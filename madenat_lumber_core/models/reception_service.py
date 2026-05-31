@@ -34,6 +34,13 @@ class LumberReceptionService:
                 'volume_purchase_m3': line.vol_purchase_m3,
                 'volumen_m3': line.vol_purchase_m3, # Stock real
                 'vol_shipment_m3': line.vol_shipment_m3, # Exportación
+
+                # Dimensiones comerciales para exportación
+                'espesor_inch_frac': line.thickness_visual or '',
+                'ancho_inch_frac': line.width_visual or '',
+                'thickness_visual': line.thickness_visual or '',
+                'width_visual': line.width_visual or '',
+                'length_ft': line.length_input_raw if line.lengthuom == 'ft' else False,
             }
             self.env['stock.lot'].create(lot_vals)
             stats['created'] += 1
