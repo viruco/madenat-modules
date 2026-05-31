@@ -19,6 +19,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Wizard `lumber.consolidation.import.wizard` archivado como dead code documentado. El archivo existe en `wizards/lumber_consolidation_import_wizard.py` pero no está integrado (sin import, sin vista XML, sin acción). Su lógica era incompatible con el modelo actual (escribe campos inexistentes en `stock.lot`). El flujo canónico de asignación a contenedores es `lumber.container.lot.wizard`.
 - Documentación del dominio del wizard para reflejar la regla de disponibilidad canónica.
 - Comentario en `_is_processed_lot()` para documentar que `subproducto_id` no es indicador de procesamiento.
 
