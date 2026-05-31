@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================= -->
+    <!--  1. VISTA LISTA: CONFIGURACIÓN TIPOS DE DOCUMENTOS      -->
+    <!-- ========================================================= -->
+    <record id="view_lumber_document_checklist_list" model="ir.ui.view">
+        <field name="name">lumber.document.checklist.list</field>
+        <field name="model">lumber.document.checklist</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de Documentos" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="is_required"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!--  2. ACCIÓN DE VENTANA (CONFIGURACIÓN)                   -->
+    <!-- ========================================================= -->
+    <record id="action_lumber_document_checklist" model="ir.actions.act_window">
+        <field name="name">Tipos de Documentos (Checklist)</field>
+        <field name="res_model">lumber.document.checklist</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define los tipos de documentos requeridos
+            </p>
+            <p>
+                Crea aquí la lista maestra de documentos (ej: BL, Factura, Certificado de Origen).
+                Estos aparecerán automáticamente en cada nuevo embarque.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!--  3. EXTENSIÓN: VISTA FORMULARIO EMBARQUE (REEMPLAZO)    -->
+    <!-- ========================================================= -->
+    <record id="view_lumber_export_shipment_form_checklist" model="ir.ui.view">
+        <field name="name">lumber.export.shipment.form.checklist</field>
+        <field name="model">lumber.export.shipment</field>
+        <field name="inherit_id" ref="madenat_lumber_logistics.view_lumber_export_shipment_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- ESTRATEGIA ROBUSTA: Reemplazar la pestaña estática antigua -->
+            <!-- CORRECCIÓN: Usamos //notebook directamente para evitar errores de selector -->
+            <xpath expr="//notebook" position="inside">
+                
+                <page string="📂 Gestión Documental" name="documents">
+                    
+                    <!-- Banner Informativo -->
+                    <div class="alert alert-info mb-2" role="alert">
+                        <strong>Gestión Documental V2:</strong> Cargue los archivos digitales aquí. 
+                        Los estados se actualizarán automáticamente.
+                    </div>
+
+                    <!-- Cabecera de Estado Resumido -->
+                    <group>
+                        <group>
+                            <field name="document_status" widget="badge" 
+                                   decoration-success="document_status == 'complete'"
+                                   decoration-warning="document_status == 'incomplete'"
+                                   decoration-danger="document_status == 'pending'"/>
+                            
+                            <field name="document_completion" widget="progressbar"/>
+                        </group>
+                    </group>
+
+                    <!-- Lista Dinámica de Documentos -->
+                    <!-- CORRECCIÓN: Eliminamos context={'default_shipment_id': active_id} que causaba el error -->
+                    <field name="document_ids">
+                        <list string="Documentos" editable="bottom" 
+                              decoration-success="state=='verified'" 
+                              decoration-danger="state=='missing'"
+                              decoration-warning="state=='attached'">
+                            
+                            <!-- Tipo de Documento (Maestro) -->
+                            <field name="checklist_id" 
+                                   options="{'no_create': True, 'no_open': True}" 
+                                   domain="[('active', '=', True)]"/>
+                            
+                            <!-- Nombre del Archivo (editable o automático) -->
+                            <field name="name" optional="show"/>
+                            
+                            <!-- Carga de Archivo -->
+                            <field name="file_name" invisible="1"/>
+                            <field name="file_data" filename="file_name" widget="binary" string="Archivo Adjunto"/>
+                            
+                            <!-- Estado Individual -->
+                            <field name="state" widget="badge" 
+                                   decoration-success="state == 'verified'" 
+                                   decoration-warning="state == 'attached'" 
+                                   decoration-danger="state == 'missing'"/>
+                                   
+                            <!-- Notas Adicionales -->
+                            <field name="notes" optional="hide"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!--  4. MENÚ: CONFIGURACIÓN                                 -->
+    <!-- ========================================================= -->
+    <menuitem id="menu_lumber_document_checklist"
+              name="Tipos de Documentos"
+              parent="madenat_lumber_logistics.menu_logistics_config"
+              action="action_lumber_document_checklist"
+              sequence="50"/>
+
+</odoo>

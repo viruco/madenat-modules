@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- ✅ REGLA DE ORO: VISTA DE LISTA PARA LÍNEAS DE COSTO - MANTENER funcionalidad existente -->
+        <record id="view_stock_lot_cost_line_list" model="ir.ui.view">
+            <field name="name">stock.lot.cost.line.list</field>
+            <field name="model">stock.lot.cost.line</field>
+            <field name="type">list</field>
+            <field name="arch" type="xml">
+                <list string="Líneas de Costo">
+                    <field name="name" string="Descripción"/>
+                    <field name="cost_type" string="Tipo"/>
+                    <field name="amount_usd" string="Monto USD" sum="Total"/>
+                    <field name="date" string="Fecha"/>
+                    <field name="lot_id" string="Lote"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ✅ REGLA DE ORO: VISTA DE FORMULARIO PARA LÍNEAS DE COSTO - MANTENER estructura existente -->
+        <record id="view_stock_lot_cost_line_form" model="ir.ui.view">
+            <field name="name">stock.lot.cost.line.form</field>
+            <field name="model">stock.lot.cost.line</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Línea de Costo">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name" string="Descripción"/>
+                                <field name="cost_type" string="Tipo de Costo"/>
+                                <field name="amount_usd" string="Monto USD"/>
+                            </group>
+                            <group>
+                                <field name="date" string="Fecha"/>
+                                <field name="lot_id" string="Lote Asociado"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="notes" string="Notas" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

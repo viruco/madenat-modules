@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Grupos de seguridad para Vendor Payment -->
+        <record id="group_vendor_payment_user" model="res.groups">
+            <field name="name">Usuario Pagos Proveedores</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+        
+        <record id="group_vendor_payment_manager" model="res.groups">
+            <field name="name">Gerente Pagos Proveedores</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+        
+        <record id="group_vendor_payment_approver" model="res.groups">
+            <field name="name">Aprobador Pagos Proveedores</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

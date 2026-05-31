@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_stock_lot_form_costing" model="ir.ui.view">
+            <field name="name">stock.lot.form.costing</field>
+            <field name="model">stock.lot</field>
+            <field name="inherit_id" ref="madenat_lumber_core.view_stock_lot_form_madenat"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form/header" position="inside">
+                    <field name="costing_state" widget="statusbar" statusbar_visible="pending,partial,complete"/>
+                </xpath>
+
+                <xpath expr="//form/sheet" position="inside">
+                    <notebook>
+                        <page string="💰 Finanzas &amp; Rentabilidad" name="financials_tab">
+                            <separator string="📊 Análisis de Rentabilidad" class="mt-4 mb-2"/>
+                            
+                            <div class="row bg-light p-3 mb-4 border rounded shadow-sm mx-0">
+                                <div class="col-4 text-center border-end">
+                                    <span class="text-muted small d-block mb-1">VENTA USD (FOB/CIF)</span>
+                                    <field name="sale_amount_usd" widget="monetary" class="h3 fw-bold text-primary"/>
+                                </div>
+                                <div class="col-4 text-center border-end">
+                                    <span class="text-muted small d-block mb-1">COSTO TOTAL</span>
+                                    <field name="total_cost_usd" widget="monetary" class="h3 fw-bold text-danger"/>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <span class="text-muted small d-block mb-1">MARGEN NETO</span>
+                                    <field name="margin_usd" widget="monetary" class="h3 fw-bold" 
+                                           decoration-success="margin_percent > 10" 
+                                           decoration-danger="margin_percent &lt; 0"/>
+                                    <div class="small fw-bold">
+                                        <field name="margin_percent" widget="percentage"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <group>
+                                <group string="📉 Desglose de Costos">
+                                    <field name="wood_cost_usd" string="Valor Madera"/>
+                                    <field name="logistic_cost_usd" string="Flete/Logística" class="fw-bold"/>
+                                    <field name="process_cost_usd" string="Procesado"/>
+                                    <field name="other_cost_usd" string="Otros Gastos"/>
+                                </group>
+                                <group string="📈 Valorización y Trazabilidad">
+                                    <field name="shipment_id" string="Embarque/Nave" readonly="1" decoration-bf="1"/>
+                                    <field name="cost_per_m3_usd" readonly="1" string="USD / m³"/>
+                                    <field name="cost_per_mbf_usd" readonly="1" string="USD / MBF"/>
+                                    <field name="exchange_rate" string="Tasa de Cambio"/>
+                                    <field name="total_cost_clp" readonly="1" string="Total CLP"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="🚢 Logística &amp; Tránsito" name="logistics_tab">
+                            <group>
+                                <group string="Ubicación de Exportación">
+                                    <field name="container_id" string="Contenedor Actual" readonly="1"/>
+                                   <field name="booking_ref" string="Reserva (Booking)" readonly="1"/>
+                                </group>
+                                <group string="Referencia de Origen">
+                                    <field name="guia_number" string="Guía Planta"/>
+                                    <field name="supplier_id" string="Planta Proveedora" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_stock_lot_tree_costing" model="ir.ui.view">
+            <field name="name">stock.lot.tree.costing</field>
+            <field name="model">stock.lot</field>
+            <field name="inherit_id" ref="stock.view_production_lot_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="attributes">
+                    <attribute name="string">Etiqueta</attribute>
+                    <attribute name="decoration-bf">1</attribute>
+                    <attribute name="width">110px</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="product_name_only" string="Producto"/>
+                    <field name="subproducto_id" string="Estado" widget="badge" decoration-success="1"/>
+                    
+                    <field name="shipment_id" string="Nave" optional="show"/>
+
+                    <field name="volumen_m3" string="m³" sum="Total m³" digits="[3,3]" optional="show"/>
+                    
+                    <field name="total_cost_usd" string="Costo Total" sum="Total Costos" optional="show" decoration-danger="1"/>
+                    <field name="sale_amount_usd" string="Venta USD" sum="Total Ventas" optional="show" decoration-primary="1"/>
+                    
+                    <field name="margin_percent" 
+                           string="Margen %" 
+                           widget="percentage" 
+                           decoration-bf="1"
+                           decoration-success="margin_percent > 15"
+                           decoration-danger="margin_percent &lt; 5"
+                           decoration-warning="margin_percent >= 5 and margin_percent &lt;= 15"/>
+                    
+                    <field name="costing_state" string="Auditoría" widget="badge" 
+                           decoration-success="costing_state == 'complete'" 
+                           decoration-warning="costing_state == 'partial'"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_stock_lot_pivot_costing" model="ir.ui.view">
+            <field name="name">stock.lot.pivot.costing</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <pivot string="Análisis de Margen por Nave" display_quantity="false" sample="1">
+                    <field name="shipment_id" type="row"/>
+                    <field name="product_name_only" type="row"/>
+                    <field name="create_date" interval="month" type="col"/>
+                    <field name="volumen_m3" type="measure"/>
+                    <field name="sale_amount_usd" type="measure" string="Venta USD"/>
+                    <field name="total_cost_usd" type="measure" string="Costo USD"/>
+                    <field name="margin_usd" type="measure" string="Margen USD"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="view_stock_lot_graph_costing" model="ir.ui.view">
+            <field name="name">stock.lot.graph.costing</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <graph string="Rentabilidad por Embarque" type="bar" stacked="True">
+                    <field name="shipment_id"/>
+                    <field name="margin_usd" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="view_stock_lot_search_costing" model="ir.ui.view">
+            <field name="name">stock.lot.search.costing</field>
+            <field name="model">stock.lot</field>
+            <field name="inherit_id" ref="stock.search_product_lot_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <separator/>
+                    <filter string="✅ Costeo Completo" name="complete" domain="[('costing_state', '=', 'complete')]"/>
+                    <filter string="⚠️ Costeo Pendiente" name="pending" domain="[('costing_state', '=', 'pending')]"/>
+                    <group expand="0" string="Agrupar por">
+                        <filter string="🚢 Por Embarque / Nave" name="shipment" context="{'group_by': 'shipment_id'}"/>
+                        <filter string="📊 Por Estado de Costeo" name="state" context="{'group_by': 'costing_state'}"/>
+                        <filter string="📦 Por Contenedor" name="container" context="{'group_by': 'container_id'}"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

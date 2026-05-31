@@ -1,0 +1,12 @@
+<odoo>
+    <!-- REPORTES COMENTADOS TEMPORALMENTE - SE ACTIVARÁN DESPUÉS -->
+    
+    <!--
+    <record id="action_report_payment_by_vendor" model="ir.actions.act_window">
+        <field name="name">Reporte: Pagos por Proveedor</field>
+        <field name="res_model">lumber.shipment.cost.line</field>
+        <field name="view_mode">pivot,graph,list</field>
+    </record>
+    -->
+    
+</odoo>

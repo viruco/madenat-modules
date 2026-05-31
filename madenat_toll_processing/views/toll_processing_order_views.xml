@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Form View -->
+    <record id="view_toll_processing_order_form" model="ir.ui.view">
+        <field name="name">toll.processing.order.form</field>
+        <field name="model">toll.processing.order</field>
+        <field name="arch" type="xml">
+            <form string="Orden Procesamiento Tercero">
+                <header>
+                    <button name="action_mark_sent" string="Marcar Enviado" 
+                            type="object" class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_mark_in_process" string="En Proceso" 
+                            type="object" class="oe_highlight"
+                            invisible="state != 'sent'"/>
+                    
+                    <!-- Botón Facturación (Fase 5) -->
+                    <button name="action_create_bill" string="Crear Factura" 
+                            type="object" class="btn-primary"
+                            invisible="state not in ('in_process', 'completed') or actual_return_volume_m3 &lt;= 0"/>
+                            
+                    <button name="action_mark_completed" string="Marcar Completado" 
+                            type="object"
+                            invisible="state != 'in_process'"/>
+                            
+                    <button name="action_cancel" string="Cancelar" 
+                            type="object"
+                            invisible="state in ('completed', 'cancelled', 'invoiced')"/>
+                            
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="draft,sent,in_process,invoiced,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <!-- Smart Button Facturas -->
+                        <button name="action_view_invoices"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-pencil-square-o"
+                                invisible="invoice_count == 0">
+                            <field name="invoice_count" widget="statinfo" string="Facturas"/>
+                        </button>
+                        
+                        <!-- Smart Button Guías -->
+                        <button name="action_view_return_guides"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="return_guide_count == 0">
+                            <field name="return_guide_count" widget="statinfo" string="Guías Retorno"/>
+                        </button>
+
+                        <!-- Smart Button Lotes Origen -->
+                        <button name="action_view_source_lots"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-cubes"
+                                invisible="not source_lot_ids">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Lotes Origen</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Datos del Procesador">
+                            <field name="processor_id"/>
+                            <field name="processor_location"/>
+                            <field name="process_type"/>
+                            <field name="service_product_id"/> <!-- Producto para factura -->
+                        </group>
+                        <group string="Logística">
+                            <field name="source_type"/>
+                            <field name="date_sent"/>
+                            <field name="date_expected_return"/>
+                            <field name="date_actual_return"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Origen" name="origin">
+                            <group>
+                                <field name="source_lot_ids" 
+                                       invisible="source_type != 'from_stock'"
+                                       nolabel="1"
+                                       domain="[('toll_order_id', '=', False), ('volumen_m3', '>', 0), ('product_id.name', 'not ilike', 'CEPILLADO'), ('product_id.name', 'not ilike', 'CEP.')]">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="product_id"/>
+                                        <field name="origin_reception_id" string="Guía/Recepción" optional="show"/>
+                                        <field name="volumen_m3" sum="Total Volumen"/>
+                                        <field name="estado_trazabilidad" optional="hide"/>
+                                    </list>
+                                </field>
+
+                                <field name="source_reception_id" 
+                                       invisible="source_type != 'from_drop_ship'"/>
+                            </group>
+                        </page>
+                        <page string="Volúmenes y Costos" name="volumes">
+                            <group>
+                                <group string="Métricas Físicas">
+                                    <field name="expected_volume_m3"/>
+                                    <field name="actual_return_volume_m3" decoration-bf="1"/>
+                                    <field name="expected_yield_pct"/>
+                                    <field name="actual_yield_pct" widget="percentage"
+                                           decoration-success="actual_yield_pct &gt; 85"
+                                           decoration-danger="actual_yield_pct &lt; 70"/>
+                                </group>
+                                <group string="Métricas Financieras">
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="process_cost_per_m3"/>
+                                    <field name="total_process_cost"/>
+                                    <separator string="Cierre Financiero"/>
+                                    <field name="actual_process_cost" decoration-bf="1"/>
+                                    <field name="lead_time_days"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Notas" name="notes">
+                            <field name="notes"/>
+                            <field name="process_description"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    
+    <!-- List View -->
+    <record id="view_toll_processing_order_list" model="ir.ui.view">
+        <field name="name">toll.processing.order.list</field>
+        <field name="model">toll.processing.order</field>
+        <field name="arch" type="xml">
+            <list string="Órdenes Procesamiento">
+                <field name="name"/>
+                <field name="processor_id"/>
+                <field name="process_type"/>
+                <field name="expected_volume_m3"/>
+                <field name="actual_return_volume_m3"/>
+                <field name="date_sent"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state == 'completed'"
+                       decoration-info="state in ('sent', 'in_process')"
+                       decoration-primary="state == 'invoiced'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Search View -->
+    <record id="view_toll_processing_order_search" model="ir.ui.view">
+        <field name="name">toll.processing.order.search</field>
+        <field name="model">toll.processing.order</field>
+        <field name="arch" type="xml">
+            <search string="Búsqueda Órdenes">
+                <field name="name"/>
+                <field name="processor_id"/>
+                <filter name="filter_draft" string="Borrador" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_in_process" string="En Proceso" domain="[('state', '=', 'in_process')]"/>
+                <filter name="filter_invoiced" string="Facturado" domain="[('state', '=', 'invoiced')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_processor" string="Procesador" context="{'group_by': 'processor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+</odoo>

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_toll_processing_order_user,toll.processing.order.user,model_toll_processing_order,group_toll_processing_user,1,1,1,0
+access_toll_processing_order_manager,toll.processing.order.manager,model_toll_processing_order,group_toll_processing_manager,1,1,1,1
+access_toll_processing_order_wizard_user,create.toll.order.wizard.user,model_create_toll_order_wizard,group_toll_processing_user,1,1,1,1

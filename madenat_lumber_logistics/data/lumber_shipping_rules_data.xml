@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Regla 1: Métrico Puro (Default) -->
+        <record id="rule_metric_actual" model="lumber.shipping.rule">
+            <name>Métrico Real (Sin Conversión)</name>
+            <calculation_method>metric_actual</calculation_method>
+            <sequence>1</sequence>
+        </record>
+
+        <!-- Regla 2: USA Standard (+1/8") -->
+        <record id="rule_usa_scant" model="lumber.shipping.rule">
+            <name>Exportación USA (Nominal + 1/8")</name>
+            <calculation_method>nominal_plus_allowance</calculation_method>
+            <allowance_inches>0.125</allowance_inches> <!-- 1/8 pulgada -->
+            <sequence>2</sequence>
+        </record>
+    </data>
+</odoo>

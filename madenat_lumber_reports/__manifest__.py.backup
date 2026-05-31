@@ -1,0 +1,12 @@
+{
+    'name': 'MADENAT Lumber Reports',
+    'version': '18.0.1.0.0',
+    'author': 'MADENAT Implementation Team',
+    'category': 'Reporting',
+    'summary': 'Reportes especializados por rol de usuario.',
+    'license': 'LGPL-3',
+    'depends': ['madenat_lumber_core', 'madenat_lumber_purchasing'],
+    'data': [],
+    'installable': True,
+    'application': False,
+}

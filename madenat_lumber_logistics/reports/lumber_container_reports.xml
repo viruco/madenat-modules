@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ACCIÓN DE REPORTE PDF -->
+    <record id="action_report_lumber_container_packing_list" model="ir.actions.report">
+        <field name="name">Packing List</field>
+        <field name="model">lumber.container</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_logistics.report_lumber_container_packing_list</field>
+        <field name="report_file">madenat_lumber_logistics.report_lumber_container_packing_list</field>
+        <field name="print_report_name">'PackingList_' + object.name</field>
+        <field name="binding_model_id" ref="model_lumber_container"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

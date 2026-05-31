@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_shipping_booking_tree" model="ir.ui.view">
+        <field name="name">shipping.booking.list</field>
+        <field name="model">shipping.booking</field>
+        <field name="arch" type="xml">
+            <list string="Reservas (Bookings)">
+                <field name="name"/>
+                <field name="shipping_line_id"/>
+                <field name="voyage_id"/>
+                <field name="container_qty"/>
+                <field name="container_type"/>
+                <field name="cargo_cutoff_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_shipping_booking_form" model="ir.ui.view">
+        <field name="name">shipping.booking.form</field>
+        <field name="model">shipping.booking</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Ej: SCL-123456"/></h1>
+                    </div>
+                    <group>
+                        <group string="Detalles Naviera">
+                            <field name="shipping_line_id"/>
+                            <field name="voyage_id"/>
+                            <field name="booking_date"/>
+                        </group>
+                        <group string="Capacidad y Fechas">
+                            <field name="container_qty"/>
+                            <field name="container_type"/>
+                            <field name="cargo_cutoff_date"/>
+                            <field name="vgm_cutoff_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notas">
+                            <field name="notes" placeholder="Instrucciones especiales de la naviera..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_shipping_booking" model="ir.actions.act_window">
+        <field name="name">Reservas (Bookings)</field>
+        <field name="res_model">shipping.booking</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+     <!-- ELIMINADO 2025-12-05 - Ahora en logistics_menus.xml
+    <menuitem id="menu_shipping_booking"
+              parent="menu_shipping_operations"
+              action="action_shipping_booking"
+              sequence="20"/>
+    -->
+</odoo>

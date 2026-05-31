@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Secuencia para consolidaciones de facturación -->
+        <record id="seq_lumber_billing_consolidation" model="ir.sequence">
+            <field name="name">Consolidación Facturación</field>
+            <field name="code">lumber.billing.consolidation</field>
+            <field name="prefix">BILL/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

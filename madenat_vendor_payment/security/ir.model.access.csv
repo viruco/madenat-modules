@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_lumber_shipment_cost_line_vendor_user,lumber.shipment.cost.line vendor user,model_lumber_shipment_cost_line,base.group_user,1,1,1,0
+access_lumber_shipment_cost_line_vendor_manager,lumber.shipment.cost.line vendor manager,model_lumber_shipment_cost_line,base.group_system,1,1,1,1
+access_account_expense_mapping_user,account.expense.mapping user,model_account_expense_mapping,base.group_user,1,0,0,0
+access_account_expense_mapping_manager,account.expense.mapping manager,model_account_expense_mapping,base.group_system,1,1,1,1
+access_vendor_payment_order_user,vendor.payment.order user,model_vendor_payment_order,base.group_user,1,0,0,0
+access_vendor_payment_order_accountant,vendor.payment.order accountant,model_vendor_payment_order,account.group_account_invoice,1,1,1,0
+access_vendor_payment_order_manager,vendor.payment.order manager,model_vendor_payment_order,base.group_system,1,1,1,1
+access_vendor_payment_wizard_user,vendor.payment.wizard user,model_vendor_payment_wizard,base.group_user,1,1,1,0
+access_vendor_payment_wizard_manager,vendor.payment.wizard manager,model_vendor_payment_wizard,base.group_system,1,1,1,1

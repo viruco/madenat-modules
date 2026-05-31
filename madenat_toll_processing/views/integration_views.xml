@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- 1. Agregar Smart Button a la Orden de Procesamiento -->
+    <record id="view_toll_processing_order_form_integration" model="ir.ui.view">
+        <field name="name">toll.processing.order.form.integration</field>
+        <field name="model">toll.processing.order</field>
+        <field name="inherit_id" ref="madenat_toll_processing.view_toll_processing_order_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_return_guides"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        invisible="return_guide_count == 0">
+                    <field name="return_guide_count" widget="statinfo" string="Guías Retorno"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <!-- 2. Agregar campo Orden de Procesamiento a la Guía -->
+    <!-- CORRECCIÓN: Usamos madenat_lumber_core como prefijo -->
+    <record id="view_madenat_guia_processing_form_inherit_toll" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.form.inherit.toll</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_madenat_guia_processing_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="toll_order_id" 
+                       invisible="tipo_recepcion != 'servicio'"
+                       readonly="state in ('validated','processed')"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

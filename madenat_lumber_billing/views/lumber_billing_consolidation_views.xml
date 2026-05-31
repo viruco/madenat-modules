@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <!-- Vista List de Consolidaciones -->
+    <record id="view_lumber_billing_consolidation_list" model="ir.ui.view">
+        <field name="name">lumber.billing.consolidation.list</field>
+        <field name="model">lumber.billing.consolidation</field>
+        <field name="arch" type="xml">
+            <list string="Consolidaciones de Facturación" default_order="create_date desc">
+                <field name="name"/>
+                <field name="shipment_id"/>
+                <field name="customer_id"/>
+                <field name="total_volume_m3"/>
+                <field name="total_price_usd"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Form de Consolidación -->
+    <record id="view_lumber_billing_consolidation_form" model="ir.ui.view">
+        <field name="name">lumber.billing.consolidation.form</field>
+        <field name="model">lumber.billing.consolidation</field>
+        <field name="arch" type="xml">
+            <form string="Consolidación de Facturación">
+                <header>
+                    <button name="action_send_to_audit" string="Enviar a Auditoría" type="object" 
+                            invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="action_start_audit" string="Iniciar Auditoría" type="object" 
+                            invisible="state != 'ready_audit'" class="oe_highlight"/>
+                    <button name="action_approve_audit" string="Aprobar" type="object" 
+                            invisible="state != 'in_audit'" class="oe_highlight"/>
+                    <button name="action_reject_audit" string="Rechazar" type="object" 
+                            invisible="state != 'in_audit'"/>
+                    <button name="action_send_to_billing" string="Enviar a Facturar" type="object" 
+                            invisible="state != 'audit_approved'" class="oe_highlight"/>
+                    <button name="action_open_invoice_wizard" string="Generar Factura" type="object" 
+                            invisible="state != 'ready_billing'" class="oe_highlight"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="shipment_id"/>
+                            <field name="customer_id"/>
+                            <field name="shipment_date"/>
+                        </group>
+                        <group>
+                            <field name="currency_id"/>
+                            <field name="total_volume_m3"/>
+                            <field name="total_price_usd"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Líneas" name="lines">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                    <field name="price_unit_usd"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción principal -->
+    <record id="action_lumber_billing_consolidation" model="ir.actions.act_window">
+        <field name="name">Consolidaciones de Facturación</field>
+        <field name="res_model">lumber.billing.consolidation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    </data>
+</odoo>

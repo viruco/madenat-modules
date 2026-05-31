@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ================================================== -->
+        <!-- VISTA DE ÁRBOL MEJORADA CON CATEGORÍAS -->
+        <!-- ================================================== -->
+        <record id="view_lumber_shipment_cost_line_tree" model="ir.ui.view">
+            <field name="name">lumber.shipment.cost.line.tree</field>
+            <field name="model">lumber.shipment.cost.line</field>
+            <field name="arch" type="xml">
+                <tree default_order="create_date desc">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="supplier_category" column_invisible="True"/>
+                    <field name="category_display" string="Categoría"/>
+                    
+                    <!-- CORRECCIÓN MONEDA: Se carga invisible primero para evitar OwlError -->
+                    <field name="currency_id" column_invisible="True"/>
+                    <field name="amount_usd" string="Monto USD" options="{'currency_field': 'currency_id'}"/>
+                    
+                    <!-- Moneda visible (si la quieres ver explícitamente) -->
+                    <field name="currency_id" optional="hide"/> 
+                    
+                    <field name="payment_state" widget="badge" options="{'badge_field': 'payment_state'}"/>
+                    <field name="invoice_ref"/>
+                    <field name="shipment_id"/>
+                    <field name="consolidation_id"/>
+                    <field name="state" widget="badge"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- ================================================== -->
+        <!-- VISTA DE BÚSQUEDA CONSOLIDADA (EXISTENTE + NUEVO) -->
+        <!-- ================================================== -->
+        <record id="view_lumber_shipment_cost_line_search_vendor" model="ir.ui.view">
+            <field name="name">lumber.shipment.cost.line.search.vendor</field>
+            <field name="model">lumber.shipment.cost.line</field>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="partner_id"/>
+                    <field name="invoice_ref"/>
+                    <field name="shipment_id"/>
+                    
+                    <!-- FILTROS POR CATEGORÍA DE PROVEEDOR (NUEVOS) -->
+                    <filter string="🌲 Proveedores Madera" 
+                            name="filter_madera_suppliers"
+                            domain="[('supplier_category', '=', 'madera')]"/>
+                    <filter string="🚚 Transportistas" 
+                            name="filter_transport_suppliers"
+                            domain="[('supplier_category', '=', 'transport')]"/>
+                    <filter string="📦 Consolidación" 
+                            name="filter_consolidation_suppliers"
+                            domain="[('supplier_category', '=', 'consolidation')]"/>
+                    <filter string="🚢 Navieras" 
+                            name="filter_naviera_suppliers"
+                            domain="[('supplier_category', '=', 'naviera')]"/>
+                    <filter string="📋 Agencias Aduana" 
+                            name="filter_aduana_suppliers"
+                            domain="[('supplier_category', '=', 'aduana')]"/>
+                    
+                    <!-- FILTROS POR ESTADO DE PAGO (EXISTENTES) -->
+                    <filter name="filter_not_paid" 
+                            string="📋 Sin Pagar" 
+                            domain="[('payment_state', 'in', ['not_paid', 'partial'])]"/>
+                    <filter name="filter_paid" 
+                            string="✅ Pagado" 
+                            domain="[('payment_state', '=', 'paid')]"/>
+                    
+                    <!-- FILTROS POR ESTADO (EXISTENTES) -->
+                    <filter name="filter_draft" 
+                            string="📝 Borrador" 
+                            domain="[('state', '=', 'draft')]"/>
+                    <filter name="filter_validated" 
+                            string="✓ Validado" 
+                            domain="[('state', '=', 'validated')]"/>
+                    
+                    <!-- AGRUPACIONES MEJORADAS -->
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_supplier_category" 
+                                string="📊 Categoría Proveedor" 
+                                context="{'group_by': 'supplier_category'}"/>
+                        <filter name="group_partner" 
+                                string="👥 Proveedor" 
+                                context="{'group_by': 'partner_id'}"/>
+                        <filter name="group_payment_state" 
+                                string="💰 Estado Pago" 
+                                context="{'group_by': 'payment_state'}"/>
+                        <filter name="group_shipment" 
+                                string="🚢 Embarque" 
+                                context="{'group_by': 'shipment_id'}"/>
+                        <filter name="group_state" 
+                                string="📝 Estado" 
+                                context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ================================================== -->
+        <!-- VISTA DE FORMULARIO MEJORADA -->
+        <!-- ================================================== -->
+        <record id="view_lumber_shipment_cost_line_form" model="ir.ui.view">
+            <field name="name">lumber.shipment.cost.line.form</field>
+            <field name="model">lumber.shipment.cost.line</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <group string="Información General">
+                                <field name="name" placeholder="Descripción del costo..."/>
+                                <field name="partner_id" required="1"/>
+                                <field name="supplier_category" required="1"/>
+                                <field name="partner_type"/>
+                                <field name="cost_type"/>
+                            </group>
+                            <group string="Montos y Estados">
+                                <!-- CORRECCIÓN: Vinculación explícita de moneda -->
+                                <field name="currency_id" invisible="1"/>
+                                <field name="amount_usd" options="{'currency_field': 'currency_id'}"/>
+                                <field name="payment_state" widget="statusbar" statusbar_visible="draft,validated,paid"/>
+                                <field name="state" widget="statusbar" statusbar_visible="draft,validated,paid"/>
+                            </group>
+                        </group>
+                        
+                        <group string="Asignación y Documentos">
+                            <group string="Nivel de Asignación">
+                                <field name="allocation_level" required="1"/>
+                                <field name="shipment_id"/>
+                                <!-- CORRECCIÓN ODOO 18: attrs reemplazado por required condicional -->
+                                <field name="container_id" required="allocation_level == 'container'"/>
+                                <field name="lot_id" required="allocation_level == 'lot'"/>
+                            </group>
+                            <group string="Documentación">
+                                <field name="invoice_id"/>
+                                <field name="invoice_ref"/>
+                                <field name="invoice_date"/>
+                                <field name="attachment_count" widget="statinfo" string="Documentos Adjuntos"/>
+                            </group>
+                        </group>
+                        
+                        <group string="Seguimiento">
+                            <field name="notes" placeholder="Observaciones adicionales..."/>
+                            <field name="validated_by_id" readonly="1"/>
+                            <field name="validated_date" readonly="1"/>
+                        </group>
+                    </sheet>
+                    
+                    <!-- BOTONES DE ACCIÓN -->
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

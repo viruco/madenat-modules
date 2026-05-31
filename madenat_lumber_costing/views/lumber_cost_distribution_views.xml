@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lumber_cost_distribution_form" model="ir.ui.view">
+        <field name="name">lumber.cost.distribution.form</field>
+        <field name="model">lumber.cost.distribution</field>
+        <field name="arch" type="xml">
+            <form string="Expediente de Liquidación de Costos">
+                <header>
+                    <button name="action_apply_costs" string="Validar y Liquidar" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_reverse_costs" string="Revertir a Borrador" type="object" class="btn-danger" invisible="state != 'applied'" confirm="¿Seguro que desea eliminar los costos inyectados de los lotes?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,applied,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Folio de Expediente"/>
+                        <h1><field name="name" class="oe_inline"/></h1>
+                    </div>
+                    
+                    <div class="row mb-4 bg-light p-3 rounded border shadow-sm mx-0">
+                        <div class="col-2 text-center border-end">
+                            <span class="text-muted d-block small mb-1 fw-bold">Volumen Físico</span>
+                            <div class="h5 mb-0 fw-bold text-info">
+                                <field name="total_volumen_fisico" nolabel="1"/> <small class="text-muted">m³</small>
+                            </div>
+                        </div>
+                        <div class="col-2 text-center border-end">
+                            <span class="text-muted d-block small mb-1 fw-bold">Volumen Export.</span>
+                            <div class="h5 mb-0 fw-bold text-success">
+                                <field name="total_volumen_export" nolabel="1"/> <small class="text-muted">m³</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center border-end">
+                            <span class="text-muted d-block small mb-1 text-uppercase fw-bold">Costo a Inyectar</span>
+                            <div class="h4 mb-0 text-primary fw-bold">
+                                <field name="currency_id" invisible="1"/>
+                                <field name="amount_total_usd" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                        </div>
+                        <div class="col-2 text-center border-end">
+                            <span class="text-muted d-block small mb-1 fw-bold">Pqts Físicos</span>
+                            <div class="h5 mb-0">
+                                <field name="package_count" nolabel="1"/>
+                            </div>
+                        </div>
+                        <div class="col-2 text-center">
+                            <span class="text-muted d-block small mb-1 fw-bold">Etiquetas Lógicas</span>
+                            <div class="h5 mb-0">
+                                <field name="lot_count" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="1. Operación Logística" name="operacion_logistica">
+                            <field name="ref" placeholder="Ej: MSC ELENOIRE / Booking FA543R" readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                        </group>
+                        
+                        <group string="2. Origen de los Datos" name="origen_datos">
+                            <field name="target_model" readonly="state != 'draft'"/>
+                            <field name="booking_id" invisible="target_model != 'booking'" required="target_model == 'booking'" readonly="state != 'draft'" options="{'no_create': True}"/>
+
+                            <field name="container_ids" 
+                                   widget="many2many_tags" 
+                                   invisible="target_model not in ('booking', 'container')" 
+                                   string="Contenedores Reales"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                          
+                            <field name="container_id" invisible="target_model != 'container'" required="target_model == 'container'" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            
+                            <field name="reception_id" invisible="target_model != 'reception'" required="target_model == 'reception'" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="purchase_id" invisible="target_model != 'purchase'" required="target_model == 'purchase'" readonly="state != 'draft'" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Matriz de Facturas" icon="fa-file-text-o">
+                            <div class="alert alert-info mt-2" role="alert" style="padding: 5px 15px;">
+                                <i class="fa fa-info-circle mr-1" aria-hidden="true" title="Información"/> <b>Auditoría:</b> Fletes y manipulación suelen dividirse por 'Volumen Físico' o 'Contenedor'. Seguros y Aduana por 'Volumen Exportación'.
+                            </div>
+                            <field name="cost_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="cost_type"/>
+                                    <field name="invoice_num"/>
+                                    <field name="invoice_date"/>
+                                    <field name="partner_id" optional="show"/>
+                                    <field name="distribution_method" string="Base de Reparto"/>
+                                    <field name="currency_id" string="Moneda"/>
+                                    <field name="amount_original" string="Monto Base"/>
+                                    <field name="exchange_rate" string="Tasa Cambio"/>
+                                    <field name="amount_usd" string="Total USD" sum="Total USD" decoration-bf="1" readonly="1" force_save="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                       <page string="Etiquetas Cargadas (Trazabilidad Dual)" icon="fa-tags">
+                            <field name="lot_ids" readonly="state != 'draft'">
+                                <list string="Lotes Detectados" create="0" default_order="ref asc, name asc">
+                                    <field name="name" string="ID Sistema" optional="show"/>
+                                    <field name="ref" string="Etiqueta" decoration-bf="1"/>
+                                    <field name="container_id" string="Contenedor"/>
+                                    <field name="piezas" sum="Total Pzas"/>
+                                    
+                                    <field name="volumen_m3" string="Vol. Físico (m³)" sum="Total Físico" decoration-info="1" widget="float" digits="[12,3]"/>
+                                    <field name="vol_shipment_m3" string="Vol. Exportación (m³)" sum="Total Exportación" decoration-success="1" decoration-bf="1" widget="float" digits="[12,3]"/>
+                                </list>
+                            </field>
+                        </page>
+                        
+                        <page string="Costos Base Existentes (BD)" icon="fa-database">
+                            <div class="alert alert-secondary mt-2" role="alert" style="padding: 5px 15px;">
+                                <i class="fa fa-history mr-1" aria-hidden="true" title="Historial"/> <b>Información:</b> Estos son los costos de servicio (Ej. Secado/Cepillado) que <b>ya fueron aplicados previamente</b> al inventario para estos lotes.
+                            </div>
+                            <field name="existing_cost_line_ids" readonly="1">
+                                <list string="Costos Previos">
+                                    <field name="lot_name_clean" string="Paquete / Etiqueta"/>
+                                    <field name="cost_type" string="Concepto de Costo"/>
+                                    <field name="date" string="Fecha Aplicación"/>
+                                    <field name="amount_usd" sum="Total Costo Base (USD)" decoration-bf="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Auditoría de Inyección" icon="fa-shield" invisible="state == 'draft'">
+                            <field name="generated_line_ids" readonly="1">
+                                <list string="Historial de Inyección">
+                                    <field name="lot_name_clean" string="Etiqueta"/>
+                                    <field name="cost_type"/>
+                                    <field name="amount_usd" sum="Total USD" decoration-bf="1"/>
+                                    <field name="date"/>
+                                    <field name="notes" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_lumber_cost_distribution_list" model="ir.ui.view">
+        <field name="name">lumber.cost.distribution.list</field>
+        <field name="model">lumber.cost.distribution</field>
+        <field name="arch" type="xml">
+            <list string="Expedientes de Liquidación">
+                <field name="name" decoration-bf="1"/>
+                <field name="date" widget="date"/>
+                <field name="ref"/>
+                <field name="amount_total_usd" string="Total USD" sum="Total"/>
+                <field name="state" widget="badge" decoration-success="state == 'applied'" decoration-info="state == 'draft'" decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_cost_line_pivot" model="ir.ui.view">
+        <field name="name">stock.lot.cost.line.pivot</field>
+        <field name="model">stock.lot.cost.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Matriz de Costos por Lote">
+                <field name="lot_name_clean" type="row"/>
+                <field name="cost_type" type="col"/>
+                <field name="amount_usd" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_lumber_cost_distribution" model="ir.actions.act_window">
+        <field name="name">Expedientes de Costeo (Staging)</field>
+        <field name="res_model">lumber.cost.distribution</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_lumber_cost_matrix" model="ir.actions.act_window">
+        <field name="name">Tarja Valorizada (Matriz Final)</field>
+        <field name="res_model">stock.lot.cost.line</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+
+    <menuitem id="menu_lumber_cost_distribution_persist" name="📋 Expedientes de Costeo (Staging)" parent="madenat_lumber_reports.menu_finance_costing" action="action_lumber_cost_distribution" sequence="12"/>
+    <menuitem id="menu_lumber_cost_matrix" name="📈 Tarja Valorizada (Inventario)" parent="madenat_lumber_reports.menu_finance_costing" action="action_lumber_cost_matrix" sequence="15"/>
+</odoo>

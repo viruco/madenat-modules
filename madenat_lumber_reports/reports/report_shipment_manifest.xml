@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ACCIÓN DE REPORTE -->
+    <record id="action_report_lumber_shipment_manifest" model="ir.actions.report">
+        <field name="name">Manifiesto de Embarque (Resumen)</field>
+        <field name="model">lumber.export.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_logistics.report_shipment_manifest_template</field>
+        <field name="report_file">madenat_lumber_logistics.report_shipment_manifest_template</field>
+        <field name="print_report_name">'Manifiesto_%s' % object.name</field>
+        <field name="binding_model_id" ref="madenat_lumber_logistics.model_lumber_export_shipment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- TEMPLATE QWEB -->
+    <template id="report_shipment_manifest_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 class="text-center mb-4">MANIFIESTO DE CARGA</h2>
+                        
+                        <!-- DATOS NAVIERA -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>Booking Ref:</strong> <span t-field="o.booking_reference"/><br/>
+                                <strong>Nave / Viaje:</strong> <span t-field="o.vessel_name"/><br/>
+                                <strong>Puerto Origen:</strong> <span t-field="o.port_loading"/><br/>
+                                <strong>Puerto Destino:</strong> <span t-field="o.port_discharge"/>
+                            </div>
+                            <div class="col-6 text-right">
+                                <strong>Fecha ETD:</strong> <span t-field="o.estimated_departure"/><br/>
+                                <strong>Cliente:</strong> <span t-field="o.customer_id"/><br/>
+                                <strong>Destino Final:</strong> <span t-field="o.final_destination"/>
+                            </div>
+                        </div>
+
+                        <!-- RESUMEN POR CONTENEDOR -->
+                        <table class="table table-bordered mt-3">
+                            <thead>
+                                <tr style="background-color: #f0f0f0;">
+                                    <th>Contenedor</th>
+                                    <th>Sello</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center">Paquetes</th>
+                                    <th class="text-right">Volumen (m³)</th>
+                                    <th class="text-right">Peso Bruto (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.container_ids" t-as="c">
+                                    <td><span t-field="c.name"/></td>
+                                    <td><span t-field="c.seal_number"/></td>
+                                    <td><span t-field="c.container_type"/></td>
+                                    <td class="text-center"><span t-field="c.lot_count"/></td>
+                                    <td class="text-right"><span t-field="c.volume_m3"/></td>
+                                    <td class="text-right"><span t-field="c.gross_weight_kg"/></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="font-weight-bold table-active">
+                                    <td colspan="3" class="text-right">TOTAL CARGA:</td>
+                                    <td class="text-center"><span t-field="o.total_packages"/></td>
+                                    <td class="text-right"><span t-field="o.total_volume_m3"/></td>
+                                    <td class="text-right"><span t-field="o.total_weight_kg"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <div class="mt-4">
+                            <strong>Observaciones:</strong><br/>
+                            <span t-field="o.notes"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

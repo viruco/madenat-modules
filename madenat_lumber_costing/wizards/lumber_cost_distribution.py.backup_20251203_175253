@@ -1,0 +1,273 @@
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+class LumberCostDistributionWizard(models.TransientModel):
+    _name = 'lumber.cost.distribution.wizard'
+    _description = 'Distribución Avanzada de Costos (Landed Cost)'
+
+
+    def _default_lots(self):
+        # Si viene de una vista de lista, precargar
+        active_ids = self._context.get('active_ids')
+        active_model = self._context.get('active_model')
+        if active_model == 'stock.lot':
+            return self.env['stock.lot'].browse(active_ids)
+        return False
+
+
+    # ====================================================================
+    # 1. SELECCIÓN DE CRITERIO (EL CEREBRO)
+    # ====================================================================
+    target_model = fields.Selection([
+        ('manual', '👉 Selección Manual de Lotes'),
+        ('reception', '📄 Por Guía de Recepción'),
+        ('purchase', '🛒 Por Orden de Compra'),
+        ('container', '📦 Por Contenedor'),
+        ('booking', '🚢 Por Reserva (Booking/BL)'),
+    ], string="Aplicar Costo A", default='manual', required=True)
+
+
+    # Campos de enlace (Se muestran según selección)
+    reception_id = fields.Many2one('madenat.guia.processing', string="Guía de Origen")
+    purchase_id = fields.Many2one('purchase.order', string="Orden de Compra")
+    
+    # Estos requieren que tengas instalado el módulo logistics
+    container_id = fields.Many2one('lumber.container', string="Contenedor")
+    booking_id = fields.Many2one('shipping.booking', string="Reserva/Booking")
+
+
+    # Lotes afectados (Se calculan solos)
+    lot_ids = fields.Many2many('stock.lot', string="Lotes Afectados", default=_default_lots)
+    lot_count = fields.Integer(string="N° Lotes", compute="_compute_lot_count")
+    
+    # ====================================================================
+    # NUEVO: CAMPOS DE ALERTA PARA LOTES FACTURADOS
+    # ====================================================================
+    billed_lot_count = fields.Integer(
+        string="Lotes Facturados",
+        compute="_compute_billed_lots",
+        help="Número de lotes que ya fueron facturados (bloqueados)"
+    )
+    
+    has_billed_lots = fields.Boolean(
+        string="Tiene Lotes Facturados",
+        compute="_compute_billed_lots",
+        help="Indica si hay lotes facturados en la selección"
+    )
+    
+    warning_message = fields.Char(
+        string="Mensaje de Advertencia",
+        compute="_compute_billed_lots"
+    )
+
+
+    # ====================================================================
+    # 2. DATOS FINANCIEROS
+    # ====================================================================
+    cost_type = fields.Selection([
+        ('freight', '🚚 Flete Nacional'),
+        ('ocean_freight', '🌊 Flete Marítimo'),
+        ('port', '⚓ Gastos Portuarios / THC'),
+        ('customs', '🛃 Agenciamiento Aduana'),
+        ('insurance', '🛡️ Seguros'),
+        ('commission', '🤝 Comisiones'),
+        ('other', '📎 Otros Gastos')
+    ], string="Concepto", required=True)
+    
+    ref = fields.Char(string="N° Factura/Ref", required=True)
+    partner_id = fields.Many2one('res.partner', string="Proveedor del Servicio")
+    
+    amount_total = fields.Float(string="Monto Total Factura", required=True)
+    currency_id = fields.Many2one('res.currency', string="Moneda", required=True, 
+                                 default=lambda self: self.env.company.currency_id)
+    
+    exchange_rate = fields.Float(string="Tasa Cambio (a USD)", default=1.0, digits=(12,4))
+    
+    distribution_method = fields.Selection([
+        ('volume', 'Por Volumen (m³) - Estándar'),
+        ('pieces', 'Por Cantidad de Piezas'),
+        ('equal', 'Equitativo (Flat)')
+    ], default='volume', string="Método Reparto", required=True)
+
+
+    # ====================================================================
+    # MÉTODOS DE LÓGICA
+    # ====================================================================
+
+
+    @api.depends('lot_ids')
+    def _compute_lot_count(self):
+        for r in self: 
+            r.lot_count = len(r.lot_ids)
+    
+    
+    @api.depends('lot_ids')
+    def _compute_billed_lots(self):
+        """
+        Calcula cuántos lotes de la selección ya están facturados.
+        NUEVO: Validación de integridad contable.
+        """
+        for wizard in self:
+            billed_lots = wizard.lot_ids.filtered(lambda lot: lot.is_billed)
+            wizard.billed_lot_count = len(billed_lots)
+            wizard.has_billed_lots = bool(billed_lots)
+            
+            if wizard.has_billed_lots:
+                wizard.warning_message = (
+                    f"⚠️ ADVERTENCIA: {len(billed_lots)} de {len(wizard.lot_ids)} lotes "
+                    f"ya fueron facturados y serán EXCLUIDOS de la distribución."
+                )
+            else:
+                wizard.warning_message = False
+
+
+    @api.onchange('currency_id')
+    def _onchange_currency(self):
+        if self.currency_id.name == 'USD':
+            self.exchange_rate = 1.0
+
+
+    @api.onchange('target_model', 'reception_id', 'purchase_id', 'container_id', 'booking_id')
+    def _onchange_target(self):
+        """
+        🧠 CEREBRO: Busca los lotes automáticamente según lo que el auditor seleccione.
+        """
+        lots = self.env['stock.lot']
+        
+        if self.target_model == 'reception' and self.reception_id:
+            # Buscar lotes vinculados a esta guía
+            lots = self.env['stock.lot'].search([('guia_processing_id', '=', self.reception_id.id)])
+        
+        elif self.target_model == 'purchase' and self.purchase_id:
+            # Buscar lotes vinculados a esta OC (vía recepción)
+            lots = self.env['stock.lot'].search([('purchase_order_id', '=', self.purchase_id.id)])
+            
+        elif self.target_model == 'container' and self.container_id:
+            # Buscar lotes DENTRO del contenedor
+            lots = self.container_id.lot_ids
+            
+        elif self.target_model == 'booking' and self.booking_id:
+            # Buscar todos los lotes de todos los contenedores del Booking
+            containers = self.env['lumber.container'].search([('booking_id', '=', self.booking_id.id)])
+            lots = containers.mapped('lot_ids')
+
+        if self.target_model != 'manual':
+            self.lot_ids = [(6, 0, lots.ids)]
+
+
+    def action_distribute(self):
+        """
+        🚀 EJECUCIÓN: Distribuye el costo incluso si la madera ya zarpó.
+        
+        MEJORA v2.0: Excluye automáticamente lotes facturados para proteger
+        la integridad contable.
+        """
+        if not self.lot_ids:
+            raise UserError("No hay lotes asociados al criterio seleccionado.")
+        if self.amount_total <= 0:
+            raise UserError("El monto debe ser mayor a cero.")
+        
+        # ================================================================
+        # VALIDACIÓN CRÍTICA: FILTRAR LOTES FACTURADOS
+        # ================================================================
+        distributable_lots = self.lot_ids.filtered(lambda lot: not lot.is_billed)
+        billed_lots = self.lot_ids - distributable_lots
+        
+        if billed_lots:
+            # Logging de auditoría
+            _logger.warning(
+                f"[COST DISTRIBUTION] Se excluyeron {len(billed_lots)} lotes facturados: "
+                f"{billed_lots.mapped('name')}"
+            )
+            
+            # Si TODOS los lotes están facturados, bloquear operación
+            if not distributable_lots:
+                raise UserError(_(
+                    "❌ DISTRIBUCIÓN BLOQUEADA\n\n"
+                    "Todos los lotes seleccionados (%d) ya fueron facturados y "
+                    "no pueden recibir costos adicionales.\n\n"
+                    "Lotes facturados:\n%s\n\n"
+                    "Si necesita modificar costos de lotes facturados:\n"
+                    "1. Cancele las facturas asociadas\n"
+                    "2. Modifique los costos\n"
+                    "3. Vuelva a facturar\n\n"
+                    "Contacte a Contabilidad para más información."
+                ) % (len(billed_lots), '\n'.join(f"• {lot.name}" for lot in billed_lots)))
+        
+        # Continuar con lotes distribuibles
+        working_lots = distributable_lots
+
+        # 1. Normalizar a USD
+        total_usd = self.amount_total
+        if self.currency_id.name != 'USD':
+            if self.exchange_rate <= 0: 
+                raise UserError("Tasa de cambio inválida.")
+            total_usd = self.amount_total / self.exchange_rate
+
+        # 2. Calcular Base
+        total_base = 0.0
+        for lot in working_lots:
+            if self.distribution_method == 'volume':
+                total_base += (lot.volumen_m3 or lot.volume_purchase_m3 or 0.0)
+            elif self.distribution_method == 'pieces':
+                total_base += lot.piezas
+            else:
+                total_base += 1
+
+        if total_base == 0: 
+            raise UserError("Base de distribución cero (revise volúmenes).")
+
+        # 3. Inyectar Costos (Historial)
+        CostLine = self.env['stock.lot.cost.line']
+        count = 0
+        
+        for lot in working_lots:
+            # Factor
+            lot_base = 0.0
+            if self.distribution_method == 'volume':
+                lot_base = (lot.volumen_m3 or lot.volume_purchase_m3 or 0.0)
+            elif self.distribution_method == 'pieces':
+                lot_base = lot.piezas
+            else:
+                lot_base = 1
+            
+            factor = lot_base / total_base
+            amount = total_usd * factor
+
+            # Crear Línea
+            CostLine.create({
+                'lot_id': lot.id,
+                'name': f"{dict(self._fields['cost_type'].selection).get(self.cost_type)} | {self.ref}",
+                'cost_type': self.cost_type,
+                'amount_usd': amount,
+                'partner_id': self.partner_id.id,
+                'date': fields.Date.today(),
+                'notes': f"Origen: {self.target_model} | Ref: {self.ref}"
+            })
+            
+            # Forzar recálculo
+            if hasattr(lot, '_compute_total_cost_usd'):
+                lot._compute_total_cost_usd()
+            
+            count += 1
+        
+        # Mensaje de éxito con información de exclusiones
+        success_message = f'USD {total_usd:,.2f} distribuidos en {count} lotes.'
+        if billed_lots:
+            success_message += f'\n⚠️ Se excluyeron {len(billed_lots)} lotes facturados.'
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Costos Asignados',
+                'message': success_message,
+                'type': 'success' if not billed_lots else 'warning',
+                'sticky': bool(billed_lots),  # Si hubo exclusiones, mensaje permanente
+            }
+        }

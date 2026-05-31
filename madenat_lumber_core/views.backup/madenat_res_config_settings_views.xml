@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_madenat" model="ir.ui.view">
+        <field name="name">res.config.settings.form.madenat</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- XPATH corregido para Odoo 18 CE -->
+            <xpath expr="//form" position="inside">
+                
+                <app string="MADENAT Lumber" name="madenat_lumber_core">
+                    
+                    <!-- ============================================ -->
+                    <!-- SECCIÓN: Importación y Productos            -->
+                    <!-- ============================================ -->
+                    <block title="Configuración Madera">
+                        <setting>
+                            <field name="allow_product_creation"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Crear productos automáticamente al importar packing lists
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting>
+                            <field name="omission_threshold"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Máximo de productos que pueden omitirse en importación
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting>
+                            <field name="import_product_id"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Producto por defecto para nuevos lotes importados
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    
+                    <!-- ============================================ -->
+                    <!-- SECCIÓN: Notificaciones SMS                  -->
+                    <!-- ============================================ -->
+                    <block title="Notificaciones SMS">
+                        <setting>
+                            <field name="stock_move_sms_validation"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Activar validación por SMS en movimientos de stock
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting>
+                            <field name="stock_sms_confirmation_template_id"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Plantilla para mensajes SMS de confirmación de stock
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    
+                    <!-- ============================================ -->
+                    <!-- SECCIÓN: Validación de Volúmenes (NUEVA)    -->
+                    <!-- Agregado: 2025-12-01 - Robustecimiento      -->
+                    <!-- ============================================ -->
+                    <block title="Validación de Volúmenes">
+                        <setting help="Diferencia porcentual entre volumen comercial (de guía) y volumen físico (de Excel) que dispara advertencia visual">
+                            <label for="volume_variance_warning_threshold" string="Umbral de Advertencia (%)"/>
+                            <field name="volume_variance_warning_threshold" class="oe_inline"/>
+                            <div class="content-group mt16">
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fa fa-warning" title="Advertencia"/> 
+                                    <strong>Ejemplo:</strong> Con 5%, si la diferencia es entre 5% y 10%, 
+                                    se mostrará decoración amarilla en la recepción
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting help="Diferencia porcentual que dispara alerta crítica y puede requerir justificación obligatoria">
+                            <label for="volume_variance_critical_threshold" string="Umbral Crítico (%)"/>
+                            <field name="volume_variance_critical_threshold" class="oe_inline"/>
+                            <div class="content-group mt16">
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="fa fa-exclamation-circle" title="Crítico"/> 
+                                    <strong>Ejemplo:</strong> Con 10%, si la diferencia supera el 10%, 
+                                    se mostrará decoración roja y requerirá justificación
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <!-- Info adicional -->
+                        <setting>
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle" title="Información"/> 
+                                <strong>Cómo funciona la validación:</strong>
+                                <ul class="mb-0 mt8">
+                                    <li><strong>Volumen Comercial:</strong> Extraído del PDF de la guía de despacho</li>
+                                    <li><strong>Volumen Físico:</strong> Calculado desde el Excel del packing list</li>
+                                    <li><strong>Validación automática:</strong> El sistema compara ambos valores y muestra alertas según los umbrales configurados</li>
+                                    <li><strong>Audit Log:</strong> Todas las diferencias significativas quedan registradas para trazabilidad</li>
+                                </ul>
+                            </div>
+                        </setting>
+                    </block>
+                    
+                </app>
+                
+            </xpath>
+        </field>
+    </record>
+</odoo>

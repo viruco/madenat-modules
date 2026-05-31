@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shipping_vessel_user,shipping.vessel.user,model_shipping_vessel,base.group_user,1,1,1,1
+access_shipping_voyage_user,shipping.voyage.user,model_shipping_voyage,base.group_user,1,1,1,1
+access_shipping_booking_user,shipping.booking.user,model_shipping_booking,base.group_user,1,1,1,1

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <menuitem id="menu_lumber_billing_root"
+                  name="💰 Facturación MADENAT"
+                  parent="account.menu_finance"
+                  sequence="15"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_consolidation"
+                  name="📋 Consolidaciones"
+                  parent="menu_lumber_billing_root"
+                  action="action_lumber_billing_consolidation"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_audit"
+                  name="📊 Auditoría"
+                  parent="menu_lumber_billing_root"
+                  sequence="20"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_audit_pending"
+                  name="⏳ Pendientes de Auditar"
+                  parent="menu_lumber_billing_audit"
+                  action="action_lumber_billing_audit_pending"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_audit_in_progress"
+                  name="🔍 En Auditoría"
+                  parent="menu_lumber_billing_audit"
+                  action="action_lumber_billing_audit_in_progress"
+                  sequence="20"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_audit_completed"
+                  name="✅ Auditadas"
+                  parent="menu_lumber_billing_audit"
+                  action="action_lumber_billing_audit_completed"
+                  sequence="30"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_accounting"
+                  name="🧾 Facturación"
+                  parent="menu_lumber_billing_root"
+                  sequence="30"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_ready"
+                  name="✅ Listas para Facturar"
+                  parent="menu_lumber_billing_accounting"
+                  action="action_lumber_billing_ready"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_billed"
+                  name="📄 Facturadas"
+                  parent="menu_lumber_billing_accounting"
+                  action="action_lumber_billing_billed"
+                  sequence="20"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_reports"
+                  name="📈 Reportes"
+                  parent="menu_lumber_billing_root"
+                  sequence="40"
+                  groups="account.group_account_manager"/>
+        
+        <menuitem id="menu_lumber_billing_variance_analysis"
+                  name="📊 Análisis de Variaciones"
+                  parent="menu_lumber_billing_reports"
+                  action="action_lumber_billing_variance_analysis"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+    </data>
+</odoo>

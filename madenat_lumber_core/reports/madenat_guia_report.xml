@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_madenat_guia" model="ir.actions.report">
+        <field name="name">Packing List / Guía Técnica</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_core.report_madenat_guia_document</field>
+        <field name="report_file">madenat_lumber_core.report_madenat_guia_document</field>
+        <field name="print_report_name">'Guia_%s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_madenat_guia_processing"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="action_lumber_reception_pending" model="ir.actions.act_window">
+            <field name="name">🚨 Recepciones Pendientes</field>
+            <field name="res_model">lumber.reception</field>
+            <field name="view_mode">list,form,kanban</field>
+            <field name="domain">[('purchase_id', '=', False), ('state', 'in', ['draft', 'processing'])]</field>
+            <field name="context">{'search_default_draft': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">No hay recepciones pendientes</p>
+                <p>Las recepciones sin orden de compra asociada aparecerán aquí para su regularización.</p>
+            </field>
+        </record>
+
+        <record id="action_lumber_reception_raw_only" model="ir.actions.act_window">
+            <field name="name">📦 Recepción Madera Bruta</field>
+            <field name="res_model">lumber.reception</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_lumber_reception_list"/>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Crea la primera recepción de madera bruta</p>
+            </field>
+        </record>
+
+        <record id="action_guia_processing_list" model="ir.actions.act_window">
+            <field name="name">Guías Procesadas (Servicios)</field>
+            <field name="res_model">madenat.guia.processing</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_madenat_guia_processing_list"/>
+            <field name="search_view_id" ref="view_madenat_guia_processing_search"/>
+            <field name="domain">[('tipo_recepcion', '!=', 'raw')]</field>
+            <field name="context">{'search_default_filter_draft': 1, 'default_tipo_recepcion': 'service'}</field>
+        </record>
+
+        <record id="action_madenat_audit_logs" model="ir.actions.act_window">
+            <field name="name">📊 Registro de Auditoría</field>
+            <field name="res_model">madenat.audit.log</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Sin registros de auditoría</p>
+            </field>
+        </record>
+
+        <record id="action_madenat_patios_recepcion" model="ir.actions.act_window">
+            <field name="name">Patios de Recepción</field>
+            <field name="res_model">stock.location</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('usage', '=', 'internal')]</field>
+            <field name="context">{'default_usage': 'internal'}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crea tu primer Patio de Recepción o Asignación.
+                </p>
+                <p>
+                    Aquí puedes registrar los recintos físicos (ej: Puerto Coronel, Marval) 
+                    donde se almacenará la madera bruta o procesada.
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_madenat_root" 
+                  name="🌲 MADENAT Lumber" 
+                  parent="stock.menu_stock_root" 
+                  sequence="5"
+                  groups="base.group_user"/>
+
+        <menuitem id="menu_lumber_reception_pending" 
+                  name="🚨 Recepciones Pendientes"
+                  parent="menu_madenat_root"
+                  action="action_lumber_reception_pending"
+                  sequence="5"
+                  groups="stock.group_stock_user"/>
+
+        <menuitem id="menu_lumber_reception" 
+                  name="📦 Madera Bruta (Proveedor)" 
+                  parent="menu_madenat_root"
+                  action="action_lumber_reception_raw_only" 
+                  sequence="10"
+                  groups="stock.group_stock_user"/>
+
+        <menuitem id="menu_guia_processing_root"
+                  name="🏭 Post-Proceso (Servicios)"
+                  parent="menu_madenat_root"
+                  sequence="15"
+                  groups="stock.group_stock_user"/>
+
+        <menuitem id="menu_guia_processing_list"
+                  name="Guías Procesadas"
+                  parent="menu_guia_processing_root"
+                  action="action_guia_processing_list"
+                  sequence="10"
+                  groups="stock.group_stock_user"/>
+                  
+        <menuitem id="menu_madenat_audit" 
+                  name="📊 Auditoría" 
+                  parent="menu_madenat_root"
+                  action="action_madenat_audit_logs" 
+                  sequence="30"
+                  groups="stock.group_stock_manager"/>
+                  
+       
+    </data>
+</odoo>

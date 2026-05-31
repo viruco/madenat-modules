@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_lumber_billing_consolidation" model="ir.actions.act_window">
+            <field name="name">Consolidaciones de Facturación</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay consolidaciones aún
+                </p>
+                <p>
+                    Las consolidaciones aparecerán aquí cuando sean creadas desde logística.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_lumber_billing_audit_pending" model="ir.actions.act_window">
+            <field name="name">Pendientes de Auditar</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','=','ready_audit')]</field>
+        </record>
+
+        <record id="action_lumber_billing_audit_in_progress" model="ir.actions.act_window">
+            <field name="name">En Auditoría</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','=','in_audit')]</field>
+        </record>
+
+        <record id="action_lumber_billing_audit_completed" model="ir.actions.act_window">
+            <field name="name">Auditadas</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','in',['audit_approved','audit_rejected'])]</field>
+        </record>
+
+        <record id="action_lumber_billing_ready" model="ir.actions.act_window">
+            <field name="name">Listas para Facturar</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','=','ready_billing')]</field>
+        </record>
+
+        <record id="action_lumber_billing_billed" model="ir.actions.act_window">
+            <field name="name">Facturadas</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','=','billed')]</field>
+        </record>
+
+        <record id="action_lumber_billing_variance_analysis" model="ir.actions.act_window">
+            <field name="name">Análisis de Variaciones de Costos</field>
+            <field name="res_model">lumber.billing.consolidation</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','in',['audit_approved','ready_billing','billed'])]</field>
+        </record>
+    </data>
+</odoo>

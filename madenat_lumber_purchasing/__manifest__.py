@@ -1,0 +1,21 @@
+{
+    'name': 'MADENAT - Gestión de Compras de Madera',
+    'version': '18.0.2.2.0',
+    'category': 'Purchasing',
+    'summary': 'Gestión especializada de compras para madera con OCs automáticas',
+    'description': "Módulo de compras especializado para madera.",
+    'depends': ['purchase', 'madenat_lumber_core'],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/purchase_order_views.xml',
+        'views/lumber_reception_views.xml',
+        "views/purchase_order_views_ce.xml",
+        'views/lumber_purchase_menu.xml',
+    ],
+    'demo': [],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'license': 'LGPL-3',
+    'author': 'MADENAT',
+}

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<template id="report_lumber_container_packing_list">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Helvetica'; font-size: 10px; color: #333;">
+                    
+                    <div class="row mb-3" style="border-bottom: 2px solid #1a4a7c;">
+                        <div class="col-8">
+                            <h2 style="color: #1a4a7c;"><strong>LISTA DE EMPAQUE (PACKING LIST)</strong></h2>
+                            <h4 class="text-muted">Contenedor: <t t-esc="container.name"/></h4>
+                        </div>
+                        <div class="col-4 text-right">
+                            <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"/><br/>
+                            <strong>Embarque:</strong> <t t-esc="container.shipment_id.name"/><br/>
+                            <strong>Tipo:</strong> <t t-esc="container.container_type"/>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm table-bordered mb-4">
+                        <thead class="bg-light text-center">
+                            <tr>
+                                <th>PAQUETES</th>
+                                <th>LOTES</th>
+                                <th>V. STOCK NOMINAL (m³)</th>
+                                <th style="background-color: #d1ecf1;">VOL. EMBARQUE REAL (m³)</th>
+                                <th>TOTAL MBF</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center" style="font-size: 12px; font-weight: bold;">
+                            <tr>
+                                <td><t t-esc="container.packages"/></td> 
+                                <td><t t-esc="len(container.lot_ids)"/></td> 
+                                <td><t t-esc="'%.3f' % container.total_volume_purchase_m3"/></td>
+                                <td style="background-color: #f8f9fa;"><t t-esc="'%.3f' % container.volume_m3"/></td>
+                                <td><t t-esc="'%.3f' % container.volume_mbf"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="table table-sm table-striped border">
+                        <thead style="background-color: #343a40; color: white;">
+                            <tr class="text-center" style="font-size: 10px;">
+                                <th style="width: 3%">#</th>
+                                <th style="width: 14%">LOTE (REF)</th>
+                                <th style="width: 16%">PRODUCTO</th>
+                                <th style="width: 10%">SUB PROD</th>
+                                <th style="width: 6%">ESP</th>
+                                <th style="width: 8%">ANCHO</th>
+                                <th style="width: 8%">LARGO</th>
+                                <th style="width: 6%">PZAS</th>
+                                <th style="width: 9%">V. STOCK</th>
+                                <th style="width: 10%; background-color: #2c3e50;">V. EMBARQUE</th>
+                                <th style="width: 10%">MBF</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-size: 10px;">
+                            <t t-set="idx" t-value="1"/>
+                            <t t-foreach="container.lot_ids.sorted(lambda l: l.name)" t-as="lot">
+                                <tr>
+                                    <td class="text-center"><t t-esc="idx"/></td>
+                                    <td class="text-center"><strong><t t-esc="lot.ref or lot.name"/></strong></td>
+                                    <td><t t-esc="lot.product_id.name[:25]"/></td>
+                                    <td><t t-esc="lot.subproducto_id.name or '-'"/></td>
+                                    
+                                    <td class="text-center">
+                                        <t t-if="lot.espesor_inch_frac">
+                                            <t t-esc="lot.espesor_inch_frac"/>"
+                                        </t>
+                                        <t t-elif="lot.thickness_visual">
+                                            <t t-esc="lot.thickness_visual"/>"
+                                        </t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                    
+                                    <td class="text-center">
+                                        <t t-set="ancho_text" t-value="lot.ancho_inch_frac or lot.width_visual or ''"/>
+                                        <t t-if="ancho_text">
+                                            <t t-if="str(ancho_text).replace(' ', '').isdigit() and int(str(ancho_text).replace(' ', '')) &gt; 20">
+                                                <t t-esc="ancho_text"/> mm
+                                            </t>
+                                            <t t-else="">
+                                                <t t-esc="ancho_text"/>"
+                                            </t>
+                                        </t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                    
+                                    <td class="text-center">
+                                        <t t-if="lot.length_ft and lot.length_ft &gt; 0">
+                                            <t t-esc="'%.2f' % lot.length_ft"/> ft
+                                        </t>
+                                        <t t-elif="lot.largo_ft_frac">
+                                            <t t-set="l_clean" t-value="str(lot.largo_ft_frac).replace(chr(39),'').replace(chr(34),'').strip()"/>
+                                            <t t-if="l_clean.startswith('3') or l_clean.startswith('4')">
+                                                <t t-esc="l_clean"/> m
+                                            </t>
+                                            <t t-else="">
+                                                <t t-esc="l_clean"/> ft
+                                            </t>
+                                        </t>
+                                        <t t-elif="lot.largo_m and lot.largo_m &gt; 0">
+                                            <t t-esc="'%.2f' % lot.largo_m"/> m
+                                        </t>
+                                        <t t-else="">-</t>
+                                    </td>
+
+                                    <td class="text-right"><strong><t t-esc="lot.piezas"/></strong></td>
+                                    <td class="text-right"><t t-esc="'%.3f' % lot.volumen_m3"/></td>
+                                    <td class="text-right" style="background-color: #f8f9fa;">
+                                        <strong><t t-esc="'%.3f' % lot.vol_shipment_m3"/></strong>
+                                    </td>
+                                    <td class="text-right"><t t-esc="'%.3f' % lot.volumen_mbf"/></td>
+                                </tr>
+                                <t t-set="idx" t-value="idx + 1"/>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </t>
+</template>
+</odoo>

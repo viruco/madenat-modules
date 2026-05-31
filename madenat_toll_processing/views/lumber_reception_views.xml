@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <record id="view_lumber_reception_form_inherit_toll" model="ir.ui.view">
+        <field name="name">lumber.reception.form.inherit.toll</field>
+        <field name="model">lumber.reception</field>
+        <!-- CORRECCIÓN: Usamos el ID del CORE, que es donde se define originalmente -->
+        <field name="inherit_id" ref="madenat_lumber_core.view_lumber_reception_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Smart Button -->
+            <!-- Usamos un div genérico por si button_box no tiene name específico en core,
+                 pero normalmente es //div[@name='button_box'] -->
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_toll_orders"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-cogs"
+                            invisible="toll_order_count == 0">
+                        <field name="toll_order_count" widget="statinfo" string="Procesamiento"/>
+                    </button>
+                </div>
+            </xpath>
+            
+            <!-- Botón de Acción en Header -->
+            <header position="inside">
+                <button name="action_create_toll_order" 
+                        string="Crear Orden Procesamiento" 
+                        type="object" 
+                        class="oe_highlight"
+                        invisible="toll_order_count > 0 or state != 'done'"/>
+            </header>
+            
+        </field>
+    </record>
+    
+</odoo>

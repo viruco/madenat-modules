@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST PRINCIPAL -->
+    <record id="view_madenat_guia_processing_list" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.list</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <list string="Recepción de Guías"
+                  decoration-muted="state == 'draft'"
+                  decoration-success="state == 'validated'"
+                  decoration-info="state == 'processed'"
+                  decoration-danger="state == 'cancelled'">
+                <field name="name" string="Guía"/>
+                <field name="tipo_recepcion" string="Tipo"/>
+                <field name="date_emission" string="Fecha"/>
+                <field name="partner_id" string="Proveedor"/>
+                <field name="order_id" string="Orden Compra"/>
+                <field name="vol_comercial" string="Vol. Comercial m³" digits="[16, 3]"/>
+                <field name="vol_fisico" string="Vol. Físico m³" digits="[16, 3]"/>
+                <field name="diff_pct" string="Dif. %"
+                       widget="percentage"
+                       decoration-danger="diff_pct &lt; 0"
+                       decoration-success="diff_pct &gt; 0"
+                       decoration-muted="diff_pct == 0"/>
+                <field name="total_paquetes" string="Paquetes"/>
+                <field name="state" string="Estado" widget="badge"
+                       decoration-success="state == 'validated'"
+                       decoration-info="state == 'processed'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM PRINCIPAL -->
+    <record id="view_madenat_guia_processing_form" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.form</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <form string="Recepción de Guía">
+                <header>
+                    <!-- 1. Procesamiento -->
+                    <button name="do_full_processing" string="🔄 Procesar Documentos"
+                            type="object" class="btn-primary"
+                            invisible="not can_process"/>
+
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="can_process"
+                         style="margin: 0; padding: 8px 12px;">
+                        <strong>⏳ Requisitos para procesar:</strong>
+                        <span invisible="guide_pdf_file">❌ PDF Guía</span>
+                        <span invisible="excel_file">❌ Excel Packing</span>
+                    </div>
+
+                    <!-- 2. Flujo de estados normal -->
+                    <button name="action_validate" string="✅ Validar"
+                            type="object" class="btn-success"
+                            invisible="not can_validate"/>
+
+                    <button name="action_reopen_to_draft" string="↩️ Reabrir a Borrador"
+                            type="object" class="btn-warning"
+                            invisible="not can_reopen"/>
+
+                    <button name="action_cancel" string="❌ Cancelar"
+                            type="object" class="btn-secondary"
+                            invisible="not can_cancel"/>
+
+                    <!-- 3. Herramienta de emergencia -->
+                    <button name="action_force_cancel" string="🔄 Cancelación Forzada"
+                            type="object" class="btn-danger"
+                            invisible="state != 'validated'"/>
+
+                    <!-- Indicadores rápidos -->
+                    <div class="oe_header_indicators"
+                         style="margin-left: auto; display: flex; gap: 20px; align-items: center;">
+                        <div class="indicator" invisible="state == 'draft'">
+                            <strong>📦 Lotes Únicos:</strong>
+                            <field name="total_lotes_unicos" nolabel="1" readonly="1" class="fw-bold"/>
+                        </div>
+                        <div class="indicator" invisible="state == 'draft'">
+                            <strong>📋 Paquetes:</strong>
+                            <field name="total_paquetes" nolabel="1" readonly="1" class="fw-bold"/>
+                        </div>
+                        <div class="indicator" invisible="state == 'draft'">
+                            <strong>🔢 Piezas:</strong>
+                            <span class="text-muted">Ver detalle</span>
+                        </div>
+                    </div>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,processed,validated,cancelled"/>
+
+                    <!-- Acceso rápido a OC -->
+                    <button name="action_open_po" type="object" string="Abrir OC"
+                            class="oe_stat_button" invisible="not order_id">
+                        <span class="fa fa-shopping-cart" title="Abrir Orden de Compra"/>
+                    </button>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"
+                                   placeholder="Ej: 39177 - N° de Guía"/>
+                        </h1>
+                    </div>
+
+                    <!-- Cabecera de datos básicos -->
+                    <group>
+                        <group>
+                            <field name="tipo_recepcion" string="Tipo de Recepción" required="1"/>
+                            <field name="partner_id" string="Proveedor"/>
+                            <field name="assignment_location_id" string="Patio de Asignación"
+                                   domain="[('usage','=','internal')]"
+                                   required="1"/>
+                            <field name="order_id" string="Orden de Compra"
+                                   context="{'default_partner_id': partner_id}"
+                                   options="{'no_create': True}"
+                                   placeholder="Buscar OC existente o se creará automática..."/>
+                            <field name="date_emission" string="Fecha Recepción"/>
+                        </group>
+                        <group string="Información Monetaria">
+                            <field name="rate_date" string="Fecha Tipo Cambio"/>
+                            <field name="rate_usd" string="Tipo de Cambio USD"/>
+                            <field name="additional_cost" string="Monto Total CLP"/>
+                        </group>
+                    </group>
+
+                    <!-- Panel volúmenes -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <h2>📊 Volúmenes: Comercial (Guía) vs Físico (Medido)</h2>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Comercial -->
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Vol. Comercial (Documento Guía)</strong>
+                                </div>
+                                <div class="card-body">
+                                    <label for="vol_comercial"
+                                           class="o_form_label">Vol. Guía (m³)</label>
+                                    <div class="mb-2">
+                                        <field name="vol_comercial"
+                                               class="form-control fw-bold" readonly="1"/>
+                                        <small class="text-muted">
+                                            <i class="fa fa-file-pdf-o"
+                                               title="Información del PDF"/> Del PDF de la guía
+                                        </small>
+                                    </div>
+                                    <field name="vol_comercial_mbf"
+                                           string="Vol. Guía (MBF)"
+                                           class="form-control" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Físico -->
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Vol. Físico (Medición Real)</strong>
+                                </div>
+                                <div class="card-body">
+                                    <field name="vol_fisico"
+                                           string="Vol. Medido (m³)"
+                                           class="form-control fw-bold" readonly="1"/>
+                                    <field name="vol_fisico_mbf"
+                                           string="Vol. Medido (MBF)"
+                                           class="form-control mt-2" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diferencias -->
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Control de Diferencias</strong>
+                                </div>
+                                <div class="card-body">
+                                    <field name="diff_pct" string="Diferencia (%)"
+                                           class="form-control"
+                                           decoration-danger="diff_pct &gt; 5 or diff_pct &lt; -5"
+                                           readonly="1"/>
+                                    <field name="diff_m3" string="Diferencia (m³)"
+                                           class="form-control mt-2" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumen -->
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Resumen de Recepción</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Lotes Únicos:</strong>
+                                        <field name="total_lotes_unicos"
+                                               nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Paquetes:</strong>
+                                        <field name="total_paquetes"
+                                               nolabel="1" readonly="1"/>
+                                    </div>
+                                    <field name="date_processed"
+                                           string="Procesado"
+                                           class="form-control mt-2" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notebook -->
+                    <notebook>
+                        <!-- Documentos y procesamiento -->
+                        <page string="Documentos y Procesamiento" name="documents">
+                            <div invisible="order_id">
+                                <div class="alert alert-warning" role="alert"
+                                     style="margin-bottom:16px;">
+                                    <span style="font-weight:600;">ℹ️ Información:</span>
+                                    <span>No se detectó Orden de Compra completa. El sistema creará una básica si no asignas una manualmente.</span>
+                                </div>
+                            </div>
+
+                            <group string="Archivos de Origen - Flujo Secuencial">
+                                <group>
+                                    <label for="oc_pdf_file"
+                                           string="📄 1. PDF Orden de Compra"
+                                           class="text-primary font-weight-bold o_form_label"/>
+                                    <div>
+                                        <field name="oc_pdf_file"
+                                               filename="oc_pdf_filename"
+                                               class="oe_inline"
+                                               placeholder="Subir PDF de OC"
+                                               invisible="state != 'draft'"/>
+                                        <field name="oc_pdf_filename" invisible="1"/>
+                                        <button name="action_attach_oc_pdf"
+                                                type="object" string="Subir OC"
+                                                class="btn-secondary btn-sm"
+                                                invisible="state != 'draft' or not oc_pdf_file"/>
+                                        <p class="text-muted" style="font-size:12px;">* Opcional</p>
+                                    </div>
+
+                                    <label for="guide_pdf_file"
+                                           string="📄 2. PDF Guía Despacho"
+                                           class="o_form_label"/>
+                                    <div>
+                                        <field name="guide_pdf_file"
+                                               filename="guide_pdf_filename"
+                                               class="oe_inline"
+                                               placeholder="Subir PDF de Guía"
+                                               invisible="state != 'draft'"/>
+                                        <field name="guide_pdf_filename" invisible="1"/>
+                                        <button name="action_attach_guide_pdf"
+                                                type="object" string="Subir Guía"
+                                                class="btn-secondary btn-sm"
+                                                invisible="state != 'draft' or not guide_pdf_file"/>
+                                    </div>
+                                </group>
+
+                                <group>
+                                    <label for="excel_file"
+                                           string="📊 3. Excel Packing List"
+                                           class="o_form_label"/>
+                                    <div>
+                                        <field name="excel_file"
+                                               filename="excel_filename"
+                                               class="oe_inline"
+                                               placeholder="Subir Excel de Packing"
+                                               invisible="state != 'draft'"/>
+                                        <field name="excel_filename" invisible="1"/>
+                                        <button name="action_attach_excel"
+                                                type="object" string="Subir Excel"
+                                                class="btn-secondary btn-sm"
+                                                invisible="state != 'draft' or not excel_file"/>
+
+                                        <div class="o_form_label" style="margin-top:12px;">Total Paquetes</div>
+                                        <div>
+                                            <field name="total_paquetes"
+                                                   nolabel="1" readonly="1"/>
+                                        </div>
+                                        <div class="o_form_label">Volumen Total m³</div>
+                                        <div>
+                                            <field name="vol_total_m3"
+                                                   nolabel="1" readonly="1"/>
+                                        </div>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <div class="alert alert-info"
+                                 role="alert"
+                                 invisible="not can_process">
+                                <strong>🎯 Listo para procesar!</strong>
+                                <span>Tienes los archivos esenciales. Haz clic en "Procesar Documentos".</span>
+                            </div>
+
+                            <separator string="Log de Procesamiento"/>
+                            <field name="notes"
+                                   placeholder="El registro de operaciones aparecerá aquí..."
+                                   readonly="1"/>
+                        </page>
+
+                        <!-- Lotes generados -->
+                        <page string="Lotes Generados" name="lots">
+                            <field name="lot_ids">
+                                <list string="Detalle de Lotes Generados" editable="bottom">
+                                    <field name="name" string="N° Lote"/>
+                                    <field name="product_code_only" string="Código" readonly="1"/>
+                                    <field name="product_name_only" string="Producto" readonly="1"/>
+                                    <field name="espesor_mm" string="Esp (mm)" optional="show"/>
+                                    <field name="ancho_mm" string="Ancho (mm)" optional="show"/>
+                                    <field name="largo_m" string="Largo (m)" optional="show"/>
+                                    <field name="piezas" string="Piezas" sum="Total Piezas"/>
+                                    <field name="volumen_m3" string="Vol m³" sum="Total Vol m³" digits="[16,3]"/>
+                                    <field name="location_id" string="Ubicación"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Costos asignados -->
+                        <page string="Costos Asignados" name="costs"
+                              invisible="state != 'validated'">
+                            <div class="alert alert-info" role="alert">
+                                <strong>💡 Información:</strong> Costos asignados según tipo de recepción (Madera o Servicio).
+                            </div>
+                            <field name="lot_ids">
+                                <list>
+                                    <field name="name" string="Lote"/>
+                                    <field name="product_id" string="Producto"/>
+                                    <field name="volumen_m3" string="Volumen"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Detalles de agrupación -->
+                        <page string="📊 Detalles Agrupación" name="grouping_details"
+                              invisible="state == 'draft'">
+                            <group>
+                                <group string="Resumen de Agrupación">
+                                    <field name="total_paquetes"
+                                           string="Total Paquetes" readonly="1"/>
+                                    <field name="total_paquetes_individuales"
+                                           string="Paquetes Individuales" readonly="1"/>
+
+                                    <label for="total_lotes_unicos" string="Lotes Reales"/>
+                                    <div>
+                                        <field name="total_lotes_unicos"
+                                               class="oe_inline fw-bold"/> lotes únicos
+                                    </div>
+
+                                    <label for="total_lotes_unicos" string="Relación"/>
+                                    <div>
+                                        <field name="total_lotes_unicos"
+                                               class="oe_inline"/> lotes →
+                                        <field name="total_paquetes_individuales"
+                                               class="oe_inline"/> paquetes
+                                    </div>
+                                </group>
+
+                                <group string="Eficiencia de Agrupación">
+                                    <div class="text-muted">
+                                        <p>La agrupación optimiza la gestión de inventario consolidando paquetes idénticos en un solo lote lógico cuando corresponde.</p>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <div class="alert alert-success"
+                                 role="alert"
+                                 invisible="total_lotes_unicos == 0">
+                                <strong>✅ Agrupación Detectada:</strong>
+                                <div>
+                                    Esta guía contiene
+                                    <strong>
+                                        <field name="total_lotes_unicos"
+                                               class="oe_inline"/> lotes únicos
+                                    </strong>
+                                    construidos a partir de
+                                    <field name="total_paquetes_individuales"
+                                           class="oe_inline"/> paquetes individuales del Excel.
+                                </div>
+                            </div>
+
+                            <div class="alert alert-light border" role="alert">
+                                <strong>📋 Información Técnica:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li><strong>Lotes Únicos:</strong> Identificados por código de lote en Excel.</li>
+                                    <li><strong>Paquetes Individuales:</strong> Total de líneas procesadas.</li>
+                                    <li><strong>Trazabilidad:</strong> Ver pestaña "Lotes Generados" para detalle de piezas.</li>
+                                </ul>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- LIST DE PENDIENTES -->
+    <record id="view_madenat_guia_processing_pending_list" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.pending.list</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <list string="🚨 Guías Pendientes de Vinculación">
+                <field name="name" string="Guía"/>
+                <field name="tipo_recepcion" string="Tipo"/>
+                <field name="partner_id" string="Proveedor"/>
+                <field name="order_id" string="OC Referencia"/>
+                <field name="vol_comercial" string="Vol. Comercial m³"/>
+                <field name="vol_fisico" string="Vol. Físico m³"/>
+                <field name="diff_pct" string="Diferencia %" widget="percentage"/>
+                <button name="action_open_po" type="object" string="Abrir OC"
+                        class="btn-primary" invisible="not order_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACCIONES -->
+    <record id="action_madenat_guia_processing" model="ir.actions.act_window">
+        <field name="name">Recepción de Guías</field>
+        <field name="res_model">madenat.guia.processing</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_madenat_guia_processing_pending" model="ir.actions.act_window">
+        <field name="name">🚨 Guías Pendientes</field>
+        <field name="res_model">madenat.guia.processing</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_madenat_guia_processing_pending_list"/>
+        <field name="domain">[('state', '=', 'draft'), ('order_id','=',False)]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+</odoo>

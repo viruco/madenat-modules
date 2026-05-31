@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_lumber_cost_distribution,lumber.cost.distribution,model_lumber_cost_distribution,base.group_user,1,1,1,1
+access_lumber_cost_distribution_line,lumber.cost.distribution.line,model_lumber_cost_distribution_line,base.group_user,1,1,1,1
+access_stock_lot_cost_line,stock.lot.cost.line,model_stock_lot_cost_line,base.group_user,1,1,1,1
+access_stock_lot_user,stock.lot.user,stock.model_stock_lot,base.group_user,1,1,1,0
+access_lumber_cost_distribution_wizard,lumber.cost.distribution.wizard,model_lumber_cost_distribution_wizard,base.group_user,1,1,1,1

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="wizard_lumber_reception_mass_update_form" model="ir.ui.view">
+        <field name="name">wizard.lumber.reception.mass.update.form</field>
+        <field name="model">lumber.reception.mass.update</field>
+        <field name="arch" type="xml">
+            <form string="Actualización Masiva de Recepción de Madera">
+                <header>
+                    <field name="reception_id" readonly="1" class="oe_inline"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="ingestion_profile" readonly="1"/>
+                        <field name="subproduct_id"
+                               domain="[('id', 'in', allowed_subproduct_ids)]"
+                               options="{'no_quick_create': False, 'no_create_edit': False}"
+                               placeholder="Seleccione o cree un sub-producto"/>
+                        <field name="thickness_nominal" string="Espesor Nominal (mm)"/>
+                        <field name="width_nominal" string="Ancho Nominal (mm)"/>
+                        <field name="length_nominal" string="Largo Nominal (m)"/>
+                    </group>
+                    <footer>
+                        <button name="action_apply" string="Aplicar Cambios" type="object" class="btn-primary"/>
+                        <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo></content>
+<file_path>views/wizard_lumber_reception_mass_update.xml

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="view_lumber_reception_form_purchasing" model="ir.ui.view">
+      <field name="name">lumber.reception.form.purchasing</field>
+      <field name="model">lumber.reception</field>
+      <field name="inherit_id" ref="madenat_lumber_core.view_lumber_reception_form"/>
+      <field name="arch" type="xml">
+        <field name="purchase_id" position="after">
+          <button name="open_related_po" type="object" 
+                  class="btn btn-outline-primary mt-2" icon="fa-external-link" string="Abrir Orden de Compra"
+                  invisible="not purchase_id"/>
+        </field>
+      </field>
+    </record>
+  </data>
+</odoo>

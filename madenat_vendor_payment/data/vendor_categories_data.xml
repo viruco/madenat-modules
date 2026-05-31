@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- ================================================== -->
+        <!-- CATEGORÍAS ESPECÍFICAS PARA PROVEEDORES MADENAT -->
+        <!-- ================================================== -->
+        
+        <!-- Categoría: Proveedores de Madera -->
+        <record id="category_supplier_madera" model="res.partner.category">
+            <field name="name">🌲 Proveedores de Madera</field>
+            <field name="color">1</field>
+        </record>
+        
+        <!-- Categoría: Transportistas -->
+        <record id="category_supplier_transport" model="res.partner.category">
+            <field name="name">🚚 Transportistas</field>
+            <field name="color">2</field>
+        </record>
+        
+        <!-- Categoría: Empresas de Consolidación -->
+        <record id="category_supplier_consolidation" model="res.partner.category">
+            <field name="name">📦 Empresas de Consolidación</field>
+            <field name="color">3</field>
+        </record>
+        
+        <!-- Categoría: Navieras -->
+        <record id="category_supplier_naviera" model="res.partner.category">
+            <field name="name">🚢 Navieras</field>
+            <field name="color">4</field>
+        </record>
+        
+        <!-- Categoría: Agencias Aduanales -->
+        <record id="category_supplier_aduana" model="res.partner.category">
+            <field name="name">📋 Agencias Aduanales</field>
+            <field name="color">5</field>
+        </record>
+        
+        <!-- Categoría: Aseguradoras -->
+        <record id="category_supplier_seguros" model="res.partner.category">
+            <field name="name">🛡️ Aseguradoras</field>
+            <field name="color">6</field>
+        </record>
+        
+        <!-- Categoría: Servicios Portuarios -->
+        <record id="category_supplier_portuarios" model="res.partner.category">
+            <field name="name">🏗️ Servicios Portuarios</field>
+            <field name="color">7</field>
+        </record>
+    </data>
+</odoo>

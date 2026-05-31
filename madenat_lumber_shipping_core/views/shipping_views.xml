@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vistas para Shipping Vessel -->
+        <record id="view_shipping_vessel_list" model="ir.ui.view">
+            <field name="name">shipping.vessel.list</field>
+            <field name="model">shipping.vessel</field>
+            <field name="arch" type="xml">
+                <list string="Motonaves">
+                    <field name="name"/>
+                    <field name="imo_number"/>
+                    <field name="flag_country_id"/>
+                    <field name="vessel_type"/>
+                    <field name="capacity_teu"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_shipping_vessel_form" model="ir.ui.view">
+            <field name="name">shipping.vessel.form</field>
+            <field name="model">shipping.vessel</field>
+            <field name="arch" type="xml">
+                <form string="Motonave">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="imo_number"/>
+                                <field name="flag_country_id"/>
+                                <field name="vessel_type"/>
+                                <field name="capacity_teu"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vistas para Shipping Voyage -->
+        <record id="view_shipping_voyage_list" model="ir.ui.view">
+            <field name="name">shipping.voyage.list</field>
+            <field name="model">shipping.voyage</field>
+            <field name="arch" type="xml">
+                <list string="Viajes">
+                    <field name="name"/>
+                    <field name="vessel_id"/>
+                    <field name="voyage_reference"/>
+                    <field name="port_of_loading_id"/>
+                    <field name="port_of_discharge_id"/>
+                    <field name="etd"/>
+                    <field name="eta"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_shipping_voyage_form" model="ir.ui.view">
+            <field name="name">shipping.voyage.form</field>
+            <field name="model">shipping.voyage</field>
+            <field name="arch" type="xml">
+                <form string="Viaje">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="vessel_id"/>
+                                <field name="voyage_reference"/>
+                                <field name="port_of_loading_id"/>
+                                <field name="port_of_discharge_id"/>
+                                <field name="etd"/>
+                                <field name="eta"/>
+                                <field name="state"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vistas para Shipping Booking -->
+        <record id="view_shipping_booking_list" model="ir.ui.view">
+            <field name="name">shipping.booking.list</field>
+            <field name="model">shipping.booking</field>
+            <field name="arch" type="xml">
+                <list string="Reservas">
+                    <field name="name"/>
+                    <field name="shipping_line_id"/>
+                    <field name="voyage_id"/>
+                    <field name="container_qty"/>
+                    <field name="container_type"/>
+                    <field name="booking_date"/>
+                    <field name="cargo_cutoff_date"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_shipping_booking_form" model="ir.ui.view">
+            <field name="name">shipping.booking.form</field>
+            <field name="model">shipping.booking</field>
+            <field name="arch" type="xml">
+                <form string="Reserva">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="shipping_line_id"/>
+                                <field name="voyage_id"/>
+                                <field name="container_qty"/>
+                                <field name="container_type"/>
+                                <field name="booking_date"/>
+                                <field name="cargo_cutoff_date"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acciones -->
+        <record id="action_shipping_vessel" model="ir.actions.act_window">
+            <field name="name">Motonaves</field>
+            <field name="res_model">shipping.vessel</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_shipping_voyage" model="ir.actions.act_window">
+            <field name="name">Viajes</field>
+            <field name="res_model">shipping.voyage</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_shipping_booking" model="ir.actions.act_window">
+            <field name="name">Reservas</field>
+            <field name="res_model">shipping.booking</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

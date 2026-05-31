@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extend res.partner form view -->
+    <record id="view_partner_form_inherit_processor" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.processor</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Agregar checkbox "Es Procesador" en pestaña Sales & Purchase -->
+            <xpath expr="//page[@name='sales_purchases']" position="inside">
+                <group name="processor_info" string="Información Procesador">
+                    <field name="is_processor"/>
+                    <field name="processor_location" 
+                           placeholder="Ej: Camino a Curanilahue Km 12, Los Ángeles"
+                           invisible="not is_processor"/>
+                </group>
+            </xpath>
+            
+        </field>
+    </record>
+    
+    <!-- Filtro en search view -->
+    <record id="view_partner_search_inherit_processor" model="ir.ui.view">
+        <field name="name">res.partner.search.inherit.processor</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="filter_processors" 
+                        string="Procesadores" 
+                        domain="[('is_processor', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+    
+</odoo>

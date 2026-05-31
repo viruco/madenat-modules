@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+    <!-- ================================================================== -->
+    <!-- AUTOMATED ACTIONS: Notificaciones automáticas                      -->
+    <!-- ================================================================== -->
+
+    <!-- Acción Automatizada 1: Notificar a Felipe cuando hay consolidaciones pendientes -->
+    <record id="action_notify_auditor_pending" model="base.automation">
+        <field name="name">Notificar Auditor - Pendiente de Auditar</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="trigger">on_state_set</field>
+        <field name="state">ready_audit</field>
+        <field name="active">True</field>
+        <field name="code">
+# Buscar grupo de auditores (puedes crear uno específico)
+auditor_group = env.ref('account.group_account_manager', raise_if_not_found=False)
+if auditor_group:
+    for user in auditor_group.users:
+        # Crear actividad para cada auditor
+        env['mail.activity'].create({
+            'res_id': record.id,
+            'res_model_id': env.ref('madenat_lumber_billing.model_lumber_billing_consolidation').id,
+            'user_id': user.id,
+            'activity_type_id': env.ref('mail.mail_activity_data_todo').id,
+            'summary': 'Nueva Consolidación Pendiente de Auditar',
+            'note': f'La consolidación {record.name} está lista para ser auditada.',
+        })
+        </field>
+    </record>
+
+    <!-- Acción Automatizada 2: Notificar a María Victoria cuando está lista para facturar -->
+    <record id="action_notify_accountant_ready" model="base.automation">
+        <field name="name">Notificar Contable - Lista para Facturar</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="trigger">on_state_set</field>
+        <field name="state">ready_billing</field>
+        <field name="active">True</field>
+        <field name="code">
+# Buscar grupo de contadores
+accountant_group = env.ref('account.group_account_invoice', raise_if_not_found=False)
+if accountant_group:
+    for user in accountant_group.users:
+        # Crear actividad para cada contador
+        env['mail.activity'].create({
+            'res_id': record.id,
+            'res_model_id': env.ref('madenat_lumber_billing.model_lumber_billing_consolidation').id,
+            'user_id': user.id,
+            'activity_type_id': env.ref('mail.mail_activity_data_todo').id,
+            'summary': 'Consolidación Lista para Facturar',
+            'note': f'La consolidación {record.name} ha sido aprobada y está lista para generar factura.',
+        })
+        </field>
+    </record>
+
+    <!-- Acción Automatizada 3: Alerta cuando hay variaciones críticas en auditoría -->
+    <record id="action_alert_critical_variance" model="base.automation">
+        <field name="name">Alerta - Variación Crítica de Costos</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="trigger">on_write</field>
+        <field name="filter_pre_domain">[('state', '=', 'in_audit')]</field>
+        <field name="filter_domain">[('cost_alert_level', '=', 'red')]</field>
+        <field name="active">True</field>
+        <field name="code">
+# Enviar mensaje al auditor asignado
+if record.auditor_id:
+    record.message_post(
+        body=f'''
+        &lt;p&gt;&lt;strong&gt;⚠️ ALERTA CRÍTICA DE VARIACIÓN DE COSTOS&lt;/strong&gt;&lt;/p&gt;
+        &lt;ul&gt;
+            &lt;li&gt;Consolidación: {record.name}&lt;/li&gt;
+            &lt;li&gt;Variación Total: {record.variance_total_cost_percent:.2f}%&lt;/li&gt;
+            &lt;li&gt;Monto Variación: USD {record.variance_total_cost_usd:,.2f}&lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;p&gt;Se requiere justificación obligatoria antes de aprobar.&lt;/p&gt;
+        ''',
+        subject='Alerta Crítica - Variación de Costos',
+        partner_ids=[record.auditor_id.partner_id.id],
+        message_type='notification',
+        subtype_xmlid='mail.mt_note',
+    )
+        </field>
+    </record>
+
+    <!-- ================================================================== -->
+    <!-- SERVER ACTIONS: Acciones del servidor                              -->
+    <!-- ================================================================== -->
+
+    <!-- Acción de servidor: Crear consolidación desde embarque -->
+    <record id="action_create_consolidation_from_shipment" model="ir.actions.server">
+        <field name="name">Crear Consolidación de Facturación</field>
+        <field name="model_id" ref="madenat_lumber_logistics.model_lumber_export_shipment"/>
+        <field name="binding_model_id" ref="madenat_lumber_logistics.model_lumber_export_shipment"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+# Validar que el embarque esté completado
+for shipment in records:
+    if shipment.state != 'delivered':
+        raise UserError('Solo se pueden crear consolidaciones desde embarques entregados.')
+    
+    # Validar que no tenga consolidación ya creada
+    existing = env['lumber.billing.consolidation'].search([
+        ('shipment_id', '=', shipment.id)
+    ], limit=1)
+    
+    if existing:
+        raise UserError(f'El embarque {shipment.name} ya tiene una consolidación: {existing.name}')
+    
+    # Crear consolidación
+    consolidation = env['lumber.billing.consolidation'].create({
+        'shipment_id': shipment.id,
+        'currency_id': env.ref('base.USD').id,
+    })
+    
+    # Crear líneas desde contenedores y lotes
+    for container in shipment.container_ids:
+        for lot in container.lot_ids:
+            env['lumber.billing.consolidation.line'].create({
+                'consolidation_id': consolidation.id,
+                'lot_id': lot.id,
+                'container_id': container.id,
+                'product_id': lot.product_id.id,
+                'name': f"{lot.name} - {lot.product_id.display_name}",
+                'volume_m3': lot.volumen_m3 if hasattr(lot, 'volumen_m3') else 0.0,
+                'quantity': lot.volumen_m3 if hasattr(lot, 'volumen_m3') else 1.0,
+                'wood_cost_usd': lot.wood_cost_usd if hasattr(lot, 'wood_cost_usd') else 0.0,
+                'logistic_cost_usd': lot.logistic_cost_usd if hasattr(lot, 'logistic_cost_usd') else 0.0,
+                'process_cost_usd': lot.process_cost_usd if hasattr(lot, 'process_cost_usd') else 0.0,
+                'price_unit_usd': lot.product_id.list_price,
+            })
+    
+    # Retornar acción para abrir la consolidación
+    action = {
+        'type': 'ir.actions.act_window',
+        'name': 'Consolidación de Facturación',
+        'res_model': 'lumber.billing.consolidation',
+        'res_id': consolidation.id,
+        'view_mode': 'form',
+        'target': 'current',
+    }
+        </field>
+    </record>
+
+    <!-- ================================================================== -->
+    <!-- SCHEDULED ACTIONS: Tareas programadas                              -->
+    <!-- ================================================================== -->
+
+    <!-- Tarea programada: Recordatorio diario de consolidaciones pendientes -->
+    <record id="ir_cron_reminder_pending_audit" model="ir.cron">
+        <field name="name">Recordatorio: Consolidaciones Pendientes de Auditar</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_reminder_pending_audit()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+        <field name="doall">False</field>
+    </record>
+
+    <!-- ================================================================== -->
+    <!-- EMAIL TEMPLATES: Plantillas de correo                              -->
+    <!-- ================================================================== -->
+
+    <!-- Template: Notificación de aprobación -->
+    <record id="email_template_audit_approved" model="mail.template">
+        <field name="name">Consolidación Aprobada por Auditoría</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="subject">Consolidación ${object.name} Aprobada</field>
+        <field name="email_from">${object.company_id.email or ''}</field>
+        <field name="email_to">${object.approver_id.email or ''}</field>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #28a745;">✓ Consolidación Aprobada</h2>
+    
+    <p>Hola,</p>
+    
+    <p>La consolidación <strong>${object.name}</strong> ha sido aprobada por auditoría y está lista para facturar.</p>
+    
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Embarque:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${object.shipment_id.name}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cliente:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${object.customer_id.name}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total a Facturar:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">USD ${object.total_price_usd:,.2f}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Auditor:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${object.auditor_id.name}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Fecha Auditoría:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${object.audit_date}</td>
+        </tr>
+    </table>
+    
+    <p>Puedes proceder a generar la factura desde el sistema.</p>
+    
+    <p style="margin-top: 30px;">
+        Saludos,<br/>
+        <strong>Sistema MADENAT</strong>
+    </p>
+</div>
+        </field>
+    </record>
+
+    <!-- Template: Notificación de rechazo -->
+    <record id="email_template_audit_rejected" model="mail.template">
+        <field name="name">Consolidación Rechazada por Auditoría</field>
+        <field name="model_id" ref="model_lumber_billing_consolidation"/>
+        <field name="subject">Consolidación ${object.name} Rechazada</field>
+        <field name="email_from">${object.company_id.email or ''}</field>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #dc3545;">✗ Consolidación Rechazada</h2>
+    
+    <p>La consolidación <strong>${object.name}</strong> ha sido rechazada en auditoría.</p>
+    
+    <p><strong>Observaciones:</strong></p>
+    <p style="background-color: #f8d7da; padding: 10px; border-left: 4px solid #dc3545;">
+        ${object.audit_notes or 'Sin observaciones'}
+    </p>
+    
+    <p>Por favor revisar y corregir antes de reenviar.</p>
+</div>
+        </field>
+    </record>
+    </data>
+</odoo>

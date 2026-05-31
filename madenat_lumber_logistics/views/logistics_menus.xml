@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- ================================================== -->
+        <!-- MENÚ LOGÍSTICA INTEGRADO BAJO MADENAT LUMBER -->
+        <!-- ================================================== -->
+        
+        <!-- Menú Logística bajo MADENAT Lumber (referencia CORREGIDA) -->
+        <menuitem 
+            id="menu_lumber_logistics" 
+            name="Logística Exportación" 
+            parent="madenat_lumber_core.menu_madenat_root" 
+            sequence="30"/>
+        
+        <!-- EMBARQUES -->
+        <menuitem 
+            id="menu_lumber_export_shipment" 
+            name="Embarques" 
+            parent="menu_lumber_logistics" 
+            action="action_lumber_export_shipment"
+            sequence="10"/>
+        
+        <!-- CONSOLIDACIÓN -->
+        <menuitem 
+            id="menu_lumber_container_consolidation"
+            name="Consolidación"
+            parent="menu_lumber_logistics"
+            action="action_lumber_container_consolidation"
+            sequence="15"/>
+        
+        <!-- CONTENEDORES -->
+        <menuitem 
+            id="menu_lumber_containers" 
+            name="Contenedores" 
+            parent="menu_lumber_logistics" 
+            action="action_lumber_container"
+            sequence="20"/>
+        
+        <!-- CONFIGURACIÓN LOGÍSTICA -->
+        <menuitem 
+            id="menu_logistics_config" 
+            name="Configuración" 
+            parent="menu_lumber_logistics" 
+            sequence="90"/>
+        
+        <menuitem 
+            id="menu_shipping_vessel" 
+            name="Motonaves" 
+            parent="menu_logistics_config" 
+            action="madenat_lumber_shipping_core.action_shipping_vessel"
+            sequence="10"/>
+        
+        <menuitem 
+            id="menu_shipping_voyage" 
+            name="Viajes" 
+            parent="menu_logistics_config" 
+            action="madenat_lumber_shipping_core.action_shipping_voyage"
+            sequence="20"/>
+        
+        <menuitem 
+            id="menu_shipping_booking" 
+            name="Reservas" 
+            parent="menu_logistics_config" 
+            action="madenat_lumber_shipping_core.action_shipping_booking"
+            sequence="30"/>
+
+        <record id="action_lumber_shipping_rule" model="ir.actions.act_window">
+            <field name="name">Reglas de Cubicación</field>
+            <field name="res_model">lumber.shipping.rule</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <!-- Ítem de Menú -->
+        <menuitem 
+            id="menu_lumber_shipping_rule" 
+            name="Reglas de Cubicación" 
+            parent="menu_logistics_config" 
+            action="action_lumber_shipping_rule"
+            sequence="80"/>
+
+    </data>
+</odoo>

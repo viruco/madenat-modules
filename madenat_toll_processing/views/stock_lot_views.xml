@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extender formulario de Lote con información de Toll Processing -->
+    <record id="view_stock_lot_form_inherit_toll" model="ir.ui.view">
+        <field name="name">stock.lot.form.inherit.toll</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_stock_lot_form_madenat"/>
+        <field name="arch" type="xml">
+
+            <!-- Insertar al final del sheet principal, en un bloque propio -->
+            <xpath expr="//sheet" position="inside">
+                <group name="toll_processing_group" string="Procesamiento en Terceros">
+                    <group>
+                        <field name="toll_order_id"
+                               string="Orden de Procesamiento"/>
+                        <field name="processor_id"
+                               string="Procesador Actual"
+                               domain="[('is_processor', '=', True)]"/>
+                        <field name="origin_reception_id"
+                               string="Recepción Origen"/>
+                    </group>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

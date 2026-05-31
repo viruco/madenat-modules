@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <menuitem id="menu_lumber_reports_root"
+                  name="📈 Reportes MADENAT"
+                  parent="madenat_lumber_logistics.menu_lumber_logistics"
+                  sequence="98"/>
+    </data>
+</odoo>

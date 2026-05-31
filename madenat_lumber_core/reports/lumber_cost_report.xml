@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_lumber_cost">
+        <t t-call="web.html_container">
+            <div class="page" style="font-family: 'Arial', sans-serif; margin: 20px; line-height: 1.4;">
+                
+                <!-- DIAGNÓSTICO -->
+                <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 8px;">
+                    <h3 style="color: #856404; margin: 0 0 10px 0; text-align: center;">🔍 ESTADO DEL SISTEMA</h3>
+                    <div style="text-align: center;">
+                        <strong>Motor de Costos:</strong> 
+                        <t t-if="cost_summary">
+                            <span style="color: #27ae60;">✅ ACTIVO</span>
+                        </t>
+                        <t t-else="">
+                            <span style="color: #e74c3c;">❌ INACTIVO</span>
+                        </t>
+                        <br/>
+                        <strong>Lotes a Procesar:</strong> <span t-esc="len(docs)"/>
+                    </div>
+                </div>
+
+                <!-- SOLO MOSTRAR SI HAY DATOS -->
+                <t t-if="cost_summary and len(docs) > 0">
+                    
+                    <!-- ENCABEZADO -->
+                    <div style="text-align: center; border-bottom: 3px solid #2c5aa0; padding-bottom: 15px; margin-bottom: 25px;">
+                        <h1 style="color: #2c5aa0; margin: 0; font-size: 24px;">REPORTE DE COSTOS POR LOTE</h1>
+                        <h3 style="color: #666; margin: 5px 0; font-size: 16px; font-weight: normal;">MADENAT LUMBER EXPORT</h3>
+                    </div>
+
+                    <!-- RESUMEN EJECUTIVO -->
+                    <div style="background: #e8f5e8; border: 1px solid #2ecc71; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: #27ae60; text-align: center;">📊 RESUMEN EJECUTIVO</h3>
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div>
+                                <strong>LOTES PROCESADOS</strong><br/>
+                                <span style="font-size: 18px;"><span t-esc="len(docs)"/></span>
+                            </div>
+                            <div>
+                                <strong>INVERSIÓN TOTAL</strong><br/>
+                                <span style="font-size: 18px;">$<span t-esc="'%.0f' % (total_general or 0.0)"/> USD</span>
+                            </div>
+                            <div>
+                                <strong>VOLUMEN TOTAL</strong><br/>
+                                <span style="font-size: 18px;"><span t-esc="'%.3f' % (volumen_total or 0.0)"/> m³</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA PRINCIPAL - ACCESO 100% SEGURO -->
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin: 20px 0;">
+                        <thead>
+                            <tr style="background-color: #34495e; color: white;">
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: left;">LOTE</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: left;">PRODUCTO</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">VOLUMEN (m³)</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">COSTO MADERA</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">COSTO PROCESO</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">COSTO LOGÍSTICA</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">TOTAL</th>
+                                <th style="padding: 10px 8px; border: 1px solid #2c3e50; text-align: center;">COSTO/m³</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="docs" t-as="lot" style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 8px; border: 1px solid #e0e0e0;">
+                                    <strong style="color: #2c3e50;"><span t-field="lot.name"/></strong>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0;">
+                                    <span t-field="lot.product_id.display_name"/>
+                                </td>
+                                
+                                <!-- ✅ ACCESO SEGURO: (cost_summary.get(lot.id) or {}).get('campo', default) -->
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: center;">
+                                    <span t-esc="'%.3f' % (cost_summary.get(lot.id) or {}).get('volumen_m3', 0.0)"/>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: right;">
+                                    $<span t-esc="'%.0f' % (cost_summary.get(lot.id) or {}).get('costo_madera', 0.0)"/>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: right;">
+                                    $<span t-esc="'%.0f' % (cost_summary.get(lot.id) or {}).get('costo_proceso', 0.0)"/>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: right;">
+                                    $<span t-esc="'%.0f' % (cost_summary.get(lot.id) or {}).get('costo_logistica', 0.0)"/>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold; background: #f8f9fa;">
+                                    $<span t-esc="'%.0f' % (cost_summary.get(lot.id) or {}).get('total_cost_usd', 0.0)"/>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: right; color: #2c5aa0;">
+                                    $<span t-esc="'%.2f' % (cost_summary.get(lot.id) or {}).get('cost_per_m3', 0.0)"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- TOTALES GENERALES -->
+                    <div style="background: #2c3e50; color: white; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; text-align: center;">TOTALES GENERALES</h3>
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div>
+                                <strong>INVERSIÓN TOTAL</strong><br/>
+                                <span style="font-size: 18px;">$<span t-esc="'%.0f' % (total_general or 0.0)"/> USD</span>
+                            </div>
+                            <div>
+                                <strong>VOLUMEN TOTAL</strong><br/>
+                                <span style="font-size: 18px;"><span t-esc="'%.3f' % (volumen_total or 0.0)"/> m³</span>
+                            </div>
+                            <div>
+                                <strong>COSTO PROMEDIO</strong><br/>
+                                <span style="font-size: 18px;">$<span t-esc="'%.2f' % ((total_general or 0.0) / (volumen_total or 1.0))"/> USD/m³</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </t>
+
+                <!-- MENSAJE SI NO HAY DATOS -->
+                <t t-if="not cost_summary">
+                    <div style="text-align: center; padding: 40px; background: #ffebee; border: 2px solid #e74c3c; border-radius: 8px;">
+                        <h2 style="color: #c0392b;">⚠️ SISTEMA NO CONFIGURADO</h2>
+                        <p style="color: #c0392b; font-size: 16px;">
+                            El motor de cálculo de costos no está disponible.<br/>
+                            Contacte al administrador del sistema.
+                        </p>
+                    </div>
+                </t>
+
+                <!-- PIE DE PÁGINA -->
+                <div style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #bdc3c7; font-size: 10px; color: #7f8c8d; text-align: center;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>MADENAT LUMBER EXPORT</strong><br/>
+                            Sistema de Gestión Maderera - Reporte de Costos
+                        </div>
+                        <div style="text-align: right;">
+                            Generado el <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+</odoo>

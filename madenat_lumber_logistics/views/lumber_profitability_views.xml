@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_lot_pivot_profitability_final" model="ir.ui.view">
+        <field name="name">stock.lot.pivot.profitability.madenat</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Rentabilidad" sample="1">
+                <field name="export_shipment_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="volumen_m3" type="measure"/>
+                <field name="sale_amount_usd" type="measure" string="Venta (USD)"/>
+                <field name="margin_usd" type="measure" string="Margen (USD)"/>
+                <field name="margin_percent" type="measure" string="Margen %" widget="percentage"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_graph_profitability_final" model="ir.ui.view">
+        <field name="name">stock.lot.graph.profitability.madenat</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <graph string="Rentabilidad por Nave" type="bar" sample="1">
+                <field name="export_shipment_id"/>
+                <field name="margin_usd" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_madenat_profitability_analysis" model="ir.actions.act_window">
+        <field name="name">📊 Análisis de Rentabilidad Real</field>
+        <field name="res_model">stock.lot</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="domain">[('export_shipment_id', '!=', False)]</field>
+        <field name="view_id" ref="view_stock_lot_pivot_profitability_final"/>
+    </record>
+</odoo>

@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_lumber_export_shipment_user,lumber.export.shipment.user,model_lumber_export_shipment,base.group_user,1,1,1,0
+access_lumber_export_shipment_manager,lumber.export.shipment.manager,model_lumber_export_shipment,stock.group_stock_manager,1,1,1,1
+access_lumber_container_user,lumber.container.user,model_lumber_container,base.group_user,1,1,1,0
+access_lumber_container_manager,lumber.container.manager,model_lumber_container,stock.group_stock_manager,1,1,1,1
+access_lumber_shipment_cost_line_user,lumber.shipment.cost.line.user,model_lumber_shipment_cost_line,base.group_user,1,1,1,0
+access_lumber_container_rollover_wizard_user,lumber.container.rollover.wizard.user,model_lumber_container_rollover_wizard,base.group_user,1,1,1,0
+access_lumber_container_rollover_wizard_manager,lumber.container.rollover.wizard.manager,model_lumber_container_rollover_wizard,base.group_system,1,1,1,1
+access_lumber_container_lot_wizard_user,lumber.container.lot.wizard.user,model_lumber_container_lot_wizard,base.group_user,1,1,1,1
+access_lumber_document_checklist,lumber.document.checklist,model_lumber_document_checklist,base.group_user,1,1,1,1
+access_lumber_shipment_document,lumber.shipment.document,model_lumber_shipment_document,base.group_user,1,1,1,1
+access_lumber_shipping_rule_user,lumber.shipping.rule.user,model_lumber_shipping_rule,base.group_user,1,0,0,0
+access_lumber_shipping_rule_manager,lumber.shipping.rule.manager,model_lumber_shipping_rule,stock.group_stock_manager,1,1,1,1
+access_lumber_shipment_line_user,lumber.shipment.line.user,model_lumber_shipment_line,base.group_user,1,1,1,0
+access_lumber_shipment_line_manager,lumber.shipment.line.manager,model_lumber_shipment_line,stock.group_stock_manager,1,1,1,1

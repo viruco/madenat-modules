@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lumber_reception_mass_update_form" model="ir.ui.view">
+        <field name="name">lumber.reception.mass.update.form</field>
+        <field name="model">lumber.reception.mass.update</field>
+        <field name="arch" type="xml">
+            <form string="Fijar Nominal y Clasificación">
+
+                <div class="alert alert-info mb-4 shadow-sm border-left-info"
+                     role="alert"
+                     invisible="ingestion_profile == 'metric'">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-calculator fa-2x mr-3 text-info" aria-hidden="true" title="Calculadora"/>
+                        <div>
+                            <strong style="font-size: 1.1rem;">
+                                Panel de Control de Nominales (Compra)
+                            </strong><br/>
+                            <span>
+                                Ingrese las dimensiones en <strong>fracciones imperiales</strong>
+                                (ej. <strong>6/4</strong>, <strong>1 9/16</strong>, <strong>3 5/8</strong>)
+                                o decimales. El sistema calculará automáticamente los mm.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mb-4 shadow-sm"
+                     role="alert"
+                     invisible="ingestion_profile != 'metric'">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-info-circle fa-2x mr-3 text-warning" aria-hidden="true" title="Información"/>
+                        <div>
+                            <strong style="font-size: 1.1rem;">
+                                📏 Modo Madera Bruta — Milimétrico Directo
+                            </strong><br/>
+                            <span>
+                                Ingrese las dimensiones <strong>directamente en milímetros</strong>
+                                (ej. Espesor: <strong>45</strong>, Ancho: <strong>125</strong>).
+                                No use fracciones — el sistema NO convertirá × 25.4.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <sheet>
+                    <field name="ingestion_profile" invisible="1"/>
+
+                    <group>
+                        <group string="📐 Dimensiones (Input Pulgadas)"
+                               name="input_group"
+                               invisible="ingestion_profile == 'metric'">
+
+                            <label for="thickness_nominal_frac"/>
+                            <div class="o_row">
+                                <field name="thickness_nominal_frac"
+                                       placeholder="Ej: 6/4 ó 1 9/16"
+                                       class="oe_inline font-weight-bold"/>
+                                <i class="fa fa-arrow-right mx-2 text-muted"
+                                   title="Convierte a milímetros" aria-hidden="true"/>
+                            </div>
+
+                            <label for="width_nominal_frac"/>
+                            <div class="o_row">
+                                <field name="width_nominal_frac"
+                                       placeholder="Ej: 3 5/8 ó 4"
+                                       class="oe_inline font-weight-bold"/>
+                                <i class="fa fa-arrow-right mx-2 text-muted"
+                                   title="Convierte a milímetros" aria-hidden="true"/>
+                            </div>
+
+                            <p class="text-muted small mt-2">
+                                <i class="fa fa-lightbulb-o mr-1" aria-hidden="true" title="Sugerencia"/>
+                                Tip: fracciones simples (3/4), mixtas (1 9/16) o decimales (1.5).
+                            </p>
+                        </group>
+
+                        <group string="📏 Dimensiones (mm directo)"
+                               name="input_group_metric"
+                               invisible="ingestion_profile != 'metric'">
+
+                            <label for="thickness_nominal_frac"/>
+                            <div class="o_row">
+                                <field name="thickness_nominal_frac"
+                                       placeholder="Ej: 45  (mm)"
+                                       class="oe_inline font-weight-bold"/>
+                                <i class="fa fa-arrow-right mx-2 text-muted"
+                                   title="Valor en mm directo" aria-hidden="true"/>
+                            </div>
+
+                            <label for="width_nominal_frac"/>
+                            <div class="o_row">
+                                <field name="width_nominal_frac"
+                                       placeholder="Ej: 125  (mm)"
+                                       class="oe_inline font-weight-bold"/>
+                                <i class="fa fa-arrow-right mx-2 text-muted"
+                                   title="Valor en mm directo" aria-hidden="true"/>
+                            </div>
+
+                            <p class="text-muted small mt-2">
+                                <i class="fa fa-info-circle mr-1" aria-hidden="true" title="Información"/>
+                                Tip: ingrese el valor numérico en milímetros. No use fracciones.
+                            </p>
+                        </group>
+
+                        <group string="⚙️ Equivalencia Sistema (mm)" name="system_group">
+                            <label for="thickness_nominal"/>
+                            <div class="o_row">
+                                <field name="thickness_nominal"
+                                       class="oe_inline font-weight-bold text-success"
+                                       readonly="1"
+                                       force_save="1"/>
+                                <span class="text-muted ml-1">mm</span>
+                                <span class="badge badge-pill badge-success ml-2"
+                                      invisible="thickness_nominal == 0">
+                                    <i class="fa fa-check" aria-hidden="true" title="Confirmado"/> Afectará m³
+                                </span>
+                            </div>
+
+                            <label for="width_nominal"/>
+                            <div class="o_row">
+                                <field name="width_nominal"
+                                       class="oe_inline font-weight-bold text-success"
+                                       readonly="1"
+                                       force_save="1"/>
+                                <span class="text-muted ml-1">mm</span>
+                                <span class="badge badge-pill badge-success ml-2"
+                                      invisible="width_nominal == 0">
+                                    <i class="fa fa-check" aria-hidden="true" title="Confirmado"/> Afectará m³
+                                </span>
+                            </div>
+                        </group>
+                    </group>
+
+                    <hr class="my-3"/>
+
+                    <group>
+                        <group string="🏷️ Clasificación MADENAT"
+                               name="classification_group">
+                            <field name="allowed_subproduct_ids" invisible="1"/>
+                            <field name="subproduct_id"
+                                   string="Subproducto / Grado"
+                                   options="{'no_create': True, 'no_open': True}"
+                                   domain="[('id', 'in', allowed_subproduct_ids)]"
+                                   placeholder="Seleccione Clasificación..."
+                                   class="font-weight-bold"/>
+                        </group>
+
+                        <group string="🎯 Alcance de la Acción">
+                            <field name="apply_to" widget="radio" nolabel="1"/>
+                            <div class="alert alert-warning py-1 px-2 mt-2"
+                                 style="font-size: 0.85rem;"
+                                 invisible="apply_to != 'all'" role="alert">
+                                <i class="fa fa-warning mr-1" aria-hidden="true" title="Advertencia"/>
+                                Se aplicará a <strong>TODOS</strong> los paquetes de la recepción.
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_apply"
+                            string="🚀 Aplicar Cambios y Recalcular Stock"
+                            type="object"
+                            class="btn-primary shadow-sm"
+                            confirm="¿Está seguro de modificar masivamente los valores nominales? Esta acción recalculará los volúmenes comerciales y de exportación."/>
+                    <button string="Descartar"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lumber_reception_mass_update" model="ir.actions.act_window">
+        <field name="name">⚡ Fijar Nominal Masivo</field>
+        <field name="res_model">lumber.reception.mass.update</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

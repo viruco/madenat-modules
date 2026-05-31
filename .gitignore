@@ -1,0 +1,14 @@
+*_BACKUP_*/
+.bak/
+.qwen/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pot
+*.mo
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

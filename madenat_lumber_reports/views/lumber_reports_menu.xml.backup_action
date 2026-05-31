@@ -1,0 +1,43 @@
+<odoo>
+    <data noupdate="0">
+        <!-- ================================================== -->
+        <!-- MENÚ REPORTES UNIFICADOS BAJO CONTABILIDAD -->
+        <!-- ================================================== -->
+        
+        <!-- Menú Reportes bajo Contabilidad -->
+        <menuitem id="menu_lumber_reports_root"
+                  name="📈 Reportes MADENAT"
+                  parent="account.menu_finance_reports"
+                  sequence="10"
+                  groups="account.group_account_user"/>
+        
+        <!-- Reportes de Inventario -->
+        <menuitem id="menu_inventory_reports"
+                  name="📦 Reportes de Inventario"
+                  parent="menu_lumber_reports_root"
+                  sequence="10"
+                  groups="stock.group_stock_user"/>
+        
+        <!-- Reportes de Facturación -->
+        <menuitem id="menu_billing_reports"
+                  name="💰 Reportes de Facturación"
+                  parent="menu_lumber_reports_root"
+                  action="action_lumber_billing_variance_analysis"
+                  sequence="20"
+                  groups="account.group_account_user"/>
+        
+        <!-- Reportes de Logística -->
+        <menuitem id="menu_logistics_reports"
+                  name="🚢 Reportes de Logística"
+                  parent="menu_lumber_reports_root"
+                  sequence="30"
+                  groups="stock.group_stock_user"/>
+        
+        <!-- Reportes de Pagos -->
+        <menuitem id="menu_payment_reports"
+                  name="💳 Reportes de Pagos"
+                  parent="menu_lumber_reports_root"
+                  sequence="40"
+                  groups="account.group_account_manager"/>
+    </data>
+</odoo>

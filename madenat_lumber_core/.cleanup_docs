@@ -1,0 +1,31 @@
+# 🧹 ARCHIVOS .md OBSOLETOS EN models/ - ACCIÓN REQUERIDA
+
+## 📋 Evaluación de Archivos .md en models/
+
+Los siguientes archivos contienen documentación técnica que pertenece a `docs/` y están **OBSOLETOS**:
+
+### ❌ Archivos a Eliminar
+1. **`0`** - Archivo vacío, sin contenido
+2. **`01_auditoria_precision.md`** - Información sobre precisión decimal duplicada en `docs/Errores/AUDITORIA_2026_05_02.md`
+3. **`02_mapa_ingestas_odoo18.md`** - Mapa de ingestas duplicado en `docs/00_ARQUITECTURA.md`
+4. **`03_instrucciones_continuidad.md`** - Instrucciones técnicas duplicadas en `docs/Errores/GUIA_CONTINUIDAD_TECNICA.md`
+5. **`ROADMAP.md`** - Planificación duplicada en `docs/ROADMAP.md` (versión más actualizada)
+
+### ✅ Documentación Consolidada en docs/
+- **`docs/GUIA_PRODUCCION_FINAL.md`** - Documento principal único
+- **`docs/00_ARQUITECTURA.md`** - Arquitectura y decisiones
+- **`docs/Errores/AUDITORIA_2026_05_02.md`** - Auditoría técnica completa
+- **`docs/Errores/GUIA_CONTINUIDAD_TECNICA.md`** - Guía para desarrolladores
+- **`docs/ROADMAP.md`** - Visión a largo plazo (v5.0.0)
+
+## 🛠️ Comando de Limpieza
+```bash
+cd /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons/madenat_lumber_core
+rm models/0 models/01_auditoria_precision.md models/02_mapa_ingestas_odoo18.md models/03_instrucciones_continuidad.md models/ROADMAP.md
+```
+
+## 🎯 Regla de Oro
+**Toda documentación debe vivir en `docs/`** - Los archivos .md en carpetas de código generan ruido y confusión.
+
+---
+*Generado: $(date)*

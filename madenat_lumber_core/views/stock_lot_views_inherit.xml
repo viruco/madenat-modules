@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_lot_form_inherit_logistics" model="ir.ui.view">
+        <field name="name">stock.lot.form.inherit.logistics</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_stock_lot_form_madenat"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_name_only']" position="after">
+                <field name="export_shipment_id" string="🚢 Embarque Actual" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_search_inherit_logistics" model="ir.ui.view">
+        <field name="name">stock.lot.search.inherit.logistics</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_stock_lot_search_madenat"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='purchase_order_id']" position="after">
+                <field name="export_shipment_id" string="🚢 Número de Embarque"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_estado']" position="after">
+                <filter string="Embarque" name="group_shipment" context="{'group_by':'export_shipment_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

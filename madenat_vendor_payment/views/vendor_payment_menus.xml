@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <menuitem id="menu_vendor_payments_root"
+                  name="💳 Pagos a Proveedores"
+                  parent="account.menu_finance"
+                  sequence="25"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_pending_payment" model="ir.actions.act_window">
+            <field name="name">Costos Pendientes de Pago</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('payment_state', 'in', ['not_paid', 'partial'])]</field>
+            <field name="context">{'search_default_filter_not_paid': 1, 'search_default_group_partner': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">No hay costos pendientes de pago</p>
+            </field>
+        </record>
+
+        <menuitem id="menu_cost_line_pending_payment"
+                  name="📋 Todos los Pendientes"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_pending_payment"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_pending_madera" model="ir.actions.act_window">
+            <field name="name">Pendientes - Proveedores Madera</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('payment_state', 'in', ['not_paid', 'partial']), ('supplier_category', '=', 'madera')]</field>
+            <field name="context">{'search_default_group_partner': 1}</field>
+        </record>
+
+        <menuitem id="menu_cost_line_pending_madera"
+                  name="🌲 Proveedores Madera"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_pending_madera"
+                  sequence="15"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_pending_transport" model="ir.actions.act_window">
+            <field name="name">Pendientes - Transportistas</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('payment_state', 'in', ['not_paid', 'partial']), ('supplier_category', '=', 'transport')]</field>
+            <field name="context">{'search_default_group_partner': 1}</field>
+        </record>
+
+        <menuitem id="menu_cost_line_pending_transport"
+                  name="🚚 Transportistas"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_pending_transport"
+                  sequence="20"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_pending_consolidation" model="ir.actions.act_window">
+            <field name="name">Pendientes - Consolidación</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('payment_state', 'in', ['not_paid', 'partial']), ('supplier_category', '=', 'consolidation')]</field>
+            <field name="context">{'search_default_group_partner': 1}</field>
+        </record>
+
+        <menuitem id="menu_cost_line_pending_consolidation"
+                  name="📦 Empresas Consolidación"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_pending_consolidation"
+                  sequence="25"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_paid" model="ir.actions.act_window">
+            <field name="name">Costos Pagados</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('payment_state', '=', 'paid')]</field>
+            <field name="context">{'search_default_group_partner': 1}</field>
+        </record>
+
+        <menuitem id="menu_cost_line_paid"
+                  name="✅ Pagados"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_paid"
+                  sequence="30"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_cost_line_all" model="ir.actions.act_window">
+            <field name="name">Todos los Costos de Embarque</field>
+            <field name="res_model">lumber.shipment.cost.line</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <menuitem id="menu_cost_line_all"
+                  name="📊 Todos los Costos"
+                  parent="menu_vendor_payments_root"
+                  action="action_cost_line_all"
+                  sequence="35"
+                  groups="account.group_account_manager"/>
+                  
+        <menuitem id="menu_vendors"
+                  name="👥 Gestión de Proveedores"
+                  parent="menu_vendor_payments_root"
+                  action="base.action_partner_supplier_form"
+                  sequence="40"
+                  groups="account.group_account_manager"/>
+
+        <record id="action_account_expense_mapping" model="ir.actions.act_window">
+            <field name="name">⚙️ Mapeo de Gastos por Categoría</field>
+            <field name="res_model">account.expense.mapping</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Configura el mapeo entre categorías de proveedores y cuentas contables.</p>
+            </field>
+        </record>
+
+        <menuitem id="menu_account_expense_mapping"
+                  name="⚙️ Mapeo de Gastos"
+                  parent="menu_vendor_payments_root"
+                  action="action_account_expense_mapping"
+                  sequence="45"
+                  groups="account.group_account_manager"/>
+    </data>
+</odoo>

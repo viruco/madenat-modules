@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- ================================================== -->
+        <!-- SOLO ACCIONES - SIN MENÚS                        -->
+        <!-- Los menús están en madenat_lumber_logistics       -->
+        <!-- ================================================== -->
+        
+        <!-- ❌ ELIMINAR COMPLETAMENTE TODOS LOS <menuitem> -->
+        <!-- ✅ MANTENER SOLO LAS ACCIONES -->
+        
+        <!-- Las acciones ya están definidas en otros archivos -->
+        <!-- shipping_vessel_views.xml -->
+        <!-- shipping_voyage_views.xml -->
+        <!-- shipping_booking_views.xml -->
+    </data>
+</odoo>

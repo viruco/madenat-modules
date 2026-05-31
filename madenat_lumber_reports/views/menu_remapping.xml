@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_madenat_root"
+              name="MADENAT Lumber"
+              web_icon="madenat_lumber_core,static/description/icon.png"
+              sequence="1"/>
+
+    <menuitem id="menu_ops_main" name="📦 Operaciones" parent="menu_madenat_root" sequence="10"/>
+    
+    <menuitem id="menu_ops_supply" name="Abastecimiento" parent="menu_ops_main" sequence="10"/>
+        
+        <menuitem id="madenat_lumber_purchasing.menu_lumber_purchase" 
+                  name="🌲 Compra Madera Bruta" 
+                  parent="menu_ops_supply" 
+                  sequence="10"/>
+        
+        <menuitem id="menu_ops_reception_cat" 
+                  name="📥 Gestión de Entradas" 
+                  parent="menu_ops_supply" 
+                  sequence="20"/>
+
+            <menuitem id="madenat_lumber_core.menu_lumber_reception_pending" 
+                      name="🪵 Madera Bruta" 
+                      parent="menu_ops_reception_cat" 
+                      action="madenat_lumber_core.action_lumber_reception_raw_only" 
+                      sequence="10"/> 
+                      <menuitem id="madenat_lumber_core.menu_guia_processing_root" 
+                      name="🏭 Guías Procesadas" 
+                      parent="menu_ops_reception_cat" 
+                      sequence="20"/>
+
+            <menuitem id="madenat_lumber_core.menu_lumber_reception" 
+                      name="📋 Historial de Ingresos" 
+                      parent="menu_ops_reception_cat" 
+                      sequence="30"/>
+
+
+            <menuitem id="menu_ops_inventory" name="Control de Lotes" parent="menu_ops_main" sequence="20"/>
+          
+                      <record id="view_madenat_clean_inventory_tree" model="ir.ui.view">
+                                <field name="name">madenat.clean.inventory.list</field>
+                                <field name="model">stock.quant</field>
+                                <field name="arch" type="xml">
+                                    <list string="Ajustes Físicos" js_class="inventory_report_list" editable="bottom" create="1" edit="1">
+                                         <field name="etiqueta_limpia" string="Etiqueta Lote"/>
+                                        
+                                         <field name="product_id" string="Producto" readonly="id != False" context="{'display_default_code': False}"/>
+                                         <field name="subproducto_id" string="Subproducto" optional="show"/>
+                                       
+                                         <field name="location_id" string="Patio / Ubicación" readonly="id != False"/>
+                                         <field name="reception_name" string="N° de Guía" decoration-info="1" readonly="1" optional="show"/>
+                                                                               
+                                        <field name="quantity" string="M³ (Sistema)" readonly="1"/>
+                                        <field name="inventory_quantity" string="M³ Físico (Escriba su Conteo aquí)"/>
+                                        <field name="inventory_diff_quantity" string="Diferencia" readonly="1" decoration-danger="inventory_diff_quantity &lt; 0" decoration-success="inventory_diff_quantity &gt; 0"/>
+                                        
+                                        <field name="product_uom_id" string="UdM" readonly="1"/>
+                                        <field name="reception_date" string="Fecha Guía" widget="date" optional="hide" readonly="1"/>
+                                    </list>
+                                </field>
+                            </record>
+
+                        <record id="action_madenat_inventory_adjustments" model="ir.actions.act_window">
+                            <field name="name">⚖️ Ajustes Físicos</field>
+                            <field name="res_model">stock.quant</field>
+                            <field name="view_mode">list</field>
+                            <field name="view_id" ref="view_madenat_clean_inventory_tree"/>
+                            <field name="context">{'inventory_mode': True}</field>
+                            <field name="domain">[('location_id.usage', '=', 'internal')]</field>
+                        </record>
+
+                    <menuitem id="menu_madenat_inventory_adjustments" 
+                            name="⚖️ Ajustes Físicos (Stock)" 
+                            parent="menu_ops_inventory" 
+                            action="action_madenat_inventory_adjustments" 
+                            sequence="10"/>
+                    
+                    <menuitem id="madenat_toll_processing.menu_toll_processing_root" 
+                            name="Procesamiento Externo" 
+                            parent="menu_ops_inventory" 
+                            sequence="20"/>
+
+    <menuitem id="menu_export_main" name="🚢 Exportaciones" parent="menu_madenat_root" sequence="20"/>
+        <menuitem id="madenat_lumber_logistics.menu_lumber_logistics" name="Embarques y Naves" parent="menu_export_main" sequence="10"/>
+        <menuitem id="madenat_lumber_shipping_core.menu_shipping_booking" name="Bookings y Reservas" parent="menu_export_main" sequence="20"/>
+
+   <menuitem id="menu_madenat_reports_main" 
+              name="📊 Reportes y Listados" 
+              parent="menu_madenat_root" 
+              sequence="25"/>
+        
+        <menuitem id="menu_report_commercial" 
+                  name="1. Comercial (Según Compra)" 
+                  parent="menu_madenat_reports_main" 
+                  action="madenat_lumber_core.action_madenat_list_commercial" 
+                  sequence="10"/>
+                  
+        <menuitem id="menu_report_physical" 
+                  name="2. Medidas Reales (Físico)" 
+                  parent="menu_madenat_reports_main" 
+                  action="madenat_lumber_core.action_madenat_list_physical" 
+                  sequence="20"/>
+                  
+        <menuitem id="menu_report_export" 
+                  name="3. De Embarque (Exportación)" 
+                  parent="menu_madenat_reports_main" 
+                  action="madenat_lumber_core.action_madenat_list_export" 
+                  sequence="30"/>
+   
+  <menuitem id="menu_finance_main" name="💰 Costeo y Finanzas" parent="menu_madenat_root" sequence="30" groups="madenat_lumber_core.group_madenat_cost_auditor,base.group_system"/> 
+        <menuitem id="menu_finance_costing" name="Centro de Costeo" parent="menu_finance_main" sequence="10"/>
+            
+            <menuitem id="menu_lots_costing_pending" name="⚠️ Lotes sin Costear" parent="menu_finance_costing" sequence="15"/>
+           
+            <menuitem id="madenat_lumber_costing.menu_cost_analysis" 
+                        name="📊 Análisis de Rentabilidad" 
+                        parent="menu_finance_costing" 
+                        action="madenat_lumber_logistics.action_madenat_profitability_analysis" 
+                        sequence="20"/>
+
+
+    <menuitem id="menu_finance_payments" name="Pagos y Facturación" parent="menu_finance_main" sequence="20"/>
+        <menuitem id="madenat_vendor_payment.menu_vendor_payments_root" name="Pagos a Proveedores" parent="menu_finance_payments" sequence="10"/>
+        <menuitem id="madenat_lumber_billing.menu_madenat_billing_root" name="Facturación Exportación" parent="menu_finance_payments" sequence="20"/>
+
+    <menuitem id="menu_audit_main" name="⚖️ Auditoría" parent="menu_madenat_root" sequence="40"/>
+        <menuitem id="madenat_lumber_core.menu_madenat_audit" name="Trazabilidad 360°" parent="menu_audit_main" sequence="10"/>
+        <menuitem id="madenat_lumber_reports.menu_lumber_reports_root" name="Reportes de Gestión" parent="menu_audit_main" sequence="20"/>
+        
+    <menuitem id="menu_madenat_config_root" name="Configuración" parent="menu_madenat_root" sequence="100" groups="base.group_system"/>
+    <record id="action_madenat_patios_recepcion" model="ir.actions.act_window">
+        <field name="name">Patios de Recepción</field>
+        <field name="res_model">stock.location</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('usage', '=', 'internal')]</field>
+        <field name="context">{'default_usage': 'internal'}</field>
+    </record>
+
+    <menuitem id="menu_madenat_config_patios" 
+              name="🏗️ Patios de Recepción" 
+              parent="menu_madenat_config_root" 
+              action="action_madenat_patios_recepcion" 
+              sequence="10"
+              groups="stock.group_stock_manager,base.group_system"/>
+    <menuitem id="menu_madenat_config_subproducto"
+              name="🏷️ Subproductos y Grados"
+              parent="menu_madenat_config_root" 
+              action="madenat_lumber_core.action_madenat_subproducto_config"
+              sequence="20"
+              groups="stock.group_stock_manager,base.group_system"/>
+
+</odoo>

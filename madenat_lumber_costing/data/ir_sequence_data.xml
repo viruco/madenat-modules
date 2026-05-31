@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_lumber_cost_distribution" model="ir.sequence">
+            <field name="name">Secuencia Distribución de Costos Madenat</field>
+            <field name="code">lumber.cost.distribution</field>
+            <field name="prefix">CD-%(year)s-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

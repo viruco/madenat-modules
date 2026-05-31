@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- SECUENCIA EMBARQUES -->
+        <record id="seq_lumber_export_shipment" model="ir.sequence">
+            <field name="name">Embarque Exportación</field>
+            <field name="code">lumber.export.shipment</field>
+            <field name="prefix">EMB-</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- ACCIONES -->
+        <record id="action_lumber_export_shipment" model="ir.actions.act_window">
+            <field name="name">Embarques de Exportación</field>
+            <field name="res_model">lumber.export.shipment</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crear un nuevo embarque de exportación
+                </p>
+                <p>
+                    Los embarques organizan lotes de madera en contenedores para exportación.
+                </p>
+            </field>
+        </record>
+        
+        <record id="action_lumber_container" model="ir.actions.act_window">
+            <field name="name">Contenedores</field>
+            <field name="res_model">lumber.container</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crear un nuevo contenedor
+                </p>
+                <p>
+                    Los contenedores transportan lotes de madera organizados por embarque.
+                </p>
+            </field>
+        </record>
+        
+        <record id="action_lumber_container_consolidation" model="ir.actions.act_window">
+            <field name="name">Consolidación de Contenedores</field>
+            <field name="res_model">lumber.container</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state', '=', 'draft')]</field> <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Consolidar contenedores
+                </p>
+            </field>
+        </record>
+        
+    </data>
+</odoo>

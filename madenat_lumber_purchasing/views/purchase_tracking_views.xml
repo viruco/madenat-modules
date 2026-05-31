@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista de Lista para Seguimiento de Compras -->
+        <record id="view_purchase_tracking_tree" model="ir.ui.view">
+            <field name="name">purchase.tracking.tree</field>
+            <field name="model">purchase.order</field>
+            <field name="arch" type="xml">
+                <tree string="Seguimiento de Compras MADENAT">
+                    <field name="name" string="Orden Compra"/>
+                    <field name="partner_id" string="Proveedor"/>
+                    <field name="date_order" string="Fecha"/>
+                    <field name="lumber_volume_m3" string="Volumen OC (m³)" digits="[16, 3]"/>
+                    <field name="volume_received_m3" string="Volumen Recibido (m³)" digits="[16, 3]"/>
+                    <field name="reception_percentage" string="% Recepcionado" widget="progressbar"/>
+                    <field name="amount_received_usd" string="Monto Recibido (USD)" digits="[16, 2]"/>
+                    <field name="state" string="Estado" widget="badge"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Acción para Seguimiento de Compras -->
+        <record id="action_purchase_tracking" model="ir.actions.act_window">
+            <field name="name">Seguimiento de Compras</field>
+            <field name="res_model">purchase.order</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_purchase_tracking_tree"/>
+            <field name="search_view_id" ref="purchase.view_purchase_order_filter"/>
+            <field name="context">{'search_default_current_year': 1}</field>
+        </record>
+
+        <!-- Menú para Seguimiento de Compras -->
+        <menuitem id="menu_purchase_tracking" 
+                  name="Seguimiento de Compras" 
+                  parent="menu_madenat_purchasing_root"
+                  action="action_purchase_tracking"
+                  sequence="20"/>
+    </data>
+</odoo>

@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <record id="view_lumber_export_shipment_pivot" model="ir.ui.view">
+            <field name="name">lumber.export.shipment.pivot</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="arch" type="xml">
+                <pivot string="Análisis de Embarques" display_quantity="1" sample="1">
+                    <field name="vessel_id" type="row"/>
+                    
+                    <field name="estimated_departure" type="col"/> 
+
+                    <field name="total_nominal_volume_m3" string="Vol. Físico Compra (m³)" type="measure"/>
+                    <field name="total_volume_m3" string="Vol. Físico Embarque (m³)" type="measure"/>
+                    
+                    <field name="yield_efficiency_pct" string="Eficiencia Yield (%)" type="measure"/>
+                    <field name="total_volume_mbf" string="Total MBF" type="measure"/>
+                    <field name="total_packages" string="Total Paquetes" type="measure"/>
+                    <field name="container_count" string="N° Contenedores" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+    <record id="view_lumber_export_shipment_form" model="ir.ui.view">
+        <field name="name">lumber.export.shipment.form</field>
+        <field name="model">lumber.export.shipment</field>
+        <field name="arch" type="xml">
+            <form string="Embarque de Exportación">
+                <header>
+                    <button name="action_confirm" string="Confirmar" type="object" 
+                            invisible="state != 'draft'" class="btn-primary"/>
+
+                    <button name="action_set_in_transit" string="Rematar Nave (Zarpe)" type="object" 
+                            invisible="state != 'confirmed'" class="btn-primary"
+                            confirm="¿Está seguro de rematar la nave? Se generará y validará automáticamente el rebaje de stock."/>
+
+                    <button name="action_deliver" string="Entregar" type="object" 
+                            invisible="state != 'in_transit'" class="btn-primary"/>
+
+                    <button name="action_draft" string="Volver a Borrador" type="object" 
+                            invisible="state == 'draft'" class="btn-secondary"
+                            confirm="⚠️ ¿Está seguro de reiniciar el embarque? Esto volverá todos los contenedores a estado 'Cargando'."/>
+
+                    <button name="action_export_shipment_xlsx" string="📊 Exportar Tarja Consolidada" 
+                            type="object" class="btn-info" icon="fa-file-excel-o" 
+                            invisible="not container_ids"/>
+
+                    <button name="action_print_packing_list" 
+                            string="📄 Imprimir Packing List (PDF)" 
+                            type="object" 
+                            class="btn-primary" 
+                            icon="fa-file-pdf-o"
+                            invisible="not container_ids"/>
+                    <button name="%(madenat_lumber_billing.action_create_consolidation_from_shipment)d"
+                            string="💰 Crear Consolidación"
+                            type="action"
+                            invisible="state != 'delivered'"
+                            class="btn-primary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_transit,delivered"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_picking" type="object" class="oe_stat_button" 
+                                icon="fa-truck" invisible="picking_count == 0">
+                            <field name="picking_count" widget="statinfo" string="Salida Stock"/>
+                        </button>
+                        <button name="action_view_shipment_lots" type="object" class="oe_stat_button" 
+                                icon="fa-cubes" invisible="lot_count == 0">
+                            <field name="lot_count" widget="statinfo" string="Paquetes"/>
+                        </button>
+                    </div>
+
+                    <field name="currency_id" invisible="1"/>
+                    <field name="yield_efficiency_pct" invisible="1"/>
+
+                    <div class="oe_title">
+                        <label for="name" string="Número de Embarque"/>
+                        <h1><field name="name" placeholder="Ej: EXP-2025-001" readonly="state != 'draft'"/></h1>
+                    </div>
+
+                    <div class="row text-center mb-4 mt-4 p-3 bg-light border rounded" id="shipment_dashboard">
+                        <div class="col-3 border-right">
+                            <small class="text-muted d-block font-weight-bold">VOLUMEN DE EMBARQUE</small>
+                            <h2 class="text-primary"><field name="total_volume_m3"/> <small>m³</small></h2>
+                        </div>
+                        <div class="col-3 border-right">
+                            <small class="text-muted d-block font-weight-bold">EFICIENCIA (YIELD)</small>
+                            <h2 class="text-danger" invisible="yield_efficiency_pct >= 90">
+                                <field name="yield_efficiency_pct"/>%
+                            </h2>
+                            <h2 class="text-success" invisible="yield_efficiency_pct &lt; 90">
+                                <field name="yield_efficiency_pct"/>%
+                            </h2>
+                        </div>
+                        <div class="col-3 border-right">
+                            <small class="text-muted d-block font-weight-bold">CANT. PAQUETES</small>
+                            <h2><field name="total_packages"/></h2>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted d-block font-weight-bold">CONTENEDORES</small>
+                            <h2><field name="container_count"/></h2>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Logística">
+                            <field name="vessel_id" string="Motonave (Barco)" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="voyage_id" string="N° de Viaje" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="bl_number" string="N° Bill of Lading" readonly="state == 'delivered'"/>
+                            <field name="booking_reference" string="Booking/Reserva" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Ruta y Destino">
+                            <field name="port_loading" readonly="state in ('in_transit', 'delivered')"/>
+                            <field name="port_discharge" readonly="state in ('in_transit', 'delivered')"/>
+                            <field name="port_destination" placeholder="Lugar de entrega final" readonly="state in ('in_transit', 'delivered')"/>
+                            <field name="estimated_departure" string="ETD (Salida)"/>
+                            <field name="estimated_arrival" string="ETA (Llegada)"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Totales y KPIs">
+                        <group>
+                            <field name="container_count"/>
+                            <field name="lot_count"/>
+                            <field name="total_packages"/>
+                        </group>
+                        <group>
+                            <field name="total_volume_m3" string="Vol. de Embarque Total (m³)" decoration-bf="1"/>
+                            <field name="total_nominal_volume_m3" string="Vol. Físico Total (m³)" class="text-muted"/>
+                            <field name="total_volume_mbf" string="Volumen MBF Total" decoration-bf="1" decoration-success="1" digits="[16, 3]"/>
+                            <field name="total_weight_kg" string="Peso Total Carga (Kg)"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Contenedores" name="containers">
+                            <field name="container_ids" context="{'default_shipment_id': id}" readonly="state in ('in_transit', 'delivered')">
+                                <list decoration-info="state == 'loading'" decoration-success="state == 'sealed'">
+                                    <field name="name" decoration-bf="1"/>
+                                    <field name="container_type"/>
+                                    <field name="seal_number"/>
+                                    <field name="packages" sum="Total Paquetes"/>
+                              
+                                    <field name="total_volume_purchase_m3" string="Vol. Físico" sum="Total Físico" digits="[16, 3]"/>
+                                    <field name="volume_m3" string="Vol. de Embarque" sum="Total m³ Embarque" digits="[16, 3]"/>
+                                    <field name="volume_mbf" string="Vol. MBF" sum="Total MBF" digits="[16, 3]"/>
+                                    <field name="gross_weight_kg" sum="Total Peso Kg"/>
+                                    <field name="state" widget="badge" 
+                                           decoration-danger="state == 'loading'" 
+                                           decoration-success="state == 'sealed'" 
+                                           decoration-info="state == 'shipped'"/>
+                                    <button name="action_open_rollover_wizard" type="object" string="Rollover" 
+                                            icon="fa-refresh" class="btn-warning" invisible="parent.state == 'draft'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="🔍 Auditoría de Cálculo (Pulgadas)" name="audit_lines">
+                            <div class="alert alert-info" role="alert">
+                                Esta tabla muestra el detalle del cálculo comercial aplicado según la Regla seleccionada.
+                                <br/>El "Vol. Facturable" es el que se usa para el Manifiesto y BL.
+                            </div>
+                            <field name="shipment_line_ids" readonly="1">
+                                <list string="Detalle de Conversión" decoration-muted="export_volume_m3 == 0">
+                                    <field name="display_label" string="N° Etiqueta"/>
+                                    <field name="container_id" optional="show"/>
+                                    <field name="physical_volume_m3" string="Vol. Físico (m³)" sum="Total Físico" optional="show"/>
+                                    <field name="export_width_inches" string="Ancho Nom. (plg)" optional="show"/>
+                                    <field name="export_volume_m3" string="Vol. Facturable (m³)" sum="Total Facturable" 
+                                           decoration-bf="1" decoration-success="export_volume_m3 > physical_volume_m3"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="📋 Checklist Documental" name="checklist">
+                            <group>
+                                <group>
+                                    <field name="document_status" widget="badge" 
+                                           decoration-success="document_status == 'complete'" 
+                                           decoration-warning="document_status == 'partial'"/>
+                                    <field name="document_completion" widget="progressbar"/>
+                                </group>
+                            </group>
+                            <separator string="Documentación de Embarque"/>
+                            <group>
+                                <group string="🚢 Booking y Reserva">
+                                    <field name="booking_reference" readonly="state != 'draft'"/>
+                                    <field name="booking_confirmed"/>
+                                    <field name="booking_date" invisible="not booking_confirmed"/>
+                                </group>
+                                <group string="⚓ Datos de la Nave">
+                                    <field name="vessel_id" readonly="1"/>
+                                    <field name="estimated_departure" readonly="1"/>
+                                    <field name="estimated_arrival" readonly="1"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="⚖️ VGM (Verified Gross Mass)">
+                                    <field name="vgm_submitted"/>
+                                    <field name="vgm_date" invisible="not vgm_submitted"/>
+                                    <field name="vgm_total_weight" invisible="not vgm_submitted"/>
+                                </group>
+                                <group string="📄 Bill of Lading">
+                                    <field name="bl_number"/>
+                                    <field name="bl_received"/>
+                                    <field name="bl_date" invisible="not bl_received"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="🏛️ Documentación Aduanera">
+                                    <field name="customs_cleared"/>
+                                    <field name="customs_date" invisible="not customs_cleared"/>
+                                    <field name="customs_reference" invisible="not customs_cleared"/>
+                                </group>
+                                <group string="💰 Facturación">
+                                    <field name="invoice_issued"/>
+                                    <field name="invoice_date" invisible="not invoice_issued"/>
+                                    <field name="invoice_number" invisible="not invoice_issued"/>
+                                </group>
+                            </group>
+                            <separator string="Sellos de Seguridad"/>
+                            <group>
+                                <field name="container_seals" nolabel="1" widget="text" 
+                                       placeholder="Ingrese los números de sello de todos los contenedores..."/>
+                            </group>
+                        </page>
+
+                        <page string="💰 Gestión Financiera" name="costs" groups="account.group_account_manager">
+                            <group>
+                                <group string="Resumen de Costos">
+                                    <field name="total_shipment_costs_usd" widget="monetary" decoration-bf="1"/>
+                                    <field name="total_cost_per_m3" widget="monetary"/>
+                                </group>
+                                <group string="Distribución">
+                                    <field name="cost_distribution_state" widget="badge" 
+                                           decoration-info="cost_distribution_state == 'pending'" 
+                                           decoration-success="cost_distribution_state == 'distributed'"/>
+                                    <button name="action_distribute_costs" string="Distribuir Costos" 
+                                            type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                                </group>
+                            </group>
+                            <field name="cost_line_ids">
+                                <list editable="bottom">
+                                    <field name="cost_type"/>
+                                    <field name="description"/>
+                                    <field name="distribution_method"/>
+                                    <field name="amount_usd" sum="Total USD"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Observaciones">
+                            <field name="notes" placeholder="Observaciones generales sobre el embarque..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_lumber_export_shipment_list" model="ir.ui.view">
+        <field name="name">lumber.export.shipment.list</field>
+        <field name="model">lumber.export.shipment</field>
+        <field name="arch" type="xml">
+            <list string="Embarques de Exportación" decoration-info="state == 'confirmed'" 
+                  decoration-warning="state == 'in_transit'" decoration-success="state == 'delivered'">
+                <field name="name" decoration-bf="1"/>
+                <field name="bl_number"/>
+                <field name="vessel_id"/>
+                <field name="customer_id" optional="show"/>
+                <field name="container_count" string="Cont."/>
+                <field name="total_volume_m3" string="m³ Embarque" sum="Total"/>
+                <field name="yield_efficiency_pct" string="Yield %" 
+                       decoration-danger="yield_efficiency_pct &lt; 90" 
+                       decoration-success="yield_efficiency_pct >= 90"/>
+                <field name="document_status" widget="badge"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'confirmed'" 
+                       decoration-warning="state == 'in_transit'" 
+                       decoration-success="state == 'delivered'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_lumber_export_shipment" model="ir.actions.act_window">
+        <field name="name">Embarques de Exportación</field>
+        <field name="res_model">lumber.export.shipment</field>
+        <field name="view_mode">list,form,pivot</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    
+    <record id="view_purchase_order_kpis_tree_madenat_pro" model="ir.ui.view">
+      <field name="name">purchase.order.kpis.tree.madenat.pro</field>
+      <field name="model">purchase.order</field>
+      <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+      <field name="arch" type="xml">
+        
+        <xpath expr="//list" position="attributes">
+            <attribute name="decoration-warning">provisional == True</attribute>
+            <attribute name="decoration-success">state == 'purchase'</attribute>
+            <attribute name="decoration-info">state in ('draft', 'sent')</attribute>
+            <attribute name="decoration-danger">state == 'cancel'</attribute>
+            <attribute name="multi_edit">1</attribute>
+            <attribute name="sample">1</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='name']" position="attributes">
+            <attribute name="decoration-bf">1</attribute>
+            <attribute name="string">Orden Madenat</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='name']" position="after">
+            <field name="partner_ref" optional="show" decoration-bf="1" string="Ref. Proveedor"/>
+        </xpath>
+
+        <xpath expr="//field[@name='partner_id']" position="attributes">
+            <attribute name="widget">many2one_avatar</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='user_id']" position="attributes">
+            <attribute name="widget">many2one_avatar_user</attribute>
+            <attribute name="optional">show</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='state']" position="attributes">
+            <attribute name="widget">badge</attribute>
+            <attribute name="decoration-success">state == 'purchase'</attribute>
+            <attribute name="decoration-info">state == 'sent'</attribute>
+            <attribute name="decoration-warning">state == 'to approve'</attribute>
+            <attribute name="decoration-muted">state == 'cancel'</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='state']" position="after">
+            <field name="invoice_status" widget="badge" decoration-success="invoice_status == 'invoiced'" decoration-info="invoice_status == 'to invoice'" optional="show"/>
+            
+            <field name="provisional" invisible="1"/>
+            <button name="action_review_provisional"
+                    type="object"
+                    icon="fa-exclamation-triangle"
+                    class="btn btn-warning btn-sm"
+                    title="⚠️ Revisar Provisional"
+                    invisible="provisional == False"/> 
+        </xpath>
+
+        <xpath expr="//field[@name='amount_total']" position="attributes">
+            <attribute name="decoration-bf">1</attribute>
+            <attribute name="widget">monetary</attribute>
+        </xpath>
+
+      </field>
+    </record>
+  </data>
+</odoo>

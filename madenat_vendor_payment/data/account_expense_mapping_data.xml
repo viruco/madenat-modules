@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- 
+        =================================================================
+        ARCHIVO DE DATOS: Mapeo de Cuentas Contables para Categorías de Gastos
+        =================================================================
+        
+        Propósito: Definir el mapeo automático entre categorías de proveedores
+                   y cuentas contables de gastos para el procesamiento automático
+                   de facturas de proveedores.
+        
+        Características:
+        - noupdate="0": Los registros se pueden actualizar en futuras actualizaciones
+        - Modelo: account.expense.mapping (modelo personalizado)
+        - Estructura: vendor_category -> expense_account_id
+        
+        IMPORTANTE: 
+        - Este archivo crea la estructura básica de categorías SIN asignar cuentas
+        - Las cuentas contables deben configurarse MANUALMENTE desde la interfaz de Odoo
+        - Esto evita errores por referencias a cuentas que no existen en el sistema
+        
+        Configuración posterior requerida:
+        1. Ir a: Contabilidad → Configuración → Mapeo de Gastos por Categoría
+        2. Para cada categoría, asignar la cuenta contable correspondiente
+        3. Usar cuentas del tipo "Gastos" (código 6xxx en plan chileno)
+        
+        Mantener la consistencia con las categorías definidas en el modelo Python
+        =================================================================
+        -->
+        
+        <!-- 
+        MAPEO: Transporte
+        Categoría: transport
+        Descripción: Gastos relacionados con servicios de transporte de mercancías
+        Ejemplos: Fletes, transportistas, mensajería, delivery, acarreos
+        Cuenta Recomendada: 61-01-001 Gastos de Fletes y Acarreos
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_transport" model="account.expense.mapping">
+            <field name="vendor_category">transport</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos de fletes en el plan contable
+            - Ejemplo: 61-01-001 Gastos de Fletes
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Combustible
+        Categoría: fuel
+        Descripción: Gastos de combustible, lubricantes y aditivos para vehículos
+        Ejemplos: Gasolina, diesel, aceites, aditivos, lubricantes
+        Cuenta Recomendada: 61-02-001 Gastos de Combustible y Lubricantes
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_fuel" model="account.expense.mapping">
+            <field name="vendor_category">fuel</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos de combustible en el plan contable
+            - Ejemplo: 61-02-001 Gastos de Combustible
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Logística
+        Categoría: logistics
+        Descripción: Gastos de servicios logísticos, almacenamiento y distribución
+        Ejemplos: Bodegaje, cross-docking, distribución, gestión logística, almacenamiento
+        Cuenta Recomendada: 61-03-001 Gastos de Almacenamiento y Logística
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_logistics" model="account.expense.mapping">
+            <field name="vendor_category">logistics</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos logísticos en el plan contable
+            - Ejemplo: 61-03-001 Gastos de Bodegaje
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Mantenimiento
+        Categoría: maintenance
+        Descripción: Gastos de mantenimiento, reparación y conservación de activos
+        Ejemplos: Reparaciones, mantenimiento preventivo, repuestos, conservación
+        Cuenta Recomendada: 61-04-001 Gastos de Mantenimiento y Reparaciones
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_maintenance" model="account.expense.mapping">
+            <field name="vendor_category">maintenance</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos de mantenimiento en el plan contable
+            - Ejemplo: 61-04-001 Gastos de Mantenimiento
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Servicios
+        Categoría: services
+        Descripción: Gastos de servicios profesionales, técnicos y consultorías
+        Ejemplos: Asesorías, consultorías, servicios técnicos, honorarios profesionales
+        Cuenta Recomendada: 61-05-001 Honorarios y Servicios Profesionales
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_services" model="account.expense.mapping">
+            <field name="vendor_category">services</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos de servicios profesionales
+            - Ejemplo: 61-05-001 Honorarios Profesionales
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Materiales
+        Categoría: materials
+        Descripción: Gastos de materiales, suministros e insumos diversos
+        Ejemplos: Materiales de oficina, insumos, herramientas, útiles
+        Cuenta Recomendada: 61-06-001 Materiales y Suministros
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_materials" model="account.expense.mapping">
+            <field name="vendor_category">materials</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos de materiales en el plan contable
+            - Ejemplo: 61-06-001 Materiales de Oficina
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+        
+        <!-- 
+        MAPEO: Otros Gastos
+        Categoría: other
+        Descripción: Gastos diversos no clasificados en otras categorías específicas
+        Ejemplos: Gastos generales, servicios varios, gastos administrativos diversos
+        Cuenta Recomendada: 61-09-001 Gastos Diversos
+        Nota: Configurar cuenta manualmente según plan contable específico
+        -->
+        <record id="expense_mapping_other" model="account.expense.mapping">
+            <field name="vendor_category">other</field>
+            <!-- 
+            CUENTA A CONFIGURAR MANUALMENTE:
+            - Buscar cuenta de gastos diversos en el plan contable
+            - Ejemplo: 61-09-001 Gastos Diversos
+            - La cuenta debe ser del tipo "Gastos"
+            -->
+        </record>
+    </data>
+</odoo>

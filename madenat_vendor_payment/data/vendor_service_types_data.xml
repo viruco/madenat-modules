@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Categoría de Proveedor: Proveedores de Madera -->
+        <record id="partner_category_lumber_supplier" model="res.partner.category">
+            <field name="name">Proveedor de Madera</field>
+            <field name="color">1</field>
+        </record>
+
+        <!-- Categoría de Proveedor: Empresas de Packing -->
+        <record id="partner_category_packing" model="res.partner.category">
+            <field name="name">Empresa de Consolidación</field>
+            <field name="color">2</field>
+        </record>
+
+        <!-- Categoría de Proveedor: Agencias de Aduana -->
+        <record id="partner_category_customs" model="res.partner.category">
+            <field name="name">Agencia de Aduana</field>
+            <field name="color">3</field>
+        </record>
+
+        <!-- Categoría de Proveedor: Navieras -->
+        <record id="partner_category_freight" model="res.partner.category">
+            <field name="name">Naviera/Freight Forwarder</field>
+            <field name="color">4</field>
+        </record>
+
+        <!-- Categoría de Proveedor: Aseguradoras -->
+        <record id="partner_category_insurance" model="res.partner.category">
+            <field name="name">Aseguradora</field>
+            <field name="color">5</field>
+        </record>
+
+    </data>
+</odoo>
+

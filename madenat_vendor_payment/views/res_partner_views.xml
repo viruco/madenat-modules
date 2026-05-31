@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_vendor_type" model="ir.ui.view">
+        <field name="name">res.partner.form.vendor.type</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='supplier_rank']/.." position="after">
+                <field name="vendor_service_type"
+                       invisible="supplier_rank == 0"
+                       string="Tipo de Servicio (MADENAT)"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

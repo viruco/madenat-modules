@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_guia_mass_update_form" model="ir.ui.view">
+        <field name="name">madenat.guia.mass.update.form</field>
+        <field name="model">madenat.guia.mass.update</field>
+        <field name="arch" type="xml">
+            <form string="Fijar Nominal y Subproducto">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-info-circle" aria-hidden="true" title="Información"/> 
+                        El <strong>Espesor</strong> recalculará las fracciones visuales (ej: 6/4).
+                    </div>
+                    <group>
+                        <group>
+                            <field name="new_thickness_mm" 
+                                   placeholder="Ej: 45.0"
+                                   class="oe_inline"/>
+                        </group>
+                        <group>
+                            <field name="subproducto_id" 
+                                   placeholder="Seleccione..."
+                                   options="{'no_open': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply" string="Aplicar Cambios" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_guia_mass_update" model="ir.actions.act_window">
+        <field name="name">Fijar Nominal y Subproducto</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">madenat.guia.mass.update</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_madenat_guia_mass_update_form"/>
+    </record>
+</odoo>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_lumber_billing_consolidation_user,lumber.billing.consolidation.user,model_lumber_billing_consolidation,base.group_user,1,1,1,0
+access_lumber_billing_consolidation_manager,lumber.billing.consolidation.manager,model_lumber_billing_consolidation,account.group_account_manager,1,1,1,1
+access_lumber_billing_consolidation_line_user,lumber.billing.consolidation.line.user,model_lumber_billing_consolidation_line,base.group_user,1,1,1,0
+access_lumber_billing_invoice_wizard,lumber.billing.invoice.wizard,model_lumber_billing_invoice_wizard,base.group_user,1,1,1,1
+access_lumber_billing_invoice_wizard_line,lumber.billing.invoice.wizard.line,model_lumber_billing_invoice_wizard_line,base.group_user,1,1,1,1

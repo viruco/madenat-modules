@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_vendor_payment" model="ir.ui.view">
+        <field name="name">res.config.settings.form.inherit.vendor.payment</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- XPATH COMPATIBLE CE: Insertar al final del formulario -->
+            <xpath expr="//form" position="inside">
+                <app string="MADENAT Vendor Payment" name="madenat_vendor_payment_config">
+                    <block title="Mapeo de Cuentas Contables" help="Configure las cuentas contables para cada categoría de proveedor">
+                        
+                        <setting string="🌲 Proveedores Madera">
+                            <field name="account_expense_lumber_id" 
+                                   options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Seleccione cuenta de gastos..."/>
+                            <div class="text-muted">
+                                Cuenta contable para gastos de compra de madera
+                            </div>
+                        </setting>
+                        
+                        <setting string="🚚 Transportistas">
+                            <field name="account_expense_transport_id" 
+                                   options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Seleccione cuenta de gastos..."/>
+                            <div class="text-muted">
+                                Cuenta para fletes y transportes
+                            </div>
+                        </setting>
+                        
+                        <setting string="📦 Consolidación">
+                            <field name="account_expense_consolidation_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta para gastos de consolidación
+                            </div>
+                        </setting>
+                        
+                        <setting string="🚢 Navieras">
+                            <field name="account_expense_naviera_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta para fletes internacionales
+                            </div>
+                        </setting>
+                        
+                        <setting string="📋 Agentes de Aduana">
+                            <field name="account_expense_aduana_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta para gastos aduanales
+                            </div>
+                        </setting>
+                        
+                        <setting string="🛡️ Aseguradoras">
+                            <field name="account_expense_seguros_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta para seguros
+                            </div>
+                        </setting>
+                        
+                        <setting string="🏗️ Servicios Portuarios">
+                            <field name="account_expense_portuario_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta para servicios portuarios
+                            </div>
+                        </setting>
+                        
+                        <setting string="⚙️ Otros Gastos">
+                            <field name="account_expense_otros_id" 
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <div class="text-muted">
+                                Cuenta por defecto para otros gastos
+                            </div>
+                        </setting>
+                        
+                    </block>
+                    
+                    <!-- Sección de ayuda -->
+                    <block>
+                        <div class="alert alert-info" role="alert">
+                            <strong>ℹ️ Instrucciones de Configuración:</strong>
+                            <ul class="mb-0 mt8">
+                                <li>Seleccione la cuenta contable correspondiente para cada categoría de proveedor</li>
+                                <li>Las cuentas deben ser del tipo "Gastos" (expense, expense_depreciation, expense_direct_cost)</li>
+                                <li>Si una categoría no tiene cuenta configurada, se usará "Otros Gastos" por defecto</li>
+                                <li>Los cambios se aplican inmediatamente al hacer clic en "Guardar"</li>
+                            </ul>
+                        </div>
+                    </block>
+                    
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

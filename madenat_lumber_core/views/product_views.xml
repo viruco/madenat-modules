@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_product_valuated_inventory_list" model="ir.ui.view">
+            <field name="name">product.valuated.inventory.list</field>
+            <field name="model">product.product</field>
+            <field name="arch" type="xml">
+                <list string="Inventario Valorizado MADENAT" 
+                      decoration-muted="stock_m3 == 0"
+                      decoration-bf="stock_m3 &gt; 0"
+                      multi_edit="0">
+                    
+                    <field name="default_code" string="Código" optional="show"/>
+                    <field name="name" string="Producto"/>
+                    
+                    <field name="stock_m3" 
+                           string="Stock (m³)" 
+                           sum="Total Volumen" 
+                           decoration-info="stock_m3 &gt; 0"
+                           widget="float" 
+                           digits="[16, 3]"/>
+                    
+                    <field name="average_cost_usd_m3" 
+                           string="Costo Prom. (USD)" 
+                           optional="show"
+                           digits="[16, 2]"/>
+                    
+                    <field name="inventory_value_usd" 
+                           string="Valor Total (USD)" 
+                           sum="Total Inventario" 
+                           widget="monetary"
+                           options="{'currency_field': 'currency_id'}"
+                           decoration-success="1" 
+                           decoration-bf="1"/>
+                           
+                    <field name="currency_id" column_invisible="1"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_valuated_inventory" model="ir.actions.act_window">
+            <field name="name">Inventario Valorizado</field>
+            <field name="res_model">product.product</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_product_valuated_inventory_list"/>
+            <field name="search_view_id" ref="product.product_search_form_view"/>
+            <field name="domain">[('type', '=', 'product')]</field>
+            <field name="context">{'search_default_filter_available': 1}</field>
+        </record>
+
+        <record id="menu_valuated_inventory" model="ir.ui.menu">
+            <field name="name">Inventario Valorizado</field>
+            <field name="parent_id" ref="menu_madenat_inventory"/>
+            <field name="action" ref="action_valuated_inventory"/>
+            <field name="sequence">30</field>
+        </record>
+    </data>
+</odoo>

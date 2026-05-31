@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_madenat_guia_document">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <div class="oe_structure"/>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <h2>Guía de Recepción: <span t-field="o.name"/></h2>
+                    </div>
+                    <div class="col-6 text-end">
+                        <h4 t-field="o.partner_id.name"/>
+                        <p t-field="o.date_processed" t-options='{"widget": "date"}'/>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <table class="table table-sm o_main_table table-bordered">
+                    <thead style="background-color: #f2f2f2;">
+                        <tr>
+                            <th>Lote</th>
+                            <th>Producto</th>
+                            <th>Grado</th>
+                            <th class="text-center">Esp. Nom.</th>
+                            <th class="text-center">Dim. Visual (Inch)</th>
+                            <th class="text-end">Piezas</th>
+                            <th class="text-end">M3</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.processing_line_ids" t-as="line">
+                            <tr>
+                                <td><span t-field="line.lot_name"/></td>
+                                <td><span t-field="line.product_id.name"/></td>
+                                <td>
+                                    <span t-field="line.subproducto_id.name" 
+                                          class="badge rounded-pill bg-info text-dark"/>
+                                </td>
+                                <td class="text-center">
+                                    <span t-field="line.espesor_nominal_mm"/> mm
+                                </td>
+                                <td class="text-center">
+                                    <span t-field="line.thickness_visual"/> x <span t-field="line.width_visual"/>
+                                </td>
+                                <td class="text-end"><span t-field="line.pieces"/></td>
+                                <td class="text-end"><span t-field="line.vol_shipment_m3" t-options='{"widget": "float", "precision": 3}'/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <div class="row justify-content-end">
+                    <div class="col-4">
+                        <table class="table table-sm">
+                            <tr class="border-black o_total">
+                                <td><strong>Total Volumen</strong></td>
+                                <td class="text-end">
+                                    <span t-field="o.vol_fisico" t-options='{"widget": "float", "precision": 3}'/> M3
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Paquetes</strong></td>
+                                <td class="text-end">
+                                    <span t-field="o.total_paquetes"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

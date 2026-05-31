@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_subproducto_list" model="ir.ui.view">
+        <field name="name">madenat.subproducto.list</field>
+        <field name="model">madenat.subproducto</field>
+        <field name="arch" type="xml">
+            <list string="Catálogo de Subproductos" editable="bottom" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="code" string="Código" optional="show"/>
+                <field name="name" string="Clasificación (Nombre)"/>
+                <field name="description" string="Descripción Técnica" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_madenat_subproducto_form" model="ir.ui.view">
+        <field name="name">madenat.subproducto.form</field>
+        <field name="model">madenat.subproducto</field>
+        <field name="arch" type="xml">
+            <form string="Subproducto MADENAT">
+                <sheet>
+                    <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Nombre del Subproducto / Grado"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Rough, S2S, Blanks Clear..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="Ej: RGH"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Descripción Comercial" name="description">
+                            <field name="description" placeholder="Agregue detalles técnicos o restricciones comerciales..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_subproducto_config" model="ir.actions.act_window">
+        <field name="name">Subproductos / Grados</field>
+        <field name="res_model">madenat.subproducto</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+          <p class="o_view_nocontent_smiling_face">
+            Crear un nuevo Subproducto o Grado de Clasificación
+          </p>
+          <p>
+            Defina aquí los nombres exactos (ej: S2S, RIP, Rough) para que el sistema 
+            pueda aplicar correctamente los bloqueos de consistencia comercial.
+          </p>
+        </field>
+    </record>
+
+
+</odoo>

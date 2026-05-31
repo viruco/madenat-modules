@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista para Lumber Shipment Cost Line -->
+        <record id="view_lumber_shipment_cost_line_list" model="ir.ui.view">
+            <field name="name">lumber.shipment.cost.line.list</field>
+            <field name="model">lumber.shipment.cost.line</field>
+            <field name="arch" type="xml">
+                <list>
+                    <!-- FIX OWL ERROR: Campo moneda requerido para Monetary -->
+                    <field name="currency_id" column_invisible="True"/>
+                    
+                    <field name="name"/>
+                    <field name="cost_type"/>
+                    <field name="partner_id"/>
+                    <field name="invoice_ref"/>
+                    <field name="amount_usd" options="{'currency_field': 'currency_id'}"/>
+                    <field name="date"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vistas para Lumber Export Shipment -->
+        <record id="view_lumber_export_shipment_list" model="ir.ui.view">
+            <field name="name">lumber.export.shipment.list</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="arch" type="xml">
+                <list string="Embarques">
+                    <!-- FIX OWL ERROR: Campo moneda requerido para la lista -->
+                    <field name="currency_id" column_invisible="True"/>
+                    
+                    <field name="name"/>
+                    <!-- <field name="voyage_id"/> -->
+                    <!-- <field name="booking_id"/> -->
+                    <field name="bl_number"/>
+                    <field name="container_number"/>
+                    <field name="state"/>
+                    <field name="total_volume_m3"/>
+                    <field name="total_packages"/>
+                    <!-- Si este campo es Monetary, requiere opciones. Si es Float, no hace daño. -->
+                    <field name="total_wood_cost_usd" options="{'currency_field': 'currency_id'}"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_export_shipment_form" model="ir.ui.view">
+            <field name="name">lumber.export.shipment.form</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="arch" type="xml">
+                <form string="Embarque de Exportación">
+                    <header>
+                        <button name="action_confirm" string="Confirmar" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                        <button name="action_set_in_transit" string="En Tránsito" type="object" class="btn-primary" invisible="state != 'confirmed'"/>
+                        <button name="action_done" string="Completar" type="object" class="btn-primary" invisible="state != 'in_transit'"/>
+                        <button name="action_cancel" string="Cancelar" type="object" invisible="state not in ['draft', 'confirmed']"/>
+                        <button name="action_draft" string="Reabrir" type="object" invisible="state != 'canceled'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_transit,done,canceled"/>
+                    </header>
+                    <sheet>
+                        <!-- FIX OWL ERROR: Moneda Global para el Formulario -->
+                        <field name="currency_id" invisible="1"/>
+
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <!-- <field name="voyage_id"/> -->
+                                <!-- <field name="booking_id"/> -->
+                                <field name="state"/>
+                            </group>
+                            <group>
+                                <field name="bl_number"/>
+                                <field name="container_number"/>
+                                <field name="seal_number"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lotes de Madera">
+                                <field name="lot_ids" 
+                                    widget="many2many_tags"
+                                    context="{
+                                        'list_view_ref': 'madenat_lumber_logistics.view_stock_lot_wizard_list',
+                                        'search_view_ref': 'madenat_lumber_logistics.view_stock_lot_wizard_search'
+                                    }"/>
+                            </page>
+
+                            <page string="Costos del Embarque">
+                                <field name="cost_line_ids">
+                                    <list>
+                                        <!-- FIX OWL ERROR: Moneda local para One2many -->
+                                        <field name="currency_id" column_invisible="True"/>
+                                        
+                                        <field name="name"/>
+                                        <field name="cost_type"/>
+                                        <field name="partner_id"/>
+                                        <field name="invoice_ref"/>
+                                        <field name="amount_usd" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="date"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Totales">
+                                <group>
+                                    <group>
+                                        <field name="total_volume_m3" readonly="1"/>
+                                        <field name="total_packages" readonly="1"/>
+                                        <field name="total_wood_cost_usd" readonly="1" options="{'currency_field': 'currency_id'}"/>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acciones -->
+        <record id="action_lumber_export_shipment" model="ir.actions.act_window">
+            <field name="name">Embarques de Exportación</field>
+            <field name="res_model">lumber.export.shipment</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

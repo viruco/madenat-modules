@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_shipment_invoice_wizard_form" model="ir.ui.view">
+    <field name="name">lumber.shipment.invoice.wizard.form</field>
+    <field name="model">lumber.shipment.invoice.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Generar Factura Draft">
+        <group>
+          <field name="shipment_id" readonly="1"/>
+          <field name="invoice_date"/>
+          <field name="currency_id"/>
+        </group>
+        <field name="lines">
+          <list editable="bottom">
+            <field name="product_id"/>
+            <field name="name"/>
+            <field name="quantity"/>
+            <field name="price_unit"/>
+          </list>
+        </field>
+        <footer>
+          <button name="action_create_draft"
+                  string="Crear Factura Borrador"
+                  type="object"
+                  class="btn-primary"/>
+          <button string="Cancelar" class="btn-secondary"
+                  special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_shipment_invoice_wizard" model="ir.actions.act_window">
+    <field name="name">Facturación Embarque</field>
+    <field name="res_model">lumber.shipment.invoice.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+
+  <record id="view_lumber_export_shipment_form_inherit_invoice" model="ir.ui.view">
+    <field name="name">lumber.export.shipment.form.invoice</field>
+    <field name="model">lumber.export.shipment</field>
+    <field name="inherit_id" ref="madenat_lumber_logistics.view_lumber_export_shipment_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="Facturación">
+          <button name="%(action_shipment_invoice_wizard)d"
+                  string="⚡ Generar Factura"
+                  type="action"
+                  class="btn-primary"
+                  context="{'default_shipment_id': active_id}"/>
+          <field name="invoice_draft_id" readonly="1"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

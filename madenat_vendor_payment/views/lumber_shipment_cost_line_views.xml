@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista MINIMALISTA - Solo campos que agregamos -->
+    <record id="view_lumber_shipment_cost_line_search_vendor" model="ir.ui.view">
+        <field name="name">lumber.shipment.cost.line.search.vendor</field>
+        <field name="model">lumber.shipment.cost.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="invoice_ref"/>
+                
+                <filter name="filter_not_paid" 
+                        string="Sin Pagar" 
+                        domain="[('payment_state', '=', 'not_paid')]"/>
+                <filter name="filter_paid" 
+                        string="Pagado" 
+                        domain="[('payment_state', '=', 'paid')]"/>
+                
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_partner" 
+                            string="Proveedor" 
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_payment_state" 
+                            string="Estado Pago" 
+                            context="{'group_by': 'payment_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

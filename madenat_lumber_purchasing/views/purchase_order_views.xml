@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- VISTA FORMULARIO EXTENDIDA CON TRAZABILIDAD -->
+  <record id="view_purchase_order_form_lumber" model="ir.ui.view">
+    <field name="name">purchase.order.form.lumber</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="arch" type="xml">
+     
+      <!-- 🆕 Botones de trazabilidad en el header -->
+      <xpath expr="//header/button[@name='action_create_invoice']" position="after">
+        <button name="action_view_receptions" 
+                type="object" 
+                string="📋 Ver Guías"
+                class="btn-info"
+                invisible="reception_count == 0"
+                help="Ver guías de despacho asociadas"/>
+        <button name="action_view_lots" 
+                type="object" 
+                string="📦 Ver Lotes"
+                class="btn-info"
+                invisible="total_lots_count == 0"
+                help="Ver todos los lotes recibidos"/>
+      </xpath>
+
+      <!-- Botones de recepción y seguimiento en button_box -->
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_create_lumber_reception" type="object"
+                class="oe_stat_button" icon="fa-truck"
+                help="Crear nueva recepción de guía">
+          <field name="reception_count" string="Recepciones" widget="statinfo"/>
+        </button>
+        <button name="action_update_reception_data" type="object"
+                class="oe_stat_button" icon="fa-refresh"
+                help="Actualizar datos de recepción">
+          <div class="o_field_widget o_stat_info">
+            <span class="o_stat_text">Actualizar</span>
+          </div>
+        </button>
+      </xpath>
+
+      <!-- Información Básica Madera + Seguimiento en paralelo -->
+      <xpath expr="//field[@name='partner_id']" position="after">
+        
+        <!-- Información Básica Madera -->
+        <group string="Información Básica Madera" name="lumber_basic_info">
+          <field name="lumber_quality" string="Calidad de Madera"/>
+          <field name="wood_type" string="Especie Maderera"/>
+          <field name="treatment" string="Tratamiento"/>
+          <field name="thickness_mm" string="Espesor (mm)"/>
+          <field name="lumber_volume_m3" string="Volumen OC m³"/>
+        </group>
+        
+        <!-- Seguimiento de Recepción -->
+        <group string="📊 Seguimiento de Recepción" name="lumber_reception_tracking">
+          <field name="received_commercial_m3" string="Vol. Comercial Recibido (m³)"/>
+          <field name="received_volume_m3" string="Vol. Físico Recibido (m³)"/>
+          <field name="variance_commercial_physical" string="Diferencia (%)"/>
+          <field name="pending_volume_m3" string="Vol. Pendiente (m³)"/>
+          <field name="percent_completed" widget="progressbar" string="% Completado"/>
+          <field name="monto_recibido_usd" string="Monto Recibido (USD)" 
+                 widget="monetary" options="{'currency_field': 'currency_id'}"/>
+        </group>
+        
+      </xpath>
+
+      <!-- 🆕 NUEVA PESTAÑA: Trazabilidad de Recepciones -->
+      <xpath expr="//notebook" position="inside">
+        <page string="📋 Trazabilidad de Recepciones" name="lumber_traceability" 
+              invisible="reception_count == 0">
+          
+          <!-- Estadísticas resumen -->
+          <group>
+            <group string="Resumen General">
+              <field name="reception_count" string="Nº Guías Procesadas"/>
+              <field name="total_lots_count" string="Total Lotes Recibidos"/>
+            </group>
+            <group string="Métricas de Volumen">
+              <field name="received_commercial_m3" string="Vol. Comercial (m³)"/>
+              <field name="received_volume_m3" string="Vol. Físico (m³)"/>
+              <field name="variance_commercial_physical" string="Diferencia (%)"/>
+              <field name="pending_volume_m3" string="Vol. Pendiente (m³)"/>
+            </group>
+          </group>
+          
+          <separator string="Guías de Despacho Asociadas"/>
+          
+          <!-- Lista simplificada de guías -->
+          <field name="reception_ids" readonly="1"/>
+          
+        </page>
+        
+        <!-- Especificaciones Técnicas -->
+        <page string="Especificaciones Técnicas" name="tech_specs">
+          <group col="4">
+            <group string="Dimensiones Básicas">
+              <field name="thickness_mm"/>
+              <field name="min_thickness_mm"/>
+              <field name="max_thickness_mm"/>
+              <field name="min_width_mm"/>
+              <field name="max_width_mm"/>
+              <field name="min_length_m"/>
+              <field name="max_length_m"/>
+            </group>
+            
+            <group string="Terminación y Secado">
+              <field name="surface_finish"/>
+              <field name="drying_method"/>
+              <field name="humidity_min"/>
+              <field name="humidity_max"/>
+            </group>
+            
+            <group string="Tolerancias">
+              <field name="thickness_tolerance_min"/>
+              <field name="thickness_tolerance_max"/>
+              <field name="width_tolerance_min"/>
+              <field name="width_tolerance_max"/>
+              <field name="length_tolerance_min"/>
+              <field name="length_tolerance_max"/>
+            </group>
+          </group>
+        </page>
+
+        <!-- Control de Calidad -->
+        <page string="Control de Calidad" name="quality_control">
+          <group col="3">
+            <group string="Defectos Aceptados">
+              <field name="accepts_pencil_wane"/>
+              <field name="accepts_blue_stain"/>
+              <field name="accepts_drying_cracks"/>
+              <field name="accepts_splits"/>
+            </group>
+            
+            <group string="Requisitos de Calidad">
+              <field name="free_bark"/>
+              <field name="no_warping"/>
+              <field name="ht_certification_required"/>
+            </group>
+            
+            <group string="Observaciones">
+              <field name="delivery_instructions" widget="text" nolabel="1" 
+                     placeholder="Instrucciones específicas de calidad y revisión..."/>
+            </group>
+          </group>
+        </page>
+
+        <!-- Embalaje y Logística -->
+        <page string="Embalaje y Logística" name="packaging_logistics">
+          <group col="2">
+            <group string="Embalaje">
+              <field name="packaging_type"/>
+              <field name="strapping_material"/>
+              <field name="ht_certification_required"/>
+            </group>
+            
+            <group string="Plazos y Condiciones">
+              <field name="delivery_period"/>
+              <field name="validity_date"/>
+              <field name="contract_number"/>
+            </group>
+            
+            <group string="Instrucciones" col="1">
+              <field name="delivery_instructions" widget="text" nolabel="1" 
+                     placeholder="Instrucciones de entrega, lugar, horarios..."/>
+              <field name="payment_terms" widget="text" nolabel="1" 
+                     placeholder="Condiciones de pago especiales..."/>
+            </group>
+          </group>
+        </page>
+
+      </xpath>
+
+    </field>
+  </record>
+
+  <!-- Vista lista con seguimiento -->
+  <record id="view_purchase_order_list_lumber" model="ir.ui.view">
+    <field name="name">purchase.order.list.lumber</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+    <field name="arch" type="xml">
+      <field name="name" position="after">
+        <field name="lumber_quality" string="Calidad" optional="show"/>
+        <field name="wood_type" string="Especie" optional="show"/>
+        <field name="thickness_mm" string="Espesor" optional="show"/>
+        <field name="lumber_volume_m3" string="Vol. OC" optional="show"/>
+        <field name="received_commercial_m3" string="Rec. Com." optional="show"/>
+        <field name="received_volume_m3" string="Rec. Fís." optional="show"/>
+        <field name="variance_commercial_physical" string="Dif. %" optional="show"/>
+        <field name="pending_volume_m3" string="Pendiente" optional="show"/>
+        <field name="percent_completed" string="% Completado" widget="progressbar" optional="show"/>
+        <field name="reception_count" string="Guías" optional="hide"/>
+      </field>
+    </field>
+  </record>
+
+</odoo>

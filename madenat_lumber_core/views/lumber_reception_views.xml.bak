@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_lumber_reception_list" model="ir.ui.view">
+        <field name="name">lumber.reception.list.console</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <list string="Consola de Recepción"
+                  multi_edit="1"
+                  sample="1"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'done'">
+
+                <field name="name" string="Recepción" decoration-bf="1"/>
+                <field name="reception_date" string="Fecha" widget="date"/>
+                <field name="supplier_id" string="Proveedor" widget="many2one_avatar"/>
+                <field name="purchase_id" string="Orden de Compra" optional="show"/>
+                <field name="ingestion_profile" string="Perfil Ingesta" widget="badge"
+                       decoration-info="ingestion_profile == 'f5085'"
+                       decoration-warning="ingestion_profile == 'f1550'"
+                       decoration-success="ingestion_profile == 'metric'"
+                       optional="show"/>
+                <field name="commercial_volume_m3" string="Vol.Físico Nominal (m³)"
+                       sum="Total Físico Nominal" decoration-bf="1" decoration-primary="1"/>
+                <field name="volume_variance_percent" string="Variación %"
+                       widget="percentage"
+                       decoration-info="volume_variance_percent != 0"
+                       optional="show"/>
+                <field name="total_amount_clp" string="Monto CLP"
+                       sum="Monto Total" widget="monetary"/>
+                <field name="state" string="Estado" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'done'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lumber_reception_form" model="ir.ui.view">
+        <field name="name">lumber.reception.form.professional</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <form string="Recepción de Madera Bruta" class="o_xxl_form_view">
+
+                <header>
+                    <button name="action_process_documents"
+                            type="object"
+                            string="▶️ Procesar Documentos"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_verify_data"
+                            type="object"
+                            string="✅ Verificar Datos"
+                            class="btn-success"
+                            invisible="state != 'processing'"/>
+                    <button name="action_confirm_reception"
+                            type="object"
+                            string="🔒 Validar Recepción"
+                            class="btn-primary"
+                            invisible="state != 'verified'"/>
+                    <button name="action_reset_to_draft"
+                            type="object"
+                            string="↩️ Reabrir Borrador"
+                            class="btn-warning"
+                            invisible="state == 'draft'"/>
+                    <button name="action_cancel"
+                            type="object"
+                            string="❌ Cancelar"
+                            class="btn-danger"
+                            invisible="not can_cancel_reception"/>
+
+                    <div class="oe_header_indicators"
+                         style="margin-left: auto; display: flex; gap: 15px; align-items: center;"
+                         invisible="state == 'draft'">
+                        <div class="indicator">
+                            <span class="text-muted">⚙️ Perfil:</span>
+                            <field name="ingestion_profile" widget="badge" nolabel="1"
+                                   decoration-info="ingestion_profile == 'f5085'"
+                                   decoration-warning="ingestion_profile == 'f1550'"
+                                   decoration-success="ingestion_profile == 'metric'"/>
+                        </div>
+                        <div class="indicator">
+                            <span class="text-muted">📦 Lotes:</span>
+                            <field name="total_packages" nolabel="1" class="fw-bold"/>
+                        </div>
+                        <div class="indicator">
+                            <span class="text-muted">📊 Vol:</span>
+                            <field name="commercial_volume_m3" nolabel="1" class="fw-bold"/>
+                            <span>m³</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="text-muted">💰</span>
+                            <field name="total_amount_clp" nolabel="1"
+                                   class="fw-bold" widget="monetary"/>
+                        </div>
+                    </div>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,processing,verified,done"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title mb-4">
+                        <span class="o_form_label text-primary fw-bold">
+                            Recepción de Madera Bruta
+                        </span>
+                        <h1>
+                            <field name="name" placeholder="Nuevo Documento" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <div class="o_horizontal_separator mt-2 mb-3 text-uppercase fw-bold text-primary" invisible="state != 'draft'">
+                        Paso 1: Configuración y Documentos Fuente
+                    </div>
+                    
+                    <group invisible="state != 'draft'" class="bg-light p-3 border-start border-4 border-warning rounded mb-4">
+                        <group string="1. Parámetros de Ingesta">
+                            <field name="ingestion_profile" widget="radio" options="{'horizontal': false}" required="1" class="fw-bold"/>
+                         </group>
+                        
+                        <group string="2. Documentos">
+                            <field name="pdf_file" filename="pdf_filename" widget="binary" string="Subir PDF Guía" required="state == 'draft'"/>
+                            <field name="excel_file" filename="excel_filename" widget="binary" string="Subir Excel (Packing)" required="state == 'draft'"/>
+                            <field name="pdf_filename" invisible="1"/>
+                            <field name="excel_filename" invisible="1"/>
+                            
+                            <field name="oc_pdf_file" widget="binary" string="Subir PDF OC (Opcional)"/>
+                            
+                            <div colspan="2" class="text-end text-muted mt-2">
+                                <i><i class="fa fa-info-circle" aria-hidden="true" title="Información"/> Luego haga clic en <b>Procesar Documentos</b> arriba.</i>
+                            </div>
+                        </group>
+                    </group>
+
+                    <group invisible="state == 'draft'">
+                        <group string="📋 Datos Comerciales">
+                                 <div class="alert alert-danger" role="alert" invisible="supplier_id" colspan="2">
+                                    <i class="fa fa-exclamation-triangle" aria-hidden="true" title="Advertencia"/> 
+                                    <strong>Proveedor no reconocido:</strong> El RUT del PDF no coincide con ningún contacto. 
+                                    Por favor, selecciónelo manualmente o créelo.
+                                </div>
+                            <field name="supplier_id" string="Proveedor" required="state != 'draft'" options="{'no_create': True}" readonly="state in ('done', 'cancel')"/>
+                            <field name="reception_date" string="Fecha Recepción" required="state != 'draft'" readonly="state in ('done', 'cancel')"/>
+                            
+                            <field name="purchase_id" string="OC en Sistema" 
+                                   invisible="not purchase_id" 
+                                   readonly="state in ('done', 'cancel')"/>
+                            
+                            <field name="manual_po_name" string="OC Extraída" 
+                                   invisible="purchase_id" 
+                                   decoration-danger="1" 
+                                   help="OC leída del PDF pero no encontrada. Puede editar este texto."/>
+                            
+                            <label for="exchange_rate" string="Tipo de Cambio (USD)"/>
+                            <div class="o_row">
+                                <field name="exchange_rate" class="oe_inline" 
+                                       decoration-danger="exchange_rate == 1.0 or exchange_rate == 0.0" 
+                                       readonly="state in ('done', 'cancel')"/>
+                                <span> del </span>
+                                <field name="exchange_rate_date" class="oe_inline" readonly="state in ('done', 'cancel')"/>
+                            </div>
+                            
+                            <field name="total_amount_clp" string="Total Neto (CLP)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" decoration-success="total_amount_clp &gt; 1" decoration-danger="total_amount_clp &lt;= 1" readonly="1" class="mt-2"/>
+                        </group>
+                        
+                        <group string="📦 Datos Logísticos (PDF)">
+                            <field name="guia_numero" string="N° Guía Despacho" required="state != 'draft'" readonly="state in ('done', 'cancel')"/>
+                            <field name="guia_fecha" string="Fecha Guía" required="state != 'draft'" readonly="state in ('done', 'cancel')"/>
+                            <field name="location_id" string="Ubicación Destino" domain="[('usage','=','internal')]" options="{'no_create': True}" readonly="state in ('done', 'cancel')"/>
+                            <field name="picking_id" string="Albarán Generado" readonly="1"/>
+                            <field name="total_packages" string="Total Paquetes" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook invisible="state == 'draft'">
+
+                            <page string="1. 📍 FÍSICO (EXCEL ORIGINAL)" name="staging_page">
+                                <div class="row mb-3 mt-2">
+                                    <div class="col-12 col-md-6 col-lg-4">
+                                        <div class="card h-100 shadow-sm border-0">
+                                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                                <strong><i class="fa fa-ruler-combined" aria-hidden="true" title="Medición"/> Físico (Real)</strong>
+                                                <span class="badge bg-light text-success">Medido</span>
+                                            </div>
+                                            <div class="card-body bg-view">
+                                                <span class="d-block text-muted small text-uppercase fw-bold">Volumen m³</span>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <field name="physical_volume_m3" class="fs-4 fw-bold text-success me-2" readonly="1"/>
+                                                    <span class="text-muted">m³</span>
+                                                </div>
+                                                <div class="border-top pt-2 mt-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-muted">Vol. MBF:</span>
+                                                        <field name="physical_volume_mbf" class="fw-bold" readonly="1"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <div class="alert alert-info mb-3" role="status">
+                                    <i class="fa fa-eye me-2" aria-hidden="true" title="Vista"/> <strong>ESPEJO DOCUMENTAL:</strong> Refleja exactamente lo extraído del Excel. <b>Intocable.</b>
+                                </div>
+                                <field name="reception_line_ids" readonly="1">
+                                    <list string="Detalle Físico (Original)">
+                                        <field name="lot_name" string="Etiqueta Lote" decoration-bf="1"/>
+                                        <field name="excel_product_name" string="Producto (Excel)"/>
+                                        
+                                        <field name="thickness" string="Espesor (mm)" readonly="1" force_save="1" column_invisible="parent.ingestion_profile == 'f5085'"/>
+                                        <field name="width" string="Ancho (mm)" readonly="1" force_save="1" column_invisible="parent.ingestion_profile == 'f5085'"/>
+                                        
+                                        <field name="thickness_visual" string="Esp. (Fracción)" readonly="1" decoration-info="1" column_invisible="parent.ingestion_profile != 'f5085'"/>
+                                        <field name="width_visual" string="Ancho (Fracción)" readonly="1" decoration-info="1" column_invisible="parent.ingestion_profile != 'f5085'"/>
+                                        
+                                        <field name="length_input_raw" string="Largo"/>
+                                        <field name="lengthuom" string="Unidad" widget="select"/>
+                                        <field name="length" string="Largo (m)" readonly="1" optional="show" decoration-muted="1"/>
+                                        <field name="pieces" string="Pzas" widget="integer" sum="Total Piezas"/>
+                                        <field name="vol_purchase_m3" sum="Total m³" string="Vol. Excel (m³)" decoration-bf="1" class="text-end" digits="[16, 3]"/>
+                                        <field name="vol_physical_m3" 
+                                            string="Vol. Excel (m³)" 
+                                            sum="Total m³" 
+                                            decoration-bf="1" 
+                                            class="text-end" 
+                                            digits="[16, 3]"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="2. 💲 COMERCIAL (INVENTARIO)" name="commercial_check">
+                                <div class="row mb-3 mt-2">
+                                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                        <div class="card h-100 shadow-sm border-0">
+                                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                                <strong><i class="fa fa-file-text-o" aria-hidden="true" title="Documento"/> Comercial (OC)</strong>
+                                                <span class="badge bg-light text-primary">Teórico</span>
+                                            </div>
+                                            <div class="card-body bg-view">
+                                                <span class="d-block text-muted small text-uppercase fw-bold">Volumen m³</span>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <field name="commercial_volume_m3" class="fs-4 fw-bold text-primary me-2" readonly="1"/>
+                                                    <span class="text-muted">m³</span>
+                                                </div>
+                                                <div class="border-top pt-2 mt-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-muted">Vol. MBF:</span>
+                                                        <field name="commercial_volume_mbf" class="fw-bold" readonly="1"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                        <div class="card h-100 shadow-sm border-0">
+                                            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                                                <strong><i class="fa fa-balance-scale" aria-hidden="true" title="Balance"/> Diferencias</strong>
+                                                <span class="badge bg-dark text-warning">Delta</span>
+                                            </div>
+                                            <div class="card-body bg-view">
+                                                <span class="d-block text-muted small text-uppercase fw-bold">Variación %</span>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <field name="volume_variance_percent" class="fs-4 fw-bold me-2" decoration-danger="volume_variance_percent &gt; 3 or volume_variance_percent &lt; -3" decoration-success="volume_variance_percent &gt; -1 and volume_variance_percent &lt; 1" readonly="1" widget="percentage"/>
+                                                </div>
+                                                <div class="border-top pt-2 mt-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-muted">Delta m³:</span>
+                                                        <field name="volume_variance_m3" class="fw-bold" readonly="1" decoration-danger="volume_variance_m3 &lt; 0" decoration-success="volume_variance_m3 &gt; 0"/>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mt-1">
+                                                        <span class="text-muted">Estado:</span>
+                                                        <field name="tolerance_status" widget="badge" readonly="1" decoration-success="tolerance_status == 'within'" decoration-warning="tolerance_status == 'above'" decoration-danger="tolerance_status == 'below'"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-warning mb-3 d-flex align-items-center" role="alert" invisible="state == 'done'">
+                                    <i class="fa fa-pencil-square-o fa-2x me-3" aria-hidden="true" title="Edición"/> 
+                                    <div>
+                                        <h5 class="alert-heading mb-1"><strong>NÚCLEO DE INVENTARIO</strong></h5>
+                                        <span>Asigna el Subproducto y ajusta valores Nominales para Stock y Costeo.</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4 text-center">
+                                        <button name="%(madenat_lumber_core.action_lumber_reception_mass_update)d" 
+                                                string="⚡ EJECUTAR ASIGNACIÓN MASIVA" 
+                                                type="action" 
+                                                class="btn btn-warning btn-lg fw-bold shadow px-5 py-2 border border-dark" 
+                                                style="font-size: 1.1rem; text-transform: uppercase;"
+                                                invisible="state == 'done'"
+                                                context="{'default_reception_id': id, 'default_ingestion_profile': ingestion_profile}"/>
+                                </div>
+
+                                <field name="reception_line_ids" readonly="state == 'done'">
+                                    <list string="Validación Comercial" editable="bottom">
+                                        <field name="lot_name" readonly="1" decoration-bf="1"/>
+                                        <field name="subproduct_id" 
+                                                string="Subproducto MADENAT" 
+                                                options="{'no_create_edit': True}" 
+                                                required="1"
+                                                domain="parent.ingestion_profile == 'f5085' and [('name', 'not ilike', 'S2S'), ('name', 'not ilike', 'RIP')] or parent.ingestion_profile == 'f1550' and [('name', 'ilike', 'S2S')] or []"/>
+                                       
+                                        <field name="thickness_nominal" 
+                                                string="Esp. Nom (mm)" 
+                                                decoration-danger="thickness_nominal == 0" 
+                                                decoration-success="thickness_nominal > 0"
+                                                class="font-weight-bold"
+                                                column_invisible="parent.ingestion_profile == 'f5085'"/>
+                                                
+                                        <field name="thickness_nominal_frac" 
+                                                string="Esp. Nom (Fracción)" 
+                                                decoration-info="1" 
+                                                column_invisible="parent.ingestion_profile != 'f5085'"/>
+
+                                        <field name="width_nominal" 
+                                                string="Ancho Nom (mm)" 
+                                                decoration-danger="width_nominal == 0" 
+                                                decoration-success="width_nominal > 0"
+                                                class="font-weight-bold"
+                                                column_invisible="parent.ingestion_profile == 'f5085'"/>
+                                                
+                                        <field name="width_nominal_frac" 
+                                                string="Ancho Nom (Fracción)" 
+                                                decoration-info="1" 
+                                                column_invisible="parent.ingestion_profile != 'f5085'"/>
+                                                
+                                        <field name="length_input_raw" string="Largo"/>
+                                        <field name="lengthuom" string="Unidad" widget="select"/>
+                                        <field name="length" string="Largo (m)" readonly="1" optional="show" decoration-muted="1"/>
+                                        <field name="pieces" string="Pzas" readonly="1" sum="Total Pzas"/>
+                                                                                                                        
+                                        <field name="vol_purchase_m3" string="Volumen Ingreso (m³)" sum="Total Ingreso" decoration-bf="1" decoration-info="1" digits="[16, 3]"/>
+                                        <field name="currency_id" column_invisible="1"/>
+                                        <field name="cost_clp_unit" string="Costo x Lote (CLP)" sum="Total Costo" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="3. 🌍 EXPORTACIÓN (CÁLCULOS S2S)" name="export_data">
+                                <div class="alert alert-secondary mb-3" role="status">
+                                    <i class="fa fa-calculator me-2" aria-hidden="true" title="Calculadora"/> <strong>CÁLCULO AUTOMÁTICO:</strong> Basado en el Perfil de Ingesta y el Nominal fijado en el Análisis Comercial.
+                                </div>
+                                <field name="reception_line_ids" readonly="1">
+                                    <list string="Capa Técnica Exportación">
+                                        <field name="lot_name" string="N° Lote" decoration-bf="1"/>
+                                        <field name="export_calculation_rule" string="Regla" widget="badge" decoration-info="1"/>
+                                        
+                                        <field name="thickness_visual" string="Espesor (Trader)" decoration-bf="1" class="text-center"/>
+                                        <field name="width_visual" string="Ancho (Trader)" decoration-bf="1" class="text-center"/>
+                                        <field name="length_input_raw" string="Largo"/>
+                                        <field name="lengthuom" string="Unidad" widget="select"/>
+                                        <field name="length" string="Largo (m)" readonly="1" optional="show" decoration-muted="1"/>
+                                        <field name="pieces" string="Pzas" readonly="1" sum="Total Pzas"/>
+                                        <field name="vol_mbf" string="Vol. MBF" sum="Total MBF" decoration-bf="1" digits="[16, 3]"/>
+                                        <field name="vol_shipment_m3" string="Vol. Exportación (m³)" sum="Total Exp" decoration-bf="1" decoration-primary="1" digits="[16, 3]"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="4. 📦 STOCK GENERADO (LOTES)" name="lots" invisible="state != 'done'">
+                                <field name="lot_ids" readonly="1">
+                                    <list decoration-muted="estado_trazabilidad != 'recepcionado'" limit="20">
+                                        <field name="name" string="Etiqueta Final" decoration-bf="1" widget="copy_clipboard"/>
+                                        <field name="product_id" string="Producto Odoo"/>
+                                        <field name="espesor_mm" string="E (mm)"/>
+                                        <field name="ancho_mm" string="A (mm)"/>
+                                        <field name="piezas" sum="Total Pzas"/>
+                                        <field name="volumen_m3" string="Stock (m³)" sum="Total Stock"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="5. 📂 DOCUMENTOS Y AUDITORÍA" name="documents">
+                                <group>
+                                    <group string="ARCHIVOS FUENTE">
+                                        <field name="pdf_file" filename="pdf_filename" widget="binary" string="PDF Guía"/>
+                                        <field name="excel_file" filename="excel_filename" widget="binary" string="Excel Packing"/>
+                                        <field name="oc_pdf_file" widget="binary" string="PDF OC"/>
+                                        <field name="pdf_filename" invisible="1"/>
+                                        <field name="excel_filename" invisible="1"/>
+                                    </group>
+                                    
+                                    <group string="TRAZABILIDAD DEL SISTEMA">
+                                        <field name="picking_id" string="Albarán de Recepción" readonly="1"/>
+                                        <field name="total_packages" string="Total Paquetes" readonly="1"/>
+                                        <field name="audit_hash" widget="CopyClipboardChar" string="Firma SHA-256" readonly="1" invisible="not audit_hash"/>
+                                    </group>
+                                </group>
+                                
+                                <group string="BITÁCORA DEL PROCESO (LOGS)">
+                                    <field name="log_notes" readonly="1" widget="html" nolabel="1" style="font-family:'Courier New',monospace; background:#f8f9fa; padding:10px; border-radius:5px; border: 1px solid #dee2e6;"/>
+                                </group>
+                            </page>
+
+                        </notebook>
+                    </sheet>
+
+                <chatter/>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lumber_reception" model="ir.actions.act_window">
+        <field name="name">Recepción de Madera</field>
+        <field name="res_model">lumber.reception</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="view_id" ref="view_lumber_reception_list"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registre su primera recepción de madera
+            </p>
+            <p>
+                Seleccione el Perfil de Ingesta, suba los documentos y el sistema
+                procesará automáticamente los datos generando los lotes de inventario.
+            </p>
+        </field>
+    </record>
+
+</odoo>

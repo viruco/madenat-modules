@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ==================== VISTA WIZARD DE ROLLEO ==================== -->
+        <!--
+        REGLA DE ORO - ROBUSTECIMIENTO:
+        - Alerts FUERA del <sheet> para cumplir con Odoo 18 CE
+        - Validación de campos requeridos
+        - Mensajes claros y profesionales
+        - Auditoría completa de acciones
+
+        Versión: 2.0.0 (2024-12-04)
+        Última modificación: Auditoría Técnica - Fase 3
+        -->
+        <record id="view_lumber_container_rollover_wizard_form" model="ir.ui.view">
+            <field name="name">lumber.container.rollover.wizard.form</field>
+            <field name="model">lumber.container.rollover.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Gestionar Rolleo de Contenedor">
+
+                    <!-- ============================================ -->
+                    <!-- ALERTA CRÍTICA (FUERA DEL SHEET) -->
+                    <!-- ============================================ -->
+                    <!-- ✅ CORREGIDO: Alert ANTES del <sheet> para cumplir con Odoo 18 -->
+                    <div class="alert alert-warning" role="alert" style="margin: 16px; border-left: 4px solid #ff9800;">
+                        <h4 class="alert-heading" style="margin-top: 0; color: #f57c00;">
+                            <i class="fa fa-exclamation-triangle" aria-hidden="true" title="Advertencia"/> ⚠️ Confirmación de Rolleo de Contenedor
+                        </h4>
+                        <hr style="margin: 10px 0; border-color: #ffb74d;"/>
+                        <p style="margin-bottom: 10px;">
+                            <strong>El rolleo ejecutará las siguientes acciones automáticamente:</strong>
+                        </p>
+                        <ul style="margin-bottom: 10px; padding-left: 20px; line-height: 1.6;">
+                            <li><i class="fa fa-check-circle text-success" aria-hidden="true" title="Confirmado"/> <strong>Los lotes permanecerán asignados</strong> al contenedor</li>
+                            <li><i class="fa fa-refresh text-info" aria-hidden="true" title="Actualizar"/> El contenedor volverá al estado <strong>"En Carga"</strong></li>
+                            <li><i class="fa fa-unlink text-warning" aria-hidden="true" title="Desvincular"/> Se <strong>desvinculará del embarque</strong> actual</li>
+                            <li><i class="fa fa-lock text-primary" aria-hidden="true" title="Bloquear"/> Se actualizará el <strong>número de sello</strong></li>
+                            <li><i class="fa fa-history text-muted" aria-hidden="true" title="Historial"/> Se registrará el <strong>motivo completo</strong> en el historial</li>
+                        </ul>
+                        <div class="alert alert-danger" role="alert" style="margin-top: 10px; padding: 8px 12px; font-size: 13px;">
+                            <i class="fa fa-ban" aria-hidden="true" title="No permitido"/> <strong>Esta acción NO se puede deshacer.</strong> Verifique toda la información antes de confirmar.
+                        </div>
+                    </div>
+
+                    <!-- ============================================ -->
+                    <!-- CONTENIDO DEL FORMULARIO -->
+                    <!-- ============================================ -->
+                    <sheet>
+
+                        <!-- Información del Contenedor -->
+                        <group>
+                            <group string="📦 Información del Contenedor">
+                                <field name="container_id"
+                                       readonly="1"
+                                       options="{'no_create': True, 'no_open': True}"
+                                       force_save="1"
+                                       required="1"/>
+                                <field name="old_seal"
+                                       readonly="1"
+                                       string="Sello Anterior"
+                                       placeholder="Sin sello registrado"/>
+                            </group>
+
+                            <group string="🔒 Nuevo Sello de Seguridad">
+                                <field name="new_seal"
+                                       required="1"
+                                       placeholder="Ej: SEAL-2025-NEW-001"
+                                       string="Nuevo Número de Sello"
+                                       help="Ingrese el número del nuevo sello de seguridad aplicado al contenedor"/>
+                            </group>
+                        </group>
+
+                        <separator string="📋 Motivo del Rolleo"/>
+
+                        <!-- Motivo del Rolleo -->
+                        <group>
+                            <field name="motive"
+                                   required="1"
+                                   widget="radio"
+                                   options="{'horizontal': true}"
+                                   help="Seleccione el motivo principal que justifica el rolleo"/>
+                        </group>
+
+                        <separator string="📝 Comentario Detallado (Obligatorio)"/>
+
+                        <!-- Comentario Detallado -->
+                        <group>
+                            <field name="note"
+                                   required="1"
+                                   placeholder="Describa en detalle:&#10;&#10;1. ¿Qué sucedió? (evento específico que motivó el rolleo)&#10;2. ¿Cuándo ocurrió? (fecha y hora aproximada)&#10;3. ¿Quién autorizó? (supervisor, cliente, naviera)&#10;4. ¿Acciones tomadas? (coordinaciones realizadas)&#10;5. ¿Observaciones adicionales? (información relevante para auditoría)"
+                                   nolabel="1"
+                                   widget="text"
+                                   options="{'rows': 6}"
+                                   help="Este comentario quedará registrado permanentemente en el historial del contenedor"/>
+                        </group>
+
+                        <!-- Nota Legal y de Auditoría -->
+                        <div class="alert alert-info" role="alert" style="margin-top: 15px; padding: 12px; background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+                            <p style="margin: 0; font-size: 13px; line-height: 1.5;">
+                                <i class="fa fa-info-circle" style="color: #1976d2;" aria-hidden="true" title="Información"/>
+                                <strong>Nota Legal y de Auditoría:</strong>
+                                <br/>
+                                Esta acción quedará registrada <strong>permanentemente</strong> en el historial
+                                del contenedor con:
+                            </p>
+                            <ul style="margin: 8px 0 0 20px; padding: 0; font-size: 12px;">
+                                <li>📅 Fecha y hora exacta de ejecución</li>
+                                <li>👤 Usuario responsable ({{ user.name }})</li>
+                                <li>📋 Motivo seleccionado y comentario detallado</li>
+                                <li>🔍 Estado anterior y posterior del contenedor</li>
+                            </ul>
+                            <p style="margin: 8px 0 0 0; font-size: 12px; color: #0277bd;">
+                                <strong>Asegúrese de proporcionar información precisa y completa.</strong>
+                            </p>
+                        </div>
+
+                    </sheet>
+
+                    <!-- ============================================ -->
+                    <!-- BOTONES DE ACCIÓN -->
+                    <!-- ============================================ -->
+                    <footer>
+                        <button name="action_confirm_rollover"
+                                type="object"
+                                string="🔄 Confirmar Rolleo"
+                                class="btn-primary"
+                                data-hotkey="v"
+                                confirm="⚠️ CONFIRMACIÓN FINAL DE ROLLEO&#10;&#10;¿Está COMPLETAMENTE SEGURO de ejecutar el rolleo de este contenedor?&#10;&#10;Consecuencias:&#10;• El contenedor se desvinculará del embarque actual&#10;• Volverá al estado 'En Carga'&#10;• Se aplicará el nuevo sello de seguridad&#10;• Esta acción NO se puede deshacer&#10;&#10;¿Desea continuar?"/>
+                        <button string="❌ Cancelar"
+                                special="cancel"
+                                class="btn-secondary"
+                                data-hotkey="z"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

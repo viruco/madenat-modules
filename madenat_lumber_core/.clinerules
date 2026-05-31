@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════════════
+# MADENAT LUMBER CORE — Reglas de Cline para este proyecto
+# ═══════════════════════════════════════════════════════════════
+
+## IDENTIDAD DEL PROYECTO
+- Odoo 18 Community Edition, módulo personalizado madenat_lumber_core
+- El código fuente en models/ es LA FUENTE DE VERDAD — está actualizado
+- La documentación en WIKI/ puede estar desactualizada → hay que actualizarla
+
+## 🔒 REGLA ABSOLUTA — MODO SOLO LECTURA DE CÓDIGO
+- ✅ PERMITIDO: leer archivos .py, .xml, .csv, .json
+- ✅ PERMITIDO: crear y editar archivos .md en WIKI/
+- ✅ PERMITIDO: ejecutar comandos de solo lectura (grep, cat, wc, ls, find)
+- ❌ PROHIBIDO: modificar cualquier archivo .py sin aprobación explícita del usuario
+- ❌ PROHIBIDO: ejecutar scripts que modifiquen el código fuente
+- ❌ PROHIBIDO: borrar archivos sin aprobación explícita
+
+## 🎯 REGLA DE ORO — PARA CUALQUIER CAMBIO FUTURO
+1. INVESTIGAR primero (grep, logs, estructura)
+2. MAPEAR dependencias (quién usa qué)
+3. ENTENDER el problema (no síntomas)
+4. APLICAR solución MÍNIMA
+5. VALIDAR impacto (¿rompe otras cosas?)
+6. DOCUMENTAR cambios
+7. DEPLOY con confianza
+
+## ESTRUCTURA DEL MÓDULO
+- models/         → lógica de negocio (NO TOCAR)
+- views/          → XML de interfaz (NO TOCAR)
+- WIKI/           → documentación en Markdown (ACTUALIZAR aquí)
+- static/         → assets frontend (NO TOCAR)
+
+## TAREA PRINCIPAL ACTUAL
+Leer el código actualizado y generar/actualizar documentación en WIKI/
+que refleje el estado real del módulo. Borrar docs obsoletas.

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Acción para abrir formulario de Lote -->
+    <record id="action_view_stock_lot_form" model="ir.actions.act_window">
+        <field name="name">Detalle del Lote</field>
+        <field name="res_model">stock.lot</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_stock_lot_form_madenat"/>
+        <field name="target">new</field>
+    </record>
+    
+</odoo>

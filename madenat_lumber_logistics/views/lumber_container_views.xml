@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_lumber_container_consolidation_kanban" model="ir.ui.view">
+        <field name="name">lumber.container.consolidation.kanban</field>
+        <field name="model">lumber.container</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="container_type"/>
+                <field name="fill_percentage"/>
+                <field name="weight_kg"/>
+                <field name="max_weight_kg"/>
+                <field name="volume_m3"/>
+                <field name="lot_count"/>
+                <field name="status_color"/>
+                <field name="state"/>
+                
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click oe_kanban_color_#{record.status_color.raw_value}">
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <br/>
+                                    <span class="text-muted">
+                                        <field name="container_type"/>
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_top_right">
+                                    <span t-attf-class="badge badge-pill #{record.fill_percentage.raw_value &lt; 50 ? 'badge-success' : (record.fill_percentage.raw_value &lt; 90 ? 'badge-warning' : 'badge-danger')}">
+                                        <t t-esc="Math.round(record.fill_percentage.raw_value || 0)"/>%
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="o_kanban_record_body">
+                                <div class="progress mb-2" style="height: 20px;">
+                                    <div class="progress-bar" 
+                                         role="progressbar" 
+                                         t-att-style="'width: ' + (record.fill_percentage.raw_value || 0) + '%'"
+                                         t-attf-class="#{record.fill_percentage.raw_value &lt; 50 ? 'bg-success' : (record.fill_percentage.raw_value &lt; 90 ? 'bg-warning' : 'bg-danger')}">
+                                        <strong><t t-esc="Math.round(record.fill_percentage.raw_value || 0)"/>%</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Peso:</small><br/>
+                                        <strong>
+                                            <t t-esc="Math.round(record.weight_kg.raw_value || 0)"/> / 
+                                            <t t-esc="Math.round(record.max_weight_kg.raw_value || 0)"/> kg
+                                        </strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Volumen:</small><br/>
+                                        <strong><t t-esc="(Math.round((record.volume_m3.raw_value || 0) * 100) / 100).toString()"/> m³</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">Lotes asignados:</small>
+                                        <strong class="float-right">
+                                            <field name="lot_count"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="o_kanban_record_bottom mt-3">
+                                <div class="oe_kanban_bottom_left">
+                                    <button type="object" 
+                                            name="action_assign_lots" 
+                                            class="btn btn-sm btn-primary"
+                                            t-if="record.state.raw_value != 'sealed'">
+                                        <i class="fa fa-plus" aria-hidden="true" title="Agregar"/> Agregar Lotes
+                                    </button>
+                                    <button type="object" 
+                                            name="action_view_lots" 
+                                            class="btn btn-sm btn-secondary"
+                                            t-if="record.lot_count.raw_value > 0">
+                                        <i class="fa fa-eye" aria-hidden="true" title="Vista"/> Ver Lotes (<t t-esc="record.lot_count.raw_value"/>)
+                                    </button>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <field name="state" widget="label_selection" 
+                                           options="{'classes': {'empty': 'default', 'loading': 'info', 'loaded': 'primary', 'sealed': 'success', 'shipped': 'warning'}}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_lumber_container_consolidation" model="ir.actions.act_window">
+        <field name="name">📦 Consolidación de Contenedores</field>
+        <field name="res_model">lumber.container</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="view_lumber_container_consolidation_kanban"/>
+        <field name="context">{'search_default_not_sealed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer contenedor
+            </p>
+            <p>
+                Usa esta vista para gestionar la consolidación de lotes en contenedores.<br/>
+                <b>Flujo:</b><br/>
+                1. Crea un nuevo contenedor<br/>
+                2. Haz clic en "Agregar Lotes" para asignar tarjas<br/>
+                3. Monitorea el llenado en tiempo real con la barra de progreso<br/>
+                4. Sella el contenedor cuando esté listo
+            </p>
+        </field>
+    </record>
+
+    <record id="view_lumber_container_list" model="ir.ui.view">
+        <field name="name">lumber.container.list</field>
+        <field name="model">lumber.container</field>
+        <field name="arch" type="xml">
+            <list string="Contenedores">
+                <field name="name"
+                       string="Contenedor"
+                       decoration-success="state == 'sealed'"
+                       decoration-info="state == 'loading'"
+                       decoration-warning="state == 'loaded'"/>
+                <field name="shipment_id"
+                       string="Embarque"
+                       optional="show"/>
+                <field name="container_type"
+                       string="Tipo"/>
+
+                <field name="seal_number" string="Sello Naviera" optional="show"/>
+                <field name="sag_seal" string="Sello SAG" optional="show"/>
+
+                <field name="fill_percentage"
+                       string="Llenado (%)"
+                       widget="progressbar"/>
+
+
+                <field name="lot_count"
+                       string="Lotes"
+                       sum="Total Lotes"
+                       optional="show"/>
+                <field name="packages"
+                       string="Paquetes"
+                       sum="Total Paquetes"
+                       optional="hide"/>
+                
+                <field name="total_vol_shipment_m3"
+                       string="Vol. Físico (m³)"
+                       sum="Total Físico"
+                       optional="show"
+                       digits="[16, 3]"/>
+                       
+                <field name="total_volume_purchase_m3"
+                       string="Vol. Nominal (m³)"
+                       sum="Total Nominal"
+                       optional="hide"
+                       digits="[16, 3]"/>
+                       
+                <field name="volume_variance_pct"
+                       string="Desviación (%)"
+                       widget="percentage"
+                       optional="hide"/>
+                <field name="volume_mbf"
+                       string="Vol. MBF"
+                       sum="Total MBF"
+                       optional="show"
+                       digits="[16, 3]"/>
+                       
+                <field name="gross_weight_kg"
+                       string="Peso Bruto (kg)"
+                       sum="Total Kg"
+                       optional="show"/>
+                <field name="state"
+                       string="Estado"
+                       widget="badge"
+                       decoration-success="state == 'sealed'"
+                       decoration-info="state == 'loading'"
+                       decoration-warning="state == 'loaded'"/>
+            </list>
+        </field>
+    </record>
+
+<record id="view_lumber_container_form" model="ir.ui.view">
+        <field name="name">lumber.container.form</field>
+        <field name="model">lumber.container</field>
+        <field name="arch" type="xml">
+            <form string="Contenedor">
+                <header>
+                    <button name="action_assign_lots" string="⚡ Agregar Lotes Rápidamente" type="object" class="oe_highlight" invisible="state in ('sealed', 'shipped')"/>
+
+                    <button name="action_start_loading"
+                            string="Iniciar Carga"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'empty'"/>
+                   <button name="action_complete_loading"
+                            string="Completar Carga"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'loading'"/>
+                    <button name="action_seal"
+                            string="Sellar Contenedor"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state != 'loaded'"/>
+                    <button name="action_view_lots"
+                            string="Ver Lotes"
+                            type="object"
+                            invisible="lot_count == 0"/>
+                            
+                    <button name="action_export_packing_list_xlsx"
+                            string="📊 Imprimir Packing List (Excel)"
+                            type="object"
+                            class="btn-info"
+                            icon="fa-file-excel-o"
+                            invisible="lot_count == 0"/>
+
+                    <button name="%(action_report_lumber_container_packing_list)d"
+                            string="📄 Imprimir Packing List"
+                            type="action"
+                            class="btn-secondary"
+                            invisible="lot_count == 0"/>
+                    <button name="action_manage_rollover"
+                            string="🔄 Rollover"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state not in ('loaded', 'sealed')"
+                            help="Gestionar rolleo del contenedor"/>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="empty,loading,loaded,sealed"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Ej: CAIU1234567"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Identidad">
+                            <field name="shipment_id"
+                                   string="Embarque"/>
+                            <field name="vessel_id" string="Motonave (Barco)"/>
+                            <field name="container_type"
+                                   string="Tipo"/>
+                            <field name="seal_number"
+                                   string="Número de Sello"/>
+                            <field name="sag_seal" 
+                                   string="Sello SAG"/>
+                        </group>
+                        <group string="Cronograma">
+                            <field name="loading_date"
+                                   string="Inicio Carga"
+                                   readonly="1"/>
+                            <field name="sealing_date"
+                                   string="Sellado"
+                                   readonly="1"/>
+                            <field name="fill_percentage"
+                                   string="Llenado (%)"
+                                   widget="progressbar"/>
+                        </group>
+                        
+                        <group string="RESUMEN DE CARGA" name="content_summary">
+                            <group>
+                                <field name="lot_count" 
+                                       string="Cant. de líneas" 
+                                       decoration-info="1"/>
+                                
+                                <field name="packages" 
+                                       string="Cant. Paquetes" 
+                                       decoration-bf="1"
+                                       decoration-success="packages &lt; lot_count"/>
+                            </group>
+                            <group>
+                                <field name="total_pieces" string="Total Piezas" decoration-bf="1"/>
+                                
+                                <field name="total_volume_m3" 
+                                       string="Volumen Total (m³)" 
+                                       decoration-bf="1"
+                                       decoration-info="1"
+                                       widget="float" 
+                                       digits="[16, 3]"/> <field name="volume_mbf" string="Total MBF" decoration-bf="1" decoration-success="1" digits="[16, 3]"/>
+                            </group>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Capacidades y Pesos">
+                            <group>
+                                <group string="Pesos (ISO/SOLAS)">
+                                    <field name="tare_weight_kg"
+                                           string="Tara (kg)"/>
+                                    <field name="weight_kg"
+                                           string="Peso Neto (kg)"/>
+                                    <field name="gross_weight_kg"
+                                           string="Peso Bruto (kg)"
+                                           decoration-bf="1"/>
+                                    <field name="max_gross_weight_kg"
+                                           string="Máximo (kg)"
+                                           readonly="1"/>
+                                    <field name="remaining_weight_kg"
+                                           string="Capacidad Restante (kg)"
+                                           readonly="1"
+                                           decoration-warning="remaining_weight_kg &lt; 1000"/>
+                                </group>
+
+                                <group string="Volúmenes y Rendimiento">
+                                    <label for="total_vol_shipment_m3"
+                                           string="Volumen Físico (Facturable)"/>
+                                    <div class="o_row">
+                                        <field name="total_vol_shipment_m3"
+                                               decoration-bf="1"
+                                               digits="[16, 3]"/>
+                                        <span> m³</span>
+                                    </div>
+
+                                    <label for="total_volume_purchase_m3"
+                                           string="Volumen Nominal (Costo)"/>
+                                    <div class="o_row">
+                                        <field name="total_volume_purchase_m3" digits="[16, 3]"/>
+                                        <span> m³</span>
+                                    </div>
+
+                                    <label for="volume_variance_pct"
+                                           string="Desviación (Yield %)"/>
+                                    <div class="o_row">
+                                        <field name="volume_variance_pct"
+                                               widget="percentage"
+                                               decoration-danger="volume_variance_pct > 0"
+                                               decoration-success="volume_variance_pct &lt;= 0"/>
+                                    </div>
+
+                                    <field name="volume_m3"
+                                           invisible="1"/>
+                                    <field name="volume_mbf"
+                                           string="Volumen (MBF)"
+                                           digits="[16, 3]"/>
+
+                                    <separator string="Límites del Contenedor"/>
+                                    <field name="max_volume_m3"
+                                           string="Capacidad Máxima (m³)"
+                                           readonly="1"/>
+                                    <field name="remaining_volume_m3"
+                                           string="Capacidad Restante (m³)"
+                                           readonly="1"
+                                           decoration-warning="remaining_volume_m3 &lt; 5"/>
+                                </group>
+                            </group>
+                        </page>
+
+                   <page string="Lotes Asignados">
+                       <field name="lot_ids" 
+                            nolabel="1"
+                            options="{'no_create': True}"
+                            domain="[('estado_trazabilidad', 'in', ['procesado', 'en_patio', 'recepcionado']), ('container_id', '=', False)]">
+                            <list string="Lotes Asignados" decoration-info="1" default_order="ref">
+                                <field name="ref" string="Etiqueta" width="140px" decoration-bf="1"/>
+                                <field name="supplier_id" string="Planta" width="130px" optional="show"/>
+                                <field name="product_id" string="Producto" width="250px"/>
+                                <field name="subproducto_id" string="Sub-Prod." widget="badge"/>
+                                <field name="espesor_inch_frac" string="E" width="60px"/>
+                                <field name="ancho_inch_frac" string="A" width="60px"/>
+                                <field name="largo_m" string="L (m)" width="70px"/>
+                                <field name="piezas" string="Pzas" sum="Total Pzas"/>
+                                <field name="vol_shipment_m3" 
+                                    string="Vol. Emb (m³)" 
+                                    sum="Total m³" 
+                                    widget="float" 
+                                    digits="[12, 3]"/>
+                                <field name="volumen_mbf" string="MBF" sum="Total MBF" widget="float" digits="[12, 3]"/>
+                                
+                                <button name="action_remove_lot_granular" 
+                                        type="object" 
+                                        icon="fa-scissors" 
+                                        title="Sacar del contenedor"
+                                        class="text-danger"
+                                        confirm="⚠️ ATENCIÓN: Al sacar esta etiqueta volverá al estado 'En Patio' y se limpiarán sus costos de viaje. ¿Desea continuar?"
+                                        invisible="parent.state == 'shipped'"/>
+                            </list>
+                        </field>
+                    </page>
+
+                        <page string="Notas">
+                            <field name="notes"
+                                   nolabel="1"
+                                   placeholder="Observaciones sobre el contenedor..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_lumber_container_search" model="ir.ui.view">
+        <field name="name">lumber.container.search</field>
+        <field name="model">lumber.container</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"
+                       string="Contenedor"/>
+                <field name="shipment_id"
+                       string="Embarque"/>
+                <field name="seal_number"
+                       string="Número de Sello"/>
+                <field name="sag_seal"
+                       string="Sello SAG"/>
+                <separator/>
+                <filter name="not_sealed"
+                        string="En Proceso"
+                        domain="[('state', '!=', 'sealed')]"/>
+                <filter name="sealed"
+                        string="Sellados"
+                        domain="[('state', '=', 'sealed')]"/>
+                <filter name="loading"
+                        string="En Carga"
+                        domain="[('state', '=', 'loading')]"/>
+                <separator/>
+                <group expand="0"
+                       string="Agrupar Por">
+                    <filter name="group_shipment"
+                            string="Embarque"
+                            context="{'group_by': 'shipment_id'}"/>
+                    <filter name="group_type"
+                            string="Tipo de Contenedor"
+                            context="{'group_by': 'container_type'}"/>
+                    <filter name="group_state"
+                            string="Estado"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>
