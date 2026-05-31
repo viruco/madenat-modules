@@ -5,6 +5,7 @@ import re
 import pandas as pd
 from odoo import models, api, _
 from odoo.exceptions import UserError, ValidationError
+from .utils_uom import MM_PER_INCH, FT_TO_M
 
 _logger = logging.getLogger(__name__)
 
@@ -248,8 +249,8 @@ class MadenatReceptionParser(models.AbstractModel):
                             # Si el valor es pequeño (menor a 10), asumimos que son PULGADAS
                             # y las convertimos a MM para el inventario.
                             if raw_esp < 10:
-                                thickness_mm = round(raw_esp * 25.4, 2)
-                                width_mm = round(raw_anc * 25.4, 2)
+                                thickness_mm = round(raw_esp * float(MM_PER_INCH), 2)
+                                width_mm = round(raw_anc * float(MM_PER_INCH), 2)
                             else:
                                 thickness_mm = raw_esp
                                 width_mm = raw_anc
@@ -265,7 +266,7 @@ class MadenatReceptionParser(models.AbstractModel):
                             # Si el largo es > 10, asumimos que son PIES y pasamos a METROS
                             # BLANKS: preservar valor raw en pies para cálculo volumétrico
                             if raw_lar > 10:
-                                length_m = round(raw_lar * 0.3048, 2)
+                                length_m = round(raw_lar * float(FT_TO_M), 2)
                                 length_raw = raw_lar
                                 length_uom = 'ft'
                             else:
@@ -289,9 +290,9 @@ class MadenatReceptionParser(models.AbstractModel):
                             width_visual = str(raw_anc)     # Ej: "3.625"
                             
                             # ⚙️ FASE 2 oculta: CONVERSIÓN SILENCIOSA A MÉTRICO (Para Inventario)
-                            thickness_mm = round(raw_esp * 25.4, 2)  # 1.5625 -> 39.69
-                            width_mm = round(raw_anc * 25.4, 2)      # 3.625 -> 92.08
-                            length_m = round(raw_lar * 0.3048, 2)    # 16 ft -> 4.88
+                            thickness_mm = round(raw_esp * float(MM_PER_INCH), 2)  # 1.5625 -> 39.69
+                            width_mm = round(raw_anc * float(MM_PER_INCH), 2)      # 3.625 -> 92.08
+                            length_m = round(raw_lar * float(FT_TO_M), 2)    # 16 ft -> 4.88
                             
                             # El Nominal Base nace del métrico, listo para que el Wizard lo aplaste a 40x90
                             t_nom, w_nom = thickness_mm, width_mm

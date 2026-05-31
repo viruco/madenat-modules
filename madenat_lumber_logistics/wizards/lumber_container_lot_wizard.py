@@ -111,63 +111,9 @@ class LumberContainerLotWizard(models.TransientModel):
         'Estado de Validación',
         compute='_compute_validation_status'
     )
-    def action_confirm(self):
-        """
-        1. Guarda los lotes en el contenedor.
-        2. Fuerza al Embarque (Padre) a recalcular sus totales.
-        3. Recarga la pantalla (F5 automático).
-        """
-        self.ensure_one()
-        
-        # 1. GUARDAR: Escribimos los lotes seleccionados en el contenedor
-        # (Usamos el comando (6, 0, IDs) para reemplazar la lista existente)
-        self.container_id.write({
-            'lot_ids': [(6, 0, self.lot_ids.ids)]
-        })
-
-        # 2. RECALCULAR PADRE: Si el contenedor tiene embarque, forzamos la suma
-        if self.container_id.shipment_id:
-            # Aquí llamamos al método _compute_totals DEL EMBARQUE (no del contenedor)
-            # Asegúrate que el modelo 'lumber.export.shipment' tenga este método público
-            self.container_id.shipment_id._compute_totals()
-
-        # 3. RECARGAR INTERFAZ: La magia que actualiza la vista web
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
     # ========================================
     # MÉTODOS COMPUTADOS
     # ========================================
-    @api.model
-    def _get_available_lots_domain(self):
-        """ 
-        🔍 FILTRO INTELIGENTE: 
-        Excluye lotes que ya están en contenedores activos (no enviados).
-        """
-        # 1. Buscar todos los lotes que están en contenedores "en proceso"
-        # (loading, loaded, sealed). Los 'shipped' ya se fueron, así que técnicamente
-        # sus lotes ya no están en patio, pero igual los excluiremos por seguridad.
-        active_containers = self.env['lumber.container'].search([
-            ('state', 'in', ['loading', 'loaded', 'sealed'])
-        ])
-        
-        # Obtenemos los IDs de los lotes ocupados
-        busy_lot_ids = active_containers.mapped('lot_ids').ids
-        
-        # 2. Retornar dominio: Lotes en stock Y que NO estén en la lista de ocupados
-        return [
-            ('quant_ids.quantity', '>', 0),       # Que existan físicamente
-            ('id', 'not in', busy_lot_ids)        # Que no estén en otro contenedor
-        ]
-
-    # Aplicar este dominio al campo Many2many del wizard
-    lot_ids = fields.Many2many(
-        'stock.lot', 
-        domain=_get_available_lots_domain,  # <--- AQUÍ ESTÁ LA MAGIA
-        string="Lotes a Agregar"
-    )
-    
     @api.depends('container_id')
     def _compute_available_lots(self):
             """
@@ -185,9 +131,14 @@ class LumberContainerLotWizard(models.TransientModel):
                 ])
                 occupied_lot_ids = occupied_lines.mapped('lot_id.id')
                 
-                # 2. DOMINIO BLINDADO: Solo lo que está en patio y APROBADO
+                # 2. DOMINIO BLINDADO: Lotes disponibles para contenedor
+                # TD-006: Incluye 'en_patio', 'procesado' y 'recepcionado'
+                # - 'en_patio': recepción sin subproducto, disponible en inventario
+                # - 'procesado': guía procesada o transformación, listo para exportar
+                # - 'recepcionado': recepción en curso, ya validado
+                # EXCLUIDOS: 'consolidado' (ya en contenedor), 'embarcado' (ya salió)
                 domain = [
-                    ('estado_trazabilidad', '=', 'en_patio'),
+                    ('estado_trazabilidad', 'in', ['en_patio', 'procesado', 'recepcionado']),
                     ('technical_validation', '=', 'approved'), # 👈 Solo calidad certificada
                     ('id', 'not in', wizard.container_id.lot_ids.ids),
                     ('id', 'not in', occupied_lot_ids),
@@ -406,16 +357,8 @@ class LumberContainerLotWizard(models.TransientModel):
         # ============================================
         if self.container_id.state == 'empty':
             self.container_id.state = 'loading'
-        
-        # ============================================
-        # 5. ACTUALIZAR TRAZABILIDAD: Lotes → consolidado
-        # ============================================
-        self.selected_lot_ids.write({
-            'estado_trazabilidad': 'consolidado'
-        })
-        
-        # ============================================
-        # 6. REGISTRO EN CHATTER: Auditoría
+
+        # 5. REGISTRO EN CHATTER: Auditoría
         # ============================================
         # Identificar factor limitante para el mensaje
         weight_pct = (self.container_id.weight_kg / self.container_id.max_weight_kg * 100) if self.container_id.max_weight_kg else 0
@@ -442,15 +385,13 @@ class LumberContainerLotWizard(models.TransientModel):
             )
         )
         
-        # ============================================
-        # 7. LOG DE AUDITORÍA
+        # 6. LOG DE AUDITORÍA
         # ============================================
         _logger.info(
             f"✅ Asignados {len(self.selected_lot_ids)} lotes a contenedor {self.container_id.name}. "
             f"Llenado: {self.container_id.fill_percentage:.1f}% (Factor: {limiting_factor})"
         )
-        
-        # ============================================
-        # 8. CERRAR WIZARD
+
+        # 7. CERRAR WIZARD
         # ============================================
         return {'type': 'ir.actions.act_window_close'}

@@ -23,8 +23,10 @@ class LumberReceptionService:
         for line in reception.reception_line_ids:
             lot_vals = {
                 'name': line.lot_name,
+                'ref': line.lot_name,
                 'product_id': line.product_id.id,
                 'reception_id': reception.id,
+                'subproducto_id': line.subproduct_id.id if line.subproduct_id else False,
                 'piezas': line.pieces,
                 'espesor_mm': line.thickness,
                 'ancho_mm': line.width,
@@ -105,6 +107,12 @@ class LumberReceptionService:
         """
         🧹 Elimina stock.moves huérfanos generados por estas recepciones.
         """
+        # 🔒 TD-001: Guardia de grupo antes de eliminar stock.moves
+        if not self.env.user.has_group('stock.group_stock_manager'):
+            raise UserError(
+                "No tienes permisos para eliminar movimientos de stock huérfanos.\n"
+                "Se requiere el grupo 'Inventario / Administrador'."
+            )
         if not origins:
             return
             

@@ -24,7 +24,7 @@ import math
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import logging
-from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4
+from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT
 
 
 _logger = logging.getLogger(__name__)
@@ -456,7 +456,7 @@ class StockLotExtended(models.Model):
         # Importación de constante centralizada (1550.003)
         
         # Factor específico para sistema Imperial (Pies/Ft) definido por PM
-        FACTOR_BLANK_5085 = 5085.312 
+        FACTOR_BLANK_5085 = float(BLANK_CLEAR_FACTOR) 
 
         for lot in self:
             # 🚀 CAMBIO 4: Definimos el Salvavidas (Nominal) al inicio
@@ -497,8 +497,8 @@ class StockLotExtended(models.Model):
             # 3. 📐 CONVERSIÓN A SISTEMA IMPERIAL Y APLICACIÓN DE HOLGURA
             # ====================================================================
             # Conversión de precisión milimétrica a pulgadas (in)
-            espesor_in = e_mm / 25.4
-            ancho_in = a_mm / 25.4
+            espesor_in = e_mm / float(MM_PER_INCH)
+            ancho_in = a_mm / float(MM_PER_INCH)
             
             # REGLA DE HOLGURA (Overmeasure): 
             # Si el producto NO es Standard (ej. Madera Rough), sumamos 1/8" (0.125) 
@@ -900,20 +900,20 @@ class StockLotExtended(models.Model):
         for lot in self:
             if lot.espesor_inch_frac:
                 espesor_decimal = self._parse_fraction_to_decimal(lot.espesor_inch_frac)
-                lot.espesor_mm = espesor_decimal * 25.4 if espesor_decimal else 0.0
+                lot.espesor_mm = espesor_decimal * float(MM_PER_INCH) if espesor_decimal else 0.0
             else:
                 lot.espesor_mm = 0.0
                 
             if lot.ancho_inch_frac:
                 ancho_decimal = self._parse_fraction_to_decimal(lot.ancho_inch_frac)
-                lot.ancho_mm = ancho_decimal * 25.4 if ancho_decimal else 0.0
+                lot.ancho_mm = ancho_decimal * float(MM_PER_INCH) if ancho_decimal else 0.0
             else:
                 lot.ancho_mm = 0.0
                 
             if lot.largo_ft_frac:
                 largo_clean = lot.largo_ft_frac.replace("'", "").strip()
                 largo_decimal = self._parse_fraction_to_decimal(largo_clean)
-                lot.largo_m = largo_decimal * 0.3048 if largo_decimal else 0.0
+                lot.largo_m = largo_decimal * float(FT_TO_M) if largo_decimal else 0.0
             else:
                 lot.largo_m = 0.0
     
@@ -1065,30 +1065,36 @@ class StockLotExtended(models.Model):
     def _is_processed_lot(self):
         """
         ✅ REGLA DE ORO: Detectar si un lote está procesado usando múltiples indicadores
-        Sin hardcode, manteniendo flexibilidad para el negocio
+        Sin hardcode, manteniendo flexibilidad para el negocio.
+
+        CORRECCIÓN TD-006 (2026-05-31):
+        - subproducto_id por sí solo NO indica procesamiento.
+        - Un lote de recepción con subproducto (ej: BLANK CLEAR) sigue disponible para contenedor.
+        - Solo guía_processing_id, parent_lot_id o dimensiones finales indican procesamiento real.
         """
         # Indicador 1: Tiene guía de procesamiento asociada
         if self.guia_processing_id:
             return True
-        
+
         # Indicador 2: Tiene lote padre (transformación tradicional) - MANTENER compatibilidad
         if self.parent_lot_id:
             return True
-        
-        # Indicador 3: Es subproducto terminado (BLANK CLEAR, RIP S2S, etc.)
-        if self.subproducto_id:
-            return True
-        
+
+        # Indicador 3: subproducto_id SOLAMENTE no indica procesamiento.
+        # Un lote de recepción con subproducto (BLANK CLEAR, RIP, etc.) sigue en patio
+        # y es asignable a contenedor. El subproducto es clasificación comercial, no estado.
+        # ✅ REMOVIDO: "if self.subproducto_id: return True"
+
         # Indicador 4: Tiene dimensiones finales post-procesamiento
         if self.thickness_final_inch > 0 or self.width_final_inch > 0:
             return True
-        
+
         # Indicador 5: Tiene volumen de embarque diferente al de compra
-        if (self.vol_shipment_m3 > 0 and 
-            self.volume_purchase_m3 > 0 and 
+        if (self.vol_shipment_m3 > 0 and
+            self.volume_purchase_m3 > 0 and
             self.vol_shipment_m3 != self.volume_purchase_m3):
             return True
-        
+
         return False
     # ==============================================================================
     # MÉTODOS COMPUTADOS - SECCIÓN 5: VALORIZACIÓN Y COSTOS
@@ -1151,7 +1157,7 @@ class StockLotExtended(models.Model):
                 # 🛡️ INTERCEPCIÓN EXPLÍCITA: Si trae la etiqueta 'mm' (ej: "195mm")
                 if 'mm' in fraction_str:
                     val = float(fraction_str.replace('mm', '').strip())
-                    return val / 25.4  # Convertimos a pulgadas para la fórmula del motor
+                    return val / float(MM_PER_INCH)  # Convertimos a pulgadas para la fórmula del motor
                     
                 # Caso 1: Número decimal simple o entero (ej: "195" o "2.5")
                 if '/' not in fraction_str and ' ' not in fraction_str:
@@ -1161,7 +1167,7 @@ class StockLotExtended(models.Model):
                     # Ninguna tabla de madera comercial mide más de 24 pulgadas (60cm) de ancho.
                     # Si el valor es mayor a 24, es ABSOLUTAMENTE SEGURO que son milímetros.
                     if val > 24:
-                        return val / 25.4
+                        return val / float(MM_PER_INCH)
                         
                     return val
                 
@@ -1214,9 +1220,9 @@ class StockLotExtended(models.Model):
             if not all([thickness_mm, width_mm, length_m, pieces]):
                 return 0.0
                 
-            thickness_inch = thickness_mm / 25.4
-            width_inch = width_mm / 25.4
-            length_feet = length_m * 3.28084
+            thickness_inch = thickness_mm / float(MM_PER_INCH)
+            width_inch = width_mm / float(MM_PER_INCH)
+            length_feet = length_m * float(M_TO_FT)
             
             board_feet = (thickness_inch * width_inch * length_feet * pieces) / 12
             mbf = board_feet / 1000

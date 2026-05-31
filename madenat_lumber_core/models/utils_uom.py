@@ -364,30 +364,42 @@ def format_volume_display(m3_value, show_mbf=True):
 # 🔥 CONSTANTES IMPERIALES Y TABLA S2S (REGLA DE ORO MADENAT)
 # ==============================================================================
 
-
-
-# ✅ FACTOR CORRECTO según Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx
-# Fórmula: in² × metros → m³
+# ✅ Factor S2S (largo en metros): in² × metros → m³
 # Derivación: 1 / (0.0254² × 1.0) = 1550.003096
 INCH_SQ_METERS_TO_M3 = Decimal('1550.003096')
 
+# ──────────────────────────────────────────────────────────────────────────────
+# 📐 CONSTANTES CANÓNICAS DE CONVERSIÓN (TD-003.2 — 2026-05-31)
+# ──────────────────────────────────────────────────────────────────────────────
+# Fuente única de verdad. NO usar literales como 25.4, 0.3048, 12000.0
+# fuera de este archivo.
+#
+# USO:
+#   float(CONSTANTE) → en fórmulas volumétricas (no necesitan Decimal)
+#   CONSTANTE        → en cálculos de precio/costo (precisión financiera)
+# ──────────────────────────────────────────────────────────────────────────────
 
+# Conversión pulgadas ↔ milímetros (definición exacta NIST)
+MM_PER_INCH              = Decimal('25.4')         # 1 pulgada = 25.4 mm exactos
+INCHES_PER_MM            = Decimal('1') / MM_PER_INCH  # ≈ 0.03937007874015748
 
-# Factor Blank Clear: espesor(pulg) × ancho(pulg) × largo(PIES) × pzas / 5085.312
-# ACTIVO — usado en ingestion_profile='f5085' (Blank Clear)
-# DIFERENCIA con F1550: este usa largo en PIES, F1550 usa largo en METROS
-BLANK_CLEAR_FACTOR = Decimal('5085.312')
+# Conversión pies ↔ metros (definición exacta NIST)
+FT_TO_M                  = Decimal('0.3048')       # 1 pie = 0.3048 m exactos
+M_TO_FT                  = Decimal('1') / FT_TO_M  # ≈ 3.280839895013123
+
+# Divisores de volumen
+M3_DIVISOR               = Decimal('1000000')      # mm² → m² (1000×1000)
+MBF_DIVISOR              = Decimal('12000')        # Board Feet divisor
+
+# Factores de cálculo
+BLANK_CLEAR_FACTOR       = Decimal('5085.312')     # Factor fórmula Blank Clear (largo en PIES)
 IMPERIAL_TO_M3_FACTOR_DEPRECATED = BLANK_CLEAR_FACTOR  # alias back-compat
 
+# Deducciones de espesor (Blank Clear)
+FACE_DEDUCTION_INCH      = Decimal('0.0625')       # -1/16" deducción por cara
 
-
-# Conversión estándar (usada solo en funciones legacy)
-METERS_TO_FEET = Decimal('3.28084')
-
-
-
-# Ajuste estándar S2S (rough → cepillado): +1/8 pulgada en ancho
-S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')  # 1/8 pulgada
+# Ajustes S2S
+S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')       # +1/8" ajuste rough → cepillado
 
 
 

@@ -16,6 +16,9 @@ from odoo.exceptions import UserError, ValidationError
 from .utils_uom import (
     INCH_SQ_METERS_TO_M3,
     S2S_WIDTH_LOOKUP,
+    MM_PER_INCH, FT_TO_M,
+    M3_DIVISOR, MBF_DIVISOR, FACE_DEDUCTION_INCH,
+    S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
     calculate_volume_imperial_to_m3,
     calculate_volume_metric_m3,
     get_s2s_adjustment,
@@ -271,7 +274,7 @@ class LumberReceptionLine(models.Model):
             raw = rec.length_input_raw if rec.length_input_raw not in (False, None) else 0.0
             if raw:
                 if rec.lengthuom == 'ft':
-                    rec.lengthm = round(raw * 0.3048, 6)
+                    rec.lengthm = round(raw * float(FT_TO_M), 6)
                 elif rec.lengthuom == 'mm':
                     rec.lengthm = round(raw * 0.001, 6)
                 else:
@@ -284,7 +287,7 @@ class LumberReceptionLine(models.Model):
         for rec in self:
             if rec.length_input_raw:
                 if rec.lengthuom == 'ft':
-                    rec.length = round(rec.length_input_raw * 0.3048, 6)
+                    rec.length = round(rec.length_input_raw * float(FT_TO_M), 6)
                 elif rec.lengthuom == 'mm':
                     rec.length = round(rec.length_input_raw * 0.001, 6)
                 else:
@@ -378,7 +381,7 @@ class LumberReceptionLine(models.Model):
         - ft → m: × 0.3048
         - m → m: × 1.0
         """
-        factors = {'m': 1.0, 'mm': 0.001, 'ft': 0.3048}
+        factors = {'m': 1.0, 'mm': 0.001, 'ft': float(FT_TO_M)}
         uom = self.lengthuom or 'm'
         raw = self.length_input_raw or 0.0
         self.length = round(raw * factors[uom], 4)
@@ -424,7 +427,7 @@ class LumberReceptionLine(models.Model):
             # Esto evita que una madera nacional de 8 metros sea convertida por error.
             if line.reception_id.ingestion_profile == 'f5085':
                 # Es Blanks: Los pies del Excel pasan a metros
-                l_final = l_raw * 0.3048
+                l_final = l_raw * float(FT_TO_M)
             else:
                 # Es S2S o Métrico: El largo ya está en metros
                 l_final = l_raw
@@ -459,7 +462,7 @@ class LumberReceptionLine(models.Model):
                 elif 22 <= t_nom <= 29: 
                     res_t = "4/4"
                 else:
-                    quarters = int(round((t_nom / 25.4) * 4))
+                    quarters = int(round((t_nom / float(MM_PER_INCH)) * 4))
                     res_t = f"{quarters}/4" if quarters > 0 else ""
                 
                 line.thickness_visual = res_t
@@ -472,8 +475,8 @@ class LumberReceptionLine(models.Model):
             # 🇺🇸 MUNDO 2: BLANKS CLEAR (EL DESACOPLE)
             else:
                 # 1. ESPEJO FÍSICO (Pestaña 1): Siempre usa la medida real del Excel
-                t_phys_in = line.thickness if line.thickness < 10.0 else line.thickness / 25.4
-                w_phys_in = line.width if line.width < 10.0 else line.width / 25.4
+                t_phys_in = line.thickness if line.thickness < 10.0 else line.thickness / float(MM_PER_INCH)
+                w_phys_in = line.width if line.width < 10.0 else line.width / float(MM_PER_INCH)
                 
                 line.thickness_visual = self._get_fraction_text(t_phys_in)
                 line.width_visual = self._get_fraction_text(w_phys_in)
@@ -483,8 +486,8 @@ class LumberReceptionLine(models.Model):
                 t_val = line.thickness_nominal if line.thickness_nominal > 0 else line.thickness
                 w_val = line.width_nominal if line.width_nominal > 0 else line.width
                 
-                t_nom_in = t_val if t_val < 10.0 else t_val / 25.4
-                w_nom_in = w_val if w_val < 10.0 else w_val / 25.4
+                t_nom_in = t_val if t_val < 10.0 else t_val / float(MM_PER_INCH)
+                w_nom_in = w_val if w_val < 10.0 else w_val / float(MM_PER_INCH)
                 
                 # AQUÍ ESTABA EL FALLO: Ahora asignamos los campos de la Pestaña 2
                 line.thickness_nominal_frac = self._get_fraction_text(t_nom_in)
@@ -528,7 +531,7 @@ class LumberReceptionLine(models.Model):
             elif '/' in raw:
                 return float(raw.split('/')[0]) / float(raw.split('/')[1])
             val = float(raw)
-            return val / 25.4 if val > 10.0 else val
+            return val / float(MM_PER_INCH) if val > 10.0 else val
         except: return 0.0
 
     def _get_fraction_text(self, value):
@@ -583,8 +586,8 @@ class LumberReceptionLine(models.Model):
         Aplica Reglas de Oro: Factor 1550.003, Factor 5085.312 y Recargo S2S (+0.125").
         """
         # --- CONSTANTES DE INGENIERÍA ---
-        FACTOR_5085 = 5085.312
-        METRO_A_PIE = 0.3048
+        FACTOR_5085 = float(BLANK_CLEAR_FACTOR)
+        METRO_A_PIE = float(FT_TO_M)
 
         # 1. PARSEO AISLADO (Funcionalidad intacta)
         def parse_to_inches(val_visual, val_real, current_line):
@@ -604,14 +607,14 @@ class LumberReceptionLine(models.Model):
                     
                     # Si es mayor a 10, asumimos milímetros y convertimos. Si no, son pulgadas.
                     val_float = float(raw)
-                    return val_float / 25.4 if val_float > 10.0 else val_float
+                    return val_float / float(MM_PER_INCH) if val_float > 10.0 else val_float
 
                 except Exception as e:
                     _logger.warning(f"MADENAT: Error parseando dimensión visual '{val_visual}': {e}")
                     pass # Falla silenciosa y segura hacia el valor real
             
             # Fallback Seguro: Usar el valor real en mm pasado como parámetro
-            return (val_real / 25.4) if val_real else 0.0
+            return (val_real / float(MM_PER_INCH)) if val_real else 0.0
 
         # 2. PROCESAMIENTO DEL RECORDSET
         for line in self:
@@ -644,14 +647,14 @@ class LumberReceptionLine(models.Model):
                 if t_in > 0 and w_in > 0 and l_m > 0 and qty > 0:
                     if rule == 'f5085':
                         # BLANK CLEAR: Fórmula con largo en PIES directos del Excel
-                        # t_in = (thickness_mm / 25.4) - 0.0625  # -1/16" deducción cara
-                        # w_in = (width_mm / 25.4) + 0.125       # +1/8" S2S
+                        # t_in = (thickness_mm / float(MM_PER_INCH)) - float(FACE_DEDUCTION_INCH)  # -1/16" deducción cara
+                        # w_in = (width_mm / float(MM_PER_INCH)) + float(S2S_WIDTH_ADJUSTMENT_INCH)       # +1/8" S2S
                         # l_ft = length_input_raw (pies, sin convertir)
-                        t_in_bc = (t_mm / 25.4) - 0.0625
-                        w_in_bc = (w_mm / 25.4) + 0.125
+                        t_in_bc = (t_mm / float(MM_PER_INCH)) - float(FACE_DEDUCTION_INCH)
+                        w_in_bc = (w_mm / float(MM_PER_INCH)) + float(S2S_WIDTH_ADJUSTMENT_INCH)
                         l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
                         vol_exp = (t_in_bc * w_in_bc * l_ft * qty) / FACTOR_5085
-                        val_mbf = (t_in_bc * w_in_bc * l_ft * qty) / 12000.0
+                        val_mbf = (t_in_bc * w_in_bc * l_ft * qty) / float(MBF_DIVISOR)
 
                     elif rule == 'f1550':
                         vol_exp = float(
@@ -661,7 +664,7 @@ class LumberReceptionLine(models.Model):
                             * Decimal(str(qty))
                             / INCH_SQ_METERS_TO_M3
                         )
-                        val_mbf = (t_in * w_in * l_feet * qty) / 12000.0
+                        val_mbf = (t_in * w_in * l_feet * qty) / float(MBF_DIVISOR)
                         
                     elif rule == 'metric':
                         # Regla Métrica Pura: Usa los valores canónicos en MM
@@ -711,7 +714,7 @@ class LumberReceptionLine(models.Model):
 
         # 3. FALLBACK (Para medidas > 160mm o fuera de tabla)
         # Según el Excel, mayores a 160mm se muestran como enteros (170 -> 170)
-        val_in = value_mm / 25.4
+        val_in = value_mm / float(MM_PER_INCH)
         if value_mm >= 160.0:
             return str(int(round(value_mm))) 
         else:
@@ -739,9 +742,9 @@ class LumberReceptionLine(models.Model):
                 t = line.thickness_nominal or line.thickness
                 w = line.width_nominal or line.width
                 l = line.length_nominal or line.length
-                line.vol_purchase_m3 = round((t * w * l * line.pieces) / 1000000.0, 3)
+                line.vol_purchase_m3 = round((t * w * l * line.pieces) / float(M3_DIVISOR), 3)
                 # Usar r3() para consistencia con Regla de Oro
-                line.vol_purchase_m3 = r3((t * w * l * line.pieces) / 1000000.0)
+                line.vol_purchase_m3 = r3((t * w * l * line.pieces) / float(M3_DIVISOR))
             
             else:
                 # BLANKS: Escalado Proporcional con redondeo a 3 decimales
@@ -1138,6 +1141,12 @@ class LumberReception(models.Model):
         - CERO RESIDUOS: Borrado físico (unlink) en lugar de desvincular (5,0,0).
         """
         self.ensure_one()
+        # 🔒 TD-001: Guardia de grupo antes de operaciones destructivas de stock
+        if not self.env.user.has_group('stock.group_stock_manager'):
+            raise UserError(
+                "No tienes permisos para reabrir una recepción confirmada.\n"
+                "Se requiere el grupo 'Inventario / Administrador'."
+            )
         _logger.info(f"🔄 INICIANDO RESETEO TOTAL - Guía: {self.name}")
         self._add_log("=" * 60)
         self._add_log("🔄 Iniciando saneamiento profundo de base de datos...")
@@ -1305,13 +1314,13 @@ class LumberReception(models.Model):
                     elif 22 <= t_mm <= 29: t_val = 1.0    # 4/4
                     elif 30 <= t_mm <= 36: t_val = 1.25   # 5/4
                     elif 47 <= t_mm <= 56: t_val = 2.0    # 8/4
-                    else: t_val = r4((t_mm / 25.4) * 4) / 4.0
+                    else: t_val = r4((t_mm / float(MM_PER_INCH)) * 4) / 4.0
                     
                     quarters = int(t_val * 4)
                     t_str = f"{quarters}/4"
 
                 # B. Ancho Visual (Octavos)
-                w_in = w_mm / 25.4
+                w_in = w_mm / float(MM_PER_INCH)
                 eighths = int(round(w_in * 8))
                 whole = eighths // 8
                 rem = eighths % 8
@@ -2511,6 +2520,12 @@ class LumberReception(models.Model):
         🧹 Elimina stock.moves huérfanos (sin picking) generados por esta recepción.
         Método separado para reutilización y testeo independiente.
         """
+        # 🔒 TD-001: Guardia de grupo antes de eliminar stock.moves
+        if not self.env.user.has_group('stock.group_stock_manager'):
+            raise UserError(
+                "No tienes permisos para eliminar movimientos de stock huérfanos.\n"
+                "Se requiere el grupo 'Inventario / Administrador'."
+            )
         names = self.mapped('name')
         moves = self.env['stock.move'].sudo().search([
             ('origin', 'in', names),

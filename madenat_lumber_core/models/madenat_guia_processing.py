@@ -64,6 +64,8 @@ from .utils_uom import (
     INCH_SQ_METERS_TO_M3,
     MBF_TO_M3,
     S2S_WIDTH_LOOKUP,
+    MM_PER_INCH, M_TO_FT, S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
+    M3_DIVISOR, MBF_DIVISOR,
     calculate_volume_metric_m3,
     get_s2s_adjustment,
     m3_to_mbf,
@@ -321,8 +323,8 @@ class MadenatGuiaProcessingLine(models.Model):
         Determina las fracciones visuales (ej: '5 3/8') y los Pies 
         basándose en el Nominal MM y el Mapa Maestro.
         """
-        M_TO_FT = 3.28084
-        MM_TO_INCH = 1 / 25.4
+        M_TO_FT = float(M_TO_FT)
+        MM_TO_INCH = 1.0 / float(MM_PER_INCH)
         
         for rec in self:
             # ------------------------------------------------------
@@ -470,8 +472,8 @@ class MadenatGuiaProcessingLine(models.Model):
         2. Comercial (Físico/Nominal): Si falta lo anterior, convierte los mm/m editables a pulgadas/pies.
         """
         # Constantes de conversión
-        MM_TO_INCH = 1 / 25.4
-        M_TO_FT = 3.28084
+        MM_TO_INCH = 1.0 / float(MM_PER_INCH)
+        M_TO_FT = float(M_TO_FT)
 
         for line in self:
             # Validación básica de integridad: Si no hay piezas, no hay volumen.
@@ -534,7 +536,7 @@ class MadenatGuiaProcessingLine(models.Model):
         🛡️ BLINDAJE: Si el cálculo geométrico real falla o faltan datos visuales,
         el sistema rescata el Volumen Nominal (vol_purchase_m3) para evitar ceros.
         """
-        FACTOR_PIES = 5085.312
+        FACTOR_PIES = float(BLANK_CLEAR_FACTOR)
 
         for line in self:
             # Valor por defecto inicial: El nominal de compra (Para que NUNCA sea 0)
@@ -673,7 +675,7 @@ class MadenatGuiaProcessingLine(models.Model):
             # 🛡️ BLINDAJE 1: Intercepción explícita de métricas
             if 'mm' in s:
                 val = float(s.replace('mm', '').strip())
-                return val / 25.4  # Convertimos mm a pulgadas decimales
+                return val / float(MM_PER_INCH)  # Convertimos mm a pulgadas decimales
                 
             # Caso A: Es un número simple entero o decimal ("4", "4.5" o "195")
             if '/' not in s and ' ' not in s:
@@ -682,7 +684,7 @@ class MadenatGuiaProcessingLine(models.Model):
                 # 🧠 BLINDAJE 2 (Heurística): Anchos comerciales > 24" (60cm) no existen.
                 # Si llega un "195", asumimos obligatoriamente que son mm.
                 if val > 24:
-                    return val / 25.4
+                    return val / float(MM_PER_INCH)
                     
                 return val
 
@@ -2323,8 +2325,8 @@ class MadenatGuiaProcessing(models.Model):
             else:
                 # 🏆 Algoritmo Exportación (Regla de Oro)
                 ajuste_s2s = get_s2s_adjustment(self.env, a_mm)
-                e_pulg = e_mm / 25.4
-                a_pulg = (a_mm / 25.4) + ajuste_s2s
+                e_pulg = e_mm / float(MM_PER_INCH)
+                a_pulg = (a_mm / float(MM_PER_INCH)) + ajuste_s2s
                 vol_m3 = float(
                             Decimal(str(pzas))
                             * Decimal(str(e_pulg))
@@ -2372,7 +2374,7 @@ class MadenatGuiaProcessing(models.Model):
             return f"{int(round(mm_value, 0))}mm"
 
         # 3. LÓGICA IMPERIAL (Solo si no es métrico)
-        inches = mm_value / 25.4
+        inches = mm_value / float(MM_PER_INCH)
         
         if dim_type == 'thickness':
             quarters = round(inches * 4)
@@ -2442,8 +2444,8 @@ class MadenatGuiaProcessing(models.Model):
                     # 🏆 Caso Exportación: Regla de Oro Madenat
                     ajuste_s2s = get_s2s_adjustment(self.env, a_mm)
                     
-                    e_pulg = e_mm / 25.4
-                    a_pulg = (a_mm / 25.4) + ajuste_s2s
+                    e_pulg = e_mm / float(MM_PER_INCH)
+                    a_pulg = (a_mm / float(MM_PER_INCH)) + ajuste_s2s
                     
                     vol_m3 = float(
                             Decimal(str(pzas))
@@ -2863,7 +2865,7 @@ class MadenatGuiaProcessing(models.Model):
     
     def _mm_a_pulgadas_frac(self, mm):
         try: 
-            return f"{int(mm/25.4)}''"
+            return f"{int(mm / float(MM_PER_INCH))}''"
         except: 
             return ""
 
@@ -3418,6 +3420,12 @@ class MadenatGuiaProcessing(models.Model):
         🧹 Elimina stock.moves huérfanos generados por esta guía de procesamiento.
         v3.0 — Eliminación 100% ORM. Cero SQL crudo. Falla segura si hay integridad comprometida.
         """
+        # 🔒 TD-001: Guardia de grupo antes de eliminar stock.moves
+        if not self.env.user.has_group('stock.group_stock_manager'):
+            raise UserError(
+                "No tienes permisos para eliminar movimientos de stock huérfanos.\n"
+                "Se requiere el grupo 'Inventario / Administrador'."
+            )
         names = self.mapped('name')
         moves = self.env['stock.move'].sudo().search([
             ('origin', 'in', names),
