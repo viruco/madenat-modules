@@ -355,6 +355,8 @@
                                 <field name="reception_line_ids" readonly="1">
                                     <list string="Capa Técnica Exportación">
                                         <field name="lot_name" string="N° Lote" decoration-bf="1"/>
+                                        <field name="product_id" string="Producto" context="{'display_default_code': False}"/>
+                                        <field name="subproduct_id" string="Grado"/>
                                         <field name="export_calculation_rule" column_invisible="1"/>
 
                                         <field name="thickness_visual" string="Espesor (Trader)" decoration-bf="1" class="text-center"/>
@@ -374,12 +376,20 @@
                             <page string="4. 📦 STOCK GENERADO (LOTES)" name="lots" invisible="state != 'done'">
                                 <field name="lot_ids" readonly="1">
                                     <list decoration-muted="estado_trazabilidad != 'recepcionado'" limit="20">
-                                        <field name="name" string="Etiqueta Final" decoration-bf="1" widget="copy_clipboard"/>
-                                        <field name="product_id" string="Producto Odoo"/>
-                                        <field name="espesor_mm" string="E (mm)"/>
-                                        <field name="ancho_mm" string="A (mm)"/>
-                                        <field name="piezas" sum="Total Pzas"/>
-                                        <field name="volumen_m3" string="Stock (m³)" sum="Total Stock"/>
+                                        <field name="name" string="Etiqueta" decoration-bf="1" widget="copy_clipboard"/>
+                                        <field name="product_id" string="Producto" context="{'display_default_code': False}"/>
+                                        <field name="subproducto_id" string="Grado"/>
+                                        <field name="espesor_inch_frac" string="E"/>
+                                        <field name="ancho_inch_frac" string="A"/>
+                                        <field name="length_ft" string="L (ft)" optional="show"/>
+                                        <field name="largo_m" string="L (m)" optional="show"/>
+                                        <field name="piezas" string="Pzas" sum="Total Pzas"/>
+                                        <field name="volumen_m3" string="Stock (m³)" sum="Total Stock" digits="[16, 3]"/>
+                                        <field name="vol_shipment_m3" string="Vol. Exp" optional="show" sum="Total Exp" digits="[16, 3]"/>
+                                        <field name="volumen_mbf" string="MBF" optional="show" sum="Total MBF" digits="[16, 3]"/>
+                                        <field name="espesor_mm" string="E (mm)" optional="hide"/>
+                                        <field name="ancho_mm" string="A (mm)" optional="hide"/>
+                                        <field name="estado_trazabilidad" string="Estado" optional="hide"/>
                                     </list>
                                 </field>
                             </page>

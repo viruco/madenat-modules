@@ -28,9 +28,12 @@
                 
                 <field name="subproducto_id" string="Sub-Prod." widget="badge" width="100px"/>
 
-                <field name="espesor_mm" string="E (mm)" width="75px"/>
-                <field name="ancho_mm" string="A (mm)" width="75px"/>
-                <field name="largo_m" string="L (m)" width="75px"/>
+                <field name="espesor_inch_frac" string="E&quot;" width="65px"/>
+                <field name="ancho_inch_frac" string="A&quot;" width="65px"/>
+                <field name="espesor_mm" string="E (mm)" width="65px" optional="show"/>
+                <field name="ancho_mm" string="A (mm)" width="65px" optional="show"/>
+                <field name="length_ft" string="L (ft)" width="65px" optional="show"/>
+                <field name="largo_m" string="L (m)" width="65px" optional="show"/>
 
                 <field name="piezas" string="Pzas" width="70px" sum="Total"/>
                 <field name="volumen_m3" string="Vol. Físico" width="100px" sum="Total" optional="show"/>
