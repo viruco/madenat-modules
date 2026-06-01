@@ -4,16 +4,18 @@
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="container">
             <t t-call="web.external_layout">
-                <div class="page" style="font-family: 'Helvetica'; font-size: 10px; color: #333;">
-                    
+                <div class="page" style="font-family: 'Arial', sans-serif; font-size: 10px; color: #333;">
+
                     <div class="row mb-3" style="border-bottom: 2px solid #1a4a7c;">
                         <div class="col-8">
-                            <h2 style="color: #1a4a7c;"><strong>LISTA DE EMPAQUE (PACKING LIST)</strong></h2>
+                            <h2 style="color: #1a4a7c;">LISTA DE EMPAQUE (PACKING LIST)</h2>
                             <h4 class="text-muted">Contenedor: <t t-esc="container.name"/></h4>
                         </div>
                         <div class="col-4 text-right">
                             <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"/><br/>
                             <strong>Embarque:</strong> <t t-esc="container.shipment_id.name"/><br/>
+                            <strong>N° Reserva:</strong> <t t-esc="container.shipment_id.booking_reference or 'Sin reserva'"/><br/>
+                            <strong>Sello:</strong> <t t-esc="container.seal_number or 'Sin sello'"/><br/>
                             <strong>Tipo:</strong> <t t-esc="container.container_type"/>
                         </div>
                     </div>
@@ -28,7 +30,7 @@
                                 <th>TOTAL MBF</th>
                             </tr>
                         </thead>
-                        <tbody class="text-center" style="font-size: 12px; font-weight: bold;">
+                        <tbody class="text-center" style="font-size: 10px;">
                             <tr>
                                 <td><t t-esc="container.packages"/></td> 
                                 <td><t t-esc="len(container.lot_ids)"/></td> 
