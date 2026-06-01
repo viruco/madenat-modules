@@ -669,14 +669,14 @@ class LumberContainer(models.Model):
             workbook = xlsxwriter.Workbook(output, {'in_memory': True})
             sheet = workbook.add_worksheet(f'TARJA_{self.name}')
 
-            # --- ESTILOS (Arial 10pt, sin negrita) ---
-            title_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'align': 'center', 'valign': 'vcenter', 'border': 1})
-            header_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'align': 'center', 'valign': 'vcenter', 'border': 1})
-            data_str_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00'})
-            data_num_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '#,##0.00'})
-            data_num_3_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '#,##0.000'})
-            data_int_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '0'})
-            footer_fmt = workbook.add_format({'font_name': 'Arial', 'font_size': 10, 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+            # --- ESTILOS (Calibri 11pt; títulos/headers/totales en bold) ---
+            title_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1})
+            header_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1})
+            data_str_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00'})
+            data_num_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '#,##0.00'})
+            data_num_3_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '#,##0.000'})
+            data_int_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FFFF00', 'num_format': '0'})
+            footer_fmt = workbook.add_format({'font_name': 'Calibri', 'font_size': 11, 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter'})
 
             # --- CONFIGURACIÓN COLUMNAS ---
             for offset in [0, 14]:
