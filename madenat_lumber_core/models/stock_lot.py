@@ -1112,12 +1112,11 @@ class StockLotExtended(models.Model):
         for lot in self:
             lot.sale_amount_usd = lot.volumen_mbf * lot.sale_price_usd_per_mbf
 
-    @api.depends('sale_amount_usd', 'cost_line_ids.amount_usd', 'cost_line_ids.cost_type')
+    @api.depends('sale_amount_usd', 'total_cost_usd')
     def _compute_margin(self):
         """Calcular margen de contribución"""
         for lot in self:
-            total_cost = sum(line.amount_usd for line in lot.cost_line_ids)
-            lot.margin_usd = lot.sale_amount_usd - total_cost
+            lot.margin_usd = lot.sale_amount_usd - lot.total_cost_usd
             if lot.sale_amount_usd > 0:
                 lot.margin_percent = (lot.margin_usd / lot.sale_amount_usd) * 100
             else:

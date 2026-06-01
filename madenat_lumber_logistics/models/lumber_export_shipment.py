@@ -315,6 +315,48 @@ class LumberExportShipment(models.Model):
                 rec.yield_efficiency_pct = (rec.total_volume_m3 / rec.total_nominal_volume_m3) * 100
             else:
                 rec.yield_efficiency_pct = 0.0
+
+    # === ANÁLISIS COMERCIAL (Márgenes por Embarque) ===
+    total_revenue_usd = fields.Monetary(
+        string='Ingreso Total (USD)',
+        compute='_compute_commercial_totals',
+        store=True,
+        currency_field='currency_id',
+        help="Suma del ingreso por venta (sale_amount_usd) de todos los lotes del embarque."
+    )
+
+    gross_margin_usd = fields.Monetary(
+        string='Margen Bruto (USD)',
+        compute='_compute_commercial_totals',
+        store=True,
+        currency_field='currency_id',
+        help="Ingreso Total - Costos de Embarque - Costo Madera."
+    )
+
+    gross_margin_pct = fields.Float(
+        string='Margen Bruto (%)',
+        compute='_compute_commercial_totals',
+        store=True,
+        digits=(16, 2),
+        help="(Margen Bruto / Ingreso Total) × 100."
+    )
+
+    @api.depends(
+        'container_ids.lot_ids.sale_amount_usd',
+        'container_ids.lot_ids.wood_cost_usd',
+        'total_shipment_costs_usd'
+    )
+    def _compute_commercial_totals(self):
+        for shipment in self:
+            lots = shipment.container_ids.mapped('lot_ids')
+            revenue = sum(lots.mapped('sale_amount_usd'))
+            wood_cost = sum(lots.mapped('wood_cost_usd'))
+            shipment.total_revenue_usd = revenue
+            shipment.gross_margin_usd = revenue - shipment.total_shipment_costs_usd - wood_cost
+            if revenue > 0:
+                shipment.gross_margin_pct = (shipment.gross_margin_usd / revenue) * 100
+            else:
+                shipment.gross_margin_pct = 0.0
     
     # ✅ MODIFICADO: Suma ambos volúmenes
     @api.depends('container_ids', 'container_ids.volume_m3', 'container_ids.total_volume_purchase_m3', 
