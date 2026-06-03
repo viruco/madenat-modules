@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 import logging
-from madenat_lumber_core.models.utils_uom import MM_PER_INCH
+from madenat_lumber_core.models.utils_uom import MM_PER_INCH, M3_DIVISOR
 
 _logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class LumberShipmentLine(models.Model):
 
             # 6. Cálculo Matemático Final
             if thickness_mm and final_width_mm and length_m and pieces:
-                vol = (thickness_mm * final_width_mm * length_m * pieces) / 1_000_000.0
+                vol = (thickness_mm * final_width_mm * length_m * pieces) / float(M3_DIVISOR)
                 line.export_volume_m3 = vol
             else:
                 line.export_volume_m3 = 0.0
