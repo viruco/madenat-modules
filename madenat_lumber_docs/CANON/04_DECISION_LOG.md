@@ -655,3 +655,50 @@ Toda variable usada en cálculos volumétricos debe estar:
 1. Definida explícitamente antes de su uso
 2. Validada con el mismo tipo de cast que sus pares en el mismo método
 3. No crear variables locales con nombres que sugieran constantes no definidas
+
+
+### DEC-2026-06-03-TD006 — AD-06: Reglas comerciales NO son parametrizables por cliente/perfil/subproducto
+
+**Fecha:** 2026-06-03
+**Tag:** v1.4-TD006
+**Estado:** Decisión firme — NO parametrizar
+
+**Pregunta de investigación:**
+¿Las reglas comerciales (`+1/8"`, `1550.003096`, `5085.312`) varían por cliente, perfil o subproducto?
+
+**Decisión:**
+NO se parametrizan. Las reglas comerciales son **fijas** para todo MADENAT y se mantienen como constantes en `utils_uom.py`.
+
+**Evidencia (6 fuentes independientes):**
+
+| # | Fuente | Hallazgo |
+|---|--------|----------|
+| 1 | `get_s2s_adjustment()` en utils_uom | Solo varía por `width_mm` (lista de exclusiones); retorna SIEMPRE `Decimal('0.125')` o `Decimal('0.0')`. Sin condicional por `partner_id`, `subproducto_id`, perfil, ni país |
+| 2 | `calculate_volume_imperial_to_m3()` | Acepta booleano `apply_s2s_adjustment` pero SIEMPRE usa la constante fija `S2S_WIDTH_ADJUSTMENT_INCH` cuando es True |
+| 3 | `lumber_export_formula.py` fallbacks | Los 3 perfiles (f5085, f1550, metric) usan las mismas constantes fijas de `utils_uom` |
+| 4 | `madenat_ingestion_config.py` | AbstractModel sin campos para reglas comerciales. No hay campo `embarque_width_adjustment`, `factor_embarque`, ni `factor_blank` |
+| 5 | Git log | Cero commits sobre variación por cliente. Solo 2 commits relacionados: TD-004 y TD-005.1 |
+| 6 | Documentación Excel | No se encontraron archivos xlsx/xls/csv en el repositorio con evidencia de variación |
+
+**Hipótesis refutadas:**
+- ❌ `+1/8"` → `+1/4"` para clientes premium
+- ❌ `1550.003096` → `1550` exacto para ciertos mercados
+- ❌ `5085.312` varía según tipo de Blank (Rough vs S2S)
+
+**Consecuencias arquitectónicas:**
+- Sin cambios de código — no se crean campos, no se modifican fórmulas
+- Sin riesgo de regresión — volúmenes A1M2605458 y A1M2602536 permanecen inalterados
+- Sin nueva UI — no se agregan vistas de configuración
+- Deuda técnica cero — la investigación documentada previene futuras re-parametrizaciones innecesarias
+
+**Condiciones de reapertura:**
+TD-006 se reabrirá SOLO si:
+1. Cliente requiere fórmula diferente (caso específico documentado, no hipotético)
+2. Mercado de exportación cambia regulaciones que afectan los factores
+3. Stakeholder confirma cambio de regla de negocio con evidencia documental
+
+**Regla derivada:**
+Antes de parametrizar cualquier regla de negocio en `madenat_ingestion_config`:
+1. Debe existir evidencia funcional concreta de variación (no hipótesis)
+2. La evidencia debe ser específica: qué cliente, qué valor, qué fecha
+3. Si no hay evidencia, mantener como constante fija documentada
