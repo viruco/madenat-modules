@@ -2,7 +2,7 @@
 import json
 import logging
 from odoo import models, fields, api, _
-from ..models.utils_uom import S2S_WIDTH_LOOKUP
+from ..models.utils_uom import S2S_WIDTH_LOOKUP, MM_PER_INCH
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class LumberReceptionMassUpdate(models.TransientModel):
                 else:
                     # Decimal: "1.5"
                     inches = float(val_str)
-                return round(inches * 25.4, 2)
+                return round(inches * MM_PER_INCH, 2)
             except Exception:
                 return 0.0
 

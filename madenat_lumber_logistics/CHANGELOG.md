@@ -7,7 +7,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
-
+- TD-004: Centralización de constante física universal `25.4` → `MM_PER_INCH` en `lumber_shipment_line.py:78,123`
 - Wizard de asignación de lotes: corregido el dominio de disponibilidad para incluir lotes con `estado_trazabilidad = 'procesado'` y `'recepcionado'`, además de `'en_patio'`. Anteriormente solo se mostraban lotes con estado `'en_patio'`, lo que excluía lotes válidos de guía procesada y recepciones en curso.
 - Clasificación de lotes: corregido `_is_processed_lot()` en `stock_lot.py` para que `subproducto_id` por sí solo no marque un lote como procesado. El subproducto es clasificación comercial, no indicador de procesamiento. Solo `guia_processing_id`, `parent_lot_id` o dimensiones finales indican procesamiento real.
 

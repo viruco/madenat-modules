@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 import logging
+from madenat_lumber_core.models.utils_uom import MM_PER_INCH
 
 _logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class LumberShipmentLine(models.Model):
         """Conversión informativa de ancho milimétrico a pulgadas."""
         for line in self:
             if line.lot_id and line.lot_id.ancho_mm:
-                line.export_width_inches = line.lot_id.ancho_mm / 25.4
+                line.export_width_inches = line.lot_id.ancho_mm / MM_PER_INCH
             else:
                 line.export_width_inches = 0.0
 
@@ -120,7 +121,7 @@ class LumberShipmentLine(models.Model):
                     # Lote con ADN Imperial: Aplicar recargo (Ej: +1/8")
                     allowance = rule.allowance_inches or 0.0
                     adjusted_width_inch = nominal_inches + allowance
-                    final_width_mm = adjusted_width_inch * 25.4
+                    final_width_mm = adjusted_width_inch * MM_PER_INCH
                 else:
                     # Lote Métrico Puro: Respetar dimensiones físicas
                     final_width_mm = width_mm
