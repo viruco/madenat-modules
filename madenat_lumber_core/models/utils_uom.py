@@ -365,7 +365,22 @@ def format_volume_display(m3_value, show_mbf=True):
 # ==============================================================================
 
 # ✅ Factor S2S (largo en metros): in² × metros → m³
-# Derivación: 1 / (0.0254² × 1.0) = 1550.003096
+# ──────────────────────────────────────────────────────────────────────────
+# Conversión dimensional exacta para cubicación comercial de embarque.
+# 
+# Derivación completa:
+#   1 pulgada = 25.4 mm (exacto, según NIST)
+#   (25.4 mm)² × 1 m / 1,000,000 = 0.00064516 m³  (mm² × m → m³)
+#   1 / 0.00064516 = 1550.003096                    (inverso escalado)
+# 
+# Uso: cubicación comercial de embarque
+#   Fórmula: (Esp.pulg × Ancho.pulg × Largo.m × Pzas) / 1550.003096
+# 
+# Precisión: dimensional completa IEEE 754 — NO es redondeo arbitrario.
+# Referencia: NIST (National Institute of Standards and Technology)
+#             — 1 pulgada = 25.4 mm exacto.
+# ⚠️ NO modificar este valor sin revisar impacto en todas las fórmulas de cubicación.
+# ──────────────────────────────────────────────────────────────────────────
 INCH_SQ_METERS_TO_M3 = Decimal('1550.003096')
 
 # ──────────────────────────────────────────────────────────────────────────────

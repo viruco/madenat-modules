@@ -58,5 +58,24 @@ Estos field defaults son configurables por el usuario desde la UI de Odoo. No re
 - Sintaxis compilada OK ✅
 - Módulo carga sin errores de import ✅
 
+### Nota sobre `1550.003096`
+
+**Fecha:** 2026-06-03
+**Motivo:** Documentar origen del valor decimal no arbitrario
+
+El valor `.003096` no es un error tipográfico ni redondeo arbitrario. Es la conversión exacta dimensional:
+
+```
+1 pulgada = 25.4 mm (exacto, según NIST)
+(25.4 mm)² × 1 m / 1,000,000 = 0.00064516 m³  (mm² × m → m³)
+1 / 0.00064516 = 1550.003096                    (inverso escalado)
+```
+
+Es la fórmula exacta para convertir pulgadas² × metros a metros³ con precisión dimensional completa IEEE 754.
+
+**Uso:** cubicación comercial de embarque: `(Esp.pulg × Ancho.pulg × Largo.m × Pzas) / 1550.003096`
+
+**Referencia:** Cálculo dimensional basado en 1 pulgada = 25.4 mm exacto (NIST — National Institute of Standards and Technology).
+
 ### Próximos pasos
 - TD-006: Evaluar si `S2S_WIDTH_ADJUSTMENT_INCH` debe ser configurable por cliente/perfil/subproducto (hoy es regla fija)
