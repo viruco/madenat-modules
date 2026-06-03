@@ -17,6 +17,26 @@ FACTOR OFICIAL: 1 MBF = 2.36 m³
 
 
 
+# ============================================================
+# ⚠️  IMPORTANTE: RESTRICCIÓN DE IMPORT ENTRE ADDONS
+# ============================================================
+# Este archivo NO puede ser importado directamente desde otros
+# addons Odoo usando import Python absoluto:
+# ❌ INCORRECTO:
+#   from madenat_lumber_core.models.utils_uom import MM_PER_INCH
+# Esto rompe el mecanismo de carga del registry de Odoo 18 CE
+# (AssertionError: Invalid import of madenat_lumb...)
+# Para usar constantes en otros módulos, usar:
+#   ✅ OPCIÓN A: duplicar la constante con comentario de referencia
+#      ancho_mm / 25.4  # MM_PER_INCH — ver utils_uom.py TD-004B
+#   ✅ OPCIÓN B (futuro TD-004B): crear módulo utils puro sin modelos
+#      para compartir constantes entre addons
+# Incidente: HF-001 (2026-06-03) — revertido TD-004/TD-005
+# Tarea pendiente: TD-004B — arquitectura de constantes compartidas
+# ============================================================
+
+
+
 CORRECCIÓN CRÍTICA (2026-01-27):
 - Factor Imperial corregido según Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx
 - Cambio: 5085.312 (in²×ft→m³) → 1550.003 (in²×m→m³)

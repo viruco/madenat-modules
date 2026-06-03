@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 import logging
-from madenat_lumber_core.models.utils_uom import MM_PER_INCH, M3_DIVISOR
-
+# HF-001: Constantes restauradas a literales — import Python absoluto entre
+# addons Odoo rompe el mecanismo de carga del registry en Odoo 18 CE Docker.
+# TD-004B pendiente: arquitectura correcta para constantes compartidas.
+# Ver también: advertencia en madenat_lumber_core/models/utils_uom.py
 _logger = logging.getLogger(__name__)
 
 class LumberShipmentLine(models.Model):
@@ -76,7 +78,7 @@ class LumberShipmentLine(models.Model):
         """Conversión informativa de ancho milimétrico a pulgadas."""
         for line in self:
             if line.lot_id and line.lot_id.ancho_mm:
-                line.export_width_inches = line.lot_id.ancho_mm / MM_PER_INCH
+                line.export_width_inches = line.lot_id.ancho_mm / 25.4  # HF-001: MM_PER_INCH revertido → TD-004B
             else:
                 line.export_width_inches = 0.0
 
@@ -121,14 +123,14 @@ class LumberShipmentLine(models.Model):
                     # Lote con ADN Imperial: Aplicar recargo (Ej: +1/8")
                     allowance = rule.allowance_inches or 0.0
                     adjusted_width_inch = nominal_inches + allowance
-                    final_width_mm = adjusted_width_inch * MM_PER_INCH
+                    final_width_mm = adjusted_width_inch * 25.4  # HF-001: MM_PER_INCH revertido → TD-004B
                 else:
                     # Lote Métrico Puro: Respetar dimensiones físicas
                     final_width_mm = width_mm
 
             # 6. Cálculo Matemático Final
             if thickness_mm and final_width_mm and length_m and pieces:
-                vol = (thickness_mm * final_width_mm * length_m * pieces) / float(M3_DIVISOR)
+                vol = (thickness_mm * final_width_mm * length_m * pieces) / 1_000_000.0  # HF-001: M3_DIVISOR revertido → TD-004B
                 line.export_volume_m3 = vol
             else:
                 line.export_volume_m3 = 0.0

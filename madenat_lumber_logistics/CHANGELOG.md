@@ -6,6 +6,30 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [HF-001] — 2026-06-03 — Hotfix: Revertir imports inválidos entre addons
+
+### Fixed
+- **CRÍTICO:** Revertidos imports Python absolutos `from madenat_lumber_core.models.utils_uom import MM_PER_INCH, M3_DIVISOR`
+  que rompían el mecanismo de carga del registry de Odoo 18 CE en Docker.
+  Evidencia: `AssertionError: Invalid import of madenat_lumber_core.models.reception_parser.MadenatReceptionParser,
+  it should start with 'odoo.addons'`
+  - Línea 79: `ancho_mm / MM_PER_INCH` → `ancho_mm / 25.4  # HF-001`
+  - Línea 124: `adjusted_width_inch * MM_PER_INCH` → `adjusted_width_inch * 25.4  # HF-001`
+  - Línea 131: `/ float(M3_DIVISOR)` → `/ 1_000_000.0  # HF-001`
+  - Restricción documentada en `utils_uom.py` para futuros desarrolladores
+
+### Deuda Técnica
+- TD-004B pendiente: diseñar arquitectura correcta para constantes compartidas entre addons
+  (módulo utils puro sin modelos ORM)
+
+### Validado
+- HTTP 200 en `/web/health`
+- Golden records inalterados: A1M2605458=4.893, A1M2602536=4.832
+
+---
+
+## [Unreleased]
+
 ### Fixed
 - TD-004: Centralización de constante física universal `25.4` → `MM_PER_INCH` en `lumber_shipment_line.py:78,123`
 - TD-005: Centralización de divisor métrico `1_000_000.0` → `M3_DIVISOR` en `lumber_shipment_line.py:131`. Agregado import `M3_DIVISOR` desde `utils_uom`.

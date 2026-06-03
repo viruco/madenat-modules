@@ -702,3 +702,48 @@ Antes de parametrizar cualquier regla de negocio en `madenat_ingestion_config`:
 1. Debe existir evidencia funcional concreta de variación (no hipótesis)
 2. La evidencia debe ser específica: qué cliente, qué valor, qué fecha
 3. Si no hay evidencia, mantener como constante fija documentada
+
+---
+
+## 2026-06-03 — HF-001: Restricción de imports Python entre addons Odoo 18 CE
+
+### DEC-2026-06-03-HF001 / AD-07
+
+**Decisión:** Revertir imports Python absolutos entre addons Odoo 18 CE
+
+**Contexto:**
+- TD-004 y TD-005 introdujeron `from madenat_lumber_core.models.utils_uom import MM_PER_INCH, M3_DIVISOR`
+  en `madenat_lumber_logistics/models/lumber_shipment_line.py`
+- El import rompe el mecanismo de carga del registry de Odoo 18 CE en Docker
+- Evidencia directa del contenedor:
+  ```
+  AssertionError: Invalid import of madenat_lumber_core.models.reception_parser.MadenatReceptionParser,
+  it should start with 'odoo.addons'
+  ```
+  Odoo requiere que todos los módulos se importen bajo el namespace `odoo.addons.*`,
+  no como paquete Python absoluto.
+- Causa raíz: `/mnt/extra-addons` NO está en `sys.path` del contenedor Python
+  (solo `/usr/lib/python3.12`, `/usr/lib/python3/dist-packages`, etc.)
+  Odoo gestiona sus propios imports internamente usando `load_openerp_module()`.
+- Impacto: HTTP 500, sistema completamente caído, `KeyError: 'madenat_test'` en LRU cache
+
+**Decisión:**
+- Revertir imports a literales en `lumber_shipment_line.py`: `25.4` y `1_000_000.0`
+- Agregar restricción documentada en `utils_uom.py` como guard-rail para futuros desarrolladores
+- Abrir TD-004B para arquitectura correcta de constantes compartidas
+
+**Alternativas descartadas:**
+- `sys.path` manipulation → frágil, no portable entre entornos
+- Instalar addons como paquetes Python (`setup.py`) → overhead innecesario, anti-patrón Odoo
+- `odoo.addons.madenat_lumber_core.models.utils_uom` → no probado en caliente, riesgo de romper otros módulos
+- Dejar imports rotos → sistema inoperable, no es opción
+
+**Regla derivada (canónica):**
+1. NUNCA usar `from madenat_lumber_core.models...` desde otro addon
+2. Las constantes compartidas deben duplicarse con comentario de referencia `# ver utils_uom.py TD-004B`
+3. La arquitectura correcta para compartir constantes entre addons será un módulo `madenat_lumber_utils`
+   sin modelos ORM, solo con constantes/funciones puras (pendiente TD-004B)
+
+**Estado:** ✅ Aplicado
+**Tag:** v2.1-HF001
+**Golden records validados:** A1M2605458=4.893, A1M2602536=4.832 (inalterados)
