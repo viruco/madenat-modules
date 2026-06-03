@@ -43,9 +43,19 @@ odoo_base (base)
     improvements               │   (base, account, base_automation,
     (base, stock, core,        │    stock, core, logistics)
      purchasing)               │
-                               └──► madenat_lumber_costing
-                                    (account, core, logistics,
-                                     shipping_core)
+               │               ├──► madenat_lumber_costing
+               ▼               │   (account, core, logistics,
+    madenat_toll_processing    │    shipping_core)
+    (base, stock, mail,        │
+     core, reception_          ├──► madenat_vendor_payment
+     improvements, account,    │   (base, account, web,
+     purchasing)               │    logistics, billing)
+                               │
+                               └──► madenat_lumber_reports
+                                    (core, purchasing, logistics,
+                                     shipping_core, costing,
+                                     toll_processing, vendor_payment,
+                                     billing)
 ```
 
 ---
@@ -135,11 +145,58 @@ odoo_base (base)
 
 ---
 
+### madenat_lumber_reports
+
+| Módulo Odoo | Razón |
+|---|---|
+| `madenat_lumber_core` | Modelos base madereros |
+| `madenat_lumber_purchasing` | Datos de compras |
+| `madenat_lumber_logistics` | Datos de embarques |
+| `madenat_lumber_shipping_core` | Datos marítimos |
+| `madenat_lumber_costing` | Costos y valorización |
+| `madenat_toll_processing` | Procesamiento en terceros |
+| `madenat_vendor_payment` | Pagos a proveedores |
+| `madenat_lumber_billing` | Facturación de exportaciones |
+
+> **Nota:** Módulo de integración final. Remapea menús y unifica la experiencia de usuario. Depende de todos los módulos MADENAT instalados.
+
+---
+
+### madenat_toll_processing
+
+| Módulo Odoo | Razón |
+|---|---|
+| `base` | Modelos base, res.partner |
+| `stock` | Movimientos de inventario |
+| `mail` | Tracking y comunicación |
+| `madenat_lumber_core` | Lotes, recepciones |
+| `madenat_lumber_reception_improvements` | Campo is_processor en res.partner |
+| `account` | Facturación de servicios |
+| `madenat_lumber_purchasing` | Flujo de compras |
+
+> **Nota:** Gestiona procesamiento de madera en plantas terceras (cepillado, secado, tratamiento). Mantiene trazabilidad origen-proceso-retorno.
+
+---
+
+### madenat_vendor_payment
+
+| Módulo Odoo | Razón |
+|---|---|
+| `base` | Modelos base, partners |
+| `account` | Facturas y pagos contables |
+| `web` | Componentes de interfaz |
+| `madenat_lumber_logistics` | Costos de embarque |
+| `madenat_lumber_billing` | Consolidaciones de facturación |
+
+> **Nota:** Sistema de pagos a proveedores con clasificación por categorías (madera, transporte, navieras, etc.) y trazabilidad completa.
+
+---
+
 ## Orden de instalación
 
 Para una instalación limpia, seguir este orden:
 
-1. **Módulos base de Odoo:** `base`, `stock`, `product`, `purchase`, `account`, `mail`, `sms`, `uom`, `base_automation`
+1. **Módulos base de Odoo:** `base`, `stock`, `product`, `purchase`, `account`, `mail`, `sms`, `uom`, `base_automation`, `web`
 2. **madenat_lumber_shipping_core** (prerequisito externo)
 3. **madenat_lumber_core** (módulo base maderero)
 4. **madenat_lumber_purchasing**
@@ -147,8 +204,11 @@ Para una instalación limpia, seguir este orden:
 6. **madenat_lumber_logistics**
 7. **madenat_lumber_billing**
 8. **madenat_lumber_costing**
+9. **madenat_toll_processing**
+10. **madenat_vendor_payment**
+11. **madenat_lumber_reports**
 
-> **Nota:** Los módulos 4–5 pueden instalarse en paralelo con el 6–7–8, siempre que `core` y `shipping_core` ya estén instalados.
+> **Nota:** Los módulos 4–5 pueden instalarse en paralelo con el 6–7–8, siempre que `core` y `shipping_core` ya estén instalados. Los módulos 9–10 requieren 4–8 instalados. El módulo 11 (reports) debe instalarse al final porque depende de todos los anteriores.
 
 ---
 
@@ -165,3 +225,4 @@ Para una instalación limpia, seguir este orden:
 - [[modulo_lumber_core]]
 - [[00_ARQUITECTURA]]
 - [[despliegue_modulo]]
+- [[madenat_lumber_logistics]]

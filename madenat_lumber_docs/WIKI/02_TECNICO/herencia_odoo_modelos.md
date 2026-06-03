@@ -19,30 +19,34 @@ Documentar los patrones de herencia usados en los modelos de MADENAT para manten
 Se usa para agregar campos o métodos a modelos existentes de Odoo.
 
 ```python
-class ResPartnerMadenat(models.Model):
+class ResPartner(models.Model):
     _inherit = 'res.partner'
 
-    madenat_es_aserradero = fields.Boolean(string='Es Aserradero')
-    madenat_especie_preferente = fields.Char(string='Especie preferente')
+    is_processor = fields.Boolean(string='Es Procesador', default=False)
+    processor_location = fields.Char(string='Ubicación Planta')
 ```
+
+> **Nota:** Esta extensión reside en `madenat_lumber_reception_improvements/models/res_partner.py`.
 
 ### Herencia de delegación (modelos propios con _name nuevo)
 Se usa para crear modelos propios de MADENAT que tienen lógica independiente.
 
 ```python
-class MadenatRecepcion(models.Model):
-    _name = 'madenat.recepcion'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
-    _description = 'Recepción de Madera MADENAT'
+class LumberReception(models.Model):
+    _name = 'lumber.reception'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.lumber.ingest.mixin']
+    _description = '📦 RECEPCIÓN DE MADERA BRUTA DESDE PROVEEDOR'
+    _order = 'reception_date desc'
 ```
 
 ---
 
 ## Reglas de convención
 
-- Todos los campos propios de MADENAT tienen prefijo `madenat_`.
-- Todos los modelos propios tienen nombre con prefijo `madenat.`.
-- Ningún modelo propio de MADENAT hereda directamente de `stock.picking`; se trabaja con métodos y referencias.
+- Los modelos de infraestructura transversal usan prefijo `madenat.` (ej: `madenat.audit.log`, `madenat.subproducto`, `madenat.guia.processing`).
+- Los modelos de dominio maderero usan prefijo `lumber.` (ej: `lumber.reception`, `lumber.reception.line`).
+- Los mixins abstractos usan `madenat.lumber.*.mixin` (ej: `madenat.lumber.ingest.mixin`, `madenat.lumber.ingest.line.mixin`, `validation.checklist.mixin`).
+- `stock.lot`, `stock.picking`, `stock.move`, `stock.quant` y `product.template` se extienden por `_inherit` sin crear modelo nuevo.
 
 ---
 
@@ -53,8 +57,19 @@ class MadenatRecepcion(models.Model):
 
 ---
 
+## Mixins transversales
+
+| Mixin | Archivo | Usado por |
+|---|---|---|
+| `madenat.lumber.ingest.mixin` | `mixin_lumber_ingest.py` | `lumber.reception` |
+| `madenat.lumber.ingest.line.mixin` | `mixin_lumber_ingest.py` | `lumber.reception.line` |
+| `validation.checklist.mixin` | `validation_checklist_mixin.py` | `lumber.reception`, `madenat.guia.processing` |
+
+---
+
 ## Relacionado
 
 - [[modulo_lumber_core]]
+- [[modelo_recepciones]]
 - [[tracking_mail_thread]]
 - [[campos_computados]]

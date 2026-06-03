@@ -27,6 +27,7 @@
         'views/guia_processing_views.xml',
         'views/guia_processing_list_search.xml',
         'views/lumber_reception_views.xml',
+        'views/lumber_ingestion_config_views.xml',
         
         # 🏗️ 2. ARQUITECTURA BASE (La pared donde cuelga todo)
         'views/lumber_core_menu.xml', 
@@ -35,7 +36,12 @@
         'reports/madenat_guia_report.xml',      
         'reports/madenat_guia_report_templates.xml',
         
-        # 🌱 6. DATOS SEMILLA (Se cargan al final para que encuentren los modelos listos)
+        # ⚙️ 6. CONFIGURACIÓN PARAMETRIZABLE (Fase 1 — Desacoplamiento de hardcodes)
+        'data/ingestion_config.xml',
+        'data/ingestion_seed_fase2.xml',
+        'data/ingestion_seed_fase3.xml',
+
+        # 🌱 7. DATOS SEMILLA (subproductos dependen de fórmulas Fase 3)
         'data/madenat_subproducto_data.xml',
     ],
     'installable': True,

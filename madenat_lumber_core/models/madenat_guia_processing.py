@@ -562,22 +562,22 @@ class MadenatGuiaProcessingLine(models.Model):
                     line.vol_shipment_m3 = fallback_vol
                     continue
 
-                # Llamada limpia a la utilidad centralizada
-                recargo = get_s2s_adjustment(self.env, line.ancho_mm)
-                width_calc = a_in + recargo
-                
                 # 5. Determinar Largo a usar
                 # Prioridad 1: length_ft | Prioridad 2: largo_m | Prioridad 3: largo_nominal_m
+                # MADENAT-FIX-BLANK-2026-06-02
                 if line.length_ft > 0.1:
-                    # FÓRMULA PIES
-                    vol = (e_in * width_calc * line.length_ft * line.pieces) / FACTOR_PIES
+                    # FÓRMULA PIES — BLANK: sin recargo de cepillado (+1/8")
+                    # Regla de negocio: blank se ingesta y se embarca con dimensiones exactas
+                    vol = (e_in * a_in * line.length_ft * line.pieces) / FACTOR_PIES
                 else:
-                    # FÓRMULA METROS
+                    # FÓRMULA METROS — S2S/RIP: con ajuste de cepillado (+1/8")
+                    recargo = get_s2s_adjustment(self.env, line.ancho_mm)
+                    width_calc = a_in + recargo
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
                         line.vol_shipment_m3 = fallback_vol
                         continue
-                    vol = (e_in * width_calc * largo_uso * line.pieces) / FACTOR_METROS
+                    vol = (e_in * width_calc * largo_uso * line.pieces) / float(INCH_SQ_METERS_TO_M3)
                 
                 # 6. Asignación Final con redondeo a 3 decimales
                 calculated_vol = r3(vol)
@@ -2364,9 +2364,8 @@ class MadenatGuiaProcessing(models.Model):
         # (Sin hardcoding, consultamos la 'neurona' central)
         
         method = getattr(self, 'calculation_method', 'madenat_gold')
-        param_obj = self.env['ir.config_parameter'].sudo()
-        raw_exceptions = param_obj.get_param('madenat.s2s_exclusion_widths', '150,160,170,180,200')
-        exceptions = [float(x.strip()) for x in raw_exceptions.split(',')]
+        # Fase 3: Delegar al helper centralizado — fuente única de verdad
+        exceptions = self.env['madenat.ingestion.config'].get_s2s_exclusion_widths()
 
         # 2. INTELIGENCIA: ¿Es una medida métrica pura o estamos en modo métrico?
         # Si la medida está en excepciones (180, 200) o el método es métrico, devolvemos MM.

@@ -14,6 +14,17 @@ class MadenatSubproducto(models.Model):
     sequence = fields.Integer('Secuencia', default=10)
     active = fields.Boolean('Activo', default=True)
 
+    # ── Asociación estructural a caminos de ingesta ──────────────────────
+    allowed_formula_ids = fields.Many2many(
+        'lumber.export.formula',
+        'madenat_subproducto_formula_rel',
+        'subproducto_id',
+        'formula_id',
+        string='Perfiles de Ingesta Permitidos',
+        help="Caminos de ingesta donde este subproducto/grado puede usarse.\n"
+             "Sin selección = visible en todos los perfiles (comportamiento legacy)."
+    )
+
     _sql_constraints = [
         ('code_unique', 'UNIQUE(code)', 'El código del sub-producto debe ser único'),
         ('name_unique', 'UNIQUE(name)', 'El nombre del sub-producto debe ser único'),

@@ -4,10 +4,11 @@
         <field name="name">madenat.subproducto.list</field>
         <field name="model">madenat.subproducto</field>
         <field name="arch" type="xml">
-            <list string="Catálogo de Subproductos" editable="bottom" decoration-muted="not active">
+            <list string="Catálogo de Subproductos" decoration-muted="not active">
                 <field name="sequence" widget="handle"/>
                 <field name="code" string="Código" optional="show"/>
                 <field name="name" string="Clasificación (Nombre)"/>
+                <field name="allowed_formula_ids" string="Perfiles Permitidos" widget="many2many_tags" optional="hide"/>
                 <field name="description" string="Descripción Técnica" optional="show"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
@@ -39,6 +40,17 @@
                     <notebook>
                         <page string="Descripción Comercial" name="description">
                             <field name="description" placeholder="Agregue detalles técnicos o restricciones comerciales..."/>
+                        </page>
+                        <page string="Aplicación / Ingesta" name="ingestion">
+                            <group string="Caminos de Ingesta Permitidos" colspan="2">
+                                <p class="text-muted">
+                                    Seleccione en qué perfiles de ingesta puede usarse este subproducto.
+                                    Si no selecciona ninguno, será visible en todos los perfiles (comportamiento legacy).
+                                </p>
+                                <field name="allowed_formula_ids" widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       colspan="2"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

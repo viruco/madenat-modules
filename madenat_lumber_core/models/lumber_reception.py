@@ -11,6 +11,7 @@ GENEALOGÍA: parent_lot_id = None (es el origen)
 Módulo Orquestador para la Recepción de Guías de Despacho Nacionales
 VERSIÓN 4.0.0 - LÓGICA INTELIGENTE DE OC + CAMPOS MARÍA VICTORIA + VALORIZACIÓN USD
 """
+import json
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from .utils_uom import (
@@ -445,11 +446,28 @@ class LumberReceptionLine(models.Model):
     # B. Sincronización UNIDIRECCIONAL (Nominal -> Visual)
     # FIX v5.5: Agregamos dependencias físicas ('thickness', 'width') para que el ORM 
     # autocalcule el espejo justo después de crear la línea en el staging.
+    # -------------------------------------------------------------------------
+    # 🧩 LECTORES DE PARÁMETROS (Fase 1 — Desacoplamiento de hardcodes)
+    # -------------------------------------------------------------------------
+    def _get_thickness_visual_ranges(self):
+        """Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy."""
+        return self.env['madenat.ingestion.config'].get_thickness_visual_rules()
+
+    def _apply_thickness_visual(self, t_mm):
+        """Aplica rangos de espesor→visual retornando string de fracción."""
+        ranges = self._get_thickness_visual_ranges()
+        for r in ranges:
+            if r[0] <= t_mm <= r[1]:
+                return r[3]
+        quarters = int(round((t_mm / float(MM_PER_INCH)) * 4))
+        return f"{quarters}/4" if quarters > 0 else ""
+
     @api.depends('thickness_nominal', 'width_nominal', 'thickness', 'width', 'reception_id.ingestion_profile')
     def _compute_visual_defaults(self):
         """
-        🎨 TRADUCTOR DE IDENTIDAD VISUAL (V6.1 - CONSOLIDADO)
+        🎨 TRADUCTOR DE IDENTIDAD VISUAL (V6.2 — PARAMETRIZADO FASE 1)
         Separa la Verdad Física (Pestaña 1) de la Sugerencia Comercial (Pestaña 2).
+        Usa madenat.thickness_visual_ranges con fallback exacto.
         """
         for line in self:
             profile = line.reception_id.ingestion_profile
@@ -457,15 +475,7 @@ class LumberReceptionLine(models.Model):
             # 🛡️ MUNDO 1: S2S / ROUGH (INTACTO - NO SE TOCA)
             if profile != 'f5085':
                 t_nom = line.thickness_nominal or line.thickness
-                if 37 <= t_nom <= 46: 
-                    res_t = "6/4"
-                elif 22 <= t_nom <= 29: 
-                    res_t = "4/4"
-                else:
-                    quarters = int(round((t_nom / float(MM_PER_INCH)) * 4))
-                    res_t = f"{quarters}/4" if quarters > 0 else ""
-                
-                line.thickness_visual = res_t
+                line.thickness_visual = self._apply_thickness_visual(t_nom)
                 line.width_visual = self._get_trader_width_text(line.width_nominal or line.width)
                 
                 # Sincronizamos los nominales por integridad (aunque el XML los oculte en S2S)
@@ -482,14 +492,12 @@ class LumberReceptionLine(models.Model):
                 line.width_visual = self._get_fraction_text(w_phys_in)
                 
                 # 2. SUGERENCIA COMERCIAL (Pestaña 2): Sugiere físico, pero escucha al Nominal
-                # Si el nominal es 0 (antes del wizard), t_val será igual al físico.
                 t_val = line.thickness_nominal if line.thickness_nominal > 0 else line.thickness
                 w_val = line.width_nominal if line.width_nominal > 0 else line.width
                 
                 t_nom_in = t_val if t_val < 10.0 else t_val / float(MM_PER_INCH)
                 w_nom_in = w_val if w_val < 10.0 else w_val / float(MM_PER_INCH)
                 
-                # AQUÍ ESTABA EL FALLO: Ahora asignamos los campos de la Pestaña 2
                 line.thickness_nominal_frac = self._get_fraction_text(t_nom_in)
                 line.width_nominal_frac = self._get_fraction_text(w_nom_in)
    
@@ -582,22 +590,19 @@ class LumberReceptionLine(models.Model):
     )
     def _compute_export_values(self):
         """
-        🚀 MOTOR DE CÁLCULO DE EXPORTACIÓN (CONSOLIDADO Y BLINDADO)
-        Aplica Reglas de Oro: Factor 1550.003, Factor 5085.312 y Recargo S2S (+0.125").
+        🚀 MOTOR DE CÁLCULO DE EXPORTACIÓN (FASE 3 — PARAMETRIZADO H8)
+        Resuelve la fórmula de exportación desde lumber.export.formula (Fase 3)
+        con fallback a constantes canónicas de utils_uom.
         """
-        # --- CONSTANTES DE INGENIERÍA ---
-        FACTOR_5085 = float(BLANK_CLEAR_FACTOR)
         METRO_A_PIE = float(FT_TO_M)
 
         # 1. PARSEO AISLADO (Funcionalidad intacta)
         def parse_to_inches(val_visual, val_real, current_line):
             if val_visual:
                 try:
-                    # Intento de parseo inteligente
                     if hasattr(current_line, '_parse_smart_dimension'):
                         return current_line._parse_smart_dimension(val_visual)
                     
-                    # Respaldo: Procesamiento de fracciones (Ej. "1 9/16" o "6/4")
                     raw = str(val_visual).replace(',', '.').strip()
                     if '/' in raw:
                         if ' ' in raw:
@@ -605,20 +610,17 @@ class LumberReceptionLine(models.Model):
                             return float(parts[0]) + (float(parts[1].split('/')[0]) / float(parts[1].split('/')[1]))
                         return float(raw.split('/')[0]) / float(raw.split('/')[1])
                     
-                    # Si es mayor a 10, asumimos milímetros y convertimos. Si no, son pulgadas.
                     val_float = float(raw)
                     return val_float / float(MM_PER_INCH) if val_float > 10.0 else val_float
 
                 except Exception as e:
                     _logger.warning(f"MADENAT: Error parseando dimensión visual '{val_visual}': {e}")
-                    pass # Falla silenciosa y segura hacia el valor real
+                    pass
             
-            # Fallback Seguro: Usar el valor real en mm pasado como parámetro
             return (val_real / float(MM_PER_INCH)) if val_real else 0.0
 
         # 2. PROCESAMIENTO DEL RECORDSET
         for line in self:
-            # Inicialización por defecto para evitar errores en UI
             vol_exp = 0.0
             val_mbf = 0.0
             
@@ -629,7 +631,6 @@ class LumberReceptionLine(models.Model):
                 l_m = line.length_nominal if line.length_nominal > 0 else line.length
                 qty = line.pieces or 0.0
 
-                # Obtención segura en Pulgadas, inyectando los mm CANÓNICOS (t_mm, w_mm) como val_real
                 t_in = parse_to_inches(line.thickness_visual, t_mm, line)
                 w_in = parse_to_inches(line.width_visual, w_mm, line)
                 
@@ -638,37 +639,37 @@ class LumberReceptionLine(models.Model):
                 if not rule:
                     rule = 'f5085' if t_in > 0 else 'metric'
 
-                # Ajuste S2S usando el ancho canónico
+                # ── FASE 3: Resolver fórmula desde modelo persistente ──
+                formula = self.env['lumber.export.formula']._resolve_for_profile(rule)
                 _s2s = float(get_s2s_adjustment(self.env, w_mm))
-                w_calc = w_in + _s2s if w_in > 0 else 0.0
-                l_feet = l_m / METRO_A_PIE if l_m else 0.0
+                _logger.debug("H8-Fase3: perfil=%s fuente=%s kind=%s", rule, formula['source'], formula['formula_kind'])
 
-                # 3. MATRIZ DE INGENIERÍA
+                # 3. MATRIZ DE INGENIERÍA (genérica, derivada de formula dict)
                 if t_in > 0 and w_in > 0 and l_m > 0 and qty > 0:
-                    if rule == 'f5085':
-                        # BLANK CLEAR: Fórmula con largo en PIES directos del Excel
-                        # t_in = (thickness_mm / float(MM_PER_INCH)) - float(FACE_DEDUCTION_INCH)  # -1/16" deducción cara
-                        # w_in = (width_mm / float(MM_PER_INCH)) + float(S2S_WIDTH_ADJUSTMENT_INCH)       # +1/8" S2S
-                        # l_ft = length_input_raw (pies, sin convertir)
-                        t_in_bc = (t_mm / float(MM_PER_INCH)) - float(FACE_DEDUCTION_INCH)
-                        w_in_bc = (w_mm / float(MM_PER_INCH)) + float(S2S_WIDTH_ADJUSTMENT_INCH)
+                    if formula['formula_kind'] == 'blank_clear':
+                        # Deducción de cara + ajuste S2S según fórmula
+                        t_calc = (t_mm / float(MM_PER_INCH)) - formula['deduction_factor']
+                        w_calc = (w_mm / float(MM_PER_INCH))
+                        if formula['s2s_adjustment_mode'] != 'none':
+                            w_calc = w_calc + _s2s
                         l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
-                        vol_exp = (t_in_bc * w_in_bc * l_ft * qty) / FACTOR_5085
-                        val_mbf = (t_in_bc * w_in_bc * l_ft * qty) / float(MBF_DIVISOR)
+                        vol_exp = (t_calc * w_calc * l_ft * qty) / formula['principal_factor']
+                        val_mbf = (t_calc * w_calc * l_ft * qty) / formula['mbf_divisor']
 
-                    elif rule == 'f1550':
+                    elif formula['formula_kind'] == 's2s_imperial':
+                        w_calc = w_in + _s2s if formula['s2s_adjustment_mode'] != 'none' else w_in
                         vol_exp = float(
                             Decimal(str(t_in))
                             * Decimal(str(w_calc))
                             * Decimal(str(l_m))
                             * Decimal(str(qty))
-                            / INCH_SQ_METERS_TO_M3
+                            / Decimal(str(formula['principal_factor']))
                         )
-                        val_mbf = (t_in * w_in * l_feet * qty) / float(MBF_DIVISOR)
+                        l_feet = l_m / METRO_A_PIE if l_m else 0.0
+                        val_mbf = (t_in * w_in * l_feet * qty) / formula['mbf_divisor']
                         
-                    elif rule == 'metric':
-                        # Regla Métrica Pura: Usa los valores canónicos en MM
-                        vol_exp = calculate_volume_metric_m3(t_mm, w_mm, l_m, qty)
+                    elif formula['formula_kind'] == 'metric_direct':
+                        vol_exp = (t_mm * w_mm * l_m * qty) / formula['principal_factor']
                         val_mbf = 0.0
 
             except Exception as e:
@@ -1158,7 +1159,33 @@ class LumberReception(models.Model):
             # A. Bloqueo por Contenedor
             lotes_en_contenedor = self.lot_ids.filtered(lambda l: getattr(l, 'container_id', False))
             if lotes_en_contenedor:
-                raise UserError("⛔ INTEGRIDAD: Lotes ya están en CONTENEDOR. Saque la madera del contenedor primero.")
+                # Construir mensaje detallado con lotes y contenedores
+                msg_lines = [
+                    "⛔ INTEGRIDAD: No se puede resetear la recepción porque todavía hay lotes asociados a contenedor.",
+                    "",
+                    "Quite primero esos lotes del contenedor y vuelva a intentar.",
+                    "",
+                ]
+                
+                # Agrupar lotes por contenedor para mejor visualización
+                lotes_por_contenedor = {}
+                for lot in lotes_en_contenedor[:10]:
+                    container_name = lot.container_id.display_name or lot.container_id.name
+                    if container_name not in lotes_por_contenedor:
+                        lotes_por_contenedor[container_name] = []
+                    lotes_por_contenedor[container_name].append(lot.ref or lot.name)
+                
+                # Agregar lotes bloqueantes al mensaje (máx 10)
+                for container, lotes in lotes_por_contenedor.items():
+                    for lote_ref in lotes:
+                        msg_lines.append(f"- Lote {lote_ref} → Contenedor {container}")
+                
+                # Si hay más de 10 lotes, indicarlo
+                if len(lotes_en_contenedor) > 10:
+                    cantidad_omitidos = len(lotes_en_contenedor) - 10
+                    msg_lines.append(f"... y {cantidad_omitidos} lotes más")
+                
+                raise UserError("\n".join(msg_lines))
 
             # B. Bloqueo por Consolidación
             if any(getattr(l, 'is_consolidated', False) for l in self.lot_ids):
@@ -1304,20 +1331,22 @@ class LumberReception(models.Model):
                 # 2. CALCULAR TEXTO VISUAL (LA REGLA DE ORO)
                 # -----------------------------------------------------------
                 
-                # A. Espesor Visual (Fix 45mm -> 6/4)
+                # A. Espesor Visual (Fix 45mm -> 6/4) — PARAMETRIZADO FASE 1
                 if 23.5 <= t_mm <= 24.5:
                     t_str = "24mm"
                 else:
-                    # Mapeo Comercial Manual
-                    t_val = 0.0
-                    if 37 <= t_mm <= 46: t_val = 1.5      # 6/4 (Tu regla)
-                    elif 22 <= t_mm <= 29: t_val = 1.0    # 4/4
-                    elif 30 <= t_mm <= 36: t_val = 1.25   # 5/4
-                    elif 47 <= t_mm <= 56: t_val = 2.0    # 8/4
-                    else: t_val = r4((t_mm / float(MM_PER_INCH)) * 4) / 4.0
-                    
-                    quarters = int(t_val * 4)
-                    t_str = f"{quarters}/4"
+                    # Mapeo Comercial desde parámetro con fallback exacto
+                    ranges = self._get_thickness_visual_ranges()
+                    t_val = None
+                    for r in ranges:
+                        if r[0] <= t_mm <= r[1]:
+                            t_val = r[2]
+                            t_str = r[3]
+                            break
+                    if t_val is None:
+                        t_val = r4((t_mm / float(MM_PER_INCH)) * 4) / 4.0
+                        quarters = int(t_val * 4)
+                        t_str = f"{quarters}/4"
 
                 # B. Ancho Visual (Octavos)
                 w_in = w_mm / float(MM_PER_INCH)
@@ -1874,8 +1903,8 @@ class LumberReception(models.Model):
 
             # Match tolerante por clave (compara contra nombre Odoo y referencia proveedor)
             po = candidate_pos.filtered(
-                lambda p: self._po_key(p.partner_ref or '') == po_key
-                    or self._po_key(p.name or '') == po_key
+                lambda p: parser.normalize_po_key(p.partner_ref or '') == po_key
+                    or parser.normalize_po_key(p.name or '') == po_key
             )[:1]
 
             if po:

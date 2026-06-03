@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================== -->
+    <!-- FASE 1 — DESACOPLAMIENTO DE HARDCODES (2026-06-02)                  -->
+    <!-- Parámetros ir.config_parameter con fallback exacto al comportamiento -->
+    <!-- actual. Cada parámetro documenta su hardcode de origen.              -->
+    <!-- ================================================================== -->
+
+    <!-- H1: Mapeo físico→nominal para blanks (reception_parser.py) -->
+    <record id="param_blanks_nominal_map" model="ir.config_parameter">
+        <field name="key">madenat.blanks_nominal_map</field>
+        <field name="value">[[1.0, 1.0], [1.25, 1.25], [1.5, 1.5], [1.5625, 1.5], [2.0, 2.0], [2.0625, 2.0], [2.5, 2.5], [3.0, 3.0]]</field>
+    </record>
+
+    <!-- H1: Tolerancia nominal (reception_parser.py) -->
+    <record id="param_nominal_tolerance" model="ir.config_parameter">
+        <field name="key">madenat.nominal_tolerance</field>
+        <field name="value">0.08</field>
+    </record>
+
+    <!-- H10+H11: Tabla unificada ancho mm→pulgadas (width_mapping.py + utils_uom.py) -->
+    <!-- Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx — 16 entradas canónicas -->
+    <record id="param_width_s2s_map" model="ir.config_parameter">
+        <field name="key">madenat.width_s2s_map</field>
+        <field name="value">{"75": 2.625, "85": 2.875, "90": 3.125, "95": 3.375, "100": 3.625, "105": 3.875, "110": 3.875, "115": 4.375, "120": 4.375, "125": 4.625, "130": 4.875, "140": 4.875, "145": 5.375, "150": 5.625, "155": 5.875, "170": 170.0}</field>
+    </record>
+
+    <!-- H5+H13: Rangos espesor→visual (lumber_reception.py) -->
+    <!-- Formato: {"ranges": [[min, max, value, label], ...], "default_format": "{quarters}/4"} -->
+    <record id="param_thickness_visual_ranges" model="ir.config_parameter">
+        <field name="key">madenat.thickness_visual_ranges</field>
+        <field name="value">{"ranges": [[37, 46, 1.5, "6/4"], [22, 29, 1.0, "4/4"], [30, 36, 1.25, "5/4"], [47, 56, 2.0, "8/4"]], "default_format": "{q}/4"}</field>
+    </record>
+
+    <!-- H2+H4+H14: Filtros y candados perfil↔subproducto -->
+    <!-- Estructura: {"profiles": {"f5085": {"allowed_keywords": [], "forbidden_keywords": ["S2S", "RIP"], "forbidden_in_lock": ["S2S", "RIP"]}, "f1550": {"allowed_keywords": ["S2S"], "forbidden_keywords": [], "forbidden_in_lock": ["ROUGH", "BLANK"]}, "metric": {"allowed_keywords": [], "forbidden_keywords": [], "forbidden_in_lock": []}}} -->
+    <record id="param_profile_subproduct_filters" model="ir.config_parameter">
+        <field name="key">madenat.profile_subproduct_filters</field>
+        <field name="value">{"profiles": {"f5085": {"allowed_keywords": [], "forbidden_keywords": ["S2S", "RIP"], "forbidden_in_lock": ["S2S", "RIP"]}, "f1550": {"allowed_keywords": ["S2S"], "forbidden_keywords": [], "forbidden_in_lock": ["ROUGH", "BLANK"]}, "metric": {"allowed_keywords": [], "forbidden_keywords": [], "forbidden_in_lock": []}}}</field>
+    </record>
+</odoo>

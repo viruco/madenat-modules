@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 from odoo import models, fields, api, _
 from ..models.utils_uom import S2S_WIDTH_LOOKUP
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class LumberReceptionMassUpdate(models.TransientModel):
@@ -174,29 +178,86 @@ class LumberReceptionMassUpdate(models.TransientModel):
         string="Subproductos Permitidos"
     )
 
+    def _get_profile_subproduct_filters(self):
+        """Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy."""
+        config = self.env['madenat.ingestion.config']
+        return {
+            "profiles": {
+                "f5085": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('f5085', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('f5085', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('f5085', 'forbidden_in_lock'),
+                },
+                "f1550": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('f1550', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('f1550', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('f1550', 'forbidden_in_lock'),
+                },
+                "metric": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('metric', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('metric', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('metric', 'forbidden_in_lock'),
+                },
+            }
+        }
+
     @api.depends('ingestion_profile')
     def _compute_allowed_subproducts(self):
         """
         Filtra subproductos disponibles según la Regla de Oro del perfil.
+        FASE 3: Filtro estructural (allowed_formula_ids → lumber.export.formula)
+                con fallback textual legacy (lumber.profile.subproduct.rule).
 
-        MATRIZ DE FILTROS:
+        PRIORIDAD:
+          1. Si existe fórmula activa para el perfil:
+             → subproductos con esa fórmula en allowed_formula_ids
+             → + subproductos sin fórmula asignada (legacy)
+          2. Si NO existe fórmula activa:
+             → fallback textual legacy (keywords ilike en name)
+
+        MATRIZ DE FILTROS (fallback):
           f5085 (Blanks) → excluye S2S y RIP
           f1550 (S2S)    → solo muestra S2S
           metric         → sin filtro (muestra todos)
         """
+        Formula = self.env['lumber.export.formula'].sudo()
+        filters_config = self._get_profile_subproduct_filters()
+        profiles_cfg = filters_config.get('profiles', {})
+
         for wizard in self:
             perfil = wizard.ingestion_profile
-            if perfil == 'f5085':
-                domain = [
-                    ('name', 'not ilike', 'S2S'),
-                    ('name', 'not ilike', 'RIP')
+
+            # ── PRIORIDAD 1: Filtro estructural por fórmula ──────────────
+            formula = Formula.search([
+                ('profile', '=', perfil),
+                ('active', '=', True),
+            ], limit=1, order='sequence')
+
+            if formula:
+                # Subproductos con esta fórmula en allowed_formula_ids
+                # + subproductos sin fórmula asignada (legacy, visibles en todos)
+                domain_structural = [
+                    '|',
+                    ('allowed_formula_ids', 'in', [formula.id]),
+                    ('allowed_formula_ids', '=', False),
                 ]
-            elif perfil == 'f1550':
-                domain = [('name', 'ilike', 'S2S')]
+                wizard.allowed_subproduct_ids = self.env['madenat.subproducto'].search(
+                    domain_structural
+                )
             else:
-                # metric: sin restricción de subproducto
-                domain = []
-            wizard.allowed_subproduct_ids = self.env['madenat.subproducto'].search(domain)
+                # ── PRIORIDAD 2: Fallback textual legacy ─────────────────
+                cfg = profiles_cfg.get(perfil, {})
+                allowed = cfg.get('allowed_keywords', [])
+                forbidden = cfg.get('forbidden_keywords', [])
+                domain = [('allowed_formula_ids', '=', False)]
+                for kw in forbidden:
+                    domain.append(('name', 'not ilike', kw))
+                if allowed:
+                    if len(allowed) > 1:
+                        domain.append('|' * (len(allowed) - 1))
+                    for kw in allowed:
+                        domain.append(('name', 'ilike', kw))
+                wizard.allowed_subproduct_ids = self.env['madenat.subproducto'].search(domain)
 
     # =========================================================================
     # CAMPOS — CLASIFICACIÓN Y ALCANCE
@@ -245,27 +306,22 @@ class LumberReceptionMassUpdate(models.TransientModel):
                 "❌ Error de integridad: No se encontró la recepción principal."
             ))
 
-        # ── 2. CANDADO DE SEGURIDAD COMERCIAL ────────────────────────────────
-        # Solo aplica a perfiles imperiales donde la mezcla de subproductos
-        # puede generar inconsistencias en los factores de cálculo volumétrico.
+        # ── 2. CANDADO DE SEGURIDAD COMERCIAL (PARAMETRIZADO FASE 1) ─────────
         if self.subproduct_id and self.ingestion_profile:
             perfil = self.ingestion_profile
             nombre_sub = self.subproduct_id.name.upper()
-
-            if perfil == 'f5085' and ('S2S' in nombre_sub or 'RIP' in nombre_sub):
-                raise UserError(_(
-                    "❌ ERROR DE CONSISTENCIA COMERCIAL:\n"
-                    "Está intentando asignar un subproducto 'S2S / RIP' en una "
-                    "recepción configurada como Blanks (F5085).\n"
-                    "Por favor, seleccione un subproducto válido."
-                ))
-            if perfil == 'f1550' and ('ROUGH' in nombre_sub or 'BLANK' in nombre_sub):
-                raise UserError(_(
-                    "❌ ERROR DE CONSISTENCIA COMERCIAL:\n"
-                    "Está intentando asignar un subproducto 'Rough / Blank' en "
-                    "una recepción configurada como S2S (F1550).\n"
-                    "Por favor, seleccione un subproducto válido."
-                ))
+            filters_config = self._get_profile_subproduct_filters()
+            profiles_cfg = filters_config.get('profiles', {})
+            cfg = profiles_cfg.get(perfil, {})
+            forbidden_in_lock = cfg.get('forbidden_in_lock', [])
+            for kw in forbidden_in_lock:
+                if kw.upper() in nombre_sub:
+                    raise UserError(_(
+                        "❌ ERROR DE CONSISTENCIA COMERCIAL:\n"
+                        "Está intentando asignar un subproducto '%s' en una "
+                        "recepción configurada como %s.\n"
+                        "Por favor, seleccione un subproducto válido."
+                    ) % (self.subproduct_id.name, perfil.upper()))
 
         # ── 3. DETERMINAR LÍNEAS OBJETIVO ─────────────────────────────────────
         if self.apply_to == 'selected':
@@ -298,8 +354,7 @@ class LumberReceptionMassUpdate(models.TransientModel):
             # width_nominal_frac: texto visual para UI y auditoría
             vals['width_nominal_frac'] = self.width_nominal_frac or ''
 
-        if self.subproduct_id:
-            vals['subproduct_id'] = self.subproduct_id.id
+        vals['subproduct_id'] = self.subproduct_id.id or False
 
         if not vals:
             raise UserError(_(

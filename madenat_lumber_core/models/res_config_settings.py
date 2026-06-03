@@ -60,3 +60,12 @@ class ResConfigSettings(models.TransientModel):
         help='Porcentaje de diferencia que dispara alerta crítica (decoración roja) '
              'y puede requerir justificación obligatoria.'
     )
+
+    # Fase 2 — Tolerancia nominal para blanks
+    nominal_tolerance = fields.Float(
+        string='Tolerancia Nominal (pulg)',
+        config_parameter='madenat.nominal_tolerance',
+        default=0.08,
+        help='Tolerancia en pulgadas para el redondeo de espesor físico a nominal '
+             'en blanks. Valor usado por el parser de recepción.'
+    )

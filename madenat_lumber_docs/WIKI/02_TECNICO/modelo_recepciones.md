@@ -34,8 +34,6 @@ class LumberReception(models.Model):
 | Verificado | `verified` | Validación completada |
 | Recibido | `done` | Recepción finalizada, lotes creados |
 | Cancelado | `cancel` | Recepción anulada |
-| Error | `error` | Error durante el procesamiento |
-| Pendiente OC | `pending_link` | Operando sin OC vinculada |
 
 ---
 
@@ -165,8 +163,12 @@ class LumberReception(models.Model):
 
 | Método | Acción | Detalle |
 |---|---|---|
+| `action_process_documents` | `draft` → `processing` | Procesa PDF y Excel: extrae datos de guía, cruza OC, genera líneas staging |
+| `action_verify_data` | `processing` → `verified` | Ejecuta validadores checklist; marca recepción como verificada |
+| `action_confirm_reception` | `verified` → `done` | Crea lotes definitivos, pickings, quants; genera snapshot de auditoría |
 | `action_reset_to_draft` | any → `draft` | Reseteo completo: elimina Quants → Lotes → Pickings → Staging en una transacción atómica. **Bloquea** si lotes están en contenedor o consolidados |
 | `action_cancel` | any → `cancel` | Cancela recepción sin borrar datos |
+| `action_link_to_existing_po` | `draft` | Vincula manualmente una OC existente a la recepción |
 
 ---
 
@@ -187,7 +189,7 @@ class LumberReception(models.Model):
 ## Evidencia
 
 - Archivo: `custom_addons/madenat_lumber_core/models/lumber_reception.py`
-- Línea de clase cabecera: ~1100
+- Línea de clase cabecera: ~817 (definición `class LumberReception(models.Model)`)
 - Wizard: `custom_addons/madenat_lumber_core/wizard/lumber_reception_mass_update.py`
 - Vistas: `custom_addons/madenat_lumber_core/views/lumber_reception_views.xml`
 - Test: `CANON/03_TESTS.md`

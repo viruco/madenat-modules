@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- FASE 2 — SEMILLA INICIAL DESDE PARAMETROS DE FASE 1 -->
+        <!-- Idempotente: si los registros ya existen, no los duplica. -->
+
+        <!-- 3a. Mapa fisico->nominal blanks (desde madenat.blanks_nominal_map) -->
+        <record id="seed_blank_nominal_1" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">1.0</field>
+            <field name="physical_max">1.0</field>
+            <field name="nominal">1.0</field>
+            <field name="sequence">10</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_125" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">1.25</field>
+            <field name="physical_max">1.25</field>
+            <field name="nominal">1.25</field>
+            <field name="sequence">20</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_15" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">1.5</field>
+            <field name="physical_max">1.5</field>
+            <field name="nominal">1.5</field>
+            <field name="sequence">30</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_15625" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">1.5625</field>
+            <field name="physical_max">1.5625</field>
+            <field name="nominal">1.5</field>
+            <field name="sequence">40</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_2" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">2.0</field>
+            <field name="physical_max">2.0</field>
+            <field name="nominal">2.0</field>
+            <field name="sequence">50</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_20625" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">2.0625</field>
+            <field name="physical_max">2.0625</field>
+            <field name="nominal">2.0</field>
+            <field name="sequence">60</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_25" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">2.5</field>
+            <field name="physical_max">2.5</field>
+            <field name="nominal">2.5</field>
+            <field name="sequence">70</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="seed_blank_nominal_3" model="lumber.blank.nominal.map" forcecreate="False">
+            <field name="profile">f5085</field>
+            <field name="physical_min">3.0</field>
+            <field name="physical_max">3.0</field>
+            <field name="nominal">3.0</field>
+            <field name="sequence">80</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 3b. Tabla Rough->S2S (desde madenat.width_s2s_map) -->
+        <record id="seed_s2s_75" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">75</field><field name="s2s_decimal">2.625</field><field name="s2s_label">2 5/8</field><field name="sequence">10</field>
+        </record>
+        <record id="seed_s2s_85" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">85</field><field name="s2s_decimal">2.875</field><field name="s2s_label">2 7/8</field><field name="sequence">20</field>
+        </record>
+        <record id="seed_s2s_90" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">90</field><field name="s2s_decimal">3.125</field><field name="s2s_label">3 1/8</field><field name="sequence">30</field>
+        </record>
+        <record id="seed_s2s_95" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">95</field><field name="s2s_decimal">3.375</field><field name="s2s_label">3 3/8</field><field name="sequence">40</field>
+        </record>
+        <record id="seed_s2s_100" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">100</field><field name="s2s_decimal">3.625</field><field name="s2s_label">3 5/8</field><field name="sequence">50</field>
+        </record>
+        <record id="seed_s2s_105" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">105</field><field name="s2s_decimal">3.875</field><field name="s2s_label">3 7/8</field><field name="sequence">60</field>
+        </record>
+        <record id="seed_s2s_110" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">110</field><field name="s2s_decimal">3.875</field><field name="s2s_label">3 7/8</field><field name="sequence">70</field>
+        </record>
+        <record id="seed_s2s_115" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">115</field><field name="s2s_decimal">4.375</field><field name="s2s_label">4 3/8</field><field name="sequence">80</field>
+        </record>
+        <record id="seed_s2s_120" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">120</field><field name="s2s_decimal">4.375</field><field name="s2s_label">4 3/8</field><field name="sequence">90</field>
+        </record>
+        <record id="seed_s2s_125" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">125</field><field name="s2s_decimal">4.625</field><field name="s2s_label">4 5/8</field><field name="sequence">100</field>
+        </record>
+        <record id="seed_s2s_130" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">130</field><field name="s2s_decimal">4.875</field><field name="s2s_label">4 7/8</field><field name="sequence">110</field>
+        </record>
+        <record id="seed_s2s_140" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">140</field><field name="s2s_decimal">4.875</field><field name="s2s_label">4 7/8</field><field name="sequence">120</field>
+        </record>
+        <record id="seed_s2s_145" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">145</field><field name="s2s_decimal">5.375</field><field name="s2s_label">5 3/8</field><field name="sequence">130</field>
+        </record>
+        <record id="seed_s2s_150" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">150</field><field name="s2s_decimal">5.625</field><field name="s2s_label">5 5/8</field><field name="sequence">140</field>
+        </record>
+        <record id="seed_s2s_155" model="lumber.width.s2s.map" forcecreate="False">
+            <field name="rough_mm">155</field><field name="s2s_decimal">5.875</field><field name="s2s_label">5 7/8</field><field name="sequence">150</field>
+        </record>
+
+        <!-- 3c. Rangos espesor->visual (desde madenat.thickness_visual_ranges) -->
+        <record id="seed_vis_44" model="lumber.thickness.visual.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="min_thickness">22</field><field name="max_thickness">29</field><field name="visual_value">1.0</field><field name="visual_label">4/4</field><field name="sequence">10</field>
+        </record>
+        <record id="seed_vis_54" model="lumber.thickness.visual.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="min_thickness">30</field><field name="max_thickness">36</field><field name="visual_value">1.25</field><field name="visual_label">5/4</field><field name="sequence">20</field>
+        </record>
+        <record id="seed_vis_64" model="lumber.thickness.visual.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="min_thickness">37</field><field name="max_thickness">46</field><field name="visual_value">1.5</field><field name="visual_label">6/4</field><field name="sequence">30</field>
+        </record>
+        <record id="seed_vis_84" model="lumber.thickness.visual.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="min_thickness">47</field><field name="max_thickness">56</field><field name="visual_value">2.0</field><field name="visual_label">8/4</field><field name="sequence">40</field>
+        </record>
+
+        <!-- 3d. Reglas Perfil<->Subproducto (desde madenat.profile_subproduct_filters) -->
+        <record id="seed_sub_f5085_forbidden_s2s" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="rule_type">forbidden</field><field name="keyword">S2S</field>
+        </record>
+        <record id="seed_sub_f5085_forbidden_rip" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="rule_type">forbidden</field><field name="keyword">RIP</field>
+        </record>
+        <record id="seed_sub_f5085_lock_s2s" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="rule_type">forbidden_in_lock</field><field name="keyword">S2S</field>
+        </record>
+        <record id="seed_sub_f5085_lock_rip" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f5085</field><field name="rule_type">forbidden_in_lock</field><field name="keyword">RIP</field>
+        </record>
+        <record id="seed_sub_f1550_allowed_s2s" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f1550</field><field name="rule_type">allowed</field><field name="keyword">S2S</field>
+        </record>
+        <record id="seed_sub_f1550_lock_rough" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f1550</field><field name="rule_type">forbidden_in_lock</field><field name="keyword">ROUGH</field>
+        </record>
+        <record id="seed_sub_f1550_lock_blank" model="lumber.profile.subproduct.rule" forcecreate="False">
+            <field name="profile">f1550</field><field name="rule_type">forbidden_in_lock</field><field name="keyword">BLANK</field>
+        </record>
+    </data>
+</odoo>

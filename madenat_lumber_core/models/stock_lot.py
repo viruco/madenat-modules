@@ -517,7 +517,8 @@ class StockLotExtended(models.Model):
                 if lot.largo_ft_frac:
                     # Limpieza y casting de la fracción (ej: "16'" -> 16.0)
                     largo_ft = float(lot.largo_ft_frac.replace("'", "").strip())
-                    vol_gold = (espesor_in * ancho_calculo * largo_ft * lot.piezas) / FACTOR_BLANK_5085
+                    # BLANK: sin ajuste de cepillado (+1/8") — dimensiones exactas de ingesta (MADENAT-FIX-BLANK-2026-06-02)
+                    vol_gold = (espesor_in * ancho_in * largo_ft * lot.piezas) / FACTOR_BLANK_5085
                 
                 # 🎯 CASO B: MADERA CORTE MÉTRICO (ESTÁNDAR)
                 # Si no hay pies, utilizamos largo en metros y el Factor de Oro 1550.003

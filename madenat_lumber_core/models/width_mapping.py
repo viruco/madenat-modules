@@ -4,6 +4,11 @@
 
 Contiene tablas de verdad centralizadas para conversiones de unidades.
 """
+import json
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class WidthMappingTable:
     """Tabla única de mapeo de anchos Rough -> S2S"""
@@ -28,7 +33,17 @@ class WidthMappingTable:
     }
 
     @classmethod
-    def get_value(cls, mm, format_type='text', tolerance=2.5):
+    def _get_mapping_from_param(cls, env):
+        """
+        Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy.
+        Retorna dict {mm_int: (decimal_inch, texto_fraccionario)}.
+        """
+        if env and 'madenat.ingestion.config' in env:
+            return env['madenat.ingestion.config'].get_width_s2s_map()
+        return cls.MAPPING
+
+    @classmethod
+    def get_value(cls, mm, format_type='text', tolerance=2.5, env=None):
         """
         Busca el valor mapeado por vecino más cercano.
 
@@ -36,17 +51,20 @@ class WidthMappingTable:
             mm: medida en milímetros
             format_type: 'text' ("5 3/8") o 'decimal' (5.375)
             tolerance: tolerancia de búsqueda ±mm
+            env: Odoo environment (opcional; si se provee, lee ir.config_parameter)
         """
         if not mm:
             return "" if format_type == 'text' else 0.0
 
+        mapping = cls._get_mapping_from_param(env) if env else cls.MAPPING
+
         # Búsqueda exacta primero
-        if mm in cls.MAPPING:
-            val = cls.MAPPING[mm]
+        if mm in mapping:
+            val = mapping[mm]
             return val[1] if format_type == 'text' else val[0]
 
         # Búsqueda por vecino más cercano
-        matches = [(m, v) for m, v in cls.MAPPING.items() if abs(m - mm) <= tolerance]
+        matches = [(m, v) for m, v in mapping.items() if abs(m - mm) <= tolerance]
         if not matches:
             return None
 

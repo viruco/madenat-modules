@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
+
 
 class MadenatGuiaMassUpdate(models.TransientModel):
     _name = 'madenat.guia.mass.update'
@@ -20,6 +25,29 @@ class MadenatGuiaMassUpdate(models.TransientModel):
         help="Clasificación comercial (Ej: Rough, s2s)"
     )
 
+    def _get_profile_subproduct_filters(self):
+        """Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy."""
+        config = self.env['madenat.ingestion.config']
+        return {
+            "profiles": {
+                "f5085": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('f5085', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('f5085', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('f5085', 'forbidden_in_lock'),
+                },
+                "f1550": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('f1550', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('f1550', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('f1550', 'forbidden_in_lock'),
+                },
+                "metric": {
+                    "allowed_keywords": config.get_profile_subproduct_rules('metric', 'allowed'),
+                    "forbidden_keywords": config.get_profile_subproduct_rules('metric', 'forbidden'),
+                    "forbidden_in_lock": config.get_profile_subproduct_rules('metric', 'forbidden_in_lock'),
+                },
+            }
+        }
+
     def action_apply(self):
         self.ensure_one()
         
@@ -33,14 +61,18 @@ class MadenatGuiaMassUpdate(models.TransientModel):
 
         guia = self.env['madenat.guia.processing'].browse(guia_id)
         
-        # 🛡️ CANDADO DE SEGURIDAD (Prevención de mezcla comercial)
+        # 🛡️ CANDADO DE SEGURIDAD (Prevención de mezcla comercial) — PARAMETRIZADO FASE 1
         if self.subproducto_id:
-            # Asumiendo que esta guía también tiene un perfil o tipo. Si no lo tiene, evalúa su nombre.
             nombre_sub = self.subproducto_id.name.upper()
             if hasattr(guia, 'ingestion_profile'):
                 perfil = getattr(guia, 'ingestion_profile')
-                if perfil == 'f5085' and ('S2S' in nombre_sub or 'RIP' in nombre_sub):
-                    raise UserError(_("❌ No puede asignar un producto 'S2S/RIP' en una guía de tipo Rough/Blanks."))
+                filters_config = self._get_profile_subproduct_filters()
+                profiles_cfg = filters_config.get('profiles', {})
+                cfg = profiles_cfg.get(perfil, {})
+                forbidden_in_lock = cfg.get('forbidden_in_lock', [])
+                for kw in forbidden_in_lock:
+                    if kw.upper() in nombre_sub:
+                        raise UserError(_("❌ No puede asignar un producto '%s' en una guía de tipo %s.") % (self.subproducto_id.name, perfil.upper()))
 
         lines = guia.processing_line_ids
         if not lines:

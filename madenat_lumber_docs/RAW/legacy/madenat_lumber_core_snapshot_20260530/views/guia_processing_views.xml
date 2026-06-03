@@ -1,0 +1,1013 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    ═══════════════════════════════════════════════════════════════════════════════
+    MÓDULO: MADENAT LUMBER CORE - RECEPCIÓN DE GUÍAS
+    DESCRIPCIÓN: Gestión completa del flujo de recepción de madera desde documentos
+                 físicos hasta ingreso a inventario con trazabilidad total.
+
+    ARQUITECTURA:
+    - Vista List: Listado ejecutivo de guías con indicadores clave
+    - Vista Form: Formulario multi-pestaña para gestión completa del ciclo de vida
+    - Vista List Pendientes: Filtro de guías sin orden de compra asociada
+
+    FLUJO DE ESTADOS:
+    draft → verified → processed → validated
+
+    AUTOR: Equipo MADENAT
+    FECHA: 2026-01-24
+    ═══════════════════════════════════════════════════════════════════════════════
+    -->
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════════════════
+    VISTA LIST PRINCIPAL
+    Propósito: Listado ejecutivo de todas las guías con KPIs visuales
+    Decoraciones: Código de colores según estado del documento
+    ═══════════════════════════════════════════════════════════════════════════════
+    -->
+    <record id="view_madenat_guia_processing_list" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.list</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <list string="Recepción de Guías"
+                  decoration-muted="state == 'draft'"
+                  decoration-success="state == 'validated'"
+                  decoration-info="state == 'processed'"
+                  decoration-danger="state == 'cancelled'">
+
+                <!-- Identificación del Documento -->
+                <field name="name" string="Guía"/>
+                <field name="tipo_recepcion" string="Tipo"/>
+                <field name="date_emission" string="Fecha"/>
+
+                <!-- Relaciones Comerciales -->
+                <field name="partner_id" string="Proveedor"/>
+                <field name="order_id" string="Orden Compra"/>
+
+                <!-- Indicadores de Volumen (KPIs) -->
+                <field name="vol_comercial" string="Vol. Comercial m³" digits="[16, 3]"/>
+                <field name="vol_fisico" string="Vol. Físico m³" digits="[16, 3]"/>
+
+                <!-- Control de Calidad: Diferencia Porcentual -->
+                <field name="diff_pct" string="Dif. %"
+                       widget="percentage"
+                       decoration-danger="diff_pct &lt; 0"
+                       decoration-success="diff_pct &gt; 0"
+                       decoration-muted="diff_pct == 0"/>
+
+                <!-- Indicadores Operativos -->
+                <field name="total_paquetes" string="Paquetes"/>
+
+                <!-- Estado del Documento (Badge con colores) -->
+                <field name="state" string="Estado" widget="badge"
+                       decoration-success="state == 'validated'"
+                       decoration-info="state == 'processed'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════════════════
+    VISTA FORM PRINCIPAL
+    Propósito: Formulario completo de gestión del ciclo de vida de la guía
+
+    ESTRUCTURA:
+    - Header: Botones de acción según estado + Statusbar + Indicadores KPI
+    - Sheet: Datos maestros + Dashboard de volúmenes + Notebook de 8 pestañas
+    - Chatter: Seguimiento de conversaciones y cambios
+
+    PRINCIPIOS DE DISEÑO:
+    - Separación de contextos por pestaña (física, comercial, exportación)
+    - Validación progresiva (draft → verified → processed → validated)
+    - Trazabilidad completa (todos los cambios registrados)
+    - UX optimizada (indicadores visuales, alertas contextuales)
+    ═══════════════════════════════════════════════════════════════════════════════
+    -->
+    <record id="view_madenat_guia_processing_form" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.form</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <form string="Recepción de Guía" class="o_xxl_form_view">
+
+                <!--
+                ═══════════════════════════════════════════════════════════════════
+                HEADER: CONTROLES DE FLUJO Y STATUSBAR
+                Propósito: Gestión del ciclo de vida del documento
+                ═══════════════════════════════════════════════════════════════════
+                -->
+                <header>
+                    <!-- PASO 1: Carga y Verificación de Datos -->
+                    <button name="action_verify_data"
+                            string="▶️ 1. Cargar y Verificar Datos"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"
+                            help="Procesa Excel y PDF para crear líneas de staging"/>
+
+                    <!-- PASO 2: Aprobación y Procesamiento -->
+                    <button name="action_process_from_staging"
+                            string="✅ 2. Aprobar y Procesar"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'verified'"
+                            help="Convierte líneas verificadas en registros finales"/>
+
+                    <!-- PASO 3: Validación e Ingreso a Stock -->
+                    <button name="action_validate"
+                            string="🔒 3. Validar e Ingresar Stock"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not can_validate"
+                            help="Genera lotes de stock y movimientos de inventario"/>
+
+                    <!-- Alerta de Requisitos Faltantes -->
+                    <div class="alert alert-warning" role="alert" invisible="can_process"
+                         style="margin: 0; padding: 8px 12px; display: inline-block; vertical-align: middle;">
+                        <strong>⏳ Requisitos:</strong>
+                        <span invisible="guide_pdf_file" style="margin-right: 5px;">❌ PDF Guía</span>
+                        <span invisible="excel_file">❌ Excel Packing</span>
+                    </div>
+
+                    <!-- Controles de Flujo Inverso -->
+                    <button name="action_reopen_to_draft"
+                            string="↩️ Reabrir a Borrador"
+                            type="object"
+                            class="btn-warning"
+                            invisible="not can_reopen"
+                            help="Retrocede el documento a estado draft para correcciones"/>
+
+                    <button name="action_force_cancel"
+                            string="🛡️ Cancelar Guía"
+                            type="object"
+                            class="btn-secondary"
+                            confirm="¿Está seguro de anular esta guía? Se validarán las reglas logísticas y financieras antes de proceder."
+                            invisible="state not in ('draft', 'validated')"
+                            help="Anula el documento de forma segura protegiendo el inventario físico."/>
+
+                    <!-- Indicadores KPI en Header -->
+                    <div class="oe_header_indicators"
+                         style="margin-left: auto; display: flex; gap: 20px; align-items: center; margin-right: 15px;">
+                        <div class="indicator" invisible="state == 'draft'">
+                            <span class="text-muted">📋 Paquetes:</span>
+                            <field name="total_paquetes" nolabel="1" readonly="1" class="fw-bold text-primary"/>
+                        </div>
+                        <div class="indicator" invisible="state == 'draft'">
+                            <span class="text-muted">📦 Lotes (Líneas):</span>
+                            <field name="total_lotes_unicos" nolabel="1" readonly="1" class="fw-bold"/>
+                        </div>
+                        <div class="indicator" invisible="state == 'draft'">
+                            <span class="text-muted">📊 Vol:</span>
+                            <field name="vol_fisico" nolabel="1" readonly="1" class="fw-bold"/> m³
+                        </div>
+                    </div>
+
+                    <!-- Statusbar: Representación visual del estado actual -->
+                    <field name="state" widget="statusbar" statusbar_visible="draft,verified,processed,validated"/>
+                </header>
+
+                <!--
+                ═══════════════════════════════════════════════════════════════════
+                SHEET: CUERPO PRINCIPAL DEL FORMULARIO
+                ═══════════════════════════════════════════════════════════════════
+                -->
+                <sheet>
+                    <!-- Título del Documento -->
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Ej: 39177 - N° de Guía"/></h1>
+                    </div>
+
+                    <!--
+                    ═══════════════════════════════════════════════════════════
+                    DATOS MAESTROS DEL DOCUMENTO
+                    Sección: Información esencial de la guía -->
+
+                    <group>
+                        <!-- ════════════════════════════════════════════════ -->
+                        <!-- COLUMNA IZQUIERDA: Datos Operativos              -->
+                        <!-- ════════════════════════════════════════════════ -->
+                        <group>
+                            <field name="tipo_recepcion" string="Tipo de Recepción" required="1"/>
+                            <field name="partner_id" string="Proveedor"/>
+                            <field name="assignment_location_id" string="Patio de Asignación"
+                                   domain="[('usage','=','internal')]" required="1"/>
+                            <field name="order_id" string="Orden de Compra"
+                                   context="{'default_partner_id': partner_id}"
+                                   options="{'no_create': True}"
+                                   placeholder="Buscar OC existente..."/>
+                            <field name="date_emission" string="Fecha Recepción"/>
+                        </group>
+
+                        <!-- ════════════════════════════════════════════════ -->
+                        <!-- COLUMNA DERECHA: Información Financiera          -->
+                        <!-- ════════════════════════════════════════════════ -->
+                        <group>
+                            <label for="rate_date" string="💰 Tipo de Cambio"/>
+                            <div>
+                                <field name="rate_date" string="Fecha" class="oe_inline"/>
+                                <field name="rate_usd" string="USD" widget="float" class="oe_inline ms-2"
+                                       options="{'precision': 2}"/>
+                            </div>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN INDEPENDIENTE: Detalle del Servicio (del PDF)  -->
+                    <!-- Solo visible cuando se procesa un PDF con datos         -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <group string="📋 Detalle del Servicio" invisible="not service_product_name" class="mt-3">
+                        <group>
+                            <field name="service_date" string="Fecha del Servicio"/>
+                            <field name="service_code" string="Código del Servicio" readonly="1"/>
+                            <field name="service_product_name" string="Descripción" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="service_volume_m3" string="Volumen (m³)" widget="float"
+                                   options="{'precision': 3}" readonly="1"/>
+                            <field name="service_unit_price_clp" string="Precio Unitario" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}" readonly="1"/>
+                            <field name="additional_cost" string="💵 Valor Total" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}" readonly="1"
+                                   class="fw-bold text-primary"/>
+                        </group>
+                    </group>
+
+
+
+
+              <div class="row mb-4 mt-2">
+                        <div class="col-12 border-bottom pb-2 mb-3">
+                            <h3 class="text-primary"><i class="fa fa-bar-chart" aria-hidden="true" title="Gráfico"/> Control de Volúmenes</h3>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <strong><i class="fa fa-file-pdf-o" aria-hidden="true" title="Documento PDF"/> Comercial (Guía)</strong>
+                                    <span class="badge bg-light text-primary">Teórico</span>
+                                </div>
+                                <div class="card-body bg-view">
+                                    <span class="d-block text-muted small text-uppercase fw-bold">Volumen m³</span>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <field name="vol_comercial" class="fs-4 fw-bold text-primary me-2" readonly="1"/>
+                                        <span class="text-muted">m³</span>
+                                    </div>
+                                    <div class="border-top pt-2 mt-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Vol. MBF:</span>
+                                            <field name="vol_comercial_mbf" class="fw-bold" readonly="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                    <strong><i class="fa fa-ruler-combined" aria-hidden="true" title="Medición"/> Físico (Nominal)</strong>
+                                    <span class="badge bg-light text-success">Medido</span>
+                                </div>
+                                <div class="card-body bg-view">
+                                    <span class="d-block text-muted small text-uppercase fw-bold">Volumen m³</span>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <field name="vol_fisico" class="fs-4 fw-bold text-success me-2" readonly="1"/>
+                                        <span class="text-muted">m³</span>
+                                    </div>
+                                    <div class="border-top pt-2 mt-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Vol. MBF:</span>
+                                            <field name="vol_fisico_mbf" class="fw-bold" readonly="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                                    <strong><i class="fa fa-balance-scale" aria-hidden="true" title="Balance"/> Diferencias</strong>
+                                    <span class="badge bg-dark text-warning">Delta</span>
+                                </div>
+                                <div class="card-body bg-view">
+                                    <span class="d-block text-muted small text-uppercase fw-bold">Variación %</span>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <field name="diff_pct"
+                                               class="fs-4 fw-bold me-2"
+                                               decoration-danger="diff_pct > 3 or diff_pct &lt; -3"
+                                               decoration-success="diff_pct &gt; -1 and diff_pct &lt; 1"
+                                               readonly="1"/>
+                                        <span class="text-muted">%</span>
+                                    </div>
+                                    <div class="border-top pt-2 mt-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Delta m³:</span>
+                                            <field name="diff_m3" class="fw-bold text-danger" readonly="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                    <strong><i class="fa fa-cubes" aria-hidden="true" title="Lotes"/> Resumen</strong>
+                                    <span class="badge bg-light text-info">Logística</span>
+                                </div>
+                                <div class="card-body bg-view">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded text-center bg-light">
+                                                <small class="d-block text-muted">Lotes</small>
+                                                <field name="total_lotes_unicos" class="h5 fw-bold mb-0" readonly="1"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded text-center bg-light">
+                                                <small class="d-block text-muted">Paquetes</small>
+                                                <field name="total_paquetes" class="h5 fw-bold mb-0" readonly="1"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-center">
+                                         <span class="text-muted small">Fecha Proceso:</span><br/>
+                                         <field name="date_processed" readonly="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--
+                    ═══════════════════════════════════════════════════════════
+                    NOTEBOOK: PESTAÑAS DE GESTIÓN DETALLADA
+                    Arquitectura: Separación de contextos operativos
+                    ═══════════════════════════════════════════════════════════
+                    -->
+                        <notebook>
+
+                            <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 1: RECEPCIÓN FÍSICA (BODEGA)
+                            Propósito: Registro de mediciones físicas originales
+                            Contexto: Valores técnicos reales sin transformación
+                            Editable: Sí (en estado draft/verified)
+                            ══════════════════════════════════════════════════════
+                            -->
+                         <page string="📍 Recepción Física (Bodega)" name="physical_reception">
+                                <field name="processing_line_ids" mode="list">
+                                    <list string="Líneas de Verificación Física"
+                                          editable="bottom"
+                                          decoration-danger="vol_physical_m3 == 0"
+                                          limit="100">
+
+                                        <field name="lot_name" string="Lote/Etiqueta" width="150px" decoration-bf="1"/>
+
+                                        <field name="product_id" string="Producto" width="300px" widget="many2one"/>
+
+                                        <field name="espesor_mm" string="Esp (mm) Real" class="text-center" width="90px"/>
+                                        <field name="ancho_mm" string="Ancho (mm) Real" class="text-center" width="90px"/>
+                                        <field name="largo_m" string="Largo (m) Real" class="text-center" width="90px"/>
+
+                                        <field name="pieces" sum="Total Piezas" string="Piezas" class="text-end" width="90px"/>
+
+                                        <field name="vol_physical_m3" sum="Total m³ Físico" string="Vol. Físico (m³)"
+                                               decoration-bf="1" class="text-end" width="120px" readonly="1" digits="[16, 3]"/>
+
+                                        <field name="sku_original" column_invisible="1"/>
+
+                                        <field name="vol_shipment_m3"
+                                               column_invisible="1"
+                                               string="Vol. Físico (m³)"
+                                               sum="Total Físico"
+                                               decoration-bf="1"
+                                               readonly="1"/>
+
+                                        <field name="thickness_visual" column_invisible="1"/>
+                                        <field name="width_visual" column_invisible="1"/>
+                                        <field name="length_ft" column_invisible="1"/>
+                                        <field name="technical_validation" column_invisible="1"/>
+                                    </list>
+                                </field>
+
+                                <group class="oe_subtotal_footer oe_right">
+                                    <field name="vol_fisico" string="Total Volumen Físico (m³)"/>
+                                    <field name="total_paquetes" string="Total Paquetes"/>
+                                </group>
+                            </page>
+
+
+                           <page string="💲 Análisis Comercial (OC)" name="commercial_analysis">
+
+                            <button name="%(madenat_lumber_core.action_madenat_guia_mass_update)d"
+                                    string="⚡ Fijar Nominal Masivo"
+                                    type="action"
+                                    class="btn btn-warning"
+                                    help="Asignar espesor, producto y subproducto masivamente."
+                                    invisible="state not in ('draft', 'verified')"/>
+
+
+
+                            <field name="processing_line_ids" mode="list" readonly="state == 'processed'">
+                                <list string="Análisis Comercial" editable="bottom" create="0" delete="0">
+
+                                <field name="lot_name" string="Lote/Etiqueta" width="150px" decoration-bf="1" readonly="1"/>
+                              <!--  <field name="product_id" string="Producto" width="250px" widget="many2one"/> -->
+                                <field name="product_id" string="Producto" options="{'no_open': True, 'no_create': True}"/>
+                                <field name="subproducto_id"
+                                        string="Sub-Producto"
+                                        optional="show"
+                                        widget="badge"
+                                        decoration-info="1"/>
+
+                                <field name="espesor_nominal_mm" string="Esp. Nom." decoration-info="1" class="fw-bold" width="80px"/>
+
+                                <field name="ancho_nominal_mm" string="Ancho Nom." decoration-info="1" class="fw-bold" width="80px"/>
+
+                                <field name="largo_nominal_m" string="Largo (m)" decoration-info="1" class="fw-bold" width="80px"/>
+
+                                <field name="pieces" string="Piezas" sum="Total Piezas" class="text-end" width="80px" readonly="1"/>
+
+                                <field name="vol_purchase_m3" string="Vol. m³" sum="Total Compra m³" class="text-end" width="100px" decoration-bf="1" readonly="1" force_save="1" digits="[16, 3]"/>
+
+                              <field name="vol_mbf" column_invisible="1" force_save="1"/>
+
+                                <field name="espesor_mm" column_invisible="1"/>
+                                <field name="ancho_mm" column_invisible="1"/>
+                                <field name="largo_m" column_invisible="1"/>
+                                <field name="thickness_visual" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                            <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 3: VISTA EXPORTACIÓN (DOBLE CONSOLIDACIÓN)
+                            Propósito: Comparación lado a lado de valores de Compra vs Exportación
+
+                            ARQUITECTURA DE DOBLE CONSOLIDACIÓN:
+
+                            - Columnas de Exportación (🌎): Valores imperiales transformados - EDITABLE
+
+                            CASO DE USO:
+                            Permite corregir errores de transformación automática manteniendo
+                            trazabilidad de los valores originales de compra.
+
+                            CAMPOS EDITABLES:
+                            - subproducto_id: Calidad/Grado de la madera
+                            - thickness_visual: Espesor en formato fraccionario (ej: 7/4)
+                            - width_visual: Ancho en pulgadas fraccionarias (ej: 4 1/2)
+                            ══════════════════════════════════════════════════════
+                            -->
+                        <page string="🌎 Vista (Exportación)" name="export_view">
+
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fa fa-info-circle" aria-hidden="true" title="Información"/>
+                                    <strong>⚠️ IMPORTANTE:</strong> Los campos en verde son EDITABLES para corregir conversiones de octavos (1/8").
+                                </div>
+
+                                <field name="processing_line_ids" mode="list">
+                                    <list string="Consolidación: Compra vs Exportación"
+                                        editable="bottom"
+                                        create="0"
+                                        delete="0">
+
+                                        <field name="lot_name" string="Lote" readonly="1" width="110px" decoration-bf="1"/>
+                                        <field name="product_id" string="Producto" readonly="1" widget="many2one" width="200px"/>
+                                        <field name="subproducto_id"  string="Sub Producto" readonly="1" width="110px" decoration-bf="1"/>
+                                        <field name="thickness_visual"
+                                            string="🌎 Espesor"
+                                            width="100px"
+                                            class="text-center"
+                                            decoration-success="1"
+                                            placeholder="7/4"
+                                            help="Espesor Nominal en Pulgadas"/>
+
+                                        <field name="width_visual"
+                                            string="🌎 Ancho"
+                                            width="120px"
+                                            class="text-center"
+                                            decoration-success="1"
+                                            placeholder="5 3/8"
+                                            help="Ancho Nominal. El sistema sumará +1/8 automáticamente."/>
+
+
+
+                                        <field name="lengthinputraw"
+                                            string="Largo (Input)"
+                                            width="90px"
+                                            class="text-center fw-bold"
+                                            decoration-success="1"
+                                            placeholder="Ej: 4.0"
+                                            required="1"/>
+
+                                        <field name="lengthuom"
+                                            string="UoM"
+                                            width="70px"
+                                            class="text-center"
+                                            optional="show"
+                                            required="1"
+                                            help="Unidad de medida del largo ingresado (m, mm, ft)"/>
+
+                                        <field name="length_ft"
+                                            string="Pies (Calc)"
+                                            width="60px"
+                                            optional="show"
+                                            readonly="1"
+                                            force_save="1"
+                                            class="text-muted"/>
+                                        <field name="pieces" string="Pzas" readonly="1" width="60px" class="text-end" sum="Total Piezas"/>
+
+                                        <field name="vol_mbf"
+                                            string="Vol (MBF)"
+                                            sum="Total MBF Facturación"
+                                            width="100px"
+                                            class="text-end"
+                                            decoration-bf="1"
+                                            readonly="1"
+                                            digits="[16, 3]"/>
+
+                                        <field name="vol_shipment_m3"
+                                            string="Vol (m³)"
+                                            sum="Total Embarque m³"
+                                            width="100px"
+                                            class="text-end"
+                                            decoration-success="1"
+                                            decoration-bf="1"
+                                            readonly="1"
+                                            help="REGLA DE ORO: E_Frac x (A_Frac + 1/8) x Largo x Pzas / Factor (1550 o 5085)."
+                                            digits="[16, 3]"/>
+
+
+
+                                        <field name="sku_original" column_invisible="1"/>
+                                    </list>
+                                </field>
+
+                                <group class="oe_subtotal_footer oe_right">
+                                    <field name="vol_total_mbf" string="Total Volumen (MBF)" readonly="1" decoration-bf="1"/>
+
+                                    <field name="vol_shipment_m3" string="Total Volumen (m³)" readonly="1" class="fw-bold"/>
+
+                                    <field name="total_paquetes" string="Total Paquetes" readonly="1"/>
+                                </group>
+
+                                <div class="row mt-3">
+                                    <div class="col-md-12">
+                                        <div class="alert alert-warning border" role="alert">
+                                            <h5>📏 Tabla de Conversión - Regla de Octavos (1/8")</h5>
+                                            <table class="table table-sm table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fracción</th>
+                                                        <th>Decimal (pulgadas)</th>
+                                                        <th>Milímetros</th>
+                                                        <th>Ejemplo</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td>1/8"</td><td>0.125"</td><td>3.175mm</td><td>5 1/8" = 130.175mm</td></tr>
+                                                    <tr><td>1/4" (2/8)</td><td>0.25"</td><td>6.35mm</td><td>5 1/4" = 133.35mm</td></tr>
+                                                    <tr><td>3/8"</td><td>0.375"</td><td>9.525mm</td><td><strong>5 3/8" = 136.525mm</strong></td></tr>
+                                                    <tr><td>1/2" (4/8)</td><td>0.5"</td><td>12.7mm</td><td>4 1/2" = 114.3mm</td></tr>
+                                                    <tr><td>5/8"</td><td>0.625"</td><td>15.875mm</td><td>5 5/8" = 142.875mm</td></tr>
+                                                    <tr><td>3/4" (6/8)</td><td>0.75"</td><td>19.05mm</td><td>7/4 = 1.75" = 44.45mm</td></tr>
+                                                    <tr><td>7/8"</td><td>0.875"</td><td>22.225mm</td><td>5 7/8" = 149.225mm</td></tr>
+                                                </tbody>
+                                            </table>
+                                            <p class="mb-0"><strong>💡 Tip:</strong> Si ve un valor como "5.71", probablemente debería ser "5 3/8" (136.5mm).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </page>
+
+                           <page string="📂 Documentos" name="documents">
+
+                                <div invisible="order_id">
+                                    <div class="alert alert-warning" role="alert" style="margin-bottom:16px;">
+                                        <span style="font-weight:600;">ℹ️ Información:</span>
+                                        <span>No se detectó Orden de Compra completa asociada a este documento.</span>
+                                    </div>
+                                </div>
+
+                                <group string="Archivos de Origen - Trazabilidad de Ingesta">
+                                    <group>
+                                        <label for="oc_pdf_file" string="📄 1. PDF Orden de Compra"
+                                            class="text-primary font-weight-bold o_form_label"/>
+                                        <div>
+                                            <field name="oc_pdf_file" filename="oc_pdf_filename" class="oe_inline"
+                                                placeholder="Subir PDF de OC" invisible="state != 'draft'"/>
+                                            <field name="oc_pdf_filename" invisible="1"/>
+                                            <button name="action_attach_oc_pdf" type="object" string="Subir OC"
+                                                    class="btn-secondary btn-sm"
+                                                    invisible="state != 'draft' or not oc_pdf_file"/>
+                                            <p class="text-muted" style="font-size:12px;">* Documento opcional para vinculación masiva</p>
+                                        </div>
+
+                                        <label for="guide_pdf_file" string="📄 2. PDF Guía Despacho" class="o_form_label"/>
+                                        <div>
+                                            <field name="guide_pdf_file" filename="guide_pdf_filename" class="oe_inline"
+                                                placeholder="Subir PDF de Guía" invisible="state != 'draft'"/>
+                                            <field name="guide_pdf_filename" invisible="1"/>
+                                            <button name="action_attach_guide_pdf" type="object" string="Subir Guía"
+                                                    class="btn-secondary btn-sm"
+                                                    invisible="state != 'draft' or not guide_pdf_file"/>
+                                        </div>
+                                    </group>
+
+                                    <group>
+                                        <label for="excel_file" string="📊 3. Excel Packing List" class="o_form_label"/>
+                                        <div>
+                                            <field name="excel_file" filename="excel_filename" class="oe_inline"
+                                                placeholder="Subir Excel de Packing" invisible="state != 'draft'"/>
+                                            <field name="excel_filename" invisible="1"/>
+                                            <button name="action_attach_excel" type="object" string="Subir Excel"
+                                                    class="btn-secondary btn-sm"
+                                                    invisible="state != 'draft' or not excel_file"/>
+
+                                            <div class="o_form_label" style="margin-top:12px; font-weight: bold; color: #2c3e50;">
+                                                <i class="fa fa-cubes" aria-hidden="true" title="Lotes"/> Total Paquetes
+                                            </div>
+                                            <div style="font-size: 1.1em;"><field name="total_paquetes" nolabel="1" readonly="1" class="fw-bold"/></div>
+
+                                            <div class="o_form_label" style="margin-top:8px; font-weight: bold; color: #2c3e50;">
+                                                <i class="fa fa-balance-scale" aria-hidden="true" title="Balance"/> Volumen Total m³ (Packing)
+                                            </div>
+                                            <div style="font-size: 1.1em;"><field name="vol_total_m3" nolabel="1" readonly="1" class="fw-bold text-primary"/></div>
+                                        </div>
+                                    </group>
+                                </group>
+
+                                <div class="alert alert-info" role="alert" invisible="not can_process">
+                                    <i class="fa fa-rocket" aria-hidden="true" title="Flujo validado"/> <strong>🎯 Flujo Validado:</strong>
+                                    <span>Se han cargado los archivos esenciales. El sistema está listo para ejecutar la "Verificación de Datos" (Staging).</span>
+                                </div>
+
+                                <separator string="📝 Log de Procesamiento e Ingesta" style="margin-top:20px;"/>
+                                <field name="notes"
+                                       placeholder="El registro técnico de la operación aparecerá aquí después de cargar los archivos..."
+                                       readonly="1"
+                                       style="font-family: 'Courier New', Courier, monospace; background-color: #f8f9fa;"/>
+                            </page>
+                        <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 5: LOTES GENERADOS (STOCK)
+                            Propósito: Visualización de lotes creados en inventario
+                            Disponible: Después de validación (state = validated)
+
+                            ✅ CORRECCIÓN v3: Atributo editable eliminado (lista readonly)
+                            ══════════════════════════════════════════════════════
+                            -->
+                            <page string="📦 Lotes Generados (Stock)" name="lots">
+
+                                <div class="alert alert-success" role="alert" style="margin-bottom: 15px;">
+                                    <i class="fa fa-check-circle" aria-hidden="true" title="Confirmado"/>
+                                    <strong>Lotes Creados en Stock:</strong>
+                                    <field name="lineas_procesadas" readonly="1" class="fw-bold"/>
+                                    lotes han sido generados exitosamente y están listos para despacho o exportación.
+                                </div>
+
+                                <field name="lot_ids" mode="list">
+                                    <list string="Lotes de Stock Generados"
+                                          create="0"
+                                          delete="0"
+                                          decoration-success="estado_trazabilidad == 'recepcionado'"
+                                          decoration-info="estado_trazabilidad == 'procesado'">
+
+                                        <field name="name"
+                                               string="Lote/Etiqueta"
+                                               readonly="1"
+                                               decoration-bf="1"
+                                               width="130px"/>
+
+                                        <field name="product_code_only"
+                                               string="Código"
+                                               readonly="1"
+                                               width="100px"
+                                               optional="show"/>
+
+                                        <field name="product_name_only"
+                                               string="Producto"
+                                               readonly="1"
+                                               width="200px"/>
+
+                                        <field name="espesor_mm"
+                                               string="📏 Esp (mm)"
+                                               width="85px"
+                                               readonly="1"
+                                               optional="show"
+                                               class="text-center"/>
+
+                                        <field name="ancho_mm"
+                                               string="📏 Ancho (mm)"
+                                               width="95px"
+                                               readonly="1"
+                                               optional="show"
+                                               class="text-center"/>
+
+                                        <field name="largo_m"
+                                               string="📏 Largo (m)"
+                                               width="85px"
+                                               readonly="1"
+                                               optional="show"
+                                               class="text-center"/>
+
+                                        <field name="piezas"
+                                               string="Piezas"
+                                               sum="Total Piezas Stock"
+                                               width="75px"
+                                               readonly="1"
+                                               decoration-bf="1"
+                                               class="text-end"/>
+
+                                        <field name="volumen_m3"
+                                               string="Vol (m³)"
+                                               sum="Total m³ Stock"
+                                               digits="[16, 3]"
+                                               width="95px"
+                                               readonly="1"
+                                               decoration-bf="1"
+                                               class="text-end"/>
+
+                                        <field name="location_id"
+                                               string="Ubicación"
+                                               width="150px"
+                                               optional="hide"/>
+
+                                        <field name="estado_trazabilidad"
+                                               string="Estado"
+                                               widget="badge"
+                                               readonly="1"
+                                               width="110px"
+                                               optional="show"/>
+                                    </list>
+                                </field>
+
+                                <group class="oe_subtotal_footer oe_right mt-3">
+                                    <field name="total_lotes_unicos" string="Total Lotes Físicos" readonly="1"/>
+
+                                    <field name="vol_fisico"
+                                           string="Volumen Total Stock (m³)"
+                                           readonly="1"
+                                           decoration-bf="1"
+                                           class="text-primary"/>
+
+                                    <field name="vol_fisico_mbf"
+                                           string="Volumen Total (MBF)"
+                                           readonly="1"
+                                           optional="hide"/>
+                                </group>
+                            </page>
+
+
+                            <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 6: COSTOS ASIGNADOS
+                            Propósito: Visualización de costos distribuidos por lote
+                            Disponible: Solo en estado validated
+                            ✅ CORRECCIÓN: Nombres de campos corregidos
+                            ══════════════════════════════════════════════════════
+                            -->
+                            <page string="💰 Costos Asignados" name="costs" invisible="state != 'validated'">
+
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fa fa-calculator" aria-hidden="true" title="Calculadora"/>
+                                    <strong>Auditoría de Costos:</strong> Los valores aquí reflejados son finales y se basan en el
+                                    <strong>Volumen Comercial</strong> validado en la Pestaña 2.
+                                </div>
+
+                                <field name="lot_ids">
+                                    <list string="Costos por Lote" create="0" delete="0">
+
+                                        <field name="name" string="Lote/Etiqueta" readonly="1" decoration-bf="1"/>
+                                        <field name="product_id" string="Producto" readonly="1"/>
+
+                                        <field name="volumen_m3" string="Vol. Com (m³)" sum="Total m³ Comercial" readonly="1"/>
+
+                                        <field name="wood_cost_usd"
+                                               string="Costo Madera (USD)"
+                                               sum="Subtotal Madera"
+                                               readonly="1"
+                                               decoration-success="1"/>
+
+                                        <field name="purchase_cost_usd"
+                                               string="Costo Servicio (USD)"
+                                               sum="Subtotal Servicios"
+                                               readonly="1"
+                                               decoration-warning="1"/>
+
+                                        <field name="total_cost_usd"
+                                               string="COSTO TOTAL (USD)"
+                                               sum="INVERSIÓN TOTAL"
+                                               readonly="1"
+                                               decoration-bf="1"
+                                               class="fw-bold"/>
+
+                                        <field name="cost_per_m3_usd"
+                                               string="USD/m³ Com"
+                                               readonly="1"
+                                               avg="Promedio USD/m³"
+                                               optional="show"
+                                               decoration-muted="1"/>
+
+                                        <field name="cost_per_mbf_usd"
+                                               string="USD/MBF"
+                                               readonly="1"
+                                               avg="Promedio USD/MBF"
+                                               optional="hide"/>
+                                    </list>
+                                </field>
+
+                                <group class="oe_subtotal_footer oe_right mt-3" style="width: 400px;">
+                                    <field name="additional_cost" string="Monto Guía (CLP)" class="text-muted"/>
+                                    <field name="rate_usd" string="Tasa aplicada (USD)"/>
+
+                                    <div class="oe_subtotal_footer_separator oe_inline">
+                                        <label for="vol_fisico" string="Valor Total Inversión (USD)"/>
+                                    </div>
+                                    <p class="text-primary fw-bold" style="font-size: 1.2em; text-align: right;">
+                                        <i class="fa fa-money" aria-hidden="true" title="Monto"/> Verificado en Lotes
+                                    </p>
+                                </group>
+                            </page>
+
+
+                            <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 7: DETALLES DE AGRUPACIÓN
+                            Propósito: Análisis de consolidación de lotes
+                            Métricas: Lotes únicos, paquetes individuales, eficiencia de agrupación
+                            ══════════════════════════════════════════════════════
+                            -->
+                           <page string="📊 Detalles Agrupación" name="grouping_details" invisible="state == 'draft'">
+                                <group>
+                                    <group string="Resumen de Agrupación">
+                                        <field name="total_paquetes" string="Total Paquetes (Ingesta)" readonly="1" decoration-bf="1"/>
+                                        <field name="total_paquetes_individuales" string="Líneas Procesadas" readonly="1"/>
+
+                                        <label for="total_lotes_unicos" string="Lotes Reales en Inventario"/>
+                                        <div class="o_row">
+                                            <field name="total_lotes_unicos" class="oe_inline fw-bold text-primary"/>
+                                            <span> lotes únicos identificados</span>
+                                        </div>
+
+                                        <label for="total_lotes_unicos" string="Relación de Consolidación"/>
+                                        <div class="o_row">
+                                            <field name="total_lotes_unicos" class="oe_inline"/> lotes únicos → representa
+                                            <field name="total_paquetes_individuales" class="oe_inline"/> paquetes físicos
+                                        </div>
+                                    </group>
+
+                                    <group string="Eficiencia de Agrupación">
+                                        <field name="vol_fisico" string="Volumen Total Consolidado (m³)"
+                                               readonly="1" decoration-success="1" class="fw-bold"/>
+
+                                        <div class="text-muted">
+                                            <p><i class="fa fa-info-circle" aria-hidden="true" title="Información"/> La agrupación optimiza la gestión de inventario, reduciendo la cantidad de etiquetas físicas sin perder la trazabilidad del volumen total.</p>
+                                        </div>
+                                    </group>
+                                </group>
+
+                                <div class="alert alert-success" role="alert" invisible="total_lotes_unicos == 0">
+                                    <i class="fa fa-check-square-o" aria-hidden="true" title="Completado"/> <strong>✅ Agrupación Exitosa:</strong>
+                                    <div style="margin-left: 20px; margin-top: 5px;">
+                                        Esta guía contiene <strong><field name="total_lotes_unicos" class="oe_inline"/> lotes únicos</strong>
+                                        que agrupan la totalidad de la carga medida.
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-light border" role="alert">
+                                    <strong>📋 Glosario Técnico de Consolidación:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>Lotes Únicos:</strong> Cantidad de identidades físicas registradas (Tags Madenat).</li>
+                                        <li><strong>Paquetes Individuales:</strong> Total de registros procesados desde el archivo origen (Excel).</li>
+                                        <li><strong>Dato Maestro:</strong> El volumen total debe coincidir exactamente con la sumatoria de las pestañas 1 y 2.</li>
+                                    </ul>
+                                </div>
+                            </page>
+
+                            <!--
+                            ══════════════════════════════════════════════════════
+                            PESTAÑA 8: RESUMEN HTML
+                            Propósito: Visualización dinámica de datos procesados
+                            Campo JSON: grouping_details_json
+                            ══════════════════════════════════════════════════════
+                            -->
+                           <page string="📈 Resumen HTML" name="html_summary">
+                                <field name="grouping_details_json" invisible="1"/>
+
+                                <div class="alert alert-light border" role="alert">
+                                    <strong>📊 Análisis de Datos:</strong>
+                                    <p class="mb-0 mt-2">Aquí se mostrará un resumen dinámico de los datos procesados.</p>
+                                </div>
+
+                                <div class="container-fluid mt-3">
+                                    <div class="row text-center">
+                                        <div class="col-md-4 border-end">
+                                            <div class="text-muted small uppercase fw-bold">Total Físico (Bodega)</div>
+                                            <div class="h3 fw-bold text-dark">
+                                                <field name="vol_fisico" nolabel="1"/> <small>m³</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 border-end">
+                                            <div class="text-muted small uppercase fw-bold">Total Comercial (Compra)</div>
+                                            <div class="h3 fw-bold text-primary">
+                                                <field name="vol_comercial" nolabel="1"/> <small>m³</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="text-muted small uppercase fw-bold">Desviación (Dif. %)</div>
+                                            <div class="h3 fw-bold" decoration-danger="diff_pct &gt; 5" decoration-success="diff_pct &lt;= 5">
+                                                <field name="diff_pct" nolabel="1" widget="percentage"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="mt-4 mb-4"/>
+
+                                    <div class="mt-3 bg-white p-3 border rounded shadow-sm" invisible="not grouping_details_json">
+                                        <i class="fa fa-table text-info me-2" aria-hidden="true" title="Tabla"/>
+                                        <span class="text-muted">Desglose Técnico de Consolidación (Detalle por Sub-producto)</span>
+                                        </div>
+                                </div>
+                            </page>
+                        </notebook>
+
+                </sheet>
+
+                <!-- Chatter: Sistema de mensajería y seguimiento -->
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════════════════
+    VISTA LIST PENDIENTES
+    Propósito: Filtro rápido de guías sin orden de compra asociada
+    Uso: Gestión de excepciones operativas
+    ═══════════════════════════════════════════════════════════════════════════════
+    -->
+   <record id="view_madenat_guia_processing_pending_list" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.pending.list</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <list string="🚨 Guías Pendientes de Vinculación" class="text-danger">
+                <field name="name" string="Guía" decoration-bf="1"/>
+                <field name="tipo_recepcion" string="Tipo"/>
+                <field name="partner_id" string="Proveedor"/>
+                <field name="order_id" string="OC Referencia"/>
+
+                <field name="vol_comercial" string="Vol. Comercial m³" sum="Total Comercial Pendiente" digits="[16, 3]"/>
+
+                <field name="vol_fisico" string="Vol. Físico m³" sum="Total Físico Pendiente" digits="[16, 3]"/>
+
+                <field name="diff_pct" string="Diferencia %"
+                       widget="percentage"
+                       decoration-danger="diff_pct &gt; 5"
+                       decoration-muted="diff_pct == 0"/>
+
+                <field name="state" widget="badge" decoration-warning="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════════════════
+    ACCIONES DE VENTANA
+    ═══════════════════════════════════════════════════════════════════════════════
+    -->
+
+    <!-- Acción Principal: Todas las Guías -->
+ <record id="action_madenat_guia_processing" model="ir.actions.act_window">
+        <field name="name">Recepción de Guías</field>
+        <field name="res_model">madenat.guia.processing</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cargue su primera guía de despacho
+            </p>
+            <p>
+                Siga la REGLA DE ORO: Ingrese los datos físicos para calcular volúmenes métricos (1M)
+                y de exportación (1550/5085) con el ajuste de 1/8".
+            </p>
+        </field>
+    </record>
+
+   <record id="action_madenat_guia_processing_pending" model="ir.actions.act_window">
+        <field name="name">🚨 Guías Pendientes</field>
+        <field name="res_model">madenat.guia.processing</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_madenat_guia_processing_pending_list"/>
+        <field name="domain">[('state', '=', 'draft'), ('order_id','=',False)]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+</odoo>

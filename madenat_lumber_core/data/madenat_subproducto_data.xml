@@ -5,12 +5,14 @@
             <field name="name">Rough</field>
             <field name="code">ROUGH</field>
             <field name="description">Madera aserrada</field>
+            <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f1550')])]"/>
         </record>
 
         <record id="subprod_s2s" model="madenat.subproducto">
             <field name="name">RIP s2s</field>
             <field name="code">S2S</field>
             <field name="description">Cepillado 2 caras</field>
+            <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f1550')])]"/>
         </record>
     </data>
 </odoo>

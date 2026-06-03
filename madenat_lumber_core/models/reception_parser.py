@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 import io
 import re
@@ -26,9 +27,21 @@ class MadenatReceptionParser(models.AbstractModel):
     _NOMINAL_TOLERANCE = 0.08
 
     @api.model
+    def _get_blanks_nominal_map(self):
+        """Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy."""
+        return self.env['madenat.ingestion.config'].get_blank_nominal_map()
+
+    @api.model
+    def _get_nominal_tolerance(self):
+        """Fase 2: Lee desde helper centralizado (res.config.settings → Fase 1 → legacy)."""
+        return self.env['madenat.ingestion.config'].get_nominal_tolerance()
+
+    @api.model
     def _resolve_nominal(self, raw_inches):
-        for physical, nominal in self._BLANKS_NOMINAL_MAP:
-            if abs(raw_inches - physical) <= self._NOMINAL_TOLERANCE:
+        nominal_map = self._get_blanks_nominal_map()
+        tolerance = self._get_nominal_tolerance()
+        for physical, nominal in nominal_map:
+            if abs(raw_inches - physical) <= tolerance:
                 return nominal
         return raw_inches
   
@@ -222,13 +235,44 @@ class MadenatReceptionParser(models.AbstractModel):
         return 'standard'
 
     def _process_dataframe(self, df, formato, logs, warnings):
-            """Procesa el DataFrame ya limpio y con columnas estandarizadas."""
+            """
+            Procesa el DataFrame ya limpio y con columnas estandarizadas.
+            
+            FASE 3 — PARAMETRIZADO H9: Resuelve reglas de parsing desde
+            lumber.ingestion.format con fallback a hardcode legacy.
+            """
             lines = []
             total_vol = 0.0
 
+            # ── FASE 3: Resolver formato de ingesta desde modelo persistente ──
+            fmt = self.env['lumber.ingestion.format']._resolve_for_profile(formato)
+            _logger.debug("H9-Fase3: perfil=%s fuente=%s heuristic_thickness=%s",
+                          formato, fmt['source'], fmt['thickness_unit_heuristic'])
+
+            def _resolve_unit(raw_val, heuristic, threshold):
+                """Determina si un valor raw está en pulgadas/pies o mm/m según heurística."""
+                if heuristic == 'always_mm':
+                    return raw_val, 'mm'
+                elif heuristic == 'always_inch':
+                    return raw_val, 'inch'
+                elif heuristic == 'always_m':
+                    return raw_val, 'm'
+                elif heuristic == 'always_ft':
+                    return raw_val, 'ft'
+                elif heuristic == 'auto_lt10_inch':
+                    return (raw_val, 'inch') if raw_val < threshold else (raw_val, 'mm')
+                elif heuristic == 'auto_gt10_ft':
+                    return (raw_val, 'ft') if raw_val > threshold else (raw_val, 'm')
+                return raw_val, 'mm'
+
+            def _convert_to_mm(val, unit, conversion_mode):
+                """Convierte a mm si corresponde según el modo de conversión."""
+                if conversion_mode == 'inches_to_mm' and unit == 'inch':
+                    return round(val * float(MM_PER_INCH), 2)
+                return val
+
             for idx, row in df.iterrows():
                 try:
-                    # Ya no usamos next(), usamos los nombres limpios que le dimos en read_excel
                     package_no = int(row['package_no'])
                     pieces = int(row['pieces'])
                     vol_m3 = float(row['volume_m3'])
@@ -239,75 +283,43 @@ class MadenatReceptionParser(models.AbstractModel):
 
                     product_name_raw = str(row['product_name']).strip().upper() if pd.notna(row['product_name']) else 'MADERA'
 
-                  
-                    # --- EL ESPEJO DOCUMENTAL Y LA REGLA DE ORO ---
+                    # --- FASE 3: Resolver dimensiones según formato parametrizado ---
+                    esp_val, esp_unit = _resolve_unit(
+                        raw_esp, fmt['thickness_unit_heuristic'], fmt['thickness_threshold'])
+                    anc_val, anc_unit = _resolve_unit(
+                        raw_anc, fmt['width_unit_heuristic'], fmt['thickness_threshold'])
+                    lar_val, lar_unit = _resolve_unit(
+                        raw_lar, fmt['length_unit_heuristic'], fmt['length_threshold'])
+
+                    thickness_visual = str(raw_esp)
+                    width_visual = str(raw_anc)
+
+                    # Conversión a mm para inventario
+                    thickness_mm = _convert_to_mm(esp_val, esp_unit, fmt['conversion_mode'])
+                    width_mm = _convert_to_mm(anc_val, anc_unit, fmt['conversion_mode'])
+
+                    # Largo a metros
+                    if fmt['conversion_mode'] == 'feet_to_m' or lar_unit == 'ft':
+                        length_m = round(raw_lar * float(FT_TO_M), 2)
+                        length_raw = raw_lar
+                        length_uom = 'ft'
+                    else:
+                        length_m = raw_lar
+                        length_raw = raw_lar
+                        length_uom = 'm'
+
+                    # Nominales (para f5085: resolver desde mapa, otros: usar valor directo)
                     if formato == 'f5085':
-                            # 🎯 ES EL PERFIL QUE YA TENÍAS, PERO AHORA ES HÍBRIDO
-                            thickness_visual = str(raw_esp)
-                            width_visual = str(raw_anc)
-                            
-                            # Si el valor es pequeño (menor a 10), asumimos que son PULGADAS
-                            # y las convertimos a MM para el inventario.
-                            if raw_esp < 10:
-                                thickness_mm = round(raw_esp * float(MM_PER_INCH), 2)
-                                width_mm = round(raw_anc * float(MM_PER_INCH), 2)
-                            else:
-                                thickness_mm = raw_esp
-                                width_mm = raw_anc
-
-                            # Resolvemos el nominal usando tu mapa existente
-                            t_nom = self._resolve_nominal(raw_esp)
-                            if t_nom == raw_esp:
-                                warnings.append(f"⚠️ Paquete {package_no}: nominal {raw_esp}\" sin mapeo.")
-                            
-                            w_nom = width_mm
-                            export_rule = 'f5085'
-                            
-                            # Si el largo es > 10, asumimos que son PIES y pasamos a METROS
-                            # BLANKS: preservar valor raw en pies para cálculo volumétrico
-                            if raw_lar > 10:
-                                length_m = round(raw_lar * float(FT_TO_M), 2)
-                                length_raw = raw_lar
-                                length_uom = 'ft'
-                            else:
-                                length_m = raw_lar
-                                length_raw = raw_lar
-                                length_uom = 'm'
-
-                    elif formato == 'f1550':
-                            thickness_visual = str(raw_esp)
-                            width_visual = str(raw_anc)
-                            thickness_mm = raw_esp
-                            width_mm = raw_anc
-                            t_nom, w_nom = raw_esp, raw_anc
-                            length_m = raw_lar
-                            export_rule = 'f1550'
-
+                        t_nom = self._resolve_nominal(raw_esp)
+                        if t_nom == raw_esp:
+                            warnings.append(f"⚠️ Paquete {package_no}: nominal {raw_esp}\" sin mapeo.")
+                        w_nom = width_mm
                     elif formato == 'blanks':
-                            # 🎯 FASE 1: EL ESPEJO INAMOVIBLE (Lo que vio el Trader en el Excel)
-                            # Se guarda en los campos "visual" (texto) para que no cambien jamás
-                            thickness_visual = str(raw_esp) # Ej: "1.5625"
-                            width_visual = str(raw_anc)     # Ej: "3.625"
-                            
-                            # ⚙️ FASE 2 oculta: CONVERSIÓN SILENCIOSA A MÉTRICO (Para Inventario)
-                            thickness_mm = round(raw_esp * float(MM_PER_INCH), 2)  # 1.5625 -> 39.69
-                            width_mm = round(raw_anc * float(MM_PER_INCH), 2)      # 3.625 -> 92.08
-                            length_m = round(raw_lar * float(FT_TO_M), 2)    # 16 ft -> 4.88
-                            
-                            # El Nominal Base nace del métrico, listo para que el Wizard lo aplaste a 40x90
-                            t_nom, w_nom = thickness_mm, width_mm
-                            
-                            # 🚀 FASE 3: REGLA DE EXPORTACIÓN (S2S)
-                            export_rule = 'f1550' 
+                        t_nom, w_nom = thickness_mm, width_mm
+                    else:
+                        t_nom, w_nom = thickness_mm, width_mm
 
-                    else: # 'metric'
-                            thickness_visual = str(raw_esp)
-                            width_visual = str(raw_anc)
-                            thickness_mm = raw_esp
-                            width_mm = raw_anc
-                            t_nom, w_nom = raw_esp, raw_anc
-                            length_m = raw_lar
-                            export_rule = 'metric'
+                    export_rule = fmt['export_rule_outcome']
 
                     lines.append({
                         'package_no': package_no,
@@ -315,12 +327,12 @@ class MadenatReceptionParser(models.AbstractModel):
                         'product_name': product_name_raw,
                         'pieces': pieces,
                         'volume_m3': vol_m3,
-                        'unit_price_usd': 0.0, # El orquestador inyectará el precio real
+                        'unit_price_usd': 0.0,
                         'thickness_mm': thickness_mm,
                         'width_mm': width_mm,
                         'length_m': length_m,
-                        'length_input_raw': locals().get('length_raw', length_m),
-                        'length_uom': locals().get('length_uom', 'm'),
+                        'length_input_raw': length_raw,
+                        'length_uom': length_uom,
                         'thickness_visual': thickness_visual,
                         'width_visual': width_visual,
                         'thickness_nominal': t_nom,

@@ -361,9 +361,22 @@ class TestLumberReception(TransactionCase):
             'width_nominal': 139.7,      
         })
         
-        self.assertGreater(linea_std.vol_shipment_m3, 0)
-        self.assertGreater(linea_blk.vol_shipment_m3, 0)
-        self.assertNotAlmostEqual(linea_std.vol_shipment_m3, linea_blk.vol_shipment_m3, places=3)
+        # T13 REFORZADO: blank debe tener valor EXACTO sin +1/8" de cepillado
+        # Fórmula: E_in x A_in x L_ft x Pzas / 5085.312 (sin recargo)
+        # linea_blk: espesor_nominal=44.45mm(1.75") x ancho_nominal=139.7mm(5.5") x 2.44m(8.005ft) x 20pzas
+        # MADENAT-FIX-BLANK-2026-06-02
+        _e = 44.45 / 25.4          # espesor nominal en pulgadas
+        _a = 139.7 / 25.4          # ancho nominal en pulgadas (SIN +1/8")
+        _l = 2.44 / 0.3048         # largo en pies
+        _p = 20                    # piezas
+        expected_blank_vol = round((_e * _a * _l * _p) / 5085.312, 3)
+        self.assertGreater(linea_std.vol_shipment_m3, 0,
+            'T13: vol S2S debe ser > 0')
+        self.assertAlmostEqual(linea_blk.vol_shipment_m3, expected_blank_vol, places=3,
+            msg=f'T13: BLANK no debe tener +1/8". '
+                f'Esperado={expected_blank_vol}, Obtenido={linea_blk.vol_shipment_m3}')
+        self.assertNotAlmostEqual(linea_std.vol_shipment_m3, linea_blk.vol_shipment_m3, places=3,
+            msg='T13: S2S y blank deben tener volúmenes distintos')
 
     def test_14_edge_cases_volumen_nulo_bloquea(self):
         """T14: Edge cases volumen nulo - bloquea confirmación"""

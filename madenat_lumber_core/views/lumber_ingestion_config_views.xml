@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- FASE 2 — VISTAS DE CONFIGURACIÓN DE INGESTA -->
+
+        <!-- 1. MAPA FÍSICO→NOMINAL BLANKS -->
+        <record id="view_lumber_blank_nominal_map_tree" model="ir.ui.view">
+            <field name="name">lumber.blank.nominal.map.tree</field>
+            <field name="model">lumber.blank.nominal.map</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="profile"/>
+                    <field name="physical_min"/>
+                    <field name="physical_max"/>
+                    <field name="nominal"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_blank_nominal_map_form" model="ir.ui.view">
+            <field name="name">lumber.blank.nominal.map.form</field>
+            <field name="model">lumber.blank.nominal.map</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="profile"/>: <field name="physical_min"/> – <field name="physical_max"/> → <field name="nominal"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="profile"/>
+                                <field name="physical_min"/>
+                                <field name="physical_max"/>
+                            </group>
+                            <group>
+                                <field name="nominal"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <p class="text-muted">Define cómo se redondea el espesor físico (pulgadas) a un valor nominal comercial.</p>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_blank_nominal_map_search" model="ir.ui.view">
+            <field name="name">lumber.blank.nominal.map.search</field>
+            <field name="model">lumber.blank.nominal.map</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="profile"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="inactive" string="Todos" domain="[]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_blank_nominal_map" model="ir.actions.act_window">
+            <field name="name">Mapa Físico→Nominal Blanks</field>
+            <field name="res_model">lumber.blank.nominal.map</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- 2. TABLA ROUGH→S2S -->
+        <record id="view_lumber_width_s2s_map_tree" model="ir.ui.view">
+            <field name="name">lumber.width.s2s.map.tree</field>
+            <field name="model">lumber.width.s2s.map</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="rough_mm"/>
+                    <field name="s2s_decimal"/>
+                    <field name="s2s_label"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_width_s2s_map_form" model="ir.ui.view">
+            <field name="name">lumber.width.s2s.map.form</field>
+            <field name="model">lumber.width.s2s.map</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="rough_mm"/> mm → <field name="s2s_label"/> (<field name="s2s_decimal"/>)</h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="rough_mm"/>
+                                <field name="s2s_decimal"/>
+                            </group>
+                            <group>
+                                <field name="s2s_label"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <p class="text-muted">Conversión de ancho bruto (rough mm) a S2S pulgadas. Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx</p>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_width_s2s_map_search" model="ir.ui.view">
+            <field name="name">lumber.width.s2s.map.search</field>
+            <field name="model">lumber.width.s2s.map</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="rough_mm"/>
+                    <field name="s2s_label"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="inactive" string="Todos" domain="[]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_width_s2s_map" model="ir.actions.act_window">
+            <field name="name">Tabla Rough→S2S</field>
+            <field name="res_model">lumber.width.s2s.map</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- 3. RANGOS ESPESOR→VISUAL -->
+        <record id="view_lumber_thickness_visual_rule_tree" model="ir.ui.view">
+            <field name="name">lumber.thickness.visual.rule.tree</field>
+            <field name="model">lumber.thickness.visual.rule</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="profile"/>
+                    <field name="min_thickness"/>
+                    <field name="max_thickness"/>
+                    <field name="visual_label"/>
+                    <field name="visual_value"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_thickness_visual_rule_form" model="ir.ui.view">
+            <field name="name">lumber.thickness.visual.rule.form</field>
+            <field name="model">lumber.thickness.visual.rule</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="profile"/>: <field name="min_thickness"/> – <field name="max_thickness"/> mm → <field name="visual_label"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="profile"/>
+                                <field name="min_thickness"/>
+                                <field name="max_thickness"/>
+                            </group>
+                            <group>
+                                <field name="visual_value"/>
+                                <field name="visual_label"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <p class="text-muted">Define qué etiqueta visual (ej: 4/4, 6/4) corresponde a cada rango de espesor en mm.</p>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_thickness_visual_rule_search" model="ir.ui.view">
+            <field name="name">lumber.thickness.visual.rule.search</field>
+            <field name="model">lumber.thickness.visual.rule</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="profile"/>
+                    <field name="visual_label"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="inactive" string="Todos" domain="[]"/>
+                    <filter name="profile_f5085" string="Blanks f5085" domain="[('profile','=','f5085')]"/>
+                    <filter name="profile_f1550" string="S2S f1550" domain="[('profile','=','f1550')]"/>
+                    <filter name="profile_metric" string="Métrico" domain="[('profile','=','metric')]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_thickness_visual_rule" model="ir.actions.act_window">
+            <field name="name">Rangos Espesor→Visual</field>
+            <field name="res_model">lumber.thickness.visual.rule</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- 4. REGLAS PERFIL↔SUBPRODUCTO -->
+        <record id="view_lumber_profile_subproduct_rule_tree" model="ir.ui.view">
+            <field name="name">lumber.profile.subproduct.rule.tree</field>
+            <field name="model">lumber.profile.subproduct.rule</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="profile"/>
+                    <field name="rule_type"/>
+                    <field name="keyword"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_profile_subproduct_rule_form" model="ir.ui.view">
+            <field name="name">lumber.profile.subproduct.rule.form</field>
+            <field name="model">lumber.profile.subproduct.rule</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="profile"/> — <field name="rule_type"/>: <field name="keyword"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="profile"/>
+                                <field name="rule_type"/>
+                            </group>
+                            <group>
+                                <field name="keyword"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <p class="text-muted">Controla qué subproductos están permitidos o bloqueados por perfil. El keyword se busca en el nombre.</p>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_profile_subproduct_rule_search" model="ir.ui.view">
+            <field name="name">lumber.profile.subproduct.rule.search</field>
+            <field name="model">lumber.profile.subproduct.rule</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="profile"/>
+                    <field name="rule_type"/>
+                    <field name="keyword"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="inactive" string="Todos" domain="[]"/>
+                    <filter name="profile_f5085" string="Blanks f5085" domain="[('profile','=','f5085')]"/>
+                    <filter name="profile_f1550" string="S2S f1550" domain="[('profile','=','f1550')]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_profile_subproduct_rule" model="ir.actions.act_window">
+            <field name="name">Reglas Perfil↔Subproducto</field>
+            <field name="res_model">lumber.profile.subproduct.rule</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- MENÚS DE CONFIGURACIÓN -->
+        <menuitem id="menu_lumber_ingestion_config_root"
+                  name="Configuración Ingesta"
+                  parent="menu_madenat_root"
+                  sequence="50"
+                  groups="madenat_lumber_core.group_lumber_config_manager"/>
+
+        <menuitem id="menu_lumber_blank_nominal_map"
+                  name="Mapa Físico→Nominal"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_blank_nominal_map"
+                  sequence="10"/>
+
+        <menuitem id="menu_lumber_width_s2s_map"
+                  name="Tabla Rough→S2S"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_width_s2s_map"
+                  sequence="20"/>
+
+        <menuitem id="menu_lumber_thickness_visual_rule"
+                  name="Rangos Espesor→Visual"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_thickness_visual_rule"
+                  sequence="30"/>
+
+        <menuitem id="menu_lumber_profile_subproduct_rule"
+                  name="Reglas Perfil↔Subproducto"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_profile_subproduct_rule"
+                  sequence="40"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- FASE 3 — FÓRMULAS DE EXPORTACIÓN (H8)                          -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_lumber_export_formula_tree" model="ir.ui.view">
+            <field name="name">lumber.export.formula.tree</field>
+            <field name="model">lumber.export.formula</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="profile"/>
+                    <field name="formula_kind"/>
+                    <field name="principal_factor"/>
+                    <field name="deduction_factor"/>
+                    <field name="s2s_adjustment_mode"/>
+                    <field name="description"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_export_formula_form" model="ir.ui.view">
+            <field name="name">lumber.export.formula.form</field>
+            <field name="model">lumber.export.formula</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="profile"/> — <field name="description"/></h1>
+                        </div>
+                        <group string="Identidad">
+                            <field name="profile"/>
+                            <field name="active"/>
+                            <field name="sequence"/>
+                            <field name="description"/>
+                        </group>
+                        <group string="Parámetros de Fórmula">
+                            <field name="formula_kind"/>
+                            <field name="unit_mode"/>
+                            <field name="principal_factor"/>
+                            <field name="deduction_factor"/>
+                            <field name="s2s_adjustment_mode"/>
+                            <field name="mbf_divisor"/>
+                        </group>
+                        <group string="Notas">
+                            <field name="threshold_note"/>
+                            <field name="notes" colspan="2"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_export_formula_search" model="ir.ui.view">
+            <field name="name">lumber.export.formula.search</field>
+            <field name="model">lumber.export.formula</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="profile"/>
+                    <field name="formula_kind"/>
+                    <field name="description"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="all" string="Todos" domain="[]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_export_formula" model="ir.actions.act_window">
+            <field name="name">Fórmulas de Exportación (H8)</field>
+            <field name="res_model">lumber.export.formula</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- FASE 3 — FORMATOS DE INGESTA (H9)                              -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_lumber_ingestion_format_tree" model="ir.ui.view">
+            <field name="name">lumber.ingestion.format.tree</field>
+            <field name="model">lumber.ingestion.format</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="profile"/>
+                    <field name="thickness_unit_heuristic"/>
+                    <field name="length_unit_heuristic"/>
+                    <field name="export_rule_outcome"/>
+                    <field name="description"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_ingestion_format_form" model="ir.ui.view">
+            <field name="name">lumber.ingestion.format.form</field>
+            <field name="model">lumber.ingestion.format</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="profile"/> — <field name="description"/></h1>
+                        </div>
+                        <group string="Identidad">
+                            <field name="profile"/>
+                            <field name="active"/>
+                            <field name="sequence"/>
+                            <field name="description"/>
+                            <field name="source_format"/>
+                        </group>
+                        <group string="Heurísticas de Unidad">
+                            <field name="thickness_unit_heuristic"/>
+                            <field name="width_unit_heuristic"/>
+                            <field name="length_unit_heuristic"/>
+                            <field name="conversion_mode"/>
+                            <field name="export_rule_outcome"/>
+                        </group>
+                        <group string="Umbrales">
+                            <field name="thickness_threshold"/>
+                            <field name="length_threshold"/>
+                        </group>
+                        <group string="Mapeo de Columnas (JSON)">
+                            <field name="column_mapping_json" widget="ace" options="{'mode': 'json'}" colspan="2"/>
+                        </group>
+                        <group string="Notas">
+                            <field name="notes" colspan="2"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_ingestion_format_search" model="ir.ui.view">
+            <field name="name">lumber.ingestion.format.search</field>
+            <field name="model">lumber.ingestion.format</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="profile"/>
+                    <field name="export_rule_outcome"/>
+                    <field name="description"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="all" string="Todos" domain="[]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_ingestion_format" model="ir.actions.act_window">
+            <field name="name">Formatos de Ingesta (H9)</field>
+            <field name="res_model">lumber.ingestion.format</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+        <!-- MENÚS FASE 3 -->
+        <menuitem id="menu_lumber_export_formula"
+                  name="Fórmulas Exportación (H8)"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_export_formula"
+                  sequence="50"/>
+
+        <menuitem id="menu_lumber_ingestion_format"
+                  name="Formatos Ingesta (H9)"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_ingestion_format"
+                  sequence="60"/>
+
+    </data>
+</odoo>

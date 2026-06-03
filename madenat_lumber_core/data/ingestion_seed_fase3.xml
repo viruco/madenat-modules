@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- FASE 3 — SEED: FÓRMULAS DE EXPORTACIÓN (H8)                    -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Perfil f5085: Blank Clear — pies, sin recargo S2S -->
+        <record id="export_formula_f5085" model="lumber.export.formula" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Blank Clear — Factor 5085 (Pies)</field>
+            <field name="formula_kind">blank_clear</field>
+            <field name="unit_mode">imperial_feet</field>
+            <field name="principal_factor" eval="5085.312"/>
+            <field name="deduction_factor" eval="0.0625"/>
+            <field name="s2s_adjustment_mode">none</field>
+            <field name="mbf_divisor" eval="12000.0"/>
+            <field name="threshold_note">Aplica solo cuando largo está en pies (length_input_raw &gt; 0)</field>
+            <field name="notes">Fórmula canónica Blank Clear según Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx.
+Deducción de cara: -1/16" (0.0625). Sin ajuste S2S adicional.
+El largo se toma de length_input_raw (pies).</field>
+        </record>
+
+        <!-- Perfil f1550: S2S / Rough — metros, con recargo +1/8" -->
+        <record id="export_formula_f1550" model="lumber.export.formula" forcecreate="True">
+            <field name="profile">f1550</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">S2S / Rough — Factor 1550 (Metros)</field>
+            <field name="formula_kind">s2s_imperial</field>
+            <field name="unit_mode">imperial_meters</field>
+            <field name="principal_factor" eval="1550.003096"/>
+            <field name="deduction_factor" eval="0.0"/>
+            <field name="s2s_adjustment_mode">per_width</field>
+            <field name="mbf_divisor" eval="12000.0"/>
+            <field name="threshold_note">Ajuste S2S por ancho: consulta exclusiones en madenat.s2s_exclusion_widths</field>
+            <field name="notes">Fórmula S2S/Rough: largo en metros, dimensiones en pulgadas.
+Ajuste +1/8" al ancho según tabla de exclusiones S2S.
+Factor 1550.003096 = in²×m → m³.</field>
+        </record>
+
+        <!-- Perfil metric: Métrico directo -->
+        <record id="export_formula_metric" model="lumber.export.formula" forcecreate="True">
+            <field name="profile">metric</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Métrico Directo — mm×mm×m / 1.000.000</field>
+            <field name="formula_kind">metric_direct</field>
+            <field name="unit_mode">metric_mm</field>
+            <field name="principal_factor" eval="1000000.0"/>
+            <field name="deduction_factor" eval="0.0"/>
+            <field name="s2s_adjustment_mode">none</field>
+            <field name="mbf_divisor" eval="12000.0"/>
+            <field name="threshold_note">Sin deducciones ni ajustes. Cálculo volumétrico puro.</field>
+            <field name="notes">Fórmula métrica directa: (mm × mm × m × piezas) / 1.000.000.
+MBF = 0 (no aplica para métrico puro).</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- FASE 3 — SEED: FORMATOS DE INGESTA (H9)                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Perfil f5085: Blanks Clear — heurística auto, pulgadas→mm -->
+        <record id="ingestion_format_f5085" model="lumber.ingestion.format" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Excel Blanks Clear — auto-detección pulgadas/pies</field>
+            <field name="source_format">excel</field>
+            <field name="thickness_unit_heuristic">auto_lt10_inch</field>
+            <field name="width_unit_heuristic">auto_lt10_inch</field>
+            <field name="length_unit_heuristic">auto_gt10_ft</field>
+            <field name="conversion_mode">inches_to_mm</field>
+            <field name="export_rule_outcome">f5085</field>
+            <field name="thickness_threshold" eval="10.0"/>
+            <field name="length_threshold" eval="10.0"/>
+            <field name="notes">Formato estándar de Blanks Clear.
+Espesor/Ancho: si valor &lt; 10 → pulgadas, se convierten a mm (×25.4).
+Largo: si valor &gt; 10 → pies, se convierten a metros (×0.3048).
+Regla de exportación resultante: f5085.
+Nominal de espesor se resuelve desde blank_nominal_map.</field>
+        </record>
+
+        <!-- Perfil f1550: S2S/Rough — mm directos, sin conversión -->
+        <record id="ingestion_format_f1550" model="lumber.ingestion.format" forcecreate="True">
+            <field name="profile">f1550</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Excel S2S / Rough — milimétrico directo</field>
+            <field name="source_format">excel</field>
+            <field name="thickness_unit_heuristic">always_mm</field>
+            <field name="width_unit_heuristic">always_mm</field>
+            <field name="length_unit_heuristic">always_m</field>
+            <field name="conversion_mode">identity</field>
+            <field name="export_rule_outcome">f1550</field>
+            <field name="thickness_threshold" eval="10.0"/>
+            <field name="length_threshold" eval="10.0"/>
+            <field name="notes">Formato S2S/Rough: dimensiones ya vienen en mm y metros.
+Sin conversión de unidades. Sin resolución de nominales.
+Regla de exportación resultante: f1550.</field>
+        </record>
+
+        <!-- Perfil blanks: formato legacy — siempre pulgadas/pies -->
+        <record id="ingestion_format_blanks" model="lumber.ingestion.format" forcecreate="True">
+            <field name="profile">blanks</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Blanks (Legado) — imperial forzado</field>
+            <field name="source_format">excel</field>
+            <field name="thickness_unit_heuristic">always_inch</field>
+            <field name="width_unit_heuristic">always_inch</field>
+            <field name="length_unit_heuristic">always_ft</field>
+            <field name="conversion_mode">inches_to_mm</field>
+            <field name="export_rule_outcome">f1550</field>
+            <field name="thickness_threshold" eval="10.0"/>
+            <field name="length_threshold" eval="10.0"/>
+            <field name="notes">Formato legacy "blanks": todo se asume en pulgadas/pies.
+Convierte a mm y metros para inventario.
+Regla de exportación resultante: f1550 (no f5085).
+Este perfil es híbrido histórico.</field>
+        </record>
+
+        <!-- Perfil metric: Madera Bruta — mm directos -->
+        <record id="ingestion_format_metric" model="lumber.ingestion.format" forcecreate="True">
+            <field name="profile">metric</field>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Madera Bruta — métrico directo</field>
+            <field name="source_format">excel</field>
+            <field name="thickness_unit_heuristic">always_mm</field>
+            <field name="width_unit_heuristic">always_mm</field>
+            <field name="length_unit_heuristic">always_m</field>
+            <field name="conversion_mode">identity</field>
+            <field name="export_rule_outcome">metric</field>
+            <field name="thickness_threshold" eval="10.0"/>
+            <field name="length_threshold" eval="10.0"/>
+            <field name="notes">Madera bruta nacional: dimensiones en mm y metros.
+Sin conversión. Sin resolución de nominales.
+Regla de exportación resultante: metric (cálculo volumétrico puro).</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,7 +1,7 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.3.0
-**Fecha de actualización:** 2026-05-23
+**Versión documental:** 6.4.0
+**Fecha de actualización:** 2026-06-02
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
 ---
@@ -56,7 +56,7 @@ Este documento es exclusivamente una matriz de evidencia, validación y criterio
 
 ## 3. Matriz de Validación Activa (T29 – T32)
 
-Estos casos definen la validación funcional del ingreso de largo con unidad seleccionable. Actualmente requieren ejecución y evidencia real para ser cerrados.
+Estos casos definen la validación funcional del ingreso de largo con unidad seleccionable. Actualmente requieren ejecución y evidencia real para ser cerrados. No son bloqueantes para el deploy a TEST del fix de blanks.
 
 | ID | Caso | Entrada | Esperado | Estado Documental |
 |---|---|---|---|---|
@@ -67,7 +67,19 @@ Estos casos definen la validación funcional del ingreso de largo con unidad sel
 
 ---
 
-## 4. Caso Base Recomendado para Evidencia
+## 4. Evidencia — Fix de Blanks (2026-06-02)
+
+### Caso: T33 — Fix de ajuste S2S indebido en blanks
+- **Fecha:** 2026-06-02
+- **Alcance:** `stock_lot.py`, `madenat_guia_processing.py`
+- **Problema corregido:** El ajuste volumétrico S2S (cepillado) se aplicaba indebidamente a líneas de blanks clear, distorsionando el cálculo de volumen de embarque.
+- **Solución:** Corrección en la lógica condicional para que las líneas con perfil `blanks_clear` usen exclusivamente `BLANK_CLEAR_FACTOR` (f5085), sin aplicar deducciones de cepillado (`FACE_DEDUCTION_INCH`, `S2S_WIDTH_ADJUSTMENT_INCH`).
+- **Validación local:** Módulo actualiza sin error de registry. Cálculo volumétrico verificado en recepción con blanks.
+- **Estado:** CERRADO (Evidencia local)
+
+---
+
+## 5. Caso Base Recomendado para Evidencia
 
 Para ejecutar validaciones integrales, se recomienda utilizar la siguiente casuística documentada:
 - **Guía:** `40597`
@@ -77,7 +89,7 @@ Para ejecutar validaciones integrales, se recomienda utilizar la siguiente casu�
 
 ---
 
-## 5. Plantilla de Ejecución de Pruebas
+## 6. Plantilla de Ejecución de Pruebas
 
 Toda ejecución debe documentarse bajo este formato antes de cambiar el estado a "CERRADO":
 
@@ -99,7 +111,7 @@ Toda ejecución debe documentarse bajo este formato antes de cambiar el estado a
 
 ---
 
-## 6. Criterios Globales de Aprobación Documental
+## 7. Criterios Globales de Aprobación Documental
 
 Un caso de prueba se considera formalmente aprobado y puede transicionar a estado CERRADO únicamente si cumple las siguientes condiciones de validación:
 1. Existe una correlación demostrable entre el Input y el Resultado Real (Evidencia).
@@ -109,7 +121,7 @@ Un caso de prueba se considera formalmente aprobado y puede transicionar a estad
 
 ---
 
-## 7. Diccionario de Fallos Comunes
+## 8. Diccionario de Fallos Comunes
 
 Para asistir en la validación y debugging:
 | Si falla | Revisar |
@@ -124,6 +136,7 @@ Para asistir en la validación y debugging:
 | T14 | validaciones de edge |
 | T29 / T30 / T31 | lógica de conversión y normalización de cálculos |
 | T32 | wizard, domain y quick-create |
+| T33 | `stock_lot.py`, `madenat_guia_processing.py`, condicional S2S vs blanks |
 
 ---
 
@@ -144,7 +157,3 @@ Para asistir en la validación y debugging:
 - Evidencia: Registro verificado en tabla `lumber_reception_line` tras trigger de compute.
 - Estado: PENDIENTE (Evidencia registrada)
 - Hallazgos: El sistema aplica correctamente el factor 0.3048 y respeta la precisión de 3 decimales definida en T28.
-
----
-
-Actualmente, los casos **T29, T30, T31 y T32** permanecen en estado **PENDIENTE** por falta de ejecución física. Requieren ser corridos utilizando la Plantilla de Ejecución y adjuntar la evidencia en este documento para formalizar su cierre.

@@ -17,3 +17,15 @@ access_lumber_reception_line_manager,lumber.reception.line.manager,model_lumber_
 access_lumber_reception_mass_update,lumber.reception.mass.update,model_lumber_reception_mass_update,base.group_user,1,1,1,1
 access_madenat_guia_processing_line,madenat.guia.processing.line,model_madenat_guia_processing_line,base.group_user,1,1,1,1
 access_madenat_guia_mass_update,madenat.guia.mass.update,model_madenat_guia_mass_update,base.group_user,1,1,1,1
+access_lumber_blank_nominal_map_config,lumber.blank.nominal.map.config,model_lumber_blank_nominal_map,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_blank_nominal_map_user,lumber.blank.nominal.map.user,model_lumber_blank_nominal_map,base.group_user,1,0,0,0
+access_lumber_width_s2s_map_config,lumber.width.s2s.map.config,model_lumber_width_s2s_map,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_width_s2s_map_user,lumber.width.s2s.map.user,model_lumber_width_s2s_map,base.group_user,1,0,0,0
+access_lumber_thickness_visual_rule_config,lumber.thickness.visual.rule.config,model_lumber_thickness_visual_rule,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_thickness_visual_rule_user,lumber.thickness.visual.rule.user,model_lumber_thickness_visual_rule,base.group_user,1,0,0,0
+access_lumber_profile_subproduct_rule_config,lumber.profile.subproduct.rule.config,model_lumber_profile_subproduct_rule,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_profile_subproduct_rule_user,lumber.profile.subproduct.rule.user,model_lumber_profile_subproduct_rule,base.group_user,1,0,0,0
+access_lumber_export_formula_config,lumber.export.formula.config,model_lumber_export_formula,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_export_formula_user,lumber.export.formula.user,model_lumber_export_formula,base.group_user,1,0,0,0
+access_lumber_ingestion_format_config,lumber.ingestion.format.config,model_lumber_ingestion_format,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_ingestion_format_user,lumber.ingestion.format.user,model_lumber_ingestion_format,base.group_user,1,0,0,0

@@ -647,8 +647,8 @@ def get_s2s_adjustment(env, width_mm):
     """
     Retorna el ajuste S2S en pulgadas para un ancho dado en mm.
 
-    Consulta 'madenat.s2s_exclusion_widths' en ir.config_parameter para
-    determinar qué anchos quedan excluidos del ajuste +1/8".
+    Delega en el helper centralizado madenat.ingestion.config (Fase 3)
+    para la lectura de exclusiones. Fuente única de verdad.
 
     Args:
         env:      Odoo environment (self.env)
@@ -658,16 +658,9 @@ def get_s2s_adjustment(env, width_mm):
         Decimal: 0.0 si el ancho está en la lista de exclusiones,
                  Decimal('0.125') en caso contrario.
     """
-    param_obj = env['ir.config_parameter'].sudo()
-    raw_exceptions = param_obj.get_param(
-        'madenat.s2s_exclusion_widths', '150,160,170,180,200'
-    )
-
-    try:
-        exceptions = [float(x.strip()) for x in raw_exceptions.split(',')]
-    except Exception:
-        # Fallback de seguridad si el parámetro está corrupto
-        exceptions = [150.0, 160.0, 170.0, 180.0, 200.0]
+    # Delegar al helper centralizado (Fase 3 — cierra brecha de lectura directa)
+    config = env['madenat.ingestion.config']
+    exceptions = config.get_s2s_exclusion_widths()
 
     # Si el ancho está en la lista negra → sin recargo
     if round(width_mm, 1) in exceptions:

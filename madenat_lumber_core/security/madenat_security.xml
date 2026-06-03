@@ -18,5 +18,12 @@
             <field name="category_id" ref="module_category_madenat"/>
             <field name="implied_ids" eval="[(4, ref('group_madenat_cost_auditor'))]"/>
         </record>
+    
+        <record id="group_lumber_config_manager" model="res.groups">
+            <field name="name">Configurador de Reglas de Ingesta</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('group_madenat_admin'))]"/>
+            <field name="comment">Usuario autorizado a mantener las reglas de configuracion de ingesta (mapas, tolerancias, filtros).</field>
+        </record>
     </data>
 </odoo>
