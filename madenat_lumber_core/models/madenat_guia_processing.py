@@ -260,7 +260,7 @@ class MadenatGuiaProcessingLine(models.Model):
         Determina las fracciones visuales (ej: '5 3/8') y los Pies 
         basándose en el Nominal MM y el Mapa Maestro.
         """
-        M_TO_FT = float(M_TO_FT)
+        m_to_ft = float(M_TO_FT)
         MM_TO_INCH = 1.0 / float(MM_PER_INCH)
         
         for rec in self:
@@ -305,7 +305,7 @@ class MadenatGuiaProcessingLine(models.Model):
             # ------------------------------------------------------
             # Si editas largo_m, esto actualiza length_ft automáticamente
             if rec.largo_m > 0:
-                rec.length_ft = rec.largo_m * M_TO_FT
+                rec.length_ft = rec.largo_m * m_to_ft
             else:
                 rec.length_ft = 0.0
    
@@ -410,7 +410,7 @@ class MadenatGuiaProcessingLine(models.Model):
         """
         # Constantes de conversión
         MM_TO_INCH = 1.0 / float(MM_PER_INCH)
-        M_TO_FT = float(M_TO_FT)
+        m_to_ft = float(M_TO_FT)
 
         for line in self:
             # Validación básica de integridad: Si no hay piezas, no hay volumen.
@@ -449,7 +449,7 @@ class MadenatGuiaProcessingLine(models.Model):
                         # Conversión al vuelo a sistema imperial para aplicar la fórmula
                         t_in = eff_esp_mm * MM_TO_INCH
                         w_in = eff_anc_mm * MM_TO_INCH
-                        l_ft = eff_largo_m * M_TO_FT
+                        l_ft = eff_largo_m * m_to_ft
                         
                         vol_bf = (t_in * w_in * l_ft * line.pieces) / 12.0
                         line.vol_mbf = vol_bf / 1000.0
@@ -509,7 +509,7 @@ class MadenatGuiaProcessingLine(models.Model):
                 else:
                     # FÓRMULA METROS — S2S/RIP: con ajuste de cepillado (+1/8")
                     recargo = get_s2s_adjustment(self.env, line.ancho_mm)
-                    width_calc = a_in + recargo
+                    width_calc = a_in + float(recargo)
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
                         line.vol_shipment_m3 = fallback_vol
@@ -2287,7 +2287,7 @@ class MadenatGuiaProcessing(models.Model):
                     ajuste_s2s = get_s2s_adjustment(self.env, a_mm)
                     
                     e_pulg = e_mm / float(MM_PER_INCH)
-                    a_pulg = (a_mm / float(MM_PER_INCH)) + ajuste_s2s
+                    a_pulg = (a_mm / float(MM_PER_INCH)) + float(ajuste_s2s)
                     
                     vol_m3 = float(
                             Decimal(str(pzas))

@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+### Hotfix
+- Corregido error `unsupported operand type(s) for +: 'float' and 'decimal.Decimal'` en procesamiento Excel (2026-06-04). Causa raíz: `get_s2s_adjustment()` retorna `Decimal` pero se usaba en aritmética con `float` en dos sitios de `madenat_guia_processing.py` sin conversión. Solución mínima: `float(ajuste_s2s)` en `_validar_y_enriquecer_lineas:2290` y `float(recargo)` en `_compute_vol_shipment_m3:512`. Sin cambios en lógica de lotes, líneas de detalle, paquetes, volúmenes ni conteos. Sintaxis OK.
+
+- Corregido `UnboundLocalError` por sombreado de constante importada `M_TO_FT` en guía processing (2026-06-04). Causa raíz: `M_TO_FT = float(M_TO_FT)` en dos métodos (`_compute_vol_mbf:413`, `_compute_imperial_values:263`) reasignaba localmente el nombre de la constante importada desde `utils_uom.py`, causando que Python la interpretara como variable local en todo el scope. Solución mínima: renombrar variable local a `m_to_ft` en ambas funciones. Sin cambios en lógica de negocio, lotes, líneas ni paquetes. Sintaxis y reinicio de Odoo OK.
+
 ### Refactored
 - TD-009: Centralizar `LUMBER_DIMENSION_MAP` en `utils_uom.py` (2026-06-04). Dict movido sin modificaciones desde `madenat_guia_processing.py:22-61` a `utils_uom.py:733`. Import extendido en `guia_processing.py:63-75`. Preparatorio para TD-010 (migración a modelos ORM configurables). 43 líneas eliminadas de `guia_processing.py`. Comportamiento funcional idéntico.
 
