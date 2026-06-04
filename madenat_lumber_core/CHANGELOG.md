@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Refactored
+- TD-009: Centralizar `LUMBER_DIMENSION_MAP` en `utils_uom.py` (2026-06-04). Dict movido sin modificaciones desde `madenat_guia_processing.py:22-61` a `utils_uom.py:733`. Import extendido en `guia_processing.py:63-75`. Preparatorio para TD-010 (migración a modelos ORM configurables). 43 líneas eliminadas de `guia_processing.py`. Comportamiento funcional idéntico.
+
 ### Research
 - TD-006: Investigación de parametrización de reglas comerciales (`+1/8"`, `1550.003096`, `5085.312`) — conclusión: NO parametrizable. Las 6 fuentes de evidencia (código, git log, docs, modelo de configuración) confirman que las reglas son fijas para todo MADENAT. Sin evidencia de variación por cliente/perfil/subproducto. Documentado en WIKI y CANON con condiciones de reapertura.
 
@@ -13,4 +16,3 @@
 ## [1.5.0] - 2025-12-13
 ### Added
 - **Trazabilidad:** Nuevo campo `source_shipment_cost_line_id` en `stock.lot.cost.line` para vincular costos con su origen en embarques.
-

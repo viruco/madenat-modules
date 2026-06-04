@@ -720,3 +720,53 @@ try:
 
 except Exception as e:
     _logger.error(f"⚠️ Error en validación de factores UoM: {e}")
+
+# ==========================================================================
+# MAPA MAESTRO DE DIMENSIONES (Consolidado: CSV "Base de Verdad" + Estándar)
+# TD-009: Centralizado desde madenat_guia_processing.py (2026-06-04)
+# Mapeo de dimensiones estándar de madera aserrada (espesor y ancho en mm)
+# → thickness: espesor nominal en mm → texto visual en fracciones de pulgada
+# → width: ancho nominal en mm → texto visual en pulgadas
+# Fuente de verdad para compute en MadenatGuiaProcessingLine
+# TD-010 migrará esto a modelos ORM configurables desde UI
+# ==========================================================================
+LUMBER_DIMENSION_MAP = {
+    'thickness': {
+        32: "4/4",   # 1.0"
+        38: "5/4",   # 1.25"
+        45: "6/4",   # 1.5"
+        50: "8/4",   # 2.0"
+        63: "10/4",  # 2.5"
+        76: "12/4",  # 3.0"
+    },
+    'width': {
+        # --- RANGO RIP / INDS (Fuente: CSV Base de Verdad) ---
+        75:  "2 5/8",  # CSV (Era 3 1/8 incorrecto)
+        85:  "2 7/8",  # CSV
+        90:  "3 1/8",  # CSV (Era 3 1/2 incorrecto)
+        95:  "3 3/8",  # CSV
+        100: "3 5/8",  # CSV (Era 4 incorrecto)
+        105: "3 7/8",  # CSV
+        110: "3 7/8",  # CSV
+        112: "4 3/8",  # Estándar
+        117: "4 5/8",  # Estándar
+        120: "4 3/8",  # CSV
+        125: "4 5/8",  # CSV/Estándar (Coinciden)
+        130: "4 7/8",  # CSV
+        137: "5 3/8",  # Estándar
+        140: "4 7/8",  # CSV
+        145: "5 3/8",  # CSV/Estándar (Coinciden)
+        150: "5 5/8",  # CSV/Estándar (Coinciden)
+        155: "5 7/8",  # CSV
+        
+        # --- RANGO ANCHO ESTÁNDAR (Fuente: Estándar Madenat) ---
+        160: "160",
+        170: "170",
+        180: "180",
+        190: "190",
+        195: "195",  # <- ¡El sistema ahora sabe qué es!
+        200: "200",
+        220: "220",
+        250: "250",
+    }
+}
