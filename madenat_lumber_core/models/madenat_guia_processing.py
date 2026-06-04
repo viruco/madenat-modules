@@ -77,16 +77,9 @@ from .utils_uom import (
 _logger = logging.getLogger(__name__)
 
 # ============================================================================
+# TD-007: imports duplicados eliminados (2026-06-04) — ya están en líneas 9-10 y 76.
 # ✅ NUEVO: MODELO DE STAGING PARA LÍNEAS DE GUÍA PROCESADA
 # ============================================================================
-# -*- coding: utf-8 -*-
-import logging
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
-
-_logger = logging.getLogger(__name__)
-
-
 class MadenatGuiaProcessingLine(models.Model):
     """
     Línea de Verificación (Staging) - Versión Profesional v4.0
@@ -295,22 +288,8 @@ class MadenatGuiaProcessingLine(models.Model):
                 line.ancho_nominal_mm = line.ancho_mm
 
             # Si el usuario ya escribió un valor (ej: 150), NO hacemos nada.
-    @api.depends('espesor_nominal_mm', 'espesor_mm', 
-                 'ancho_nominal_mm', 'ancho_mm', 
-                 'largo_m', 'pieces')
-    def _compute_vol_purchase_m3(self):
-        for rec in self:
-            # 1. Espesor
-            esp = rec.espesor_nominal_mm if rec.espesor_nominal_mm > 0 else rec.espesor_mm
-            
-            # 2. Ancho (Usamos el Nominal que ahora estará pre-llenado)
-            anc = rec.ancho_nominal_mm if rec.ancho_nominal_mm > 0 else rec.ancho_mm
-            
-            # 3. Largo (Editable)
-            largo = rec.largo_m
-
-            # 4. Cálculo
-            rec.vol_purchase_m3 = calculate_volume_metric_m3(esp, anc, largo, rec.pieces)
+    # TD-007: v1 de _compute_vol_purchase_m3 eliminada (2026-06-04).
+    # La v2 (línea ~424) es la activa — incluye largo_nominal_m en @api.depends.
    
    # ==========================================================================
     # 1. CONVERSIÓN: NOMINAL/METROS -> VISUAL/PIES
@@ -924,18 +903,9 @@ class MadenatGuiaProcessing(models.Model):
     diff_pct = fields.Float(string="% Diferencia", digits=(16, 3), compute="_compute_all_totals", store=True)
     diff_mbf = fields.Float(string="Δ MBF", digits=(16, 3))
 
-    can_process = fields.Boolean(string="Puede procesar", compute="_compute_can_process", store=False)
-    # C. VOLUMEN EMBARQUE / EXPORTACIÓN (NUEVO EN CABECERA - 39.48)
-    # Esta variable ya existía en las líneas, ahora la creamos en el padre para ver el total.
-   
-
-    # D. FOOTER (Total Abajo)
-    vol_total_m3 = fields.Float(
-        string="Total Volumen Packing", 
-        digits=(16, 3), 
-        compute='_compute_volumenes_reales', 
-        store=True
-    )
+    # TD-007: Definiciones duplicadas eliminadas (2026-06-04).
+    # Campos activos: líneas 906-912 con compute=_compute_all_totals (método real).
+    # Las definiciones removidas usaban _compute_volumenes_reales (método inexistente).
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # ✅ CORRECCIÓN 1: can_validate UNIFICADO
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -949,37 +919,6 @@ class MadenatGuiaProcessing(models.Model):
     can_cancel = fields.Boolean(string="Puede cancelar", compute="_compute_can_cancel")
     can_reopen = fields.Boolean(string="Puede reabrir", compute="_compute_can_reopen")
     cancel_reason = fields.Text(string="Motivo cancelación")
-
-    # ==========================================================================
-    # 1. CAMPOS DE VOLUMEN (LAS 3 VERDADES)
-    # ==========================================================================
-
-    # A. VOLUMEN COMPRA (Existente)
-    vol_comercial = fields.Float(
-        string="Vol. Compra (m³)", 
-        digits=(16, 3), 
-        compute='_compute_volumenes_reales', 
-        store=True
-    )
-
-    # B. VOLUMEN FÍSICO REAL / BODEGA (Existente - 47.152)
-    vol_fisico = fields.Float(
-        string="Vol. Real Bodega (m³)", 
-        digits=(16, 3), 
-        compute='_compute_volumenes_reales', 
-        store=True
-    )
-
-    # C. VOLUMEN EMBARQUE / EXPORTACIÓN (NUEVO EN CABECERA - 39.48)
-    # Esta variable ya existía en las líneas, ahora la creamos en el padre para ver el total.
- 
-    # D. FOOTER (Total Abajo)
-    vol_total_m3 = fields.Float(
-        string="Total Volumen Packing", 
-        digits=(16, 3), 
-        compute='_compute_volumenes_reales', 
-        store=True
-    )
 
    
     # ==========================================================================
@@ -2294,63 +2233,9 @@ class MadenatGuiaProcessing(models.Model):
         # Si no hay match en tabla, usamos la aproximación por octavos
         return self._calculate_fractional_approximation(physical_mm, dim_type)
 
-    def _validar_y_enriquecer_lineas(self, lineas):
-        """
-        🏛️ ENRIQUECIMIENTO CONSOLIDADO (Sin recortes):
-        Sincroniza el cálculo de m3 con la visualización del Staging para que
-        el 195mm no se transforme en 7 5/8" nunca más.
-        """
-        validas = []
-        method = getattr(self, 'calculation_method', 'madenat_gold')
-
-        for l in lineas:
-            # Mantener integridad de funcionalidad original
-            if not l.get('Codigo Interno') or l.get('Cantidad', 0) <= 0:
-                continue
-
-            try:
-                pzas = float(l.get('Cantidad', 0))
-                e_mm = float(l.get('Espesor', 0))
-                a_mm = float(l.get('Ancho', 0))
-                l_m = float(l.get('Largo', 0))
-            except (ValueError, TypeError):
-                continue
-
-            # CALCULO Y ETIQUETADO SEGÚN MÉTODO
-            if method == 'pure_metric':
-                # 📏 Algoritmo Felipe (Guía 19826)
-                vol_m3 = calculate_volume_metric_m3(e_mm, a_mm, l_m, pzas)
-                l['thickness_visual'] = f"{int(e_mm)}mm"
-                l['width_visual'] = f"{int(a_mm)}mm"
-            else:
-                # 🏆 Algoritmo Exportación (Regla de Oro)
-                ajuste_s2s = get_s2s_adjustment(self.env, a_mm)
-                e_pulg = e_mm / float(MM_PER_INCH)
-                a_pulg = (a_mm / float(MM_PER_INCH)) + ajuste_s2s
-                vol_m3 = float(
-                            Decimal(str(pzas))
-                            * Decimal(str(e_pulg))
-                            * Decimal(str(a_pulg))
-                            * Decimal(str(l_m))
-                            / INCH_SQ_METERS_TO_M3
-                        )
-
-                # Visual imperial con nuestra nueva función inteligente
-                l['thickness_visual'] = self._get_nominal_dimension(e_mm, 'thickness')
-                l['width_visual'] = self._get_nominal_dimension(a_mm, 'width')
-
-            # Inyección de resultados finales
-            l.update({
-                'vol_shipment_m3': round(vol_m3, 4),
-                'espesor_mm': e_mm,
-                'ancho_mm': a_mm,
-                'largo_m': l_m,
-                'pieces': pzas
-            })
-            validas.append(l)
-
-        return validas
-
+    # TD-007: v1 de _validar_y_enriquecer_lineas eliminada (2026-06-04).
+    # La v2 (línea ~2405) es la activa — agrega validación e_mm/a_mm/l_m <= 0
+    # y usa _calculate_fractional_approximation en vez de _get_nominal_dimension.
     def _calculate_fractional_approximation(self, mm_value, dim_type='width'):
         """
         🚀 APROXIMACIÓN INTELIGENTE:
