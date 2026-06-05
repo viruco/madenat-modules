@@ -1663,7 +1663,7 @@ class MadenatGuiaProcessing(models.Model):
         # 1. 🛡️ ESCUDO ANTI-DUPLICADOS (Búsqueda por Origen)
         picking = self.env['stock.picking'].search([
             ('origin', '=', self.name),
-            ('state', '!=', 'cancel')
+            ('state', 'not in', ['cancel', 'done'])
         ], limit=1)
 
         if picking:
@@ -3166,11 +3166,16 @@ class MadenatGuiaProcessing(models.Model):
             # =======================================================
             # 🧹 FASE 3: REVERSIÓN FÍSICA Y LIMPIEZA (ORM Legal)
             # =======================================================
-            # 1. Cancelamos Pickings en borrador/espera
-            pickings_to_cancel = pickings.filtered(lambda p: p.state not in ('done', 'cancel'))
-            if pickings_to_cancel:
-                pickings_to_cancel.action_cancel()
-                pickings_to_cancel.write({'origin': f"ANULADO-{rec.name}"})
+            # 1. Cancelamos Pickings en borrador/espera (iteración individual con try/except)
+            for picking in pickings.filtered(lambda p: p.state not in ('done', 'cancel')):
+                try:
+                    picking.action_cancel()
+                except Exception as e:
+                    _logger.warning(f"⚠️ No se pudo cancelar picking {picking.name}: {e}")
+                try:
+                    picking.write({'origin': f"ANULADO-{rec.name}"})
+                except Exception:
+                    pass
 
             # 2. Desvinculamos Albaranes 'Done' Internos (como EMB-00032)
             # Les cambiamos el origen para que la guía quede "libre" para procesarse de nuevo.
