@@ -1,6 +1,21 @@
 ## [Unreleased]
 
 ### Hotfix
+- **[HOTFIX v3] — Savepoint en create() para limpiar transacción tras IntegrityError (2026-06-04)**
+
+  **Hallazgo forense (logs 00:50–00:53):**
+  - v2 sí entra al fallback: `⚠️ Colisión UNIQUE... reutilizando lote existente` aparece a las 00:53:10,980.
+  - Pero 17 ms después (00:53:10,997) el error de unicidad **sigue propagándose** al usuario.
+  - **Causa real:** psycopg2 requiere que una transacción que sufre `IntegrityError` haga rollback completo antes de cualquier otra operación. Aunque `except` capturaba la excepción, el cursor seguía tainted, y el `lot.search()` + `lot.write(vals)` del fallback fallaban silenciosamente, re-lanzando la misma `IntegrityError` al confirmar la transacción.
+
+  **Corrección (v3):**
+  - `_create_or_get_lot()` línea 2640: el `create()` ahora se ejecuta dentro de `with self.env.cr.savepoint():`. El savepoint aísla la colisión UNIQUE: si falla, solo se descarta ese sub-bloque y el cursor queda limpio para el fallback de re-búsqueda y `write()`.
+
+  **Validación:**
+  - `py_compile` OK.
+  - Reinicio de Odoo OK.
+  - Pendiente: prueba funcional del ciclo completo (procesar → reenviar a borrador → revalidar).
+
 - **[HOTFIX v2] — _create_or_get_lot() ahora captura ValidationError (2026-06-04)**
 
   **Hallazgo de logs (post commit 09c870d):**

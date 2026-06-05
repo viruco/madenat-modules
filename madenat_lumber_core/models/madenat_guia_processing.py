@@ -2638,7 +2638,8 @@ class MadenatGuiaProcessing(models.Model):
                     vals['purchase_price_usd_per_m3'] = po.order_line[0].price_unit
 
             try:
-                return self.env['stock.lot'].create(vals)
+                with self.env.cr.savepoint():
+                    return self.env['stock.lot'].create(vals)
             except (IntegrityError, ValidationError):
                 _logger.warning(
                     "⚠️ Colisión UNIQUE en stock.lot para name=%s product_id=%s company_id=%s — "
