@@ -1,6 +1,27 @@
 ## [Unreleased]
 
 ### Hotfix
+- **[HOTFIX] — _create_or_get_lot() tolera colisión de unicidad al reprocesar guía (2026-06-04)**
+
+  **Causa raíz confirmada:**
+  - `action_reopen_to_draft()` solo desvincula lotes de la guía (`guia_processing_id = False`) pero el `stock.lot` persiste en BD con su `name`, `product_id` y `company_id`.
+  - Al reprocesar, `_create_or_get_lot()` hace `search(name, product_id, company_id)` — si por cualquier motivo no encuentra el lote existente, ejecuta `create()` y PostgreSQL lanza `IntegrityError` por la constraint `UNIQUE(name, product_id, company_id)` nativa de `stock.lot`.
+  - Sin cambios en la lógica de `action_reopen_to_draft()` ni en `do_full_processing()` ni en `action_validate()`.
+
+  **Cambio aplicado:**
+  - `_create_or_get_lot()` (línea ~2639): el `self.env['stock.lot'].create(vals)` ahora está envuelto en `try/except IntegrityError`. Si ocurre la colisión, el método invalida caché, re-busca el lote existente y lo reutiliza con `write(vals)`. Solo re-lanza la excepción si realmente no aparece.
+
+  **Impacto:**
+  - Sin cambios en `action_reopen_to_draft()`, `do_full_processing()`, `action_validate()`, ni `action_force_cancel()`.
+  - Sin `unlink()` de lotes — los lotes permanecen en BD para trazabilidad.
+  - Sin cambios en lógica de stock, pickings ni moves.
+  - El método es ahora idempotente ante reproceso desde borrador.
+
+  **Validación:**
+  - `py_compile` OK.
+  - Reinicio de Odoo OK.
+  - Pendiente: prueba funcional del ciclo completo (procesar → reenviar a borrador → revalidar).
+
 - **[HOTFIX] — Duplicados al reenviar guía a borrador (2026-06-04)**
 
   **Causa raíz:**

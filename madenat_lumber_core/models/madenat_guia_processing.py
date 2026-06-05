@@ -8,6 +8,7 @@ GENEALOGÍA: parent_lot_id = Lote Bruto (obligatorio)
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from psycopg2.errors import IntegrityError
 import pandas as pd
 import pdfplumber
 import re 
@@ -2611,7 +2612,7 @@ class MadenatGuiaProcessing(models.Model):
             return lot
         else:
             # ═══════════════════════════════════════════════════════
-            # CASO 2: NO EXISTE -> Crear nuevo
+            # CASO 2: NO EXISTE -> Crear nuevo (idempotente ante reproceso)
             # ═══════════════════════════════════════════════════════
             _logger.info(
                 f"✨ Creando lote {name} con estados: "
@@ -2636,7 +2637,25 @@ class MadenatGuiaProcessing(models.Model):
                 if po.order_line:
                     vals['purchase_price_usd_per_m3'] = po.order_line[0].price_unit
 
-            return self.env['stock.lot'].create(vals)
+            try:
+                return self.env['stock.lot'].create(vals)
+            except IntegrityError:
+                _logger.warning(
+                    "⚠️ Colisión UNIQUE en stock.lot para name=%s product_id=%s company_id=%s — "
+                    "reutilizando lote existente (probable reproceso desde borrador).",
+                    name, product.id, self.env.company.id
+                )
+                self.env['stock.lot'].flush_model(['name', 'product_id', 'company_id'])
+                self.env['stock.lot'].invalidate_model(['name', 'product_id', 'company_id'])
+                lot = self.env['stock.lot'].search([
+                    ('name', '=', name),
+                    ('product_id', '=', product.id),
+                    ('company_id', '=', self.env.company.id)
+                ], limit=1)
+                if lot:
+                    lot.write(vals)
+                    return lot
+                raise
 
 
 
