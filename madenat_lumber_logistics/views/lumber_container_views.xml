@@ -356,38 +356,40 @@
                         </page>
 
                    <page string="Lotes Asignados">
-                       <field name="lot_ids" 
-                            nolabel="1"
-                            options="{'no_create': True}"
-                            domain="[('estado_trazabilidad', 'in', ['procesado', 'en_patio', 'recepcionado']), ('container_id', '=', False)]">
-                            <list string="Lotes Asignados" decoration-info="1" default_order="ref">
-                                <field name="ref" string="Etiqueta" width="140px" decoration-bf="1"/>
-                                <field name="supplier_id" string="Planta" width="130px" optional="show"/>
-                                <field name="product_id" string="Producto" width="250px"/>
-                                <field name="subproducto_id" string="Sub-Prod." widget="badge"/>
-                                <field name="espesor_inch_frac" string="E" width="60px"/>
-                                <field name="ancho_inch_frac" string="A" width="60px"/>
-                                <field name="length_ft" string="L (ft)" width="65px"/>
-                                <field name="largo_m" string="L (m)" width="65px" optional="show"/>
-                                <field name="espesor_mm" string="E (mm)" width="65px" optional="show"/>
-                                <field name="ancho_mm" string="A (mm)" width="65px" optional="show"/>
-                                <field name="piezas" string="Pzas" sum="Total Pzas"/>
-                                <field name="vol_shipment_m3" 
-                                    string="Vol. Emb (m³)" 
-                                    sum="Total m³" 
-                                    widget="float" 
-                                    digits="[12, 3]"/>
-                                <field name="volumen_mbf" string="MBF" sum="Total MBF" widget="float" digits="[12, 3]"/>
-                                
-                                <button name="action_remove_lot_granular" 
-                                        type="object" 
-                                        icon="fa-scissors" 
-                                        title="Sacar del contenedor"
-                                        class="text-danger"
-                                        confirm="⚠️ ATENCIÓN: Al sacar esta etiqueta volverá al estado 'En Patio' y se limpiarán sus costos de viaje. ¿Desea continuar?"
-                                        invisible="parent.state == 'shipped'"/>
-                            </list>
-                        </field>
+                        <field name="lot_ids" 
+                             nolabel="1"
+                             options="{'no_create': True}"
+                             domain="[('estado_trazabilidad', 'in', ['procesado', 'en_patio', 'recepcionado']), ('container_id', '=', False)]"
+                             context="{'list_view_ref': 'madenat_lumber_logistics.view_stock_lot_shipping_wizard_list'}">
+                             <list string="Lotes Asignados" decoration-info="1" default_order="ref">
+                                 <field name="ref" string="Etiqueta" width="140px" decoration-bf="1"/>
+                                 <field name="supplier_id" string="Planta" width="130px" optional="show"/>
+                                 <field name="product_id" string="Producto" width="250px"/>
+                                 <field name="subproducto_id" string="Sub-Prod." widget="badge"/>
+                                 <field name="espesor_inch_frac" string="E&quot;" width="65px"/>
+                                 <field name="ancho_inch_frac" string="A&quot;" width="65px"/>
+                                 <field name="espesor_mm" string="E (mm)" width="65px" optional="show"/>
+                                 <field name="ancho_mm" string="A (mm)" width="65px" optional="show"/>
+                                 <field name="length_ft" string="L (ft)" width="65px" optional="show"/>
+                                 <field name="largo_m" string="L (m)" width="65px" optional="show"/>
+                                 <field name="piezas" string="Pzas" sum="Total Pzas"/>
+                                 <field name="volumen_m3" string="Vol. Físico" width="100px" sum="Total" optional="show"/>
+                                 <field name="vol_shipment_m3" string="Vol. Emb." width="110px" sum="Total" decoration-bf="1"/>
+                                 <field name="volumen_mbf" string="Vol. MBF" width="100px" sum="Total" decoration-bf="1"/>
+                                 <field name="guia_number" string="Guía/Rece" width="130px" optional="show"/>
+                                 <field name="location_id" string="Ubicación" width="130px" optional="show"/>
+                                 <field name="note" column_invisible="True"/>
+                                 <field name="name" column_invisible="True"/>
+                                 
+                                 <button name="action_remove_lot_granular" 
+                                         type="object" 
+                                         icon="fa-scissors" 
+                                         title="Sacar del contenedor"
+                                         class="text-danger"
+                                         confirm="⚠️ ATENCIÓN: Al sacar esta etiqueta volverá al estado 'En Patio' y se limpiarán sus costos de viaje. ¿Desea continuar?"
+                                         invisible="parent.state == 'shipped'"/>
+                             </list>
+                         </field>
                     </page>
 
                         <page string="Notas">

@@ -2507,8 +2507,8 @@ class MadenatGuiaProcessing(models.Model):
         lot = self.env['stock.lot'].search([
             ('name', '=', name), 
             ('product_id', '=', product.id),
-            ('company_id', '=', self.env.company.id)
-        ], limit=1)
+            ('company_id', 'in', [self.env.company.id, False]),
+        ], limit=1, order='company_id DESC')
         
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         # 3. PREPARACIÓN DE VALORES (CON ESTADOS Y VISUALES)
@@ -2651,8 +2651,8 @@ class MadenatGuiaProcessing(models.Model):
                 lot = self.env['stock.lot'].search([
                     ('name', '=', name),
                     ('product_id', '=', product.id),
-                    ('company_id', '=', self.env.company.id)
-                ], limit=1)
+                    ('company_id', 'in', [self.env.company.id, False]),
+                ], limit=1, order='company_id DESC')
                 if lot:
                     lot.write(vals)
                     return lot

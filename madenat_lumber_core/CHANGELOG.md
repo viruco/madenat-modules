@@ -1,6 +1,27 @@
 ## [Unreleased]
 
 ### Hotfix
+- **[HOTFIX v4] — Búsqueda de lote tolera company_id=NULL (2026-06-04)**
+
+  **Evidencia de BD:**
+  ```sql
+  SELECT id, name, product_id, company_id FROM stock_lot WHERE id = 1605;
+  -- Resultado: company_id IS NULL, guia_processing_id IS NULL
+  ```
+  El lote `D7731 PCLAT04201253250 19846` existe en BD desde 2026-04-03 con `company_id=NULL`. Tanto la búsqueda primaria como el fallback usaban `('company_id', '=', 1)`, donde `NULL = 1` es falso en SQL — el lote nunca era encontrado. Esto forzaba la rama `create()` que disparaba la colisión UNIQUE, y el fallback repetía la misma búsqueda fallida.
+
+  **Corrección (v4):**
+  - Ambas búsquedas ahora usan `('company_id', 'in', [self.env.company.id, False])` con `order='company_id DESC'`. El `write(vals)` subsiguiente establece `company_id` correctamente, reparando lotes huérfanos.
+
+  **Impacto:**
+  - Sin cambios en `action_reopen_to_draft()`, `do_full_processing()`, `action_validate()`.
+  - Sin `unlink()` de lotes — trazabilidad preservada.
+  - Corrige datos legados (lotes huérfanos con company_id=NULL).
+
+  **Validación:**
+  - `py_compile` OK.
+  - Pendiente: prueba funcional del ciclo completo.
+
 - **[HOTFIX v3] — Savepoint en create() para limpiar transacción tras IntegrityError (2026-06-04)**
 
   **Hallazgo forense (logs 00:50–00:53):**
