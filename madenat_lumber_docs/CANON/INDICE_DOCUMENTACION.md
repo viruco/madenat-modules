@@ -1,7 +1,7 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 8.0.0
-**Fecha de actualización:** 2026-06-02
+**Versión documental:** 9.0.0
+**Fecha de actualización:** 2026-06-04
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
 
 ---
@@ -25,7 +25,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases | 7.0.0 | 2026-06-02 |
 | `06_CHECKLIST.md` | Checklist operativo de sesión, validación y cierre | 5.0.0 | 2026-06-02 |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.1.0 | 2026-05-28 |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 8.0.0 | 2026-06-02 |
+| `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado, checklist canónico, huecos, riesgos, índice y orden de trabajo futuro | 1.0.0 | 2026-06-04 |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 9.0.0 | 2026-06-04 |
 
 ## 3. Documentos WIKI operativa
 
