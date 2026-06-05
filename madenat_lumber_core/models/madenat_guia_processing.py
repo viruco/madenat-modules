@@ -2639,7 +2639,7 @@ class MadenatGuiaProcessing(models.Model):
 
             try:
                 return self.env['stock.lot'].create(vals)
-            except IntegrityError:
+            except (IntegrityError, ValidationError):
                 _logger.warning(
                     "⚠️ Colisión UNIQUE en stock.lot para name=%s product_id=%s company_id=%s — "
                     "reutilizando lote existente (probable reproceso desde borrador).",

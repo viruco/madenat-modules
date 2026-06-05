@@ -1,14 +1,29 @@
 ## [Unreleased]
 
 ### Hotfix
-- **[HOTFIX] — _create_or_get_lot() tolera colisión de unicidad al reprocesar guía (2026-06-04)**
+- **[HOTFIX v2] — _create_or_get_lot() ahora captura ValidationError (2026-06-04)**
+
+  **Hallazgo de logs (post commit 09c870d):**
+  - Las trazas muestran `✨ Creando lote D7731...` en cada reproceso, pero **nunca** aparece el log `⚠️ Colisión UNIQUE...` del fallback.
+  - El error visible al usuario sigue siendo: `"Error de validación: La combinación de número de serie o lote y producto debe ser única..."`
+  - **Causa real del bypass:** Odoo captura el `IntegrityError` de psycopg2 en la capa ORM (`_sql_constraints`) y lo re-lanza como `ValidationError`. Por lo tanto, nuestro `except IntegrityError` **nunca se ejecutaba** — el `create()` lanzaba `ValidationError` directamente al usuario, que es lo mismo que se veía antes del hotfix.
+
+  **Corrección (v2):**
+  - `_create_or_get_lot()` línea 2641: `except (IntegrityError, ValidationError):` — ahora captura ambas excepciones. El fallback de re-búsqueda y reutilización del lote existente se ejecutará correctamente ante colisiones UNIQUE de `_sql_constraints`.
+
+  **Validación:**
+  - `py_compile` OK.
+  - Reinicio de Odoo OK.
+  - Pendiente: prueba funcional del ciclo completo (procesar → reenviar a borrador → revalidar).
+
+- **[HOTFIX v1] — _create_or_get_lot() tolera colisión de unicidad al reprocesar guía (2026-06-04)**
 
   **Causa raíz confirmada:**
   - `action_reopen_to_draft()` solo desvincula lotes de la guía (`guia_processing_id = False`) pero el `stock.lot` persiste en BD con su `name`, `product_id` y `company_id`.
   - Al reprocesar, `_create_or_get_lot()` hace `search(name, product_id, company_id)` — si por cualquier motivo no encuentra el lote existente, ejecuta `create()` y PostgreSQL lanza `IntegrityError` por la constraint `UNIQUE(name, product_id, company_id)` nativa de `stock.lot`.
   - Sin cambios en la lógica de `action_reopen_to_draft()` ni en `do_full_processing()` ni en `action_validate()`.
 
-  **Cambio aplicado:**
+  **Cambio aplicado (v1):**
   - `_create_or_get_lot()` (línea ~2639): el `self.env['stock.lot'].create(vals)` ahora está envuelto en `try/except IntegrityError`. Si ocurre la colisión, el método invalida caché, re-busca el lote existente y lo reutiliza con `write(vals)`. Solo re-lanza la excepción si realmente no aparece.
 
   **Impacto:**
