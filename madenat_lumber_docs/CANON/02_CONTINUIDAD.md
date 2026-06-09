@@ -39,17 +39,35 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 
 ---
 
-## 4. Punto de retoma
+## 4. Punto de retoma — 2026-06-09
 
-Al reanudar trabajo:
-- Leer `05_BACKLOG.md` para la tarea activa.
-- Confirmar que el fix de blanks ya está documentado (AD-27) y validado en local.
-- La prioridad inmediata es el deploy a TEST, no revalidar T29–T32 ni Fase 6 UI.
+**Último commit:** 2e0c7ca — fix(menu): renombrar menú raíz C1 Cristhian
+**Rama:** main
+**Estado:** En curso — implementando observaciones Cristhian (08-06-2026)
 
-### Próximos 3 pasos
-1. Preparar y ejecutar deploy a TEST del módulo `madenat_lumber_core`.
-2. Validar cálculos volumétricos de blanks en ambiente TEST (guía de referencia: `40597`).
-3. Registrar resultado de validación y decidir si se procede a producción.
+### Cerrado en sesión 09-06-2026
+- C1: Menú raíz renombrado "📥 Ingreso de Guías Dentro de Recepción" ✅
+- _compute_visual_defaults para Blank (f5085): confirmado correcto, no requirió cambios ✅
+- Diagnóstico completo flujos S2S vs Blank completado ✅
+- SSH cuenta viruco configurado permanentemente en WSL2 ✅
+
+### Bloqueado — esperando Cristhian
+- C3: deduction_factor=0.0625 para blank_clear
+  → Pregunta enviada: ¿El volumen exportación Blank usa deducción de cara 1/16" o espesor nominal exacto?
+
+### Pendiente activo (próxima sesión)
+- C2: Mostrar tipo de producto con labels operativos en Recepción (Madera Aserrada / Blank)
+- C3: Validar volúmenes Blank post-confirmación deduction_factor
+- C4: Restricción documental Packing/Guía por tipo producto — requiere regla de Cristhian
+- Máquina remota de test: validar commit 2e0c7ca en staging
+
+### Contexto clave descubierto
+- Flujo S2S: puede modificar nominal comercial, aplica f1550, recargo +1/8"
+- Flujo Blank: producto final de compra, no sufre transformación nominal,
+  solo conversión de unidades (pies→m), factor f5085 (5085.312)
+- _compute_visual_defaults ya separa correctamente ambos mundos (línea 481)
+- deduction_factor=0.0625 en seed está documentado como "según planilla real"
+  — no modificar sin confirmación de negocio
 
 ---
 

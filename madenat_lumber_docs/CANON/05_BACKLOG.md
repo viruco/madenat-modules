@@ -43,6 +43,22 @@ No avanzar a consolidaciones mayores mientras la base técnica siga generando ri
 
 ---
 
+## Observaciones Cristhian — 08-06-2026
+
+| ID | Descripción | Estado | Bloqueo |
+|----|-------------|--------|---------|
+| C1 | Renombrar menú raíz "Ingreso de Guías Dentro de Recepción" | ✅ Cerrado — commit 2e0c7ca | — |
+| C2 | Labels operativos tipo producto (Aserrada/Blank) visibles en Recepción | ⏳ Pendiente | — |
+| C3 | Volúmenes Blank: confirmar deduction_factor 0.0625 vs 0.0 | 🔒 Bloqueado | Cristhian confirma regla negocio |
+| C4 | Restricción documental Packing/Guía obligatorio por tipo producto | ⏳ Pendiente | Cristhian confirma regla |
+
+**Estimado post-desbloqueo:**
+- C2: 2 horas
+- C3: 30 minutos (solo ajuste seed si aplica)
+- C4: 4 horas
+
+---
+
 ## FASE 7 — INTEGRACIÓN CONTABLE (Visión a largo plazo)
 
 ### Objetivo
