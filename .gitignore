@@ -1,15 +1,48 @@
-*_BACKUP_*/
-.bak/
-.qwen/
+# ─── Backups automáticos de Cline ───
+*.bak
+*.bak.*
+*.bak2
+*.bak3
+
+# ─── Archivos temporales Python ───
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-*.pot
-*.mo
+*.pyd
+.Python
+
+# ─── Auditorías y documentos temporales (fuera de CANON) ───
+madenat_lumber_docs/AUDITORIA_*.md
+madenat_lumber_docs/REMEDIACION_*.md
+madenat_lumber_docs/DEPURACION_*.md
+madenat_lumber_docs/TALLER_*.md
+madenat_lumber_docs/PRE_FASE_*.md
+madenat_lumber_docs/EJECUCION_*.md
+madenat_lumber_docs/GUIA_OPERATIVA_*.md
+madenat_lumber_docs/MANDATO_*.md
+madenat_lumber_docs/PLAN_*.md
+madenat_lumber_docs/CIERRE_*.md
+madenat_lumber_docs/ANALISIS_*.md
+
+# ─── Odoo runtime ───
+*.log
+filestore/
+.odoo_history
+
+# ─── IDEs ───
 .vscode/
 .idea/
 *.swp
+*.swo
 *~
+
+# ─── OS ───
 .DS_Store
 Thumbs.db
+
+# ─── Otros artefactos ───
 *.tar.gz
+*.pot
+*.mo
+.qwen/
+*_BACKUP_*/
