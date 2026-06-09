@@ -26,7 +26,7 @@
         </record>
 
         <record id="action_lumber_reception_raw_only" model="ir.actions.act_window">
-            <field name="name">📦 Recepción Madera Bruta</field>
+            <field name="name">📥 Ingreso de Guías Dentro de Recepción</field>
             <field name="res_model">lumber.reception</field>
             <field name="view_mode">list,form</field>
             <field name="view_id" ref="view_lumber_reception_list"/>
