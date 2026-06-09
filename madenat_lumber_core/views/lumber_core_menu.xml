@@ -2,15 +2,26 @@
 <odoo>
     <data noupdate="0">
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ACCIONES PROPIAS DE CORE                                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ACCIÓN 567 — Consola de Recepciones Principal                   -->
+        <!-- Abre agrupada por OC (purchase_order) por defecto para lectura  -->
+        <!-- rápida. Excluye canceladas del dominio base.                    -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <record id="action_lumber_reception_pending" model="ir.actions.act_window">
-            <field name="name">🚨 Recepciones Pendientes</field>
+            <field name="name">Consola de Recepciones</field>
             <field name="res_model">lumber.reception</field>
-            <field name="view_mode">list,form,kanban</field>
-            <field name="domain">[('purchase_id', '=', False), ('state', 'in', ['draft', 'processing'])]</field>
-            <field name="context">{'search_default_draft': 1}</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="madenat_lumber_core.view_lumber_reception_list"/>
+            <field name="search_view_id" ref="madenat_lumber_core.view_lumber_reception_search"/>
+            <field name="domain">[('state', 'not in', ['cancelled'])]</field>
+            <field name="context">{'search_default_group_by_purchase_order': 1, 'search_default_order_by_date': 1}</field>
             <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">No hay recepciones pendientes</p>
-                <p>Las recepciones sin orden de compra asociada aparecerán aquí para su regularización.</p>
+                <p class="o_view_nocontent_smiling_face">Consola de Recepciones MADENAT</p>
+                <p>Visualice, filtre y gestione todas las recepciones de madera bruta agrupadas por OC.</p>
             </field>
         </record>
 
@@ -46,63 +57,212 @@
             </field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ACCIONES MIGRADAS DESDE REPORTS (inventory adjustments)        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_madenat_clean_inventory_tree" model="ir.ui.view">
+            <field name="name">madenat.clean.inventory.list</field>
+            <field name="model">stock.quant</field>
+            <field name="arch" type="xml">
+                <list string="Ajustes Físicos" js_class="inventory_report_list" editable="bottom" create="1" edit="1">
+                    <field name="etiqueta_limpia" string="Etiqueta Lote"/>
+                    <field name="product_id" string="Producto" readonly="id != False" context="{'display_default_code': False}"/>
+                    <field name="subproducto_id" string="Subproducto" optional="show"/>
+                    <field name="location_id" string="Patio / Ubicación" readonly="id != False"/>
+                    <field name="reception_name" string="N° de Guía" decoration-info="1" readonly="1" optional="show"/>
+                    <field name="quantity" string="M³ (Sistema)" readonly="1"/>
+                    <field name="inventory_quantity" string="M³ Físico (Escriba su Conteo aquí)"/>
+                    <field name="inventory_diff_quantity" string="Diferencia" readonly="1" decoration-danger="inventory_diff_quantity &lt; 0" decoration-success="inventory_diff_quantity &gt; 0"/>
+                    <field name="product_uom_id" string="UdM" readonly="1"/>
+                    <field name="reception_date" string="Fecha Guía" widget="date" optional="hide" readonly="1"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_madenat_inventory_adjustments" model="ir.actions.act_window">
+            <field name="name">⚖️ Ajustes Físicos</field>
+            <field name="res_model">stock.quant</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_madenat_clean_inventory_tree"/>
+            <field name="context">{'inventory_mode': True}</field>
+            <field name="domain">[('location_id.usage', '=', 'internal')]</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ACCIÓN MIGRADA DESDE REPORTS (config patios)                   -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
         <record id="action_madenat_patios_recepcion" model="ir.actions.act_window">
             <field name="name">Patios de Recepción</field>
             <field name="res_model">stock.location</field>
             <field name="view_mode">list,form</field>
             <field name="domain">[('usage', '=', 'internal')]</field>
             <field name="context">{'default_usage': 'internal'}</field>
-            <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">
-                    Crea tu primer Patio de Recepción o Asignación.
-                </p>
-                <p>
-                    Aquí puedes registrar los recintos físicos (ej: Puerto Coronel, Marval) 
-                    donde se almacenará la madera bruta o procesada.
-                </p>
-            </field>
         </record>
 
-        <menuitem id="menu_madenat_root" 
-                  name="🌲 MADENAT Lumber" 
-                  parent="stock.menu_stock_root" 
-                  sequence="5"
-                  groups="base.group_user"/>
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ROOT ÚNICO MADENAT LUMBER — madenat_lumber_core ES EL DUEÑO   -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
 
-        <menuitem id="menu_lumber_reception_pending" 
-                  name="🚨 Recepciones Pendientes"
+        <menuitem id="menu_madenat_root"
+                  name="MADENAT Lumber"
+                  web_icon="madenat_lumber_core,static/description/icon.png"
+                  sequence="1"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- RAMAS DE PRIMER NIVEL (ARQUITECTURA BASE EN CORE)              -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- FASE 2 — 488 (Consola de Compras Madera) como entrada principal del módulo.
+             Reemplaza funcionalmente a 744 (Dashboard Operaciones) retirado del flujo. -->
+        <menuitem id="menu_ops_main"
+                  name="📦 Operaciones"
                   parent="menu_madenat_root"
+                  action="madenat_lumber_purchasing.action_madenat_purchase_order"
+                  sequence="10"/>
+
+        <menuitem id="menu_export_main"
+                  name="🚢 Exportaciones"
+                  parent="menu_madenat_root"
+                  sequence="20"/>
+
+        <menuitem id="menu_madenat_reports_main"
+                  name="📊 Reportes y Listados"
+                  parent="menu_madenat_root"
+                  sequence="25"/>
+
+        <menuitem id="menu_finance_main"
+                  name="💰 Costeo y Finanzas"
+                  parent="menu_madenat_root"
+                  sequence="30"/>
+
+        <menuitem id="menu_audit_main"
+                  name="⚖️ Auditoría"
+                  parent="menu_madenat_root"
+                  sequence="40"/>
+
+        <menuitem id="menu_madenat_config_root"
+                  name="Configuración"
+                  parent="menu_madenat_root"
+                  sequence="100"
+                  groups="base.group_system,group_lumber_config_manager"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- RAMAS DE SEGUNDO NIVEL — ESTRUCTURALES COMPARTIDAS             -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- ▸ Operaciones → Abastecimiento -->
+        <menuitem id="menu_ops_supply"
+                  name="Abastecimiento"
+                  parent="menu_ops_main"
+                  sequence="10"/>
+
+        <!-- ▸ Operaciones → Abastecimiento → Gestión de Entradas -->
+        <menuitem id="menu_ops_reception_cat"
+                  name="📥 Gestión de Entradas"
+                  parent="menu_ops_supply"
+                  sequence="20"/>
+
+        <!-- ▸ Operaciones → Control de Lotes -->
+        <menuitem id="menu_ops_inventory"
+                  name="Control de Lotes"
+                  parent="menu_ops_main"
+                  sequence="20"/>
+
+        <!-- ▸ Costeo y Finanzas → Centro de Costeo -->
+        <menuitem id="menu_finance_costing"
+                  name="Centro de Costeo"
+                  parent="menu_finance_main"
+                  sequence="10"/>
+
+        <!-- ▸ Costeo y Finanzas → Pagos y Facturación -->
+        <menuitem id="menu_finance_payments"
+                  name="Pagos y Facturación"
+                  parent="menu_finance_main"
+                  sequence="20"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MENÚS PROPIOS DE CORE REPARENTADOS CORRECTAMENTE               -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <menuitem id="menu_lumber_reception_pending"
+                  name="📥 Ingreso de Guías"
+                  parent="menu_ops_reception_cat"
                   action="action_lumber_reception_pending"
-                  sequence="5"
-                  groups="stock.group_stock_user"/>
-
-        <menuitem id="menu_lumber_reception" 
-                  name="📦 Madera Bruta (Proveedor)" 
-                  parent="menu_madenat_root"
-                  action="action_lumber_reception_raw_only" 
                   sequence="10"
-                  groups="stock.group_stock_user"/>
+                  groups="group_madenat_operaciones"/>
+
+        <menuitem id="menu_lumber_reception_pending_stock"
+                  name="⏳ Pendientes de Stock"
+                  parent="menu_ops_reception_cat"
+                  action="action_lumber_reception_pending_stock"
+                  sequence="12"
+                  groups="group_madenat_operaciones"/>
+
+        <menuitem id="menu_lumber_reception_kanban"
+                  name="📋 Tablero de Recepciones"
+                  parent="menu_ops_reception_cat"
+                  action="action_lumber_reception_kanban"
+                  sequence="5"
+                  groups="group_madenat_operaciones"/>
 
         <menuitem id="menu_guia_processing_root"
-                  name="🏭 Post-Proceso (Servicios)"
-                  parent="menu_madenat_root"
-                  sequence="15"
-                  groups="stock.group_stock_user"/>
+                  name="🏭 Guías Procesadas"
+                  parent="menu_ops_reception_cat"
+                  sequence="20"
+                  groups="group_madenat_operaciones"/>
 
+        <menuitem id="menu_lumber_reception"
+                  name="📋 Historial de Ingresos"
+                  parent="menu_ops_reception_cat"
+                  action="action_lumber_reception_raw_only"
+                  sequence="30"
+                  groups="group_madenat_operaciones"/>
+
+        <!-- ▸ Submenú de Guías Procesadas -->
         <menuitem id="menu_guia_processing_list"
                   name="Guías Procesadas"
                   parent="menu_guia_processing_root"
                   action="action_guia_processing_list"
                   sequence="10"
-                  groups="stock.group_stock_user"/>
-                  
-        <menuitem id="menu_madenat_audit" 
-                  name="📊 Auditoría" 
-                  parent="menu_madenat_root"
-                  action="action_madenat_audit_logs" 
-                  sequence="30"
+                  groups="group_madenat_operaciones"/>
+
+        <!-- ▸ Auditoría → Trazabilidad 360° -->
+        <menuitem id="menu_madenat_audit"
+                  name="Trazabilidad 360°"
+                  parent="menu_audit_main"
+                  action="action_madenat_audit_logs"
+                  sequence="10"
                   groups="stock.group_stock_manager"/>
-                  
-       
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- INVENTORY ADJUSTMENTS (migrado desde reports)                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <menuitem id="menu_madenat_inventory_adjustments"
+                  name="⚖️ Ajustes Físicos (Stock)"
+                  parent="menu_ops_inventory"
+                  action="action_madenat_inventory_adjustments"
+                  sequence="10"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CONFIGURACIÓN (migrado desde reports)                          -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <menuitem id="menu_madenat_config_patios"
+                  name="🏗️ Patios de Recepción"
+                  parent="menu_madenat_config_root"
+                  action="action_madenat_patios_recepcion"
+                  sequence="10"
+                  groups="stock.group_stock_manager,base.group_system,group_lumber_config_manager"/>
+
+        <menuitem id="menu_madenat_config_subproducto"
+                  name="🏷️ Subproductos y Grados"
+                  parent="menu_madenat_config_root"
+                  action="madenat_lumber_core.action_madenat_subproducto_config"
+                  sequence="20"
+                  groups="stock.group_stock_manager,base.group_system,group_lumber_config_manager"/>
+
     </data>
 </odoo>

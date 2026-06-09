@@ -1,38 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA LIST PRINCIPAL — Consola de Recepciones (acción 567)         -->
+    <!-- Diseño: lectura rápida por OC, sin montos, foco en volúmenes y    -->
+    <!-- tolerancias. Agrupación por defecto vía contexto de la acción.     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <record id="view_lumber_reception_list" model="ir.ui.view">
         <field name="name">lumber.reception.list.console</field>
         <field name="model">lumber.reception</field>
         <field name="arch" type="xml">
-            <list string="Consola de Recepción"
+            <list string="Consola de Recepciones"
                   multi_edit="1"
                   sample="1"
+                  default_order="reception_date desc, name desc"
                   decoration-info="state == 'draft'"
-                  decoration-success="state == 'done'">
+                  decoration-success="state == 'done'"
+                  decoration-danger="tolerance_status == 'critical'">
 
-                <field name="name" string="Recepción" decoration-bf="1"/>
+                <!-- ═══ ANCLA: Guía de despacho ═══ -->
+                <field name="name" string="Guía" decoration-bf="1"/>
+
+                <!-- ═══ FECHA ═══ -->
                 <field name="reception_date" string="Fecha" widget="date"/>
-                <field name="supplier_id" string="Proveedor" widget="many2one_avatar"/>
-                <field name="purchase_id" string="Orden de Compra" optional="show"/>
-                <field name="ingestion_profile" string="Perfil Ingesta" widget="badge"
-                       decoration-info="ingestion_profile == 'f5085'"
-                       decoration-warning="ingestion_profile == 'f1550'"
-                       decoration-success="ingestion_profile == 'metric'"
-                       optional="show"/>
-                <field name="commercial_volume_m3" string="Vol.Físico Nominal (m³)"
-                       sum="Total Físico Nominal" decoration-bf="1" decoration-primary="1"/>
-                <field name="volume_variance_percent" string="Variación %"
-                       widget="percentage"
-                       decoration-info="volume_variance_percent != 0"
-                       optional="show"/>
-                <field name="total_amount_clp" string="Monto CLP"
-                       sum="Monto Total" widget="monetary"/>
+
+                <!-- ═══ PROVEEDOR ═══ -->
+                <field name="supplier_id" string="Proveedor"/>
+
+                <!-- ═══ OC VISIBLE (purchase_order = computed char, siempre poblado) ═══ -->
+                <field name="purchase_order" string="OC"
+                       decoration-bf="purchase_order and purchase_order != 'SIN ORDEN'"
+                       decoration-danger="purchase_order == 'SIN ORDEN' or not purchase_order"/>
+
+                <!-- ═══ ESTADO ═══ -->
                 <field name="state" string="Estado" widget="badge"
                        decoration-info="state == 'draft'"
+                       decoration-warning="state == 'processing' or state == 'verified'"
                        decoration-success="state == 'done'"
                        decoration-muted="state == 'cancelled'"/>
+
+                <!-- ═══ VOLÚMENES BODEGA (Físico Real) ═══ -->
+                <field name="physical_volume_mbf" string="MBF Bodega"
+                       sum="Total MBF Bodega" digits="[16, 3]"/>
+                <field name="physical_volume_m3" string="Vol. Bodega (m³)"
+                       sum="Total Vol. Bodega" digits="[16, 3]"/>
+
+                <!-- ═══ VOLUMEN EXPORTACIÓN ═══ -->
+                <!-- total_volume_mbf = suma del vol_mbf por línea calculado con la -->
+                <!-- regla de exportación real (factor 5085/1550 + ajuste S2S), no  -->
+                <!-- una simple conversión aritmética como commercial_volume_mbf.    -->
+                <field name="total_volume_mbf" string="MBF Exportación"
+                       sum="Total MBF Exp" digits="[16, 3]"/>
+
+                <!-- ═══ DESVIACIÓN ═══ -->
+                <field name="volume_variance_percent" string="Desviación %"
+                       widget="percentage"
+                       decoration-success="volume_variance_percent &gt;= -2 and volume_variance_percent &lt;= 2"
+                       decoration-warning="(volume_variance_percent &gt; 2 and volume_variance_percent &lt;= 10) or (volume_variance_percent &lt; -2 and volume_variance_percent &gt;= -10)"
+                       decoration-danger="volume_variance_percent &gt; 10 or volume_variance_percent &lt; -10"/>
+
+                <!-- ═══ TOLERANCIA ═══ -->
+                <field name="tolerance_status" string="Tolerancia" widget="badge"
+                       decoration-success="tolerance_status == 'ok'"
+                       decoration-warning="tolerance_status == 'warning'"
+                       decoration-danger="tolerance_status == 'critical'"/>
+
+                <!-- ═══ TIPO DE PRODUCTO ═══ -->
+                <field name="ingestion_profile" widget="badge" optional="show"/>
+
+                <!-- ═══ TÉCNICOS OCULTOS ═══ -->
+                <!-- purchase_id: se conserva column_invisible porque el search view
+                     y posibles filtros heredados lo referencian, pero NO debe ser
+                     columna visible (está vacío en los registros actuales). -->
+                <field name="purchase_id" column_invisible="1"/>
+                <!-- currency_id: requerido por campos Monetary aunque no se muestren -->
                 <field name="currency_id" column_invisible="1"/>
+                <!-- manual_po_name: visible solo en form, oculto en lista -->
+                <field name="manual_po_name" column_invisible="1"/>
             </list>
         </field>
     </record>
@@ -41,7 +85,7 @@
         <field name="name">lumber.reception.form.professional</field>
         <field name="model">lumber.reception</field>
         <field name="arch" type="xml">
-            <form string="Recepción de Madera Bruta" class="o_xxl_form_view">
+            <form string="Ingreso de Guías de Madera" class="o_xxl_form_view">
 
                 <header>
                     <button name="action_process_documents"
@@ -74,7 +118,7 @@
                          style="margin-left: auto; display: flex; gap: 15px; align-items: center;"
                          invisible="state == 'draft'">
                         <div class="indicator">
-                            <span class="text-muted">⚙️ Perfil:</span>
+                            <label for="ingestion_profile" string="Tipo de Producto:"/>
                             <field name="ingestion_profile" widget="badge" nolabel="1"
                                    decoration-info="ingestion_profile == 'f5085'"
                                    decoration-warning="ingestion_profile == 'f1550'"
@@ -103,7 +147,7 @@
                 <sheet>
                     <div class="oe_title mb-4">
                         <span class="o_form_label text-primary fw-bold">
-                            Recepción de Madera Bruta
+                            Ingreso de Guías
                         </span>
                         <h1>
                             <field name="name" placeholder="Nuevo Documento" readonly="1"/>
@@ -274,7 +318,7 @@
                                                     </div>
                                                     <div class="d-flex justify-content-between mt-1">
                                                         <span class="text-muted">Estado:</span>
-                                                        <field name="tolerance_status" widget="badge" readonly="1" decoration-success="tolerance_status == 'within'" decoration-warning="tolerance_status == 'above'" decoration-danger="tolerance_status == 'below'"/>
+                                                        <field name="tolerance_status" widget="badge" readonly="1" decoration-success="tolerance_status == 'ok'" decoration-warning="tolerance_status == 'warning'" decoration-danger="tolerance_status == 'critical'"/>
                                                     </div>
                                                 </div>
                                             </div>
@@ -298,6 +342,14 @@
                                                 style="font-size: 1.1rem; text-transform: uppercase;"
                                                 invisible="state == 'done'"
                                                 context="{'default_reception_id': id, 'default_ingestion_profile': ingestion_profile}"/>
+                                </div>
+
+                                <div class="alert alert-danger mt-2"
+                                     invisible="nominal_status == 'fixed'">
+                                    <i class="fa fa-exclamation-triangle text-danger" aria-hidden="true"/>
+                                    <strong>Nominales sin fijar:</strong> 
+                                    Ejecute <b>EJECUTAR ASIGNACIÓN MASIVA</b> antes de continuar. 
+                                    Los volúmenes mostrados son físicos (no comerciales).
                                 </div>
 
                                 <field name="reception_line_ids" readonly="state == 'done'">
@@ -351,6 +403,12 @@
                             <page string="3. 🌍 EXPORTACIÓN (CÁLCULOS S2S)" name="export_data">
                                 <div class="alert alert-secondary mb-3" role="status">
                                     <i class="fa fa-calculator me-2" aria-hidden="true" title="Calculadora"/> <strong>CÁLCULO AUTOMÁTICO:</strong> Basado en el Perfil de Ingesta y el Nominal fijado en el Análisis Comercial.
+                                </div>
+                                <div class="alert alert-warning mb-3"
+                                     invisible="nominal_status == 'fixed'">
+                                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"/>
+                                    <strong>Nota:</strong>
+                                    Los volúmenes de exportación se calcularán correctamente después de fijar los nominales.
                                 </div>
                                 <field name="reception_line_ids" readonly="1">
                                     <list string="Capa Técnica Exportación">
@@ -425,10 +483,111 @@
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SEARCH VIEW PRINCIPAL — Consola de Recepciones (acción 567)        -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_lumber_reception_search" model="ir.ui.view">
+        <field name="name">lumber.reception.search.console</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <search string="Consola de Recepciones">
+                <!-- ═══ BÚSQUEDA RÁPIDA UNIFICADA ═══ -->
+                <!-- Cubre: número de guía, OC visible (purchase_order) y referencia manual -->
+                <field name="name" string="Guía / OC / Ref."
+                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('manual_po_name','ilike',self)]"/>
+                <field name="supplier_id" string="Proveedor"/>
+                <field name="reception_date" string="Fecha"/>
+                <!-- purchase_id se retira como campo de búsqueda visible porque
+                     está vacío en los registros actuales. La búsqueda por OC se
+                     canaliza a través de purchase_order en el campo unificado. -->
+                <separator/>
+
+                <!-- ═══ ORDEN ═══ -->
+                <filter name="order_by_date" string="Más Recientes"
+                        domain="[]"
+                        context="{'order': 'reception_date desc'}"/>
+                <separator/>
+
+                <!-- ═══ FILTROS POR ESTADO ═══ -->
+                <filter name="state_draft" string="📝 Borrador"
+                        domain="[('state','=','draft')]"/>
+                <filter name="state_processing" string="⚙️ En Proceso"
+                        domain="[('state','=','processing')]"/>
+                <filter name="state_verified" string="👀 Verificado"
+                        domain="[('state','=','verified')]"/>
+                <filter name="state_done" string="✅ Recibido"
+                        domain="[('state','=','done')]"/>
+                <separator/>
+
+                <!-- ═══ FILTROS POR TOLERANCIA ═══ -->
+                <filter name="tolerance_ok" string="✅ Dentro de Tolerancia"
+                        domain="[('tolerance_status','=','ok')]"/>
+                <filter name="tolerance_warning" string="⚠️ Alerta Tolerancia"
+                        domain="[('tolerance_status','=','warning')]"/>
+                <filter name="tolerance_critical" string="🚨 Crítica — Revisar"
+                        domain="[('tolerance_status','=','critical')]"/>
+                <filter name="needs_attention" string="⚡ Requiere Atención"
+                        domain="['|', ('tolerance_status','=','warning'), ('tolerance_status','=','critical')]"/>
+                <separator/>
+
+                <!-- ═══ AGRUPACIONES ═══ -->
+                <filter name="group_by_purchase_order" string="Agrupar por OC"
+                        domain="[]"
+                        context="{'group_by':'purchase_order'}"/>
+                <filter name="group_by_state" string="Agrupar por Estado"
+                        domain="[]"
+                        context="{'group_by':'state'}"/>
+                <filter name="group_by_supplier" string="Agrupar por Proveedor"
+                        domain="[]"
+                        context="{'group_by':'supplier_id'}"/>
+                <filter name="group_by_date_month" string="Agrupar por Mes"
+                        domain="[]"
+                        context="{'group_by':'reception_date'}"/>
+                <filter name="group_by_tolerance" string="Agrupar por Tolerancia"
+                        domain="[]"
+                        context="{'group_by':'tolerance_status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_lumber_reception_pending_list" model="ir.ui.view">
+        <field name="name">lumber.reception.pending.list</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <list string="Consola de Recepciones"
+                  multi_edit="1"
+                  sample="1"
+                  default_order="reception_date desc"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'done'">
+                <field name="name" string="Guía" decoration-bf="1"/>
+                <field name="reception_date" string="Fecha" widget="date"/>
+                <field name="supplier_id" string="Proveedor" widget="many2one_avatar"/>
+                <field name="purchase_id" string="OC Asociada" decoration-info="1"
+                       optional="show"/>
+                <field name="purchase_order" string="Ref. OC (Extraída)"
+                       decoration-info="purchase_id == False and purchase_order"
+                       decoration-danger="purchase_id == False and not purchase_order"
+                       optional="hide"/>
+                <field name="commercial_volume_m3" string="Vol. Comercial (m³)"
+                       sum="Total Comercial" digits="[16, 3]"/>
+                <field name="volume_variance_percent" string="Variación %"
+                       widget="percentage"
+                       decoration-info="volume_variance_percent != 0"/>
+                <field name="state" string="Estado" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'processing' or state == 'verified'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
     <record id="action_lumber_reception" model="ir.actions.act_window">
         <field name="name">Recepción de Madera</field>
         <field name="res_model">lumber.reception</field>
-        <field name="view_mode">list,form,kanban</field>
+        <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_lumber_reception_list"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -437,6 +596,146 @@
             <p>
                 Seleccione el Perfil de Ingesta, suba los documentos y el sistema
                 procesará automáticamente los datos generando los lotes de inventario.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA LIST: PENDIENTES DE STOCK (processing + verified → done)     -->
+    <!-- Foco: recepciones que aún no han ingresado a inventario.           -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_lumber_reception_pending_stock_list" model="ir.ui.view">
+        <field name="name">lumber.reception.pending.stock.list</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <list string="Pendientes de Stock"
+                  multi_edit="1"
+                  sample="1"
+                  default_order="reception_date desc"
+                  decoration-warning="state == 'verified'"
+                  decoration-info="state == 'processing'"
+                  decoration-danger="tolerance_status == 'critical'">
+
+                <!-- Identidad -->
+                <field name="name" string="Guía" decoration-bf="1"/>
+                <field name="reception_date" string="Fecha" widget="date"/>
+                <field name="supplier_id" string="Proveedor"/>
+
+                <!-- OC visible -->
+                <field name="purchase_order" string="OC"
+                       decoration-bf="purchase_order and purchase_order != 'SIN ORDEN'"
+                       decoration-danger="purchase_order == 'SIN ORDEN' or not purchase_order"/>
+
+                <!-- Estado -->
+                <field name="state" string="Estado" widget="badge"
+                       decoration-warning="state == 'verified'"
+                       decoration-info="state == 'processing'"/>
+
+                <!-- Volúmenes -->
+                <field name="physical_volume_m3" string="Vol. Bodega (m³)"
+                       sum="Total Pendiente" digits="[16, 3]"/>
+                <field name="total_volume_mbf" string="MBF Exportación"
+                       sum="Total MBF Exp" digits="[16, 3]"/>
+
+                <!-- Desviación y tolerancia -->
+                <field name="volume_variance_percent" string="Desviación %"
+                       widget="percentage"
+                       decoration-danger="volume_variance_percent &gt; 10 or volume_variance_percent &lt; -10"
+                       decoration-warning="(volume_variance_percent &gt; 2 and volume_variance_percent &lt;= 10) or (volume_variance_percent &lt; -2 and volume_variance_percent &gt;= -10)"/>
+
+                <field name="tolerance_status" string="Tolerancia" widget="badge"
+                       decoration-success="tolerance_status == 'ok'"
+                       decoration-warning="tolerance_status == 'warning'"
+                       decoration-danger="tolerance_status == 'critical'"/>
+
+                <!-- picking_id: indicador rápido de si ya tiene albarán -->
+                <field name="picking_id" string="Albarán"
+                       decoration-success="picking_id"
+                       decoration-muted="not picking_id"
+                       optional="show"/>
+
+                <field name="purchase_id" column_invisible="1"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="manual_po_name" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SEARCH VIEW: PENDIENTES DE STOCK                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_lumber_reception_pending_stock_search" model="ir.ui.view">
+        <field name="name">lumber.reception.pending.stock.search</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <search string="Pendientes de Stock">
+                <field name="name" string="Guía / OC / Ref."
+                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('manual_po_name','ilike',self)]"/>
+                <field name="supplier_id" string="Proveedor"/>
+                <field name="reception_date" string="Fecha"/>
+                <separator/>
+
+                <filter name="order_by_date" string="Más Recientes"
+                        domain="[]"
+                        context="{'order': 'reception_date desc'}"/>
+                <separator/>
+
+                <!-- Solo estados activos de esta consola -->
+                <filter name="state_verified" string="👀 Verificado"
+                        domain="[('state','=','verified')]"/>
+                <filter name="state_processing" string="⚙️ En Proceso"
+                        domain="[('state','=','processing')]"/>
+                <separator/>
+
+                <!-- Priorización por tolerancia -->
+                <filter name="tolerance_warning" string="⚠️ Alerta Tolerancia"
+                        domain="[('tolerance_status','=','warning')]"/>
+                <filter name="tolerance_critical" string="🚨 Crítica — Revisar"
+                        domain="[('tolerance_status','=','critical')]"/>
+                <filter name="needs_attention" string="⚡ Requiere Atención"
+                        domain="['|', ('tolerance_status','=','warning'), ('tolerance_status','=','critical')]"/>
+                <separator/>
+
+                <!-- Agrupaciones -->
+                <filter name="group_by_purchase_order" string="Agrupar por OC"
+                        domain="[]"
+                        context="{'group_by':'purchase_order'}"/>
+                <filter name="group_by_supplier" string="Agrupar por Proveedor"
+                        domain="[]"
+                        context="{'group_by':'supplier_id'}"/>
+                <filter name="group_by_date_month" string="Agrupar por Mes"
+                        domain="[]"
+                        context="{'group_by':'reception_date'}"/>
+                <filter name="group_by_tolerance" string="Agrupar por Tolerancia"
+                        domain="[]"
+                        context="{'group_by':'tolerance_status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- ACCIÓN: PENDIENTES DE STOCK                                        -->
+    <!-- Dominio: processing + verified.                                     -->
+    <!-- Se omite ('picking_id', '=', False) porque en BD verified no tiene -->
+    <!-- picking_id y processing tampoco; es redundante hoy. Si en el futuro -->
+    <!-- processing llegara a tener picking_id parcial, se puede agregar.    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="action_lumber_reception_pending_stock" model="ir.actions.act_window">
+        <field name="name">Recepciones Pendientes de Stock</field>
+        <field name="res_model">lumber.reception</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_lumber_reception_pending_stock_list"/>
+        <field name="search_view_id" ref="view_lumber_reception_pending_stock_search"/>
+        <field name="domain">[('state', 'in', ['processing', 'verified'])]</field>
+        <field name="context">{'search_default_group_by_purchase_order': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sin recepciones pendientes de ingreso a stock
+            </p>
+            <p>
+                Recepciones en estado <b>En Proceso</b> o <b>Verificado</b> que
+                aún no han sido confirmadas. Revise volúmenes y tolerancias, luego
+                ejecute <b>Validar Recepción</b> para generar los lotes de inventario.
             </p>
         </field>
     </record>

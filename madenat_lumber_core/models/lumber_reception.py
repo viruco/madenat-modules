@@ -249,11 +249,16 @@ class LumberReceptionLine(models.Model):
     )
 
     # === DATOS FINANCIEROS ===
-    estimated_cost_usd = fields.Float("Costo Est. (USD)")
+    estimated_cost_usd = fields.Monetary(
+        "Costo Est. (USD)",
+        currency_field='currency_id',
+        help="Costo estimado en USD durante staging."
+    )
 
     # NUEVO: El costo prorrateado que usaremos para el inventario real
-    cost_clp_unit = fields.Float(
+    cost_clp_unit = fields.Monetary(
         string="Costo Unitario (CLP)",
+        currency_field='currency_id',
         compute="_compute_line_cost",
         store=True,
         help="Costo neto de la madera prorrateado por m3 comercial"
@@ -855,11 +860,62 @@ class LumberReception(models.Model):
         ], string='Perfil de Ingesta', required=True, default='f5085', tracking=True, 
         help="Define explícitamente la regla matemática que aplicará el parser al Excel.")
 
+    # ========== CAMPO NOMINAL_STATUS ==========
+    nominal_status = fields.Selection([
+        ('pending', 'Pendiente'),
+        ('partial', 'Parcial'),
+        ('fixed', 'Fijado'),
+    ], string='Estado Nominal', compute='_compute_nominal_status', store=True,
+       help='Estado de fijación de nominales en las líneas de recepción')
+
+    @api.depends('reception_line_ids.thickness_nominal', 'reception_line_ids.width_nominal')
+    def _compute_nominal_status(self):
+        """
+        Compute nominal_status para lumber.reception.
+        
+        Reglas:
+        - pending: todas las líneas tienen thickness_nominal == 0 o width_nominal == 0
+        - partial: al menos una línea tiene nominal > 0 pero no todas
+        - fixed: todas las líneas tienen thickness_nominal > 0 y width_nominal > 0
+        """
+        for reception in self:
+            lines = reception.reception_line_ids
+            
+            if not lines:
+                reception.nominal_status = 'pending'
+                continue
+            
+            # Contar líneas con nominales válidos
+            fixed_lines = lines.filtered(
+                lambda l: l.thickness_nominal > 0 and l.width_nominal > 0
+            )
+            
+            if len(fixed_lines) == 0:
+                reception.nominal_status = 'pending'
+            elif len(fixed_lines) == len(lines):
+                reception.nominal_status = 'fixed'
+            else:
+                reception.nominal_status = 'partial'
 
     # ================ FLAGS DE ESTADO (COPIA DE GUÍAS) ================
     can_process_reception = fields.Boolean(
-        compute="_compute_can_process_reception", 
+        compute="_compute_can_process_reception",
         string="Puede procesar"
+    )
+
+    # --- FASE 4: Campos de soporte para KPIs y Gates (CANON/14, C14) ---
+    reconciliation_state = fields.Selection(
+        [('pending', 'Pendiente'), ('done', 'Conciliado'), ('difference', 'Diferencia')],
+        string='Estado Conciliación',
+        default='pending',
+        tracking=True,
+        help="GB-5: Estado de conciliación con factura del proveedor. Solo Contabilidad puede cambiar a 'done'."
+    )
+    gate_duration_hours = fields.Float(
+        string='Tiempo Staging→Stock (h)',
+        compute='_compute_gate_duration_hours',
+        store=False,
+        help="KPI: Horas transcurridas desde Gate 0 hasta Gate 3."
     )
     can_reopen_reception = fields.Boolean(
         compute="_compute_can_reopen_reception"
@@ -958,6 +1014,15 @@ class LumberReception(models.Model):
         for rec in self:
             rec.can_cancel_reception = rec.state in ('draft', 'processing')
 
+    def _compute_gate_duration_hours(self):
+        """KPI: Horas transcurridas desde Gate 0 hasta Gate 3 (confirmación)."""
+        for rec in self:
+            if rec.create_date and rec.write_date and rec.state == 'done':
+                delta = rec.write_date - rec.create_date
+                rec.gate_duration_hours = delta.total_seconds() / 3600.0
+            else:
+                rec.gate_duration_hours = 0.0
+
     # ==========================================================
 
 
@@ -1034,8 +1099,19 @@ class LumberReception(models.Model):
     exchange_rate_date = fields.Date('Fecha Tipo Cambio', default=fields.Date.context_today)
     exchange_rate = fields.Float('Tipo de Cambio USD', digits=(12, 4), tracking=True)
     
-    total_amount_clp = fields.Float('Monto Total CLP', digits=(16, 2), tracking=True)
-    total_amount_usd = fields.Float('Monto Total USD', compute='_compute_usd_amount', store=True, digits=(16, 2))
+    total_amount_clp = fields.Monetary(
+        'Monto Total CLP',
+        currency_field='currency_id',
+        tracking=True,
+        help="Monto total facturado en CLP (fuente de verdad de la recepción)."
+    )
+    total_amount_usd = fields.Monetary(
+        'Monto Total USD',
+        currency_field='usd_currency_id',
+        compute='_compute_usd_amount',
+        store=True,
+        help="Equivalente USD calculado: total_amount_clp / exchange_rate."
+    )
     
     price_per_m3_usd = fields.Float(
         'Precio USD/m³',
@@ -1281,6 +1357,13 @@ class LumberReception(models.Model):
             raise UserError(f"🛑 Error de Integridad: No se pudo limpiar la base de datos.\nDetalle: {e}")
 
         self._add_log("✅ <strong>SANEAMIENTO COMPLETADO:</strong> BD limpia, lista para nueva carga.")
+        self.env['madenat.audit.log'].sudo().create({
+            'reception_id': self.id,
+            'action_type': 'lot_update',
+            'event_type': 'forced_reopen',
+            'description': f'Reapertura forzada: {self.name}. Recepción reabierta desde estado done a draft',
+            'user_id': self.env.user.id,
+        })
         
         return {
             'type': 'ir.actions.act_window',
@@ -1509,26 +1592,56 @@ class LumberReception(models.Model):
                  'reception_line_ids.vol_physical_m3',
                  'reception_line_ids.vol_mbf') # Agregamos dependencia de MBF
     def _compute_totals(self):
-        """
-        Cálculo BLINDADO (Consolidado):
-        Suma siempre desde las líneas para reflejar cambios en tiempo real.
-        Mantiene lógica de MBF y Paquetes original.
-        """
-        for rec in self:
-            lines = rec.reception_line_ids
-            
-            # 1. Volúmenes (Físico y Comercial)
-            rec.physical_volume_m3 = sum(lines.mapped('vol_physical_m3'))
-            vol_comercial = sum(lines.mapped('vol_purchase_m3'))
-            
-            rec.commercial_volume_m3 = vol_comercial
-            rec.total_volume_m3 = vol_comercial # Regla de Oro: Total = Comercial
-            
-            # 2. Conteo de Paquetes (Funcionalidad original mantenida)
-            rec.total_packages = len(lines)
-            
-            # 3. MBF (Funcionalidad original mantenida)
-            rec.total_volume_mbf = sum(lines.mapped('vol_mbf'))
+            """
+            Cálculo consolidado de totales de la recepción.
+
+            OBJETIVO
+            - Reflejar en cabecera los totales calculados desde las líneas.
+            - Persistir los valores en BD porque los campos usan store=True.
+            - Mantener coherencia operativa entre m³ físicos, m³ comerciales y MBF.
+
+            REGLAS
+            1. physical_volume_m3:
+            Suma del volumen físico real medido en líneas.
+            2. commercial_volume_m3:
+            Suma del volumen nominal / compra en líneas.
+            3. total_volume_m3:
+            Se mantiene igual al volumen comercial según la Regla de Oro actual.
+            4. total_packages:
+            Cantidad de líneas de recepción.
+            5. total_volume_mbf:
+            Se mantiene como la suma MBF ya usada por el sistema.
+            6. physical_volume_mbf:
+            Se calcula y GUARDA. Si el modelo de línea no tiene vol_physical_mbf,
+            se usa conversión desde physical_volume_m3 como fallback.
+
+            NOTA TÉCNICA
+            Un campo compute con store=True solo queda bien persistido si este método
+            asigna explícitamente el valor al campo. Antes no se asignaba
+            physical_volume_mbf, por eso quedaba en cero o null en BD.
+            """
+            for rec in self:
+                lines = rec.reception_line_ids
+
+                physical_m3 = sum(lines.mapped('vol_physical_m3')) if lines else 0.0
+                commercial_m3 = sum(lines.mapped('vol_purchase_m3')) if lines else 0.0
+                total_mbf = sum(lines.mapped('vol_mbf')) if lines else 0.0
+                total_packages = len(lines)
+
+                rec.physical_volume_m3 = float_round(physical_m3, precision_digits=3)
+                rec.commercial_volume_m3 = float_round(commercial_m3, precision_digits=3)
+                rec.total_volume_m3 = float_round(commercial_m3, precision_digits=3)
+                rec.total_packages = total_packages
+                rec.total_volume_mbf = float_round(total_mbf, precision_digits=3)
+
+                if lines and 'vol_physical_mbf' in lines._fields:
+                    physical_mbf = sum(lines.mapped('vol_physical_mbf'))
+                elif physical_m3 > 0:
+                    physical_mbf = physical_m3 / 2.36
+                else:
+                    physical_mbf = 0.0
+
+                rec.physical_volume_mbf = float_round(physical_mbf, precision_digits=3)
     @api.depends('total_amount_clp', 'exchange_rate')
     def _compute_usd_amount(self):
         """Calcular monto total en USD basado en tipo de cambio"""
@@ -2307,6 +2420,38 @@ class LumberReception(models.Model):
             if not self.reception_line_ids:
                 raise UserError("⚠️ No existen líneas cargadas en el staging.")
 
+            # 🛡️ GATE GB-1: Validación pre-Gate 3 — staging completo (CANON/14, C17)
+            incomplete = self.reception_line_ids.filtered(
+                lambda l: not l.product_id or not l.subproduct_id
+                or not l.thickness_nominal or not l.width_nominal
+            )
+            if incomplete:
+                self.env['madenat.audit.log'].sudo().create({
+                    'reception_id': self.id,
+                    'action_type': 'omission',
+                    'event_type': 'gate_rejected',
+                    'description': f"GB-1 rechazado. Staging incompleto: {len(incomplete)} líneas sin datos completos",
+                    'user_id': self.env.user.id,
+                })
+                raise UserError(
+                    "🛑 VALIDACIÓN BLOQUEADA: Nominales sin fijar.\n\n"
+                    "%d líneas no tienen dimensiones nominales.\n\n"
+                    "🔧 ACCIÓN REQUERIDA:\n"
+                    "1. Vaya a la pestaña 'COMERCIAL (INVENTARIO)'\n"
+                    "2. Ejecute el botón 'EJECUTAR ASIGNACIÓN MASIVA'\n"
+                    "3. Asigne subproducto, espesor y ancho nominal\n"
+                    "4. Verifique que todos los nominales estén en verde\n"
+                    "5. Vuelva a intentar 'Validar Recepción'"
+                    % len(incomplete)
+                )
+
+            self.env['madenat.audit.log'].sudo().create({
+                'reception_id': self.id,
+                'action_type': 'lot_update',
+                'event_type': 'gate_passed',
+                'description': f"GB-1 superado. Staging completo: {len(self.reception_line_ids)} líneas listas para Gate 3",
+                'user_id': self.env.user.id,
+            })
             # =========================================================================
             # 🛡️ GATE 2 & 3: SEGURIDAD Y CRIPTOGRAFÍA
             # =========================================================================
@@ -2477,9 +2622,10 @@ class LumberReception(models.Model):
         if omitted_count > 0:
             # Crear registro en audit log
             try:
-                self.env['madenat.audit.log'].create({
+                self.env['madenat.audit.log'].sudo().create({
                     'reception_id': self.id,
                     'action_type': 'omission',
+                    'event_type': 'gate_rejected',
                     'description': (
                         f"Procesamiento de Excel: {omitted_count} de {total_rows} líneas omitidas.\n"
                         f"Líneas válidas procesadas: {valid_rows}\n"
