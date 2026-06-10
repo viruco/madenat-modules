@@ -487,19 +487,21 @@ class LumberReceptionLine(models.Model):
                 line.thickness_nominal_frac = line.thickness_visual
                 line.width_nominal_frac = line.width_visual
             
-            # 🇺🇸 MUNDO 2: BLANKS CLEAR (EL DESACOPLE)
+            # 🇺🇸 MUNDO 2: BLANKS CLEAR (C3 — obs. Cristhian 08-06-2026)
             else:
-                # 1. ESPEJO FÍSICO (Pestaña 1): Siempre usa la medida real del Excel
-                t_phys_in = line.thickness if line.thickness < 10.0 else line.thickness / float(MM_PER_INCH)
-                w_phys_in = line.width if line.width < 10.0 else line.width / float(MM_PER_INCH)
-                
-                line.thickness_visual = self._get_fraction_text(t_phys_in)
-                line.width_visual = self._get_fraction_text(w_phys_in)
-                
-                # 2. SUGERENCIA COMERCIAL (Pestaña 2): Sugiere físico, pero escucha al Nominal
+                # 1. ESPESOR VISUAL: Nominal comercial desde tabla de rangos (ej: 6/4)
+                #    Usa el espesor nominal si existe, o el físico como fallback
                 t_val = line.thickness_nominal if line.thickness_nominal > 0 else line.thickness
                 w_val = line.width_nominal if line.width_nominal > 0 else line.width
                 
+                # thickness_visual = nominal comercial (cuartos: 4/4, 5/4, 6/4, 8/4)
+                line.thickness_visual = self._apply_thickness_visual(t_val)
+                # width_visual sigue siendo la fracción real (no aplica mapeo de cuartos para ancho)
+                w_phys_in = line.width if line.width < 10.0 else line.width / float(MM_PER_INCH)
+                line.width_visual = self._get_fraction_text(w_phys_in)
+                
+                # 2. FRACCIÓN NOMINAL (Pestaña 2): Fracción real exacta (ej: 1 9/16)
+                #    Se mantiene con la precisión del Excel para trazabilidad
                 t_nom_in = t_val if t_val < 10.0 else t_val / float(MM_PER_INCH)
                 w_nom_in = w_val if w_val < 10.0 else w_val / float(MM_PER_INCH)
                 
@@ -853,12 +855,42 @@ class LumberReception(models.Model):
     
 
     ingestion_profile = fields.Selection([
-            ('f5085', '🪵 Blanks Clear (Factor 5085 - Pies)'),
-            ('f1550', '📐 S2S / Rough (Factor 1550 - Métrico)'),
-            ('metric', '📏 Madera Bruta (Milimétrico Directo)'),
+            ('f1550', '🪚 Madera Aserrada / S2S'),
+            ('f5085', '📦 Blank Clear'),
+            ('metric', '📏 Madera Bruta / Métrico'),
         
-        ], string='Perfil de Ingesta', required=True, default='f5085', tracking=True, 
-        help="Define explícitamente la regla matemática que aplicará el parser al Excel.")
+        ], string='Tipo de Producto', required=True, default='f5085', tracking=True, 
+        help="Seleccione el tipo de producto para determinar la regla de cálculo y los documentos requeridos.")
+    # ========== C4: VALIDACIÓN DOCUMENTAL POR TIPO DE PRODUCTO ==========
+    @api.constrains('ingestion_profile', 'pdf_file', 'excel_file', 'state')
+    def _check_required_documents(self):
+        """
+        C4 — obs. Cristhian 08-06-2026:
+          - Madera Aserrada (f1550) → solo Packing List (excel_file) obligatorio
+          - Blank Clear (f5085)     → solo PDF Guía (pdf_file) obligatorio
+          - Madera Bruta (metric)   → ambos opcionales (sin restricción)
+        Solo valida al salir de draft (action_process_documents).
+        """
+        for rec in self:
+            if rec.state == 'draft':
+                continue  # No validar en borrador
+            
+            if rec.ingestion_profile == 'f1550':
+                if not rec.excel_file:
+                    raise ValidationError(_(
+                        "📄 Documento Requerido: Packing List (Excel)\n\n"
+                        "Para Madera Aserrada / S2S debe subir el archivo Excel de Packing List.\n"
+                        "El PDF de Guía no es necesario para este tipo de producto."
+                    ))
+            
+            elif rec.ingestion_profile == 'f5085':
+                if not rec.pdf_file:
+                    raise ValidationError(_(
+                        "📄 Documento Requerido: Guía de Despacho (PDF)\n\n"
+                        "Para Blank Clear debe subir el PDF de la Guía de Despacho.\n"
+                        "El Excel Packing List no es necesario para este tipo de producto."
+                    ))
+            # metric: sin restricción documental
 
     # ========== CAMPO NOMINAL_STATUS ==========
     nominal_status = fields.Selection([
