@@ -1392,7 +1392,6 @@ class LumberReception(models.Model):
         self.env['madenat.audit.log'].sudo().create({
             'reception_id': self.id,
             'action_type': 'lot_update',
-            'action_type': 'forced_reopen',
             'description': f'Reapertura forzada: {self.name}. Recepción reabierta desde estado done a draft',
             'user_id': self.env.user.id,
         })
