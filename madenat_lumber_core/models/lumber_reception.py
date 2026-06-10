@@ -1392,7 +1392,7 @@ class LumberReception(models.Model):
         self.env['madenat.audit.log'].sudo().create({
             'reception_id': self.id,
             'action_type': 'lot_update',
-            'event_type': 'forced_reopen',
+            'action_type': 'forced_reopen',
             'description': f'Reapertura forzada: {self.name}. Recepción reabierta desde estado done a draft',
             'user_id': self.env.user.id,
         })
@@ -2461,7 +2461,7 @@ class LumberReception(models.Model):
                 self.env['madenat.audit.log'].sudo().create({
                     'reception_id': self.id,
                     'action_type': 'omission',
-                    'event_type': 'gate_rejected',
+                    'action_type': 'gate_rejected',
                     'description': f"GB-1 rechazado. Staging incompleto: {len(incomplete)} líneas sin datos completos",
                     'user_id': self.env.user.id,
                 })
@@ -2480,7 +2480,7 @@ class LumberReception(models.Model):
             self.env['madenat.audit.log'].sudo().create({
                 'reception_id': self.id,
                 'action_type': 'lot_update',
-                'event_type': 'gate_passed',
+                'action_type': 'gate_passed',
                 'description': f"GB-1 superado. Staging completo: {len(self.reception_line_ids)} líneas listas para Gate 3",
                 'user_id': self.env.user.id,
             })
@@ -2657,7 +2657,7 @@ class LumberReception(models.Model):
                 self.env['madenat.audit.log'].sudo().create({
                     'reception_id': self.id,
                     'action_type': 'omission',
-                    'event_type': 'gate_rejected',
+                    'action_type': 'gate_rejected',
                     'description': (
                         f"Procesamiento de Excel: {omitted_count} de {total_rows} líneas omitidas.\n"
                         f"Líneas válidas procesadas: {valid_rows}\n"
