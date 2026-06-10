@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- C3 — SEED: RANGOS ESPESOR→VISUAL NOMINAL COMERCIAL (BLANKS)    -->
+        <!--                                                               -->
+        <!-- Regla de negocio Cristhian (08-06-2026):                       -->
+        │   Espesor real en pulgadas se mapea al nominal comercial (cuartos)│
+        │   Ej: 1 9/16" (1.5625") → 6/4                                   -->
+        <!--                                                               -->
+        <!-- Rangos en pulgadas (min_inch, max_inch):                       -->
+        <!--   4/4  = 1.000"   rango [0.875, 1.125]                        -->
+        <!--   5/4  = 1.250"   rango [1.125, 1.375]                        -->
+        <!--   6/4  = 1.500"   rango [1.375, 1.625]                        -->
+        <!--   7/4  = 1.750"   rango [1.625, 1.875]                        -->
+        <!--   8/4  = 2.000"   rango [1.875, 2.250]                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="thickness_visual_4_4_f5085" model="lumber.thickness.visual.rule" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="sequence">10</field>
+            <field name="active" eval="True"/>
+            <field name="min_thickness" eval="21.0"/>
+            <field name="max_thickness" eval="29.0"/>
+            <field name="visual_value" eval="1.0"/>
+            <field name="visual_label">4/4</field>
+        </record>
+
+        <record id="thickness_visual_5_4_f5085" model="lumber.thickness.visual.rule" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="sequence">20</field>
+            <field name="active" eval="True"/>
+            <field name="min_thickness" eval="29.0"/>
+            <field name="max_thickness" eval="35.0"/>
+            <field name="visual_value" eval="1.25"/>
+            <field name="visual_label">5/4</field>
+        </record>
+
+        <record id="thickness_visual_6_4_f5085" model="lumber.thickness.visual.rule" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="sequence">30</field>
+            <field name="active" eval="True"/>
+            <field name="min_thickness" eval="35.0"/>
+            <field name="max_thickness" eval="42.0"/>
+            <field name="visual_value" eval="1.5"/>
+            <field name="visual_label">6/4</field>
+        </record>
+
+        <record id="thickness_visual_7_4_f5085" model="lumber.thickness.visual.rule" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="sequence">40</field>
+            <field name="active" eval="True"/>
+            <field name="min_thickness" eval="42.0"/>
+            <field name="max_thickness" eval="48.0"/>
+            <field name="visual_value" eval="1.75"/>
+            <field name="visual_label">7/4</field>
+        </record>
+
+        <record id="thickness_visual_8_4_f5085" model="lumber.thickness.visual.rule" forcecreate="True">
+            <field name="profile">f5085</field>
+            <field name="sequence">50</field>
+            <field name="active" eval="True"/>
+            <field name="min_thickness" eval="48.0"/>
+            <field name="max_thickness" eval="58.0"/>
+            <field name="visual_value" eval="2.0"/>
+            <field name="visual_label">8/4</field>
+        </record>
+
+    </data>
+</odoo>

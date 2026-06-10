@@ -43,6 +43,9 @@
 
         # 🌱 7. DATOS SEMILLA (subproductos dependen de fórmulas Fase 3)
         'data/madenat_subproducto_data.xml',
+
+        # 🎨 8. RANGOS VISUALES NOMINAL COMERCIAL (C3 — obs. Cristhian)
+        'data/thickness_visual_ranges_seed.xml',
     ],
     'installable': True,
     'application': False, # El Core es el motor, no la App
