@@ -99,6 +99,35 @@ class LumberReceptionLine(models.Model):
         ('f5085', 'Factor 5085 (Pies)')
     ], string="Regla Cálculo", default='metric')
 
+    @api.onchange('ingestion_profile')
+    def _onchange_ingestion_profile_to_export_rule(self):
+        """
+        🔄 SINCRONIZA: ingestion_profile → export_calculation_rule
+        
+        Cuando el usuario cambia el perfil de ingesta (Excel),
+        automáticamente se setea la regla de cálculo correcta:
+        
+        | ingestion_profile | export_calculation_rule |
+        |-------------------|-------------------------|
+        | f5085             | f5085                   |
+        | f1550             | f1550                   |
+        | metric/blanks     | metric                  |
+        
+        FIX: Evita que cálculos de EXPORTACIÓN usen regla wrong (bug: -0,005)
+        """
+        if not self.ingestion_profile:
+            return
+        
+        mapping = {
+            'f5085': 'f5085',
+            'f1550': 'f1550',
+            'metric': 'metric',
+            'blanks': 'metric',
+        }
+        
+        self.export_calculation_rule = mapping.get(self.ingestion_profile, 'metric')
+
+
     # ==========================================================================
     # DIMENSIONES NOMINALES Y VISUALES (COMERCIALES - OC)
     # ==========================================================================
