@@ -42,7 +42,7 @@
             <field name="sequence">30</field>
             <field name="active" eval="True"/>
             <field name="min_thickness" eval="35.0"/>
-            <field name="max_thickness" eval="42.0"/>
+            <field name="max_thickness" eval="46.0"/>
             <field name="visual_value" eval="1.5"/>
             <field name="visual_label">6/4</field>
         </record>
@@ -51,7 +51,7 @@
             <field name="profile">f5085</field>
             <field name="sequence">40</field>
             <field name="active" eval="True"/>
-            <field name="min_thickness" eval="42.0"/>
+            <field name="min_thickness" eval="46.0"/>
             <field name="max_thickness" eval="48.0"/>
             <field name="visual_value" eval="1.75"/>
             <field name="visual_label">7/4</field>
