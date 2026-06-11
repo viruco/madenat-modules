@@ -1,6 +1,39 @@
 ## [Unreleased]
 
 ### Hotfix
+- **[HOTFIX UX] — Pestaña Comercial f5085: Esp. Comercial (thickness_visual) como columna principal, nominal exacto como columna opcional (2026-06-10)**
+
+  **Síntoma:**
+  La pestaña "COMERCIAL (INVENTARIO)" mostraba `thickness_nominal_frac` (fracción exacta, ej: "1 1/2") para el perfil f5085, cuando el operador espera ver la representación comercial estándar de cuartos (ej: "6/4") que ya se usa en las pestañas Físico y Exportación.
+
+  **Causa raíz:**
+  El método `_compute_visual_defaults` (lumber_reception.py L499-538) calcula dos valores distintos para f5085:
+  - `thickness_visual` → cuartos comerciales (4/4, 5/4, 6/4, 8/4) vía `_apply_thickness_visual()`
+  - `thickness_nominal_frac` → fracción exacta base 16 (ej: "1 1/2") vía `_get_fraction_text()`
+  
+  La pestaña Comercial renderizaba solo `thickness_nominal_frac`, mostrando la fracción exacta en lugar del cuarto comercial.
+
+  **Corrección (solo XML, 0 Python):**
+  - Archivo: `views/lumber_reception_views.xml`
+  - Columna principal (visible): `thickness_visual` con string="Esp. Comercial", `readonly="0"`
+  - Columna secundaria (oculta): `thickness_nominal_frac` con string="Nom. Exacto", `optional="hide"`
+  - `column_invisible` por perfil conservado en ambas: solo visible en f5085
+  - El nominal exacto sigue accesible vía menú de columnas (tres puntos > Nom. Exacto)
+
+  **Impacto:**
+  - Cero cambios en Python, cálculos matemáticos, exportación, costeo o auditoría
+  - Trazabilidad del nominal exacto preservada (columna opcional accesible)
+  - Edición manual preservada (`thickness_visual` tiene `readonly=False` en modelo, `readonly="0"` en vista)
+  - Edición masiva preservada (wizard escribe `thickness_nominal` + `thickness_nominal_frac` → ORM recalcula `thickness_visual` vía `@api.depends`)
+  - Edición inline preservada (tree tiene `editable="bottom"`)
+
+  **Validación:**
+  - Sin cambios en `_compute_visual_defaults`, `_compute_export_values`, `_compute_volume_purchase`, `_compute_line_cost`
+  - Sin cambios en f1550, metric (`column_invisible` los oculta)
+  - Sin cambios en gate GB-1, nominal_status, wizard de asignación masiva
+  - Sin cambios en auditoría (audit_snapshot), exportación Excel, validación documental
+  - Sin pérdida de trazabilidad: el nominal exacto queda disponible como columna opcional
+
 - **[HOTFIX v4] — Búsqueda de lote tolera company_id=NULL (2026-06-04)**
 
   **Evidencia de BD:**
