@@ -164,13 +164,10 @@
                          </group>
                         
                         <group string="2. Documentos">
-                            <!-- C4: Blank → solo PDF Guía | Madera Aserrada → solo Excel Packing -->
                             <field name="pdf_file" filename="pdf_filename" widget="binary" string="Subir PDF Guía"
-                                   invisible="ingestion_profile == 'f1550'"
-                                   required="ingestion_profile != 'f1550' and state == 'draft'"/>
+                                   required="state == 'draft'"/>
                             <field name="excel_file" filename="excel_filename" widget="binary" string="Subir Excel (Packing)"
-                                   invisible="ingestion_profile == 'f5085'"
-                                   required="ingestion_profile != 'f5085' and state == 'draft'"/>
+                                   required="state == 'draft'"/>
                             <field name="pdf_filename" invisible="1"/>
                             <field name="excel_filename" invisible="1"/>
                             
@@ -178,9 +175,7 @@
                             
                             <div colspan="2" class="text-end text-muted mt-2">
                                 <i><i class="fa fa-info-circle" aria-hidden="true" title="Información"/>
-                                <span invisible="ingestion_profile == 'f1550'">Suba el <b>PDF de la Guía</b> (Blank).</span>
-                                <span invisible="ingestion_profile == 'f5085'">Suba el <b>Excel Packing List</b> (Madera Aserrada).</span>
-                                Luego haga clic en <b>Procesar Documentos</b> arriba.</i>
+                                Suba el <b>PDF de la Guía</b> y el <b>Excel Packing List</b>. Luego haga clic en <b>Procesar Documentos</b> arriba.</i>
                             </div>
                         </group>
                     </group>
