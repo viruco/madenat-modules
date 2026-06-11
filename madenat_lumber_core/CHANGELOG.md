@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [18.0.5.1.0] - 2026-06-11
+### Fixed
+- **thickness_visual 6/4**: max_thickness 42→46mm, 7/4 min_thickness 42→46mm
+- 45mm S2S ahora clasifica correctamente como `6/4` (nominal canónico 1.5")
+- Script de migración automática incluido: aplica en upgrade sin intervención manual
+
+
 ### Hotfix
 - **[HOTFIX UX] — Pestaña Comercial f5085: Esp. Comercial (thickness_visual) como columna principal, nominal exacto como columna opcional (2026-06-10)**
 
