@@ -179,6 +179,6 @@
         <field name="view_mode">pivot,list</field>
     </record>
 
-    <menuitem id="menu_lumber_cost_distribution_persist" name="📋 Expedientes de Costeo (Staging)" parent="madenat_lumber_reports.menu_finance_costing" action="action_lumber_cost_distribution" sequence="12"/>
-    <menuitem id="menu_lumber_cost_matrix" name="📈 Tarja Valorizada (Inventario)" parent="madenat_lumber_reports.menu_finance_costing" action="action_lumber_cost_matrix" sequence="15"/>
+    <menuitem id="menu_lumber_cost_distribution_persist" name="📋 Expedientes de Costeo (Staging)" parent="madenat_lumber_core.menu_finance_costing" action="action_lumber_cost_distribution" sequence="12"/>
+    <menuitem id="menu_lumber_cost_matrix" name="📈 Tarja Valorizada (Inventario)" parent="madenat_lumber_core.menu_finance_costing" action="action_lumber_cost_matrix" sequence="15"/>
 </odoo>

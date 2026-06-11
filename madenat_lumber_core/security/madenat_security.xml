@@ -1,29 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
+
+        <!-- ========================================================= -->
+        <!-- CATEGORÍA DEL MÓDULO                                      -->
+        <!-- ========================================================= -->
         <record id="module_category_madenat" model="ir.module.category">
             <field name="name">MADENAT: Gestión Madera</field>
             <field name="description">Control de accesos para el flujo Trader de Madenat</field>
             <field name="sequence">1</field>
         </record>
 
+        <!-- ========================================================= -->
+        <!-- GRUPO BASE: AUDITORÍA DE COSTOS                           -->
+        <!-- ========================================================= -->
         <record id="group_madenat_cost_auditor" model="res.groups">
             <field name="name">Auditor de Costos (Felipe)</field>
             <field name="category_id" ref="module_category_madenat"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Grupo legacy/base para auditoría de costos.</field>
         </record>
 
+        <!-- ========================================================= -->
+        <!-- ADMINISTRACIÓN MADENAT                                    -->
+        <!-- ========================================================= -->
         <record id="group_madenat_admin" model="res.groups">
             <field name="name">Administrador Madenat</field>
             <field name="category_id" ref="module_category_madenat"/>
             <field name="implied_ids" eval="[(4, ref('group_madenat_cost_auditor'))]"/>
+            <field name="comment">Administración funcional del núcleo MADENAT.</field>
         </record>
-    
+
+        <!-- ========================================================= -->
+        <!-- CONFIGURACIÓN DE REGLAS DE INGESTA                       -->
+        <!-- ========================================================= -->
         <record id="group_lumber_config_manager" model="res.groups">
             <field name="name">Configurador de Reglas de Ingesta</field>
             <field name="category_id" ref="module_category_madenat"/>
             <field name="implied_ids" eval="[(4, ref('group_madenat_admin'))]"/>
-            <field name="comment">Usuario autorizado a mantener las reglas de configuracion de ingesta (mapas, tolerancias, filtros).</field>
+            <field name="comment">Usuario autorizado a mantener reglas de ingesta, mapas, tolerancias y filtros.</field>
         </record>
+
+        <!-- ========================================================= -->
+        <!-- OPERACIONES                                               -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_operaciones" model="res.groups">
+            <field name="name">Operaciones</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+            <field name="comment">Recepción, staging, stock físico, contenedores, embarques y trazabilidad operativa.</field>
+        </record>
+
+        <!-- ========================================================= -->
+        <!-- COSTOS                                                    -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_costos" model="res.groups">
+            <field name="name">Costos</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Costos base, líneas de costo, distribuciones y auditoría monetaria.</field>
+        </record>
+
+        <!-- ========================================================= -->
+        <!-- CONTABILIDAD                                              -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_contabilidad" model="res.groups">
+            <field name="name">Contabilidad</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('group_madenat_costos')), (4, ref('account.group_account_manager'))]"/>
+            <field name="comment">Contabilidad y cierres con visibilidad ampliada sobre costos y facturación.</field>
+        </record>
+
+        <!-- ========================================================= -->
+        <!-- GERENCIA                                                  -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_gerencia" model="res.groups">
+            <field name="name">Gerencia</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[
+                (4, ref('group_madenat_operaciones')),
+                (4, ref('group_madenat_costos')),
+                (4, ref('group_madenat_contabilidad'))
+            ]"/>
+            <field name="comment">Visión consolidada, autorización y supervisión global del flujo MADENAT.</field>
+        </record>
+
+        <!-- ========================================================= -->
+        <!-- GRUPO TÉCNICO OPCIONAL: AUDITORÍA COSTO / SEGURIDAD       -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_cost_auditor_plus" model="res.groups">
+            <field name="name">Auditoría de Costos Avanzada</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('group_madenat_cost_auditor'))]"/>
+            <field name="comment">Extensión opcional del perfil de auditoría base.</field>
+        </record>
+
     </data>
 </odoo>
