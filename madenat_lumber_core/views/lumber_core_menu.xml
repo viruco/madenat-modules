@@ -130,7 +130,7 @@
         <menuitem id="menu_madenat_reports_main"
                   name="📊 Reportes y Listados"
                   parent="menu_madenat_root"
-                  sequence="25"/>
+                  sequence="45"/>
 
         <menuitem id="menu_finance_main"
                   name="💰 Costeo y Finanzas"
