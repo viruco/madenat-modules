@@ -23,6 +23,7 @@ from .utils_uom import (
     calculate_volume_imperial_to_m3,
     calculate_volume_metric_m3,
     get_s2s_adjustment,
+    decimal_inch_to_fraction_str,
     r3,
     r4,
 )
@@ -99,7 +100,6 @@ class LumberReceptionLine(models.Model):
         ('f5085', 'Factor 5085 (Pies)')
     ], string="Regla Cálculo", default='metric')
 
-    @api.onchange('ingestion_profile')
     def _onchange_ingestion_profile_to_export_rule(self):
         """
         🔄 SINCRONIZA: ingestion_profile → export_calculation_rule
@@ -127,6 +127,30 @@ class LumberReceptionLine(models.Model):
         
         self.export_calculation_rule = mapping.get(self.ingestion_profile, 'metric')
 
+    # ==========================================================================
+    # 🪞 ESPEJO DOCUMENTAL — PRESENTACIÓN FRACCIONARIA (solo UI, no altera BD)
+    # ==========================================================================
+    thickness_document_display = fields.Char(
+        "Esp. Original",
+        compute="_compute_document_display",
+        store=False,
+        help="Representación fraccionaria del valor documental (ej: '1 9/16'). "
+             "Solo lectura, calculado al vuelo desde thickness_document_value."
+    )
+    width_document_display = fields.Char(
+        "Ancho Original",
+        compute="_compute_document_display",
+        store=False,
+        help="Representación fraccionaria del valor documental (ej: '3 5/8'). "
+             "Solo lectura, calculado al vuelo desde width_document_value."
+    )
+
+    @api.depends('thickness_document_value', 'width_document_value')
+    def _compute_document_display(self):
+        """Convierte el valor documental crudo (decimal string) a fracción legible."""
+        for rec in self:
+            rec.thickness_document_display = decimal_inch_to_fraction_str(rec.thickness_document_value)
+            rec.width_document_display = decimal_inch_to_fraction_str(rec.width_document_value)
 
     # ==========================================================================
     # DIMENSIONES NOMINALES Y VISUALES (COMERCIALES - OC)
@@ -138,6 +162,20 @@ class LumberReceptionLine(models.Model):
     width_nominal = fields.Float("Ancho Nom. (mm)")
     length_nominal = fields.Float("Largo Nom. (m)")
 
+    thickness_document_value = fields.Char(
+        "Valor Documental Esp.", 
+        readonly=True,
+        help="Valor original del Excel/PDF para auditoría y trazabilidad (ej: '1 9/16', '1.5625'). "
+             "Nunca se altera tras la ingesta; conserva la evidencia documental."
+    )
+
+
+    width_document_value = fields.Char(
+        "Valor Documental Ancho",
+        readonly=True,
+        copy=False,
+        help="Valor original del Excel/PDF para auditoría y trazabilidad del ancho. Nunca se altera tras la ingesta."
+    )
     thickness_visual = fields.Char(
         "Espesor (Nom)", 
         compute="_compute_visual_defaults", 
@@ -390,22 +428,27 @@ class LumberReceptionLine(models.Model):
     def _onchange_subproduct_id(self):
         """
         🎯 Regla de Oro: Auto-llenado de medidas nominales desde el producto.
+
         BLINDAJE: El subproducto NO tiene autoridad para pisar un nominal que
         el usuario o el Wizard ya hayan fijado. Solo actúa si la celda está en cero.
+        
+        CORRECCIÓN 2026-06-10:
+          madenat.subproducto es un catálogo de clasificación (ROUGH, S2S, BLANK CLEAR)
+          SIN campos dimensionales. Los atributos thickness_nominal / width_nominal /
+          length_nominal NO existen en ese modelo, lo que causaba AttributeError al
+          disparar este onchange desde la UI (RPC_ERROR).
+          
+          La inyección de nominales desde subproducto queda deshabilitada hasta que
+          el modelo de catálogo incorpore campos dimensionales. Mientras tanto, los
+          nominales se obtienen del Wizard de asignación masiva o del parser de ingesta.
         """
     
         if self.subproduct_id:
-            sub_t = self.subproduct_id.thickness_nominal or 0.0
-            sub_w = self.subproduct_id.width_nominal or 0.0
-            sub_l = self.subproduct_id.length_nominal or 0.0
-
-            # Solo inyectar si nuestro nominal actual está vacío/cero
-            if not self.thickness_nominal and sub_t > 0:
-                self.thickness_nominal = sub_t
-            if not self.length_nominal and sub_l > 0:
-                self.length_nominal = sub_l
-            if not self.width_nominal and sub_w > 0:
-                self.width_nominal = sub_w
+            # ⚠️ madenat.subproducto no tiene campos dimensionales.
+            #    Reservamos la estructura para cuando el modelo los incorpore.
+            #    Los nominales deben fijarse vía Wizard (lumber.reception.mass.update)
+            #    o desde el parser de ingesta (reception_parser._process_dataframe).
+            pass
 
     @api.onchange('length_input_raw', 'lengthuom')
     def _onchange_length_input(self):
@@ -496,10 +539,12 @@ class LumberReceptionLine(models.Model):
         quarters = int(round((t_mm / float(MM_PER_INCH)) * 4))
         return f"{quarters}/4" if quarters > 0 else ""
 
-    @api.depends('thickness_nominal', 'width_nominal', 'thickness', 'width', 'reception_id.ingestion_profile')
+    @api.depends('thickness_nominal', 'width_nominal', 'thickness', 'width',
+                 'reception_id.ingestion_profile',
+                 'thickness_document_value', 'width_document_value')
     def _compute_visual_defaults(self):
         """
-        🎨 TRADUCTOR DE IDENTIDAD VISUAL (V6.2 — PARAMETRIZADO FASE 1)
+        🎨 TRADUCTOR DE IDENTIDAD VISUAL (V6.3 — FIX BLANK CLEAR 10-06-2026)
         Separa la Verdad Física (Pestaña 1) de la Sugerencia Comercial (Pestaña 2).
         Usa madenat.thickness_visual_ranges con fallback exacto.
         """
@@ -516,26 +561,30 @@ class LumberReceptionLine(models.Model):
                 line.thickness_nominal_frac = line.thickness_visual
                 line.width_nominal_frac = line.width_visual
             
-            # 🇺🇸 MUNDO 2: BLANKS CLEAR (C3 — obs. Cristhian 08-06-2026)
+            # 🇺🇸 MUNDO 2: BLANKS CLEAR (f5085)
+            # REGLA DE NEGOCIO — No es una limitación técnica:
+            #   El cliente exporta Blank Clear con las dimensiones exactas del
+            #   documento de compra original. Cualquier transformación a cuartos
+            #   comerciales (4/4, 6/4, 8/4) corrompe la trazabilidad documental
+            #   y la conformidad con el packing list de exportación.
+            #
+            # TRAZABILIDAD DE DATOS (para auditores y futuros mantenedores):
+            #   raw_esp → parser._process_dataframe() → str(raw_esp)
+            #   → _fill_staging_table() → thickness_document_value (readonly, inmutable)
+            #   → _compute_visual_defaults() → _parse_smart_dimension() → _get_fraction_text()
+            #   → thickness_visual / thickness_nominal_frac
+            #   NO hay normalización ni mapeo comercial en este camino.
+            #   NO pasa por _apply_thickness_visual() ni _get_trader_width_text().
+            #
+            # obs. Cristhian 10-06-2026.
             else:
-                # 1. ESPESOR VISUAL: Nominal comercial desde tabla de rangos (ej: 6/4)
-                #    Usa el espesor nominal si existe, o el físico como fallback
-                t_val = line.thickness_nominal if line.thickness_nominal > 0 else line.thickness
-                w_val = line.width_nominal if line.width_nominal > 0 else line.width
+                t_doc_in = line._parse_smart_dimension(line.thickness_document_value)
+                w_doc_in = line._parse_smart_dimension(line.width_document_value)
                 
-                # thickness_visual = nominal comercial (cuartos: 4/4, 5/4, 6/4, 8/4)
-                line.thickness_visual = self._apply_thickness_visual(t_val)
-                # width_visual sigue siendo la fracción real (no aplica mapeo de cuartos para ancho)
-                w_phys_in = line.width if line.width < 10.0 else line.width / float(MM_PER_INCH)
-                line.width_visual = self._get_fraction_text(w_phys_in)
-                
-                # 2. FRACCIÓN NOMINAL (Pestaña 2): Fracción real exacta (ej: 1 9/16)
-                #    Se mantiene con la precisión del Excel para trazabilidad
-                t_nom_in = t_val if t_val < 10.0 else t_val / float(MM_PER_INCH)
-                w_nom_in = w_val if w_val < 10.0 else w_val / float(MM_PER_INCH)
-                
-                line.thickness_nominal_frac = self._get_fraction_text(t_nom_in)
-                line.width_nominal_frac = self._get_fraction_text(w_nom_in)
+                line.thickness_visual = line._get_fraction_text(t_doc_in)
+                line.width_visual = line._get_fraction_text(w_doc_in)
+                line.thickness_nominal_frac = line._get_fraction_text(t_doc_in)
+                line.width_nominal_frac = line._get_fraction_text(w_doc_in)
    
 
     def action_suggest_nominal_defaults(self):
@@ -683,11 +732,12 @@ class LumberReceptionLine(models.Model):
                 # 3. MATRIZ DE INGENIERÍA (genérica, derivada de formula dict)
                 if t_in > 0 and w_in > 0 and l_m > 0 and qty > 0:
                     if formula['formula_kind'] == 'blank_clear':
-                        # Deducción de cara + ajuste S2S según fórmula
-                        t_calc = (t_mm / float(MM_PER_INCH)) - formula['deduction_factor']
-                        w_calc = (w_mm / float(MM_PER_INCH))
-                        if formula['s2s_adjustment_mode'] != 'none':
-                            w_calc = w_calc + _s2s
+                        # FIX 2026-06-11 v2: Fórmula Excel canónica para blank_clear
+                        # = (t - 1/16) × (w + 1/8) × L_ft × pzas / 5085.312
+                        # +1/8 en ancho es SIEMPRE obligatorio para blank_clear
+                        # Causa raíz: s2s_adjustment_mode='none' bloqueaba el +1/8
+                        t_calc = t_in - formula['deduction_factor']
+                        w_calc = w_in + float(S2S_WIDTH_ADJUSTMENT_INCH)
                         l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
                         vol_exp = (t_calc * w_calc * l_ft * qty) / formula['principal_factor']
                         val_mbf = (t_calc * w_calc * l_ft * qty) / formula['mbf_divisor']
@@ -719,8 +769,8 @@ class LumberReceptionLine(models.Model):
                 )
                 vol_exp = 0.0
 
-            line.vol_shipment_m3 = float_round(vol_exp, precision_digits=3, rounding_method='HALF-UP')
-            line.vol_mbf = float_round(val_mbf, precision_digits=3, rounding_method='HALF-UP')
+            line.vol_shipment_m3 = float_round(vol_exp, precision_digits=6, rounding_method='HALF-UP')
+            line.vol_mbf = float_round(val_mbf, precision_digits=6, rounding_method='HALF-UP')
             line.board_feet = float_round(val_mbf * 1000.0, precision_digits=2, rounding_method='HALF-UP')
   
     # ==========================================================================
@@ -784,20 +834,24 @@ class LumberReceptionLine(models.Model):
                 line.vol_purchase_m3 = r3((t * w * l * line.pieces) / float(M3_DIVISOR))
             
             else:
-                # BLANKS: Escalado Proporcional con redondeo a 3 decimales
-                if line.thickness_nominal == 0 and line.width_nominal == 0:
-                    # Si no hay Wizard, es exactamente el del Excel
-                    line.vol_purchase_m3 = line.vol_shipment_m3
+                # FIX 2026-06-11 v2: Fórmula Excel canónica para blank_clear
+                # = (t - 1/16) × (w + 1/8) × L_ft × pzas / 5085.312
+                # _parse_smart_dimension parsea "1 9/16" → 1.5625 EXACTO (fracciones)
+                # NO usar thickness_nominal/mm_per_inch: 92.07mm → 3.6248" ≠ 3.625"
+                t_in_p = line._parse_smart_dimension(line.thickness_visual) if line.thickness_visual else 0.0
+                w_in_p = line._parse_smart_dimension(line.width_visual) if line.width_visual else 0.0
+                l_ft_p = line.length_input_raw if line.length_input_raw \
+                         else (line.length_nominal or line.length) / float(FT_TO_M)
+                if t_in_p > 0 and w_in_p > 0 and l_ft_p > 0:
+                    t_calc_p = t_in_p - float(FACE_DEDUCTION_INCH)
+                    w_calc_p = w_in_p + float(S2S_WIDTH_ADJUSTMENT_INCH)
+                    line.vol_purchase_m3 = r3(
+                        (t_calc_p * w_calc_p * l_ft_p * (line.pieces or 0))
+                        / float(BLANK_CLEAR_FACTOR)
+                    )
                 else:
-                    t_nom = line.thickness_nominal if line.thickness_nominal > 0 else line.thickness
-                    w_nom = line.width_nominal if line.width_nominal > 0 else line.width
-                    
-                    factor_t = t_nom / line.thickness if line.thickness > 0 else 1.0
-                    factor_w = w_nom / line.width if line.width > 0 else 1.0
-                    
-                    # 🎯 REDONDEO CRÍTICO: Elimina la milésima de discrepancia
-                    line.vol_purchase_m3 = round(line.vol_shipment_m3 * factor_t * factor_w, 3)
-                    line.vol_purchase_m3 = r3(line.vol_shipment_m3 * factor_t * factor_w)
+                    line.vol_purchase_m3 = line.vol_shipment_m3
+
 
             if not self._is_valid_volume(line.vol_purchase_m3):
                 _logger.warning(
@@ -1851,6 +1905,11 @@ class LumberReception(models.Model):
                 'thickness': item.get('thickness_mm', 0.0),
                 'width': item.get('width_mm', 0.0),
                 'length': item.get('length_m', 0.0),
+
+                # 🛡️ TRAZABILIDAD DOCUMENTAL (Auditoría 2026-06-10):
+                # Preserva el valor original del Excel/PDF sin transformación alguna.
+                'thickness_document_value': item.get('thickness_document_value', ''),
+                'width_document_value': item.get('width_document_value', ''),
 
                 # 📐 LARGO INPUT (Blanks: pies directos del Excel)
                 'length_input_raw': item.get('length_input_raw', item.get('length_m', 0.0)),

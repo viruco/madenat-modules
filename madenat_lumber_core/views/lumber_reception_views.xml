@@ -256,30 +256,21 @@
                                 </div>
                                 <field name="reception_line_ids" readonly="1">
                                     <list string="Detalle Físico (Original)">
+                                        <!-- ═══ IDENTIDAD ═══ -->
                                         <field name="lot_name" string="Etiqueta Lote" decoration-bf="1"/>
                                         <field name="excel_product_name" string="Producto (Excel)"/>
-                                        
-                                        <field name="thickness" string="Espesor (mm)" readonly="1" force_save="1" column_invisible="parent.ingestion_profile == 'f5085'"/>
-                                        <field name="width" string="Ancho (mm)" readonly="1" force_save="1" column_invisible="parent.ingestion_profile == 'f5085'"/>
-                                        
-                                        <field name="thickness_visual" string="Esp. (Fracción)" readonly="1" decoration-info="1" column_invisible="parent.ingestion_profile != 'f5085'"/>
-                                        <field name="width_visual" string="Ancho (Fracción)" readonly="1" decoration-info="1" column_invisible="parent.ingestion_profile != 'f5085'"/>
-                                        
-                                        <field name="length_input_raw" string="Largo (pies)"
-                                               column_invisible="parent.ingestion_profile != 'f5085'"/>
-                                        <field name="lengthuom" column_invisible="1"/>
-                                        <field name="export_calculation_rule" column_invisible="1"/>
-                                        <field name="length" string="Largo (m)" readonly="1" optional="show" decoration-muted="1"
-                                               column_invisible="parent.ingestion_profile == 'f5085'"/>
+
+                                        <!-- ═══ ESPEJO DOCUMENTAL (Auditoría 2026-06-10):
+                                             Valor exacto del Excel/PDF, inmutable, sin transformación.
+                                             Renderizado como fracción humana legible (ej: 1 9/16). -->
+                                        <field name="thickness_document_display" string="Esp. Original" readonly="1" decoration-muted="1"/>
+                                        <field name="width_document_display" string="Ancho Original" readonly="1" decoration-muted="1"/>
+
+                                        <field name="length" string="Largo (m)" readonly="1" optional="hide" decoration-muted="1"/>
+
+                                        <!-- ═══ RESUMEN OPERATIVO ═══ -->
                                         <field name="pieces" string="Pzas" widget="integer" sum="Total Piezas"/>
                                         <field name="vol_purchase_m3" sum="Total m³" string="Vol. Compra (m³)" decoration-bf="1" class="text-end" digits="[16, 3]"/>
-                                        <field name="vol_physical_m3"
-                                            string="Vol. Físico Real (m³)"
-                                            sum="Total m³"
-                                            decoration-bf="1"
-                                            class="text-end"
-                                            digits="[16, 3]"
-                                            column_invisible="parent.ingestion_profile == 'f5085'"/>
                                     </list>
                                 </field>
                             </page>
@@ -376,10 +367,24 @@
                                                 class="font-weight-bold"
                                                 column_invisible="parent.ingestion_profile == 'f5085'"/>
                                                 
-                                        <field name="thickness_nominal_frac" 
-                                                string="Esp. Nom (Fracción)" 
+                                        <field name="thickness_visual" 
+                                                string="Esp. Comercial" 
                                                 decoration-info="1" 
-                                                column_invisible="parent.ingestion_profile != 'f5085'"/>
+                                                column_invisible="parent.ingestion_profile not in ('f5085', 'f1550')"
+                                                readonly="0"/>
+                                        <!-- FIX 2026-06-10: thickness_nominal_frac oculto en todos los perfiles.
+                                             Siempre es un duplicado computacional de thickness_visual
+                                             (_compute_visual_defaults L561, L586). -->
+                                        <field name="thickness_nominal_frac" 
+                                                string="Nom. Exacto" 
+                                                optional="hide" 
+                                                column_invisible="1"/>
+
+                                        <field name="width_visual" 
+                                                string="Ancho Comercial" 
+                                                decoration-info="1" 
+                                                column_invisible="parent.ingestion_profile not in ('f5085', 'f1550')"
+                                                readonly="0"/>
 
                                         <field name="width_nominal" 
                                                 string="Ancho Nom (mm)" 
@@ -388,10 +393,13 @@
                                                 class="font-weight-bold"
                                                 column_invisible="parent.ingestion_profile == 'f5085'"/>
                                                 
+                                        <!-- FIX 2026-06-10: width_nominal_frac oculto en todos los perfiles.
+                                             Siempre es un duplicado computacional de width_visual
+                                             (_compute_visual_defaults L562, L587). -->
                                         <field name="width_nominal_frac" 
                                                 string="Ancho Nom (Fracción)" 
                                                 decoration-info="1" 
-                                                column_invisible="parent.ingestion_profile != 'f5085'"/>
+                                                column_invisible="1"/>
                                                
                                         <field name="length_input_raw" string="Largo (pies)"
                                                column_invisible="parent.ingestion_profile != 'f5085'"/>
@@ -463,8 +471,10 @@
                             <page string="5. 📂 DOCUMENTOS Y AUDITORÍA" name="documents">
                                 <group>
                                     <group string="ARCHIVOS FUENTE">
-                                        <field name="pdf_file" filename="pdf_filename" widget="binary" string="PDF Guía"/>
-                                        <field name="excel_file" filename="excel_filename" widget="binary" string="Excel Packing"/>
+                                        <field name="pdf_file" filename="pdf_filename" widget="binary" string="PDF Guía"
+                                               invisible="ingestion_profile == 'f1550'"/>
+                                        <field name="excel_file" filename="excel_filename" widget="binary" string="Excel Packing"
+                                               invisible="ingestion_profile == 'f5085'"/>
                                         <field name="oc_pdf_file" widget="binary" string="PDF OC"/>
                                         <field name="pdf_filename" invisible="1"/>
                                         <field name="excel_filename" invisible="1"/>
@@ -593,7 +603,7 @@
     </record>
 
     <record id="action_lumber_reception" model="ir.actions.act_window">
-        <field name="name">Recepción de Madera</field>
+        <field name="name">Ingreso de Guías</field>
         <field name="res_model">lumber.reception</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_lumber_reception_list"/>

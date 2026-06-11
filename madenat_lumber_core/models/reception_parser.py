@@ -154,12 +154,22 @@ class MadenatReceptionParser(models.AbstractModel):
             # ====================================================================
             
             def scrub_number(val):
-                """ Elimina letras, unidades y repara decimales chilenos """
+                """ Elimina letras, unidades, parsea fracciones y repara decimales chilenos """
                 if pd.isna(val): return val
                 val_str = str(val).lower()
                 
                 # Extirpar unidades de medida
                 val_str = re.sub(r'(m3|m³|mm|cm|m|pcs|pzas|pt|unid)', '', val_str).strip()
+                
+                # 📐 PARSEO DE FRACCIONES IMPERIALES (ej: "1 9/16", "3 5/8", "2 1/4")
+                # Debe ejecutarse ANTES del traductor chileno para no confundir
+                # la barra de fracción con formato numérico.
+                fraction_match = re.match(r'^(\d+)\s+(\d+)/(\d+)$', val_str)
+                if fraction_match:
+                    whole = float(fraction_match.group(1))
+                    num = float(fraction_match.group(2))
+                    den = float(fraction_match.group(3))
+                    return str(whole + num / den)
                 
                 # 🇨🇱 TRADUCTOR CHILENO A PYTHON
                 # Si el número viene como "1.500,25" lo pasamos a "1500.25"
@@ -310,9 +320,17 @@ class MadenatReceptionParser(models.AbstractModel):
 
                     # Nominales (para f5085: resolver desde mapa, otros: usar valor directo)
                     if formato == 'f5085':
-                        t_nom = self._resolve_nominal(raw_esp)
-                        if t_nom == raw_esp:
-                            warnings.append(f"⚠️ Paquete {package_no}: nominal {raw_esp}\" sin mapeo.")
+                        # 🛡️ CORRECCIÓN AUDITORÍA 2026-06-10:
+                        # Respetar la unidad ya resuelta por la heurística.
+                        # Si esp_unit == 'inch', aplicamos resolve_nominal y convertimos a mm.
+                        # Si esp_unit == 'mm', el valor ya está en mm y se usa directamente.
+                        if esp_unit == 'inch':
+                            t_nom_inch = self._resolve_nominal(esp_val)
+                            t_nom = round(t_nom_inch * float(MM_PER_INCH), 2)
+                            if t_nom_inch == esp_val:
+                                warnings.append(f"⚠️ Paquete {package_no}: nominal {esp_val}\" sin mapeo.")
+                        else:
+                            t_nom = thickness_mm
                         w_nom = width_mm
                     elif formato == 'blanks':
                         t_nom, w_nom = thickness_mm, width_mm
@@ -335,6 +353,8 @@ class MadenatReceptionParser(models.AbstractModel):
                         'length_uom': length_uom,
                         'thickness_visual': thickness_visual,
                         'width_visual': width_visual,
+                        'thickness_document_value': str(raw_esp),
+                        'width_document_value': str(raw_anc),
                         'thickness_nominal': t_nom,
                         'width_nominal': w_nom,
                         'export_rule': export_rule
