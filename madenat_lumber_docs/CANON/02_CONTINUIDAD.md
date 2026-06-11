@@ -1,7 +1,7 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 8.0.0
-**Fecha de actualización:** 2026-06-02
+**Versión documental:** 8.1.0
+**Fecha de actualización:** 2026-06-10
 **Estado:** ACTIVO — Checkpoint vivo para retoma técnica sin reconstrucción de contexto
 
 ---
@@ -39,11 +39,14 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 
 ---
 
-## 4. Punto de retoma — 2026-06-09
+## 4. Punto de retoma — 2026-06-10
 
 **Último commit:** 2e0c7ca — fix(menu): renombrar menú raíz C1 Cristhian
 **Rama:** main
-**Estado:** En curso — implementando observaciones Cristhian (08-06-2026)
+**Estado:** Hotfix UX cerrado. Pendientes C2, C3, C4 según backlog.
+
+### Cerrado en sesión 10-06-2026
+- HOTFIX UX — Pestaña Comercial f5085: `thickness_visual` como columna principal, `thickness_nominal_frac` como opcional. Solo XML (lumber_reception_views.xml L372-380), 0 Python. Trazabilidad preservada vía columna opcional. Ver CHANGELOG.md.
 
 ### Cerrado en sesión 09-06-2026
 - C1: Menú raíz renombrado "📥 Ingreso de Guías Dentro de Recepción" ✅
