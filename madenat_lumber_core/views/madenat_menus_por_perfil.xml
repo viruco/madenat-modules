@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ================================================================ -->
+        <!-- FASE 2 — Navegación por perfil (CANON/14, C4)                    -->
+        <!-- Extiende lumber_core_menu.xml (madenat_lumber_core)               -->
+        <!-- ================================================================ -->
+
+        <!-- ▸ Contabilidad — Nuevo menú principal -->
+
+        <menuitem id="menu_contabilidad_main"
+                  name="📒 Contabilidad"
+                  parent="menu_madenat_root"
+                  sequence="27"/>
+
+        <menuitem id="menu_contabilidad_conciliacion"
+                  name="📊 Panel Conciliación"
+                  parent="menu_contabilidad_main"
+                  action="action_madenat_accounting_reconciliation"
+                  sequence="10"
+                  groups="group_madenat_contabilidad"/>
+
+        <menuitem id="menu_contabilidad_cierre"
+                  name="🔒 Cierre de Período"
+                  parent="menu_contabilidad_main"
+                  action="action_madenat_cost_audit"
+                  sequence="20"
+                  groups="group_madenat_contabilidad"/>
+
+        <!-- ▸ Gerencia — Nuevo menú principal independiente -->
+
+        <menuitem id="menu_gerencia_main"
+                  name="📈 Gerencia"
+                  parent="menu_madenat_root"
+                  sequence="35"/>
+
+        <menuitem id="menu_gerencia_dashboard"
+                  name="📊 Dashboard Gerencial"
+                  parent="menu_gerencia_main"
+                  action="madenat_lumber_logistics.action_madenat_executive_dashboard"
+                  sequence="10"
+                  groups="group_madenat_gerencia"/>
+
+        <menuitem id="menu_gerencia_trazabilidad"
+                  name="🔍 Trazabilidad 360"
+                  parent="menu_gerencia_main"
+                  action="madenat_lumber_logistics.action_madenat_traceability_360"
+                  sequence="20"
+                  groups="group_madenat_gerencia"/>
+
+        <!-- ▸ Dashboards de entrada por perfil -->
+        <!-- NOTE: Dashboard 744 retirado del flujo principal por decisión de negocio.
+             action_madenat_ops_dashboard queda disponible pero sin menú visible. -->
+
+        <!-- <menuitem id="menu_ops_dashboard"
+                  name="📊 Dashboard"
+                  parent="menu_ops_main"
+                  action="action_madenat_ops_dashboard"
+                  sequence="5"
+                  groups="group_madenat_operaciones"/> -->
+
+        <menuitem id="menu_costos_dashboard"
+                  name="📊 Dashboard Costos"
+                  parent="menu_finance_main"
+                  action="action_madenat_costing_dashboard"
+                  sequence="5"
+                  groups="group_madenat_costos"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Vista pivot de Auditoría de Costos — Perfil Costos -->
+        <record id="action_madenat_cost_audit" model="ir.actions.act_window">
+            <field name="name">Auditoría de Costos</field>
+            <field name="res_model">stock.lot</field>
+            <field name="view_mode">pivot,graph,list</field>
+            <field name="context">{
+                'pivot_measures': ['wood_cost_usd', 'total_cost_usd', 'cost_per_m3_usd', 'cost_per_mbf_usd', 'margin_usd'],
+                'pivot_row_groupby': ['product_id'],
+                'pivot_column_groupby': ['create_date:month']
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Auditoría de costos por lote</p>
+                <p>Use el pivote para analizar costos por producto, mes o embarque.</p>
+            </field>
+        </record>
+
+        <record id="view_madenat_cost_audit_pivot" model="ir.ui.view">
+            <field name="name">madenat.cost.audit.pivot</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <pivot string="Auditoría de Costos">
+                    <field name="product_id" type="row"/>
+                    <field name="create_date" type="col" interval="month"/>
+                    <field name="wood_cost_usd" type="measure"/>
+                    <field name="total_cost_usd" type="measure"/>
+                    <field name="cost_per_m3_usd" type="measure"/>
+                    <field name="cost_per_mbf_usd" type="measure"/>
+                    <field name="margin_usd" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+    </data>
+</odoo>

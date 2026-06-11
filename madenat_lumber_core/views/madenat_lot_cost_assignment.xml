@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Lista editable para asignación masiva de costo base — Perfil Costos -->
+        <record id="action_madenat_lot_cost_assignment" model="ir.actions.act_window">
+            <field name="name">Asignar Costo Base</field>
+            <field name="res_model">stock.lot</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('wood_cost_usd', '=', 0)]</field>
+            <field name="context">{'search_default_filter_no_cost': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Todos los lotes tienen costo asignado</p>
+                <p>Aquí aparecen los lotes pendientes de valorización (wood_cost_usd = 0).</p>
+            </field>
+        </record>
+
+        <record id="view_madenat_lot_cost_assignment_tree" model="ir.ui.view">
+            <field name="name">madenat.lot.cost.assignment.tree</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <list string="Asignación de Costo Base" editable="bottom" create="false" delete="false">
+                    <field name="name" readonly="1"/>
+                    <field name="product_id" readonly="1"/>
+                    <field name="supplier_id" readonly="1" string="Proveedor"/>
+                    <field name="volumen_m3" readonly="1" string="Volumen (m³)"/>
+                    <field name="wood_cost_usd" string="Costo Base (USD)" required="1"/>
+                    <field name="subproducto_id" readonly="1" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="search_madenat_lot_cost_assignment" model="ir.ui.view">
+            <field name="name">madenat.lot.cost.assignment.search</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <search>
+                    <filter name="filter_no_cost" string="Sin costo" domain="[('wood_cost_usd','=',0)]"/>
+                    <filter name="filter_with_cost" string="Con costo" domain="[('wood_cost_usd','&gt;',0)]"/>
+                    <field name="product_id"/>
+                    <field name="supplier_id"/>
+                </search>
+            </field>
+        </record>
+
+    </data>
+</odoo>

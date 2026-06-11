@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="dashboard_madenat_executive" model="ir.ui.view">
+            <field name="name">madenat.executive.dashboard</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_dashboard" create="false" delete="false">
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_card">
+                                <t t-set="shipments_transit" t-value="env['lumber.export.shipment'].search_count([('state','in',['in_transit','delivered'])])"/>
+                                <t t-set="shipments_draft" t-value="env['lumber.export.shipment'].search_count([('state','=','draft')])"/>
+                                <div class="o_kanban_card_content">
+                                    <strong>Embarques</strong>
+                                    <div>En tránsito / Entregados: <t t-esc="shipments_transit"/></div>
+                                    <div>Borrador: <t t-esc="shipments_draft"/></div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="action_madenat_executive_dashboard" model="ir.actions.act_window">
+            <field name="name">Dashboard Gerencial</field>
+            <field name="res_model">lumber.export.shipment</field>
+            <field name="view_mode">kanban,graph</field>
+            <field name="view_id" ref="dashboard_madenat_executive"/>
+        </record>
+
+    </data>
+</odoo>

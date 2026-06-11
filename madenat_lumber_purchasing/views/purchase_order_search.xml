@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="view_purchase_order_madenat_search" model="ir.ui.view">
+      <field name="name">purchase.order.madenat.search</field>
+      <field name="model">purchase.order</field>
+      <field name="arch" type="xml">
+        <search string="Buscar OC Madera">
+
+          <field name="name"
+                 string="OC / Ref. Proveedor"
+                 filter_domain="['|','|',('name','ilike',self),('partner_ref','ilike',self),('origin','ilike',self)]"/>
+          <field name="partner_id"
+                 string="Proveedor"
+                 filter_domain="[('partner_id','child_of',self)]"/>
+          <field name="user_id" string="Comprador"/>
+
+          <separator/>
+
+          <filter name="state_draft"
+                  string="Borrador"
+                  domain="[('state','=','draft')]"/>
+          <filter name="state_sent"
+                  string="Enviadas"
+                  domain="[('state','in',('sent','to approve'))]"/>
+          <filter name="state_purchase"
+                  string="Confirmadas"
+                  domain="[('state','=','purchase')]"/>
+          <filter name="state_done"
+                  string="Cerradas"
+                  domain="[('state','=','done')]"/>
+          <filter name="state_cancel"
+                  string="Canceladas"
+                  domain="[('state','=','cancel')]"/>
+
+          <separator/>
+
+          <filter name="pending_reception"
+                  string="Con volumen pendiente"
+                  domain="[('pending_volume_m3','&gt;',0)]"/>
+          <filter name="no_reception"
+                  string="Sin recepción"
+                  domain="[('reception_count','=',0),('state','=','purchase')]"/>
+          <filter name="provisional_filter"
+                  string="Provisionales"
+                  domain="[('provisional','=',True)]"/>
+
+          <separator/>
+
+          <filter name="variance_high"
+                  string="Desvío volumen &gt; 5%"
+                  domain="[('variance_commercial_physical','&gt;',5)]"/>
+          <filter name="not_invoiced"
+                  string="Por facturar"
+                  domain="[('invoice_status','=','to invoice'),('state','=','purchase')]"/>
+
+          <separator/>
+
+          <filter name="group_by_state"
+                  string="Por estado"
+                  context="{'group_by':'state'}"/>
+          <filter name="group_by_partner"
+                  string="Por proveedor"
+                  context="{'group_by':'partner_id'}"/>
+          <filter name="group_by_user"
+                  string="Por comprador"
+                  context="{'group_by':'user_id'}"/>
+
+        </search>
+      </field>
+    </record>
+
+  </data>
+</odoo>

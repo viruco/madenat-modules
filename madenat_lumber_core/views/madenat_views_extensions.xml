@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ================================================================ -->
+        <!-- FASE 3 — Extensiones de vistas existentes (CANON/14, C10-C13)    -->
+        <!-- ================================================================ -->
+
+        <!-- C10: stock.lot form — Pestaña Costos (solo grupo Costos) -->
+        <record id="view_stock_lot_form_madenat_extension" model="ir.ui.view">
+            <field name="model">stock.lot</field>
+            <field name="inherit_id" ref="madenat_lumber_core.view_stock_lot_form_madenat"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="💰 Costos" groups="group_madenat_costos">
+                        <group>
+                            <group>
+                                <field name="wood_cost_usd" string="Costo Base Madera (USD)" widget="monetary"/>
+                                <field name="total_cost_usd" string="Costo Total (USD)" widget="monetary" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="cost_per_m3_usd" string="Costo por m³ (USD)" widget="monetary" readonly="1"/>
+                                <field name="cost_per_mbf_usd" string="Costo por MBF (USD)" widget="monetary" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Desglose de Costos Adicionales">
+                            <field name="cost_line_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="cost_type"/>
+                                    <field name="amount_usd" widget="monetary"/>
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                </list>
+                            </field>
+                        </group>
+                    </page>
+                    <page string="🔍 Trazabilidad" groups="group_madenat_operaciones,group_madenat_gerencia">
+                        <group>
+                            <group>
+                                <field name="reception_id" string="Recepción Origen" readonly="1"/>
+                                <field name="guia_number" string="N° Guía" readonly="1"/>
+                                <field name="supplier_id" string="Proveedor" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="purchase_order_id" string="OC" readonly="1"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- C11: lumber.export.shipment form — Pestaña Costos Logísticos -->
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- C15: SANEAMIENTO APP SWITCHER — Ocultar apps estándar ruidosas  -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- Justificación: MADENAT es la experiencia principal. Las apps    -->
+        <!-- estándar que no aportan al flujo de negocio se restringen a     -->
+        <!-- admin técnico (base.group_system).                              -->
+        <!--                                                                 -->
+        <!-- MANTENIDAS VISIBLES:                                            -->
+        <!--   - stock.menu_stock_root       Backend operativo de inventario -->
+        <!--   - purchase.menu_purchase_root Backend de compras              -->
+        <!--   - base.menu_administration    Ajustes (admin técnico)         -->
+        <!-- OCULTADAS (solo admin sistema):                                 -->
+        <!--   - account.menu_finance        MADENAT tiene rama propia       -->
+        <!--     (Pagos a Proveedores ya fue reparentado a menu_finance_payments) -->
+        <!--   - mail.channel_menu_root      Ruido, no es canal de negocio   -->
+        <!--   - contacts.menu_contacts      Gestionado vía proveedores      -->
+        <!--     dentro del flujo MADENAT                                    -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <menuitem id="account.menu_finance"
+                  groups="base.group_system"/>
+
+        <menuitem id="mail.channel_menu_root"
+                  groups="base.group_system"/>
+
+        <menuitem id="contacts.menu_contacts"
+                  groups="base.group_system"/>
+
+    </data>
+</odoo>

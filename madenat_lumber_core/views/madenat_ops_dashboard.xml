@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Dashboard de Operaciones — Kanban con KPIs -->
+        <!-- Vista debe definirse ANTES de la acción que la referencia (evita ParseError por forward ref) -->
+        <record id="dashboard_madenat_ops" model="ir.ui.view">
+            <field name="name">madenat.ops.dashboard</field>
+            <field name="model">lumber.reception</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_dashboard" create="false" delete="false">
+                    <field name="id"/>
+                    <field name="name"/>
+                    <field name="state"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_card">
+                                <div class="o_kanban_card_content">
+                                    <t t-set="total_draft" t-value="env['lumber.reception'].search_count([('state','=','draft')])"/>
+                                    <t t-set="total_processing" t-value="env['lumber.reception'].search_count([('state','=','processing')])"/>
+                                    <t t-set="total_done" t-value="env['lumber.reception'].search_count([('state','=','done')])"/>
+                                    <t t-set="lotes_sin_container" t-value="env['stock.lot'].search_count([('container_id','=',False)])"/>
+                                    <t t-set="lotes_sin_costo" t-value="env['stock.lot'].search_count([('wood_cost_usd','=',0)])"/>
+
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="o_kanban_primary_left">
+                                                <strong>Recepciones</strong>
+                                                <div>Borrador: <t t-esc="total_draft"/></div>
+                                                <div>En proceso: <t t-esc="total_processing"/></div>
+                                                <div>Finalizadas: <t t-esc="total_done"/></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="o_kanban_primary_right">
+                                                <strong>Inventario</strong>
+                                                <div>Lotes sin contenedor: <t t-esc="lotes_sin_container"/></div>
+                                                <div>Lotes sin costo: <t t-esc="lotes_sin_costo"/></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="action_madenat_ops_dashboard" model="ir.actions.act_window">
+            <field name="name">Dashboard Operaciones</field>
+            <field name="res_model">lumber.reception</field>
+            <field name="view_mode">graph,list</field>
+            <field name="view_id" ref="dashboard_madenat_ops"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Panel de control de Operaciones MADENAT</p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

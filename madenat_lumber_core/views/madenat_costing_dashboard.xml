@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="dashboard_madenat_costing" model="ir.ui.view">
+            <field name="name">madenat.costing.dashboard</field>
+            <field name="model">stock.lot</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_dashboard" create="false" delete="false">
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_card">
+                                <t t-set="sin_costo" t-value="env['stock.lot'].search_count([('wood_cost_usd','=',0)])"/>
+                                <t t-set="total_lotes" t-value="env['stock.lot'].search_count([])"/>
+                                <t t-set="dists_pendientes" t-value="env['lumber.cost.distribution'].search_count([('state','=','draft')])"/>
+                                <div class="o_kanban_card_content">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Costos Base</strong>
+                                            <div>Lotes sin costo: <t t-esc="sin_costo"/></div>
+                                            <div>Total lotes: <t t-esc="total_lotes"/></div>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Distribuciones</strong>
+                                            <div>Pendientes: <t t-esc="dists_pendientes"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="action_madenat_costing_dashboard" model="ir.actions.act_window">
+            <field name="name">Dashboard Costos</field>
+            <field name="res_model">stock.lot</field>
+            <field name="view_mode">kanban,graph</field>
+            <field name="view_id" ref="dashboard_madenat_costing"/>
+        </record>
+
+    </data>
+</odoo>
