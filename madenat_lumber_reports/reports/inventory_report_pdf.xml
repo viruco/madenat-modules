@@ -1,0 +1,756 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 8 QWeb Templates + 8 ir.actions.report — Inventario Recepción        -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- PLANTILLA BASE REUTILIZABLE -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_inventory_base_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    <t t-esc="title"/>
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <t t-foreach="headers" t-as="h">
+                                        <th><t t-esc="h"/></th>
+                                    </t>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-foreach="rows" t-as="r">
+                                    <tr>
+                                        <t t-foreach="r" t-as="cell">
+                                            <td class="text-center">
+                                                <t t-esc="cell"/>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R1 — DETALLE POR PATIO — TODOS PRODUCTOS -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r1_detail_location_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R1 — Detalle por Patio — Todos Productos
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Proveedor</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Orden de Compra</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Espesor</th>
+                                    <th>Ancho</th>
+                                    <th>Largo (m)</th>
+                                    <th>Piezas</th>
+                                    <th>M3</th>
+                                    <th>MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.reception_id.name"/></td>
+                                        <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.reception_id.purchase_order or 'SIN ORDEN'"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.thickness_visual"/></td>
+                                        <td><t t-esc="l.width_visual"/></td>
+                                        <td><t t-esc="'%.3f' % (l.length or 0)"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="9">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r1_detail_location" model="ir.actions.report">
+        <field name="name">R1: Detalle por Patio — Todos Productos (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r1_detail_location_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r1_detail_location_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R2 — RESUMEN POR PATIO — TODOS PRODUCTOS -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r2_summary_location_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R2 — Resumen por Patio — Todos Productos
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Total Piezas</th>
+                                    <th>Total M3</th>
+                                    <th>Total MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="3">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r2_summary_location" model="ir.actions.report">
+        <field name="name">R2: Resumen por Patio — Todos Productos (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r2_summary_location_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r2_summary_location_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R3 — DETALLE POR PATIO — TIPO PRODUCTO -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r3_detail_location_sub_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R3 — Detalle por Patio — Tipo Producto
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Proveedor</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Espesor</th>
+                                    <th>Ancho</th>
+                                    <th>Largo (m)</th>
+                                    <th>Piezas</th>
+                                    <th>M3</th>
+                                    <th>MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.reception_id.name"/></td>
+                                        <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.thickness_visual"/></td>
+                                        <td><t t-esc="l.width_visual"/></td>
+                                        <td><t t-esc="'%.3f' % (l.length or 0)"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="9">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r3_detail_location_sub" model="ir.actions.report">
+        <field name="name">R3: Detalle por Patio — Tipo Producto (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r3_detail_location_sub_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r3_detail_location_sub_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R4 — RESUMEN POR PATIO — TIPO PRODUCTO -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r4_summary_location_sub_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R4 — Resumen por Patio — Tipo Producto
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Total Piezas</th>
+                                    <th>Total M3</th>
+                                    <th>Total MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="3">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r4_summary_location_sub" model="ir.actions.report">
+        <field name="name">R4: Resumen por Patio — Tipo Producto (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r4_summary_location_sub_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r4_summary_location_sub_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R5 — DETALLE POR PROVEEDOR -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r5_detail_partner_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R5 — Detalle por Proveedor
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Proveedor</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Espesor</th>
+                                    <th>Ancho</th>
+                                    <th>Largo (m)</th>
+                                    <th>Piezas</th>
+                                    <th>M3</th>
+                                    <th>MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.reception_id.name"/></td>
+                                        <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.thickness_visual"/></td>
+                                        <td><t t-esc="l.width_visual"/></td>
+                                        <td><t t-esc="'%.3f' % (l.length or 0)"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="9">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r5_detail_partner" model="ir.actions.report">
+        <field name="name">R5: Detalle por Proveedor (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r5_detail_partner_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r5_detail_partner_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R6 — RESUMEN POR PROVEEDOR -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r6_summary_partner_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R6 — Resumen por Proveedor
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Proveedor</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Total Piezas</th>
+                                    <th>Total M3</th>
+                                    <th>Total MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="3">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r6_summary_partner" model="ir.actions.report">
+        <field name="name">R6: Resumen por Proveedor (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r6_summary_partner_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r6_summary_partner_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R7 — DETALLE POR ORDEN DE COMPRA -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r7_detail_purchase_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R7 — Detalle por Orden de Compra
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Patio</th>
+                                    <th>Proveedor</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Espesor</th>
+                                    <th>Ancho</th>
+                                    <th>Largo (m)</th>
+                                    <th>Piezas</th>
+                                    <th>M3</th>
+                                    <th>MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.reception_id.name"/></td>
+                                        <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.thickness_visual"/></td>
+                                        <td><t t-esc="l.width_visual"/></td>
+                                        <td><t t-esc="'%.3f' % (l.length or 0)"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="10">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r7_detail_purchase" model="ir.actions.report">
+        <field name="name">R7: Detalle por Orden de Compra (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r7_detail_purchase_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r7_detail_purchase_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R8 — RESUMEN POR ORDEN DE COMPRA -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r8_summary_purchase_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R8 — Resumen por Orden de Compra
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Orden de Compra</th>
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Total Piezas</th>
+                                    <th>Total M3</th>
+                                    <th>Total MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td>
+                                            <t t-if="l.reception_id.purchase_id">
+                                                <t t-esc="l.reception_id.purchase_id.name"/>
+                                            </t>
+                                        </td>
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_id.name"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="3">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r8_summary_purchase" model="ir.actions.report">
+        <field name="name">R8: Resumen por Orden de Compra (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r8_summary_purchase_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r8_summary_purchase_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- R9 — DETALLE POR PRODUCTO -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <template id="report_r9_detail_product_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="line">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Calibri', 'Segoe UI', 'Arial', sans-serif;
+                                font-size: 11px; color: #333;">
+                        <div class="row mb-2"
+                             style="border-bottom: 2px solid #1a4a7c;">
+                            <div class="col-12">
+                                <h2 style="color: #1a4a7c; font-weight: bold;">
+                                    R9 — Detalle por Producto
+                                </h2>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped border">
+                            <thead style="background-color: #343a40; color: white;">
+                                <tr class="text-center" style="font-size: 11px;">
+                                    <th>Producto</th>
+                                    <th>Subproducto</th>
+                                    <th>Patio</th>
+                                    <th>Proveedor</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Espesor</th>
+                                    <th>Ancho</th>
+                                    <th>Largo (m)</th>
+                                    <th>Piezas</th>
+                                    <th>M3</th>
+                                    <th>MBF</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 11px;">
+                                <t t-set="tot_p" t-value="0"/>
+                                <t t-set="tot_m3" t-value="0.0"/>
+                                <t t-set="tot_mbf" t-value="0.0"/>
+                                <t t-foreach="docs" t-as="l">
+                                    <tr class="text-center">
+                                        <td><t t-esc="l.product_id.name"/></td>
+                                        <td><t t-esc="l.subproduct_name"/></td>
+                                        <td><t t-esc="l.reception_id.location_id.name"/></td>
+                                        <td><t t-esc="l.partner_name"/></td>
+                                        <td><t t-esc="l.reception_id.name"/></td>
+                                        <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.thickness_visual"/></td>
+                                        <td><t t-esc="l.width_visual"/></td>
+                                        <td><t t-esc="'%.3f' % (l.length or 0)"/></td>
+                                        <td><t t-esc="l.pieces"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_physical_m3 or 0)"/></td>
+                                        <td><t t-esc="'%.3f' % (l.vol_mbf or 0)"/></td>
+                                    </tr>
+                                    <t t-set="tot_p" t-value="tot_p + (l.pieces or 0)"/>
+                                    <t t-set="tot_m3" t-value="tot_m3 + (l.vol_physical_m3 or 0)"/>
+                                    <t t-set="tot_mbf" t-value="tot_mbf + (l.vol_mbf or 0)"/>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
+                                    <td colspan="9">TOTALES</td>
+                                    <td><t t-esc="tot_p"/></td>
+                                    <td><t t-esc="'%.3f' % tot_m3"/></td>
+                                    <td><t t-esc="'%.3f' % tot_mbf"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_r9_detail_product" model="ir.actions.report">
+        <field name="name">R9: Detalle por Producto (PDF)</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">madenat_lumber_reports.report_r9_detail_product_pdf</field>
+        <field name="report_file">madenat_lumber_reports.report_r9_detail_product_pdf</field>
+        <field name="binding_model_id" ref="model_lumber_reception_line"/>
+    </record>
+
+</odoo>
