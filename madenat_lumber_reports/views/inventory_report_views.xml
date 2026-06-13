@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- List Views + Search View — Inventario Recepción                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+
+    <!-- Tree View: DETALLE (13 columnas) -->
+    <record id="view_lumber_reception_line_tree_detail" model="ir.ui.view">
+        <field name="name">lumber.reception.line.tree.detail</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <list string="Detalle Inventario Recepción">
+                <field name="patio_label" optional="hide"/>
+                <field name="complete_location_name" optional="show"/>
+                <field name="partner_name" optional="hide"/>
+                <field name="reception_id"/>
+                <field name="product_id"/>
+                <field name="subproduct_id"/>
+                <field name="lot_name"/>
+                <field name="thickness_visual"/>
+                <field name="width_visual"/>
+                <field name="length"/>
+                <field name="pieces"/>
+                <field name="vol_physical_m3"/>
+                <field name="vol_mbf"/>
+                <!-- CAMBIO: agregar purchase_order como columna visible -->
+                <field name="purchase_order" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Tree View: RESUMEN (6 columnas) -->
+    <record id="view_lumber_reception_line_tree_summary" model="ir.ui.view">
+        <field name="name">lumber.reception.line.tree.summary</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <list string="Resumen Inventario Recepción">
+                <field name="patio_label" optional="hide"/>
+                <field name="product_id"/>
+                <field name="subproduct_id"/>
+                <field name="pieces" sum="Total Piezas"/>
+                <field name="vol_physical_m3" sum="Total M3"/>
+                <field name="vol_mbf" sum="Total MBF"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Tree View: RESUMEN POR PROVEEDOR (R6) -->
+    <record id="view_lumber_reception_line_tree_summary_partner" model="ir.ui.view">
+        <field name="name">lumber.reception.line.tree.summary.partner</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <list string="Resumen por Proveedor">
+                <field name="partner_name" optional="hide"/>
+                <field name="product_id"/>
+                <field name="subproduct_id"/>
+                <field name="pieces" sum="Total Piezas"/>
+                <field name="vol_physical_m3" sum="Total M3"/>
+                <field name="vol_mbf" sum="Total MBF"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Tree View: DETALLE POR PRODUCTO (R9) -->
+    <record id="view_lumber_reception_line_tree_detail_product" model="ir.ui.view">
+        <field name="name">lumber.reception.line.tree.detail.product</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <list string="Detalle por Producto">
+                <field name="product_id" optional="hide"/>
+                <field name="subproduct_name" optional="show"/>
+                <field name="patio_label" optional="hide"/>
+                <field name="partner_name" optional="hide"/>
+                <field name="reception_id"/>
+                <field name="thickness_visual"/>
+                <field name="width_visual"/>
+                <field name="length"/>
+                <field name="pieces" sum="Total Piezas"/>
+                <field name="vol_physical_m3" sum="Total M3"/>
+                <field name="vol_mbf" sum="Total MBF"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Search View compartido para todos los reportes -->
+    <record id="view_lumber_reception_line_search_inventory" model="ir.ui.view">
+        <field name="name">lumber.reception.line.search.inventory</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Recepciones">
+                <field name="reception_id"/>
+                <field name="product_id"/>
+                <field name="subproduct_id"/>
+                <field name="lot_name"/>
+                <field name="patio_label"/>
+                <separator/>
+                <filter name="filter_active" string="Activos"
+                        domain="[('reception_id.state', '!=', 'cancelled')]"/>
+                <separator/>
+                <filter name="group_patio_label" string="Patio"
+                        context="{'group_by': 'patio_label'}"/>
+                <filter name="group_location" string="Patio (Ubicación Técnica)"
+                        context="{'group_by': 'location_id'}"/>
+                <filter name="group_product" string="Producto"
+                        context="{'group_by': 'product_id'}"/>
+                <filter name="group_subproduct" string="Subproducto"
+                        context="{'group_by': 'subproduct_id'}"/>
+                <filter name="group_partner" string="Proveedor"
+                        context="{'group_by': 'partner_name'}"/>
+                <field name="partner_name"/>
+                <!-- CAMBIO: group_by purchase_id → purchase_order -->
+                <filter name="group_purchase" string="Orden de Compra"
+                        context="{'group_by': 'purchase_order'}"/>
+            </search>
+        </field>
+    </record>
+
+
+</odoo>
