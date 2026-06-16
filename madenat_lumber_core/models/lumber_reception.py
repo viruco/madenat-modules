@@ -74,6 +74,15 @@ class LumberReceptionLine(models.Model):
     reception_id = fields.Many2one('lumber.reception', string='Recepción', ondelete='cascade', required=True)
     lot_name = fields.Char(string="N° Lote", required=True)
     subproduct_id = fields.Many2one('madenat.subproducto', string="Subproducto/Grado")
+    
+    # 🔗 ORDEN DE COMPRA: Related a reception_id.manual_po_name (dato real, no staging)
+    # ✅ Robusto: store=True para que se pueda usar en reportes, búsquedas y filtros
+    # ✅ Profesional: nombre claro en español, comentario explicativo
+    purchase_order_name = fields.Char(
+        string='Orden de Compra',
+        related='reception_id.manual_po_name',
+        store=True,
+    )
     product_name_clean = fields.Char(
         string="Nombre Producto",
         compute='_compute_product_name_clean',
@@ -913,6 +922,21 @@ class LumberReception(models.Model):
     
     _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.lumber.ingest.mixin']
     _order = 'reception_date desc'
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🛡️ CONSTRAINT SQL ANTI-DUPLICADO (2026-06-11)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Clave natural: name (número de guía) + company_id.
+    # Evita la creación de dos cabeceras lumber.reception con el mismo número de guía.
+    # Conservador: solo name + company_id, no incluye supplier_id para no bloquear
+    # casos legítimos donde una guía podría procesarse con distinto proveedor (raro pero posible).
+    _sql_constraints = [
+        ('unique_reception_name_per_company',
+         'UNIQUE(name, company_id)',
+         '⛔ GUÍA DUPLICADA: Ya existe una recepción con el número %(name)s en esta compañía.\n'
+         'No puede crear dos recepciones con el mismo número de guía.\n'
+         'Verifique en Recepciones → Buscar por número de guía.')
+    ]
 
     audit_snapshot = fields.Text('Snapshot JSON', readonly=True)
     audit_hash = fields.Char('Firma SHA-256', readonly=True)
@@ -1854,12 +1878,28 @@ class LumberReception(models.Model):
     # ========================================================================
     def _fill_staging_table(self, pl_data):
         """
-        ✅ MÉTODO v5.5: LLENAR TABLA DE VALIDACIÓN (STAGING)
+        ✅ MÉTODO v5.6: LLENAR TABLA DE VALIDACIÓN (STAGING)
         - Inyecta metadatos de Triple Capa validados en shell.
         - Mantiene trazabilidad original (lot_name = p_code).
         - DELEGA el cálculo visual al ORM para garantizar consistencia.
+        - 🛡️ GUARDIA ANTI-DUPLICADO (2026-06-11): No permite re-llenar staging
+          si ya existen lotes reales (stock.lot) generados para esta recepción.
         """
-        # 1. Limpieza preventiva (Sin cambios)
+        # 🛡️ GUARDIA: Bloquear si ya hay lotes reales generados
+        existing_lot_count = self.env['stock.lot'].search_count([
+            ('reception_id', '=', self.id)
+        ])
+        if existing_lot_count > 0:
+            raise UserError(
+                "⛔ STAGING BLOQUEADO\n\n"
+                "Esta recepción ya tiene %d lote(s) generados en el inventario real.\n"
+                "No se puede re-llenar el staging sin antes resetear la recepción.\n\n"
+                "🔧 ACCIÓN REQUERIDA:\n"
+                "Use 'Resetear a Borrador' para limpiar los lotes y volver a cargar datos."
+                % existing_lot_count
+            )
+        
+        # 1. Limpieza preventiva
         self.reception_line_ids.unlink()
         
         lines_to_create = []
@@ -2538,6 +2578,26 @@ class LumberReception(models.Model):
                 raise UserError("⚠️ La recepción debe estar en estado 'Verificada' para confirmar.")
             if not self.reception_line_ids:
                 raise UserError("⚠️ No existen líneas cargadas en el staging.")
+            
+            # 🛡️ GUARDIA ANTI-DUPLICADO (2026-06-11):
+            # Bloquear si ya existen stock.lot asociados a esta recepción.
+            # La guía ya fue procesada — no se debe volver a confirmar sin resetear primero.
+            existing_lot_count = self.env['stock.lot'].search_count([
+                ('reception_id', '=', self.id)
+            ])
+            if existing_lot_count > 0:
+                raise UserError(
+                    "⛔ RECEPCIÓN YA PROCESADA\n\n"
+                    "Esta guía ya tiene %d lote(s) generados en el inventario real.\n\n"
+                    "🔍 POSIBLES CAUSAS:\n"
+                    "• La guía ya fue confirmada anteriormente.\n"
+                    "• Se intentó re-procesar el mismo staging sin resetear.\n\n"
+                    "🔧 ACCIÓN REQUERIDA:\n"
+                    "1. Si necesita reprocesar: use 'Resetear a Borrador' primero.\n"
+                    "2. Si es un error: verifique que no se haya duplicado la guía.\n"
+                    "3. Si está en estado 'done': la recepción ya está completa y no requiere acción."
+                    % existing_lot_count
+                )
 
             # 🛡️ GATE GB-1: Validación pre-Gate 3 — staging completo (CANON/14, C17)
             incomplete = self.reception_line_ids.filtered(
@@ -2548,7 +2608,6 @@ class LumberReception(models.Model):
                 self.env['madenat.audit.log'].sudo().create({
                     'reception_id': self.id,
                     'action_type': 'omission',
-                    'action_type': 'gate_rejected',
                     'description': f"GB-1 rechazado. Staging incompleto: {len(incomplete)} líneas sin datos completos",
                     'user_id': self.env.user.id,
                 })
@@ -2567,7 +2626,6 @@ class LumberReception(models.Model):
             self.env['madenat.audit.log'].sudo().create({
                 'reception_id': self.id,
                 'action_type': 'lot_update',
-                'action_type': 'gate_passed',
                 'description': f"GB-1 superado. Staging completo: {len(self.reception_line_ids)} líneas listas para Gate 3",
                 'user_id': self.env.user.id,
             })
@@ -2744,7 +2802,6 @@ class LumberReception(models.Model):
                 self.env['madenat.audit.log'].sudo().create({
                     'reception_id': self.id,
                     'action_type': 'omission',
-                    'action_type': 'gate_rejected',
                     'description': (
                         f"Procesamiento de Excel: {omitted_count} de {total_rows} líneas omitidas.\n"
                         f"Líneas válidas procesadas: {valid_rows}\n"

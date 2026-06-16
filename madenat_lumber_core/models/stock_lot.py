@@ -872,9 +872,10 @@ class StockLotExtended(models.Model):
             
             # 🎯 FALLBACK: Recepción directa (para otros casos)
             remaining_lots = existing_lots.filtered(lambda l: not l.purchase_order_id)
-            for lot in remaining_lots.filtered(lambda l: l.reception_id and l.reception_id.purchase_id):
-                lot.purchase_order_id = lot.reception_id.purchase_id
-                lot.supplier_id = lot.reception_id.purchase_id.partner_id
+            for lot in remaining_lots.filtered(lambda l: l.reception_id):
+                if lot.reception_id.purchase_id:
+                    lot.purchase_order_id = lot.reception_id.purchase_id
+                lot.supplier_id = lot.reception_id.supplier_id or (lot.reception_id.purchase_id and lot.reception_id.purchase_id.partner_id)
                 
         except Exception as e:
             _logger.warning("Error en _compute_purchase_info: %s", str(e))
@@ -1017,7 +1018,7 @@ class StockLotExtended(models.Model):
     # ==============================================================================
     # MÉTODOS COMPUTADOS - SECCIÓN 4: ESTADO Y TRAZABILIDAD
     # ==============================================================================
-    @api.depends('reception_id', 'parent_lot_id', 'guia_processing_id', 'subproducto_id')
+    @api.depends('reception_id', 'reception_id.state', 'parent_lot_id', 'guia_processing_id', 'subproducto_id')
     def _compute_estado_trazabilidad(self):
         """✅ NUEVA LÓGICA ROBUSTA: Calcular estado considerando múltiples indicadores de procesado"""
         for lot in self:

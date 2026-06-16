@@ -75,8 +75,8 @@
                 <field name="purchase_id" column_invisible="1"/>
                 <!-- currency_id: requerido por campos Monetary aunque no se muestren -->
                 <field name="currency_id" column_invisible="1"/>
-                <!-- manual_po_name: visible solo en form, oculto en lista -->
-                <field name="manual_po_name" column_invisible="1"/>
+                <!-- purchase_order: visible solo en form, oculto en lista -->
+                <field name="purchase_order" column_invisible="1"/>
             </list>
         </field>
     </record>
@@ -194,7 +194,7 @@
                                    invisible="not purchase_id" 
                                    readonly="state in ('done', 'cancel')"/>
                             
-                            <field name="manual_po_name" string="OC Extraída" 
+                            <field name="purchase_order" string="OC Extraída" 
                                    invisible="purchase_id" 
                                    decoration-danger="1" 
                                    help="OC leída del PDF pero no encontrada. Puede editar este texto."/>
@@ -507,7 +507,7 @@
                 <!-- ═══ BÚSQUEDA RÁPIDA UNIFICADA ═══ -->
                 <!-- Cubre: número de guía, OC visible (purchase_order) y referencia manual -->
                 <field name="name" string="Guía / OC / Ref."
-                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('manual_po_name','ilike',self)]"/>
+                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('purchase_order','ilike',self)]"/>
                 <field name="supplier_id" string="Proveedor"/>
                 <field name="reception_date" string="Fecha"/>
                 <!-- purchase_id se retira como campo de búsqueda visible porque
@@ -669,7 +669,7 @@
 
                 <field name="purchase_id" column_invisible="1"/>
                 <field name="currency_id" column_invisible="1"/>
-                <field name="manual_po_name" column_invisible="1"/>
+                <field name="purchase_order" column_invisible="1"/>
             </list>
         </field>
     </record>
@@ -683,7 +683,7 @@
         <field name="arch" type="xml">
             <search string="Pendientes de Stock">
                 <field name="name" string="Guía / OC / Ref."
-                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('manual_po_name','ilike',self)]"/>
+                       filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('purchase_order','ilike',self)]"/>
                 <field name="supplier_id" string="Proveedor"/>
                 <field name="reception_date" string="Fecha"/>
                 <separator/>

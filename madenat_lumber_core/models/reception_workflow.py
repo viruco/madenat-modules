@@ -94,14 +94,43 @@ class LumberReceptionWorkflow:
             self._inject_unit_prices(reception, pl_data, oc_data)
             reception._add_log(f"✅ Packing List: {len(pl_data.get('lines', []))} líneas (Motor Desacoplado v2)")
 
+            # 2.5 🛡️ VALIDACIÓN TEMPRANA DE DUPLICADOS (2026-06-11)
+            # Se ejecuta ANTES de Gate 1, cabecera, staging y creación de lotes.
+            # Si la guía ya existe, bloquea el flujo completo con UserError.
+            guide_no_for_check = dg_data.get('guide_no') or pl_data.get('guide_no') or ''
+            if guide_no_for_check:
+                reception._add_log("🔍 Verificando duplicados antes de continuar...")
+                _logger.info(
+                    "🔍 PIPELINE: validación temprana de duplicados guía=%s reception=%s",
+                    guide_no_for_check, reception.name
+                )
+                parser._check_guide_duplicate(guide_no_for_check, exclude_id=reception.id)
+                reception._add_log("✅ Validación de duplicados superada — guía no existe en el sistema")
+            else:
+                _logger.warning(
+                    "⚠️ PIPELINE: no se detectó número de guía en PDF ni Excel — "
+                    "se omite validación de duplicados. reception=%s", reception.name
+                )
+
             # 3. GATE 1: Reconciliación Documental
             self._execute_gate_1(reception, dg_data, pl_data, exchange_rate)
 
             # 4. Cabecera y TC (Blindaje Financiero)
             self._update_header_data(reception, dg_data, pl_data, exchange_rate)
 
-            # 5. Resolución de Orden de Compra y Duplicados
-            reception._add_log("🔍 4/5 Resolviendo Orden de Compra...")
+            # 5. Llenado de Staging (SIEMPRE, incluso sin OC vinculada)
+            reception._add_log("🏷️ 4/5 Generando staging...")
+            if reception.reception_line_ids:
+                reception.reception_line_ids.with_context(force_delete=True).unlink()
+            
+            reception._fill_staging_table(pl_data)
+            reception._add_log(f"✅ STAGING: {len(reception.reception_line_ids)} líneas")
+            
+            reception._add_log("💰 Asignando costos...")
+            reception._assign_costs_to_lots(pl_data)
+
+            # 6. Resolución de Orden de Compra y Duplicados
+            reception._add_log("🔍 5/5 Resolviendo Orden de Compra...")
             po, supplier = reception._find_or_create_po_intelligent(dg_data, oc_data)
             
             if not po and not reception.manual_po_name:
@@ -118,17 +147,6 @@ class LumberReceptionWorkflow:
                 except Exception as e:
                     _logger.warning("Duplicados: %s", str(e))
                     reception._add_log(f"⚠️ DUPLICADOS: {str(e)}")
-
-            # 6. Llenado de Staging y Costos
-            reception._add_log("🏷️ 5/5 Generando staging...")
-            if reception.reception_line_ids:
-                reception.reception_line_ids.with_context(force_delete=True).unlink()
-            
-            reception._fill_staging_table(pl_data)
-            reception._add_log(f"✅ STAGING: {len(reception.reception_line_ids)} líneas")
-            
-            reception._add_log("💰 Asignando costos...")
-            reception._assign_costs_to_lots(pl_data)
 
             # 7. TRANSICIÓN FINAL
             reception.write({'state': 'verified'})

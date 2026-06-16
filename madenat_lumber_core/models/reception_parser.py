@@ -26,6 +26,132 @@ class MadenatReceptionParser(models.AbstractModel):
     ]
     _NOMINAL_TOLERANCE = 0.08
 
+    # ──────────────────────────────────────────────────────────────────────
+    # 🛡️ VALIDACIÓN TEMPRANA DE DUPLICADOS (2026-06-11)
+    # ──────────────────────────────────────────────────────────────────────
+    @api.model
+    def _check_guide_duplicate(self, guide_no, partner_id=None, exclude_id=None):
+        """
+        Bloquea la ingesta si la guía ya existe en lumber.reception
+        o en madenat.guia.processing ANTES de crear staging, lotes o
+        confirmar la recepción.
+
+        Claves naturales:
+          - lumber.reception:      name + company_id
+          - madenat.guia.processing: name + partner_id + company_id
+
+        Si encuentra coincidencia, lanza UserError en español con
+        todos los datos relevantes para que el operador pueda ubicar
+        el registro existente.
+
+        Args:
+            guide_no (str): Número de guía detectado en el documento.
+            partner_id (int|None): ID del partner si ya se conoce.
+            exclude_id (int|None): ID de lumber.reception a excluir
+                (el mismo registro que se está procesando).
+
+        Returns:
+            None — lanza UserError si hay duplicado.
+
+        Raises:
+            UserError: Guía ya registrada, con detalle del registro existente.
+        """
+        if not guide_no:
+            return  # Sin número de guía no se puede validar
+
+        company_id = self.env.company.id
+        _logger.info(
+            "🔍 _check_guide_duplicate: buscando guía=%s company=%s partner=%s",
+            guide_no, company_id, partner_id
+        )
+
+        # 1. Buscar en lumber.reception (clave: name + company_id si existe)
+        reception_model = self.env['lumber.reception']
+        reception_domain = [('name', '=', guide_no)]
+        if 'company_id' in reception_model._fields:
+            reception_domain.append(('company_id', '=', company_id))
+        else:
+            _logger.debug(
+                "🔍 _check_guide_duplicate: lumber.reception no tiene company_id; "
+                "buscando solo por name=%s", guide_no
+            )
+        if exclude_id:
+            reception_domain.append(('id', '!=', exclude_id))
+        existing_reception = reception_model.sudo().search(reception_domain, limit=1)
+        if existing_reception:
+            rec = existing_reception
+            supplier_name = rec.supplier_id.name or '—'
+            date_str = str(rec.guia_fecha) if rec.guia_fecha else '—'
+            state_str = dict(rec._fields['state'].selection).get(rec.state, rec.state)
+            _logger.warning(
+                "⛔ DUPLICADO DETECTADO: lumber.reception name=%s id=%s state=%s supplier=%s",
+                guide_no, rec.id, rec.state, supplier_name
+            )
+            raise UserError(_(
+                "⚠️ La guía N° %(guide)s ya fue registrada en el sistema.\n"
+                "No se permite subirla nuevamente.\n\n"
+                "📋 DATOS DEL REGISTRO EXISTENTE:\n"
+                "   • N° Guía: %(guide)s\n"
+                "   • Proveedor: %(supplier)s\n"
+                "   • Fecha: %(date)s\n"
+                "   • Estado: %(state)s\n"
+                "   • ID Interno: %(id)s\n\n"
+                "🔧 ACCIÓN REQUERIDA:\n"
+                "   Revise el registro existente o edite ese mismo documento\n"
+                "   en lugar de subir uno nuevo."
+            ) % {
+                'guide': guide_no,
+                'supplier': supplier_name,
+                'date': date_str,
+                'state': state_str,
+                'id': rec.id,
+            })
+
+        # 2. Buscar en madenat.guia.processing (clave: name + partner_id + company_id si existe)
+        processing_model = self.env['madenat.guia.processing']
+        processing_domain = [('name', '=', guide_no)]
+        if 'company_id' in processing_model._fields:
+            processing_domain.append(('company_id', '=', company_id))
+        else:
+            _logger.debug(
+                "🔍 _check_guide_duplicate: madenat.guia.processing no tiene company_id; "
+                "buscando por name + partner_id si se conoce"
+            )
+        if partner_id:
+            processing_domain.append(('partner_id', '=', partner_id))
+        existing_processing = processing_model.sudo().search(processing_domain, limit=1)
+        if existing_processing:
+            rec = existing_processing
+            supplier_name = rec.partner_id.name or '—'
+            date_str = str(rec.date_emission) if rec.date_emission else '—'
+            state_str = dict(rec._fields['state'].selection).get(rec.state, rec.state)
+            _logger.warning(
+                "⛔ DUPLICADO DETECTADO: madenat.guia.processing name=%s id=%s state=%s supplier=%s",
+                guide_no, rec.id, rec.state, supplier_name
+            )
+            raise UserError(_(
+                "⚠️ La guía N° %(guide)s ya fue registrada en el sistema "
+                "(Guías Procesadas).\n"
+                "No se permite subirla nuevamente.\n\n"
+                "📋 DATOS DEL REGISTRO EXISTENTE:\n"
+                "   • N° Guía: %(guide)s\n"
+                "   • Proveedor: %(supplier)s\n"
+                "   • Fecha: %(date)s\n"
+                "   • Estado: %(state)s\n"
+                "   • ID Interno: %(id)s\n\n"
+                "🔧 ACCIÓN REQUERIDA:\n"
+                "   Revise el registro existente o edite ese mismo documento\n"
+                "   en lugar de subir uno nuevo."
+            ) % {
+                'guide': guide_no,
+                'supplier': supplier_name,
+                'date': date_str,
+                'state': state_str,
+                'id': rec.id,
+            })
+
+        _logger.info("✅ _check_guide_duplicate: sin duplicados para guía=%s", guide_no)
+
     @api.model
     def _get_blanks_nominal_map(self):
         """Fase 2: Lee desde helper centralizado con fallback Fase 1 + legacy."""

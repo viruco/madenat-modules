@@ -117,19 +117,7 @@
             <field name="rough_mm">155</field><field name="s2s_decimal">5.875</field><field name="s2s_label">5 7/8</field><field name="sequence">150</field>
         </record>
 
-        <!-- 3c. Rangos espesor->visual (desde madenat.thickness_visual_ranges) -->
-        <record id="seed_vis_44" model="lumber.thickness.visual.rule" forcecreate="False">
-            <field name="profile">f5085</field><field name="min_thickness">22</field><field name="max_thickness">29</field><field name="visual_value">1.0</field><field name="visual_label">4/4</field><field name="sequence">10</field>
-        </record>
-        <record id="seed_vis_54" model="lumber.thickness.visual.rule" forcecreate="False">
-            <field name="profile">f5085</field><field name="min_thickness">30</field><field name="max_thickness">36</field><field name="visual_value">1.25</field><field name="visual_label">5/4</field><field name="sequence">20</field>
-        </record>
-        <record id="seed_vis_64" model="lumber.thickness.visual.rule" forcecreate="False">
-            <field name="profile">f5085</field><field name="min_thickness">37</field><field name="max_thickness">46</field><field name="visual_value">1.5</field><field name="visual_label">6/4</field><field name="sequence">30</field>
-        </record>
-        <record id="seed_vis_84" model="lumber.thickness.visual.rule" forcecreate="False">
-            <field name="profile">f5085</field><field name="min_thickness">47</field><field name="max_thickness">56</field><field name="visual_value">2.0</field><field name="visual_label">8/4</field><field name="sequence">40</field>
-        </record>
+        <!-- 3c. Rangos espesor->visual (cubiertos por thickness_visual_ranges_seed.xml) -->
 
         <!-- 3d. Reglas Perfil<->Subproducto (desde madenat.profile_subproduct_filters) -->
         <record id="seed_sub_f5085_forbidden_s2s" model="lumber.profile.subproduct.rule" forcecreate="False">

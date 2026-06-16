@@ -35,8 +35,8 @@ class LumberBlankNominalMap(models.Model):
         ),
         (
             'check_physical_range_valid',
-            'CHECK(physical_max > physical_min)',
-            'El máximo físico debe ser mayor que el mínimo.'
+            'CHECK(physical_max >= physical_min)',
+            'El máximo físico debe ser mayor o igual que el mínimo.'
         ),
         (
             'check_nominal_positive',

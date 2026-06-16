@@ -723,6 +723,20 @@ class MadenatGuiaProcessing(models.Model):
     _description = "Recepción de Guías Procesadas"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.lumber.ingest.mixin', 'validation.checklist.mixin']
     _order = 'date_emission desc'
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🛡️ CONSTRAINT SQL ANTI-DUPLICADO (2026-06-11)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Clave natural: name (número de guía) + partner_id (proveedor) + company_id.
+    # Evita la creación de dos cabeceras con el mismo número de guía para el mismo proveedor.
+    _sql_constraints = [
+        ('unique_guia_processing_name_per_partner',
+         'UNIQUE(name, partner_id, company_id)',
+         '⛔ GUÍA DUPLICADA: Ya existe una guía de procesamiento con el número %(name)s '
+         'para el proveedor %(partner_id)s en esta compañía.\n'
+         'No puede crear dos guías con el mismo número. Verifique en Guías Procesadas.')
+    ]
+
     name = fields.Char(string='Referencia', required=True, copy=False, readonly=True, default=lambda self: _('New'))
     
     # ==============================================================================================
