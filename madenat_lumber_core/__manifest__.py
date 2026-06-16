@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Core',
-    'version': '18.0.5.1.0',
+    'version': '18.0.5.2.0',
     'summary': 'Cimiento Técnico - MADENAT',
     'category': 'Inventory',
     'license': 'LGPL-3',

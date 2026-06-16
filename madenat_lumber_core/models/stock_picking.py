@@ -9,18 +9,26 @@ _logger = logging.getLogger(__name__)
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    # --- RELACIÓN CON RECEPCIÓN MADENAT (CORREGIDO) ---
+    # ==========================================================================
+    # --- RELACIÓN CON RECEPCIÓN MADENAT (CANONICAL v2) ---
+    # reception_id = discriminador operativo real (usado en writes y búsquedas)
+    # lumber_reception_id = legacy/related, mantenido solo para compatibilidad de lectura/UI.
+    # ==========================================================================
+    reception_id = fields.Many2one(
+        'lumber.reception',
+        'Recepción de Guía MADENAT',
+        copy=False,
+        index=True,
+    )
+
     lumber_reception_id = fields.Many2one(
-        'lumber.reception', 
-        'Recepción de Guía MADENAT', 
-        copy=False, 
-        readonly=True,
-        index=True
+        related='reception_id',
+        string='Recepción Legacy',
     )
 
     # El campo de lotes ahora es un 'related' a través de la recepción, mucho más eficiente.
     lumber_lot_ids = fields.One2many(
-        related='lumber_reception_id.lot_ids',
+        related='reception_id.lot_ids',
         string='Lotes MADENAT en esta Recepción'
     )
 
@@ -232,9 +240,9 @@ class StockPicking(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'stock.lot',
             'view_mode': 'list,form',
-            'domain': [('reception_id', '=', self.lumber_reception_id.id)],
+            'domain': [('reception_id', '=', self.reception_id.id)],
             'context': {
-                'default_reception_id': self.lumber_reception_id.id,
+                'default_reception_id': self.reception_id.id,
                 'search_default_technical_pending': 1
             }
         }
@@ -258,7 +266,7 @@ class StockPicking(models.Model):
             }
             # Si nos pasan la recepción, la enlazamos desde el nacimiento
             if reception_id:
-                picking_vals['lumber_reception_id'] = reception_id
+                picking_vals['reception_id'] = reception_id
                 
             picking = self.create(picking_vals)
             _logger.info(f"✅ Picking creado y vinculado: {picking.name}")

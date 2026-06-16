@@ -21,7 +21,7 @@
       <field name="arch" type="xml">
         <field name="scheduled_date" position="before">
           <field name="picking_type_code" string="Tipo" invisible="1"/>
-          <field name="lumber_reception_id" string="Guía Madenat" optional="show"/>
+          <field name="reception_id" string="Guía Madenat" optional="show"/>
         </field>
         <field name="state" position="before">
             <field name="total_volume_m3" string="Total Guía (m³)" sum="Suma Total" optional="show" decoration-success="1" decoration-bf="1"/>
@@ -37,7 +37,7 @@
       <field name="arch" type="xml">
         <xpath expr="//search" position="inside">
           <separator/>
-          <field name="name" string="Albarán o Guía" filter_domain="['|', ('name', 'ilike', self), ('lumber_reception_id', 'ilike', self)]"/>
+          <field name="name" string="Albarán o Guía" filter_domain="['|', ('name', 'ilike', self), ('reception_id.name', 'ilike', self)]"/>
           <filter string="Recepciones MADENAT" name="incoming_pickings" domain="[('picking_type_code','=','incoming')]"/>
           <filter string="Entregas MADENAT" name="outgoing_pickings" domain="[('picking_type_code','=','outgoing')]"/>
         </xpath>

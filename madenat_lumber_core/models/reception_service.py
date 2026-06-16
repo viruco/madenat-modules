@@ -114,7 +114,7 @@ class LumberReceptionService:
             'location_id': picking_type.default_location_src_id.id,
             'location_dest_id': reception.location_id.id or picking_type.default_location_dest_id.id,
             'origin': reception.name, 
-            'lumber_reception_id': reception.id,
+            'reception_id': reception.id,
             'company_id': self.env.company.id,
         })
 
