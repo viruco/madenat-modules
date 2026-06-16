@@ -1,9 +1,9 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 9.1.0  <!-- actualizado: 2026-06-16 -->
+**Versión documental:** 9.2.0  <!-- actualizado: 2026-06-16 -->
 **Fecha de actualización:** 2026-06-16
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
-**Responsable revisión:** Sesión Cline — auditoría documental 2026-06-16
+**Responsable revisión:** Sesión Cline — consolidación flujos de ingesta 2026-06-16
 
 ---
 
@@ -30,9 +30,10 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado, checklist canónico, huecos, riesgos, índice y orden de trabajo futuro | 1.1.0 | 2026-06-16 | ✅ Vigente |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — mapa de campos, migración Float→Monetary | 1.0.0 | 2026-06-05 | ✅ Completada (revisada 2026-06-16) |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 9.1.0 | 2026-06-16 | ✅ Vigente |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa | 1.0.0 | 2026-06-16 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 9.2.0 | 2026-06-16 | ✅ Vigente |
 
-<!-- actualizado: 2026-06-16 — agregados 08, 10, 11; columna Estado; fechas actualizadas -->
+<!-- actualizado: 2026-06-16 — agregados 08, 10, 11, 12; columna Estado; fechas actualizadas -->
 
 ## 3. Documentos WIKI operativa
 
