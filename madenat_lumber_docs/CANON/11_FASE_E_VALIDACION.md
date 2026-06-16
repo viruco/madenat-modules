@@ -1,9 +1,10 @@
 # FASE E — VALIDACIÓN END-TO-END, CI Y OPERACIÓN
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 
-**Versión documental:** 1.0.0
+**Versión documental:** 1.1.0  <!-- actualizado: 2026-06-16 -->
 **Fecha:** 2026-06-05
 **Estado:** ACTIVO — Cierre Fase E
+**Última revisión:** 2026-06-16
 **Depende de:** Fases A (Monetaria), B (Contable), C (Tests), D (Documental)
 
 ---
@@ -243,7 +244,9 @@ fi
 | Suite 3 | `madenat_lumber_costing/tests/test_landed_cost_integration.py` | 5 | landed cost link, sin picking, account_id, reverse, doble apply |
 | Suite 4 | `madenat_lumber_costing/tests/test_module_compatibility.py` | 7 | billing, logistics, costing inheritance, Monetary compat |
 
-**Total: 23 tests con 8 bugs protegidos contra regresión.**
+**Total: 23 tests en costing + ~47 tests adicionales en core, billing (ver `03_TESTS.md` §7). ~70 tests automatizados en total.**
+
+<!-- actualizado: 2026-06-16 — refleja inventario real de tests -->
 
 ## 2.4 Riesgos Cubiertos por CI
 
@@ -265,9 +268,11 @@ fi
 
 | Pendiente | Prioridad | Bloquea CI |
 |-----------|-----------|------------|
-| Tests para `test_guia_processing.py` (3465 líneas sin tests) | Alta | No |
+| Tests para `test_guia_processing.py` (3465 líneas, 15 tests creados en TD-008) | Baja | No |
 | Tests para `madenat_lumber_logistics` | Media | No |
-| Tests para `madenat_lumber_billing` | Baja | No |
+| Tests para `madenat_lumber_billing` (3 tests en `test_billing_consolidation.py`) | Baja | No |
+
+<!-- actualizado: 2026-06-16 — guia_processing y billing ya tienen tests -->
 | Integración con GitHub Actions / GitLab CI | Media | No |
 | Reporte JUnit XML para CI dashboards | Baja | No |
 
@@ -508,7 +513,7 @@ El proyecto MADENAT Lumber ha alcanzado un nivel de madurez operativa verificabl
 
 | Riesgo | Nivel | Mitigación actual |
 |--------|-------|------------------|
-| `madenat_guia_processing.py` sin tests (3465 líneas) | ALTO | Prioridad Fase B del backlog |
+| `madenat_guia_processing.py` (3465 líneas) | BAJO (15 tests creados TD-008) | Monitorizar cobertura |
 | `stock.valuation.layer` no generado automáticamente | MEDIO | Requiere Fase D (integración contable) |
 | Constraint `stock_lot_check_cost_positive` | MEDIO | Documentado, no bloqueante |
 | Sin CI en servidor externo (GitHub Actions) | BAJO | Commands listos para integrar |
@@ -516,7 +521,9 @@ El proyecto MADENAT Lumber ha alcanzado un nivel de madurez operativa verificabl
 ## 5.3 Qué Queda para Clase Mundial
 
 1. **Integración contable completa** (Fase D): `stock.valuation.layer` automático, `account.move` desde landed cost.
-2. **Cobertura de tests ampliada**: `test_guia_processing.py`, `test_logistics.py`, `test_billing.py`.
+2. **Cobertura de tests ampliada**: `test_logistics.py` (único módulo sin tests).
+
+<!-- actualizado: 2026-06-16 — guia_processing, billing ya cubiertos -->
 3. **CI/CD completo**: GitHub Actions / GitLab CI con reporte JUnit, notificaciones, bloqueo de merge en fallo.
 4. **Monitoreo**: Health checks automatizados, alertas, dashboards de KPIs operativos.
 5. **Refactor modular**: Separar `MadenatGuiaProcessingLine` y `LumberReceptionLine` a archivos propios.
@@ -535,8 +542,11 @@ El proyecto MADENAT Lumber ha alcanzado un nivel de madurez operativa verificabl
 | `run_tests.sh` | **ACTUALIZADO** | Script de CI pipeline unificado |
 | `CANON/INDICE_DOCUMENTACION.md` | **ACTUALIZADO** | Agregado `11_FASE_E_VALIDACION.md` |
 | `CANON/02_CONTINUIDAD.md` | **ACTUALIZADO** | Nuevo checkpoint post-Fase E |
+| `CANON/11_FASE_E_VALIDACION.md` | **REVISADO** | Auditoría documental 2026-06-16 |
 
 ---
 
 *Documento creado: 2026-06-05 — Cierre Fase E — Validación End-to-End, CI y Operación*
-*Versión: 1.0.0*
+*Versión: 1.1.0 — Revisado 2026-06-16*
+
+<!-- actualizado: 2026-06-16 — estado de tests actualizado -->

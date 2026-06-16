@@ -1,7 +1,7 @@
 # MADENAT — Matriz de Evidencia y Validación
 
 **Versión documental:** 6.4.0
-**Fecha de actualización:** 2026-06-02
+**Fecha de actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
 ---
@@ -56,14 +56,16 @@ Este documento es exclusivamente una matriz de evidencia, validación y criterio
 
 ## 3. Matriz de Validación Activa (T29 – T32)
 
-Estos casos definen la validación funcional del ingreso de largo con unidad seleccionable. Actualmente requieren ejecución y evidencia real para ser cerrados. No son bloqueantes para el deploy a TEST del fix de blanks.
+Estos casos definen la validación funcional del ingreso de largo con unidad seleccionable. Existen tests automatizados en `test_length_uom_and_subproducto.py`. Pendiente ejecución formal con evidencia en ambiente staging.
 
-| ID | Caso | Entrada | Esperado | Estado Documental |
-|---|---|---|---|---|
-| T29 | Conversión ft → m | `lengthinputraw` en pies | `length` normalizado a metros | PENDIENTE (Evidencia registrada) |
-| T30 | Conversión mm → m | `lengthinputraw` en mm | `length` normalizado a metros | PENDIENTE |
-| T31 | Conversión m → m | `lengthinputraw` en m | `length` sin alteración | PENDIENTE |
-| T32 | Quick-create subproducto | wizard mass update | alta rápida funcional | PENDIENTE |
+| ID | Caso | Entrada | Esperado | Estado Documental | Test automatizado |
+|---|---|---|---|---|---|
+| T29 | Conversión ft → m | `lengthinputraw` en pies | `length` normalizado a metros | PENDIENTE (Evidencia registrada, test `test_29_length_ft_to_m`) | ✅ |
+| T30 | Conversión mm → m | `lengthinputraw` en mm | `length` normalizado a metros | PENDIENTE (test `test_30_length_mm_to_m`) | ✅ |
+| T31 | Conversión m → m | `lengthinputraw` en m | `length` sin alteración | PENDIENTE (test `test_31_length_m_default_unchanged`) | ✅ |
+| T32 | Quick-create subproducto | wizard mass update | alta rápida funcional | PENDIENTE (test `test_32_quickcreate_subproducto_desde_wizard`) | ✅ |
+
+<!-- actualizado: 2026-06-16 — agregada columna de test automatizado -->
 
 ---
 
@@ -111,7 +113,40 @@ Toda ejecución debe documentarse bajo este formato antes de cambiar el estado a
 
 ---
 
-## 7. Criterios Globales de Aprobación Documental
+## 7. Nuevas suites de test (post 2026-06-02)  <!-- actualizado: 2026-06-16 -->
+
+Estas suites existen en código pero no tienen trazabilidad en la matriz documental T01–T33. Se registran aquí como inventario para futura integración formal.
+
+### madenat_lumber_core
+| Archivo | Clase | # Tests | Cobertura |
+|---|---|---|---|
+| `tests/test_lot_costing.py` | TestLotCosting | 6 | C1.1–C1.6: wood_cost, no doble conteo, margin, deprecación, cost_per_m3, cost_per_mbf |
+| `tests/test_ingestion_gate.py` | TestGate0PreUpload | 5 | Gate 0: excel, pdf, extensión, vacío, tamaño |
+| `tests/test_ingestion_gate.py` | TestGate1DocumentReconciliation | 10 | Gate 1: reconciliación, mismatch, duplicado, TC, volumen, OC |
+| `tests/test_duplicate_validation.py` | TestDuplicateValidation | 8 | Duplicados PDF, guia_processing, staging, mensajes error |
+| `tests/test_guia_processing.py` | TestMadenatGuiaProcessing | 13 | Creación, state machine, cancel, unlink, volúmenes, TD-007 duplicados |
+| `tests/test_guia_processing.py` | TestMadenatGuiaProcessingLine | 2 | staging, vol_purchase |
+| `tests/test_lumber_reception.py` | TestLumberReception | 14 | T01–T14: suma m3, mbf, triple capa, dedup, volúmenes, width map, gate 3, trazabilidad, edge cases |
+| `tests/test_length_uom_and_subproducto.py` | TestLengthUomAndSubproducto | 4 | T29–T32: ft, mm, m, quick-create subproducto |
+
+### madenat_lumber_costing
+| Archivo | Clase | # Tests | Cobertura |
+|---|---|---|---|
+| `tests/test_cost_distribution.py` | TestCostDistribution | 5 | C2.1–C2.5: apply, account_id, total, landed_cost, reverse |
+| `tests/test_landed_cost_integration.py` | TestLandedCostIntegration | 5 | C3.1–C3.5: picking, sin picking, account_id, reverse, doble apply |
+| `tests/test_module_compatibility.py` | TestModuleCompatibility | 6 | C4.1–C4.6: billing, logistics, herencia, Monetary, purchase_cost, account_id |
+
+### madenat_lumber_billing
+| Archivo | Clase | # Tests | Cobertura |
+|---|---|---|---|
+| `tests/test_billing_consolidation.py` | TestBillingConsolidation | 3 | Flujo auditoría, no duplicar, server action rechaza |
+
+**Total aprox.:** ~70 tests automatizados distribuidos en 9 archivos de test.
+**Estado documental:** Inventariados. Pendiente integración formal en matriz T01–T33 con numeración T34 en adelante.
+
+---
+
+## 8. Criterios Globales de Aprobación Documental  <!-- renumerado por inserción de sección 7 -->
 
 Un caso de prueba se considera formalmente aprobado y puede transicionar a estado CERRADO únicamente si cumple las siguientes condiciones de validación:
 1. Existe una correlación demostrable entre el Input y el Resultado Real (Evidencia).
@@ -121,7 +156,7 @@ Un caso de prueba se considera formalmente aprobado y puede transicionar a estad
 
 ---
 
-## 8. Diccionario de Fallos Comunes
+## 9. Diccionario de Fallos Comunes  <!-- renumerado -->
 
 Para asistir en la validación y debugging:
 | Si falla | Revisar |

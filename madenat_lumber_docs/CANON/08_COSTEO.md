@@ -1,6 +1,7 @@
 # CANON/08_COSTEO — FLUJO CANÓNICO DE COSTEO END-TO-END
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 ## Fecha: 2026-06-05
+## Última revisión: 2026-06-16  <!-- actualizado: 2026-06-16 -->
 ## Estado: DOCUMENTO CANÓNICO (creado cierre Fase A)
 ## Refs: FASE-A, AD-XX-MONETARIO, Anexo de Saneamiento Monetario 2026-06-04
 
@@ -204,11 +205,13 @@ Cada campo Monetary tiene su `currency_field` explícito. No hay ambigüedad USD
 
 # 7. QUÉ QUEDÓ PENDIENTE (FASE B+)
 
-1. **Contabilidad real**: `stock.lot.cost.line` no tiene `account_id` para mapping contable
-2. **Valuation layers**: Odoo no recibe los landed costs automáticamente en `stock.valuation.layer`
+1. **Contabilidad real**: `stock.lot.cost.line` tiene `account_id` (campo existe) pero falta mapping contable completo a `account.move`
+2. **Valuation layers**: `stock.landed.cost` integrado parcialmente (commits `81c3373`, `4372dec`) — pendiente validación end-to-end en staging
 3. **vendor_payment**: Modelo placeholder sin implementación real
 4. **Reportes financieros**: Migrar reportes legacy a usar Monetary nativo
-5. **Pruebas automatizadas**: Tests unitarios para flujos de costeo
+5. **Pruebas automatizadas**: Existen suites C2 (cost_distribution), C3 (landed_cost_integration), C4 (module_compatibility) — ver `03_TESTS.md` sección 7. Pendiente ejecución formal en staging.
+
+<!-- actualizado: 2026-06-16 — landed_cost integrado, tests existen, account_id existe -->
 
 ---
 

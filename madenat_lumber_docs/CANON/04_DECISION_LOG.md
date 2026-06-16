@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 6.2.0
-**Última actualización:** 2026-05-23
+**Última actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->
 **Estado:** Canonical / activo
 
 ---
@@ -705,6 +705,58 @@ Antes de parametrizar cualquier regla de negocio en `madenat_ingestion_config`:
 
 ---
 
+## 2026-06-13 — Fix: campo purchase_order inexistente en lumber.reception.line
+
+### DEC-2026-06-13-BUG-03 / AD-31
+
+**Decisión:** Revertir `purchase_order` → `purchase_id` en vistas de reportes R7/R8.
+
+**Problema:**
+El archivo `madenat_lumber_reports/views/inventory_report_views.xml` referenciaba el campo `purchase_order` en dos lugares:
+1. `<field name="purchase_order" optional="show"/>` en `view_lumber_reception_line_tree_detail` (línea 28)
+2. `context="{'group_by': 'purchase_order'}"` en el filtro `group_purchase` (línea 118)
+
+Esto causaba un `ParseError` de Odoo:
+```
+El campo "purchase_order" no existe en el modelo "lumber.reception.line"
+```
+
+**Causa raíz:**
+| Campo | Modelo | ¿Existe? | Tipo |
+|-------|--------|----------|------|
+| `purchase_order` | `lumber.reception` (cabecera) | ✅ Sí | `Char` (compute, store=True) |
+| `purchase_id` | `lumber.reception` (cabecera) | ✅ Sí | `Many2one('purchase.order')` |
+| `purchase_id` | `lumber.reception.line` (vía `_inherit` en `lumber_reception_reports.py`) | ✅ Sí | `Many2one` related a `reception_id.purchase_id` |
+| `purchase_order` | `lumber.reception.line` | ❌ **NO EXISTE** | — |
+
+`purchase_order` es un campo `Char` computado que solo existe en el modelo cabecera `lumber.reception`. En `lumber.reception.line`, el campo correcto es `purchase_id` (defined en `LumberReceptionLineReport` que hereda de `lumber.reception.line`, línea 50 de `lumber_reception_reports.py`).
+
+**Solución aplicada:**
+- Eliminar `<field name="purchase_order" optional="show"/>` → reemplazar por `<field name="purchase_id" optional="show"/>`
+- Cambiar `group_by: 'purchase_order'` → `group_by: 'purchase_id'`
+
+**Cambios:**
+- Archivo: `custom_addons/madenat_lumber_reports/views/inventory_report_views.xml`
+- Líneas afectadas: 27-28 y 116-118 (2 bloques modificados)
+- Vistas afectadas: `view_lumber_reception_line_tree_detail` y `view_lumber_reception_line_search_inventory`
+
+**Impacto:**
+- ✅ Cierra `ParseError` que bloqueaba la carga de vistas de reportes
+- ✅ El campo `purchase_id` (Many2one) muestra el nombre de la OC automáticamente en la UI
+- ✅ El filtro "Orden de Compra" agrupa correctamente por `purchase_id`
+- ✅ Sin cambios en modelos, solo vistas
+
+**Riesgos:**
+Ninguno. `purchase_id` ya existía como campo relacionado en `lumber.reception.line` desde `lumber_reception_reports.py` línea 50.
+
+**Regla derivada:**
+Antes de agregar un campo a una vista XML, verificar:
+1. ¿El campo existe en el modelo base?
+2. ¿El campo existe en algún `_inherit` del modelo?
+3. ¿El campo es `related` o `compute` de otro modelo? Si es `related`, usar el campo del modelo heredado, no el de la cabecera.
+
+---
+
 ## 2026-06-03 — HF-001: Restricción de imports Python entre addons Odoo 18 CE
 
 ### DEC-2026-06-03-HF001 / AD-07
@@ -747,3 +799,102 @@ Antes de parametrizar cualquier regla de negocio en `madenat_ingestion_config`:
 **Estado:** ✅ Aplicado
 **Tag:** v2.1-HF001
 **Golden records validados:** A1M2605458=4.893, A1M2602536=4.832 (inalterados)
+
+---
+
+## 2026-06-09 — C2/C4: Selector tipo producto + Restricción documental Packing/Guía
+
+### AD-32 — Selector operativo de tipo producto con restricción documental por perfil
+
+**Decisión:** Agregar selector de tipo producto (Madera Aserrada / Blank) con labels operativos en Recepción, y restringir la documentación requerida (Packing/Guía) según el tipo de producto configurado por perfil de ingesta.
+
+**Contexto:** Observaciones C2 y C4 de Cristhian (2026-06-09). El operador necesitaba identificar visualmente el tipo de producto en la recepción y el sistema debía validar qué documentos eran obligatorios según el perfil.
+
+**Cambios:**
+- `lumber_reception_views.xml`: Agregado selector tipo producto con labels operativos
+- Restricción documental: Packing requerido solo para perfiles que lo usan, Guía requerida solo para perfiles que la necesitan
+- Commits: `c6d8812` (C2), `0cda416` (C2+C4 amend)
+
+**Impacto:**
+- ✅ Operador identifica tipo producto sin ambigüedad en la UI
+- ✅ Validación documental adaptativa por perfil (no se pide Packing para blanks, no se pide Guía para métrico)
+- ✅ Sin cambios en cálculos, workflow ni flujo financiero
+
+**Regla derivada:**
+Toda regla de validación documental debe ser específica por perfil de ingesta. No asumir que todos los perfiles requieren los mismos documentos.
+
+---
+
+## 2026-06-09 — C3: Parseo fracciones imperiales + Separación flujos S2S/Blank
+
+### AD-33 — Parseo robusto de fracciones imperiales y espejo documental S2S/Blank
+
+**Decisión:** Implementar parseo robusto de fracciones imperiales (ej: "1 1/2" → 1.5) y formalizar la separación de flujos de cálculo entre S2S y Blank, documentando cada factor en espejo documental (`thickness_nominal_frac` como espejo exacto de `thickness_visual`).
+
+**Contexto:** Observación C3 de Cristhian. El sistema debía interpretar correctamente fracciones imperiales mixtas y mantener un espejo documental entre la representación visual (cuartos comerciales) y la nominal exacta (fracción base 16).
+
+**Cambios:**
+- Parseo de fracciones imperiales: soporte para formato mixto (entero + fracción) y formato simple (solo fracción)
+- `_compute_visual_defaults`: `thickness_nominal_frac` como espejo exacto de `thickness_visual`
+- Separación explícita de flujos S2S (f1550) y Blank (f5085) en documentación y código
+- Commits: `4b2d802` (C3 parseo), `525af85` (CHANGELOG)
+
+**Impacto:**
+- ✅ Fracciones imperiales parseadas correctamente (1 1/2" = 6/4 comercial)
+- ✅ Trazabilidad completa: nominal exacto preservado como columna opcional
+- ✅ Separación S2S/Blank documentada como regla arquitectónica
+
+**Regla derivada:**
+1. `thickness_nominal_frac` SIEMPRE debe ser espejo computacional de `thickness_visual`. No se editan independientemente.
+2. Todo parseo de unidades imperiales debe soportar formato mixto (entero + fracción) y formato simple.
+3. La separación S2S vs Blank es arquitectónica: S2S puede modificar nominal comercial (f1550, recargo +1/8"), Blank es producto final sin transformación.
+
+---
+
+## 2026-06-11 — thickness_visual 6/4 range + Migración 18.0.5.1.0
+
+### AD-34 — Corrección de rango thickness_visual 6/4 y patrón de migración post-módulo
+
+**Decisión:** Corregir el rango de clasificación thickness_visual: 6/4 max_thickness 42→46mm, 7/4 min_thickness 42→46mm, para que 45mm S2S clasifique correctamente como 6/4 (nominal canónico 1.5"). Establecer patrón de migración `18.0.5.1.0` para cambios de datos semilla que requieren `post-migrate`.
+
+**Contexto:** INC-010. El rango 6/4 terminaba en 42mm, causando que 45mm S2S (espesor nominal 1.5" = 6/4 canónico) se clasificara erróneamente como 7/4.
+
+**Cambios:**
+- `thickness_visual_ranges_seed.xml`: 6/4 max 42→46mm, 7/4 min 42→46mm
+- `migrations/18.0.5.1.0/`: Script de migración automática con `post-migrate`
+- Commits: `3252c7e` (fix), `52ec1c7` (migration), `7b3665f` (docs INC-010 + DEC-006)
+
+**Impacto:**
+- ✅ 45mm S2S ahora clasifica correctamente como 6/4
+- ✅ Migración automática en upgrade sin intervención manual
+- ✅ Patrón `post-migrate` documentado para futuros cambios de datos semilla
+
+**Regla derivada:**
+1. Todo cambio en datos semilla (XML) que afecte registros existentes DEBE incluir script de migración con versión semántica.
+2. Rangos de clasificación visual deben validarse contra casos reales de producción antes de publicarse.
+3. INC y DEC deben documentarse en la misma sesión que el fix.
+
+---
+
+## 2026-06-13 — R7/R8: Alineación reportes inventory con purchase_order de core
+
+### AD-35 — Campo purchase_id como fuente única en reportes de inventario R7/R8
+
+**Decisión:** Unificar el campo de orden de compra en reportes R7 y R8 usando `purchase_id` (Many2one relacionado desde `lumber.reception.line` vía `reception_id.purchase_id`) como fuente única, eliminando referencias al campo inexistente `purchase_order` (Char computado que solo existe en la cabecera `lumber.reception`).
+
+**Contexto:** DEC-2026-06-13-BUG-03 (AD-31) resolvió el ParseError inicial. Esta decisión complementaria formaliza la alineación de group_by y columnas en R7/R8 con la arquitectura de core.
+
+**Cambios:**
+- `inventory_report_views.xml`: `purchase_order` → `purchase_id` en tree y search
+- PDF footer colspan corregido para alineación de columnas
+- Commit: `99545d9` (R7 OC column fix), `3ba43575` (R7/R8 group_by alignment)
+
+**Impacto:**
+- ✅ Reportes R7 y R8 cargan sin ParseError
+- ✅ Filtro "Agrupar por OC" funcional en inventory reports
+- ✅ PDF footer colspan consistente con número real de columnas
+- ✅ Sin cambios en modelos — solo vistas
+
+**Regla derivada (refuerza AD-31):**
+Al extender vistas de reportes sobre `lumber.reception.line`, usar SIEMPRE `purchase_id` (related field definido en `lumber_reception_reports.py`), NUNCA `purchase_order` (campo exclusivo de la cabecera). Verificar existencia del campo en el modelo concreto antes de referenciarlo en XML.
+<!-- actualizado: 2026-06-16 — AD-32 a AD-35 agregados -->

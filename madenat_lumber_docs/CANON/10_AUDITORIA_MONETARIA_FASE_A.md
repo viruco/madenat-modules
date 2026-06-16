@@ -1,7 +1,8 @@
 # FASE A — AUDITORÍA MONETARIA COMPLETA
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 ## Fecha: 2026-06-04
-## Estado: COMPLETADA (Investigación)
+## Última revisión: 2026-06-16  <!-- actualizado: 2026-06-16 -->
+## Estado: COMPLETADA (Investigación + Implementación Subfases A1–A4)
 
 ---
 
@@ -327,9 +328,11 @@ Moneda base: USD (`currency_id`). Ya configurado.
 ✅ Bug en cálculo de costo por m³/MBF detectado  
 ✅ Plan de migración priorizado  
 ✅ Implementación de Subfases A1–A4  
-⬜ Validación funcional  
-⬜ Documentación actualizada  
-⬜ Commits  
+⬜ Validación funcional en staging  
+✅ Documentación actualizada — `08_COSTEO.md` creado 2026-06-05, revisado 2026-06-16  
+✅ Commits — registrados en git log (2026-06-02 a 2026-06-05)  
+
+<!-- actualizado: 2026-06-16 -->
 
 ---
 
@@ -359,4 +362,4 @@ Moneda base: USD (`currency_id`). Ya configurado.
 ✅ `amount_usd` → Monetary  
 
 *Documento generado: 2026-06-04 — Fase A — Auditoría Monetaria*
-*Última actualización: 2026-06-05 — Migraciones completadas*
+*Última actualización: 2026-06-16 — Revisión documental, marcados entregables*

@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
 **Versión documental:** 6.3.0  
-**Fecha de actualización:** 2026-05-23  
+**Fecha de actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->  
 **Estado:** ACTIVO — Prioridad inmediata en estabilización documental y validación funcional de Fase 6
 
 ---
@@ -48,14 +48,14 @@ No avanzar a consolidaciones mayores mientras la base técnica siga generando ri
 | ID | Descripción | Estado | Bloqueo |
 |----|-------------|--------|---------|
 | C1 | Renombrar menú raíz "Ingreso de Guías Dentro de Recepción" | ✅ Cerrado — commit 2e0c7ca | — |
-| C2 | Labels operativos tipo producto (Aserrada/Blank) visibles en Recepción | ⏳ Pendiente | — |
-| C3 | Volúmenes Blank: confirmar deduction_factor 0.0625 vs 0.0 | 🔒 Bloqueado | Cristhian confirma regla negocio |
-| C4 | Restricción documental Packing/Guía obligatorio por tipo producto | ⏳ Pendiente | Cristhian confirma regla |
+| C2 | Labels operativos tipo producto (Aserrada/Blank) visibles en Recepción | ✅ Cerrado — commit c6d8812 + 0cda416 | — |
+| C3 | Volúmenes Blank: confirmar deduction_factor 0.0625 vs 0.0 | 🔒 Bloqueado (parcial: reglas nominal 6/4-8/4 ✅ commit 5732fd5) | Cristhian confirma regla negocio |
+| C4 | Restricción documental Packing/Guía obligatorio por tipo producto | ✅ Cerrado — commit 0cda416 | — |
 
-**Estimado post-desbloqueo:**
-- C2: 2 horas
+**Estimado post-desbloqueo (C3):**
 - C3: 30 minutos (solo ajuste seed si aplica)
-- C4: 4 horas
+
+<!-- actualizado: 2026-06-16 — C2, C4 cerrados; C3 deducción pendiente -->
 
 ---
 
@@ -71,8 +71,13 @@ Extender la madurez operativa hacia los módulos contables de Odoo.
 
 ## PRÓXIMAS TAREAS
 
-1. Diseño conceptual de integración contable (FASE 7).
-2. Parametrización de tolerancias (FASE 5).
+1. Validar commit `3ba43575` (R7/R8 group_by + OC column) en máquina remota de test.
+2. Validar nuevos features en staging: kanban, dashboards, wizard period_close, búsqueda OC, stock_landed_cost.
+3. Confirmar deduction_factor Blank con Cristhian (C3).
+4. Diseño conceptual de integración contable (FASE 7).
+5. Parametrización de tolerancias (FASE 5).
+
+<!-- actualizado: 2026-06-16 — agregadas tareas de staging validation -->
 
 ---
 

@@ -1,8 +1,9 @@
 # FASE DOCUMENTAL MAESTRA — Consolidación, Checklist y Mapa Operativo
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.0.0
+**Versión documental:** 1.1.0  <!-- actualizado: 2026-06-16 -->
 **Fecha:** 2026-06-04
+**Última revisión:** 2026-06-16
 **Estado:** ACTIVO — Documento canónico de gobernanza documental
 **Propósito:** Mapa maestro, checklist reutilizable, índice único y guía de continuidad para todas las fases del proyecto
 
@@ -19,14 +20,15 @@ El proyecto MADENAT Lumber cuenta con **10 módulos Odoo activos** + 1 repositor
 - 3 análisis integrales (inventario traders, pre-fase A, inventario residuos)
 - Base funcional operativa validada con suite T01–T33
 
-**Debilidades:**
-- 3 módulos con deuda documental (sin README ni CHANGELOG)
-- Arquitectura monetaria fragmentada: 30 campos Float que deben migrar a Monetary
-- `madenat_guia_processing.py` con 3465 líneas, cero tests unitarios, campos duplicados
-- Documento canónico de costeo (`08_COSTEO.md`) inexistente pese a estar referenciado
-- Documento `01_FLUJO_PACKING.md` listado en índices pero no verificado en disco
+**Debilidades (actualizado 2026-06-16):**
+- 2 módulos principales sin CHANGELOG (costing, billing)
+- Arquitectura monetaria: Fase A completada (17 campos Monetary en core), pendientes ~12 Float en costing/vendor_payment
+- `madenat_guia_processing.py` cuenta con `test_guia_processing.py` (15 tests) desde TD-008
+- Documento canónico de costeo `08_COSTEO.md` CREADO (2026-06-05, revisado 2026-06-16)
+- `test_cost_distribution.py`, `test_landed_cost_integration.py`, `test_module_compatibility.py` creados para costing
 
-**Veredicto:** El proyecto está **listo para avanzar por fases** siempre que se respete el orden de prioridad establecido en este documento y se use el checklist maestro como contrato interno de trabajo.
+**Veredicto:** El proyecto avanzó significativamente desde 2026-06-04. Fase A monetaria y Fase C tests están parcialmente completadas. Pendiente: validación en staging, deduction_factor Blank, deploy a producción.
+<!-- actualizado: 2026-06-16 -->
 
 ---
 
@@ -53,9 +55,11 @@ El proyecto MADENAT Lumber cuenta con **10 módulos Odoo activos** + 1 repositor
 | Módulo | README | CHANGELOG | CANON | WIKI | Tests | Auditoría |
 |--------|--------|-----------|-------|------|-------|-----------|
 | `madenat_lumber_core` | ✅ | ✅ | ✅ | ✅ (7+) | ✅ | ✅ (3) |
-| `madenat_lumber_costing` | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ |
+| `madenat_lumber_costing` | ✅ | ❌ | ❌ | ❌ | ✅ | ⚠️ |
 | `madenat_lumber_logistics` | ✅ | ✅ | ✅ | ✅ | ❌ | ⚠️ |
 | `madenat_lumber_billing` | ✅ | ❌ | ❌ | ❌ | ✅ | ⚠️ |
+
+<!-- actualizado: 2026-06-16 — costing README y tests existen -->
 | `madenat_lumber_purchasing` | ❌ | ⚠️ | ❌ | ❌ | — | ⚠️ |
 | `madenat_lumber_shipping_core` | ❌ | ❌ | ❌ | ⚠️ | — | — |
 | `madenat_lumber_reception_improvements` | ✅ | ❌ | ❌ | ❌ | — | — |
@@ -68,8 +72,10 @@ El proyecto MADENAT Lumber cuenta con **10 módulos Odoo activos** + 1 repositor
 
 | Módulo | Campos Float | Campos Monetary | Estado | Acción requerida |
 |--------|-------------|-----------------|--------|-----------------|
-| `madenat_lumber_core` | **21** | 0 | ❌ CRÍTICO | Migrar a Monetary |
+| `madenat_lumber_core` | 4 (tasas/%) | **17** | ✅ COMPLETADO (Fase A) | Migración realizada 2026-06-02 |
 | `madenat_lumber_costing` | **9** | 0 | ⚠️ PARCIAL | Migrar a Monetary |
+
+<!-- actualizado: 2026-06-16 — core migrado a 17 Monetary, 4 Float son tasas/porcentajes -->
 | `madenat_lumber_billing` | 0 | 4 | ✅ CORRECTO | — |
 | `madenat_lumber_logistics` | 0 | 2 | ✅ CORRECTO | — |
 | `madenat_toll_processing` | 0 | 1 | ✅ CORRECTO | — |
@@ -109,7 +115,9 @@ El proyecto MADENAT Lumber cuenta con **10 módulos Odoo activos** + 1 repositor
 |---------|----------------|--------|
 | `01_FLUJO_PACKING.md` | `INDICE_DOCUMENTACION.md`, `07_TRABAJO_CON_IA.md` | ⚠️ No verificado |
 | `05_CONTINUIDAD_GLOBAL.md` | VSCode tabs | ⚠️ Existe como archivo pero NO listado en `INDICE_DOCUMENTACION.md` |
-| `08_COSTEO.md` | `AUDITORIA_MODULOS_COSTEO.md` (como faltante) | ❌ NO EXISTE |
+| `08_COSTEO.md` | `AUDITORIA_MODULOS_COSTEO.md` (como faltante) | ✅ CREADO 2026-06-05, revisado 2026-06-16 |
+
+<!-- actualizado: 2026-06-16 -->
 | `GUIA_PRODUCCION_FINAL.md` | `07_TRABAJO_CON_IA.md` | ⚠️ No verificado |
 | `HOJA_RUTA_EJECUTIVA.md` | `07_TRABAJO_CON_IA.md` | ⚠️ No verificado |
 | `QUICK_START.md` | `07_TRABAJO_CON_IA.md`, `INDICE_DOCUMENTACION.md` | ⚠️ No verificado |
@@ -248,10 +256,12 @@ Este checklist reemplaza y extiende el existente `06_CHECKLIST.md` (v4.1.0). Es 
 
 | Prioridad | Documento | Justificación |
 |-----------|-----------|---------------|
-| **ALTA** | `CANON/08_COSTEO.md` | Sin documento canónico de flujo de costeo end-to-end. Referenciado como necesario en `AUDITORIA_MODULOS_COSTEO.md`. |
+| **ALTA** | `CANON/08_COSTEO.md` | ✅ CREADO 2026-06-05 — Flujo canónico de costeo end-to-end documentado. Revisado 2026-06-16. |
 | **ALTA** | `WIKI/02_TECNICO/costeo_distribucion.md` | El motor `lumber.cost.distribution` (315 líneas, 6 métodos de prorrateo) no tiene documentación técnica. |
-| **ALTA** | `README.md` para `madenat_lumber_costing` | Módulo sin README. |
+| **ALTA** | `README.md` para `madenat_lumber_costing` | ✅ EXISTE — verificado en disco 2026-06-16. |
 | **ALTA** | `CHANGELOG.md` para `madenat_lumber_costing` | Sin trazabilidad de cambios. |
+
+<!-- actualizado: 2026-06-16 — 08_COSTEO creado, README costing existe -->
 | **MEDIA** | `WIKI/02_TECNICO/flujo_devoluciones.md` | Sin documentación de devoluciones. |
 | **MEDIA** | `WIKI/02_TECNICO/troubleshooting.md` | Sin guía de errores comunes y diagnóstico. |
 | **MEDIA** | `README.md` para `madenat_lumber_shipping_core` | Infraestructura sin README. |
@@ -276,9 +286,11 @@ No se detectó duplicación significativa entre documentos canónicos. Cada docu
 
 | ID | Riesgo | Severidad | Fuente | Acción |
 |----|--------|-----------|--------|--------|
-| R-01 | 30 campos Float monetarios sin migrar a Monetary | 🚨 CRÍTICO | Auditoría 06-03, Auditoría Costeo | Migrar en Fase A |
-| R-02 | `madenat_guia_processing.py` sin tests (3465 líneas) | 🔴 ALTO | Auditoría 06-04 | Crear `test_guia_processing.py` |
-| R-03 | Campos duplicados en `MadenatGuiaProcessing` (4 campos shadowed) | 🔴 ALTO | Auditoría 06-04 | Limpiar definiciones duplicadas |
+| R-01 | 30 campos Float monetarios sin migrar a Monetary | 🟡 MEDIO (Fase A completa en core) | Auditoría 06-03, Auditoría Costeo | Migrar costing + vendor_payment |
+| R-02 | `madenat_guia_processing.py` sin tests (3465 líneas) | 🟡 MEDIO | Auditoría 06-04 | ✅ `test_guia_processing.py` creado (15 tests, TD-008) |
+| R-03 | Campos duplicados en `MadenatGuiaProcessing` (4 campos shadowed) | 🟡 MEDIO | Auditoría 06-04 | Resuelto en TD-007 (duplicados eliminados) |
+
+<!-- actualizado: 2026-06-16 — R-01 Fase A completa, R-02 tests existen, R-03 resuelto -->
 | R-04 | Constraint `stock_lot_check_cost_positive` inefectiva | 🟡 MEDIO | CANON 02, Backlog | Revisar modelo |
 | R-05 | `_deprecated_action_distribute_costs` bypassea `cost_line_ids` | 🟡 MEDIO | Auditoría Costeo | Redirigir a cost_line_ids |
 | R-06 | Monolito parcial en `lumber_reception.py` | 🟡 MEDIO | CANON 00, Backlog | Refactor futuro |
@@ -371,17 +383,19 @@ madenat_lumber_docs/
 
 Basado en el análisis de lo que ya existe, el estado de cada módulo y las dependencias entre ellos, este es el orden recomendado para futuras fases:
 
-### Fase A: Saneamiento monetario (PRIORIDAD 0)
+### Fase A: Saneamiento monetario (PRIORIDAD 0) — PARCIALMENTE COMPLETADA
 
 **Objetivo:** Unificar la base monetaria del proyecto migrando `fields.Float` → `fields.Monetary`.
 
-1. `madenat_lumber_core` → Agregar `currency_id` a `stock.lot`. Migrar 21 campos Float a Monetary. Unificar costo base como `cost_line` con `cost_type='wood'`. Corregir `cost_per_m3_usd`.
-2. `madenat_lumber_costing` → Migrar 9 campos Float a Monetary. Verificar `_compute_total_cost_usd` (posible doble conteo). Crear README + CHANGELOG.
-3. `madenat_lumber_logistics` → Redirigir `_deprecated_action_distribute_costs` a `cost_line_ids`.
-4. `madenat_lumber_billing` → Adaptar lectura de `wood_cost_usd` cuando core migre.
-5. `madenat_vendor_payment` → Migrar `amount_total`, `amount_paid` a Monetary.
-6. Crear `CANON/08_COSTEO.md` con flujo canónico de costeo end-to-end.
-7. Crear `WIKI/02_TECNICO/costeo_distribucion.md` documentando el motor de distribución.
+1. ✅ `madenat_lumber_core` → Agregado `currency_id` a `stock.lot`. Migrados 17 campos Float a Monetary (Fase A, 2026-06-02). Corregido `cost_per_m3_usd`. Ver `08_COSTEO.md` sección 2.1.
+2. ⏳ `madenat_lumber_costing` → 9 campos Float pendientes de migrar a Monetary. README existe. CHANGELOG pendiente.
+3. ⏳ `madenat_lumber_logistics` → Redirigir `_deprecated_action_distribute_costs` a `cost_line_ids`.
+4. ⏳ `madenat_lumber_billing` → Adaptar lectura de `wood_cost_usd` (ya compatible via Monetary).
+5. ⏳ `madenat_vendor_payment` → Migrar `amount_total`, `amount_paid` a Monetary.
+6. ✅ Crear `CANON/08_COSTEO.md` — CREADO 2026-06-05, revisado 2026-06-16.
+7. ⏳ Crear `WIKI/02_TECNICO/costeo_distribucion.md` — pendiente.
+
+<!-- actualizado: 2026-06-16 — Fase A completada en core -->
 
 **Justificación:** Sin base monetaria unificada, cualquier integración contable futura (account.move, stock.landed.cost) será frágil e inconsistente. Core es P0 porque 8 de los 11 módulos dependen de él.
 
@@ -400,14 +414,18 @@ Basado en el análisis de lo que ya existe, el estado de cada módulo y las depe
 
 **Justificación:** Estos son bugs y artefactos que crecen con el tiempo. Resolverlos temprano evita que se conviertan en bloqueantes.
 
-### Fase C: Cobertura de tests (PRIORIDAD 1)
+### Fase C: Cobertura de tests (PRIORIDAD 1) — PARCIALMENTE COMPLETADA
 
 **Objetivo:** Crear tests unitarios para los módulos sin cobertura.
 
-1. `test_guia_processing.py` → 3465 líneas sin un solo test (riesgo máximo de regresión).
-2. `test_cost_distribution.py` → Motor de prorrateo sin tests.
-3. `test_logistics.py` → Contenedores sin tests.
-4. Cerrar T29–T32 con evidencia formal.
+1. ✅ `test_guia_processing.py` → CREADO (15 tests, TD-008). Cubre state machine, cancel, unlink, volúmenes, TD-007 duplicados.
+2. ✅ `test_cost_distribution.py` → CREADO (5 tests, C2.1–C2.5). Motor de prorrateo con tests.
+3. ✅ `test_landed_cost_integration.py` → CREADO (5 tests, C3.1–C3.5).
+4. ✅ `test_module_compatibility.py` → CREADO (6 tests, C4.1–C4.6).
+5. ✅ `test_length_uom_and_subproducto.py` → CREADO (4 tests, T29–T32 automatizados). Pendiente evidencia formal en staging.
+6. ⏳ `test_logistics.py` → Contenedores sin tests.
+
+<!-- actualizado: 2026-06-16 — suites C2-C4 y guia_processing existen -->
 
 **Justificación:** Sin tests automatizados, cualquier refactor o fix puede romper flujos críticos sin ser detectado hasta producción.
 
