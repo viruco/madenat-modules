@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 8 ir.actions.act_window — Inventario Recepción                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- R1: Detalle por Patio — Todos Productos -->
+    <record id="action_r1_detail_location" model="ir.actions.act_window">
+        <field name="name">R1: Detalle por Patio — Todos Productos</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'patio_label', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail"/>
+    </record>
+
+    <!-- R2: Resumen por Patio — Todos Productos -->
+    <record id="action_r2_summary_location" model="ir.actions.act_window">
+        <field name="name">R2: Resumen por Patio — Todos Productos</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'patio_label', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary"/>
+    </record>
+
+    <!-- R3: Detalle por Patio — Tipo Producto -->
+    <record id="action_r3_detail_location_sub" model="ir.actions.act_window">
+        <field name="name">R3: Detalle por Patio — Tipo Producto</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'patio_label', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail"/>
+    </record>
+
+    <!-- R4: Resumen por Patio — Tipo Producto -->
+    <record id="action_r4_summary_location_sub" model="ir.actions.act_window">
+        <field name="name">R4: Resumen por Patio — Tipo Producto</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'patio_label', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary"/>
+    </record>
+
+    <!-- R5: Detalle por Proveedor -->
+    <record id="action_r5_detail_partner" model="ir.actions.act_window">
+        <field name="name">R5: Detalle por Proveedor</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'partner_name', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail"/>
+    </record>
+
+    <!-- R6: Resumen por Proveedor -->
+    <record id="action_r6_summary_partner" model="ir.actions.act_window">
+        <field name="name">R6: Resumen por Proveedor</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'partner_name', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary_partner"/>
+    </record>
+
+    <!-- R7: Detalle por Orden de Compra -->
+    <record id="action_r7_detail_purchase" model="ir.actions.act_window">
+        <field name="name">R7: Detalle por Orden de Compra</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail"/>
+    </record>
+
+    <!-- R8: Resumen por Orden de Compra -->
+    <record id="action_r8_summary_purchase" model="ir.actions.act_window">
+        <field name="name">R8: Resumen por Orden de Compra</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary"/>
+    </record>
+
+    <!-- R9: Detalle por Producto -->
+    <record id="action_r9_detail_product" model="ir.actions.act_window">
+        <field name="name">R9: Detalle por Producto</field>
+        <field name="res_model">lumber.reception.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
+        <field name="context">{'group_by': 'product_id', 'search_default_filter_active': True}</field>
+        <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail_product"/>
+    </record>
+
+</odoo>

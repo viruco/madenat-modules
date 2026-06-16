@@ -22,10 +22,10 @@
                 <field name="width_visual"/>
                 <field name="length"/>
                 <field name="pieces"/>
+                <field name="purchase_order_name" string="Orden Compra"/>
                 <field name="vol_physical_m3"/>
                 <field name="vol_mbf"/>
-                <!-- CAMBIO: agregar purchase_order como columna visible -->
-                <field name="purchase_order" optional="show"/>
+                <!-- CAMBIO: purchase_order_name → purchase_id (campo real en DB) -->
             </list>
         </field>
     </record>
@@ -113,12 +113,120 @@
                 <filter name="group_partner" string="Proveedor"
                         context="{'group_by': 'partner_name'}"/>
                 <field name="partner_name"/>
-                <!-- CAMBIO: group_by purchase_id → purchase_order -->
+                <!-- CAMBIO: purchase_order_name → purchase_id -->
                 <filter name="group_purchase" string="Orden de Compra"
-                        context="{'group_by': 'purchase_order'}"/>
+                        context="{'group_by': 'purchase_id'}"/>
             </search>
         </field>
     </record>
 
+
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- Tree Views: STOCK REAL (stock.quant) — R1, R2, R5, R7, R9             -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- R1: Detalle por Patio — Stock Real (stock.quant)   -->
+    <!-- 13 columnas: negocio + trazabilidad + inventario      -->
+    <record id="view_stock_quant_tree_r1_detail_patio" model="ir.ui.view">
+        <field name="name">stock.quant.tree.r1.detail</field>
+        <field name="model">stock.quant</field>
+        <field name="priority" eval="20"/>
+        <field name="arch" type="xml">
+            <list string="R1 — Detalle por Patio (Stock Real)">
+                <field name="location_name" string="Patio" optional="hide"/>
+                <field name="lot_id" string="Etiqueta Lote"/>
+                <field name="lot_reception_date" string="Fecha Recepción" optional="show"/>
+                <field name="lot_guia_number" string="N° Guía" optional="show"/>
+                <field name="lot_purchase_order" string="N° Orden" optional="show"/>
+                <field name="lot_supplier" string="Proveedor" optional="show"/>
+                <field name="product_id" string="Producto"/>
+                <field name="lot_subproducto" string="Subproducto" optional="show"/>
+                <field name="lot_escuadria" string="Escuadría" optional="show"/>
+                <field name="lot_largo_m" string="Largo (m)" optional="show" sum="Total Largo"/>
+                <field name="lot_piezas" string="Piezas" optional="show" sum="Total Piezas"/>
+                <field name="lot_volumen_m3" string="Vol. (m³)" optional="show" sum="Total Vol."/>
+                <field name="quantity" string="Stock"/>
+                <field name="lot_container_name" string="Contenedor" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- R2: Resumen por Patio — Stock Real (stock.quant) -->
+    <record id="view_stock_quant_tree_r2_summary_patio" model="ir.ui.view">
+        <field name="name">stock.quant.tree.r2.summary</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <list string="R2 — Resumen por Patio (Stock Real)">
+                <field name="location_name" optional="hide"/>
+                <field name="product_id"/>
+                <field name="lot_id" string="Lote"/>
+                <field name="quantity" sum="Total Cantidad"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- R5: Detalle por Proveedor — Stock Real (stock.quant) -->
+    <record id="view_stock_quant_tree_r5_detail_partner" model="ir.ui.view">
+        <field name="name">stock.quant.tree.r5.detail</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <list string="R5 — Detalle por Proveedor (Stock Real)">
+                <field name="location_name" optional="hide"/>
+                <field name="lot_id" string="Lote"/>
+                <field name="product_id"/>
+                <field name="quantity" sum="Total Cantidad"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- R7: Detalle por Orden de Compra — Stock Real (stock.quant) -->
+    <record id="view_stock_quant_tree_r7_detail_purchase" model="ir.ui.view">
+        <field name="name">stock.quant.tree.r7.detail</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <list string="R7 — Detalle por Orden de Compra (Stock Real)">
+                <field name="lot_id" string="Lote"/>
+                <field name="location_name" optional="hide"/>
+                <field name="product_id"/>
+                <field name="quantity" sum="Total Cantidad"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- R9: Detalle por Producto — Stock Real (stock.quant) -->
+    <record id="view_stock_quant_tree_r9_detail_product" model="ir.ui.view">
+        <field name="name">stock.quant.tree.r9.detail</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <list string="R9 — Detalle por Producto (Stock Real)">
+                <field name="product_id" optional="hide"/>
+                <field name="location_name" optional="hide"/>
+                <field name="lot_id" string="Lote"/>
+                <field name="quantity" sum="Total Cantidad"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View para stock.quant — Stock Real -->
+    <record id="view_stock_quant_search_inventory" model="ir.ui.view">
+        <field name="name">stock.quant.search.inventory</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Stock Real">
+                <field name="product_id"/>
+                <field name="location_id"/>
+                <field name="lot_id"/>
+                <separator/>
+                <filter name="filter_stock_real" string="Stock Real"
+                        domain="[('quantity', '>', 0), ('location_id.usage', '=', 'internal')]"/>
+                <separator/>
+                <filter name="group_location" string="Por Patio"
+                        context="{'group_by': 'location_id'}"/>
+                <filter name="group_product" string="Por Producto"
+                        context="{'group_by': 'product_id'}"/>
+            </search>
+        </field>
+    </record>
 
 </odoo>

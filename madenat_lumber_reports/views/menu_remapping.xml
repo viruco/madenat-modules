@@ -6,6 +6,31 @@
     <!-- Root y arquitectura base → madenat_lumber_core/lumber_core_menu   -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CONSOLIDACIÓN R1-R8: Eliminar menús duplicados de BD               -->
+    <!-- Los menús se borran explícitamente porque Odoo persiste registros -->
+    <!-- ir.ui.menu aunque se elimine el <menuitem> del XML.               -->
+    <!-- Las acciones (ir.actions.act_window) y exports (XLSX/PDF) se      -->
+    <!-- preservan intactos para compatibilidad con bookmarks/URLs.         -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r3_detail_location_sub'))]"/>
+    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r4_summary_location_sub'))]"/>
+    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r6_summary_partner'))]"/>
+    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r8_summary_purchase'))]"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FASE 4 LIMPIEZA: Eliminar vistas stock.lot huérfanas de BD         -->
+    <!-- location_name se movió a stock.quant. Las vistas viejas de         -->
+    <!-- stock.lot que referencian location_name causan OwlError.           -->
+    <!-- Las nuevas vistas stock.quant están en inventory_report_views.xml. -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r1_detail_patio'))]"/>
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r2_summary_patio'))]"/>
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r5_detail_partner'))]"/>
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r7_detail_purchase'))]"/>
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r9_detail_product'))]"/>
+    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_search_inventory'))]"/>
+
     <!-- Sub-menús de Reportes (bajo section declarado en core) -->
     <menuitem id="menu_report_commercial"
               name="1. Comercial (Según Compra)"
@@ -30,5 +55,56 @@
               name="⚠️ Lotes sin Costear"
               parent="madenat_lumber_core.menu_finance_costing"
               sequence="15"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════  -->
+    <!-- 📦 INVENTARIO RECEPCIÓN                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════  -->
+    <menuitem id="menu_inventory_reports_section"
+              name="📦 Inventario Recepción"
+              parent="madenat_lumber_core.menu_madenat_reports_main"
+              sequence="39"/>
+
+    <menuitem id="menu_r1_detail_location"
+              name="R1: Detalle por Patio — Stock Real"
+              parent="menu_inventory_reports_section"
+              action="madenat_lumber_reports.action_r1_stock_detail_patio"
+              sequence="40"/>
+
+    <menuitem id="menu_r2_summary_location"
+              name="R2: Resumen por Patio — Stock Real"
+              parent="menu_inventory_reports_section"
+              action="madenat_lumber_reports.action_r2_stock_summary_patio"
+              sequence="41"/>
+
+    <!-- R3: Consolidado en R1 (misma vista, mismo agrupamiento). Acción técnica preservada. -->
+    <!-- <menuitem id="menu_r3_detail_location_sub" ... /> — DESACTIVADO por duplicidad exacta con R1 -->
+
+    <!-- R4: Consolidado en R2 (misma vista, mismo agrupamiento). Acción técnica preservada. -->
+    <!-- <menuitem id="menu_r4_summary_location_sub" ... /> — DESACTIVADO por duplicidad exacta con R2 -->
+
+    <menuitem id="menu_r5_detail_partner"
+              name="R5: Detalle por Proveedor — Stock Real"
+              parent="menu_inventory_reports_section"
+              action="madenat_lumber_reports.action_r5_stock_detail_partner"
+              sequence="44"/>
+
+    <!-- R6: Capacidad secundaria — exportable vía XLSX desde R5 + filtro group_by=partner_name. Menú no expuesto. -->
+    <!-- <menuitem id="menu_r6_summary_partner" ... /> — DESACTIVADO (accesible desde R5 con filtros) -->
+
+    <menuitem id="menu_r7_detail_purchase"
+              name="R7: Detalle por Orden de Compra — Stock Real"
+              parent="menu_inventory_reports_section"
+              action="madenat_lumber_reports.action_r7_stock_detail_purchase"
+              sequence="46"/>
+
+    <!-- R8: Capacidad secundaria — exportable vía XLSX desde R7 + filtro group_by=purchase_id. Menú no expuesto. -->
+    <!-- <menuitem id="menu_r8_summary_purchase" ... /> — DESACTIVADO (accesible desde R7 con filtros) -->
+
+    <!-- R9: Detalle por Producto — Stock Real -->
+    <menuitem id="menu_r9_detail_product"
+              name="R9: Detalle por Producto — Stock Real"
+              parent="menu_inventory_reports_section"
+              action="madenat_lumber_reports.action_r9_stock_detail_product"
+              sequence="47"/>
 
 </odoo>
