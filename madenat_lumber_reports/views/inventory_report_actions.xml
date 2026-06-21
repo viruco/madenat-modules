@@ -64,23 +64,23 @@
         <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary_partner"/>
     </record>
 
-    <!-- R7: Detalle por Orden de Compra -->
+    <!-- R7: Detalle por Orden de Compra (agrupado por OC) -->
     <record id="action_r7_detail_purchase" model="ir.actions.act_window">
         <field name="name">R7: Detalle por Orden de Compra</field>
         <field name="res_model">lumber.reception.line</field>
         <field name="view_mode">list</field>
         <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
-        <field name="context">{'search_default_filter_active': True}</field>
+        <field name="context">{'group_by': 'purchase_id', 'search_default_filter_active': True}</field>
         <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_detail"/>
     </record>
 
-    <!-- R8: Resumen por Orden de Compra -->
+    <!-- R8: Resumen por Orden de Compra (agrupado por OC) -->
     <record id="action_r8_summary_purchase" model="ir.actions.act_window">
         <field name="name">R8: Resumen por Orden de Compra</field>
         <field name="res_model">lumber.reception.line</field>
         <field name="view_mode">list</field>
         <field name="domain">[('reception_id.state', '!=', 'cancelled')]</field>
-        <field name="context">{'search_default_filter_active': True}</field>
+        <field name="context">{'group_by': 'purchase_id', 'search_default_filter_active': True}</field>
         <field name="view_id" ref="madenat_lumber_reports.view_lumber_reception_line_tree_summary"/>
     </record>
 

@@ -13,10 +13,10 @@
     <!-- Las acciones (ir.actions.act_window) y exports (XLSX/PDF) se      -->
     <!-- preservan intactos para compatibilidad con bookmarks/URLs.         -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r3_detail_location_sub'))]"/>
-    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r4_summary_location_sub'))]"/>
-    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r6_summary_partner'))]"/>
-    <delete model="ir.ui.menu" search="[('id','=',ref('madenat_lumber_reports.menu_r8_summary_purchase'))]"/>
+    <delete id="menu_r3_detail_location_sub" model="ir.ui.menu"/>
+    <delete id="menu_r4_summary_location_sub" model="ir.ui.menu"/>
+    <delete id="menu_r6_summary_partner" model="ir.ui.menu"/>
+    <delete id="menu_r8_summary_purchase" model="ir.ui.menu"/>
 
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- FASE 4 LIMPIEZA: Eliminar vistas stock.lot huérfanas de BD         -->
@@ -24,12 +24,12 @@
     <!-- stock.lot que referencian location_name causan OwlError.           -->
     <!-- Las nuevas vistas stock.quant están en inventory_report_views.xml. -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r1_detail_patio'))]"/>
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r2_summary_patio'))]"/>
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r5_detail_partner'))]"/>
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r7_detail_purchase'))]"/>
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_tree_r9_detail_product'))]"/>
-    <delete model="ir.ui.view" search="[('id','=',ref('madenat_lumber_reports.view_stock_lot_search_inventory'))]"/>
+    <delete id="view_stock_lot_tree_r1_detail_patio" model="ir.ui.view"/>
+    <delete id="view_stock_lot_tree_r2_summary_patio" model="ir.ui.view"/>
+    <delete id="view_stock_lot_tree_r5_detail_partner" model="ir.ui.view"/>
+    <delete id="view_stock_lot_tree_r7_detail_purchase" model="ir.ui.view"/>
+    <delete id="view_stock_lot_tree_r9_detail_product" model="ir.ui.view"/>
+    <delete id="view_stock_lot_search_inventory" model="ir.ui.view"/>
 
     <!-- Sub-menús de Reportes (bajo section declarado en core) -->
     <menuitem id="menu_report_commercial"

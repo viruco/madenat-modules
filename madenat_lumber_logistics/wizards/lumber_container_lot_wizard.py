@@ -118,6 +118,12 @@ class LumberContainerLotWizard(models.TransientModel):
     def _compute_available_lots(self):
             """
             Obtener lotes disponibles para asignar con filtro estricto de calidad.
+            
+            INCIDENTE PRODUCTIVO 2026-06-18 — RESUELTO:
+            La causa raíz NO estaba en este dominio sino en action_force_cancel()
+            de madenat_guia_processing.py, que no marcaba technical_validation='rejected'.
+            El filtro por technical_validation='approved' aquí ya es suficiente.
+            Ver fix en: custom_addons/madenat_lumber_core/models/madenat_guia_processing.py
             """
             for wizard in self:
                 if not wizard.container_id:
@@ -132,17 +138,15 @@ class LumberContainerLotWizard(models.TransientModel):
                 occupied_lot_ids = occupied_lines.mapped('lot_id.id')
                 
                 # 2. DOMINIO BLINDADO: Lotes disponibles para contenedor
-                # TD-006: Incluye 'en_patio', 'procesado' y 'recepcionado'
-                # - 'en_patio': recepción sin subproducto, disponible en inventario
-                # - 'procesado': guía procesada o transformación, listo para exportar
-                # - 'recepcionado': recepción en curso, ya validado
-                # EXCLUIDOS: 'consolidado' (ya en contenedor), 'embarcado' (ya salió)
                 domain = [
                     ('estado_trazabilidad', 'in', ['en_patio', 'procesado', 'recepcionado']),
-                    ('technical_validation', '=', 'approved'), # 👈 Solo calidad certificada
+                    ('technical_validation', '=', 'approved'),
                     ('id', 'not in', wizard.container_id.lot_ids.ids),
                     ('id', 'not in', occupied_lot_ids),
                     ('product_id.type', 'in', ['product', 'consu']),
+                    # Bloqueo de lotes huérfanos y guías draft/cancelled
+                    '|', ('reception_id', '!=', False), ('guia_processing_id', '!=', False),
+                    '|', ('guia_processing_id', '=', False), ('guia_processing_id.state', 'not in', ['draft', 'cancelled']),
                 ]
                 
                 # 3. Ejecutar y asignar

@@ -330,7 +330,7 @@
                                 
                                 <div class="mb-4 text-center">
                                         <button name="%(madenat_lumber_core.action_lumber_reception_mass_update)d" 
-                                                string="⚡ EJECUTAR ASIGNACIÓN MASIVA" 
+                                                string="⚡ ASIGNACIÓN MASIVA" 
                                                 type="action" 
                                                 class="btn btn-warning btn-lg fw-bold shadow px-5 py-2 border border-dark" 
                                                 style="font-size: 1.1rem; text-transform: uppercase;"

@@ -482,6 +482,46 @@ class LumberExportShipment(models.Model):
             if not lots:
                 raise UserError(_("No hay lotes asignados para rebajar stock."))
 
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            # 🛡️ GUARDA ANTI-FUGA (2026-06-18):
+            # Defensa primaria: technical_validation='rejected'
+            # (estado persistente en el lote, sobrevive a la
+            # desvinculación de guia_processing_id).
+            # Defensa secundaria: guía asociada en estado 'draft'.
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            rejected_lots = lots.filtered(lambda l: l.technical_validation == 'rejected')
+            if rejected_lots:
+                lot_names = "\n- ".join(rejected_lots.mapped('name')[:5])
+                raise UserError(
+                    "⛔ DENEGADO EXPORTACIÓN - LOTES REVERTIDOS\n\n"
+                    f"Los siguientes lotes fueron marcados como 'Rechazados' "
+                    f"porque su guía de origen fue devuelta a borrador:\n"
+                    f"- {lot_names}\n\n"
+                    "No puede exportar lotes de guías revertidas. "
+                    "Vuelva a procesar la guía para regenerar lotes "
+                    "válidos antes de zarpar."
+                )
+            guia_processing_model = self.env.get('madenat.guia.processing')
+            if guia_processing_model:
+                draft_processing_ids = guia_processing_model.search([
+                    ('lot_ids', 'in', lots.ids),
+                    ('state', '=', 'draft'),
+                ])
+                if draft_processing_ids:
+                    offending_lots = lots.filtered(
+                        lambda l: l.guia_processing_id in draft_processing_ids
+                    )
+                    lot_names = "\n- ".join(offending_lots.mapped('name')[:5])
+                    guia_names = ", ".join(draft_processing_ids.mapped('name'))
+                    raise UserError(
+                        "⛔ DENEGADO EXPORTACIÓN - GUÍA REVERTIDA\n\n"
+                        f"Los siguientes lotes pertenecen a guías en estado "
+                        f"'Borrador' (revertidas):\n- {lot_names}\n\n"
+                        f"Guías afectadas: {guia_names}\n\n"
+                        "No puede exportar lotes de guías revertidas. "
+                        "Vuelva a procesar la guía antes de zarpar."
+                    )
+
             # 🟢 INSERTO QUIRÚRGICO 1: Buscamos dónde están físicamente guardados los lotes hoy
             quants = self.env['stock.quant'].search([
                 ('lot_id', 'in', lots.ids),

@@ -197,15 +197,6 @@ class StockLotExtended(models.Model):
     # ==============================================================================
     # SECCIÓN 1: RELACIONES Y TRAZABILIDAD BÁSICA
     # ==============================================================================
-        # === TRAZABILIDAD ORIGEN  ===
-    lumber_reception_id = fields.Many2one(
-        'lumber.reception', 
-        string="Recepción de Origen",
-        readonly=True,
-        help="Enlace a la recepción donde se ingresó este paquete."
-    )
-
-    
     reception_id = fields.Many2one(
         'lumber.reception',
         string='Recepción de Compra',
@@ -545,12 +536,6 @@ class StockLotExtended(models.Model):
     # ==============================================================================
     # SECCIÓN 6: DIMENSIONES FINALES POST-PROCESO...
     # ==============================================================================
-    espesor_nominal_mm = fields.Float(
-     string='Espesor Nominal (mm)', 
-     digits=(16, 3),
-     help="Espesor comercial de compra (ej: 55mm). Pestaña 2."
-    )
-
     ancho_nominal_mm = fields.Float(
         string='Ancho Nominal (mm)',
         digits=(16, 3),

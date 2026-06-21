@@ -4,21 +4,28 @@
         <field name="name">madenat.guia.mass.update.form</field>
         <field name="model">madenat.guia.mass.update</field>
         <field name="arch" type="xml">
-            <form string="Fijar Nominal y Subproducto">
+            <form string="Fijar valores comerciales masivos">
                 <sheet>
                     <div class="alert alert-info" role="alert">
-                        <i class="fa fa-info-circle" aria-hidden="true" title="Información"/> 
-                        El <strong>Espesor</strong> recalculará las fracciones visuales (ej: 6/4).
+                        <i class="fa fa-info-circle" aria-hidden="true" title="Información"/>
+                        Puede actualizar de forma masiva el <strong>espesor nominal</strong>,
+                        el <strong>subproducto</strong> y/o el <strong>producto</strong>.
+                        El espesor solo recalculará la fracción visual si se informa.
                     </div>
                     <group>
                         <group>
-                            <field name="new_thickness_mm" 
-                                   placeholder="Ej: 45.0"
+                            <field name="new_thickness_mm"
+                                   placeholder="Opcional, ej: 45.0"
                                    class="oe_inline"/>
                         </group>
                         <group>
-                            <field name="subproducto_id" 
-                                   placeholder="Seleccione..."
+                            <field name="subproducto_id"
+                                   placeholder="Opcional"
+                                   options="{'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="product_id"
+                                   placeholder="Opcional"
                                    options="{'no_open': True}"/>
                         </group>
                     </group>
@@ -32,7 +39,7 @@
     </record>
 
     <record id="action_madenat_guia_mass_update" model="ir.actions.act_window">
-        <field name="name">Fijar Nominal y Subproducto</field>
+        <field name="name">Fijar valores comerciales masivos</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">madenat.guia.mass.update</field>
         <field name="view_mode">form</field>

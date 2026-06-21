@@ -757,7 +757,7 @@ class MadenatGuiaProcessing(models.Model):
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('verified', '🔍 Por Verificar'),
-        ('processed', '📦 Procesada'),
+        ('processed', '📦 Procesada (legacy)'),
         ('validated', '✅ Validada'),
         ('cancelled', '❌ Cancelada'),
     ], string='Estado', default='draft', required=True, tracking=True)
@@ -767,12 +767,44 @@ class MadenatGuiaProcessing(models.Model):
     partner_id = fields.Many2one('res.partner', string="Proveedor / Transportista", required=True, tracking=True)
     order_id = fields.Many2one('purchase.order', string="Orden de Compra", tracking=True)
     
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC (Patch 2026-06-18)
+    # Separación referencia documental vs vínculo operativo.
+    # oc_reference_raw NUNCA se sobrescribe al vincular una purchase.order.
+    # ══════════════════════════════════════════════════════════════════════════════
+    oc_reference_raw = fields.Char(
+        string="OC Documental",
+        readonly=True,
+        copy=False,
+        tracking=True,
+        help="Referencia de OC extraída del documento original. Nunca se sobrescribe."
+    )
+    oc_reference_norm = fields.Char(
+        string="OC Normalizada (matching)",
+        compute='_compute_oc_reference_norm',
+        store=True,
+        copy=False,
+        help="Clave técnica normalizada para matching: solo A-Z0-9 mayúsculas, sin espacios ni puntuación. Derivada automáticamente de oc_reference_raw."
+    )
+    oc_match_status = fields.Selection([
+        ('not_found', 'No encontrada'),
+        ('single_match', 'Coincidencia exacta'),
+        ('multi_match', 'Múltiples coincidencias'),
+        ('manual', 'Vinculación manual'),
+        ('created', 'Creada desde guía'),
+    ], string="Estado Match OC", default='not_found', tracking=True, copy=False)
+    oc_match_note = fields.Text(
+        string="Nota de Match OC",
+        copy=False,
+        help="Bitácora de reconciliación de OC."
+    )
+    
     # Adjuntos
     pdf_attachment_id = fields.Many2one('ir.attachment', string="Archivo PDF Guía")
     excel_attachment_id = fields.Many2one('ir.attachment', string="Archivo Excel Packing List")
 
     # Binarios para UX
-    oc_pdf_file = fields.Binary(string="PDF Orden de Compra (binario)")
+    oc_pdf_file = fields.Binary(string="PDF Orden de Compra (OC)")
     oc_pdf_filename = fields.Char(string="Nombre PDF OC")
     guide_pdf_file = fields.Binary(string="PDF Guía (binario)")
     guide_pdf_filename = fields.Char(string="Nombre PDF Guía")
@@ -880,15 +912,6 @@ class MadenatGuiaProcessing(models.Model):
     # Campos activos: líneas 906-912 con compute=_compute_all_totals (método real).
     # Las definiciones removidas usaban _compute_volumenes_reales (método inexistente).
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # ✅ CORRECCIÓN 1: can_validate UNIFICADO
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    can_validate = fields.Boolean(
-        string="Puede validar", 
-        compute="_compute_can_validate", 
-        store=False,
-        help="Combinación de validación de checklist + volumen físico"
-    )
-    
     can_cancel = fields.Boolean(string="Puede cancelar", compute="_compute_can_cancel")
     can_reopen = fields.Boolean(string="Puede reabrir", compute="_compute_can_reopen")
     cancel_reason = fields.Text(string="Motivo cancelación")
@@ -1046,8 +1069,13 @@ class MadenatGuiaProcessing(models.Model):
                 }
 
                 # --- C. GESTIÓN DE PRODUCTO ---
-                group_code = re.sub(r'[^A-Z0-9]', '_', raw_product_name.upper())
-                product = rec.find_or_create_product(group_code, raw_product_name)
+                # Prioridad: product_id fijado manualmente (wizard) > búsqueda automática
+                if item.product_id:
+                    product = item.product_id
+                    group_code = product.default_code or product.name
+                else:
+                    group_code = re.sub(r'[^A-Z0-9]', '_', raw_product_name.upper())
+                    product = rec.find_or_create_product(group_code, raw_product_name)
 
                 # --- D. CREACIÓN DEL LOTE ---
                 lot = rec._create_or_get_lot(
@@ -1106,7 +1134,6 @@ class MadenatGuiaProcessing(models.Model):
                     'vol_total_m3': total_vol,
                     'total_paquetes': total_pkg,
                     'total_lotes_unicos': len(set(d['lote_code'] for d in lot_data)),
-                    'state': 'processed',
                     'date_processed': fields.Datetime.now()
                 })
                 
@@ -1281,6 +1308,11 @@ class MadenatGuiaProcessing(models.Model):
         # ═══════════════════════════════════════════════════════════════════════════════
         update_vals = {'state': 'verified'}  # Estado original que ya estaba
         
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # 🏷️ TRAZABILIDAD OC: Extraer referencia documental del PDF (NUNCA sobrescribir)
+        # ═══════════════════════════════════════════════════════════════════════════════
+        oc_reference_detected = None
+        
         if self.pdf_attachment_id or self.guide_pdf_file:
             try:
                 archivo_pdf = self.pdf_attachment_id or self._store_binary_as_attachment(
@@ -1322,6 +1354,14 @@ class MadenatGuiaProcessing(models.Model):
                 if pdf_data.get('service_code'):
                     update_vals['service_code'] = pdf_data['service_code']
                 
+                # 🏷️ Extraer OC documental del PDF (prioridad 1)
+                if pdf_data.get('orden_compra'):
+                    oc_reference_detected = pdf_data['orden_compra']
+                    _logger.info(
+                        f"📄 OC documental detectada en PDF: {oc_reference_detected} "
+                        f"para Guía {self.name}"
+                    )
+                
                 _logger.info(
                     f"✅ PDF procesado - Guía: {self.name} | "
                     f"Costo Total: ${pdf_data.get('additional_cost', 0):,.0f} CLP | "
@@ -1334,10 +1374,54 @@ class MadenatGuiaProcessing(models.Model):
             except Exception as e:
                 _logger.warning(f"⚠️ PDF no procesado (no crítico): {e}")
                 # No hacemos raise - dejamos que el flujo continúe sin PDF
+        
+        # 🏷️ Fallback: OC desde Excel si no vino en PDF (prioridad 2)
+        if not oc_reference_detected:
+            oc_reference_detected = packing_data.get('oc_reference')
+            if oc_reference_detected:
+                _logger.info(
+                    f"📊 OC documental detectada en Excel: {oc_reference_detected} "
+                    f"para Guía {self.name}"
+                )
+        
+        # 🏷️ Persistir oc_reference_raw: permitir actualización si el valor detectado
+        # es más completo que el almacenado (ej: 'MC 2506-01' vs '2506-01').
+        # Esto corrige extracciones truncadas de versiones anteriores del regex
+        # sin sobrescribir referencias correctas ya establecidas.
+        if oc_reference_detected:
+            stored = (self.oc_reference_raw or '').strip()
+            detected_norm = self._normalize_oc_key(oc_reference_detected)
+            stored_norm = self._normalize_oc_key(stored)
+            # Actualizar si: no existe valor previo, o el nuevo contiene más información
+            # (el normalizado del nuevo es más largo y contiene al normalizado del viejo)
+            if not stored:
+                update_vals['oc_reference_raw'] = oc_reference_detected
+                _logger.info(
+                    f"🏷️ oc_reference_raw persistido (nuevo): {oc_reference_detected} "
+                    f"para Guía {self.name}"
+                )
+            elif len(detected_norm) > len(stored_norm) and stored_norm in detected_norm:
+                update_vals['oc_reference_raw'] = oc_reference_detected
+                _logger.info(
+                    f"🏷️ oc_reference_raw corregido: '{stored}' → '{oc_reference_detected}' "
+                    f"(detección más completa) para Guía {self.name}"
+                )
+            elif detected_norm != stored_norm:
+                _logger.info(
+                    f"🏷️ oc_reference_raw NO actualizado: detectado='{oc_reference_detected}' "
+                    f"(norm='{detected_norm}') ≠ almacenado='{stored}' (norm='{stored_norm}') "
+                    f"para Guía {self.name} — se conserva el valor existente."
+                )
         # ═══════════════════════════════════════════════════════════════════════════════
      
       
-        self.write(update_vals)  # Ahora escribe state + datos del PDF (si existen)
+        self.write(update_vals)  # Ahora escribe state + datos del PDF + oc_reference_raw (si existen)
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # 🏷️ MATCH DE OC: Intentar auto-vincular si aplica
+        # ═══════════════════════════════════════════════════════════════════════════════
+        self._match_purchase_order()
+        # ═══════════════════════════════════════════════════════════════════════════════
         
         # Mostrar notificación Y recargar la vista (sin cambios)
         return {
@@ -1446,38 +1530,81 @@ class MadenatGuiaProcessing(models.Model):
 
     def action_validate(self):
         """
-        🚀 VERSIÓN v23.0 (SELF-HEALING): AUTORREPARACIÓN + INYECCIÓN NOMINAL
+        🚀 VERSIÓN v24.0 (FLUJO UNIFICADO): do_full_processing + autorreparación + validación
         ===================================================================
-        Mejoras Críticas:
-        0. 🔧 AUTORREPARACIÓN: Detecta si el producto es 'Consumible' y lo fuerza a 'Almacenable'
-           antes de procesar, garantizando la creación de Stock (Quants).
-        1. 🛡️ BLINDAJE: Verifica que el destino sea Bodega (Internal).
-        2. 👻 LIMPIEZA: Elimina fantasmas.
-        3. 💎 NOMINAL: Inyecta volumen de compra.
-        4. 🔄 REFRESH: Recarga la interfaz.
+        Fusiona el procesamiento de lotes y la validación de stock en un solo paso atómico.
+        Ejecutable desde estado 'verified'.
+        
+        Fases:
+        0. 🔧 AUTORREPARACIÓN: Asegura que los productos sean Almacenables antes de reservar.
+        1. 🏭 PROCESAMIENTO: Crea lotes y picking draft (do_full_processing).
+        2. 🛡️ BLINDAJE: Verifica que el destino sea Bodega (Internal).
+        3. 👻 LIMPIEZA + 💎 NOMINAL: Elimina fantasmas e inyecta volumen de compra.
+        4. 🏁 VALIDACIÓN: Confirma, asigna y valida el picking.
         """
         self.ensure_one()
-        _logger.info(f"🔍 [START] Validando Guía {self.name} - MODO: Nominal + Autorreparación")
+        _logger.info(f"🔍 [START] Validando Guía {self.name} - MODO: Unificado (verified → validated)")
 
         # 1. Validaciones Previas
-        if self.state != 'processed':
-            raise ValidationError("⛔ La guía debe estar en estado 'Procesada' para validar.")
+        if self.state not in ('verified', 'processed'):
+            raise ValidationError(
+                "⛔ La guía debe estar en estado 'Verificada' para aprobar e ingresar a stock.\n"
+                "Use primero el botón 'Cargar y Verificar Datos' si aún no lo ha hecho."
+            )
+
+        # =======================================================
+        # 🛡️ BLINDAJE DE INTEGRIDAD OPERATIVA (2026-06-18)
+        # Bloquea el ingreso a stock cuando hay datos críticos inválidos.
+        # =======================================================
+        lines_sin_espesor = self.processing_line_ids.filtered(
+            lambda l: not l.espesor_nominal_mm or l.espesor_nominal_mm <= 0
+        )
+        if lines_sin_espesor:
+            raise ValidationError(
+                "⛔ VALIDACIÓN DE DIMENSIONES FALLIDA\n\n"
+                "Hay {} línea(s) sin espesor nominal asignado.\n"
+                "Use la pestaña 'Análisis Comercial (OC)' y el botón "
+                "'Fijar Nominal Masivo' para completar los espesores "
+                "antes de aprobar el ingreso a stock.".format(len(lines_sin_espesor))
+            )
+
+        lines_sin_subproducto = self.processing_line_ids.filtered(
+            lambda l: not l.subproducto_id
+        )
+        if lines_sin_subproducto:
+            raise ValidationError(
+                "⛔ VALIDACIÓN DE PRODUCTO FALLIDA\n\n"
+                "Hay {} línea(s) sin subproducto asignado.\n"
+                "Use la pestaña 'Análisis Comercial (OC)' para asignar "
+                "un subproducto (FAS, S2S, Rough, etc.) a cada línea "
+                "antes de aprobar el ingreso a stock.".format(len(lines_sin_subproducto))
+            )
+        # =======================================================
 
         # =======================================================
         # 🔧 FASE 0: AUTORREPARACIÓN DE MAESTROS (CRÍTICO ODOO 18)
+        # Debe ejecutarse ANTES de cualquier acción que cree o reserve stock.
         # =======================================================
-        # Antes de mover nada, aseguramos que los productos sean Almacenables.
-        # Si son 'Consumibles' (is_storable=False), Odoo NO crea stock.
         productos_involucrados = self.processing_line_ids.mapped('product_id')
         for product in productos_involucrados:
-            # Usamos sudo() para saltar reglas de permisos si el usuario no es admin de inventario
             tmpl = product.product_tmpl_id.sudo()
             if not tmpl.is_storable:
                 _logger.warning(f"🔧 [FIX] El producto '{product.name}' era Consumible. Convirtiendo a ALMACENABLE.")
                 tmpl.write({
-                    'is_storable': True, 
-                    'type': 'consu' # En Odoo 18, type='consu' + is_storable=True es lo correcto
+                    'is_storable': True,
+                    'type': 'consu'
                 })
+        # =======================================================
+
+        # =======================================================
+        # 🏭 FASE 1: PROCESAMIENTO DE LOTES (solo si viene de verified)
+        # Si la guía ya está en 'processed' (legacy), saltamos esta fase.
+        # =======================================================
+        if self.state == 'verified':
+            _logger.info(f"🏭 [FASE 1] Ejecutando do_full_processing() desde verified para Guía {self.name}")
+            self.do_full_processing()
+            # Refrescar el recordset para obtener el estado actualizado y lot_ids
+            self.invalidate_recordset()
         # =======================================================
 
         # 2. Recuperar o Crear Picking
@@ -1829,14 +1956,68 @@ class MadenatGuiaProcessing(models.Model):
             self.picking_ids = [(4, picking.id)]
 
         _logger.info(f"✅ Albarán maestro {picking.name} generado con éxito.")
-        
-        # Confirmar automáticamente para que pase de 'Borrador' a 'Preparado'
-        picking.action_confirm()
         return picking
 
     # ==============================================================================================
     #                                     3. LÓGICA DE PARSEO
     # ==============================================================================================
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ FASE 2B: VALIDADOR DE PLAUSIBILIDAD DE REFERENCIA OC
+    # ══════════════════════════════════════════════════════════════════════════════
+    _OC_HEADER_NOISE = {
+        'PRODUCTOS', 'PRIMARIOS', 'ELABORACION', 'MADERA', 'REFERENCIAS',
+        'DOCUMENTO', 'DOCUMENTOS', 'FOLIO', 'FECHA', 'MOTIVO', 'TIPO',
+        'OTROS', 'GUIA', 'DESPACHO', 'ORDEN', 'COMPRA', 'NRO', 'NUMERO',
+        'EMISION', 'VENDEDOR', 'COMPRADOR', 'DIRECCION', 'CIUDAD', 'PAIS',
+        'TELEFONO', 'EMAIL', 'CONTACTO', 'RUT', 'RAZON', 'SOCIAL',
+    }
+
+    def _is_plausible_oc_reference(self, candidate):
+        """
+        Fase 2B: Filtro anti-falsos-positivos para referencias de OC.
+        
+        Reglas de rechazo:
+        1. Longitud > 50 caracteres
+        2. No contiene ningún dígito
+        3. Contiene 3 o más palabras del vocabulario de encabezados DTE/Documento
+        4. Es un bloque de texto narrativo (más de 6 palabras)
+        
+        Reglas de aceptación:
+        - Referencias tipo: MC 2506-01, MC-2506-01, OC 2506, 80123456
+        - Estructura: prefijo opcional (2-3 letras) + dígitos + opcional (-digitos)
+        """
+        if not candidate:
+            return False
+        c = str(candidate).strip()
+        # 1. Longitud máxima razonable para una referencia de OC
+        if len(c) > 50:
+            _logger.debug(f"_is_plausible_oc_reference: rechazado por longitud {len(c)}: {c[:80]}")
+            return False
+        # 2. Debe contener al menos un dígito
+        if not re.search(r'\d', c):
+            _logger.debug(f"_is_plausible_oc_reference: rechazado sin dígitos: {c!r}")
+            return False
+        # 3. Contar palabras del vocabulario de ruido de encabezados
+        words = set(re.findall(r'[A-Z]{3,}', c.upper()))
+        noise_hits = words & self._OC_HEADER_NOISE
+        if len(noise_hits) >= 3:
+            _logger.debug(
+                f"_is_plausible_oc_reference: rechazado por ruido DTE "
+                f"({len(noise_hits)} hits: {noise_hits}): {c[:80]}"
+            )
+            return False
+        # 4. Demasiadas palabras → probablemente texto narrativo, no una referencia
+        all_words = c.split()
+        if len(all_words) > 6:
+            _logger.debug(f"_is_plausible_oc_reference: rechazado por >6 palabras: {c[:80]}")
+            return False
+        # 5. La referencia debe contener un token con dígitos (ej: 2506, 80123456)
+        tokens_with_digits = [w for w in all_words if re.search(r'\d', w)]
+        if not tokens_with_digits:
+            _logger.debug(f"_is_plausible_oc_reference: rechazado sin token numérico: {c!r}")
+            return False
+        return True
 
     def _parse_dispatch_pdf(self, attachment):
         try:
@@ -1850,20 +2031,114 @@ class MadenatGuiaProcessing(models.Model):
             # SECCIÓN 1: EXTRACCIÓN DE GUÍA (sin cambios)
             # ══════════════════════════════════════════════════════════
             guia = re.search(r'Gu[ií]a[-\s]*N[oº]\s*[:\-]?\s*(\d+)', texto)
+
+            # ── TEMPORAL: diagnóstico de texto alrededor de MC/OC ──
+            if self.name and '19846' in str(self.name):
+                _logger.warning("🔬 DIAG OCR 19846 — fragmentos ±120 chars alrededor de MC/OC:")
+                for m in re.finditer(r'(?:MC|OC)', texto, re.I):
+                    s = max(0, m.start()-120)
+                    e = min(len(texto), m.end()+120)
+                    _logger.warning("   → …%r…", texto[s:e])
+                _logger.warning("🔬 DIAG OCR 19846 — texto completo (%d chars) dump chunk 0..600: %r",
+                                len(texto), texto[:600])
             
             # ══════════════════════════════════════════════════════════
-            # SECCIÓN 2: EXTRACCIÓN DE ORDEN DE COMPRA (sin cambios)
+            # SECCIÓN 2: EXTRACCIÓN DE ORDEN DE COMPRA (Fase 2B reforzada)
             # ══════════════════════════════════════════════════════════
-            oc_patterns = [
-                r'(?:OC|MC|Orden)[\s\.\-:]*([A-Z0-9]+(?:\s*[-]\s*[A-Z0-9]+)+)', 
-                r'801[\s\.\-]*(\d+)'
-            ]
+            # Primero: buscar patrón específico MC/OC + 2+ segmentos numéricos (prioridad máxima)
+            # Requiere al menos 2 bloques de dígitos después del prefijo (ej: MC 2506-01, OC-2506-01)
+            # Patch 2026-06-18: separador flexible [\s\-]+ tolera " - " (espacio-guion-espacio)
+            # presente en PDFs donde el OCR o el formato original inserta espacios alrededor del guion.
+            oc_specific_full = re.findall(
+                r'\b((?:MC|OC)\s*[:.\-]?\s*\d{2,4}[\s\-]+\d{2,4}(?:[\s\-]+\d{2,4}(?!\/|\d))*)',
+                texto, re.I
+            )
+
+            # ── TEMPORAL: log Fase A full candidates ──
+            if self.name and '19846' in str(self.name):
+                _logger.warning("🔬 DIAG 19846 — Fase A full candidates (raw): %r",
+                                [c.strip() for c in set(oc_specific_full)])
+                _logger.warning("🔬 DIAG 19846 — Fase A full candidates (dedup): %r",
+                                sorted(set(oc_specific_full), key=lambda x: len(x), reverse=True))
+
             oc_name = False
-            for p in oc_patterns:
-                match = re.search(p, texto, re.I)
-                if match:
-                    oc_name = re.sub(r'\s*-\s*', '-', match.group(1))
-                    break
+            if oc_specific_full:
+                # Preferir el match más largo/completo (más segmentos = más preciso)
+                for candidate in sorted(set(oc_specific_full), key=lambda x: len(x), reverse=True):
+                    candidate = re.sub(r'\s+', ' ', candidate.strip())
+                    plausible = self._is_plausible_oc_reference(candidate)
+                    if self.name and '19846' in str(self.name):
+                        _logger.warning("🔬 DIAG 19846 — Fase A full: candidate=%r plausible=%s",
+                                        candidate, plausible)
+                    if plausible:
+                        oc_name = candidate
+                        _logger.info(
+                            f"📄 OC específica detectada en PDF: {oc_name!r} "
+                            f"para Guía {self.name}"
+                        )
+                        break
+            
+            # Fallback: una sola palabra numérica después de MC/OC (ej: MC 2506)
+            if not oc_name:
+                oc_specific_short = re.findall(
+                    r'\b((?:MC|OC)\s*[:.\-]?\s*\d{2,4})',
+                    texto, re.I
+                )
+
+                # ── TEMPORAL: log Fase A short candidates ──
+                if self.name and '19846' in str(self.name):
+                    _logger.warning("🔬 DIAG 19846 — Fase A short candidates (raw): %r",
+                                    [c.strip() for c in set(oc_specific_short)])
+
+                if oc_specific_short:
+                    for candidate in sorted(set(oc_specific_short), key=lambda x: len(x), reverse=True):
+                        candidate = re.sub(r'\s+', ' ', candidate.strip())
+                        plausible = self._is_plausible_oc_reference(candidate)
+                        if self.name and '19846' in str(self.name):
+                            _logger.warning("🔬 DIAG 19846 — Fase A short: candidate=%r plausible=%s",
+                                            candidate, plausible)
+                        if plausible:
+                            oc_name = candidate
+                            _logger.info(
+                                f"📄 OC específica (corta) detectada en PDF: {oc_name!r} "
+                                f"para Guía {self.name}"
+                            )
+                            break
+            
+            # Fallback amplio solo si no se encontró específica
+            if not oc_name:
+                oc_patterns = [
+                    r'((?:MC|OC|Orden)\s*[:.\-]?\s*[A-Z0-9]+(?:[\s\-][A-Z0-9]+)+)',
+                    r'801[\s\.\-]*(\d+)'
+                ]
+
+                # ── TEMPORAL: log Fase B candidates ──
+                if self.name and '19846' in str(self.name):
+                    _logger.warning("🔬 DIAG 19846 — Fase B fallback: evaluando patterns %r",
+                                    oc_patterns)
+
+                for p in oc_patterns:
+                    for match in re.finditer(p, texto, re.I):
+                        raw = match.group(1).strip()
+                        candidate = re.sub(r'\s+', ' ', raw)
+                        plausible = self._is_plausible_oc_reference(candidate)
+                        if self.name and '19846' in str(self.name):
+                            _logger.warning("🔬 DIAG 19846 — Fase B: candidate=%r plausible=%s pattern=%r",
+                                            candidate, plausible, p)
+                        if plausible:
+                            oc_name = candidate
+                            _logger.info(
+                                f"📄 OC detectada en PDF (fallback): {oc_name!r} "
+                                f"para Guía {self.name}"
+                            )
+                            break
+                    if oc_name:
+                        break
+
+            # ── TEMPORAL: log final selection ──
+            if self.name and '19846' in str(self.name):
+                _logger.warning("🔬 DIAG 19846 — FINAL SELECTION: oc_name=%r (type=%s)",
+                                oc_name, type(oc_name).__name__)
 
             # ══════════════════════════════════════════════════════════
             # SECCIÓN 3: EXTRACCIÓN DE VOLUMEN (sin cambios)
@@ -2356,11 +2631,12 @@ class MadenatGuiaProcessing(models.Model):
                 s = " ".join([str(x) for x in r if pd.notna(x)])
                 
                 # Uso del alias seguro 'regex_lib'
-                # Regex busca: "OC", "MC" u "Orden" seguido de alfanuméricos y guiones
-                m = regex_lib.search(r'(?:OC|MC|Orden)[\s\.\-:]*([A-Z0-9]+(?:\s*[-]\s*[A-Z0-9]+)+)', s, regex_lib.I)
+                # Fase 2B: capturar referencia COMPLETA incluyendo prefijo MC/OC
+                m = regex_lib.search(r'((?:MC|OC|Orden)\s*[:.\-]?\s*[A-Z0-9]+(?:[\s\-][A-Z0-9]+)+)', s, regex_lib.I)
                 
                 if m: 
-                    return m.group(1).replace(' ', '')
+                    raw = m.group(1).strip()
+                    return re.sub(r'\s+', ' ', raw)  # normalizar espacios
                     
         except Exception as e: 
             # 3. ENTENDER el problema: Capturamos la excepción real en lugar de silenciarla.
@@ -2442,14 +2718,417 @@ class MadenatGuiaProcessing(models.Model):
             if (rec.additional_cost or 0) > 0 and (rec.vol_fisico or 0) <= 0:
                 raise UserError("Monto > 0 exige volumen físico > 0.")
 
-    def _create_basic_purchase_order(self, ref):
-        return self.env['purchase.order'].create({
+    def _create_basic_purchase_order(self, ref, ingestion_source_ref=''):
+        """Crea una purchase.order básica con trazabilidad documental."""
+        po_vals = {
             'name': ref, 
             'partner_id': self.partner_id.id, 
             'state': 'draft',
             'currency_id': self.env.company.currency_id.id, 
             'date_order': fields.Datetime.now()
+        }
+        # Conservar referencia documental en nota interna si el modelo lo soporta
+        ingestion_ref = ingestion_source_ref or self.oc_reference_raw or self.name
+        if hasattr(self.env['purchase.order'], 'ingestion_source_ref'):
+            po_vals['ingestion_source_ref'] = ingestion_ref
+        return self.env['purchase.order'].create(po_vals)
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ FASE 2A — CREAR OC DESDE PDF / GUÍA (MANUAL-ASISTIDA) (Patch 2026-06-18)
+    # ══════════════════════════════════════════════════════════════════════════════
+    def _extract_po_draft_values_from_oc_pdf(self):
+        """
+        Extrae valores candidatos desde el PDF de OC (oc_pdf_file) para prellenado seguro.
+        Busca patrones típicos de órdenes de compra madereras chilenas.
+        
+        Retorna dict con claves (solo las encontradas con alta confianza):
+            - oc_reference_raw / name
+            - supplier_name
+            - payment_terms_text
+            - delivery_window_text
+            - quoted_volume_text
+            - quoted_price_text
+        
+        Si no hay PDF de OC o la extracción falla, retorna dict vacío sin error.
+        """
+        self.ensure_one()
+        result = {}
+        
+        # Determinar fuente del PDF de OC — SOLO desde oc_pdf_file
+        if not self.oc_pdf_file:
+            return result
+        import base64
+        try:
+            pdf_bytes = base64.b64decode(self.oc_pdf_file)
+            pdf_name = self.oc_pdf_filename or 'OC PDF'
+        except Exception:
+            _logger.warning("_extract_po_draft_values: no se pudo decodificar oc_pdf_file")
+            return result
+        if not pdf_bytes:
+            return result
+        
+        try:
+            import io
+            pdf_file = io.BytesIO(pdf_bytes)
+            texto = ''
+            with pdfplumber.open(pdf_file) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        texto += page_text + '\n'
+            
+            if not texto.strip():
+                return result
+            
+            # ── Referencia OC (Fase 2B: capturar prefijo MC/OC) ──
+            oc_patterns = [
+                r'((?:MC|OC|Orden\s+de\s+Compra)\s*[:.\-]?\s*[A-Z0-9]+(?:[\s\-][A-Z0-9]+)+)',
+                r'(?:Referencia|Ref\.?|N[oº]\s*OC)\s*[:.\-]?\s*([A-Z0-9]+(?:[\s\-][A-Z0-9]+)+)',
+            ]
+            for p in oc_patterns:
+                m = re.search(p, texto, re.I)
+                if m:
+                    raw = m.group(1).strip()
+                    result['name'] = re.sub(r'\s+', ' ', raw)
+                    break
+            
+            # ── Proveedor ──
+            supplier_match = re.search(
+                r'(?:Proveedor|Vendedor|Raz[oó]n\s+Social)[\s\.\-:]*(.+?)(?:\n|$)',
+                texto, re.I
+            )
+            if supplier_match:
+                candidate = supplier_match.group(1).strip()
+                # Limpiar: eliminar RUT/dirección si vienen pegados
+                candidate = re.sub(r'\d{1,2}\.\d{3}\.\d{3}[-]\d.*', '', candidate).strip()
+                candidate = re.sub(r'\d{7,9}[-]\d.*', '', candidate).strip()
+                if len(candidate) > 2:
+                    result['supplier_name'] = candidate[:200]  # límite seguro
+            
+            # ── Condición de pago ──
+            payment_match = re.search(
+                r'(?:Condici[oó]n\s+(?:de\s+)?[Pp]ago?|Pago)[\s\.\-:]*(.+?)(?:\n|$)',
+                texto, re.I
+            )
+            if payment_match:
+                result['payment_terms_text'] = payment_match.group(1).strip()[:200]
+            
+            # ── Ventana de entrega ──
+            delivery_match = re.search(
+                r'(?:Entrega|Delivery|Fecha\s+(?:de\s+)?Entrega)[\s\.\-:]*(.+?)(?:\n|$)',
+                texto, re.I
+            )
+            if delivery_match:
+                result['delivery_window_text'] = delivery_match.group(1).strip()[:200]
+            
+            # ── Volumen cotizado ──
+            vol_match = re.search(
+                r'(?:Volumen|Cantidad|M3|Metros\s+C[uú]bicos)[\s\.\-:]*([\d\.,]+)\s*(?:M3|m3|Metros)?',
+                texto, re.I
+            )
+            if vol_match:
+                result['quoted_volume_text'] = vol_match.group(1).strip()[:50]
+            
+            # ── Precio cotizado ──
+            price_match = re.search(
+                r'(?:Precio|USD|Valor\s+Unitario|US\$)[\s\.\-:]*\$?\s*([\d\.,]+)\s*(?:/m3|USD)?',
+                texto, re.I
+            )
+            if price_match:
+                result['quoted_price_text'] = price_match.group(1).strip()[:50]
+            
+            _logger.info(
+                f"_extract_po_draft_values: extraídos {len(result)} valores del PDF OC "
+                f"'{pdf_name}' para guía {self.name}: {list(result.keys())}"
+            )
+            
+        except Exception as e:
+            _logger.warning(
+                f"_extract_po_draft_values: error no crítico procesando PDF OC para guía "
+                f"{self.name}: {e}"
+            )
+        
+        return result
+
+    def action_create_purchase_order_from_document(self):
+        """
+        🏷️ FASE 2A — Crear purchase.order en draft desde guía con trazabilidad documental.
+        
+        Flujo manual-asistido (NO automático):
+        1. Validar que exista oc_reference_raw
+        2. Validar que exista partner_id
+        3. Extraer datos candidatos del PDF de OC si existe
+        4. Crear purchase.order en draft con datos mínimos
+        5. Adjuntar PDF de OC a la purchase.order si existe
+        6. Vincular de vuelta a la guía (order_id, oc_match_status, oc_match_note)
+        7. Abrir formulario de la purchase.order creada
+        
+        Restricciones:
+        - NO confirma la PO (queda draft)
+        - NO crea líneas de compra
+        - NO toca madenat_lumber_purchasing
+        - NO sobrescribe oc_reference_raw
+        """
+        self.ensure_one()
+        
+        # Si ya tiene OC vinculada, abrirla
+        if self.order_id:
+            return self.action_open_po()
+        
+        # Validaciones
+        if not self.oc_reference_raw:
+            raise UserError(
+                "No se puede crear una Orden de Compra sin referencia documental.\n\n"
+                "La guía no tiene una referencia de OC extraída del documento (oc_reference_raw). "
+                "Procese primero el PDF/Excel para detectar la referencia."
+            )
+        
+        if not self.partner_id:
+            raise UserError(
+                "No se puede crear una Orden de Compra sin proveedor.\n\n"
+                "Asigne un Proveedor a la guía antes de crear la OC."
+            )
+        
+        # ── 1. Extraer datos candidatos del PDF de OC si existe ──
+        extracted = {}
+        if self.oc_pdf_file:
+            extracted = self._extract_po_draft_values_from_oc_pdf()
+        
+        # ── 2. Crear purchase.order en draft ──
+        # Nombre canónico: SIEMPRE self.oc_reference_raw (referencia documental persistida).
+        # El nombre extraído del PDF (extracted['name']) es solo dato auxiliar, no reemplaza la referencia.
+        po_name = self._canonize_oc_name(self.oc_reference_raw)
+        po = self._create_basic_purchase_order(po_name)
+        
+        # ── 3. Enriquecer con datos extraídos del PDF (solo si son seguros) ──
+        # Si purchase.order tiene campo partner_ref y tenemos supplier_name
+        if extracted.get('supplier_name') and hasattr(self.env['purchase.order'], 'partner_ref'):
+            po.partner_ref = extracted['supplier_name'][:200]
+        
+        # Agregar nota de origen documental via message_post (NO depende de campo 'notes')
+        note_lines = [
+            f"OC creada manualmente desde guía {self.name}.",
+            f"Referencia documental: {self.oc_reference_raw}.",
+        ]
+        if extracted.get('name') and extracted['name'] != self.oc_reference_raw:
+            note_lines.append(f"Nombre detectado en PDF: {extracted['name']} (auxiliar, no vinculante).")
+        if extracted:
+            extras = []
+            if extracted.get('supplier_name'):
+                extras.append(f"Proveedor: {extracted['supplier_name']}")
+            if extracted.get('payment_terms_text'):
+                extras.append(f"Condición de pago: {extracted['payment_terms_text']}")
+            if extracted.get('delivery_window_text'):
+                extras.append(f"Entrega: {extracted['delivery_window_text']}")
+            if extracted.get('quoted_volume_text'):
+                extras.append(f"Volumen: {extracted['quoted_volume_text']} M3")
+            if extracted.get('quoted_price_text'):
+                extras.append(f"Precio: USD ${extracted['quoted_price_text']}/m3")
+            if extras:
+                note_lines.append("Datos extraídos del PDF de OC:")
+                note_lines.extend(f"  - {e}" for e in extras)
+        po.message_post(body='\n'.join(note_lines))
+        
+        # ── 4. Adjuntar PDF de OC a la purchase.order si existe ──
+        if self.oc_pdf_file:
+            try:
+                self.env['ir.attachment'].create({
+                    'name': self.oc_pdf_filename or 'OC PDF',
+                    'datas': self.oc_pdf_file,
+                    'res_model': 'purchase.order',
+                    'res_id': po.id,
+                    'type': 'binary',
+                })
+                _logger.info(
+                    f"PDF de OC adjuntado a purchase.order {po.name} (id={po.id}) "
+                    f"desde guía {self.name}"
+                )
+            except Exception as e:
+                _logger.warning(
+                    f"No se pudo adjuntar PDF de OC a PO {po.name}: {e}. "
+                    f"La PO se creó igualmente."
+                )
+        
+        # ── 5. Vincular de vuelta a la guía ──
+        # NUNCA sobrescribir oc_reference_raw
+        self.write({
+            'order_id': po.id,
+            'oc_match_status': 'created',
+            'oc_match_note': (
+                f'OC creada manualmente desde guía {self.name} '
+                f'usando referencia documental {self.oc_reference_raw}.'
+            ),
         })
+        
+        _logger.info(
+            f"✅ PO {po.name} (id={po.id}) creada en draft desde guía {self.name}. "
+            f"oc_match_status=created. oc_reference_raw preservado: {self.oc_reference_raw}"
+        )
+        
+        # ── 6. Abrir formulario de la purchase.order creada ──
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Orden de Compra: {po.name}',
+            'res_model': 'purchase.order',
+            'res_id': po.id,
+            'view_mode': 'form',
+            'view_id': False,
+            'target': 'current',
+            'context': dict(self.env.context),
+        }
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC — HELPERS (Patch 2026-06-18)
+    # ══════════════════════════════════════════════════════════════════════════════
+    def _normalize_oc_key(self, value):
+        """Normaliza referencia de OC para matching técnico: solo A-Z0-9 mayúsculas, sin espacios ni puntuación."""
+        if not value:
+            return ''
+        return re.sub(r'[^A-Z0-9]+', '', (value or '').upper())
+
+    @api.depends('oc_reference_raw')
+    def _compute_oc_reference_norm(self):
+        """
+        Fase 2B: Clave técnica normalizada derivada de oc_reference_raw.
+        Ejemplo: 'MC 0708-236' → 'MC0708236'
+        Se usa para matching sin perder el prefijo MC/OC.
+        """
+        for rec in self:
+            rec.oc_reference_norm = rec._normalize_oc_key(rec.oc_reference_raw or '')
+
+    def _canonize_oc_name(self, raw_reference):
+        """
+        Fase 2B: Produce un nombre canónico legible de negocio para usar como name de purchase.order.
+        
+        Reglas:
+        - 'MC 0708-236'  → 'MC 0708-236'  (espacios preservados, formato negocio)
+        - 'MC-2506-01'   → 'MC-2506-01'   (guiones preservados)
+        - '2506-01'      → '2506-01'       (sin prefijo, se acepta tal cual)
+        - 'MC0708236'    → 'MC 0708-236'   (reinsertar espacios si patrón MC+digitos+digitos)
+        
+        NUNCA trunca el prefijo MC/OC. Siempre preserva la identidad documental completa.
+        """
+        if not raw_reference:
+            return raw_reference
+        ref = str(raw_reference).strip()
+        # Si ya tiene formato legible con espacios (ej: 'MC 0708-236'), devolver tal cual
+        if ' ' in ref and any(c.isalpha() for c in ref[:4]):
+            return ref
+        # Si tiene guiones (ej: 'MC-2506-01'), devolver tal cual
+        if '-' in ref and any(c.isalpha() for c in ref[:4]):
+            return ref
+        # Si es solo numérico (ej: '2506-01'), devolver tal cual
+        if not any(c.isalpha() for c in ref):
+            return ref
+        # Caso: MC0708236 (sin separadores) → intentar 'MC 0708-236'
+        m = re.match(r'^([A-Z]{2,3})(\d{2,4})(\d{2,4})$', ref)
+        if m:
+            return f"{m.group(1)} {m.group(2)}-{m.group(3)}"
+        # Fallback: devolver tal cual
+        return ref
+
+    def _match_purchase_order(self):
+        """
+        Busca y vincula una purchase.order usando oc_reference_raw normalizado.
+        Lógica:
+        - si no hay oc_reference_raw → not_found, return False
+        - 1 match único → auto-vincula con status 'single_match'
+        - >1 matches → deja order_id=False con status 'multi_match'
+        - 0 matches → deja order_id=False con status 'not_found'
+        No crea purchase.order automáticamente.
+        Retorna True si se vinculó, False en caso contrario.
+        """
+        self.ensure_one()
+        if not self.oc_reference_raw:
+            self.write({
+                'oc_match_status': 'not_found',
+                'oc_match_note': 'No existe referencia documental de OC para buscar.',
+            })
+            return False
+
+        # Si ya tiene order_id asignado manualmente, respetarlo
+        if self.order_id:
+            _logger.info(
+                f"_match_purchase_order: Guía {self.name} ya tiene order_id={self.order_id.name}, "
+                f"conservando vínculo existente. oc_reference_raw={self.oc_reference_raw}"
+            )
+            # Si el estado es not_found o no está seteado, marcarlo como manual
+            if self.oc_match_status in ('not_found', False):
+                self.write({
+                    'oc_match_status': 'manual',
+                    'oc_match_note': f'Vinculado manualmente a {self.order_id.name}. '
+                                     f'Referencia documental: {self.oc_reference_raw}',
+                })
+            return True
+
+        extracted_oc_raw = self.oc_reference_raw
+        extracted_oc_norm = self.oc_reference_norm or self._normalize_oc_key(extracted_oc_raw or '')
+        normalized_ref = extracted_oc_norm
+        if not normalized_ref:
+            _logger.debug("_match_purchase_order: referencia vacía tras normalización.")
+            return False
+
+        # Buscar purchase.orders del partner en estados permitidos
+        domain = [('state', 'in', ['draft', 'sent', 'purchase', 'done'])]
+        if self.partner_id:
+            domain.append(('partner_id', '=', self.partner_id.id))
+        candidates = self.env['purchase.order'].search(domain)
+
+        # Comparar por nombre normalizado
+        matches = self.env['purchase.order']
+        for po in candidates:
+            candidate_oc_raw = po.name or ''
+            candidate_oc_norm = self._normalize_oc_key(candidate_oc_raw)
+            oc_match_result = (candidate_oc_norm == normalized_ref)
+            _logger.debug(
+                "_match_purchase_order | extracted_oc_raw=%r candidate_oc_raw=%r "
+                "extracted_oc_norm=%r candidate_oc_norm=%r oc_match_result=%s",
+                extracted_oc_raw, candidate_oc_raw,
+                extracted_oc_norm, candidate_oc_norm,
+                oc_match_result,
+            )
+            if oc_match_result:
+                matches |= po
+
+        if len(matches) == 1:
+            po = matches
+            self.write({
+                'order_id': po.id,
+                'oc_match_status': 'single_match',
+                'oc_match_note': f'Auto-match exacto por nombre con {po.name}.',
+            })
+            _logger.info(
+                f"_match_purchase_order: Guía {self.name} auto-vinculada a "
+                f"PO {po.name} (single_match). oc_reference_raw={self.oc_reference_raw}"
+            )
+            return True
+
+        elif len(matches) > 1:
+            self.write({
+                'order_id': False,
+                'oc_match_status': 'multi_match',
+                'oc_match_note': (
+                    f'Se encontraron {len(matches)} OCs coincidentes. '
+                    f'Revisar manualmente.'
+                ),
+            })
+            _logger.warning(
+                f"_match_purchase_order: multi_match ({len(matches)}) para "
+                f"oc_reference_raw={self.oc_reference_raw}. Guía {self.name}."
+            )
+            return False
+
+        else:
+            self.write({
+                'order_id': False,
+                'oc_match_status': 'not_found',
+                'oc_match_note': 'No se encontró una OC coincidente en el sistema.',
+            })
+            _logger.info(
+                f"_match_purchase_order: not_found para oc_reference_raw={self.oc_reference_raw}. "
+                f"Guía {self.name}."
+            )
+            return False
 
     def _assign_costs_to_generated_lots(self, lot_data, packing_data):
         if self.tipo_recepcion != 'service' or self.additional_cost <= 0: 
@@ -2725,10 +3404,6 @@ class MadenatGuiaProcessing(models.Model):
                     'location_dest_id': picking.location_dest_id.id,
                 })
                 
-        # Confirmar el albarán para que pase a estado 'Preparado'
-        if picking.state == 'draft':
-            picking.action_confirm()
-            
         return picking
 
     def _obtener_precio_desde_oc(self, po):
@@ -2765,50 +3440,15 @@ class MadenatGuiaProcessing(models.Model):
                 (rec.excel_attachment_id or rec.excel_file)
             )
 
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # ✅ CORRECCIÓN 1B: Compute UNIFICADO can_validate
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    
-    @api.depends('state', 'vol_fisico', 'validation_status')
-    def _compute_can_validate(self):
-        """
-        ✅ VERSIÓN UNIFICADA: Combina validación de checklist + volumen físico
-        
-        Reglas:
-        1. Debe estar en estado 'processed'
-        2. Debe tener volumen físico > 0
-        3. Si existe checklist, debe estar aprobado (passed o warning)
-        
-        NOTA: Sobreescribe el _compute_can_validate del mixin para agregar
-        validación de volumen físico específica de guías procesadas.
-        """
-        for rec in self:
-            # Validación básica de estado y volumen (requisito de negocio)
-            basic_check = (rec.state == 'processed' and rec.vol_fisico > 0)
-            
-            # Validación de checklist (si existe)
-            checklist_check = True  # Por defecto aprobado si no hay checklist
-            if rec.validation_checklist_ids:
-                # Si hay checklist, debe estar aprobado (passed) o con advertencias (warning)
-                checklist_check = rec.validation_status in ('passed', 'warning')
-            
-            # Resultado final: AMBAS validaciones deben pasar
-            rec.can_validate = basic_check and checklist_check
-            
-            _logger.debug(
-                f"can_validate para {rec.name}: "
-                f"basic={basic_check}, checklist={checklist_check}, final={rec.can_validate}"
-            )
-
     @api.depends('state')
     def _compute_can_cancel(self):
         for rec in self:
-            rec.can_cancel = rec.state in ('draft', 'processed')
+            rec.can_cancel = rec.state in ('draft', 'verified')
 
     @api.depends('state')
     def _compute_can_reopen(self):
         for rec in self:
-            rec.can_reopen = rec.state in ('verified', 'cancelled', 'processed')
+            rec.can_reopen = rec.state in ('verified', 'cancelled')
 
 
 
@@ -3083,12 +3723,19 @@ class MadenatGuiaProcessing(models.Model):
             # =======================================================
             # 4. LIMPIEZA DE LOTES
             # =======================================================
+            # 🛡️ FIX INCIDENTE PRODUCTIVO 2026-06-18:
+            # action_force_cancel debe marcar technical_validation='rejected'
+            # para ser consistente con action_reopen_to_draft y evitar que
+            # lotes huérfanos (guia_processing_id=NULL) aparezcan en el
+            # wizard "Agregar Lotes Físicos" como disponibles.
+            # Sin esta marca, el lote queda con technical_validation='approved'
+            # y reception_id=False, haciéndolo indistinguible de un lote válido.
             if rec.lot_ids:
                 try:
                     rec.lot_ids.write({
-                        
                         'guia_processing_id': False,
                         'estado_trazabilidad': 'recepcionado',
+                        'technical_validation': 'rejected',
                     })
                     rec.write({'lot_ids': [(5, 0, 0)]})
                     _logger.info(f"✅ Lotes desvinculados para Guía {rec.name}")
@@ -3218,8 +3865,26 @@ class MadenatGuiaProcessing(models.Model):
                 rec.message_post(body=f"⚠️ Se detectaron albaranes internos validados ({', '.join(albaranes_hechos.mapped('name'))}). Se desvincularon para permitir el reset.")
 
             # 3. Limpieza de Lotes y Staging
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            # PATCH 2026-06-18: Capturar IDs de lotes ANTES de
+            # desvincularlos, para poder limpiar sus quants en FASE 3.5.
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            revert_lot_ids = list(rec.lot_ids.ids) if rec.lot_ids else []
             if rec.lot_ids:
-                rec.lot_ids.write({'guia_processing_id': False, 'estado_trazabilidad': 'recepcionado'})
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                # 🛡️ CIERRE DE FUGA (2026-06-18):
+                # Desvincular guia_processing_id NO es suficiente porque
+                # logística perdería visibilidad del lote revertido.
+                # Solución: marcar technical_validation='rejected' como
+                # estado persistente en el lote, independiente del
+                # vínculo con la guía. Logística bloqueará lotes con
+                # technical_validation='rejected' aunque no tengan guía.
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                rec.lot_ids.write({
+                    'guia_processing_id': False,
+                    'estado_trazabilidad': 'recepcionado',
+                    'technical_validation': 'rejected',
+                })
                 rec.write({'lot_ids': [(5, 0, 0)]})
 
             if rec.processing_line_ids:
@@ -3227,8 +3892,92 @@ class MadenatGuiaProcessing(models.Model):
                 rec.invalidate_recordset(['processing_line_ids'])
 
             # =======================================================
-            # 🔄 FASE 4: RESET A BORRADOR
+            # 🧹 FASE 3.5: LIMPIEZA DE STOCK RESIDUAL (quants)
             # =======================================================
+            # PATCH 2026-06-18 — Causa raíz CR1:
+            # action_reopen_to_draft NO eliminaba stock.quant, lo que
+            # provocaba que los lotes revertidos siguieran apareciendo
+            # en reportes de logística con quantity > 0.
+            #
+            # Solución: buscar todos los quants asociados a los lotes
+            # revertidos y poner su quantity en 0.0 dentro de un
+            # savepoint para que un fallo parcial no rompa la reversa.
+            # =======================================================
+            if revert_lot_ids:
+                try:
+                    with rec.env.cr.savepoint():
+                        quants_to_clear = rec.env['stock.quant'].sudo().search([
+                            ('lot_id', 'in', revert_lot_ids),
+                            ('quantity', '>', 0),
+                            ('location_id.usage', '=', 'internal'),
+                        ])
+
+                        quant_prev = {
+                            q.id: q.quantity for q in quants_to_clear
+                        }
+                        quants_cleared = len(quants_to_clear)
+
+                        if quants_to_clear:
+                            quants_to_clear.write({'quantity': 0.0})
+
+                            # ── LOG: detalle por quant ──
+                            quant_detail_lines = [
+                                f"  • Quant #{qid}: {prev_qty:.4f} → 0.0000"
+                                for qid, prev_qty in sorted(quant_prev.items())
+                            ]
+                            _logger.info(
+                                "🧹 [FASE 3.5] Reversa Guía %s — %d quants puestos en cero:\n%s",
+                                rec.name, quants_cleared,
+                                '\n'.join(quant_detail_lines),
+                            )
+                            rec.message_post(
+                                body=(
+                                    f"🧹 <strong>Cleanup de Stock Residual:</strong> "
+                                    f"{quants_cleared} existencia(s) puesta(s) en cero "
+                                    f"(quants) de lotes revertidos.<br/>"
+                                    f"Lotes: {len(revert_lot_ids)} | "
+                                    f"Quants: {', '.join(str(qid) for qid in sorted(quant_prev.keys()))}"
+                                )
+                            )
+                        else:
+                            _logger.info(
+                                "🧹 [FASE 3.5] Reversa Guía %s — sin quants residuales "
+                                "que limpiar (lotes: %s)",
+                                rec.name, revert_lot_ids,
+                            )
+                except Exception as e:
+                    _logger.error(
+                        "❌ [FASE 3.5] Error limpiando quants residuales para guía %s: %s",
+                        rec.name, e,
+                    )
+                    rec.message_post(
+                        body=(
+                            f"⚠️ <strong>Cleanup de Stock Parcial:</strong> "
+                            f"No se pudieron poner en cero todos los quants. "
+                            f"Revise manualmente los lotes revertidos.<br/>"
+                            f"Error: {e}"
+                        )
+                    )
+
+            # ── FASE 3.6: Limpieza de stock.move huérfanos ──
+            try:
+                rec._cleanup_orphan_moves_guia()
+            except Exception as e:
+                _logger.warning(
+                    "⚠️ [FASE 3.6] No se pudieron limpiar moves huérfanos "
+                    "para guía %s: %s",
+                    rec.name, e,
+                )
+
+            # =======================================================
+            # 🔄 FASE 4: RESET A BORRADOR (LIMPIEZA COMPLETA DE TRAZABILIDAD)
+            # =======================================================
+            # 🛡️ PATCH 2026-06-18: Cierre de fuga de estado.
+            # Campos financieros y de servicio derivados del PDF deben
+            # limpiarse explícitamente para evitar persistencia silenciosa
+            # de datos de una verificación previa al re-procesar con un
+            # PDF distinto.
+            # También se limpia vol_comercial_pdf (extraído del PDF).
             rec.write({
                 'state': 'draft',
                 'date_processed': False,
@@ -3241,9 +3990,37 @@ class MadenatGuiaProcessing(models.Model):
                 'lineas_procesadas': 0,
                 'lot_details_data': False,
                 'grouping_details_json': False,
+                # ═══════════════════════════════════════════════════════
+                # 🏷️ Fase 2B: limpieza de trazabilidad OC
+                # ═══════════════════════════════════════════════════════
+                'order_id': False,
+                'oc_reference_raw': False,
+                'oc_match_status': 'not_found',
+                'oc_match_note': False,
+                # oc_reference_norm se recalcula automáticamente (compute store=True)
+                # ═══════════════════════════════════════════════════════
+                # 🛡️ CIERRE DE FUGA (2026-06-18):
+                # Limpieza explícita de campos financieros y de servicio
+                # derivados del PDF. Sin esta limpieza, una nueva
+                # verificación con PDF distinto arrastraría valores
+                # residuales de la verificación anterior.
+                # ═══════════════════════════════════════════════════════
+                'additional_cost': 0.0,
+                'rate_usd': 1.0,
+                'rate_date': fields.Date.context_today(self),
+                'service_product_name': False,
+                'service_volume_m3': 0.0,
+                'service_unit_price_clp': 0.0,
+                'service_date': False,
+                'service_code': False,
+                'vol_comercial_pdf': 0.0,
             })
 
-            rec.message_post(body="🔄 **Reversión Exitosa:** Guía reseteada. Albaranes internos previos desvinculados.")
+            rec.message_post(
+                body="🔄 **Reversión Exitosa:** Guía reseteada a borrador. "
+                     "Trazabilidad OC, lotes, staging y campos financieros/PDF limpiados. "
+                     "Albaranes internos previos desvinculados."
+            )
 
 
     # ========================================

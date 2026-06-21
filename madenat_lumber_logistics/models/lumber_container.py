@@ -330,6 +330,10 @@ class LumberContainer(models.Model):
             """
             Sincroniza las líneas de embarque (O2M) y el estado del Lote (container_id).
             MEJORA: Agregada actualización automática de estado_trazabilidad.
+            🛡️ PATCH 2026-06-18: Guarda anti-fuga de estado.
+            Rechaza lotes cuyo guia_processing_id esté en estado 'draft' o
+            cuyo estado_trazabilidad indique reversión, evitando que lotes
+            huérfanos de una guía revertida se cuelen a logística.
             """
             for container in self:
                 # 1. Identificar el estado actual en la DB vs el estado deseado
@@ -339,6 +343,35 @@ class LumberContainer(models.Model):
                 # 2. LOTES AGREGADOS: Marcar dueño, crear línea Y cambiar estado
                 lots_to_add = target_lots_from_wizard - current_lots_in_db
                 for lot in lots_to_add:
+                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    # 🛡️ GUARDA ANTI-FUGA (2026-06-18):
+                    # Defensa primaria: technical_validation='rejected'
+                    # (estado persistente en el lote, sobrevive a la
+                    # desvinculación de guia_processing_id).
+                    # Defensa secundaria: guia_processing_id.state='draft'
+                    # (para lotes con vínculo aún vivo a guía revertida).
+                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    if lot.technical_validation == 'rejected':
+                        from odoo.exceptions import UserError
+                        raise UserError(
+                            "⛔ DENEGADO LOGÍSTICO - LOTE REVERTIDO\n\n"
+                            f"El lote '{lot.name}' fue marcado como 'Rechazado' "
+                            "porque su guía de origen fue devuelta a borrador.\n\n"
+                            "No puede consolidar lotes de una guía revertida. "
+                            "Vuelva a procesar la guía para regenerar lotes "
+                            "válidos antes de usarlos en logística."
+                        )
+                    if lot.guia_processing_id and lot.guia_processing_id.state == 'draft':
+                        from odoo.exceptions import UserError
+                        raise UserError(
+                            "⛔ DENEGADO LOGÍSTICO - GUÍA REVERTIDA\n\n"
+                            f"El lote '{lot.name}' pertenece a la guía "
+                            f"'{lot.guia_processing_id.name}' que se encuentra "
+                            f"en estado 'Borrador' (revertida).\n\n"
+                            "No puede consolidar lotes de una guía que ha sido "
+                            "devuelta a borrador. Vuelva a procesar la guía "
+                            "antes de usar estos lotes en logística."
+                        )
                     lot.write({
                         'container_id': container.id,
                         'estado_trazabilidad': 'consolidado' # 👈 Sincronización de inventario

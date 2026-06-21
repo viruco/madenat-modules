@@ -356,10 +356,10 @@
                         </page>
 
                    <page string="Lotes Asignados">
-                        <field name="lot_ids" 
-                             nolabel="1"
-                             options="{'no_create': True}"
-                             domain="[('estado_trazabilidad', 'in', ['procesado', 'en_patio', 'recepcionado']), ('container_id', '=', False)]"
+                         <field name="lot_ids" 
+                              nolabel="1"
+                              options="{'no_create': True}"
+                              domain="[('estado_trazabilidad', 'in', ['procesado', 'en_patio', 'recepcionado']), ('technical_validation', '=', 'approved'), ('container_id', '=', False)]"
                              context="{'list_view_ref': 'madenat_lumber_logistics.view_stock_lot_shipping_wizard_list'}">
                              <list string="Lotes Asignados" decoration-info="1" default_order="ref">
                                  <field name="ref" string="Etiqueta" width="140px" decoration-bf="1"/>

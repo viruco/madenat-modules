@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Extensión de lumber.reception para integración con compras - Odoo 18 CE
-VERSIÓN CORREGIDA - Manejo robusto de None + Compatible con valores type
+PATCH 2026-06-18: ELIMINADA autocreación de purchase.order.
+Convertido a find-and-link con trazabilidad documental de OC.
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -15,8 +16,18 @@ class LumberReceptionPurchasing(models.Model):
     
     def _find_po_and_supplier(self, dg_data):
         """
-        SOBRESCRITURA: Buscar OC existente o crear automáticamente con campos extendidos
-        MANEJO ROBUSTO DE None
+        SOBRESCRITURA PATCH 2026-06-18: find-and-link SIN autocreación.
+        
+        Busca OC existente por nombre normalizado. Si no encuentra:
+        - Persiste oc_reference_raw con la referencia documental detectada
+        - NO crea purchase.order automáticamente
+        - Deja purchase_id=False, oc_match_status='not_found'
+        - Retorna (False, supplier) para que el flujo continúe con referencia manual
+        
+        Si encuentra match único:
+        - Vincula purchase_id = po.id
+        - Conserva oc_reference_raw (NUNCA se sobrescribe)
+        - oc_match_status = 'singlematch'
         """
         # Validación robusta: manejar None de forma segura
         supplier_rut = dg_data.get('supplier_rut')
@@ -26,7 +37,7 @@ class LumberReceptionPurchasing(models.Model):
         supplier_rut = supplier_rut.strip() if supplier_rut else ''
         po_ref = po_ref.strip() if po_ref else ''
         
-        _logger.info(f"🔍 Buscando OC: {po_ref}, Proveedor: {supplier_rut}")
+        _logger.info(f"🔍 [PATCH 2026-06-18] Buscando OC: {po_ref}, Proveedor: {supplier_rut}")
         
         if not po_ref:
             raise UserError(_("No se detectó referencia de OC en el documento PDF."))
@@ -39,32 +50,73 @@ class LumberReceptionPurchasing(models.Model):
             supplier = self._create_supplier_from_guide(dg_data, supplier_rut)
             self._add_log(f"✅ Proveedor '{supplier.name}' creado automáticamente")
         
-        # Buscar Orden de Compra
-        po = self.env['purchase.order'].search([
-            ('name', '=ilike', po_ref),
-            ('partner_id', '=', supplier.id),
-            ('state', 'in', ['purchase', 'done'])
-        ], limit=1)
+        # ═══════════════════════════════════════════════════════════════
+        # 🏷️ PERSISTIR REFERENCIA DOCUMENTAL (NUNCA sobrescribir)
+        # ═══════════════════════════════════════════════════════════════
+        if po_ref and not self.oc_reference_raw:
+            self.write({'oc_reference_raw': po_ref})
+            _logger.info(
+                f"🏷️ oc_reference_raw persistido en lumber.reception: {po_ref} "
+                f"para Recepción {self.name}"
+            )
         
-        # SI EXISTE - Vincular
+        # ═══════════════════════════════════════════════════════════════
+        # BUSCAR OC EXISTENTE (find-and-link, NO find-or-create)
+        # ═══════════════════════════════════════════════════════════════
+        # Usar normalize_oc_ref del core para matching robusto
+        normalized_ref = self._normalize_oc_ref(po_ref) if hasattr(self, '_normalize_oc_ref') else po_ref.upper().replace(' ', '')
+        
+        candidates = self.env['purchase.order'].search([
+            ('partner_id', '=', supplier.id),
+            ('state', 'in', ['draft', 'sent', 'purchase', 'done'])
+        ])
+        
+        # Match por nombre normalizado
+        po = candidates.filtered(
+            lambda p: (hasattr(self, '_normalize_oc_ref') and self._normalize_oc_ref(p.name or '') == normalized_ref)
+                      or (p.name or '').upper().replace(' ', '') == normalized_ref
+        )[:1]
+        
+        # ═══════════════════════════════════════════════════════════════
+        # SI EXISTE MATCH ÚNICO - Vincular
+        # ═══════════════════════════════════════════════════════════════
         if po:
             self.write({
                 'purchase_id': po.id,
-                'purchase_order': po.name,
                 'supplier_id': supplier.id,
+                'oc_match_status': 'singlematch',
+                'oc_match_note': f'Auto-match por nombre contra PO {po.name}',
+                'manual_po_name': False,
             })
+            self._add_log(f"✅ OC {po.name} vinculada exitosamente (singlematch).")
+            _logger.info(
+                f"✅ [PATCH 2026-06-18] OC {po.name} vinculada a Recepción {self.name}. "
+                f"oc_reference_raw={self.oc_reference_raw}"
+            )
             return po, supplier
         
-        # SI NO EXISTE - Crear automáticamente
+        # ═══════════════════════════════════════════════════════════════
+        # SI NO EXISTE - NO CREAR. Dejar para resolución humana.
+        # ═══════════════════════════════════════════════════════════════
         else:
-            po = self._create_po_from_guide(dg_data, po_ref, supplier)
-            self._add_log(f"✅ OC '{po_ref}' creada automáticamente con especificaciones")
             self.write({
-                'purchase_id': po.id,
-                'purchase_order': po.name,
+                'purchase_id': False,
                 'supplier_id': supplier.id,
+                'oc_match_status': 'not_found',
+                'oc_match_note': (
+                    f'OC {po_ref} no encontrada. Vincular manualmente o crear con supervisión.'
+                ),
+                'manual_po_name': po_ref,  # Legacy: mantener compatibilidad con vistas existentes
             })
-            return po, supplier
+            _logger.warning(
+                f"⚠️ [PATCH 2026-06-18] OC '{po_ref}' no encontrada para proveedor {supplier.name}. "
+                f"NO se crea automáticamente. Recepción {self.name} queda en modo referencia manual. "
+                f"oc_reference_raw={self.oc_reference_raw}"
+            )
+            self._add_log(
+                f"⚠️ OC '{po_ref}' no encontrada. Vincule manualmente o cree la OC con supervisión."
+            )
+            return False, supplier
     
     def _create_supplier_from_guide(self, dg_data, supplier_rut):
         """Crear proveedor basado en datos de la guía"""
@@ -78,7 +130,20 @@ class LumberReceptionPurchasing(models.Model):
         })
     
     def _create_po_from_guide(self, dg_data, po_ref, supplier):
-        """Crear OC automáticamente desde datos de la guía - VERSIÓN CORREGIDA"""
+        """
+        ⚠️ DEPRECATED por PATCH 2026-06-18.
+        
+        Este método se conserva para compatibilidad con código que pueda
+        referenciarlo, pero ya NO se invoca desde _find_po_and_supplier.
+        
+        Si se invoca manualmente, crea una OC con advertencia explícita
+        de que la creación automática está deshabilitada por política.
+        """
+        _logger.warning(
+            f"⚠️ _create_po_from_guide llamado manualmente para OC '{po_ref}'. "
+            f"La autocreación de OC está DESHABILITADA por PATCH 2026-06-18. "
+            f"Se creará la OC pero con marca de 'revisión requerida'."
+        )
         # Buscar producto genérico para madera
         lumber_product = self.env['product.product'].search([
             ('default_code', '=', 'MADERA_GENERICA')
@@ -88,10 +153,6 @@ class LumberReceptionPurchasing(models.Model):
             raise UserError("Falta producto base MADERA_GENERICA en la base o está inactivo. Reinstale/actualice el módulo para crear el dato maestro por XML.")
         if lumber_product.type != 'product' or lumber_product.uom_id != self.env.ref('uom.product_uom_cubic_meter'):
             raise UserError("El producto 'MADERA_GENERICA' está mal configurado. Debe ser tipo 'Almacenable' y unidad en m³. Corrija manualmente vía inventario Odoo o recargue el XML.")
-        _logger.info(f"MADERA_GENERICA detectado, id={lumber_product.id}, uom={lumber_product.uom_id.name}, type={lumber_product.type}")
-        # FIX auditoría 2025-11-04: Control robusto de existencia y atributos de MADERA_GENERICA.
-
-        
         
         # Extraer datos específicos de madera
         net_total = dg_data.get('net_total', 0)
@@ -118,7 +179,8 @@ class LumberReceptionPurchasing(models.Model):
         }
         
         po = self.env['purchase.order'].create(po_vals)
-        po.button_confirm()  # Confirmar automáticamente
+        # NO confirmar automáticamente — requiere revisión humana
+        # po.button_confirm()
         
         return po
     

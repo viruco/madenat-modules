@@ -80,8 +80,9 @@ class LumberReceptionLine(models.Model):
     # ✅ Profesional: nombre claro en español, comentario explicativo
     purchase_order_name = fields.Char(
         string='Orden de Compra',
-        related='reception_id.manual_po_name',
+        related='reception_id.purchase_order',
         store=True,
+        help="OC canónica de la recepción (prioriza purchase_id.name > manual_po_name > 'SIN ORDEN')."
     )
     product_name_clean = fields.Char(
         string="Nombre Producto",
@@ -1128,6 +1129,31 @@ class LumberReception(models.Model):
         help="Si no existe OC en Odoo, ingrese el número manualmente aquí."
     )
     
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC (Patch 2026-06-18)
+    # Separación referencia documental vs vínculo operativo.
+    # oc_reference_raw NUNCA se sobrescribe al vincular una purchase.order.
+    # ══════════════════════════════════════════════════════════════════════════════
+    oc_reference_raw = fields.Char(
+        string="OC Documental",
+        readonly=True,
+        copy=False,
+        tracking=True,
+        help="Referencia documental de OC extraída desde la guía/PDF. Nunca se sobrescribe."
+    )
+    oc_match_status = fields.Selection([
+        ('not_found', 'No encontrada'),
+        ('single_match', 'Coincidencia exacta'),
+        ('multi_match', 'Múltiples coincidencias'),
+        ('manual', 'Vinculación manual'),
+        ('created', 'Creada desde recepción'),
+    ], string="Estado Match OC", default='not_found', tracking=True, copy=False)
+    oc_match_note = fields.Text(
+        string="Nota de Match OC",
+        copy=False,
+        help="Bitácora de reconciliación de OC."
+    )
+    
     # MODIFICADO: Este campo ahora debe calcularse para mostrar la OC Real o la Manual
     purchase_order = fields.Char(
         string='Orden Compra (Visual)', 
@@ -1165,14 +1191,19 @@ class LumberReception(models.Model):
     # ==========================================================
 
 
-    @api.depends('purchase_id', 'manual_po_name')
+    @api.depends('purchase_id', 'manual_po_name', 'oc_reference_raw')
     def _compute_purchase_order_display(self):
-        """Prioriza la OC oficial de Odoo, si no, usa la manual."""
+        """Prioriza la OC oficial de Odoo, si no, usa la manual.
+        Formato visible canónico: MC - 2506 - 01"""
         for rec in self:
             if rec.purchase_id:
-                rec.purchase_order = rec.purchase_id.name
+                rec.purchase_order = rec._canonize_oc_display(rec.purchase_id.name)
+            elif rec.manual_po_name:
+                rec.purchase_order = rec._canonize_oc_display(rec.manual_po_name)
+            elif rec.oc_reference_raw:
+                rec.purchase_order = rec._canonize_oc_display(rec.oc_reference_raw)
             else:
-                rec.purchase_order = rec.manual_po_name or 'SIN ORDEN'
+                rec.purchase_order = 'SIN ORDEN'
    # ==================== VOLÚMENES DUALES (m³ + MBF) ====================
     commercial_volume_m3 = fields.Float(
         digits=(16, 3), 
@@ -1809,6 +1840,129 @@ class LumberReception(models.Model):
         current_log = self.log_notes or ""
         self.log_notes = f"{current_log}\n[{timestamp}] {message}"
 
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC — HELPERS (Patch 2026-06-18)
+    # ══════════════════════════════════════════════════════════════════════════════
+    def _normalize_oc_key(self, value):
+        """Normaliza referencia de OC: uppercase A-Z0-9, eliminar todo lo que no sea A-Z o 0-9, sin espacios."""
+        if not value:
+            return ''
+        return re.sub(r'[^A-Z0-9]+', '', (value or '').upper())
+
+    def _canonize_oc_display(self, value):
+        """
+        Formato documental visible estándar: MC - 2506 - 01.
+
+        Regla:
+        1. Si el valor ya calza con PATRÓN CANÓNICO (LETRAS - NÚMERO - NÚMERO),
+           retornarlo tal cual (idempotente).
+        2. Si se detecta un prefijo alfabético seguido de dos bloques numéricos
+           (separados por espacios, guiones, underscores o sin separador),
+           reensamblar como: PREFIJO - BLOQUE1 - BLOQUE2.
+        3. Fallback: retornar el valor sin alterar (no perder información).
+        """
+        if not value:
+            return ''
+        v = str(value).strip()
+        # Ya está en formato canónico: MC - 2506 - 01
+        if re.match(r'^[A-Z]+\s*-\s*\d+\s*-\s*\d+$', v, re.IGNORECASE):
+            return v
+        # Intentar extraer: PREFIJO, BLOQUE1, BLOQUE2
+        m = re.match(r'^([A-Z]+)[\s\-_]*(\d+)[\s\-_]*(\d+)$', v, re.IGNORECASE)
+        if m:
+            return f"{m.group(1).upper()} - {m.group(2)} - {m.group(3)}"
+        # Fallback: valor sin alterar
+        return v
+
+    def _match_reception_purchase_order(self):
+        """
+        Busca y vincula una purchase.order usando oc_reference_raw normalizado.
+        Lógica:
+        - si no hay oc_reference_raw → not_found, return False
+        - 1 match único → auto-vincula con status 'single_match'
+        - >1 matches → deja purchase_id=False con status 'multi_match'
+        - 0 matches → deja purchase_id=False con status 'not_found'
+        No crea purchase.order automáticamente.
+        Retorna True si se vinculó, False en caso contrario.
+        """
+        self.ensure_one()
+        if not self.oc_reference_raw:
+            self.write({
+                'oc_match_status': 'not_found',
+                'oc_match_note': 'No existe referencia documental de OC para buscar.',
+            })
+            return False
+
+        # Si ya tiene purchase_id asignado manualmente, respetarlo
+        if self.purchase_id:
+            _logger.info(
+                f"_match_reception_purchase_order: Recepción {self.name} ya tiene "
+                f"purchase_id={self.purchase_id.name}, conservando vínculo existente. "
+                f"oc_reference_raw={self.oc_reference_raw}"
+            )
+            if self.oc_match_status in ('not_found', False):
+                self.write({
+                    'oc_match_status': 'manual',
+                    'oc_match_note': (
+                        f'Vinculado manualmente a {self.purchase_id.name}. '
+                        f'Referencia documental: {self.oc_reference_raw}'
+                    ),
+                })
+            return True
+
+        normalized_ref = self._normalize_oc_key(self.oc_reference_raw)
+        if not normalized_ref:
+            return False
+
+        domain = [('state', 'in', ['draft', 'sent', 'purchase', 'done'])]
+        if self.supplier_id:
+            domain.append(('partner_id', '=', self.supplier_id.id))
+        candidates = self.env['purchase.order'].search(domain)
+
+        matches = candidates.filtered(
+            lambda po: self._normalize_oc_key(po.name or '') == normalized_ref
+        )
+
+        if len(matches) == 1:
+            po = matches
+            self.write({
+                'purchase_id': po.id,
+                'oc_match_status': 'single_match',
+                'oc_match_note': f'Auto-match exacto por nombre con {po.name}.',
+            })
+            _logger.info(
+                f"_match_reception_purchase_order: Recepción {self.name} auto-vinculada a "
+                f"PO {po.name} (single_match). oc_reference_raw={self.oc_reference_raw}"
+            )
+            return True
+
+        elif len(matches) > 1:
+            self.write({
+                'purchase_id': False,
+                'oc_match_status': 'multi_match',
+                'oc_match_note': (
+                    f'Se encontraron {len(matches)} OCs coincidentes. '
+                    f'Revisar manualmente.'
+                ),
+            })
+            _logger.warning(
+                f"_match_reception_purchase_order: multi_match ({len(matches)}) para "
+                f"oc_reference_raw={self.oc_reference_raw}. Recepción {self.name}."
+            )
+            return False
+
+        else:
+            self.write({
+                'purchase_id': False,
+                'oc_match_status': 'not_found',
+                'oc_match_note': 'No se encontró una OC coincidente en el sistema.',
+            })
+            _logger.info(
+                f"_match_reception_purchase_order: not_found para "
+                f"oc_reference_raw={self.oc_reference_raw}. Recepción {self.name}."
+            )
+            return False
+
     def _get_current_exchange_rate(self):
         """
         Obtener tipo de cambio auxiliar (USD -> CLP).
@@ -2046,7 +2200,7 @@ class LumberReception(models.Model):
                 'location_id': picking_type.default_location_src_id.id,
                 'location_dest_id': self.location_id.id or picking_type.default_location_dest_id.id,
                 'origin': self.name,  # Mantenemos el nombre puro para su consulta SQL
-                'lumber_reception_id': self.id,
+                'reception_id': self.id,
                 'company_id': self.env.company.id,
             })
 
@@ -2126,6 +2280,15 @@ class LumberReception(models.Model):
             po_ref = parser.normalize_po_display(po_ref_raw)
             po_key = parser.normalize_po_key(po_ref_raw)
 
+            # ═══════════════════════════════════════════════════════════════
+            # 🏷️ PERSISTIR REFERENCIA DOCUMENTAL (NUNCA sobrescribir)
+            # ═══════════════════════════════════════════════════════════════
+            if po_ref and not self.oc_reference_raw:
+                self.write({'oc_reference_raw': po_ref})
+                _logger.info(
+                    f"🏷️ oc_reference_raw persistido: {po_ref} para Recepción {self.name}"
+                )
+
             # 🛑 2. VALIDACIONES DE SEGURIDAD CRÍTICAS (No permitir avanzar sin datos base)
             if not po_key:
                 raise UserError(
@@ -2196,37 +2359,36 @@ class LumberReception(models.Model):
                 # Escritura de vínculo exitoso
                 self.write({
                     'purchase_id': po.id,
-                    'purchase_order': po.name,
-                    'manual_po_name': False,
                     'supplier_id': supplier.id,
+                    'oc_match_status': 'single_match',
+                    'oc_match_note': f'Auto-match exacto por nombre con {po.name}.',
                 })
+                _logger.info(
+                    f"_match_reception_purchase_order: Recepción {self.name} "
+                    f"auto-vinculada a PO {po.name} (single_match). "
+                    f"oc_reference_raw={self.oc_reference_raw}"
+                )
                 return po, supplier
 
-            # 🆕 6. GESTIÓN DE OC (CASO 2: CREACIÓN DESDE DATOS DE PDF COMPRA)
-            if oc_data:
-                self._add_log(f"🆕 OC '{po_ref}' no existe → Iniciando creación desde PDF de Compra.")
-                po = self.create_po_from_oc_data(po_ref, supplier, oc_data)
-                # Aseguramos que la referencia del proveedor en la PO sea la normalizada
-                po.write({'partner_ref': po_ref})
-                
-                self.write({
-                    'purchase_id': po.id,
-                    'purchase_order': po.name,
-                    'manual_po_name': False,
-                    'supplier_id': supplier.id,
-                })
-                return po, supplier
+            # ═══════════════════════════════════════════════════════════════
+            # 🛑 PATCH 2026-06-18: DESACTIVADA autocreación automática de OC.
+            # El flujo anterior llamaba a create_po_from_oc_data() si existía
+            # oc_data y no había match. Esto generaba purchase.orders sin
+            # supervisión humana, con valores hardcode y sin trazabilidad.
+            # Ahora se resuelve como fallback manual con trazabilidad completa.
+            # ═══════════════════════════════════════════════════════════════
 
-            # ⚠️ 7. GESTIÓN DE OC (CASO 3: FALLBACK MANUAL / NO BLOQUEANTE)
+            # ⚠️ 6. GESTIÓN DE OC (FALLBACK MANUAL / NO BLOQUEANTE)
             self._add_log(f"⚠️ OC '{po_ref}' sin coincidencia → Modo Referencia Manual habilitado.")
             
             # Guardamos la intención del PDF en manual_po_name para guiar al usuario
             self.write({
                 'state': 'processing',
                 'purchase_id': False,
-                'purchase_order': False,
                 'manual_po_name': po_ref,
                 'supplier_id': supplier.id,
+                'oc_match_status': 'not_found',
+                'oc_match_note': f'OC {po_ref} no encontrada. Vincular manualmente o crear con supervisión.',
             })
             
             # Notificación en Chatter para auditoría futura

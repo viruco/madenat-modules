@@ -2,11 +2,14 @@
 """
 Script de auditoría: Diagnóstico de trazabilidad de lotes.
 Verifica:
-1. Cuántos lotes tienen reception_id vs lumber_reception_id vs guia_processing_id
+1. Cuántos lotes tienen reception_id vs guia_processing_id
 2. Cuántos lotes de cada flujo no tienen FK de origen
 3. Si hay violaciones de exclusividad
 4. Estado de contenedores respecto a lotes
 5. Cobertura en reportes
+
+v2.0 (2026-06-16): Eliminada dependencia de lumber_reception_id legacy.
+   reception_id es la FK canónica única.
 """
 import psycopg2
 import json
@@ -24,7 +27,7 @@ try:
         SELECT column_name, data_type 
         FROM information_schema.columns 
         WHERE table_name='stock_lot' 
-          AND column_name IN ('reception_id', 'lumber_reception_id', 'guia_processing_id', 'reception_type')
+          AND column_name IN ('reception_id', 'guia_processing_id', 'reception_type')
         ORDER BY column_name;
     """)
     results["columns_stock_lot"] = [list(r) for r in cur.fetchall()]
@@ -34,11 +37,9 @@ try:
         SELECT 
             COUNT(*) AS total,
             COUNT(*) FILTER (WHERE reception_id IS NOT NULL) AS has_reception_id,
-            COUNT(*) FILTER (WHERE lumber_reception_id IS NOT NULL) AS has_lumber_reception_id,
             COUNT(*) FILTER (WHERE guia_processing_id IS NOT NULL) AS has_guia_processing_id,
-            COUNT(*) FILTER (WHERE reception_id IS NOT NULL AND lumber_reception_id IS NOT NULL) AS has_both_reception_fks,
             COUNT(*) FILTER (WHERE reception_id IS NOT NULL AND guia_processing_id IS NOT NULL) AS violates_exclusivity,
-            COUNT(*) FILTER (WHERE reception_id IS NULL AND lumber_reception_id IS NULL AND guia_processing_id IS NULL) AS no_origin_fk
+            COUNT(*) FILTER (WHERE reception_id IS NULL AND guia_processing_id IS NULL) AS no_origin_fk
         FROM stock_lot
         WHERE name NOT LIKE '%virtual%' AND name NOT LIKE '%default%';
     """)
@@ -54,13 +55,12 @@ try:
     """)
     results["reception_type_distribution"] = [list(r) for r in cur.fetchall()]
     
-    # ── D. Lotes raw (recepción directa) sin reception_id y sin lumber_reception_id ──
+    # ── D. Lotes raw (recepción directa) sin reception_id ──
     cur.execute("""
-        SELECT id, name, reception_id, lumber_reception_id, guia_processing_id, reception_type, guia_number
+        SELECT id, name, reception_id, guia_processing_id, reception_type, guia_number
         FROM stock_lot
         WHERE reception_type = 'raw'
           AND reception_id IS NULL
-          AND lumber_reception_id IS NULL
         LIMIT 30;
     """)
     results["raw_lots_no_fk"] = [list(r) for r in cur.fetchall()]
@@ -78,7 +78,7 @@ try:
     
     # ── F. Lotes que son recepción directa pero reception_type es NULL ──
     cur.execute("""
-        SELECT id, name, reception_id, lumber_reception_id, guia_processing_id, reception_type, guia_number
+        SELECT id, name, reception_id, guia_processing_id, reception_type, guia_number
         FROM stock_lot
         WHERE reception_id IS NOT NULL 
           AND reception_type IS NULL
@@ -86,15 +86,15 @@ try:
     """)
     results["reception_lots_no_type"] = [list(r) for r in cur.fetchall()]
     
-    # ── G. Lotes con reception_id pero sin lumber_reception_id (el gap documentado) ──
+    # ── G. Lotes con reception_id poblado ──
     cur.execute("""
         SELECT 
             COUNT(*) AS cnt,
-            COUNT(*) FILTER (WHERE reception_id IS NOT NULL AND lumber_reception_id IS NULL) AS gap_canonical_fk
+            COUNT(*) FILTER (WHERE reception_id IS NOT NULL) AS has_canonical_fk
         FROM stock_lot
         WHERE name NOT LIKE '%virtual%' AND name NOT LIKE '%default%';
     """)
-    results["canonical_fk_gap"] = [list(r) for r in cur.fetchall()]
+    results["canonical_fk_coverage"] = [list(r) for r in cur.fetchall()]
     
     # ── H. Tabla lumber_container ──
     cur.execute("""
@@ -120,7 +120,7 @@ try:
     
     # ── J. Muestra de lotes: 10 de cada flujo ──
     cur.execute("""
-        SELECT id, name, reception_id, lumber_reception_id, guia_processing_id, reception_type, guia_number
+        SELECT id, name, reception_id, guia_processing_id, reception_type, guia_number
         FROM stock_lot
         WHERE reception_type = 'raw' AND name NOT LIKE '%virtual%'
         LIMIT 10;
@@ -128,7 +128,7 @@ try:
     results["sample_raw_lots"] = [list(r) for r in cur.fetchall()]
     
     cur.execute("""
-        SELECT id, name, reception_id, lumber_reception_id, guia_processing_id, reception_type, guia_number
+        SELECT id, name, reception_id, guia_processing_id, reception_type, guia_number
         FROM stock_lot
         WHERE reception_type = 'processed' AND name NOT LIKE '%virtual%'
         LIMIT 10;

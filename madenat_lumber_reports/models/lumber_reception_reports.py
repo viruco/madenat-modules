@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 8 Reportes de Inventario Recepción — XLSX + PDF
-Hereda de lumber.reception.line para agregar métodos de exportación.
+Hereda de lumber.reception.line y report.helper.mixin para métodos de exportación.
 """
+# -*- coding: utf-8 -*-
 
 import io
 import base64
@@ -14,7 +15,8 @@ _logger = logging.getLogger(__name__)
 
 
 class LumberReceptionLineReport(models.Model):
-    _inherit = 'lumber.reception.line'
+    _name = 'lumber.reception.line'
+    _inherit = ['lumber.reception.line', 'report.helper.mixin']
 
     # ──────────────────────────────────────────────
     # CAMPOS RELATED para group_by en vistas
@@ -86,84 +88,15 @@ class LumberReceptionLineReport(models.Model):
                 line.patio_label = _('R1')
 
     # ──────────────────────────────────────────────
-    # HELPERS
+    # NOTA: _xlsx_styles() y _create_xlsx_attachment()
+    # ahora se heredan de report.helper.mixin.
+    # Se elimina la duplicación previa de ~54 líneas.
     # ──────────────────────────────────────────────
-
-    def _get_location_name(self):
-        """Patio vía reception_id.location_id"""
-        self.ensure_one()
-        if self.reception_id.location_id:
-            return self.reception_id.location_id.name
-        return ''
-
-    def _get_subproduct_name(self):
-        """Subproducto desde subproduct_id (madenat.subproducto)"""
-        self.ensure_one()
-        if self.subproduct_id:
-            return self.subproduct_id.name
-        return ''
-
+    # NOTA: _get_location_name() y _get_subproduct_name()
+    # fueron eliminados (2026-06-16). No tenían referencias activas.
+    # Usar _report_get_canonical_patio_label() y
+    # _report_get_canonical_subproduct_name() del mixin en su lugar.
     # ──────────────────────────────────────────────
-    # ESTILOS XLSX (Calibri 11pt)
-    # ──────────────────────────────────────────────
-
-    def _xlsx_styles(self, workbook):
-        return {
-            'title': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'align': 'center', 'valign': 'vcenter', 'border': 1,
-            }),
-            'header': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'align': 'center', 'valign': 'vcenter', 'border': 1,
-                'bg_color': '#343a40', 'font_color': 'white',
-            }),
-            'data_str': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-            }),
-            'data_num': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '#,##0.000',
-            }),
-            'data_int': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '0',
-            }),
-            'footer': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-            }),
-            'footer_num': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '#,##0.000',
-            }),
-            'footer_int': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '0',
-            }),
-        }
-
-    def _create_xlsx_attachment(self, workbook, output, filename):
-        """Crea ir.attachment y retorna acción de descarga"""
-        workbook.close()
-        output.seek(0)
-        attachment = self.env['ir.attachment'].create({
-            'name': filename,
-            'type': 'binary',
-            'datas': base64.b64encode(output.read()),
-            'res_model': self._name,
-            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=true',
-            'target': 'self',
-        }
 
     # ──────────────────────────────────────────────
     # R1 — DETALLE POR PATIO — TODOS PRODUCTOS
@@ -181,16 +114,17 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R1_Detalle_Patio')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        # Anchura columnas
-        widths = [20, 25, 18, 12, 25, 20, 10, 10, 10, 9, 12, 12]
+        # Anchura columnas (13 columnas: +OC respecto al original)
+        widths = [20, 25, 18, 16, 18, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        # Cabecera
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Producto',
-                'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
+        # Cabecera (encabezados corregidos: Fecha de recepción + OC)
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción',
+                'Orden de Compra', 'Producto', 'Subproducto',
+                'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R1 — Detalle por Patio — Todos Productos', sty['title'])
@@ -202,46 +136,35 @@ class LumberReceptionLineReport(models.Model):
         tot_m3 = 0.0
         tot_mbf = 0.0
         for line in self:
-            loc = line.patio_label or ''
-            provider = line.partner_name or ''
-            guide = line.reception_id.name or ''
-            date = line.reception_id.reception_date.strftime('%Y-%m-%d') if line.reception_id.reception_date else ''
-            product = line.product_id.name or ''
-            sub = line.subproduct_id.name or ''
-            thick = line.thickness_visual or ''
-            width = line.width_visual or ''
-            length = line.length or 0
-            pieces = line.pieces or 0
-            m3 = line.vol_physical_m3 or 0.0
-            mbf = line.vol_mbf or 0.0
+            data = self._report_build_detail_row(line, include_oc=True)
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['oc'], sty['data_str'])
+            sheet.write(row, 5, data['producto'], sty['data_str'])
+            sheet.write(row, 6, data['subproducto'], sty['data_str'])
+            sheet.write(row, 7, data['espesor'], sty['data_str'])
+            sheet.write(row, 8, data['ancho'], sty['data_str'])
+            sheet.write(row, 9, data['largo'], sty['data_num'])
+            sheet.write(row, 10, data['piezas'], sty['data_int'])
+            sheet.write(row, 11, data['m3'], sty['data_num'])
+            sheet.write(row, 12, data['mbf'], sty['data_num'])
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, provider, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            sheet.write(row, 4, product, sty['data_str'])
-            sheet.write(row, 5, sub, sty['data_str'])
-            sheet.write(row, 6, thick, sty['data_str'])
-            sheet.write(row, 7, width, sty['data_str'])
-            sheet.write(row, 8, length, sty['data_num'])
-            sheet.write(row, 9, pieces, sty['data_int'])
-            sheet.write(row, 10, m3, sty['data_num'])
-            sheet.write(row, 11, mbf, sty['data_num'])
-
-            tot_pieces += pieces
-            tot_m3 += m3
-            tot_mbf += mbf
+            tot_pieces += data['piezas']
+            tot_m3 += data['m3']
+            tot_mbf += data['mbf']
             row += 1
 
         # Totales
         sheet.write(row, 0, 'TOTALES', sty['footer'])
-        for c in range(1, 9):
+        for c in range(1, 10):
             sheet.write(row, c, '', sty['footer'])
-        sheet.write(row, 9, tot_pieces, sty['footer_int'])
-        sheet.write(row, 10, tot_m3, sty['footer_num'])
-        sheet.write(row, 11, tot_mbf, sty['footer_num'])
+        sheet.write(row, 10, tot_pieces, sty['footer_int'])
+        sheet.write(row, 11, tot_m3, sty['footer_num'])
+        sheet.write(row, 12, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R1_Detalle_Patio.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R1_Detalle_Patio.xlsx')
 
     # ──────────────────────────────────────────────
     # R2 — RESUMEN POR PATIO — TODOS PRODUCTOS
@@ -259,7 +182,7 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R2_Resumen_Patio')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         widths = [20, 25, 20, 14, 14, 14]
         for i, w in enumerate(widths):
@@ -271,18 +194,21 @@ class LumberReceptionLineReport(models.Model):
         for i, c in enumerate(cols):
             sheet.write(1, i, c, sty['header'])
 
-        # Agrupación
+        # Agrupación usando helpers canónicos
         agg = {}
         for line in self:
-            loc = line.patio_label or 'Sin Patio'
-            prod = line.product_id.name or 'Sin Producto'
-            sub = line.subproduct_id.name or 'Sin Subproducto'
+            loc = self._report_get_canonical_patio_label(line)
+            prod = self._report_get_canonical_product_name(line)
+            sub = self._report_get_canonical_subproduct_name(line)
+            pieces = self._report_get_canonical_pieces(line)
+            m3 = self._report_get_canonical_volume_m3(line)
+            mbf = self._report_get_canonical_mbf(line)
             key = (loc, prod, sub)
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
-            agg[key]['pieces'] += (line.pieces or 0)
-            agg[key]['m3'] += (line.vol_physical_m3 or 0.0)
-            agg[key]['mbf'] += (line.vol_mbf or 0.0)
+            agg[key]['pieces'] += pieces
+            agg[key]['m3'] += m3
+            agg[key]['mbf'] += mbf
 
         row = 2
         tot_p, tot_m3, tot_mbf = 0, 0.0, 0.0
@@ -305,7 +231,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 4, tot_m3, sty['footer_num'])
         sheet.write(row, 5, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R2_Resumen_Patio.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R2_Resumen_Patio.xlsx')
 
     # ──────────────────────────────────────────────
     # R3 — DETALLE POR PATIO — TIPO PRODUCTO
@@ -323,13 +249,13 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R3_Detalle_Patio_Subprod')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 18, 12, 25, 20, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 18, 16, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Producto',
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción', 'Producto',
                 'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
@@ -342,35 +268,23 @@ class LumberReceptionLineReport(models.Model):
         tot_m3 = 0.0
         tot_mbf = 0.0
         for line in self:
-            loc = line.patio_label or ''
-            provider = line.partner_name or ''
-            guide = line.reception_id.name or ''
-            date = line.reception_id.reception_date.strftime('%Y-%m-%d') if line.reception_id.reception_date else ''
-            product = line.product_id.name or ''
-            sub = line.subproduct_id.name or ''
-            thick = line.thickness_visual or ''
-            width = line.width_visual or ''
-            length = line.length or 0
-            pieces = line.pieces or 0
-            m3 = line.vol_physical_m3 or 0.0
-            mbf = line.vol_mbf or 0.0
+            data = self._report_build_detail_row(line, include_oc=False)
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['producto'], sty['data_str'])
+            sheet.write(row, 5, data['subproducto'], sty['data_str'])
+            sheet.write(row, 6, data['espesor'], sty['data_str'])
+            sheet.write(row, 7, data['ancho'], sty['data_str'])
+            sheet.write(row, 8, data['largo'], sty['data_num'])
+            sheet.write(row, 9, data['piezas'], sty['data_int'])
+            sheet.write(row, 10, data['m3'], sty['data_num'])
+            sheet.write(row, 11, data['mbf'], sty['data_num'])
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, provider, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            sheet.write(row, 4, product, sty['data_str'])
-            sheet.write(row, 5, sub, sty['data_str'])
-            sheet.write(row, 6, thick, sty['data_str'])
-            sheet.write(row, 7, width, sty['data_str'])
-            sheet.write(row, 8, length, sty['data_num'])
-            sheet.write(row, 9, pieces, sty['data_int'])
-            sheet.write(row, 10, m3, sty['data_num'])
-            sheet.write(row, 11, mbf, sty['data_num'])
-
-            tot_pieces += pieces
-            tot_m3 += m3
-            tot_mbf += mbf
+            tot_pieces += data['piezas']
+            tot_m3 += data['m3']
+            tot_mbf += data['mbf']
             row += 1
 
         sheet.write(row, 0, 'TOTALES', sty['footer'])
@@ -380,7 +294,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 10, tot_m3, sty['footer_num'])
         sheet.write(row, 11, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R3_Detalle_Patio_Subprod.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R3_Detalle_Patio_Subprod.xlsx')
 
     # ──────────────────────────────────────────────
     # R4 — RESUMEN POR PATIO — TIPO PRODUCTO
@@ -398,7 +312,7 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R4_Resumen_Patio_Subprod')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         widths = [20, 25, 20, 14, 14, 14]
         for i, w in enumerate(widths):
@@ -412,15 +326,18 @@ class LumberReceptionLineReport(models.Model):
 
         agg = {}
         for line in self:
-            loc = line.patio_label or 'Sin Patio'
-            prod = line.product_id.name or 'Sin Producto'
-            sub = line.subproduct_id.name or 'Sin Subproducto'
+            loc = self._report_get_canonical_patio_label(line)
+            prod = self._report_get_canonical_product_name(line)
+            sub = self._report_get_canonical_subproduct_name(line)
+            pieces = self._report_get_canonical_pieces(line)
+            m3 = self._report_get_canonical_volume_m3(line)
+            mbf = self._report_get_canonical_mbf(line)
             key = (loc, prod, sub)
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
-            agg[key]['pieces'] += (line.pieces or 0)
-            agg[key]['m3'] += (line.vol_physical_m3 or 0.0)
-            agg[key]['mbf'] += (line.vol_mbf or 0.0)
+            agg[key]['pieces'] += pieces
+            agg[key]['m3'] += m3
+            agg[key]['mbf'] += mbf
 
         row = 2
         tot_p, tot_m3, tot_mbf = 0, 0.0, 0.0
@@ -443,7 +360,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 4, tot_m3, sty['footer_num'])
         sheet.write(row, 5, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R4_Resumen_Patio_Subprod.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R4_Resumen_Patio_Subprod.xlsx')
 
     # ──────────────────────────────────────────────
     # R5 — DETALLE POR PROVEEDOR
@@ -461,13 +378,13 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R5_Detalle_Proveedor')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 18, 12, 25, 20, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 18, 16, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Producto',
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción', 'Producto',
                 'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
@@ -480,35 +397,23 @@ class LumberReceptionLineReport(models.Model):
         tot_m3 = 0.0
         tot_mbf = 0.0
         for line in self:
-            loc = line.patio_label or ''
-            provider = line.partner_name or ''
-            guide = line.reception_id.name or ''
-            date = line.reception_id.reception_date.strftime('%Y-%m-%d') if line.reception_id.reception_date else ''
-            product = line.product_id.name or ''
-            sub = line.subproduct_id.name or ''
-            thick = line.thickness_visual or ''
-            width = line.width_visual or ''
-            length = line.length or 0
-            pieces = line.pieces or 0
-            m3 = line.vol_physical_m3 or 0.0
-            mbf = line.vol_mbf or 0.0
+            data = self._report_build_detail_row(line, include_oc=False)
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['producto'], sty['data_str'])
+            sheet.write(row, 5, data['subproducto'], sty['data_str'])
+            sheet.write(row, 6, data['espesor'], sty['data_str'])
+            sheet.write(row, 7, data['ancho'], sty['data_str'])
+            sheet.write(row, 8, data['largo'], sty['data_num'])
+            sheet.write(row, 9, data['piezas'], sty['data_int'])
+            sheet.write(row, 10, data['m3'], sty['data_num'])
+            sheet.write(row, 11, data['mbf'], sty['data_num'])
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, provider, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            sheet.write(row, 4, product, sty['data_str'])
-            sheet.write(row, 5, sub, sty['data_str'])
-            sheet.write(row, 6, thick, sty['data_str'])
-            sheet.write(row, 7, width, sty['data_str'])
-            sheet.write(row, 8, length, sty['data_num'])
-            sheet.write(row, 9, pieces, sty['data_int'])
-            sheet.write(row, 10, m3, sty['data_num'])
-            sheet.write(row, 11, mbf, sty['data_num'])
-
-            tot_pieces += pieces
-            tot_m3 += m3
-            tot_mbf += mbf
+            tot_pieces += data['piezas']
+            tot_m3 += data['m3']
+            tot_mbf += data['mbf']
             row += 1
 
         sheet.write(row, 0, 'TOTALES', sty['footer'])
@@ -518,7 +423,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 10, tot_m3, sty['footer_num'])
         sheet.write(row, 11, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R5_Detalle_Proveedor.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R5_Detalle_Proveedor.xlsx')
 
     # ──────────────────────────────────────────────
     # R6 — RESUMEN POR PROVEEDOR
@@ -536,7 +441,7 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R6_Resumen_Proveedor')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         widths = [25, 25, 20, 14, 14, 14]
         for i, w in enumerate(widths):
@@ -550,15 +455,18 @@ class LumberReceptionLineReport(models.Model):
 
         agg = {}
         for line in self:
-            provider = line.partner_name or 'Sin Proveedor'
-            prod = line.product_id.name or 'Sin Producto'
-            sub = line.subproduct_id.name or 'Sin Subproducto'
+            provider = self._report_get_canonical_supplier_name(line)
+            prod = self._report_get_canonical_product_name(line)
+            sub = self._report_get_canonical_subproduct_name(line)
+            pieces = self._report_get_canonical_pieces(line)
+            m3 = self._report_get_canonical_volume_m3(line)
+            mbf = self._report_get_canonical_mbf(line)
             key = (provider, prod, sub)
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
-            agg[key]['pieces'] += (line.pieces or 0)
-            agg[key]['m3'] += (line.vol_physical_m3 or 0.0)
-            agg[key]['mbf'] += (line.vol_mbf or 0.0)
+            agg[key]['pieces'] += pieces
+            agg[key]['m3'] += m3
+            agg[key]['mbf'] += mbf
 
         row = 2
         tot_p, tot_m3, tot_mbf = 0, 0.0, 0.0
@@ -581,7 +489,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 4, tot_m3, sty['footer_num'])
         sheet.write(row, 5, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R6_Resumen_Proveedor.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R6_Resumen_Proveedor.xlsx')
 
     # ──────────────────────────────────────────────
     # R7 — DETALLE POR ORDEN DE COMPRA
@@ -599,14 +507,15 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R7_Detalle_OC')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 18, 12, 25, 25, 20, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 18, 16, 18, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Orden de Compra', 'Producto',
-                'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción',
+                'Orden de Compra', 'Producto', 'Subproducto',
+                'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R7 — Detalle por Orden de Compra', sty['title'])
@@ -618,37 +527,24 @@ class LumberReceptionLineReport(models.Model):
         tot_m3 = 0.0
         tot_mbf = 0.0
         for line in self:
-            loc = line.patio_label or ''
-            provider = line.partner_name or ''
-            guide = line.reception_id.name or ''
-            date = line.reception_id.reception_date.strftime('%Y-%m-%d') if line.reception_id.reception_date else ''
-            product = line.product_id.name or ''
-            sub = line.subproduct_id.name or ''
-            thick = line.thickness_visual or ''
-            width = line.width_visual or ''
-            length = line.length or 0
-            pieces = line.pieces or 0
-            m3 = line.vol_physical_m3 or 0.0
-            mbf = line.vol_mbf or 0.0
+            data = self._report_build_detail_row(line, include_oc=True)
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['oc'], sty['data_str'])
+            sheet.write(row, 5, data['producto'], sty['data_str'])
+            sheet.write(row, 6, data['subproducto'], sty['data_str'])
+            sheet.write(row, 7, data['espesor'], sty['data_str'])
+            sheet.write(row, 8, data['ancho'], sty['data_str'])
+            sheet.write(row, 9, data['largo'], sty['data_num'])
+            sheet.write(row, 10, data['piezas'], sty['data_int'])
+            sheet.write(row, 11, data['m3'], sty['data_num'])
+            sheet.write(row, 12, data['mbf'], sty['data_num'])
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, provider, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            oc = line.reception_id.purchase_order or 'SIN ORDEN'
-            sheet.write(row, 4, oc, sty['data_str'])
-            sheet.write(row, 5, product, sty['data_str'])
-            sheet.write(row, 6, sub, sty['data_str'])
-            sheet.write(row, 7, thick, sty['data_str'])
-            sheet.write(row, 8, width, sty['data_str'])
-            sheet.write(row, 9, length, sty['data_num'])
-            sheet.write(row, 10, pieces, sty['data_int'])
-            sheet.write(row, 11, m3, sty['data_num'])
-            sheet.write(row, 12, mbf, sty['data_num'])
-
-            tot_pieces += pieces
-            tot_m3 += m3
-            tot_mbf += mbf
+            tot_pieces += data['piezas']
+            tot_m3 += data['m3']
+            tot_mbf += data['mbf']
             row += 1
 
         sheet.write(row, 0, 'TOTALES', sty['footer'])
@@ -658,7 +554,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 11, tot_m3, sty['footer_num'])
         sheet.write(row, 12, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R7_Detalle_OC.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R7_Detalle_OC.xlsx')
 
     # ──────────────────────────────────────────────
     # R8 — RESUMEN POR ORDEN DE COMPRA
@@ -676,7 +572,7 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R8_Resumen_OC')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         widths = [25, 25, 20, 14, 14, 14]
         for i, w in enumerate(widths):
@@ -690,16 +586,18 @@ class LumberReceptionLineReport(models.Model):
 
         agg = {}
         for line in self:
-            purchase = line.reception_id.purchase_id
-            oc = purchase.name if purchase else 'Sin OC'
-            prod = line.product_id.name or 'Sin Producto'
-            sub = line.subproduct_id.name or 'Sin Subproducto'
+            oc = self._report_get_canonical_purchase_order(line)
+            prod = self._report_get_canonical_product_name(line)
+            sub = self._report_get_canonical_subproduct_name(line)
+            pieces = self._report_get_canonical_pieces(line)
+            m3 = self._report_get_canonical_volume_m3(line)
+            mbf = self._report_get_canonical_mbf(line)
             key = (oc, prod, sub)
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
-            agg[key]['pieces'] += (line.pieces or 0)
-            agg[key]['m3'] += (line.vol_physical_m3 or 0.0)
-            agg[key]['mbf'] += (line.vol_mbf or 0.0)
+            agg[key]['pieces'] += pieces
+            agg[key]['m3'] += m3
+            agg[key]['mbf'] += mbf
 
         row = 2
         tot_p, tot_m3, tot_mbf = 0, 0.0, 0.0
@@ -722,7 +620,7 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 4, tot_m3, sty['footer_num'])
         sheet.write(row, 5, tot_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R8_Resumen_OC.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R8_Resumen_OC.xlsx')
 
     # ──────────────────────────────────────────────
     # R9 — DETALLE POR PRODUCTO
@@ -740,91 +638,27 @@ class LumberReceptionLineReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R9_Detalle_Producto')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         # Anchura columnas
-        widths = [20, 25, 12, 25, 18, 12, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 12, 25, 18, 16, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        # Cabecera
+        # Cabecera (encabezado corregido: Fecha de recepción)
         cols = ['Producto', 'Subproducto', 'Patio', 'Proveedor',
-                'Guía', 'Fecha', 'Espesor', 'Ancho', 'Largo (m)',
+                'Guía', 'Fecha de recepción', 'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R9 — Detalle por Producto', sty['title'])
         for i, c in enumerate(cols):
             sheet.write(1, i, c, sty['header'])
 
-        # Agrupar por producto + subproducto para mantener orden y subtotales
-        agg = {}
-        order = []
-        for line in self:
-            prod = line.product_id.name or 'Sin Producto'
-            sub = line.subproduct_id.name or 'Sin Subproducto'
-            loc = line.patio_label or ''
-            provider = line.partner_name or ''
-            guide = line.reception_id.name or ''
-            date = line.reception_id.reception_date.strftime('%Y-%m-%d') if line.reception_id.reception_date else ''
-            thick = line.thickness_visual or ''
-            width = line.width_visual or ''
-            length = line.length or 0
-            pieces = line.pieces or 0
-            m3 = line.vol_physical_m3 or 0.0
-            mbf = line.vol_mbf or 0.0
-
-            key = (prod, sub)
-            if key not in agg:
-                agg[key] = {'rows': [], 'tot_p': 0, 'tot_m3': 0.0, 'tot_mbf': 0.0}
-                order.append(key)
-            agg[key]['rows'].append((loc, provider, guide, date, thick, width,
-                                     length, pieces, m3, mbf))
-            agg[key]['tot_p'] += pieces
-            agg[key]['tot_m3'] += m3
-            agg[key]['tot_mbf'] += mbf
-
-        row = 2
-        grand_p, grand_m3, grand_mbf = 0, 0.0, 0.0
-
-        for i, (prod, sub) in enumerate(order):
-            group = agg[(prod, sub)]
-
-            # Fila de grupo (cabecera de producto)
-            sheet.merge_range(row, 0, row, len(cols) - 1,
-                              f'{prod} — {sub}', sty['header'])
-            row += 1
-
-            for (loc, provider, guide, date, thick, width,
-                 length, pieces, m3, mbf) in group['rows']:
-                sheet.write(row, 0, prod, sty['data_str'])
-                sheet.write(row, 1, sub, sty['data_str'])
-                sheet.write(row, 2, loc, sty['data_str'])
-                sheet.write(row, 3, provider, sty['data_str'])
-                sheet.write(row, 4, guide, sty['data_str'])
-                sheet.write(row, 5, date, sty['data_str'])
-                sheet.write(row, 6, thick, sty['data_str'])
-                sheet.write(row, 7, width, sty['data_str'])
-                sheet.write(row, 8, length, sty['data_num'])
-                sheet.write(row, 9, pieces, sty['data_int'])
-                sheet.write(row, 10, m3, sty['data_num'])
-                sheet.write(row, 11, mbf, sty['data_num'])
-                row += 1
-
-            # Subtotales del grupo
-            sheet.write(row, 0, f'SUB {prod}', sty['footer'])
-            for c in range(1, 9):
-                sheet.write(row, c, '', sty['footer'])
-            sheet.write(row, 9, group['tot_p'], sty['footer_int'])
-            sheet.write(row, 10, group['tot_m3'], sty['footer_num'])
-            sheet.write(row, 11, group['tot_mbf'], sty['footer_num'])
-            grand_p += group['tot_p']
-            grand_m3 += group['tot_m3']
-            grand_mbf += group['tot_mbf']
-            row += 1
-
-            # Línea vacía entre grupos
-            if i < len(order) - 1:
-                row += 1
+        # Usar helper genérico de agrupación R9
+        structure = self._report_build_r9_structure(self, include_oc=False)
+        row, grand_p, grand_m3, grand_mbf = self._report_write_r9_xlsx_body(
+            sheet, sty, structure, start_row=2
+        )
 
         # Totales generales
         sheet.write(row, 0, 'TOTALES', sty['footer'])
@@ -834,4 +668,4 @@ class LumberReceptionLineReport(models.Model):
         sheet.write(row, 10, grand_m3, sty['footer_num'])
         sheet.write(row, 11, grand_mbf, sty['footer_num'])
 
-        return self._create_xlsx_attachment(workbook, output, 'R9_Detalle_Producto.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R9_Detalle_Producto.xlsx')

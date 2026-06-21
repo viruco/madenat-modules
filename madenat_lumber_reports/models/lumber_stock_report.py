@@ -35,9 +35,10 @@ _logger = logging.getLogger(__name__)
 class LumberStockReport(models.Model):
     """
     Reportes de inventario real basados en stock.quant.
-    _inherit = 'stock.quant' → stock.quant + lot_id → lot attributes.
+    _inherit = 'stock.quant' + 'report.helper.mixin' → stock.quant + lot_id → lot attributes.
     """
-    _inherit = 'stock.quant'
+    _name = 'stock.quant'
+    _inherit = ['stock.quant', 'report.helper.mixin']
 
     # ──────────────────────────────────────────────────────
     # CAMPO COMPUTADO: nombre de ubicación (atributo del quant)
@@ -177,7 +178,7 @@ class LumberStockReport(models.Model):
                 q.lot_container_name = ''
 
     # ──────────────────────────────────────────────────────
-    # HELPERS: leer atributos del lote desde quant.lot_id
+    # HELPERS LEGACY (mantenidos por compatibilidad)
     # ──────────────────────────────────────────────────────
 
     def _lot_name(self, field_name, default=''):
@@ -198,65 +199,10 @@ class LumberStockReport(models.Model):
         return obj.display_name if obj else default
 
     # ──────────────────────────────────────────────────────
-    # ESTILOS XLSX (Calibri 11pt — mismo formato que legacy)
+    # NOTA: _xlsx_styles() y _create_xlsx_attachment()
+    # ahora se heredan de report.helper.mixin.
+    # Se elimina la duplicación previa de ~54 líneas.
     # ──────────────────────────────────────────────────────
-
-    def _xlsx_styles(self, workbook):
-        return {
-            'title': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'align': 'center', 'valign': 'vcenter', 'border': 1,
-            }),
-            'header': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'align': 'center', 'valign': 'vcenter', 'border': 1,
-                'bg_color': '#343a40', 'font_color': 'white',
-            }),
-            'data_str': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-            }),
-            'data_num': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '#,##0.000',
-            }),
-            'data_int': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '0',
-            }),
-            'footer': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-            }),
-            'footer_num': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '#,##0.000',
-            }),
-            'footer_int': workbook.add_format({
-                'font_name': 'Calibri', 'font_size': 11, 'bold': True,
-                'border': 1, 'align': 'center', 'valign': 'vcenter',
-                'num_format': '0',
-            }),
-        }
-
-    def _create_xlsx_attachment(self, workbook, output, filename):
-        workbook.close()
-        output.seek(0)
-        attachment = self.env['ir.attachment'].create({
-            'name': filename,
-            'type': 'binary',
-            'datas': base64.b64encode(output.read()),
-            'res_model': self._name,
-            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=true',
-            'target': 'self',
-        }
 
     # ──────────────────────────────────────────────────────
     # FILTRO CANÓNICO DE STOCK FÍSICO REAL
@@ -279,44 +225,16 @@ class LumberStockReport(models.Model):
         )
 
     # ──────────────────────────────────────────────────────
+    # HELPERS LOCALES (delegados al mixin canónico cuando aplica)
+    # ──────────────────────────────────────────────────────
+    # NOTA (2026-06-16): _clean_lot_label y _build_escuadria fueron reemplazados
+    # por los helpers canónicos del mixin report.helper.mixin:
+    #   - _clean_lot_label → _report_get_canonical_lot_label
+    #   - _build_escuadria   → _report_get_canonical_thickness + _report_get_canonical_width
+
+    # ──────────────────────────────────────────────────────
     # R1 — DETALLE POR PATIO — INFORME OPERATIVO TRAZABLE
     # ──────────────────────────────────────────────────────
-
-    def _get_container_name(self, lot):
-        """Busca el contenedor asociado al lote, si existe."""
-        if not lot:
-            return ''
-        try:
-            container = self.env['lumber.container'].sudo().search(
-                [('lot_ids', 'in', lot.id)], limit=1
-            )
-            return container.name if container else ''
-        except Exception:
-            return ''
-
-    def _clean_lot_label(self, lot):
-        """Devuelve la etiqueta del lote sin prefijos técnicos."""
-        if not lot:
-            return ''
-        name = lot.name or ''
-        # Si la etiqueta es un número largo con padding, mantenerla tal cual
-        return name.strip()
-
-    def _build_escuadria(self, lot):
-        """Construye la escuadría legible: espesor x ancho."""
-        if not lot:
-            return ''
-        if lot.escuadria and lot.escuadria.strip():
-            return lot.escuadria.strip()
-        thick = lot.thickness_visual or ''
-        wide = lot.width_visual or ''
-        if thick and wide:
-            return f'{thick} x {wide}'
-        if thick:
-            return thick
-        if wide:
-            return wide
-        return ''
 
     def action_export_r1_stock_detail_xlsx(self):
         _logger.info("━━━ 📊 R1 — DETALLE POR PATIO (INFORME OPERATIVO) ━━━")
@@ -336,17 +254,17 @@ class LumberStockReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R1_Stock_Real_Patio')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        # 13 columnas en el orden especificado
-        widths = [22, 18, 14, 18, 18, 24, 28, 20, 18, 10, 8, 12, 18]
+        # 13 columnas — anchos compactos al estilo embarque
+        widths = [16, 22, 14, 16, 16, 22, 24, 18, 16, 10, 8, 13, 16]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
         cols = [
             'Patio', 'Etiqueta Lote', 'Fecha Recepción', 'N° Guía',
             'N° Orden', 'Proveedor', 'Producto', 'Subproducto',
-            'Escuadría', 'Largo (m)', 'Piezas', 'Vol. Stock (m³)', 'Contenedor',
+            'Escuadría', 'Largo (m)', 'Piezas', 'Vol. (m³)', 'Contenedor',
         ]
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R1 — Detalle por Patio — Stock Real', sty['title'])
@@ -370,49 +288,56 @@ class LumberStockReport(models.Model):
             # Ordenar por etiqueta de lote dentro del patio
             qs_sorted = sorted(qs, key=lambda x: (x.lot_id.name or '') if x.lot_id else '')
 
-            # ── Cabecera de patio ──
+            # ── Cabecera de patio (estilo suave diferenciado de headers) ──
             sheet.merge_range(row, 0, row, len(cols) - 1,
-                              f'📍 {patio_name}', sty['header'])
+                              f'📍 {patio_name}', sty['patio_header'])
             row += 1
 
             patio_pieces, patio_m3 = 0, 0.0
-            for q in qs_sorted:
+            for qi, q in enumerate(qs_sorted):
                 lot = q.lot_id
-                label = self._clean_lot_label(lot)
-                date = ''
-                if lot and lot.reception_id and lot.reception_id.reception_date:
-                    date = lot.reception_id.reception_date.strftime('%Y-%m-%d')
-                guide = lot.guia_number if lot and lot.guia_number else ''
-                oc = lot.purchase_order_id.name if lot and lot.purchase_order_id else ''
-                supplier = lot.supplier_id.name if lot and lot.supplier_id else ''
-                product = q.product_id.name or ''
-                sub = lot.subproducto_id.name if lot and lot.subproducto_id else ''
-                escuadria = self._build_escuadria(lot)
-                length = lot.largo_m if lot else 0
-                pieces = lot.piezas if lot else 0
-                m3 = round(lot.volumen_m3, 3) if lot and lot.volumen_m3 else 0.0
-                container = self._get_container_name(lot)
+                alt = qi % 2 == 1  # zebra striping
 
-                sheet.write(row, 0, patio_name, sty['data_str'])
-                sheet.write(row, 1, label, sty['data_str'])
-                sheet.write(row, 2, date, sty['data_str'])
-                sheet.write(row, 3, guide, sty['data_str'])
-                sheet.write(row, 4, oc, sty['data_str'])
-                sheet.write(row, 5, supplier, sty['data_str'])
-                sheet.write(row, 6, product, sty['data_str'])
-                sheet.write(row, 7, sub, sty['data_str'])
-                sheet.write(row, 8, escuadria, sty['data_str'])
-                sheet.write(row, 9, length, sty['data_num'])
-                sheet.write(row, 10, pieces, sty['data_int'])
-                sheet.write(row, 11, m3, sty['data_num'])
-                sheet.write(row, 12, container, sty['data_str'])
+                # Resolver campos alineados con la vista Tree R1:
+                # usar los mismos related/compute fields de stock.quant
+                # que el Tree despliega directamente.
+                label = lot.name.strip() if (lot and lot.name) else ''
+                date = q.lot_reception_date.strftime('%Y-%m-%d') if q.lot_reception_date else ''
+                guide = q.lot_guia_number or ''
+                oc = q.lot_purchase_order or ''
+                supplier = q.lot_supplier or ''
+                product = q.product_id.name or ''
+                sub = q.lot_subproducto or ''
+                escuadria = q.lot_escuadria or ''
+                length = q.lot_largo_m or 0.0
+                pieces = q.lot_piezas or 0
+                m3 = q.lot_volumen_m3 or 0.0
+                container = q.lot_container_name or ''
+
+                s_str = sty['data_str_alt'] if alt else sty['data_str']
+                s_num = sty['data_num_alt'] if alt else sty['data_num']
+                s_int = sty['data_int_alt'] if alt else sty['data_int']
+
+                sheet.write(row, 0, patio_name, s_str)
+                sheet.write(row, 1, label, s_str)
+                sheet.write(row, 2, date, s_str)
+                sheet.write(row, 3, guide, s_str)
+                sheet.write(row, 4, oc, s_str)
+                sheet.write(row, 5, supplier, s_str)
+                sheet.write(row, 6, product, s_str)
+                sheet.write(row, 7, sub, s_str)
+                sheet.write(row, 8, escuadria, s_str)
+                sheet.write(row, 9, length, s_num)
+                sheet.write(row, 10, pieces, s_int)
+                sheet.write(row, 11, m3, s_num)
+                sheet.write(row, 12, container, s_str)
 
                 patio_pieces += pieces
                 patio_m3 += m3
                 row += 1
 
             # ── Subtotal de patio ──
-            sheet.write(row, 0, f'SUB {patio_name}', sty['footer'])
+            sheet.write(row, 0, f'Subtotal {patio_name}', sty['footer'])
             for c in range(1, 10):
                 sheet.write(row, c, '', sty['footer'])
             sheet.write(row, 10, patio_pieces, sty['footer_int'])
@@ -425,17 +350,17 @@ class LumberStockReport(models.Model):
             if pi < len(patio_order) - 1:
                 row += 1  # línea vacía entre patios
 
-        # ── Total general ──
-        sheet.write(row, 0, 'TOTAL GENERAL', sty['footer'])
+        # ── Total general (resaltado con borde doble) ──
+        sheet.write(row, 0, 'TOTAL GENERAL', sty['grand_footer'])
         for c in range(1, 10):
-            sheet.write(row, c, '', sty['footer'])
-        sheet.write(row, 10, grand_pieces, sty['footer_int'])
-        sheet.write(row, 11, grand_m3, sty['footer_num'])
-        sheet.write(row, 12, '', sty['footer'])
+            sheet.write(row, c, '', sty['grand_footer'])
+        sheet.write(row, 10, grand_pieces, sty['grand_footer_int'])
+        sheet.write(row, 11, grand_m3, sty['grand_footer_num'])
+        sheet.write(row, 12, '', sty['grand_footer'])
 
         _logger.info("📊 R1: %d patios, %d quants, %d piezas totales",
                      len(patio_order), len(quants), grand_pieces)
-        return self._create_xlsx_attachment(workbook, output, 'R1_Detalle_Patio_Stock_Real.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R1_Detalle_Patio_Stock_Real.xlsx')
 
     # ──────────────────────────────────────────────────────
     # R2 — RESUMEN POR PATIO — TODOS PRODUCTOS
@@ -456,24 +381,25 @@ class LumberStockReport(models.Model):
         if not quants:
             raise UserError(_("Sin existencias reales en ubicaciones internas."))
 
-        # Agregación manual por (location, product, subproducto) desde lot_id
+        # Agregación manual por (location, product, subproducto) usando helpers canónicos
+        # Para Producto se prefiere el nombre limpio del lote (sin [CÓDIGO])
         agg = {}
         for q in quants:
+            loc = self._report_get_canonical_patio_label(q)
             lot = q.lot_id
-            loc = q.location_name or _('Sin Patio')
-            prod = q.product_id.name or _('Sin Producto')
-            sub = lot.subproducto_id.name if lot and lot.subproducto_id else _('Sin Subproducto')
+            prod = (lot.product_name_only or self._report_get_canonical_product_name(q)) if lot else self._report_get_canonical_product_name(q)
+            sub = self._report_get_canonical_subproduct_name(q)
             key = (loc, prod, sub)
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
-            agg[key]['pieces'] += (lot.piezas if lot else 0)
-            agg[key]['m3'] += (lot.volumen_m3 if lot else 0.0)
-            agg[key]['mbf'] += (lot.volumen_mbf if lot else 0.0)
+            agg[key]['pieces'] += self._report_get_canonical_pieces(q)
+            agg[key]['m3'] += self._report_get_canonical_volume_m3(q)
+            agg[key]['mbf'] += self._report_get_canonical_mbf(q)
 
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R2_Resumen_Patio_Stock')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
         widths = [20, 25, 20, 14, 14, 14]
         for i, w in enumerate(widths):
@@ -507,7 +433,7 @@ class LumberStockReport(models.Model):
         sheet.write(row, 5, tot_mbf, sty['footer_num'])
 
         _logger.info("📊 R2 STOCK FÍSICO: %d grupos exportados", len(agg))
-        return self._create_xlsx_attachment(workbook, output, 'R2_Resumen_Patio_Stock_Real.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R2_Resumen_Patio_Stock_Real.xlsx')
 
     # ──────────────────────────────────────────────────────
     # R5 — DETALLE POR PROVEEDOR
@@ -531,13 +457,13 @@ class LumberStockReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R5_Detalle_Proveedor_Stock')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 18, 12, 25, 20, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 18, 16, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Producto',
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción', 'Producto',
                 'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
@@ -551,36 +477,26 @@ class LumberStockReport(models.Model):
             x.lot_id.supplier_id.name if x.lot_id and x.lot_id.supplier_id else '',
             x.product_id.name or ''
         )):
+            data = self._report_build_detail_row(q, include_oc=False)
+            # Usar volumen_m3 del lote directamente (stock real)
             lot = q.lot_id
-            supplier = lot.supplier_id.name if lot and lot.supplier_id else ''
-            loc = q.location_name or ''
-            guide = lot.guia_number if lot and lot.guia_number else ''
-            date = ''
-            if lot and lot.reception_id and lot.reception_id.reception_date:
-                date = lot.reception_id.reception_date.strftime('%Y-%m-%d')
-            product = q.product_id.name or ''
-            sub = lot.subproducto_id.name if lot and lot.subproducto_id else ''
-            thick = lot.thickness_visual if lot else ''
-            width = lot.width_visual if lot else ''
-            length = lot.largo_m if lot else 0
-            pieces = lot.piezas if lot else 0
             m3 = lot.volumen_m3 if lot else 0.0
             mbf = lot.volumen_mbf if lot else 0.0
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, supplier, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            sheet.write(row, 4, product, sty['data_str'])
-            sheet.write(row, 5, sub, sty['data_str'])
-            sheet.write(row, 6, thick, sty['data_str'])
-            sheet.write(row, 7, width, sty['data_str'])
-            sheet.write(row, 8, length, sty['data_num'])
-            sheet.write(row, 9, pieces, sty['data_int'])
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['producto'], sty['data_str'])
+            sheet.write(row, 5, data['subproducto'], sty['data_str'])
+            sheet.write(row, 6, data['espesor'], sty['data_str'])
+            sheet.write(row, 7, data['ancho'], sty['data_str'])
+            sheet.write(row, 8, data['largo'], sty['data_num'])
+            sheet.write(row, 9, data['piezas'], sty['data_int'])
             sheet.write(row, 10, m3, sty['data_num'])
             sheet.write(row, 11, mbf, sty['data_num'])
 
-            tot_pieces += pieces
+            tot_pieces += data['piezas']
             tot_m3 += m3
             tot_mbf += mbf
             row += 1
@@ -593,7 +509,7 @@ class LumberStockReport(models.Model):
         sheet.write(row, 11, tot_mbf, sty['footer_num'])
 
         _logger.info("📊 R5 STOCK FÍSICO: %d quants exportados", len(quants))
-        return self._create_xlsx_attachment(workbook, output, 'R5_Detalle_Proveedor_Stock_Real.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R5_Detalle_Proveedor_Stock_Real.xlsx')
 
     # ──────────────────────────────────────────────────────
     # R7 — DETALLE POR ORDEN DE COMPRA
@@ -617,14 +533,15 @@ class LumberStockReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R7_Detalle_OC_Stock')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 18, 12, 25, 25, 20, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 18, 16, 18, 25, 20, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha', 'Orden de Compra', 'Producto',
-                'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
+        cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción',
+                'Orden de Compra', 'Producto', 'Subproducto',
+                'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R7 — Detalle por Orden de Compra — Stock Real (stock.quant)', sty['title'])
@@ -634,41 +551,29 @@ class LumberStockReport(models.Model):
         row = 2
         tot_pieces, tot_m3, tot_mbf = 0, 0.0, 0.0
         for q in quants.sorted(key=lambda x: (
-            x.lot_id.purchase_order_id.name if x.lot_id and x.lot_id.purchase_order_id else 'SIN ORDEN',
+            self._report_get_canonical_purchase_order(x),
             x.product_id.name or ''
         )):
             lot = q.lot_id
-            supplier = lot.supplier_id.name if lot and lot.supplier_id else ''
-            loc = q.location_name or ''
-            guide = lot.guia_number if lot and lot.guia_number else ''
-            date = ''
-            if lot and lot.reception_id and lot.reception_id.reception_date:
-                date = lot.reception_id.reception_date.strftime('%Y-%m-%d')
-            product = q.product_id.name or ''
-            sub = lot.subproducto_id.name if lot and lot.subproducto_id else ''
-            thick = lot.thickness_visual if lot else ''
-            width = lot.width_visual if lot else ''
-            length = lot.largo_m if lot else 0
-            pieces = lot.piezas if lot else 0
+            data = self._report_build_detail_row(q, include_oc=True)
             m3 = lot.volumen_m3 if lot else 0.0
             mbf = lot.volumen_mbf if lot else 0.0
-            oc = lot.purchase_order_id.name if lot and lot.purchase_order_id else 'SIN ORDEN'
 
-            sheet.write(row, 0, loc, sty['data_str'])
-            sheet.write(row, 1, supplier, sty['data_str'])
-            sheet.write(row, 2, guide, sty['data_str'])
-            sheet.write(row, 3, date, sty['data_str'])
-            sheet.write(row, 4, oc, sty['data_str'])
-            sheet.write(row, 5, product, sty['data_str'])
-            sheet.write(row, 6, sub, sty['data_str'])
-            sheet.write(row, 7, thick, sty['data_str'])
-            sheet.write(row, 8, width, sty['data_str'])
-            sheet.write(row, 9, length, sty['data_num'])
-            sheet.write(row, 10, pieces, sty['data_int'])
+            sheet.write(row, 0, data['patio'], sty['data_str'])
+            sheet.write(row, 1, data['proveedor'], sty['data_str'])
+            sheet.write(row, 2, data['guia'], sty['data_str'])
+            sheet.write(row, 3, data['fecha_recepcion'], sty['data_str'])
+            sheet.write(row, 4, data['oc'], sty['data_str'])
+            sheet.write(row, 5, data['producto'], sty['data_str'])
+            sheet.write(row, 6, data['subproducto'], sty['data_str'])
+            sheet.write(row, 7, data['espesor'], sty['data_str'])
+            sheet.write(row, 8, data['ancho'], sty['data_str'])
+            sheet.write(row, 9, data['largo'], sty['data_num'])
+            sheet.write(row, 10, data['piezas'], sty['data_int'])
             sheet.write(row, 11, m3, sty['data_num'])
             sheet.write(row, 12, mbf, sty['data_num'])
 
-            tot_pieces += pieces
+            tot_pieces += data['piezas']
             tot_m3 += m3
             tot_mbf += mbf
             row += 1
@@ -681,7 +586,7 @@ class LumberStockReport(models.Model):
         sheet.write(row, 12, tot_mbf, sty['footer_num'])
 
         _logger.info("📊 R7 STOCK FÍSICO: %d quants exportados", len(quants))
-        return self._create_xlsx_attachment(workbook, output, 'R7_Detalle_OC_Stock_Real.xlsx')
+        return self._report_create_xlsx_attachment(workbook, output, 'R7_Detalle_OC_Stock_Real.xlsx')
 
     # ──────────────────────────────────────────────────────
     # R9 — DETALLE POR PRODUCTO
@@ -705,84 +610,27 @@ class LumberStockReport(models.Model):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet('R9_Detalle_Producto_Stock')
-        sty = self._xlsx_styles(workbook)
+        sty = self._report_xlsx_styles(workbook)
 
-        widths = [20, 25, 12, 25, 18, 12, 10, 10, 10, 9, 12, 12]
+        widths = [20, 25, 12, 25, 18, 16, 10, 10, 10, 9, 12, 12]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
         cols = ['Producto', 'Subproducto', 'Patio', 'Proveedor',
-                'Guía', 'Fecha', 'Espesor', 'Ancho', 'Largo (m)',
+                'Guía', 'Fecha de recepción', 'Espesor', 'Ancho', 'Largo (m)',
                 'Piezas', 'M3', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R9 — Detalle por Producto — Stock Real (stock.quant)', sty['title'])
         for i, c in enumerate(cols):
             sheet.write(1, i, c, sty['header'])
 
-        agg = {}
-        order = []
-        for q in quants:
-            lot = q.lot_id
-            supplier = lot.supplier_id.name if lot and lot.supplier_id else ''
-            prod = q.product_id.name or 'Sin Producto'
-            sub = lot.subproducto_id.name if lot and lot.subproducto_id else 'Sin Subproducto'
-            loc = q.location_name or ''
-            guide = lot.guia_number if lot and lot.guia_number else ''
-            date = ''
-            if lot and lot.reception_id and lot.reception_id.reception_date:
-                date = lot.reception_id.reception_date.strftime('%Y-%m-%d')
-            thick = lot.thickness_visual if lot else ''
-            width = lot.width_visual if lot else ''
-            length = lot.largo_m if lot else 0
-            pieces = lot.piezas if lot else 0
-            m3 = lot.volumen_m3 if lot else 0.0
-            mbf = lot.volumen_mbf if lot else 0.0
+        # Usar helper genérico de agrupación R9
+        structure = self._report_build_r9_structure(quants, include_oc=False)
+        row, grand_p, grand_m3, grand_mbf = self._report_write_r9_xlsx_body(
+            sheet, sty, structure, start_row=2
+        )
 
-            key = (prod, sub)
-            if key not in agg:
-                agg[key] = {'rows': [], 'tot_p': 0, 'tot_m3': 0.0, 'tot_mbf': 0.0}
-                order.append(key)
-            agg[key]['rows'].append((loc, supplier, guide, date, thick, width,
-                                     length, pieces, m3, mbf))
-            agg[key]['tot_p'] += pieces
-            agg[key]['tot_m3'] += m3
-            agg[key]['tot_mbf'] += mbf
-
-        row = 2
-        grand_p, grand_m3, grand_mbf = 0, 0.0, 0.0
-        for i, (prod, sub) in enumerate(order):
-            group = agg[(prod, sub)]
-            sheet.merge_range(row, 0, row, len(cols) - 1,
-                              f'{prod} — {sub}', sty['header'])
-            row += 1
-            for (loc, supplier, guide, date, thick, width,
-                 length, pieces, m3, mbf) in group['rows']:
-                sheet.write(row, 0, prod, sty['data_str'])
-                sheet.write(row, 1, sub, sty['data_str'])
-                sheet.write(row, 2, loc, sty['data_str'])
-                sheet.write(row, 3, supplier, sty['data_str'])
-                sheet.write(row, 4, guide, sty['data_str'])
-                sheet.write(row, 5, date, sty['data_str'])
-                sheet.write(row, 6, thick, sty['data_str'])
-                sheet.write(row, 7, width, sty['data_str'])
-                sheet.write(row, 8, length, sty['data_num'])
-                sheet.write(row, 9, pieces, sty['data_int'])
-                sheet.write(row, 10, m3, sty['data_num'])
-                sheet.write(row, 11, mbf, sty['data_num'])
-                row += 1
-            sheet.write(row, 0, f'SUB {prod}', sty['footer'])
-            for c in range(1, 9):
-                sheet.write(row, c, '', sty['footer'])
-            sheet.write(row, 9, group['tot_p'], sty['footer_int'])
-            sheet.write(row, 10, group['tot_m3'], sty['footer_num'])
-            sheet.write(row, 11, group['tot_mbf'], sty['footer_num'])
-            grand_p += group['tot_p']
-            grand_m3 += group['tot_m3']
-            grand_mbf += group['tot_mbf']
-            row += 1
-            if i < len(order) - 1:
-                row += 1
-
+        # Totales generales
         sheet.write(row, 0, 'TOTALES', sty['footer'])
         for c in range(1, 9):
             sheet.write(row, c, '', sty['footer'])
@@ -790,5 +638,5 @@ class LumberStockReport(models.Model):
         sheet.write(row, 10, grand_m3, sty['footer_num'])
         sheet.write(row, 11, grand_mbf, sty['footer_num'])
 
-        _logger.info("📊 R9 STOCK FÍSICO: %d grupos, %d quants exportados", len(order), len(quants))
-        return self._create_xlsx_attachment(workbook, output, 'R9_Detalle_Producto_Stock_Real.xlsx')
+        _logger.info("📊 R9 STOCK FÍSICO: %d grupos, %d quants exportados", len(structure['order']), len(quants))
+        return self._report_create_xlsx_attachment(workbook, output, 'R9_Detalle_Producto_Stock_Real.xlsx')

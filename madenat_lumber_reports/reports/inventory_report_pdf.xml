@@ -2,6 +2,7 @@
 <odoo>
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <!-- 8 QWeb Templates + 8 ir.actions.report — Inventario Recepción        -->
+    <!-- REFACTOR 2026-06-16: "Fecha" → "Fecha de recepción" + OC en R7       -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -49,7 +50,7 @@
     </template>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
-    <!-- R1 — DETALLE POR PATIO — TODOS PRODUCTOS -->
+    <!-- R1 — DETALLE POR PATIO — TODOS PRODUCTOS (13 columnas con OC)       -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <template id="report_r1_detail_location_pdf">
         <t t-call="web.html_container">
@@ -72,7 +73,7 @@
                                     <th>Patio</th>
                                     <th>Proveedor</th>
                                     <th>Guía</th>
-                                    <th>Fecha</th>
+                                    <th>Fecha de recepción</th>
                                     <th>Orden de Compra</th>
                                     <th>Producto</th>
                                     <th>Subproducto</th>
@@ -111,7 +112,7 @@
                             </tbody>
                             <tfoot>
                                 <tr style="font-weight: bold; background-color: #e9ecef;" class="text-center">
-                                    <td colspan="9">TOTALES</td>
+                                    <td colspan="10">TOTALES</td>
                                     <td><t t-esc="tot_p"/></td>
                                     <td><t t-esc="'%.3f' % tot_m3"/></td>
                                     <td><t t-esc="'%.3f' % tot_mbf"/></td>
@@ -228,7 +229,7 @@
                                     <th>Patio</th>
                                     <th>Proveedor</th>
                                     <th>Guía</th>
-                                    <th>Fecha</th>
+                                    <th>Fecha de recepción</th>
                                     <th>Producto</th>
                                     <th>Subproducto</th>
                                     <th>Espesor</th>
@@ -382,7 +383,7 @@
                                     <th>Patio</th>
                                     <th>Proveedor</th>
                                     <th>Guía</th>
-                                    <th>Fecha</th>
+                                    <th>Fecha de recepción</th>
                                     <th>Producto</th>
                                     <th>Subproducto</th>
                                     <th>Espesor</th>
@@ -513,7 +514,7 @@
     </record>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
-    <!-- R7 — DETALLE POR ORDEN DE COMPRA -->
+    <!-- R7 — DETALLE POR ORDEN DE COMPRA (CORREGIDO: +OC +Fecha recepción)  -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <template id="report_r7_detail_purchase_pdf">
         <t t-call="web.html_container">
@@ -536,7 +537,8 @@
                                     <th>Patio</th>
                                     <th>Proveedor</th>
                                     <th>Guía</th>
-                                    <th>Fecha</th>
+                                    <th>Fecha de recepción</th>
+                                    <th>Orden de Compra</th>
                                     <th>Producto</th>
                                     <th>Subproducto</th>
                                     <th>Espesor</th>
@@ -557,6 +559,7 @@
                                         <td><t t-esc="l.partner_name"/></td>
                                         <td><t t-esc="l.reception_id.name"/></td>
                                         <td><t t-esc="l.reception_id.reception_date"/></td>
+                                        <td><t t-esc="l.reception_id.purchase_order or 'SIN ORDEN'"/></td>
                                         <td><t t-esc="l.product_id.name"/></td>
                                         <td><t t-esc="l.subproduct_id.name"/></td>
                                         <td><t t-esc="l.thickness_visual"/></td>
@@ -634,6 +637,9 @@
                                             <t t-if="l.reception_id.purchase_id">
                                                 <t t-esc="l.reception_id.purchase_id.name"/>
                                             </t>
+                                            <t t-else="">
+                                                <t t-esc="l.reception_id.purchase_order or 'SIN ORDEN'"/>
+                                            </t>
                                         </td>
                                         <td><t t-esc="l.product_id.name"/></td>
                                         <td><t t-esc="l.subproduct_id.name"/></td>
@@ -696,7 +702,7 @@
                                     <th>Patio</th>
                                     <th>Proveedor</th>
                                     <th>Guía</th>
-                                    <th>Fecha</th>
+                                    <th>Fecha de recepción</th>
                                     <th>Espesor</th>
                                     <th>Ancho</th>
                                     <th>Largo (m)</th>

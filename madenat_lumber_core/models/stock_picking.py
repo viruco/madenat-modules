@@ -10,20 +10,13 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     # ==========================================================================
-    # --- RELACIÓN CON RECEPCIÓN MADENAT (CANONICAL v2) ---
-    # reception_id = discriminador operativo real (usado en writes y búsquedas)
-    # lumber_reception_id = legacy/related, mantenido solo para compatibilidad de lectura/UI.
+    # --- RELACIÓN CON RECEPCIÓN MADENAT ---
     # ==========================================================================
     reception_id = fields.Many2one(
         'lumber.reception',
         'Recepción de Guía MADENAT',
         copy=False,
         index=True,
-    )
-
-    lumber_reception_id = fields.Many2one(
-        related='reception_id',
-        string='Recepción Legacy',
     )
 
     # El campo de lotes ahora es un 'related' a través de la recepción, mucho más eficiente.
