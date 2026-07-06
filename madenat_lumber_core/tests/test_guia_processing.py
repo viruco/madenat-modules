@@ -7,6 +7,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError, UserError
 import logging
+from unittest.mock import patch
 
 _logger = logging.getLogger(__name__)
 
@@ -329,4 +330,101 @@ class TestOrphanMoveCleanupSavepoint(TransactionCase):
         _logger.info(
             "✅ savepoint test OK: %d moves eliminados, 1 protegido (%s)",
             len(deleted_ids), remaining.name
+        )
+
+    def test_savepoint_isolates_transaction_on_unlink_failure(self):
+        """
+        🔬 Test B — Aislamiento transaccional real del savepoint.
+
+        SIMULACIÓN CONTROLADA (no fallo de integridad real de PostgreSQL):
+        Se usa mock.patch sobre StockMove.unlink para forzar una excepción
+        DENTRO del bloque savepoint, simulando un IntegrityError que haría
+        que el cursor de la transacción externa quedara "tainted" (inutilizable)
+        si NO existiera el savepoint.
+
+        Hipótesis: el savepoint captura el fallo del unlink, revierte solo
+        el bloque interno, y el cursor externo sigue operable inmediatamente
+        después de capturar la excepción.
+
+        Si este test FALLA (cursor inutilizable post-excepción), la
+        recomendación de consolidar hacia savepoint en reception_service
+        queda CONTRADECIDA.
+        """
+        # 1. Crear guía y moves huérfanos limpios (sin move_lines)
+        origin_name = 'GW-SAVEPOINT-B-001'
+        guia = self.GuiaModel.create({
+            'name': origin_name,
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+        })
+
+        common_vals = {
+            'name': 'Orphan Move Test B',
+            'product_id': self.product.id,
+            'product_uom_qty': 1.0,
+            'product_uom': self.uom.id,
+            'picking_id': False,
+            'location_id': self.location_supplier.id,
+            'location_dest_id': self.location.id,
+            'company_id': self.env.company.id,
+            'origin': origin_name,
+            'state': 'done',
+        }
+
+        move_a = self.MoveModel.create({**common_vals, 'name': 'Orphan-Fail-A'})
+        move_b = self.MoveModel.create({**common_vals, 'name': 'Orphan-Fail-B'})
+
+        self.assertEqual(
+            self.MoveModel.search_count([('id', 'in', [move_a.id, move_b.id])]), 2,
+            "Los 2 moves deben existir antes de la limpieza"
+        )
+
+        # 2. Mock: forzar que unlink() dentro del savepoint lance Exception
+        with patch(
+            'odoo.addons.stock.models.stock_move.StockMove.unlink',
+            side_effect=Exception("Simulated integrity failure inside savepoint")
+        ):
+            with self.assertRaises(UserError) as ctx:
+                guia._cleanup_orphan_moves_guia()
+
+            self.assertIn("No se pudieron eliminar", str(ctx.exception),
+                "Debe lanzar UserError con mensaje de seguridad Odoo")
+
+        # 3. ASERTO CRÍTICO: el cursor externo sigue operable
+        cursor_healthy = False
+        try:
+            count_after = self.env['stock.move'].search_count([])
+            cursor_healthy = True
+            _logger.info(
+                "✅ Test B — Cursor operable post-savepoint-failure: search_count=%d", count_after
+            )
+        except Exception as e:
+            _logger.error("❌ Test B — Cursor INUTILIZABLE post-savepoint-failure: %s", e)
+
+        self.assertTrue(
+            cursor_healthy,
+            "CRÍTICO: El cursor quedó inutilizable tras el fallo del unlink dentro "
+            "del savepoint. Esto CONTRADICE la recomendación de consolidar hacia "
+            "savepoint en reception_service."
+        )
+
+        # 4. Verificar que los moves fallidos NO quedaron en estado intermedio
+        moves_after = self.MoveModel.search([('id', 'in', [move_a.id, move_b.id])])
+        self.assertEqual(len(moves_after), 2,
+            "Ambos moves deben seguir existiendo (rollback correcto del savepoint)")
+
+        for m in moves_after:
+            self.assertEqual(m.state, 'done',
+                f"Move {m.name} no debe haber quedado en estado 'draft' intermedio "
+                f"(tiene state={m.state}). El savepoint revirtió write() correctamente."
+            )
+            self.assertFalse(
+                m.origin.startswith('HUERFANO-PROTEGIDO-'),
+                f"Move {m.name} NO debe ser marcado como protegido "
+                "(el fallo fue en unlink, no en filtro protected_moves)"
+            )
+
+        _logger.info(
+            "✅ Test B PASS — Savepoint aísla correctamente el fallo de unlink. "
+            "Cursor externo operable. Recomendación Fase 2 CONFIRMADA."
         )

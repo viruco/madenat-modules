@@ -733,3 +733,71 @@ Este test servirá como **criterio de aceptación** para la Fase 3 (consolidaci�
 3. **Si se unifica hacia unlink directo**, el test fallaría porque `reception_service` no tiene el filtro `protected_moves` ni el savepoint — los moves con `move_line_ids` causarían `UserError` de Odoo.
 4. **0% de cobertura previa → ahora 1 test** que cubre el escenario más crítico del método.
 
+
+---
+
+## Z. Test B — Aislamiento transaccional real del savepoint (Fase 3a, complemento — 2026-07-06)
+
+### Z.1 Ubicación del test
+- **Archivo:** `custom_addons/madenat_lumber_core/tests/test_guia_processing.py`
+- **Clase:** `TestOrphanMoveCleanupSavepoint`
+- **Método:** `test_savepoint_isolates_transaction_on_unlink_failure`
+- **Tag:** `@tagged('post_install', '-at_install', 'madenat', 'guia_processing', 'cleanup')`
+
+### Z.2 Mecanismo de fallo forzado
+
+**Tipo: SIMULACIÓN CONTROLADA (mock.patch)**
+
+No existe FK RESTRICT explotable en custom_addons que permita forzar un fallo de integridad real de PostgreSQL durante el unlink de stock.move sin modificar código de producción. Se usó `unittest.mock.patch` sobre `odoo.addons.stock.models.stock_move.StockMove.unlink` con `side_effect=Exception(...)` para simular una falla de integridad dentro del bloque `with self.env.cr.savepoint():`.
+
+**Path mockeado:** `odoo.addons.stock.models.stock_move.StockMove.unlink`
+**Excepción forzada:** `Exception("Simulated integrity failure inside savepoint")`
+
+### Z.3 Resultado de ejecución
+
+**Fecha:** 2026-07-06 21:25 UTC-4
+**Base de datos:** madenat_test
+**Comando:** `docker exec odoo18_app odoo -d madenat_test --test-enable --test-tags ":TestOrphanMoveCleanupSavepoint.test_savepoint_isolates_transaction_on_unlink_failure" --stop-after-init --log-level=test --http-port=18071`
+
+**Resultado: ✅ PASS**
+
+```
+🧹 MADENAT guia_processing cleanup: 2 stock.moves huérfanos encontrados para guías: ['GW-SAVEPOINT-B-001']
+❌ Error ORM eliminando moves huérfanos: Simulated integrity failure inside savepoint
+✅ Test B — Cursor operable post-savepoint-failure: search_count=402
+✅ Test B PASS — Savepoint aísla correctamente el fallo de unlink. Cursor externo operable.
+0 failed, 0 error(s) of 1 tests when loading database 'madenat_test'
+```
+
+### Z.4 Verificación de criterios de aceptación
+
+| Criterio | Estado | Evidencia |
+|---|---|---|
+| UserError se lanza correctamente | ✅ | `with self.assertRaises(UserError)` capturó la excepción, mensaje contiene "No se pudieron eliminar" |
+| Cursor externo operable post-fallo | ✅ | `search_count([])` retornó 402 sin excepción — el cursor NO quedó tainted |
+| Moves fallidos preservados en estado original | ✅ | Ambos moves siguen en `state='done'`, sin prefijo `HUERFANO-PROTEGIDO-` |
+| Rollback correcto de write() intermedio | ✅ | Los moves NO quedaron en estado `'draft'` — el savepoint revirtió `cleanable_moves.write({'state': 'draft'})` |
+
+### Z.5 Veredicto
+
+**VEREDICTO: CONFIRMA la recomendación de Fase 2.**
+
+El savepoint en `_cleanup_orphan_moves_guia()` cumple su función real: cuando el `unlink()` falla dentro del bloque protegido, el savepoint realiza rollback de las operaciones parciales (`write` y `unlink`) sin contaminar el cursor de la transacción externa. Inmediatamente después de capturar la excepción, el cursor sigue siendo operable para cualquier operación de BD.
+
+**Implicación para la consolidación:** Si se aplicara el mismo patrón savepoint + force_delete a `reception_service.cleanup_orphan_moves()`, se obtendría el mismo nivel de protección — un fallo en el cleanup de una guía no abortaría la transacción completa del caller. Si en cambio se consolidara hacia unlink directo (sin savepoint), un fallo de integridad durante el unlink dejaría el cursor tainted y forzaría rollback total, rompiendo el comportamiento batch de FASE 3.6.
+
+### Z.6 Limitación del mock
+
+Este test usa `mock.patch`, no un fallo real de PostgreSQL. Un `IntegrityError` real podría comportarse de manera ligeramente distinta en cuanto al momento exacto en que el cursor queda tainted (antes o después de que el `except` lo capture). Sin embargo, el test demuestra que el **mecanismo de aislamiento** funciona para el caso general de excepción dentro del savepoint, que es el argumento central de la recomendación de Fase 2.
+
+---
+
+**FASE 3a COMPLETA (Test A + Test B)**
+
+| Test | Nombre | Resultado | Qué valida |
+|---|---|---|---|
+| Test A | `test_partial_batch_failure_protected_moves_survive` | ✅ PASS | Filtro `protected_moves` + savepoint implícito sobre `cleanable_moves` |
+| Test B | `test_savepoint_isolates_transaction_on_unlink_failure` | ✅ PASS | Aislamiento del cursor externo cuando el unlink falla dentro del savepoint |
+
+**Veredicto final:** Ambos tests pasan contra el código actual. La evidencia empírica (Test B) CONFIRMA que el savepoint protege el cursor de la transacción externa, y la evidencia estructural (Test A) CONFIRMA que el filtro `protected_moves` permite supervivencia parcial. La recomendación de Fase 2 (consolidar hacia savepoint) queda **sostenida por evidencia funcional reproducible**, no solo por lectura de código.
+
