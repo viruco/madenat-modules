@@ -1,3 +1,12 @@
+## [18.0.5.6.0] - 2026-07-06
+### Changed
+- **Consolidación de `reception_service.cleanup_orphan_moves()` hacia savepoint**
+  - Estrategia de unlink homogeneizada: `savepoint + with_context(force_delete=True).unlink()` en ambos métodos sobrevivientes.
+  - Validado con Tests A y B (Fase 3a): 0 failed, 0 error(s).
+  - Asimetría transaccional documentada en Fase 2 eliminada.
+  - **Commit:** `e6a1fc1`
+  - **Ver AD-39 (cierre funcional) y sección W de `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md`.**
+
 ## [18.0.5.5.0] - 2026-07-06
 ### Removed
 - **Eliminado `_cleanup_orphan_moves()` de `lumber_reception.py` (código muerto)**

@@ -1015,4 +1015,13 @@ Al documentar migraciones arquitectónicas (como Float→Monetary), el CANON deb
   4. [x] 0 referencias rotas al método archivado en `lumber_reception.py`
   5. [x] Los 2 métodos sobrevivientes (`reception_service`, `guia_processing`) siguen presentes y sin modificar
 - **Criterio de reversión:** `git reset --hard 56ef417` restaura el estado pre-archivado.
-- **Deuda remanente:** Los otros 2 métodos siguen duplicados (código duplicado x2). Estrategia de unlink divergente (savepoint en guia_processing vs directo en reception_service). 0% cobertura de tests en cualquier método de cleanup.
+- **Deuda remanente original:** Los otros 2 métodos siguen duplicados (código duplicado x2). Estrategia de unlink divergente (savepoint en guia_processing vs directo en reception_service). 0% cobertura de tests en cualquier método de cleanup.
+
+### Cierre funcional — 2026-07-06 (Fases 2, 3a, 3)
+
+- **Investigación (Fase 2):** La divergencia savepoint vs unlink directo existe desde el baseline inicial (`994bcbd`, 2026-05-31). No responde a un incidente conocido — es una asimetría de diseño sin justificación documentada. Ver sección X de `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md`.
+- **Tests pre-consolidación (Fase 3a):**
+  - Test A (`d597703`): Valida filtro `protected_moves` + savepoint implícito sobre `cleanable_moves`. ✅ PASS.
+  - Test B (`f72d9e9`): Valida aislamiento transaccional del cursor externo cuando el unlink falla dentro del savepoint. ✅ PASS.
+- **Consolidación (Fase 3 — `e6a1fc1`):** `reception_service.cleanup_orphan_moves()` unificado al patrón `savepoint + with_context(force_delete=True).unlink()` de `guia_processing._cleanup_orphan_moves_guia()`. Ambos métodos usan ahora la misma estrategia transaccional.
+- **Veredicto:** Asimetría transaccional eliminada. Cobertura de tests: 0% → 2 tests funcionales. Ver sección W de `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md`.

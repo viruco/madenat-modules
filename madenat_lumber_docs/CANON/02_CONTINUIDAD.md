@@ -51,11 +51,12 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 
 ## 4. Punto de retoma — 2026-07-06  <!-- actualizado: 2026-07-06 -->
 
-**Último commit conocido:** 9677f53 — refactor(cleanup): archivar _cleanup_orphan_moves (código muerto confirmado, 0 callers)
+**Último commit conocido:** e6a1fc1 — refactor(cleanup): consolidar reception_service hacia savepoint validado por tests A/B
 **Rama:** main
-**Checkpoint rollback:** 56ef417
-**Estado:** Cierre auditoría asimetría documental (AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md). Falso positivo confirmado: los 3 métodos de cleanup_orphan_moves SÍ contienen FIX 2026-07-01. Código muerto _cleanup_orphan_moves() en lumber_reception.py archivado → _archive/. AD-39 registrado. CHANGELOG 18.0.5.5.0. Módulo validado en Docker (5/5 criterios). Deuda remanente: código duplicado x2, 0% tests, estrategia de unlink divergente.
-**Pendiente:** Consolidación de cleanup_orphan_moves en un solo método (opcional, baja urgencia). Homogeneizar estrategia de unlink con savepoint. Agregar tests.
+**Checkpoint rollback:** d597703 (pre-consolidación, Tests A y B aprobados)
+**Estado:** Fase 3 completada y validada. Consolidación de `reception_service.cleanup_orphan_moves()` hacia savepoint + force_delete aplicada. Estrategia de unlink homogeneizada entre ambos métodos sobrevivientes. Tests A y B pasando (0 failed, 0 error(s)). Auditoría documentada en `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md` secciones X, Y, Z, W. AD-39 actualizado con cierre funcional.
+**Pendiente:** Auditoría documental canónica y revisión de deuda residual. Próximo sprint enfocado en documentación/continuidad, no en refactor funcional.
+**Retomar desde e6a1fc1 con revisión documental canónica y pendientes residuales de auditoría; no reabrir refactors cerrados salvo hallazgo nuevo.**
 
 ### Cerrado en sesión 10-06-2026
 - HOTFIX UX — Pestaña Comercial f5085: `thickness_visual` como columna principal, `thickness_nominal_frac` como opcional. Solo XML (lumber_reception_views.xml L372-380), 0 Python. Trazabilidad preservada vía columna opcional. Ver CHANGELOG.md.
