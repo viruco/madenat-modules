@@ -213,6 +213,28 @@ class LumberReceptionService:
             )
             return
 
-        cleanable_moves.sudo().mapped('move_line_ids').unlink()
-        cleanable_moves.sudo().write({'state': 'draft'})
-        cleanable_moves.sudo().unlink()
+        try:
+            with self.env.cr.savepoint():
+                # 1. Atacar las líneas de movimiento primero (stock.move.line)
+                move_lines = cleanable_moves.mapped('move_line_ids')
+                if move_lines:
+                    move_lines.write({'state': 'draft'})
+                    move_lines.unlink()
+
+                # 2. Atacar los movimientos cabecera (stock.move)
+                # Forzamos a borrador para intentar bypassear el estado 'done' de manera legal
+                cleanable_moves.write({'state': 'draft'})
+
+                # 3. Borrado físico usando el salvoconducto de contexto
+                cleanable_moves.with_context(force_delete=True).unlink()
+
+            _logger.info("✅ %d moves huérfanos eliminados limpiamente via ORM.", len(cleanable_moves))
+
+        except Exception as e:
+            _logger.error("❌ Error ORM eliminando moves huérfanos: %s", e)
+            raise UserError(
+                f"🛑 Seguridad Odoo: No se pudieron eliminar {len(cleanable_moves)} movimientos huérfanos.\n"
+                f"Odoo ha bloqueado la eliminación porque estos movimientos ya afectaron la "
+                f"valoración contable o tienen stock real (Quants) fuertemente asociado.\n\n"
+                f"Detalle técnico: {e}"
+            )

@@ -801,3 +801,77 @@ Este test usa `mock.patch`, no un fallo real de PostgreSQL. Un `IntegrityError` 
 
 **Veredicto final:** Ambos tests pasan contra el código actual. La evidencia empírica (Test B) CONFIRMA que el savepoint protege el cursor de la transacción externa, y la evidencia estructural (Test A) CONFIRMA que el filtro `protected_moves` permite supervivencia parcial. La recomendación de Fase 2 (consolidar hacia savepoint) queda **sostenida por evidencia funcional reproducible**, no solo por lectura de código.
 
+
+---
+
+## W. Consolidación controlada de reception_service hacia savepoint (Fase 3 — 2026-07-06)
+
+### W.1 Cambio aplicado
+
+- **Archivo modificado:** `custom_addons/madenat_lumber_core/models/reception_service.py`
+- **Método:** `cleanup_orphan_moves()` (L167)
+- **Líneas modificadas:** L215-218 (3 líneas) → L215-235 (21 líneas)
+
+**Resumen del cambio:**
+Las 3 líneas de eliminación directa:
+```python
+cleanable_moves.sudo().mapped('move_line_ids').unlink()
+cleanable_moves.sudo().write({'state': 'draft'})
+cleanable_moves.sudo().unlink()
+```
+fueron reemplazadas por el patrón validado `savepoint + force_delete` de `guia_processing._cleanup_orphan_moves_guia()` (L4365-4389):
+```python
+try:
+    with self.env.cr.savepoint():
+        move_lines = cleanable_moves.mapped('move_line_ids')
+        if move_lines:
+            move_lines.write({'state': 'draft'})
+            move_lines.unlink()
+        cleanable_moves.write({'state': 'draft'})
+        cleanable_moves.with_context(force_delete=True).unlink()
+    _logger.info("✅ %d moves huérfanos eliminados limpiamente via ORM.", len(cleanable_moves))
+except Exception as e:
+    _logger.error("❌ Error ORM eliminando moves huérfanos: %s", e)
+    raise UserError(...)
+```
+
+**Lo que NO cambió:**
+- Guardia de grupo TD-001 (sin cambios)
+- Filtro `protected_moves` (sin cambios, ya era idéntico)
+- Búsqueda de moves (sin cambios, ya era idéntica)
+- Firma del método (sin cambios, `origins` como parámetro)
+- Callers en `lumber_reception.py` L3029 y L3052 (sin cambios)
+
+### W.2 Resultado de tests
+
+| Test | Resultado | Evidencia |
+|---|---|---|
+| Test A: `test_partial_batch_failure_protected_moves_survive` | ✅ PASS | `0 failed, 0 error(s)` |
+| Test B: `test_savepoint_isolates_transaction_on_unlink_failure` | ✅ PASS | Cursor operable: `search_count=402` |
+
+Ambos tests pasan contra el código actual **después de la consolidación**. No se rompió ningún caller existente.
+
+### W.3 Veredicto
+
+**VEREDICTO: CONSOLIDACIÓN CONFIRMADA**
+
+El método `reception_service.cleanup_orphan_moves()` ahora usa el mismo patrón transaccional que `guia_processing._cleanup_orphan_moves_guia()`:
+- `savepoint()` para aislar el fallo del unlink sin contaminar la transacción externa
+- `write({'state': 'draft'})` antes del unlink (ya existía, ahora dentro del savepoint)
+- `with_context(force_delete=True).unlink()` para bypass de restricciones de integridad
+- `try/except` que convierte excepciones en `UserError` amigable
+
+Los callers (`lumber_reception.unlink()` L3029 y L3052) no requirieron cambios — el contrato del método es idéntico (mismo parámetro `origins`, mismo comportamiento de protección de moves con `quantity > 0`), solo que ahora el fallo está aislado transaccionalmente.
+
+### W.4 Compatibilidad con Fases anteriores
+
+| Fase | Documento/Sección | Impacto |
+|---|---|---|
+| Fase 1 | AD-39 (código muerto archivado) | Sin cambios — `_cleanup_orphan_moves` en `lumber_reception.py` sigue archivado |
+| Fase 2 | Sección X (micro-auditoría savepoint vs unlink) | **Resuelto** — la asimetría documentada en X.1 queda eliminada |
+| Fase 3a | Secciones Y y Z (Tests A y B) | Ambos tests siguen pasando sin modificaciones |
+
+### W.5 Hash del commit
+
+Pendiente de commit en Paso 7.
+
