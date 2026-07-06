@@ -49,13 +49,13 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 
 ---
 
-## 4. Punto de retoma — 2026-07-01  <!-- actualizado: 2026-07-01 -->
+## 4. Punto de retoma — 2026-07-06  <!-- actualizado: 2026-07-06 -->
 
-**Último commit conocido:** 3ba43575 — fix: align R7/R8 group_by with purchase_order from core
+**Último commit conocido:** 9677f53 — refactor(cleanup): archivar _cleanup_orphan_moves (código muerto confirmado, 0 callers)
 **Rama:** main
-**Estado:** Post C1-C4 + Hotfix UX cerrado + Fix UserError stock.moves (18.0.5.4.0). Auditoría forense documental Fase A+B completada. AD-26 ejecutado (0 .bak residuales). Fases C+D+E pendientes para cerrar el ciclo.
-**Nuevos features en staging:** kanban, dashboards, wizard period_close, landed_cost, búsqueda OC.
-**Limpieza ejecutada:** 33 .bak → LEGADO, backup módulo → LEGADO, docker-compose.yml.bak eliminado, backup duplicado docs eliminado.
+**Checkpoint rollback:** 56ef417
+**Estado:** Cierre auditoría asimetría documental (AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md). Falso positivo confirmado: los 3 métodos de cleanup_orphan_moves SÍ contienen FIX 2026-07-01. Código muerto _cleanup_orphan_moves() en lumber_reception.py archivado → _archive/. AD-39 registrado. CHANGELOG 18.0.5.5.0. Módulo validado en Docker (5/5 criterios). Deuda remanente: código duplicado x2, 0% tests, estrategia de unlink divergente.
+**Pendiente:** Consolidación de cleanup_orphan_moves en un solo método (opcional, baja urgencia). Homogeneizar estrategia de unlink con savepoint. Agregar tests.
 
 ### Cerrado en sesión 10-06-2026
 - HOTFIX UX — Pestaña Comercial f5085: `thickness_visual` como columna principal, `thickness_nominal_frac` como opcional. Solo XML (lumber_reception_views.xml L372-380), 0 Python. Trazabilidad preservada vía columna opcional. Ver CHANGELOG.md.

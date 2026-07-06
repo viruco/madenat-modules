@@ -999,3 +999,20 @@ Al documentar migraciones arquitectónicas (como Float→Monetary), el CANON deb
 3. **Pendiente de alineación** (la brecha entre 1 y 2) — registrado aquí, sin considerarlo bug.
 
 <!-- actualizado: 2026-07-01 — AD-38 agregado (desalineación monetaria wood_cost_usd) -->
+
+
+### AD-39 — Archivado de `_cleanup_orphan_moves()` en `lumber_reception.py` (código muerto confirmado)
+
+- **Contexto:** Auditoría `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md` identificó 3 métodos de cleanup de stock.moves huérfanos con ~90% de código duplicado. Los 3 contienen el FIX 2026-07-01 (protección quantity > 0). Uno de ellos, `_cleanup_orphan_moves()` en `lumber_reception.py:3056`, no tiene callers — fue definido para "reutilización y testeo independiente" pero nunca invocado.
+- **Evidencia:** grep exhaustivo en todo `custom_addons/` confirma 0 invocaciones. Los 2 métodos sobrevivientes (`reception_service.cleanup_orphan_moves()` y `_cleanup_orphan_moves_guia()`) cubren toda la funcionalidad necesaria.
+- **Decisión:** Archivar el método en `_archive/_cleanup_orphan_moves.py` con documentación de procedencia, eliminarlo de `lumber_reception.py`.
+- **Commit del cambio:** `9677f53`
+- **Commit checkpoint rollback:** `56ef417`
+- **Resultado de validación (5/5):**
+  1. [x] py_compile sin errores
+  2. [x] Actualización de módulo `madenat_lumber_core` en Docker termina con exit code 0
+  3. [x] 0 errores/tracebacks en logs de Odoo (solo WARNINGs preexistentes de UI)
+  4. [x] 0 referencias rotas al método archivado en `lumber_reception.py`
+  5. [x] Los 2 métodos sobrevivientes (`reception_service`, `guia_processing`) siguen presentes y sin modificar
+- **Criterio de reversión:** `git reset --hard 56ef417` restaura el estado pre-archivado.
+- **Deuda remanente:** Los otros 2 métodos siguen duplicados (código duplicado x2). Estrategia de unlink divergente (savepoint en guia_processing vs directo en reception_service). 0% cobertura de tests en cualquier método de cleanup.

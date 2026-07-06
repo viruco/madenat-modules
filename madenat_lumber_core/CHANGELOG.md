@@ -1,3 +1,13 @@
+## [18.0.5.5.0] - 2026-07-06
+### Removed
+- **Eliminado `_cleanup_orphan_moves()` de `lumber_reception.py` (código muerto)**
+  - **Evidencia:** 0 callers en producción. Confirmado por grep exhaustivo en todo custom_addons.
+  - **Motivo:** Método duplicado (90% idéntico a `cleanup_orphan_moves()` en `reception_service.py:167` y `_cleanup_orphan_moves_guia()` en `madenat_guia_processing.py:4303`). Los 3 ya contienen el FIX 2026-07-01 (protección quantity > 0).
+  - **Archivado en:** `_archive/_cleanup_orphan_moves.py` con documentación de procedencia y checkpoint de rollback.
+  - **Ver AD-38 en `04_DECISION_LOG.md`.**
+  - **Commit:** `9677f53` (checkpoint rollback: `56ef417`).
+  - **Validación:** py_compile OK, módulo actualizado en Docker sin errores, 0 referencias rotas.
+
 ## [18.0.5.4.0] - 2026-07-01
 ### Fixed
 - **UserError al eliminar stock.moves con cantidad recolectada (quantity > 0)**

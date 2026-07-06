@@ -477,3 +477,30 @@ El hallazgo original de esta auditoría:
 **Debe reclasificarse como:**
 
 > `_cleanup_orphan_moves_guia` **SÍ tiene el FIX 2026-07-01** — falso positivo de la auditoría. Deuda real: código duplicado x3, 0% tests, estrategia de unlink divergente | 🟢 Baja (no es bug, es deuda de mantenimiento)
+
+
+---
+
+## 🔒 CIERRE DE FASE 1 — 2026-07-06
+
+**Estado final:** RESUELTO — archivado y validado en producción local (Docker)
+
+**Pregunta abierta #1 de la sección 7:** Cerrada. Evidencia confirmó que `_cleanup_orphan_moves_guia()` SÍ tiene el FIX 2026-07-01.
+
+**Acción ejecutada:** Archivado de `_cleanup_orphan_moves()` (código muerto, 0 callers) de `lumber_reception.py` → `_archive/_cleanup_orphan_moves.py`.
+
+**Commits:**
+- Checkpoint rollback: `56ef417`
+- Cambio aplicado: `9677f53`
+- Documentación: este commit
+
+**Validación (5/5):**
+- [x] py_compile sin errores
+- [x] Actualización de módulo en Docker exit code 0
+- [x] 0 errores/tracebacks en logs de Odoo
+- [x] 0 referencias rotas al método archivado
+- [x] Métodos sobrevivientes intactos (reception_service:167, guia_processing:4303)
+
+**Hash de checkpoint (rollback disponible):** `56ef417`
+**Hash del cambio aplicado:** `9677f53`
+**Ver AD-39 en `04_DECISION_LOG.md`.**
