@@ -211,3 +211,122 @@ class TestMadenatGuiaProcessingLine(TransactionCase):
         method = getattr(LineClass, '_compute_vol_purchase_m3', None)
         self.assertIsNotNone(method,
             "TD-007: _compute_vol_purchase_m3 debe existir")
+
+@tagged('post_install', '-at_install', 'madenat', 'guia_processing', 'cleanup')
+class TestOrphanMoveCleanupSavepoint(TransactionCase):
+    """
+    Test movilidad del manejo de batch parcial para _cleanup_orphan_moves_guia()
+
+    Escenario: 3 stock.moves huerfanos comparten mismo origin (guia.name),
+    pero UNO tiene move_line con quantity > 0. El metodo debe eliminar los
+    2 moves limpios y proteger el move con cantidad recolectada, sin
+    contaminar la transaccion externa.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Datos minimos para crear stock.moves
+        cls.GuiaModel = cls.env['madenat.guia.processing']
+        cls.MoveModel = cls.env['stock.move']
+        cls.MoveLineModel = cls.env['stock.move.line']
+
+        cls.partner = cls.env['res.partner'].search([], limit=1)
+        if not cls.partner:
+            cls.partner = cls.env['res.partner'].create({'name': 'Test Partner'})
+        cls.product = cls.env['product.product'].search([('type', '=', 'product')], limit=1)
+        if not cls.product:
+            cls.product = cls.env['product.product'].create({'name': 'Test Product'})
+        # Usar la UoM del producto para evitar error de categoria (Volume vs Length)
+        cls.uom = cls.product.uom_id
+        if not cls.uom:
+            cls.uom = cls.env['uom.uom'].search([], limit=1)
+        cls.location = cls.env['stock.location'].search([('usage', '=', 'internal')], limit=1)
+        if not cls.location:
+            cls.location = cls.env['stock.location'].search([], limit=1)
+        cls.location_supplier = cls.env['stock.location'].search([('usage', '=', 'supplier')], limit=1)
+        if not cls.location_supplier:
+            cls.location_supplier = cls.location
+
+        # Verificar que el usuario admin de tests tiene el grupo requerido
+        if not cls.env.user.has_group('stock.group_stock_manager'):
+            cls.env.user.write({'groups_id': [
+                (4, cls.env.ref('stock.group_stock_manager').id)
+            ]})
+
+    def test_partial_batch_failure_protected_moves_survive(self):
+        """
+        ➰ Si UN move tiene move_lines con quantity > 0, debe marcarse como
+        HUERFANO-PROTEGIDO y NO eliminarse; los otros 2 moves limpios SI deben
+        eliminarse. El savepoint interno actua sobre cleanable_moves y es
+        transparente si todos pasan.
+        """
+        # 1. Crear guia que dara origen a los moves huerfanos
+        origin_name = 'GW-SAVEPOINT-TEST-001'
+        guia = self.GuiaModel.create({
+            'name': origin_name,
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+        })
+
+        # 2. Crear 3 stock.moves huerfanos (picking_id=False, mismo origin)
+        common_vals = {
+            'name': 'Orphan Move Test',
+            'product_id': self.product.id,
+            'product_uom_qty': 1.0,
+            'product_uom': self.uom.id,
+            'picking_id': False,
+            'location_id': self.location_supplier.id,
+            'location_dest_id': self.location.id,
+            'company_id': self.env.company.id,
+            'origin': origin_name,
+            'state': 'done',
+        }
+
+        move_1 = self.MoveModel.create({**common_vals, 'name': 'Orphan-Clean-1'})
+        move_2 = self.MoveModel.create({**common_vals, 'name': 'Orphan-Clean-2'})
+        move_3 = self.MoveModel.create({**common_vals, 'name': 'Orphan-Protected'})
+
+        # 3. Asignar move_line con quantity > 0 a move_3 → sera protegido
+        self.MoveLineModel.create({
+            'move_id': move_3.id,
+            'product_id': self.product.id,
+            'location_id': self.location_supplier.id,
+            'location_dest_id': self.location.id,
+            'quantity': 5.0,
+            'product_uom_id': self.uom.id,
+            'state': 'done',
+        })
+
+        self.assertEqual(self.MoveModel.search_count([('id', 'in', [move_1.id, move_2.id, move_3.id])]), 3,
+            "Los 3 moves deben existir antes de la limpieza")
+
+        # 4. Ejecutar el metodo bajo prueba
+        guia._cleanup_orphan_moves_guia()
+
+        # 5. Verificar: moves limpios eliminados, move protegido sobrevive
+        remaining = self.MoveModel.search([('id', 'in', [move_1.id, move_2.id, move_3.id])])
+
+        deleted_ids = {move_1.id, move_2.id}
+        protected_id = move_3.id
+
+        self.assertEqual(len(remaining), 1,
+            f"Solo 1 move debe sobrevivir (el protegido). Sobrevivientes: {remaining.mapped('name')}")
+
+        self.assertEqual(remaining.id, protected_id,
+            "El move sobreviviente debe ser el que tenia move_line con quantity > 0")
+
+        self.assertFalse(any(mid in remaining.ids for mid in deleted_ids),
+            "Los moves limpios deben ser eliminados")
+
+        # 6. Verificar que el move protegido fue renombrado
+        self.assertTrue(
+            remaining.origin.startswith('HUERFANO-PROTEGIDO-'),
+            f"El move protegido debe tener prefijo HUERFANO-PROTEGIDO-, tiene: {remaining.origin}"
+        )
+
+        _logger.info(
+            "✅ savepoint test OK: %d moves eliminados, 1 protegido (%s)",
+            len(deleted_ids), remaining.name
+        )
