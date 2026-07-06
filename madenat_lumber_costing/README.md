@@ -1,5 +1,7 @@
 # MADENAT Lumber Costing
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 Sistema de costeo multi-nivel para lotes de madera en MADENAT.
 
 ## Propósito

@@ -1,5 +1,7 @@
 # madenat_lumber_logistics
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 ## Propósito
 
 Módulo de gestión logística para la consolidación de lotes de madera en contenedores de exportación. Permite asignar lotes individuales a contenedores, validar capacidad física (peso y volumen), gestionar el sellado y zarpe, y controlar la documentación requerida para el embarque.

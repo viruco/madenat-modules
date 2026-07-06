@@ -1,8 +1,9 @@
 # CANON/08_COSTEO — FLUJO CANÓNICO DE COSTEO END-TO-END
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 ## Fecha: 2026-06-05
-## Última revisión: 2026-06-16  <!-- actualizado: 2026-06-16 -->
+## Última revisión: 2026-07-01  <!-- actualizado: 2026-07-01 — corregido tipo wood_cost_usd (AD-38) -->
 ## Estado: DOCUMENTO CANÓNICO (creado cierre Fase A)
+## Versión: 1.1.0
 ## Refs: FASE-A, AD-XX-MONETARIO, Anexo de Saneamiento Monetario 2026-06-04
 
 ---
@@ -49,8 +50,8 @@
 | Campo | Tipo | Moneda | Descripción |
 |-------|------|--------|-------------|
 | `currency_id` | Many2one→res.currency | USD | Moneda base del lote |
-| `wood_cost_usd` | Monetary | USD | **Fuente de verdad**: costo base madera |
-| `purchase_cost_usd` | Monetary (DEPRECATED) | USD | Legacy. Usar `wood_cost_usd` |
+| `wood_cost_usd` | Float | USD | **Fuente de verdad**: costo base madera. ⚠️ Pendiente migración a Monetary (AD-38) |
+| `purchase_cost_usd` | Float (DEPRECATED) | USD | Legacy. Usar `wood_cost_usd` |
 | `purchase_amount_usd` | Monetary (compute) | USD | Derivado: volumen_m3 × purchase_price |
 | `purchase_amount_clp` | Monetary (compute) | USD | Derivado: USD × exchange_rate |
 | `total_cost_usd` | Monetary (compute) | USD | wood + Σ(cost_line_ids) |
@@ -215,15 +216,32 @@ Cada campo Monetary tiene su `currency_field` explícito. No hay ambigüedad USD
 
 ---
 
-# 8. REGLA DE ORO DEL COSTEO
+## 8. Criterio normativo de intervención en costeo
 
-1. **Fuente única de verdad**: `wood_cost_usd` para costo base, `cost_line_ids` para adicionales
-2. **Monetary siempre**: Todo monto en dinero usa `fields.Monetary`
-3. **Trazabilidad total**: Cada costo tiene `cost_type`, `date`, `partner_id`
-4. **Reversibilidad**: `action_reverse_costs()` permite deshacer distribución
-5. **Protección**: Lotes facturados no permiten modificar costos
+Toda operación que afecte costos debe respetar esta secuencia.
+
+1. **Escribir en la fuente de verdad.**  
+   El costo base de madera se asigna en `stock.lot.wood_cost_usd`.  
+   Los costos adicionales se registran mediante `stock.lot.cost.line`, nunca
+   mediante escritura directa en totales.
+
+2. **Garantizar trazabilidad mínima.**  
+   Cada `stock.lot.cost.line` debe contener: `cost_type`, `date`, `partner_id`.  
+   Estos campos son obligatorios para que el costo sea auditable.
+
+3. **Preservar reversibilidad.**  
+   Toda distribución ejecutada desde `lumber.cost.distribution` debe poder
+   deshacerse mediante `action_reverse_costs()` sin pérdida de datos ni
+   efectos laterales en lotes no involucrados.
+
+4. **Proteger costos ya confirmados.**  
+   El `@api.constrains` `_check_cost_modification_if_billed()` impide
+   modificar `wood_cost_usd` o `purchase_cost_usd` en lotes cuyo estado
+   de facturación no permita cambios. Cualquier corrección posterior
+   requiere una acción correctiva explícita compatible con las restricciones
+   del flujo de facturación.
 
 ---
 
 *Documento creado: 2026-06-05 — Cierre Fase A — Saneamiento Monetario*
-*Versión: 1.0.0*
+*Versión: 1.1.0*

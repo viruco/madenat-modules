@@ -1,5 +1,7 @@
 # MADENAT Lumber Reception Improvements
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 ## Descripción
 
 Módulo de extensión para `madenat_lumber_purchasing` que agrega soporte para **Drop Shipment** a procesadores terceros.

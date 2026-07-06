@@ -155,12 +155,19 @@ class LumberReceptionLine(models.Model):
              "Solo lectura, calculado al vuelo desde width_document_value."
     )
 
-    @api.depends('thickness_document_value', 'width_document_value')
+    @api.depends('thickness_document_value', 'width_document_value', 'reception_id.ingestion_profile')
     def _compute_document_display(self):
-        """Convierte el valor documental crudo (decimal string) a fracción legible."""
+        """Convierte el valor documental crudo a fracción legible (imperial) o lo muestra crudo (métrico)."""
         for rec in self:
-            rec.thickness_document_display = decimal_inch_to_fraction_str(rec.thickness_document_value)
-            rec.width_document_display = decimal_inch_to_fraction_str(rec.width_document_value)
+            profile = rec.reception_id.ingestion_profile
+            if profile in ('metric', 'f1550'):
+                # Perfiles métricos puros: espejo fiel sin transformar
+                rec.thickness_document_display = rec.thickness_document_value
+                rec.width_document_display = rec.width_document_value
+            else:
+                # Perfiles con componente imperial (f5085, blanks): formato fracción
+                rec.thickness_document_display = decimal_inch_to_fraction_str(rec.thickness_document_value)
+                rec.width_document_display = decimal_inch_to_fraction_str(rec.width_document_value)
 
     # ==========================================================================
     # DIMENSIONES NOMINALES Y VISUALES (COMERCIALES - OC)
@@ -933,8 +940,8 @@ class LumberReception(models.Model):
     # casos legítimos donde una guía podría procesarse con distinto proveedor (raro pero posible).
     _sql_constraints = [
         ('unique_reception_name_per_company',
-         'UNIQUE(name, company_id)',
-         '⛔ GUÍA DUPLICADA: Ya existe una recepción con el número %(name)s en esta compañía.\n'
+         'UNIQUE(name)',
+         '⛔ GUÍA DUPLICADA: Ya existe una recepción con el número %(name)s.\n'
          'No puede crear dos recepciones con el mismo número de guía.\n'
          'Verifique en Recepciones → Buscar por número de guía.')
     ]
@@ -1141,6 +1148,13 @@ class LumberReception(models.Model):
         tracking=True,
         help="Referencia documental de OC extraída desde la guía/PDF. Nunca se sobrescribe."
     )
+    oc_reference_norm = fields.Char(
+        string="Clave normalizada (matching)",
+        compute='_compute_oc_reference_norm',
+        store=True,
+        copy=False,
+        help="Derivada automáticamente. Solo A-Z 0-9, sin espacios.",
+    )
     oc_match_status = fields.Selection([
         ('not_found', 'No encontrada'),
         ('single_match', 'Coincidencia exacta'),
@@ -1204,6 +1218,17 @@ class LumberReception(models.Model):
                 rec.purchase_order = rec._canonize_oc_display(rec.oc_reference_raw)
             else:
                 rec.purchase_order = 'SIN ORDEN'
+
+    # HOMOLOGACIÓN OC 2026-06-21: replica madenat_guia_processing.oc_reference_norm
+    @api.depends('oc_reference_raw')
+    def _compute_oc_reference_norm(self):
+        parser = self.env['madenat.reception.parser']
+        for rec in self:
+            if rec.oc_reference_raw:
+                rec.oc_reference_norm = parser.normalize_po_key(rec.oc_reference_raw)
+            else:
+                rec.oc_reference_norm = False
+
    # ==================== VOLÚMENES DUALES (m³ + MBF) ====================
     commercial_volume_m3 = fields.Float(
         digits=(16, 3), 
@@ -3048,10 +3073,46 @@ class LumberReception(models.Model):
             return
 
         _logger.info(
-            "🧹 MADENAT cleanup: eliminando %d stock.moves huérfanos para guías: %s",
+            "🧹 MADENAT cleanup: %d stock.moves huérfanos encontrados para guías: %s",
             len(moves), names
         )
 
-        moves.sudo().mapped('move_line_ids').unlink()
-        moves.sudo().write({'state': 'draft'})
-        moves.sudo().unlink()
+        # 🛡️ FIX 2026-07-01: Protección de moves con cantidad recolectada (quantity > 0).
+        # Odoo bloquea nativamente el unlink de stock.move/stock.move.line que ya tienen
+        # cantidad recolectada. En vez de forzar y causar UserError, marcamos esos moves
+        # como "HUERFANO-PROTEGIDO-" y los dejamos para revisión manual de Inventario.
+        # Causa raíz: action_reopen_to_draft() FASE 3 desvincula pickings 'done'
+        # cambiando su 'origin' pero sin cancelarlos, generando moves huérfanos con quantity>0.
+        protected_moves = moves.filtered(
+            lambda m: any((ml.quantity or 0) > 0 for ml in m.move_line_ids)
+        )
+        cleanable_moves = moves - protected_moves
+
+        if protected_moves:
+            for pm in protected_moves:
+                pm.origin = f"HUERFANO-PROTEGIDO-{pm.origin or ''}"
+            _logger.warning(
+                "🛡️ %d stock.move(s) con cantidad recolectada NO fueron eliminados "
+                "(protegidos por integridad de Odoo). Marcados como huérfanos protegidos: %s",
+                len(protected_moves), protected_moves.mapped('name'),
+            )
+            self[:1].message_post(
+                body=(
+                    "🛡️ <strong>Integridad de Inventario:</strong> "
+                    f"{len(protected_moves)} movimiento(s) con cantidad ya recolectada "
+                    "no se pudieron eliminar y quedaron marcados para revisión manual del "
+                    "equipo de Inventario. Moves: "
+                    f"{', '.join(protected_moves.mapped('name'))}"
+                )
+            )
+
+        if not cleanable_moves:
+            _logger.info(
+                "🛡️ Todos los moves huérfanos están protegidos (tienen cantidad recolectada). "
+                "No se eliminará ninguno."
+            )
+            return
+
+        cleanable_moves.sudo().mapped('move_line_ids').unlink()
+        cleanable_moves.sudo().write({'state': 'draft'})
+        cleanable_moves.sudo().unlink()

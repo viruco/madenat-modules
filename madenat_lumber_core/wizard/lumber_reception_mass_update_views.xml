@@ -137,6 +137,11 @@
                         <group string="🏷️ Clasificación MADENAT"
                                name="classification_group">
                             <field name="allowed_subproduct_ids" invisible="1"/>
+                            <!-- HOMOLOGACIÓN NOMINALES 2026-06-22: product_id en wizard masivo -->
+                            <!-- Equivalente a madenat_guia_mass_update_views.xml -->
+                            <field name="product_id"
+                                   options="{'no_create': True, 'no_quick_create': True}"
+                                   string="Producto"/>
                             <field name="subproduct_id"
                                    string="Subproducto / Grado"
                                    options="{'no_create': True, 'no_open': True}"

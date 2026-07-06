@@ -1,4 +1,9 @@
-## [Unreleased]
+## [18.0.5.4.0] - 2026-07-01
+### Fixed
+- **UserError al eliminar stock.moves con cantidad recolectada (quantity > 0)**
+  - **Causa raíz:** `action_reopen_to_draft()` FASE 3 desvincula pickings `done` internos sin cancelarlos, generando moves huérfanos.
+  - **Solución:** Filtrar moves con `move_line_ids.quantity > 0` → marcar como `"HUERFANO-PROTEGIDO-"`; solo eliminar `cleanable_moves` (quantity == 0). Fix en 3 archivos: `madenat_guia_processing.py`, `lumber_reception.py`, `reception_service.py`.
+  - **Deuda técnica registrada:** La fuente real es que FASE 3 no cancela pickings `done` internos. Requiere revisión futura.
 
 ## [18.0.5.1.0] - 2026-06-11
 ### Fixed

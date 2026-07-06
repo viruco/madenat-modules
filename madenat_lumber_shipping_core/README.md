@@ -1,5 +1,9 @@
 # MADENAT Shipping Core
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+> Arquitectura vigente: [../madenat_lumber_docs/CANON/00_ARQUITECTURA.md](../madenat_lumber_docs/CANON/00_ARQUITECTURA.md)
+> Auditoría histórica archivada: [LEGADO/auditorias/shipping_core_arquitectura_20260508.md](../madenat_lumber_docs/LEGADO/auditorias/shipping_core_arquitectura_20260508.md)
+
 Datos maestros de transporte marítimo para MADENAT.
 
 ## Propósito

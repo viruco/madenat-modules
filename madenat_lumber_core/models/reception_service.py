@@ -61,6 +61,16 @@ class LumberReceptionService:
                 'thickness_visual': line.thickness_visual or '',
                 'width_visual': line.width_visual or '',
                 'length_ft': line.length_input_raw if line.lengthuom == 'ft' else False,
+                # HOMOLOGACIÓN OC 2026-06-21: escritura directa para consistencia con guia_processing._create_or_get_lot:3272
+                # Defensa en profundidad: el compute _compute_purchase_info también lo resuelve, pero la escritura
+                # directa garantiza el valor desde el momento de creación del lote, sin depender del trigger ORM.
+                'purchase_order_id': reception.purchase_id.id if reception.purchase_id else False,
+                'supplier_id': reception.supplier_id.id if reception.supplier_id else False,
+                # HOMOLOGACIÓN NOMINALES 2026-06-22: propagar nominales a stock.lot
+                # Equivalente a _create_or_get_lot() en madenat_guia_processing.py
+                # Referencia: INVESTIGACION_NOMINALES_HOMOLOGACION_20260622.md Gap #2 y #3
+                'espesor_nominal_mm': line.thickness_nominal or 0.0,
+                'ancho_nominal_mm': line.width_nominal or 0.0,
             }
             
             existing = existing_index.get(lookup_key)
@@ -174,8 +184,35 @@ class LumberReceptionService:
         if not moves:
             return
 
-        _logger.info("🧹 MADENAT cleanup: eliminando %d stock.moves huérfanos para guías: %s", len(moves), origins)
+        _logger.info("🧹 MADENAT cleanup: %d stock.moves huérfanos encontrados para guías: %s", len(moves), origins)
 
-        moves.sudo().mapped('move_line_ids').unlink()
-        moves.sudo().write({'state': 'draft'})
-        moves.sudo().unlink()
+        # 🛡️ FIX 2026-07-01: Protección de moves con cantidad recolectada (quantity > 0).
+        # Odoo bloquea nativamente el unlink de stock.move/stock.move.line que ya tienen
+        # cantidad recolectada. En vez de forzar y causar UserError, marcamos esos moves
+        # como "HUERFANO-PROTEGIDO-" y los dejamos para revisión manual de Inventario.
+        # Causa raíz: action_reopen_to_draft() FASE 3 desvincula pickings 'done'
+        # cambiando su 'origin' pero sin cancelarlos, generando moves huérfanos con quantity>0.
+        protected_moves = moves.filtered(
+            lambda m: any((ml.quantity or 0) > 0 for ml in m.move_line_ids)
+        )
+        cleanable_moves = moves - protected_moves
+
+        if protected_moves:
+            for pm in protected_moves:
+                pm.origin = f"HUERFANO-PROTEGIDO-{pm.origin or ''}"
+            _logger.warning(
+                "🛡️ %d stock.move(s) con cantidad recolectada NO fueron eliminados "
+                "(protegidos por integridad de Odoo). Marcados como huérfanos protegidos: %s",
+                len(protected_moves), protected_moves.mapped('name'),
+            )
+
+        if not cleanable_moves:
+            _logger.info(
+                "🛡️ Todos los moves huérfanos están protegidos (tienen cantidad recolectada). "
+                "No se eliminará ninguno."
+            )
+            return
+
+        cleanable_moves.sudo().mapped('move_line_ids').unlink()
+        cleanable_moves.sudo().write({'state': 'draft'})
+        cleanable_moves.sudo().unlink()

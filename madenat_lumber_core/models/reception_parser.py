@@ -597,7 +597,25 @@ class MadenatReceptionParser(models.AbstractModel):
         po_ref = self.normalize_po_display(po_ref_raw) if po_ref_raw else None
 
         # 4. Número Guía
-        guide_match = re.search(r'(?:GUIA|GUÍA|N°|Nº)\s*[:\-]?\s*(\d+)', full_text, re.IGNORECASE)
+        # PATCH 2026-06-30: El regex original fallaba con el encabezado real
+        # chileno "GUÍA DE DESPACHO ELECTRÓNICA Nº: 24356". Se aplica la misma
+        # cascada de 3 patrones que en madenat_guia_processing._parse_dispatch_pdf.
+        # Alineado con recepción y guía procesada.
+        guide_match = None
+        # Patrón 1 — específico: encabezado DTE chileno con texto completo
+        guide_match = re.search(
+            r'GU[IÍ]A\s+DE\s+DESPACHO\s+ELECTR[OÓ]NICA\s+N[°ºoO]\s*[:\-]?\s*(\d+)',
+            full_text, re.IGNORECASE
+        )
+        # Patrón 2 — tolerante: cualquier texto entre "Guía" y "Nº"
+        if not guide_match:
+            guide_match = re.search(
+                r'Gu[ií]a\b.*?\bN[°ºoO]\s*[:\-]?\s*(\d+)',
+                full_text, re.IGNORECASE
+            )
+        # Patrón 3 — fallback mínimo: "GUIA Nº" con solo espacios/guiones
+        if not guide_match:
+            guide_match = re.search(r'(?:GUIA|GUÍA|N°|Nº)\s*[:\-]?\s*(\d+)', full_text, re.IGNORECASE)
         guide_no = guide_match.group(1).strip() if guide_match else default_name
 
         # 5. Totales y Volumen

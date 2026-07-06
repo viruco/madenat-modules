@@ -190,15 +190,6 @@
                             <field name="supplier_id" string="Proveedor" required="state != 'draft'" options="{'no_create': True}" readonly="state in ('done', 'cancel')"/>
                             <field name="reception_date" string="Fecha Recepción" required="state != 'draft'" readonly="state in ('done', 'cancel')"/>
                             
-                            <field name="purchase_id" string="OC en Sistema" 
-                                   invisible="not purchase_id" 
-                                   readonly="state in ('done', 'cancel')"/>
-                            
-                            <field name="purchase_order" string="OC Extraída" 
-                                   invisible="purchase_id" 
-                                   decoration-danger="1" 
-                                   help="OC leída del PDF pero no encontrada. Puede editar este texto."/>
-                            
                             <label for="exchange_rate" string="Tipo de Cambio (USD)"/>
                             <div class="o_row">
                                 <field name="exchange_rate" class="oe_inline" 
@@ -219,6 +210,38 @@
                             <field name="total_packages" string="Total Paquetes" readonly="1"/>
                         </group>
                     </group>
+
+                    <!-- HOMOLOGACIÓN OC 2026-06-21: Sección de trazabilidad OC homologada con madenat.guia.processing -->
+                    <group string="🏷️ TRAZABILIDAD DE ORDEN DE COMPRA" name="group_oc_traceability"
+                           colspan="2" invisible="state == 'draft'">
+                        <group>
+                            <field name="purchase_id"
+                                   string="OC Vinculada"
+                                   options="{'no_create': True, 'no_quick_create': True}"
+                                   domain="[('state', 'in', ['draft','sent','to approve','purchase','done'])]"
+                                   readonly="state in ('done', 'cancel')"/>
+                            <field name="oc_reference_raw"
+                                   string="Referencia OC del documento"
+                                   readonly="1"
+                                   help="Extraída del documento original. No editable."/>
+                            <field name="oc_reference_norm"
+                                   string="Clave normalizada (matching)"
+                                   readonly="1"
+                                   help="Derivada automáticamente. Solo A-Z 0-9, sin espacios."/>
+                        </group>
+                        <group>
+                            <field name="oc_match_status"
+                                   string="Estado de vinculación"
+                                   widget="badge"
+                                   decoration-success="oc_match_status in ('single_match','manual','created')"
+                                   decoration-warning="oc_match_status == 'multi_match'"
+                                   decoration-danger="oc_match_status == 'not_found'"/>
+                            <field name="oc_match_note"
+                                   string="Detalle de conciliación"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
                     <notebook invisible="state == 'draft'">
 
                             <page string="1. 📍 FÍSICO (EXCEL ORIGINAL)" name="staging_page">
@@ -349,8 +372,16 @@
                                 <field name="reception_line_ids" readonly="state == 'done'">
                                     <list string="Validación Comercial" editable="bottom">
                                         <field name="lot_name" readonly="1" decoration-bf="1"/>
-                                        <field name="subproduct_id" 
-                                                string="Subproducto MADENAT" 
+                                        <!-- HOMOLOGACIÓN EDICIÓN INDIVIDUAL 2026-06-22: product_id editable inline -->
+                                        <!-- CORRECCIÓN 2026-06-22: required="0" override del mixin (required=True) -->
+                                        <!-- product_id se asigna vía wizard masivo o edición individual -->
+                                        <!-- No forzar validación en celda vacía al editar otros campos de la línea -->
+                                        <field name="product_id"
+                                               string="Producto"
+                                               options="{'no_open': True, 'no_create': True}"
+                                               required="0"/>
+                                        <field name="subproduct_id"
+                                                string="Subproducto MADENAT"
                                                 options="{'no_create': False, 'no_open': False}" 
                                                 required="1"
                                                 domain="parent.ingestion_profile == 'f5085' and [('name', 'not ilike', 'S2S'), ('name', 'not ilike', 'RIP')] or parent.ingestion_profile == 'f1550' and [('name', 'ilike', 'S2S')] or []"/>

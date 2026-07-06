@@ -1,8 +1,8 @@
 ## MADENAT — Protocolo Canónico de Trabajo con IA
 
-**Versión documental:** 7.1.0
-**Fecha de actualización:** 2026-05-28
-**Estado:** ACTIVO
+**Versión documental:** 7.3.0
+**Fecha de actualización:** 2026-07-01
+**Estado:** ACTIVO — Actualizado post-auditoría documental y limpieza CANON
 **Propósito:** permitir que cualquier IA entienda el proyecto, el estado real y las reglas de trabajo sin reconstruir contexto desde cero en cada sesión.
 
 ---
@@ -29,25 +29,31 @@ madenat_lumber_logistics / madenat_lumber_billing
 
 ---
 
-## 2. Estado real del proyecto (2026-05-23)
+## 2. Estado real del proyecto (2026-07-01)
 
 ### Resuelto
-- Gates 0 a 3 implementados y documentados.
+- Gates 0 a 3 + GB-1 implementados y documentados en `00_ARQUITECTURA.md`.
 - Suite T01–T14 validada como núcleo estable.
 - Triple capa operativa (visual / física / nominal) como regla de negocio.
 - Parser, workflow, servicio de stock, helpers y mixins desacoplados del monolito.
-- Bug crítico de naming resuelto (`lengthinputraw` / `lengthuom`).
-- Módulo actualiza sin error de registry (`update --stop-after-init` cargó 85 módulos sin errores críticos).
-- Fase 6 manual: `action_create_consolidation_from_shipment` implementada y cargando correctamente.
-- Botón `💰 Crear Consolidación` visible en shipment cuando `state == 'delivered'`.
-- UI Estandarizada: Alerts con `role="alert"` y Chatter corregido en `shipping_booking_views.xml`.
+- Bug crítico de naming resuelto (`length_input_raw` / `lengthuom`).
+- Módulo actualiza sin error de registry (86 módulos cargados en 4.71s, 0 errores).
+- Fase 6 manual: `action_create_consolidation_from_shipment` implementada.
+- AD-26 ejecutado: 33 `.bak` → LEGADO, 0 residuos en módulos productivos.
+- AD-37 ejecutado: autoridad documental de shipping_core consolidada en CANON.
+- AD-38 ejecutado: desalineación `wood_cost_usd` Float vs Monetary documentada.
+- CHANGELOG cerrado: `[Unreleased]` → `[18.0.5.4.0] - 2026-07-01`.
+- CANON auditado y limpiado (2026-07-01): 6 docs archivados en LEGADO, 9 vigentes, 2 derivados.
+- Fases A (Monetaria) y C (Tests) parcialmente completadas.
 
 ### Abierto / pendiente
-- T29–T32 pendientes de ejecución formal (ft→m, mm→m, m→m, quick-create subproducto).
+- T29–T32 pendientes de ejecución formal (tests automatizados existen, falta evidencia en staging).
 - Validación funcional extremo a extremo de Fase 6 en UI.
 - Constraint `stock_lot_check_cost_positive` aún abierto.
-- Monolito parcial en `lumber_reception.py` (refactor futuro).
+- Monolito parcial en `lumber_reception.py` (refactor futuro — Fase 4 del backlog).
 - Separación final de `LumberReceptionLine` a archivo propio.
+- Fases C (CHANGELOGs), D (scripts), E (staging) pendientes para cerrar ciclo pre-deploy.
+- `deduction_factor` Blank (0.0625) pendiente de confirmación con Cristhian (C3).
 
 ---
 
@@ -58,7 +64,7 @@ madenat_lumber_logistics / madenat_lumber_billing
 - Sin fallback silencioso para tipo de cambio.
 - Sin writes en Gate 0, Gate 1 ni Gate 2. Solo Gate 3 escribe inventario real.
 - `length` es la fuente de verdad en metros. Nunca calcular sobre `lengthinputraw`.
-- `lengthinputraw` preserva el valor del operador.
+- `length_input_raw` preserva el valor del operador.
 - `lengthuom` define la unidad de entrada (`m`, `mm`, `ft`).
 - Conversión: `mm → * 0.001`, `ft → * 0.3048`, `m → * 1.0`.
 - El naming debe ser coherente entre Python, XML, tests y documentación. Cualquier discrepancia es bug crítico (AD-17).
@@ -70,18 +76,24 @@ madenat_lumber_logistics / madenat_lumber_billing
 
 | Archivo | Propósito |
 |---|---|
-| `INDICE_DOCUMENTACION.md` | Mapa oficial de todos los documentos |
+| `INDICE_DOCUMENTACION.md` | Mapa maestro de todos los documentos. Único punto de entrada. |
 | `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones |
-| `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados |
 | `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma |
-| `03_TESTS.md` | Matriz de validación funcional y técnica |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación |
+| `03_TESTS.md` | Matriz de validación funcional y técnica (T01–T33 + suites automatizadas) |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-01 a AD-38) |
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases |
-| `06_CHECKLIST.md` | Checklist operativo de sesión, validación y cierre |
+| `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
 | `07_TRABAJO_CON_IA.md` | Este archivo. Protocolo de trabajo con IA |
-| `GUIA_PRODUCCION_FINAL.md` | Guía de validación y criterio de deploy |
-| `HOJA_RUTA_EJECUTIVA.md` | Vista ejecutiva de estado, foco y prioridades |
-| `QUICK_START.md` | Onboarding rápido para retomar trabajo |
+| `08_COSTEO.md` | Flujo canónico de costeo end-to-end |
+| `11_FASE_E_VALIDACION.md` | Runbook operativo, CI pipeline (derivado vigente) |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta y discriminación operativa |
+| `15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual (derivado vigente) |
+
+**Documentos archivados en LEGADO (2026-07-01):**
+`01_FLUJO_PACKING.md`, `06_CHECKLIST.md`, `09_FASE_DOCUMENTAL_MAESTRA.md`, `10_AUDITORIA_MONETARIA_FASE_A.md`, `12_ARQUITECTURA_OPERATIVA_PERFILES.md`, `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md`, `14_GUIA_EJECUCION_INCREMENTAL.md`
+
+**Documentos WIKI (no canónicos, auxiliares):**
+`WIKI/00_INDICE.md`, `WIKI/QUICK_START.md`, `WIKI/GUIA_PRODUCCION_FINAL.md`, `WIKI/HOJA_RUTA_EJECUTIVA.md`
 
 **Criterio de verdad ante contradicción:**
 1. Documento canónico del tema.
@@ -156,11 +168,11 @@ Sí declarar siempre el contexto mínimo suficiente para que la IA trabaje sobre
 |---|---|
 | Estado o foco actual | `02_CONTINUIDAD.md` + `05_BACKLOG.md` |
 | Regla técnica o criterio | `04_DECISION_LOG.md` + `00_ARQUITECTURA.md` |
-| Flujo operativo | `01_FLUJO_PACKING.md` + `02_CONTINUIDAD.md` |
+| Flujo operativo | `12_FLUJOS_INGESTA.md` + `02_CONTINUIDAD.md` |
 | Naming de campos | `00_ARQUITECTURA.md` + `03_TESTS.md` + `04_DECISION_LOG.md` + `02_CONTINUIDAD.md` |
 | Se cierra una task | `05_BACKLOG.md` + `02_CONTINUIDAD.md` |
 | Riesgo nuevo | `02_CONTINUIDAD.md` + `05_BACKLOG.md` |
-| Criterio de validación o deploy | `06_CHECKLIST.md` + `GUIA_PRODUCCION_FINAL.md` |
+| Criterio de validación o deploy | `11_FASE_E_VALIDACION.md` + `WIKI/GUIA_PRODUCCION_FINAL.md` |
 | Forma de trabajar con IA | Este archivo |
 
 ---
@@ -176,6 +188,8 @@ No basta con corregir código. También hay que sincronizar:
 - `03_TESTS.md`
 - `04_DECISION_LOG.md`
 - `05_BACKLOG.md`
+- `07_TRABAJO_CON_IA.md`
+- `INDICE_DOCUMENTACION.md`
 
 ---
 

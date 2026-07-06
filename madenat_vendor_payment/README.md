@@ -1,5 +1,7 @@
 # MADENAT Vendor Payment Management
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 ## Descripción
 Sistema profesional de gestión de pagos a proveedores con trazabilidad completa para MADENAT.
 

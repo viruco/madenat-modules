@@ -1,8 +1,8 @@
 # MADENAT — Índice de Conocimiento Operativo
 
-**Versión:** 1.0.0
-**Fecha:** 2026-05-28
-**Estado:** ACTIVO
+**Versión:** 2.0.0
+**Fecha:** 2026-06-30
+**Estado:** ACTIVO — Actualizado en auditoría documental 2026-06-30
 
 ---
 
@@ -19,12 +19,24 @@
 | Archivo | Dueño de la verdad |
 |---|---|
 | `CANON/00_ARQUITECTURA.md` | Base técnica, componentes, restricciones y gates |
+| `CANON/01_FLUJO_PACKING.md` | Flujo funcional de packing y estados |
 | `CANON/02_CONTINUIDAD.md` | Checkpoint vivo de retoma operativa |
 | `CANON/03_TESTS.md` | Matriz de pruebas y evidencia funcional |
 | `CANON/04_DECISION_LOG.md` | Registro de decisiones técnicas y funcionales |
 | `CANON/05_BACKLOG.md` | Prioridades y tareas pendientes vigentes |
-| `CANON/06_CHECKLIST.md` | Secuencia operativa de trabajo |
+| `CANON/05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
+| `CANON/06_CHECKLIST.md` | [LEGACY] Checklist operativo — reemplazado por 09 |
 | `CANON/07_TRABAJO_CON_IA.md` | Protocolo canónico de trabajo con IA |
+| `CANON/08_COSTEO.md` | Flujo canónico de costeo end-to-end |
+| `CANON/09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro, checklist canónico, huecos, riesgos |
+| `CANON/10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria — migración Float→Monetary |
+| `CANON/11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline |
+| `CANON/12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera |
+| `CANON/12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles |
+| `CANON/13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación |
+| `CANON/14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental |
+| `CANON/15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual |
+| `CANON/INDICE_DOCUMENTACION.md` | Mapa maestro de todos los documentos (v10.0.0) |
 
 ---
 
@@ -55,6 +67,13 @@
 | `02_TECNICO/tracking_mail_thread.md` | Implementación y errores conocidos del tracking |
 | `02_TECNICO/security_accesos.md` | Grupos, permisos ir.model.access, sin ir.rule |
 | `02_TECNICO/dependencias_modulos.md` | Árbol de dependencias entre módulos MADENAT |
+| `02_TECNICO/arquitectura_ingesta_recepciones.md` | TD-004 y TD-005 — constantes físicas y reglas de negocio |
+| `02_TECNICO/configuracion_ingesta.md` | Arquitectura Fase 1+2+3 de configuración de ingesta |
+| `02_TECNICO/gates_validacion.md` | Pipeline de validación (Gate 0–3) |
+| `02_TECNICO/servicio_lotes.md` | LumberReceptionService — servicio de persistencia a stock |
+| `02_TECNICO/validadores_checklist.md` | ValidationChecklistMixin (7 validadores) |
+| `02_TECNICO/reportes_inventario_recepcion.md` | Reportes de inventario y recepción |
+| `02_TECNICO/flujo_dimensiones_comerciales.md` | Flujo de dimensiones comerciales |
 
 ---
 
@@ -67,7 +86,6 @@
 | `03_OPERACION/comandos_postgresql.md` | Consultas y mantenimiento de base de datos |
 | `03_OPERACION/comandos_docker.md` | Gestión de contenedores y redes |
 | `03_OPERACION/despliegue_modulo.md` | Flujo completo de despliegue de cambios |
-| `03_OPERACION/comandos_postgresql.md` | Comandos psql, queries de diagnóstico, backups manuales |
 | `03_OPERACION/backup_restauracion.md` | Procedimiento de backup PostgreSQL, restauración, frecuencia |
 | `03_OPERACION/variables_entorno.md` | Variables docker-compose, odoo.conf, puertos, credenciales dev vs prod |
 | `03_OPERACION/migracion_odoo19.md` | Checklist migración Odoo 18→19, cambios conocidos, preparación |
@@ -83,6 +101,7 @@
 | `04_DECISIONES/DEC-003_tracking_sin_chatter.md` | Resolución de duplicado en mail.thread |
 | `04_DECISIONES/DEC-004_postgresql_docker.md` | Uso de PostgreSQL en contenedor separado |
 | `04_DECISIONES/DEC-005_oracle_cloud_prod.md` | Estrategia de despliegue en Oracle Cloud |
+| `04_DECISIONES/DEC-006_migration_script_data_fixes.md` | Scripts de migración y data fixes |
 
 ---
 
@@ -95,6 +114,11 @@
 | `05_INCIDENTES/INC-003_address_in_use.md` | Puerto en uso por container activo |
 | `05_INCIDENTES/INC-004_column_inexistente.md` | Columna inexistente por falta de actualización |
 | `05_INCIDENTES/INC-005_license_manifest.md` | Falta de license en manifests de módulos |
+| `05_INCIDENTES/INC-006_view_mode_tree_form.md` | Error de vista tree/form en Odoo 18 |
+| `05_INCIDENTES/INC-007_menu_configuracion_inaccesible.md` | Menú de configuración inaccesible |
+| `05_INCIDENTES/INC-008_noupdate_billing_menus.md` | noupdate en menús de billing |
+| `05_INCIDENTES/INC-009_auto_dependencia_costing.md` | Auto-dependencia en costing |
+| `05_INCIDENTES/INC-010_thickness_visual_6_4_rango_s2s.md` | thickness_visual 6/4 rango S2S |
 
 ---
 
@@ -104,6 +128,16 @@
 |---|---|
 | `06_SESIONES/_PLANTILLA_SESION.md` | Plantilla para registrar sesiones: contexto, objetivos, decisiones, pendientes |
 | `06_SESIONES/_CAPSULA_CONTEXTO.md` | Cápsula activa de contexto para pegar en IA |
+
+---
+
+## Documentos raíz WIKI
+
+| Nota | Tema |
+|---|---|
+| `QUICK_START.md` | Onboarding rápido para retomar trabajo |
+| `GUIA_PRODUCCION_FINAL.md` | Guía de validación y criterio de deploy a producción |
+| `HOJA_RUTA_EJECUTIVA.md` | Vista ejecutiva de estado, foco y prioridades |
 
 ---
 

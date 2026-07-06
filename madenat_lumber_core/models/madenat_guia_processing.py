@@ -33,6 +33,11 @@ from .utils_uom import (
     LUMBER_DIMENSION_MAP,
 )
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 🛡️ INTEGRACIÓN CON PIPELINE DE VALIDACIÓN (Opción C — Gates 0+1)
+# ══════════════════════════════════════════════════════════════════════════════
+from .ingestion_gate import Gate0PreUpload, Gate1DocumentReconciliation
+
 _logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -731,14 +736,12 @@ class MadenatGuiaProcessing(models.Model):
     # Evita la creación de dos cabeceras con el mismo número de guía para el mismo proveedor.
     _sql_constraints = [
         ('unique_guia_processing_name_per_partner',
-         'UNIQUE(name, partner_id, company_id)',
+         'UNIQUE(name, partner_id)',
          '⛔ GUÍA DUPLICADA: Ya existe una guía de procesamiento con el número %(name)s '
-         'para el proveedor %(partner_id)s en esta compañía.\n'
+         'para el proveedor %(partner_id)s.\n'
          'No puede crear dos guías con el mismo número. Verifique en Guías Procesadas.')
     ]
 
-    name = fields.Char(string='Referencia', required=True, copy=False, readonly=True, default=lambda self: _('New'))
-    
     # ==============================================================================================
     #                                     1. CAMPOS DEL MODELO
     # ==============================================================================================
@@ -762,9 +765,9 @@ class MadenatGuiaProcessing(models.Model):
         ('cancelled', '❌ Cancelada'),
     ], string='Estado', default='draft', required=True, tracking=True)
 
-    name = fields.Char(string="Número de Guía", required=True, index=True, tracking=True)
+    name = fields.Char(string="Número de Guía", required=True, copy=False, readonly=True, default=lambda self: _('New'), index=True, tracking=True)
     date_emission = fields.Date(string="Fecha de Emisión", required=True, default=fields.Date.context_today, tracking=True)
-    partner_id = fields.Many2one('res.partner', string="Proveedor / Transportista", required=True, tracking=True)
+    partner_id = fields.Many2one('res.partner', string="Proveedor / Transportista", tracking=True)
     order_id = fields.Many2one('purchase.order', string="Orden de Compra", tracking=True)
     
     # ══════════════════════════════════════════════════════════════════════════════
@@ -1354,6 +1357,45 @@ class MadenatGuiaProcessing(models.Model):
                 if pdf_data.get('service_code'):
                     update_vals['service_code'] = pdf_data['service_code']
                 
+                # ══════════════════════════════════════════════════════════
+                # 🆕 RESOLUCIÓN DE PROVEEDOR DESDE PDF (2026-06-30)
+                # ══════════════════════════════════════════════════════════
+                supplier_rut = pdf_data.get('rut_emisor')
+                supplier_name = pdf_data.get('nombre_emisor', '')
+                if supplier_rut and not self.partner_id:
+                    # Buscar por VAT — mismo patrón que lumber_reception
+                    partner = self.env['res.partner'].search(
+                        [('vat', '=', supplier_rut)], limit=1
+                    )
+                    if partner:
+                        update_vals['partner_id'] = partner.id
+                        _logger.info(
+                            f"🏢 Proveedor encontrado por RUT {supplier_rut}: "
+                            f"{partner.name} (ID={partner.id}) para Guía {self.name}"
+                        )
+                    elif supplier_name and len(supplier_name) > 2:
+                        # Crear partner nuevo — patrón documentado en lumber_reception
+                        partner = self.env['res.partner'].create({
+                            'name': supplier_name[:128],
+                            'vat': supplier_rut,
+                            'is_company': True,
+                        })
+                        update_vals['partner_id'] = partner.id
+                        _logger.info(
+                            f"🏢 Proveedor creado: {partner.name} "
+                            f"(RUT={supplier_rut}, ID={partner.id}) para Guía {self.name}"
+                        )
+                    else:
+                        _logger.warning(
+                            f"⚠️ RUT {supplier_rut} detectado pero sin nombre confiable. "
+                            f"Proveedor NO asignado para Guía {self.name}. "
+                            f"Asigne manualmente."
+                        )
+                # Asignar fecha de emisión detectada en PDF
+                if pdf_data.get('fecha_emision'):
+                    update_vals['date_emission'] = pdf_data['fecha_emision']
+                # ══════════════════════════════════════════════════════════
+                
                 # 🏷️ Extraer OC documental del PDF (prioridad 1)
                 if pdf_data.get('orden_compra'):
                     oc_reference_detected = pdf_data['orden_compra']
@@ -1414,6 +1456,11 @@ class MadenatGuiaProcessing(models.Model):
                 )
         # ═══════════════════════════════════════════════════════════════════════════════
      
+        # Fallback Excel → name: si el PDF no trajo número de guía, usar el del Excel
+        if 'name' not in update_vals:
+            guide_number_excel = packing_data.get('guide_number')
+            if guide_number_excel:
+                update_vals['name'] = guide_number_excel
       
         self.write(update_vals)  # Ahora escribe state + datos del PDF + oc_reference_raw (si existen)
         
@@ -1478,6 +1525,34 @@ class MadenatGuiaProcessing(models.Model):
         lines_sin_nominal = self.processing_line_ids.filtered(lambda l: l.espesor_nominal_mm <= 0)
         if lines_sin_nominal:
             raise UserError(f"⚠️ Validación de Dimensiones Fallida: Hay {len(lines_sin_nominal)} líneas sin espesor nominal.")
+
+        # 🛡️ BLINDAJE TIPO DE CAMBIO (2026-06-30)
+        if not self.rate_usd or self.rate_usd <= 0:
+            raise UserError(
+                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
+                "El campo 'Tipo de Cambio USD' está vacío o es inválido ({}). "
+                "Verifique los datos extraídos del PDF o ingrese el valor manualmente."
+                .format(self.rate_usd)
+            )
+        if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
+            raise UserError(
+                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
+                "El tipo de cambio USD es 1.0 (valor por defecto), "
+                "y esta guía es de tipo 'Servicio Externo' donde el T/C real "
+                "es obligatorio para distribuir correctamente los costos del servicio "
+                "a los lotes generados.\n"
+                "Ingrese manualmente el tipo de cambio correcto antes de enviar a stock."
+            )
+        
+        # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
+        if self.oc_reference_raw and not self.order_id:
+            raise UserError(
+                "Debe vincular una orden de compra válida antes de procesar.\n\n"
+                "Se detectó la referencia documental '{}' en el PDF/Excel, "
+                "pero no se ha vinculado una Orden de Compra del sistema.\n"
+                "Use el botón 'Crear/Vincular OC' para asociar la OC correspondiente "
+                "antes de enviar a stock.".format(self.oc_reference_raw)
+            )
 
         # 3. PREPARACIÓN DE LA 'TRIPLE VERDAD' (Payload)
         total_vol = sum(self.processing_line_ids.mapped('vol_shipment_m3'))
@@ -1578,6 +1653,37 @@ class MadenatGuiaProcessing(models.Model):
                 "Use la pestaña 'Análisis Comercial (OC)' para asignar "
                 "un subproducto (FAS, S2S, Rough, etc.) a cada línea "
                 "antes de aprobar el ingreso a stock.".format(len(lines_sin_subproducto))
+            )
+        
+        # 🛡️ BLINDAJE TIPO DE CAMBIO (2026-06-30)
+        # Bloquea si rate_usd no está definido o es exactamente 1.0 (default falso)
+        # cuando el flujo requiere tipo de cambio real (service o compra con costo USD).
+        if not self.rate_usd or self.rate_usd <= 0:
+            raise UserError(
+                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
+                "El campo 'Tipo de Cambio USD' está vacío o es inválido ({}). "
+                "Verifique los datos extraídos del PDF o ingrese el valor manualmente."
+                .format(self.rate_usd)
+            )
+        if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
+            raise UserError(
+                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
+                "El tipo de cambio USD es 1.0 (valor por defecto), "
+                "y esta guía es de tipo 'Servicio Externo' donde el T/C real "
+                "es obligatorio para distribuir correctamente los costos del servicio "
+                "a los lotes generados.\n"
+                "Ingrese manualmente el tipo de cambio correcto antes de enviar a stock."
+            )
+        
+        # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
+        # Bloquea si hay OC documental detectada pero no existe vínculo real en el sistema.
+        if self.oc_reference_raw and not self.order_id:
+            raise UserError(
+                "Debe vincular una orden de compra válida antes de procesar.\n\n"
+                "Se detectó la referencia documental '{}' en el PDF/Excel, "
+                "pero no se ha vinculado una Orden de Compra del sistema.\n"
+                "Use el botón 'Crear/Vincular OC' para asociar la OC correspondiente "
+                "antes de enviar a stock.".format(self.oc_reference_raw)
             )
         # =======================================================
 
@@ -2028,9 +2134,28 @@ class MadenatGuiaProcessing(models.Model):
                     texto += page.extract_text() or ''
             
             # ══════════════════════════════════════════════════════════
-            # SECCIÓN 1: EXTRACCIÓN DE GUÍA (sin cambios)
+            # SECCIÓN 1: EXTRACCIÓN DE NÚMERO DE GUÍA
             # ══════════════════════════════════════════════════════════
-            guia = re.search(r'Gu[ií]a[-\s]*N[oº]\s*[:\-]?\s*(\d+)', texto)
+            # PATCH 2026-06-30: El regex original fallaba con el encabezado real
+            # chileno "GUÍA DE DESPACHO ELECTRÓNICA Nº: 24356" porque esperaba
+            # que "Guía" estuviera seguido solo de espacios/guiones antes de "Nº",
+            # cuando en realidad hay palabras intermedias ("DE DESPACHO ELECTRÓNICA").
+            # Solución: dos patrones en cascada.
+            guia = None
+            # Patrón 1 — específico: encabezado DTE chileno con texto completo
+            guia = re.search(
+                r'GU[IÍ]A\s+DE\s+DESPACHO\s+ELECTR[OÓ]NICA\s+N[°ºoO]\s*[:\-]?\s*(\d+)',
+                texto, re.IGNORECASE
+            )
+            # Patrón 2 — tolerante: cualquier texto entre "Guía" y "Nº"
+            if not guia:
+                guia = re.search(
+                    r'Gu[ií]a\b.*?\bN[°ºoO]\s*[:\-]?\s*(\d+)',
+                    texto, re.IGNORECASE
+                )
+            # Patrón 3 — fallback mínimo: "Guía Nº" con solo espacios/guiones
+            if not guia:
+                guia = re.search(r'Gu[ií]a[-\s]*N[oº]\s*[:\-]?\s*(\d+)', texto)
 
             # ── TEMPORAL: diagnóstico de texto alrededor de MC/OC ──
             if self.name and '19846' in str(self.name):
@@ -2232,13 +2357,67 @@ class MadenatGuiaProcessing(models.Model):
             
             # Extraer fecha de la guía
             service_date = False
-            date_match = re.search(r'Fecha:\s*(\d{2}/\d{2}/\d{4})', texto)
-            if date_match:
-                try:
-                    from datetime import datetime
-                    service_date = datetime.strptime(date_match.group(1), '%d/%m/%Y').date()
-                except:
-                    pass
+            guide_date = False
+            from datetime import datetime
+            date_patterns = [
+                r'Fecha(?:\s+Emisi[oó]n)?\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+                r'(\d{4}-\d{2}-\d{2})',
+                r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+            ]
+            date_formats = ['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y', '%d-%m-%y']
+            for dp in date_patterns:
+                dm = re.search(dp, texto, re.IGNORECASE)
+                if dm:
+                    for df in date_formats:
+                        try:
+                            service_date = datetime.strptime(dm.group(1), df).date()
+                            guide_date = service_date
+                            break
+                        except ValueError:
+                            continue
+                    if guide_date:
+                        break
+
+            # ══════════════════════════════════════════════════════════
+            # 🆕 SECCIÓN 7: EXTRACCIÓN DE EMISOR/PROVEEDOR (2026-06-30)
+            # ══════════════════════════════════════════════════════════
+            supplier_rut = None
+            supplier_name_detected = ''
+            # Extraer RUT emisor — mismo patrón que reception_parser.parse_dispatch_guide
+            rut_patterns = [
+                r'R[\.\s]*U[\.\s]*T[\.\s]*[:\s]*(\d{1,2}\.\d{3}\.\d{3}-[\dkK])',  # con puntos: 77.066.489-6
+                r'R[\.\s]*U[\.\s]*T[\.\s]*[:\s]*(\d{7,8}-[\dkK])',                 # sin puntos: 77066489-6
+            ]
+            for rp in rut_patterns:
+                for m in re.finditer(rp, texto, re.IGNORECASE):
+                    found_rut = m.group(1).strip()
+                    if '76.103.087' not in found_rut:  # excluir RUT MADENAT
+                        supplier_rut = found_rut
+                        break
+                if supplier_rut:
+                    break
+            # Extraer nombre emisor desde primeras líneas del PDF
+            lines = [l.strip() for l in texto.split('\n') if l.strip()]
+            if lines:
+                potential_name = lines[0]
+                if any(x in potential_name.upper() for x in ['GUIA', 'ELECTRONICA', 'FACTURA', 'GUÍA']):
+                    potential_name = lines[1] if len(lines) > 1 else potential_name
+                # Amputar RUT pegado (mismo patrón que lumber_reception)
+                clean_name = re.split(
+                    r'R\.?U\.?T\.?|[\d]{1,2}\.[\d]{3}\.',
+                    potential_name, flags=re.IGNORECASE
+                )[0]
+                clean_name = re.sub(r'[:\-\s\.,]+$', '', clean_name).strip()
+                if clean_name and len(clean_name) > 2:
+                    supplier_name_detected = clean_name[:128]
+            # Log defensivo
+            if supplier_rut:
+                _logger.info(
+                    f"📄 Emisor detectado en PDF: RUT={supplier_rut} "
+                    f"Nombre={supplier_name_detected or '(no detectado)'} "
+                    f"para Guía {self.name}"
+                )
+            # ══════════════════════════════════════════════════════════
 
             # ══════════════════════════════════════════════════════════
             # RETURN: Consolidado con todos los datos
@@ -2249,12 +2428,15 @@ class MadenatGuiaProcessing(models.Model):
                 'volumen_comercial': r3(vol_com_m3), 
                 'additional_cost': subtotal_neto,
                 'rate_usd': tipo_cambio_usd,
-                'service_product_name': service_name,           # ✅ NUEVO
-                'service_volume_m3': service_qty,               # ✅ NUEVO
-                'service_unit_price_clp': service_unit_price,   # ✅ NUEVO
-                'service_date': service_date,                   # ✅ NUEVO
-                'service_code': service_code,                   # ✅ NUEVO
-                'texto_raw': texto
+                'service_product_name': service_name,
+                'service_volume_m3': service_qty,
+                'service_unit_price_clp': service_unit_price,
+                'service_date': service_date,
+                'service_code': service_code,
+                'texto_raw': texto,
+                'rut_emisor': supplier_rut,
+                'nombre_emisor': supplier_name_detected,
+                'fecha_emision': guide_date,
             }
         except Exception as e: 
             raise UserError(f"Error procesando PDF: {e}")
@@ -2273,6 +2455,19 @@ class MadenatGuiaProcessing(models.Model):
                 raise UserError("El Excel se leyó pero no tiene líneas válidas.")
 
             result['oc_reference'] = self._find_oc_reference_in_excel(attachment)
+
+            # Extraer número de guía desde el Excel (lectura de encabezado, no bloqueante)
+            try:
+                import re as _re_guide
+                _df_guide = pd.read_excel(attachment._full_path(attachment.store_fname), header=None, nrows=10)
+                for _r in _df_guide.values:
+                    _s = " ".join([str(x) for x in _r if pd.notna(x)])
+                    _m = _re_guide.search(r'(?:GU[IÍ]A|N[°ºoO]|NRO\.?|N[úu]mero).{0,40}?(\d{4,})', _s, _re_guide.I)
+                    if _m:
+                        result['guide_number'] = _m.group(1)
+                        break
+            except Exception:
+                pass  # No bloqueante: _generate_lot_details_json usará self.name como fallback
 
             lineas_validadas = self._validar_y_enriquecer_lineas(result['lineas'])
             if not lineas_validadas: 
@@ -2293,6 +2488,38 @@ class MadenatGuiaProcessing(models.Model):
             return result
         except Exception as e: 
             raise UserError(f"Error procesando Excel: {e}")
+
+    def _try_extract_guide_number_from_binary(self, excel_binary):
+        """
+        Intento temprano de extraer número de guía desde el binario del Excel.
+        Misma regex que _parse_packing_excel. No bloqueante.
+        Retorna str con el número o None.
+        """
+        if not excel_binary:
+            return None
+        try:
+            import base64, io
+            import re as _re_guide
+            _df = pd.read_excel(io.BytesIO(base64.b64decode(excel_binary)), header=None, nrows=10)
+            for _r in _df.values:
+                _s = " ".join([str(x) for x in _r if pd.notna(x)])
+                _m = _re_guide.search(r'(?:GU[IÍ]A|N[°ºoO]|NRO\.?|N[úu]mero).{0,40}?(\d{4,})', _s, _re_guide.I)
+                if _m:
+                    return _m.group(1)
+        except Exception:
+            pass
+        return None
+
+    def write(self, vals):
+        # Extracción temprana del número de guía al subir Excel en formulario individual
+        if 'name' not in vals and 'excel_file' in vals:
+            self.ensure_one()
+            if self.name == _('New'):
+                guide_num = self._try_extract_guide_number_from_binary(vals['excel_file'])
+                if guide_num:
+                    vals = dict(vals)
+                    vals['name'] = guide_num
+        return super().write(vals)
 
     def _parse_excel_data_core(self, attachment):
         file_path = attachment._full_path(attachment.store_fname)
@@ -4094,32 +4321,70 @@ class MadenatGuiaProcessing(models.Model):
             return
 
         _logger.info(
-            "🧹 MADENAT guia_processing cleanup: intentando eliminar %d stock.moves huérfanos para guías: %s",
+            "🧹 MADENAT guia_processing cleanup: %d stock.moves huérfanos encontrados para guías: %s",
             len(moves), names
         )
+
+        # 🛡️ FIX 2026-07-01: Protección de moves con cantidad recolectada (quantity > 0).
+        # Odoo bloquea nativamente el unlink de stock.move/stock.move.line que ya tienen
+        # cantidad recolectada. En vez de forzar y causar UserError, marcamos esos moves
+        # como "HUERFANO-PROTEGIDO-" y los dejamos para revisión manual de Inventario.
+        # Causa raíz: action_reopen_to_draft() FASE 3 desvincula pickings 'done'
+        # cambiando su 'origin' pero sin cancelarlos, generando moves huérfanos con quantity>0.
+        protected_moves = moves.filtered(
+            lambda m: any((ml.quantity or 0) > 0 for ml in m.move_line_ids)
+        )
+        cleanable_moves = moves - protected_moves
+
+        if protected_moves:
+            for pm in protected_moves:
+                pm.origin = f"HUERFANO-PROTEGIDO-{pm.origin or ''}"
+            _logger.warning(
+                "🛡️ %d stock.move(s) con cantidad recolectada NO fueron eliminados "
+                "(protegidos por integridad de Odoo). Marcados como huérfanos protegidos: %s",
+                len(protected_moves), protected_moves.mapped('name'),
+            )
+            if self:
+                self[:1].message_post(
+                    body=(
+                        "🛡️ <strong>Integridad de Inventario:</strong> "
+                        f"{len(protected_moves)} movimiento(s) con cantidad ya recolectada "
+                        "no se pudieron eliminar y quedaron marcados para revisión manual del "
+                        "equipo de Inventario. Moves: "
+                        f"{', '.join(protected_moves.mapped('name'))}"
+                    )
+                )
+
+        if not cleanable_moves:
+            _logger.info(
+                "🛡️ Todos los moves huérfanos están protegidos (tienen cantidad recolectada). "
+                "No se eliminará ninguno."
+            )
+            return
 
         try:
             with self.env.cr.savepoint():
                 # 1. Atacar las líneas de movimiento primero (stock.move.line)
-                move_lines = moves.mapped('move_line_ids')
+                move_lines = cleanable_moves.mapped('move_line_ids')
                 if move_lines:
                     move_lines.write({'state': 'draft'})
                     move_lines.unlink()
 
                 # 2. Atacar los movimientos cabecera (stock.move)
                 # Forzamos a borrador para intentar bypassear el estado 'done' de manera legal
-                moves.write({'state': 'draft'})
+                cleanable_moves.write({'state': 'draft'})
 
                 # 3. Borrado físico usando el salvoconducto de contexto
-                moves.with_context(force_delete=True).unlink()
+                cleanable_moves.with_context(force_delete=True).unlink()
                 
-            _logger.info("✅ %d moves huérfanos eliminados limpiamente via ORM.", len(moves))
+            _logger.info("✅ %d moves huérfanos eliminados limpiamente via ORM.", len(cleanable_moves))
             
         except Exception as e:
             _logger.error("❌ Error ORM eliminando moves huérfanos: %s", e)
             raise UserError(
-                f"🛑 Seguridad Odoo: No se pudieron eliminar {len(moves)} movimientos huérfanos.\n"
+                f"🛑 Seguridad Odoo: No se pudieron eliminar {len(cleanable_moves)} movimientos huérfanos.\n"
                 f"Odoo ha bloqueado la eliminación porque estos movimientos ya afectaron la "
                 f"valoración contable o tienen stock real (Quants) fuertemente asociado.\n\n"
                 f"Detalle técnico: {e}"
             )
+

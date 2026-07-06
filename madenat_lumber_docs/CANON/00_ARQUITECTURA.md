@@ -1,165 +1,188 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.0.0`
-**Fecha de actualización:** 2026-05-28
-**Estado:** CANÓNICO — Fuente de verdad técnica
+**Versión documental:** `7.2.0`
+**Fecha de actualización:** 2026-07-01
+**Estado:** ✅ Vigente — Verificado contra código en auditoría forense 2026-07-01
 **Compatibilidad objetivo:** Odoo 18 CE
 
 ---
 
 ## 1. Propósito
 
-Este módulo concentra el flujo operativo y técnico de MADENAT para recepción de madera, staging documental, análisis comercial, cálculo volumétrico, validación por gates y persistencia controlada a inventario.
-
-Su responsabilidad principal no es solo “crear lotes”, sino garantizar que el paso desde documento origen hacia `stock.lot` ocurra con trazabilidad, consistencia matemática y control de side effects.
+Este módulo implementa el flujo operativo de MADENAT para:
+- Ingesta de documentos (Excel, PDF) vía `lumber.reception` y `madenat.guia.processing`.
+- Staging documental en `lumber.reception.line` antes de cualquier escritura en inventario.
+- Análisis comercial, cálculo volumétrico y validación por gates (0–3 + GB-1).
+- Persistencia controlada a `stock.lot` exclusivamente a través de Gate 3 (AD-04).
 
 ---
 
-## 2. Posición en la cadena funcional
+## 2. Posición funcional
 
-```text
-madenat_lumber_shipping_core
-            ↓
-    madenat_lumber_core
-            ↓
-madenat_lumber_logistics / facturación futura
-```
+El módulo no opera en un pipeline vertical estricto: actúa como **núcleo de ingesta y staging** que alimenta a los módulos de dominio.
 
-El módulo actúa como núcleo de ingestión, staging, validación y escritura controlada a stock.
+- **Upstream:** `madenat_lumber_purchasing` extiende `purchase.order` y enriquece el contexto de compra.
+- **Consumidores:** `madenat_lumber_logistics` (contenedores/embarques), `madenat_lumber_costing` (costeo), `madenat_lumber_billing` (facturación), `madenat_lumber_reports` (reportes).
+- **Dependencia funcional documentada:** `madenat_lumber_shipping_core` define modelos de motonaves/viajes/reservas pero los menús los construye `madenat_lumber_logistics`. Si logistics no está instalado, shipping_core es invisible en la UI. `shipping_core/__manifest__.py` tiene `shipping_menus.xml` comentado con nota "ELIMINADO - Menús migrados a logistics". `shipping_core` no declara `depends` sobre `logistics` → dependencia funcional, no técnica. Documentado como riesgo M-R2 en `02_CONTINUIDAD.md` y formalizado en `04_DECISION_LOG.md` AD-37.
 
 ---
 
 ## 3. Estado real de la arquitectura
 
-La arquitectura actual es **modular parcial**. Esto significa que ya se extrajeron componentes importantes del antiguo monolito, pero todavía existe concentración funcional dentro de `models/lumber_reception.py`.
+**Modular parcial.** Se han extraído componentes del monolito original pero `lumber_reception.py` (~3118 líneas) todavía concentra `LumberReceptionLine`, `LumberReception`, computes de staging y normalizaciones.
 
-### Componentes desacoplados ya existentes
-- `reception_parser.py` — Dispatcher y parseo multi-formato.
-- `reception_workflow.py` — Flujo de estados y validaciones operativas.
-- `reception_service.py` — Escritura a stock y servicios de persistencia.
-- `mixin_lumber_ingest.py` — Lógica compartida de ingestión.
-- `utils_uom.py` — Conversión y constantes volumétricas.
-- `width_mapping.py` — Tabla de mapeo de anchos.
+### 3.1 Archivos clave desacoplados
 
-### Componente aún concentrado
-- `models/lumber_reception.py` mantiene todavía:
-  - `LumberReceptionLine`
-  - `LumberReception`
-  - computes de staging
-  - parte de normalizaciones y comportamiento UI
+| Archivo | Responsabilidad |
+|---|---|
+| `ingestion_gate.py` | Gates 0–3: PreUpload, DocumentReconciliation, CommercialAnalysis, PreCommit |
+| `reception_parser.py` | Dispatcher multi-formato (Excel por perfil, PDF, CSV) |
+| `reception_service.py` | Escritura a `stock.lot` vía `LumberReceptionService._create_lots_from_packing()` |
+| `reception_workflow.py` | Mixin de estados y permisos (`state`, `can_process_reception`, etc.) |
+| `mixin_lumber_ingest.py` | Mixin de cálculo volumétrico (regla de oro compartida) |
+| `stock_lot.py` | Extensión de `stock.lot`: `vol_shipment_m3`, `_compute_estado_trazabilidad`, `_compute_processing_loss` |
+| `utils_uom.py` | Constantes y conversiones volumétricas (MM_PER_INCH, BLANK_CLEAR_FACTOR, r3, etc.) |
+| `width_mapping.py` | Tabla Rough→S2S + helper `get_s2s_adjustment()` |
+| `core_utils.py` | Utilidades compartidas de core |
+
+### 3.2 Modelos persistentes (Fase 2 + Fase 3 — AD-29, AD-30)
+
+El runtime actual incluye modelos para reglas de ingesta parametrizables con UI de mantenimiento:
+
+| Modelo | Propósito | AD |
+|---|---|---|
+| `lumber.blank.nominal.map` | Mapa físico→nominal blanks (8 registros) | AD-29 |
+| `lumber.width.s2s.map` | Tabla Rough→S2S (15 registros) | AD-29 |
+| `lumber.thickness.visual.rule` | Rangos espesor→visual (4 reglas) | AD-29 |
+| `lumber.profile.subproduct.rule` | Reglas perfil↔subproducto (7 reglas) | AD-29 |
+| `lumber.export.formula` | Fórmulas exportación por perfil (3 registros: f5085, f1550, metric) | AD-30 |
+| `lumber.ingestion.format` | Formatos ingesta/parsing por perfil (4 registros) | AD-30 |
+| `madenat.ingestion.config` | Helper AbstractModel con cadena de fallback de 3 niveles | AD-29 |
+
+### 3.3 Componente aún concentrado
+
+`models/lumber_reception.py` mantiene:
+- `LumberReceptionLine` (modelo de staging)
+- `LumberReception` (cabecera)
+- computes de staging (`_compute_volume_purchase`, `_compute_export_values`, `_compute_visual_defaults`, etc.)
+- normalizaciones y comportamiento UI
 
 **Conclusión arquitectónica:** el refactor estructural está avanzado y funcional, pero no está completada la separación total de línea/cabecera a archivos independientes.
 
 ---
 
-## 4. Modelos funcionales principales
+## 4. Modelos funcionales
 
-## 4.1 `lumber.reception.line`
+### 4.1 `lumber.reception.line`
 
-Modelo de staging que representa la línea documental antes de Gate 3.
+Modelo de staging (`_name = 'lumber.reception.line'`, `_inherit = ['madenat.lumber.ingest.line.mixin']`).
 
-### Responsabilidades
-- Reflejar la información cargada desde packing/documentos.
-- Preservar triple capa: visual, física y nominal.
-- Servir de superficie de corrección operativa previa a stock.
-- Proveer base para cálculos de volumen y trazabilidad.
+**Propósito:** Reflejar la información cargada desde documentos antes de Gate 3. Preservar triple capa (visual, física, nominal). Superficie de corrección operativa previa a stock. Base para cálculos volumétricos.
 
-### Campos funcionales relevantes
-- `reception_id`
-- `lot_name`
-- `pieces`
-- `product_id`
-- `subproduct_id`
-- `product_code`
-- `product_name`
-- `pieces`
-- `thickness_visual`
-- `width_visual`
-- `thickness`
-- `width`
-- `thickness_nominal`
-- `width_nominal`
-- `length`
-- `lengthuom`
-- `lengthinputraw`
-- `vol_physical_m3`
-- `vol_purchase_m3`
-- `vol_shipment_m3`
-- `vol_mbf`
-- `export_calculation_rule`
-- `audit_snapshot`
-- `audit_hash`
+**Campos funcionales (verificados contra código):**
+- `reception_id` — Many2one → `lumber.reception`, cascade delete
+- `lot_name` — Char, requerido
+- `product_id` — Many2one → `product.product`
+- `subproduct_id` — Many2one → `madenat.subproducto`
+- `product_code`, `product_name` — Char
+- `pieces` — Integer
+- `thickness_visual`, `width_visual` — Char (representación imperial: "6/4", "5 5/8")
+- `thickness_nominal`, `width_nominal` — Float (mm)
+- `length` — Float (metros, fuente de verdad para cálculos volumétricos)
+- `length_input_raw` — Float (valor crudo digitado por operador en la unidad `lengthuom`)
+- `lengthuom` — Selection: `m` / `mm` / `ft`
+- `vol_physical_m3` — Float, compute/store
+- `vol_purchase_m3` — Float, compute/store, inverse habilitado (editable en staging)
+- `vol_shipment_m3` — Float, compute/store (volumen de exportación)
+- `vol_mbf` — Float, compute/store
+- `export_calculation_rule` — Char
+- `audit_snapshot` — Text, readonly, copy=False (JSON inmutable generado por Gate3)
+- `audit_hash` — Char, SHA-256, readonly, copy=False
 
-### Nota crítica sobre largo
-A partir del cambio documental del 2026-05-23 se consolida la política:
-- `length` es la fuente de verdad en metros.
-- `lengthinputraw` conserva el valor digitado por el operador.
-- `lengthuom` define la unidad de entrada (`m`, `mm`, `ft`).
-- La normalización debe ocurrir antes de cualquier cálculo volumétrico.
+**Política de largo (AD-12 a AD-17):**
+- `length` = valor normalizado en metros. Base de todo cálculo volumétrico.
+- `length_input_raw` = valor de entrada del operador (preservado sin modificar).
+- `lengthuom` = unidad de entrada. Desacoplada del perfil de ingesta (AD-14).
+- Normalización: `_compute_lengthm` → `@api.depends('length_input_raw', 'lengthuom', 'length')`.
+- Conversión: ft → `raw * FT_TO_M`, mm → `raw * 0.001`, m → valor directo.
+- El naming correcto es `length_input_raw` (con underscores), consistente con el código.
 
-### Riesgo técnico vigente
-✅ RESUELTO (23-mayo-2026) — el `@depends` de `_compute_lengthm` usa `lengthinputraw` y `lengthuom`, y el módulo actualiza sin error de registry.
+### 4.2 `lumber.reception`
 
----
+Cabecera del flujo (`_name = 'lumber.reception'`).
 
-## 4.2 `lumber.reception`
+**Responsabilidades:** Gestionar estado del proceso, orquestar gates y transiciones, centralizar recepción documental, controlar cuándo una recepción puede procesarse/reabrirse/cancelarse, vincular staging → snapshot → inventario.
 
-Cabecera del flujo de recepción.
+**Campos relevantes:**
+- `reception_line_ids` — One2many → `lumber.reception.line`
+- `state` — Selection: draft / staging / confirmed / cancelled
+- `ingestion_profile` — Selection: f5085 / f1550 / metric / blanks_clear
+- `audit_snapshot`, `audit_hash`
+- `can_process_reception`, `can_reopen_reception`, `can_cancel_reception` (compute desde `reception_workflow.py`)
+- `guia_numero` (Char), `guia_fecha` (Date)
+- `supplier_id` — Many2one → `res.partner`
+- `order_id` / `purchase_id` — Many2one → `purchase.order`
 
-### Responsabilidades
-- Gestionar el estado del proceso.
-- Orquestar gates y transiciones.
-- Centralizar la recepción documental.
-- Controlar cuándo una recepción puede procesarse, reabrirse o cancelarse.
-- Vincular staging, snapshot y salida a inventario.
+**Métodos arquitectónicos clave:**
+- `action_confirm_reception()` → GB-1 → Gate2 → Gate3 → `LumberReceptionService._create_lots_from_packing()`.
+- `action_reopen_to_draft()` → revierte estado preservando lotes en BD y desvinculando pickings.
 
-### Campos relevantes
-- `reception_line_ids`
-- `state`
-- `ingestion_profile`
-- `audit_snapshot`
-- `audit_hash`
-- `can_process_reception`
-- `can_reopen_reception`
-- `can_cancel_reception`
-- `guia_numero`
-- `guia_fecha`
-- `supplier_id`
-- `order_id`
+### 4.3 `madenat.guia.processing`
 
----
+Flujo complementario para guías procesadas. Modelos:
+- `madenat.guia.processing` (cabecera)
+- `madenat.guia.processing.line` (líneas)
 
-## 4.3 `madenat.guia.processing` y líneas
+Métodos: `do_full_processing()`, `action_validate()`, `_create_or_get_lot()`.
 
-Este flujo sigue siendo parte del módulo para escenarios de guía procesada, servicios y trazabilidad operativa complementaria.
+### 4.4 `stock.lot` extendido (`StockLotExtended` en `stock_lot.py`)
 
-### Responsabilidades
-- Parsear guía de despacho.
-- Integrar PDF y Excel.
-- Crear staging alternativo.
-- Validar consistencia.
-- Transferir a stock cuando el flujo lo requiera.
+Extensión post-Gate3 de `stock.lot`. Campos y computes:
+- `vol_shipment_m3` — Volumen de embarque con bifurcación blanks vs S2S (AD-27).
+- `volume_purchase_m3` — Volumen nominal de compra.
+- `_compute_estado_trazabilidad()` — Batch query de trazabilidad.
+- `_compute_processing_loss()` — Pérdida entre compra y embarque.
 
 ---
 
 ## 5. Gates y política de side effects
 
-El sistema opera bajo un flujo de tres compuertas lógicas:
-1. **Gate 1 (Staging)**: Ingesta de datos desde Excel/PDF. Validación de tipos. Sin efectos en stock.
-2. **Gate 2 (Verificación)**: Análisis comercial, nominales y tolerancias. Sin efectos en stock.
-3. **Gate 3 (Validación)**: Generación de lotes (`stock.lot`) y movimientos. **Único punto autorizado de escritura en inventario**.
+El sistema opera bajo 4 gates formales (`ingestion_gate.py`) + 1 guardia inline:
+
+1. **Gate 0 — PreUpload** (`Gate0PreUpload`): Validación temprana de archivos (tipo, tamaño ≤20MB, estructura). Sin efectos en BD.
+2. **Gate 1 — DocumentReconciliation** (`Gate1DocumentReconciliation`): Conciliación de líneas de packing vs guía. Sin efectos en BD.
+3. **Gate 2 — CommercialAnalysis** (`Gate2CommercialAnalysis`): Análisis de nominales, tolerancias y reglas comerciales. Sin efectos en BD.
+4. **GB-1** (inline en `action_confirm_reception()`): Guardia pre-Gate3 que verifica staging completo antes de permitir el commit.
+5. **Gate 3 — PreCommit** (`Gate3PreCommit`): Notario criptográfico. Genera `audit_snapshot` (JSON) + `audit_hash` (SHA-256). **Único punto autorizado de escritura en inventario** (AD-04).
+
+**Regla operativa:** Gates 0–2 + GB-1 son sin efectos en stock. Gate 3 es el único write autorizado a `stock.lot` y `stock.move`.
 
 ---
 
-## 12. Criterio de alineación documental
+## 6. Wizards
 
-Este documento debe prevalecer sobre resúmenes antiguos.
-Si el código cambia en:
-- layout de largo,
-- campos de staging,
-- gates,
-- modularización,
-- o política de side effects,
+- `lumber.reception.mass.update` — Asignación masiva de espesores/anchos/subproductos. Lee reglas desde `madenat.ingestion.config`.
+- `madenat.guia.mass.update` — Ídem para guías de procesamiento.
+- `madenat.period.close` — Cierre de período (staging, pendiente validación completa).
 
-entonces este archivo debe actualizarse antes del siguiente commit.
+---
+
+## 7. Criterio de alineación documental
+
+Este documento se rige por la jerarquía de verdad definida en `INDICE_DOCUMENTACION.md` sección 8:
+1. Documento canónico del tema en `CANON/`.
+2. `04_DECISION_LOG.md`.
+3. `02_CONTINUIDAD.md`.
+4. Código fuente (verdad funcional).
+
+Si el código cambia en: layout de largo, campos de staging, gates, modularización, modelos Fase 2/3, o política de side effects, este archivo debe actualizarse en la misma sesión (AD-25).
+
+---
+
+## 8. Historial de versiones
+
+| Versión | Fecha | Cambio |
+|---|---|---|
+| 7.1.0 | 2026-06-30 | Auditoría documental. Consolidación post-limpieza. |
+| 7.2.0 | 2026-07-01 | Validación cruzada contra código. Corrección de naming (`length_input_raw`), gates reales (0–3 + GB-1), modelos Fase 2/3 agregados, `stock_lot.py` y `ingestion_gate.py` documentados, wizards listados, cadena funcional ajustada a grafo horizontal. |

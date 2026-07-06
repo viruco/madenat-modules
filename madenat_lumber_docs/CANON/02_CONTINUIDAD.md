@@ -1,7 +1,7 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 8.1.0
-**Fecha de actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->
+**Versión documental:** 9.1.0
+**Fecha de actualización:** 2026-07-01  <!-- actualizado: 2026-07-01 — post-auditoría forense + limpieza Fase A+B -->
 **Estado:** ACTIVO — Checkpoint vivo para retoma técnica sin reconstrucción de contexto
 
 ---
@@ -21,6 +21,16 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 - Ambiente: Docker en WSL (`odoo18_app`, `db`).
 - Arquitectura: modular parcial.
 
+### Documentación (post-auditoría forense 2026-07-01)
+- **Auditoría forense completa ejecutada** sobre TODO `custom_addons/` contra `madenat_lumber_docs/` como fuente canónica única.
+- **CANON/INDICE_DOCUMENTACION.md v10.0.0:** 19 documentos CANON indexados. Versión de `02_CONTINUIDAD.md` corregida (8.1.0→9.0.0 match real).
+- **WIKI/00_INDICE.md v2.0.0:** ~60 documentos WIKI indexados.
+- **AD-26 ejecutado:** 33 archivos `.bak` removidos de módulos productivos → `LEGADO/backups_modulos/`.
+- **Backup de módulo movido:** `madenat_lumber_core/backups/fase1_20260602_211431/` → `LEGADO/backups_modulos/`.
+- **CHANGELOG cerrado:** `[Unreleased]` → `18.0.5.4.0` (fix UserError stock.moves, 2026-07-01).
+- **Prueba de humo:** 86 módulos cargados en 4.71s, 0 errores, registry OK.
+- **Punto de entrada:** `CANON/INDICE_DOCUMENTACION.md` → único mapa maestro.
+
 ### Verdad Funcional (Código)
 1. **Naming de Largo:** Implementado vía `lengthinputraw` (preserva entrada) y `lengthuom` (unidad).
 2. **Fuente de Verdad:** El campo `length` es la base normalizada en metros para todos los cálculos volumétricos.
@@ -30,20 +40,22 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 
 ---
 
-## 3. Prioridades Actuales (2026-06-16)  <!-- actualizado: 2026-06-16 -->
+## 3. Prioridades Actuales (2026-07-01)  <!-- actualizado: 2026-07-01 -->
 
-1. **Validar en staging:** commit `3ba43575` (R7/R8 group_by + OC column + PDF footer) pendiente de verificación en máquina remota de test.
-2. **Confirmar deduction_factor Blank:** 0.0625 en seed `ingestion_seed_fase3.xml` sigue vigente. Pregunta a Cristhian pendiente: ¿El volumen exportación Blank usa deducción de cara 1/16" o espesor nominal exacto?
-3. **Auditoría documental canónica:** Sesión activa 2026-06-16 — revisión completa de CANON/.
-4. **Deploy a producción:** Pendiente hasta que staging esté validado y auditoría documental cerrada.
+1. **Completar Fase C:** Crear CHANGELOG mínimos en 7 módulos sin trazabilidad (costing, billing, shipping_core, reports, vendor_payment, toll_processing, reception_improvements).
+2. **Completar Fase D:** Mover scripts de auditoría/limpieza de raíz `custom_addons/` a `LEGADO/`.
+3. **Confirmar deduction_factor Blank:** 0.0625 en seed `ingestion_seed_fase3.xml` sigue vigente. Pregunta a Cristhian pendiente.
+4. **Deploy a producción:** Pendiente hasta completar Fases C+D+E y validar staging.
 
 ---
 
-## 4. Punto de retoma — 2026-06-16  <!-- actualizado: 2026-06-16 -->
+## 4. Punto de retoma — 2026-07-01  <!-- actualizado: 2026-07-01 -->
 
-**Último commit:** 3ba43575 — fix: align R7/R8 group_by with purchase_order from core
+**Último commit conocido:** 3ba43575 — fix: align R7/R8 group_by with purchase_order from core
 **Rama:** main
-**Estado:** Post C1-C4. Hotfix UX cerrado. Nuevos features (kanban, dashboards, wizard period_close, landed_cost) en staging. Auditoría documental canónica en curso.
+**Estado:** Post C1-C4 + Hotfix UX cerrado + Fix UserError stock.moves (18.0.5.4.0). Auditoría forense documental Fase A+B completada. AD-26 ejecutado (0 .bak residuales). Fases C+D+E pendientes para cerrar el ciclo.
+**Nuevos features en staging:** kanban, dashboards, wizard period_close, landed_cost, búsqueda OC.
+**Limpieza ejecutada:** 33 .bak → LEGADO, backup módulo → LEGADO, docker-compose.yml.bak eliminado, backup duplicado docs eliminado.
 
 ### Cerrado en sesión 10-06-2026
 - HOTFIX UX — Pestaña Comercial f5085: `thickness_visual` como columna principal, `thickness_nominal_frac` como opcional. Solo XML (lumber_reception_views.xml L372-380), 0 Python. Trazabilidad preservada vía columna opcional. Ver CHANGELOG.md.

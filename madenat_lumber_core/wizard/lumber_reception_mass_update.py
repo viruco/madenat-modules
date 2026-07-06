@@ -268,6 +268,15 @@ class LumberReceptionMassUpdate(models.TransientModel):
         help="Clasificación técnica MADENAT para los paquetes seleccionados"
     )
 
+    # HOMOLOGACIÓN NOMINALES 2026-06-22: product_id
+    # Equivalente a madenat_guia_mass_update.py — Gap #1
+    # Referencia: INVESTIGACION_NOMINALES_HOMOLOGACION_20260622.md
+    product_id = fields.Many2one(
+        'product.product',
+        string='Producto',
+        help="Si se especifica, se asigna masivamente a todas las líneas seleccionadas."
+    )
+
     apply_to = fields.Selection([
         ('selected', 'Solo líneas seleccionadas'),
         ('all', 'Todas las líneas de la recepción')
@@ -355,6 +364,11 @@ class LumberReceptionMassUpdate(models.TransientModel):
             vals['width_nominal_frac'] = self.width_nominal_frac or ''
 
         vals['subproduct_id'] = self.subproduct_id.id or False
+        # HOMOLOGACIÓN NOMINALES 2026-06-22: asignación masiva de product_id
+        # CORRECCIÓN 2026-06-22: escritura condicional — no pisar con False
+        # si el usuario no seleccionó producto en el wizard
+        if self.product_id:
+            vals['product_id'] = self.product_id.id
 
         if not vals:
             raise UserError(_(

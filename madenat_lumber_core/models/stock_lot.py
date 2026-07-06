@@ -836,7 +836,11 @@ class StockLotExtended(models.Model):
     # MÉTODOS COMPUTADOS - SECCIÓN 1: ESCUADRÍA Y DIMENSIONES
     # ==============================================================================
       
-    @api.depends('reception_id', 'guia_processing_id')
+    # HOMOLOGACIÓN OC 2026-06-21: depends extendido para reflejar dependencias reales del método
+    @api.depends(
+        'reception_id', 'reception_id.purchase_id', 'reception_id.supplier_id',
+        'guia_processing_id', 'guia_processing_id.order_id',
+    )
     def _compute_purchase_info(self):
         """✅ VERSIÓN SIMPLIFICADA - Solo para guías procesadas sin lote padre"""
         # Primero inicializar todos a False

@@ -1,5 +1,7 @@
 # MADENAT Lumber Billing
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 ## Descripción
 
 `madenat_lumber_billing` es un módulo de Odoo 18 CE diseñado para gestionar el proceso de facturación de embarques de madera en un flujo controlado de auditoría y facturación.

@@ -1,4 +1,12 @@
-# Arquitectura de Ingesta de Recepciones
+# Registro Técnico — Decisiones TD de Ingesta
+
+> 📖 Este documento es un registro técnico derivado de decisiones TD.
+> No sustituye la documentación canónica.
+> Para el flujo operativo de ingesta, ver `CANON/12_FLUJOS_INGESTA.md`.
+> Para decisiones arquitectónicas, ver `CANON/04_DECISION_LOG.md`.
+> Para gates y modelos, ver `CANON/00_ARQUITECTURA.md`.
+
+---
 
 ## TD-004 — Centralización de Constantes Físicas Universales
 

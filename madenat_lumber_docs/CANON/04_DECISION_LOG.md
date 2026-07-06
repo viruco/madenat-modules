@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 6.2.0
-**Última actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->
+**Versión documental:** 6.3.0
+**Última actualización:** 2026-07-01  <!-- actualizado: 2026-07-01 — AD-36 a AD-38 registrados -->
 **Estado:** Canonical / activo
 
 ---
@@ -897,4 +897,105 @@ Toda regla de validación documental debe ser específica por perfil de ingesta.
 
 **Regla derivada (refuerza AD-31):**
 Al extender vistas de reportes sobre `lumber.reception.line`, usar SIEMPRE `purchase_id` (related field definido en `lumber_reception_reports.py`), NUNCA `purchase_order` (campo exclusivo de la cabecera). Verificar existencia del campo en el modelo concreto antes de referenciarlo en XML.
-<!-- actualizado: 2026-06-16 — AD-32 a AD-35 agregados -->
+---
+
+## 2026-07-01 — Auditoría forense documental + Ejecución AD-26
+
+### AD-36 — Ejecución de higiene documental: AD-26, cierre CHANGELOG, alineación CANON
+
+**Decisión:** Ejecutar la limpieza de residuos documentales decretada en AD-26 (2026-05-23) que permanecía sin ejecutar, y alinear la documentación canónica con el estado real del repositorio.
+
+**Problema:**
+- 33 archivos `.bak` en 7 módulos productivos violando AD-26 activamente.
+- `backups/fase1_20260602_211431/` dentro de `madenat_lumber_core/`.
+- `CHANGELOG.md` con sección `[Unreleased]` abierta desde 2026-07-01 sin cierre documental (viola AD-25).
+- `INDICE_DOCUMENTACION.md` declaraba `02_CONTINUIDAD.md` v8.1.0 cuando el archivo real es v9.0.0.
+- `madenat_lumber_core/models/ROADMAP.md` en ubicación incorrecta (models/ en lugar de WIKI/).
+
+**Ejecutado (Fase A — Higiene):**
+- Snapshot de seguridad pre-limpieza: `~/madenat_pre_cleanup_20260701_170707.tar.gz` (13MB).
+- 33 archivos `.bak` movidos de módulos productivos → `LEGADO/backups_modulos/` preservando estructura y timestamps.
+- `backups/fase1_20260602_211431/` movido → `LEGADO/backups_modulos/`.
+- `docker-compose.yml.bak.2026-05-18_204331` eliminado (sin valor histórico).
+- `docs_backup_20260523_121420.tar.gz` eliminado (duplicado exacto confirmado por P7).
+- Prueba de humo: 86 módulos cargados en 4.71s, 0 errores, registry OK.
+
+**Ejecutado (Fase B — Alineación canónica):**
+- `INDICE_DOCUMENTACION.md`: versión `02_CONTINUIDAD.md` corregida 8.1.0→9.0.0.
+- `CHANGELOG.md`: sección `[Unreleased]` cerrada → `[18.0.5.4.0] - 2026-07-01`.
+- `02_CONTINUIDAD.md` actualizado a v9.1.0 con checkpoint post-auditoría.
+- `ROADMAP.md` movido de `models/` → `WIKI/02_TECNICO/roadmap_core.md`.
+
+**Impacto:**
+- AD-26 finalmente ejecutado: 0 archivos `.bak` en módulos productivos.
+- 0 directorios `backups/` en módulos productivos.
+- Documentación canónica alineada: versiones reales coinciden con el índice.
+- CHANGELOG cerrado y versionado formalmente.
+- Trazabilidad preservada: los 33 .bak permanecen accesibles en LEGADO para referencia histórica.
+
+**Regla derivada (refuerza AD-26 y AD-25):**
+1. AD-26 no es declarativo: se audita y se ejecuta. El find `.bak` debe correrse al cierre de cada sesión que toque archivos.
+2. AD-25 se extiende: ninguna sección `[Unreleased]` puede permanecer abierta más de 24h sin registro en CANON.
+3. Toda discrepancia entre INDICE_DOCUMENTACION.md y archivos reales se considera bug documental de prioridad alta.
+
+
+---
+
+## 2026-07-01 — Desactivación de autoridad documental duplicada en shipping_core
+
+### AD-37 — Degradación de `shipping_core/docs/00_ARQUITECTURA.md` a histórico
+
+**Decisión:** Archivar `madenat_lumber_shipping_core/docs/00_ARQUITECTURA.md` como documento histórico y eliminar su autoridad como fuente arquitectónica activa, consolidando la verdad en `CANON/00_ARQUITECTURA.md`.
+
+**Problema:**
+- El documento `shipping_core/docs/00_ARQUITECTURA.md` (132 líneas, auditoría 2026-05-08) competía con `CANON/00_ARQUITECTURA.md` como fuente de verdad arquitectónica.
+- Declaraba una cadena funcional `Odoo Core → [shipping_core] → madenat_lumber_core` que contradice los `__manifest__.py` reales (core no depende de shipping_core).
+- Contenía documentación verificable de los modelos `shipping.vessel`, `shipping.voyage`, `shipping.booking` no presente en CANON.
+
+**Ejecutado:**
+1. Contenido verificable de modelos de shipping extraído a `CANON/00_ARQUITECTURA.md` sección 2 (dependencia funcional shipping_core → logistics).
+2. Documento original archivado en `LEGADO/auditorias/shipping_core_arquitectura_20260508.md` (valor histórico preservado).
+3. Directorio `shipping_core/docs/` eliminado (vacío tras archivo).
+4. `shipping_core/README.md` actualizado con referencia explícita a `CANON/INDICE_DOCUMENTACION.md` y `CANON/00_ARQUITECTURA.md`.
+5. Dependencia funcional `shipping_core → logistics` documentada formalmente: `shipping_core` no declara `depends` sobre `logistics` pero sus menús son construidos por `logistics` (`shipping_menus.xml` comentado en manifest).
+
+**Impacto:**
+- 0 autoridad arquitectónica duplicada en `shipping_core/`.
+- CANON/00_ARQUITECTURA.md es la única fuente de verdad arquitectónica del ecosistema.
+- Trazabilidad histórica preservada en LEGADO.
+
+**Regla derivada:**
+Ningún módulo puede mantener un directorio `docs/` con documentos que compitan con CANON como fuente de verdad. Si un módulo requiere documentación de sus modelos, esta debe residir en CANON o en el README del módulo con referencia explícita a CANON.
+
+
+---
+
+## 2026-07-01 — Desalineación monetaria documentada: `wood_cost_usd` es `Float`, no `Monetary`
+
+### AD-38 — Trazabilidad de desalineación entre CANON/08_COSTEO y código real
+
+**Decisión:** Documentar que `stock.lot.wood_cost_usd` está implementado como `fields.Float` en el código actual, mientras que `CANON/08_COSTEO.md` sección 2.1 lo declara como `Monetary`. Esta diferencia no es un bug productivo sino un **pendiente de alineación arquitectónica** para cuando el módulo de costeo se retome.
+
+**Problema:**
+- `CANON/08_COSTEO.md` sección 2.1 lista `wood_cost_usd` como tipo `Monetary`.
+- El código real en `stock_lot.py` lo define como `fields.Float(string='Costo Madera USD', default=0.0)`.
+- La migración Float→Monetary documentada en Fase A (`10_AUDITORIA_MONETARIA_FASE_A.md`) no alcanzó a materializarse en todos los campos.
+
+**Ejecutado:**
+1. Sección 8 de `CANON/08_COSTEO.md` reformulada como criterio normativo alineado con código real. Eliminada la regla "Monetary siempre" de esa sección.
+2. La obligación de migrar a Monetary se mantiene como objetivo arquitectónico en las secciones 1-4 de `CANON/08_COSTEO.md` y en `10_AUDITORIA_MONETARIA_FASE_A.md`.
+3. Esta entrada registra la desalineación como **pendiente no bloqueante**, dado que el módulo de costeo está en construcción y el campo funciona correctamente como Float.
+
+**Impacto:**
+- La documentación canónica ahora refleja el estado real del código (sección 8).
+- La intención arquitectónica monetaria se preserva como objetivo futuro (secciones 1-4 y Fase A).
+- Ningún cambio en código.
+- Sin riesgo productivo: `wood_cost_usd` funciona correctamente como Float.
+
+**Regla derivada:**
+Al documentar migraciones arquitectónicas (como Float→Monetary), el CANON debe distinguir entre:
+1. **Objetivo de diseño** (lo que se quiere lograr) — expresado en secciones de arquitectura.
+2. **Estado real del código** (lo que está implementado) — verificado contra código antes de afirmarlo como regla operativa.
+3. **Pendiente de alineación** (la brecha entre 1 y 2) — registrado aquí, sin considerarlo bug.
+
+<!-- actualizado: 2026-07-01 — AD-38 agregado (desalineación monetaria wood_cost_usd) -->

@@ -1,5 +1,7 @@
 # MADENAT Lumber Reports
 
+> 📖 Documentación canónica: [../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md](../madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md)
+
 Cerebro de gestión y remapeo de navegación para MADENAT.
 
 ## Propósito
