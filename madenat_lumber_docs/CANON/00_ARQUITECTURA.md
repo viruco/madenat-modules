@@ -1,9 +1,9 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.2.0`
-**Fecha de actualización:** 2026-07-01
-**Estado:** ✅ Vigente — Verificado contra código en auditoría forense 2026-07-01
+**Versión documental:** `7.3.0`
+**Fecha de actualización:** 2026-07-08
+**Estado:** ✅ Vigente — Corregido post-auditoría: core_utils.py y product_template.py marcados como huérfanos/muertos, archivos faltantes agregados a tabla 3.1, parseo disperso de guia_processing documentado.
 **Compatibilidad objetivo:** Odoo 18 CE
 
 ---
@@ -39,12 +39,18 @@ El módulo no opera en un pipeline vertical estricto: actúa como **núcleo de i
 | `ingestion_gate.py` | Gates 0–3: PreUpload, DocumentReconciliation, CommercialAnalysis, PreCommit |
 | `reception_parser.py` | Dispatcher multi-formato (Excel por perfil, PDF, CSV) |
 | `reception_service.py` | Escritura a `stock.lot` vía `LumberReceptionService._create_lots_from_packing()` |
-| `reception_workflow.py` | Mixin de estados y permisos (`state`, `can_process_reception`, etc.) |
+| `reception_workflow.py` | Clase de orquestación de estados vía import inline (`from .reception_workflow import LumberReceptionWorkflow` en lumber_reception.py:2694). No es un mixin de herencia Odoo. |
+| `validation_checklist_mixin.py` | Mixin de checklist de validación para líneas de ingesta |
 | `mixin_lumber_ingest.py` | Mixin de cálculo volumétrico (regla de oro compartida) |
 | `stock_lot.py` | Extensión de `stock.lot`: `vol_shipment_m3`, `_compute_estado_trazabilidad`, `_compute_processing_loss` |
+| `stock_lot_cost_line.py` | Extensión de `stock.lot.cost.line` con cálculos de costeo |
+| `stock_picking.py` | Extensión de `stock.picking` para recepciones de lumber |
+| `stock_move.py` | Extensión de `stock.move` con trazabilidad de movimientos de lumber |
+| `product_product.py` | Extensión de `product.product` con atributos comerciales de lumber |
 | `utils_uom.py` | Constantes y conversiones volumétricas (MM_PER_INCH, BLANK_CLEAR_FACTOR, r3, etc.) |
 | `width_mapping.py` | Tabla Rough→S2S + helper `get_s2s_adjustment()` |
-| `core_utils.py` | Utilidades compartidas de core |
+| `core_utils.py` | ❌ CÓDIGO MUERTO — 0 referencias, fuera de `__init__.py` (confirmado 2026-07-08). No fue archivado por AD-39 (ese AD solo cubrió el método `_cleanup_orphan_moves`). |
+| `product_template.py` | ❌ HUÉRFANO NO ARCHIVADO — extensión de `product.template` nunca desplegada, pendiente de mover a `_archive/` (confirmado 2026-07-08). |
 
 ### 3.2 Modelos persistentes (Fase 2 + Fase 3 — AD-29, AD-30)
 
@@ -69,6 +75,10 @@ El runtime actual incluye modelos para reglas de ingesta parametrizables con UI 
 - normalizaciones y comportamiento UI
 
 **Conclusión arquitectónica:** el refactor estructural está avanzado y funcional, pero no está completada la separación total de línea/cabecera a archivos independientes.
+
+**⚠️ PARSEO DISPERSO en `madenat_guia_processing.py`:** 10 métodos de extracción de datos sin dispatcher equivalente a `reception_parser.py` (`_parse_dispatch_pdf` L2128, `_parse_packing_excel` L2445, `_parse_excel_data_core` L2524, `_find_oc_reference_in_excel` L2834, `_parse_float_value` L2639, `_parse_fraction` L604, `_get_nominal_dimension` L2678, entre otros). El archivo concentra 4,390 líneas y 8 responsabilidades con parseo disperso, frente a `reception_parser.py` que está desacoplado como dispatcher dedicado. Esta asimetría no estaba documentada en versiones previas. Confirmado en auditoría 2026-07-08. Ver riesgo relacionado en `02_CONTINUIDAD.md` sección 5.
+
+**Regla de diseño a preservar:** La lógica de negocio S2S vs Blank está correctamente aislada en `_compute_vol_shipment_m3` (L476-538, bifurcación en L510-516), separada del parseo. Cualquier intervención futura sobre los 10 métodos de parseo NO debe tocar ni fusionar esta lógica.
 
 ---
 
@@ -186,3 +196,4 @@ Si el código cambia en: layout de largo, campos de staging, gates, modularizaci
 |---|---|---|
 | 7.1.0 | 2026-06-30 | Auditoría documental. Consolidación post-limpieza. |
 | 7.2.0 | 2026-07-01 | Validación cruzada contra código. Corrección de naming (`length_input_raw`), gates reales (0–3 + GB-1), modelos Fase 2/3 agregados, `stock_lot.py` y `ingestion_gate.py` documentados, wizards listados, cadena funcional ajustada a grafo horizontal. |
+| 7.3.0 | 2026-07-08 | Corrección de vigencia post-auditoría: `core_utils.py` y `product_template.py` marcados como huérfanos/muertos, archivos faltantes agregados a tabla 3.1 (`validation_checklist_mixin`, `stock_lot_cost_line`, `stock_picking`, `stock_move`, `product_product`), parseo disperso de `madenat_guia_processing.py` documentado en sección 3.3. Sin cambios de código. |

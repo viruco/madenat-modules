@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 6.3.0
-**Última actualización:** 2026-07-01  <!-- actualizado: 2026-07-01 — AD-36 a AD-38 registrados -->
+**Versión documental:** 6.4.0
+**Última actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — AD-40 registrado (corrección de vigencia documental) -->
 **Estado:** Canonical / activo
 
 ---
@@ -1000,6 +1000,25 @@ Al documentar migraciones arquitectónicas (como Float→Monetary), el CANON deb
 
 <!-- actualizado: 2026-07-01 — AD-38 agregado (desalineación monetaria wood_cost_usd) -->
 
+
+### AD-40 — Corrección de vigencia documental — arquitectura 7.2.0→7.3.0 y riesgo de parseo disperso en madenat_guia_processing.py
+
+**Decisión:** Actualizar la documentación canónica para reflejar discrepancias de vigencia confirmadas en auditoría de solo lectura (2026-07-08), sin modificar código.
+
+**Cambios documentales ejecutados:**
+- `CANON/00_ARQUITECTURA.md` 7.2.0→7.3.0: `core_utils.py` marcado como código muerto, `product_template.py` como huérfano no archivado, `reception_workflow.py` corregido (no es mixin Odoo), 5 archivos activos en `__init__.py` agregados a tabla 3.1 (`validation_checklist_mixin`, `stock_lot_cost_line`, `stock_picking`, `stock_move`, `product_product`), parseo disperso de `madenat_guia_processing.py` documentado en sección 3.3.
+- `CANON/02_CONTINUIDAD.md` 9.1.0→9.2.0: riesgo "Parseo disperso en `madenat_guia_processing.py`" (Alta, ABIERTO) agregado a sección 5. Nota de preservación S2S/Blank explícita.
+
+**Impacto:**
+- 0 archivos de código modificados.
+- 3 documentos canónicos actualizados (`00_ARQUITECTURA.md`, `02_CONTINUIDAD.md`, `04_DECISION_LOG.md`).
+- `INDICE_DOCUMENTACION.md` actualizado con nuevas versiones.
+- Hallazgos ya confirmados por auditoría previa, esta sesión solo los registra.
+
+**Regla derivada:**
+Las discrepancias de vigencia documental detectadas en auditoría deben corregirse en la misma sesión de detección. La documentación canónica es la única fuente de verdad arquitectónica y no puede desalinearse del código.
+
+---
 
 ### AD-39 — Archivado de `_cleanup_orphan_moves()` en `lumber_reception.py` (código muerto confirmado)
 
