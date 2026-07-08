@@ -1,3 +1,7 @@
+## [18.0.5.7.0] - 2026-07-08
+### Refactored
+- Extraída `_parse_fraction` de `madenat_guia_processing.py` a utilidad compartida `parse_fraction_to_decimal_inch` en `utils_uom.py`. Consolidada duplicación con `stock_lot._parse_fraction_to_decimal`. Sin cambios de comportamiento (12 tests unitarios). AD-41.
+
 ## [18.0.5.6.0] - 2026-07-06
 ### Changed
 - **Consolidación de `reception_service.cleanup_orphan_moves()` hacia savepoint**

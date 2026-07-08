@@ -154,6 +154,71 @@ def decimal_inch_to_mm(decimal_value):
         return 0.0
 
 
+def parse_fraction_to_decimal_inch(fraction_str):
+    """
+    🚀 PARSER INTELIGENTE BILINGÜE (Métrico/Imperial):
+    Convierte "5 3/8", "6/4", "4", "4.5" y "195mm" a Float (Pulgadas Decimales).
+    Maneja errores de espacios dobles o formatos sucios.
+
+    Extraído de madenat_guia_processing._parse_fraction (2026-07-08).
+    Función pura: sin dependencia de self, sin efectos colaterales.
+
+    Args:
+        fraction_str (str): String representando dimensión imperial o métrica
+
+    Returns:
+        float: Valor en pulgadas decimales. 0.0 si entrada inválida.
+    """
+    if not fraction_str:
+        return 0.0
+
+    s = str(fraction_str).strip().lower()
+    if not s:
+        return 0.0
+
+    try:
+        # 🛡️ BLINDAJE 1: Intercepción explícita de métricas
+        if 'mm' in s:
+            val = float(s.replace('mm', '').strip())
+            return val / float(MM_PER_INCH)
+
+        # Caso A: Es un número simple entero o decimal ("4", "4.5" o "195")
+        if '/' not in s and ' ' not in s:
+            val = float(s)
+
+            # 🧠 BLINDAJE 2 (Heurística): Anchos comerciales > 24" (60cm) no existen.
+            # Si llega un "195", asumimos obligatoriamente que son mm.
+            if val > 24:
+                return val / float(MM_PER_INCH)
+
+            return val
+
+        # Caso B: Fracción Mixta ("5 3/8")
+        if ' ' in s:
+            parts = s.split()
+            # Filtrar espacios vacíos extra por si escriben "5  3/8"
+            parts = [p for p in parts if p.strip()]
+
+            if len(parts) == 2:
+                whole = float(parts[0])
+                frac_parts = parts[1].split('/')
+                if len(frac_parts) == 2:
+                    numerator = float(frac_parts[0])
+                    denominator = float(frac_parts[1])
+                    return whole + (numerator / denominator)
+
+        # Caso C: Fracción Pura ("6/4")
+        if '/' in s:
+            parts = s.split('/')
+            if len(parts) == 2:
+                return float(parts[0]) / float(parts[1])
+
+        return 0.0
+
+    except Exception as e:
+        _logger.warning(f"Error parseando fracción/métrica '{fraction_str}': {e}")
+        return 0.0
+
 
 # ============================================================================
 # 🧮 FUNCIONES DE CONVERSIÓN

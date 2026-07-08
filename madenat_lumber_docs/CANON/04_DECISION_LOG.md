@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 6.4.0
-**Última actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — AD-40 registrado (corrección de vigencia documental) -->
+**Última actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — AD-41 registrado (extracción _parse_fraction a utils_uom.py) -->
 **Estado:** Canonical / activo
 
 ---
@@ -1043,4 +1043,24 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
   - Test A (`d597703`): Valida filtro `protected_moves` + savepoint implícito sobre `cleanable_moves`. ✅ PASS.
   - Test B (`f72d9e9`): Valida aislamiento transaccional del cursor externo cuando el unlink falla dentro del savepoint. ✅ PASS.
 - **Consolidación (Fase 3 — `e6a1fc1`):** `reception_service.cleanup_orphan_moves()` unificado al patrón `savepoint + with_context(force_delete=True).unlink()` de `guia_processing._cleanup_orphan_moves_guia()`. Ambos métodos usan ahora la misma estrategia transaccional.
-- **Veredicto:** Asimetría transaccional eliminada. Cobertura de tests: 0% → 2 tests funcionales. Ver sección W de `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md`.
+  - **Veredicto:** Asimetría transaccional eliminada. Cobertura de tests: 0% → 2 tests funcionales. Ver sección W de `AUDITORIA_ASIMETRIA_DOCUMENTAL_20260706.md`.
+
+---
+
+### AD-41 — Extracción de `_parse_fraction` a utilidad compartida `parse_fraction_to_decimal_inch` en `utils_uom.py`
+
+- **Contexto:** `_parse_fraction` en `madenat_guia_processing.py:604` era un método de instancia cuasi-puro (sin uso de `self`, solo dependiente de `MM_PER_INCH` y `_logger`) con 5 callers internos confinados a cálculo de volumen. Auditoría del 2026-07-08 confirmó que era el mejor candidato piloto para estrangulamiento incremental del parseo disperso documentado en `00_ARQUITECTURA.md` sección 3.3 y `02_CONTINUIDAD.md` sección 5 (riesgo Alta). Adicionalmente se detectó duplicación del ~90% en `stock_lot._parse_fraction_to_decimal`.
+- **Evidencia de idoneidad como piloto:** Categoría A. Función determinista, 0 dependencias de negocio, 0 relación con S2S/Blank, 5 callers de bajo riesgo (cálculo de volumen), validable con 12 casos de prueba unitaria.
+- **Decisión:** Extraer a `utils_uom.py` como `parse_fraction_to_decimal_inch(fraction_str)`, función a nivel de módulo. Reemplazar los 5 call sites en `madenat_guia_processing.py`. Consolidar `stock_lot._parse_fraction_to_decimal` como wrapper de 1 línea delegando a la utilidad compartida.
+- **Archivos modificados (3):**
+  - `models/utils_uom.py` — nueva función pura compartida (~60 líneas)
+  - `models/madenat_guia_processing.py` — import añadido, 5 call sites reemplazados, `_parse_fraction` eliminado (~60 líneas netas removidas)
+  - `models/stock_lot.py` — import añadido, método delegado a wrapper de 1 línea (~50 líneas removidas)
+- **Validación:**
+  1. [x] py_compile sin errores en los 3 archivos
+  2. [x] 0 referencias huérfanas a `self._parse_fraction` en todo `custom_addons/`
+  3. [x] 12 casos de prueba unitaria ALL PASSED (fracción mixta, pura, simple, mm, vacío, heurística >24)
+  4. [x] Sin impacto en: `_parse_float_value`, `_compute_vol_shipment_m3`, reglas S2S/Blank, `ingestion_profile`, `reception_parser.py`
+- **Resultado neto:** ~110 líneas eliminadas entre los 2 archivos de modelo, duplicación consolidada. Comportamiento semánticamente idéntico.
+- **Deuda remanente:** Quedan 9 métodos de parseo disperso en `madenat_guia_processing.py`. Candidato para segundo piloto: `_parse_float_value` (11 callers, Categoría B — requiere evaluación de heurísticas de dominio CLP/espesor/ancho antes de extraer). No ejecutado en esta intervención.
+- **Sin impacto en:** `_parse_float_value`, `_compute_vol_shipment_m3`, reglas S2S/Blank, `ingestion_profile`.

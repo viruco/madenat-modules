@@ -31,6 +31,7 @@ from .utils_uom import (
     r3,
     r4,
     LUMBER_DIMENSION_MAP,
+    parse_fraction_to_decimal_inch,
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -429,8 +430,8 @@ class MadenatGuiaProcessingLine(models.Model):
                 # 1. PRIORIDAD: Valores visuales (Manejados por Parser Inteligente)
                 # -------------------------------------------------------------
                 if line.thickness_visual and line.width_visual and line.length_ft:
-                    thickness_inch = self._parse_fraction(line.thickness_visual)
-                    width_inch = self._parse_fraction(line.width_visual)
+                    thickness_inch = parse_fraction_to_decimal_inch(line.thickness_visual)
+                    width_inch = parse_fraction_to_decimal_inch(line.width_visual)
                     
                     # Cálculo: (T" * W" * L' * Pzs) / 12 / 1000
                     vol_bf = (thickness_inch * width_inch * line.length_ft * line.pieces) / 12.0
@@ -497,8 +498,8 @@ class MadenatGuiaProcessingLine(models.Model):
 
             try:
                 # 3. Parsear Fracciones (Visual -> Decimal Inch)
-                e_in = self._parse_fraction(line.thickness_visual) 
-                a_in = self._parse_fraction(line.width_visual)
+                e_in = parse_fraction_to_decimal_inch(line.thickness_visual) 
+                a_in = parse_fraction_to_decimal_inch(line.width_visual)
                 
                 # Si el parseo devuelve 0, usamos el fallback
                 if e_in <= 0 or a_in <= 0:
@@ -601,62 +602,6 @@ class MadenatGuiaProcessingLine(models.Model):
         )
         return f"{value_in:.2f}"
     
-    def _parse_fraction(self, fraction_str):
-        """
-        🚀 PARSER INTELIGENTE BILINGÜE (Métrico/Imperial):
-        Convierte "5 3/8", "6/4", "4", "4.5" y "195mm" a Float (Pulgadas Decimales).
-        Maneja errores de espacios dobles o formatos sucios.
-        """
-        if not fraction_str:
-            return 0.0
-        
-        s = str(fraction_str).strip().lower()
-        if not s:
-            return 0.0
-            
-        try:
-            # 🛡️ BLINDAJE 1: Intercepción explícita de métricas
-            if 'mm' in s:
-                val = float(s.replace('mm', '').strip())
-                return val / float(MM_PER_INCH)  # Convertimos mm a pulgadas decimales
-                
-            # Caso A: Es un número simple entero o decimal ("4", "4.5" o "195")
-            if '/' not in s and ' ' not in s:
-                val = float(s)
-                
-                # 🧠 BLINDAJE 2 (Heurística): Anchos comerciales > 24" (60cm) no existen.
-                # Si llega un "195", asumimos obligatoriamente que son mm.
-                if val > 24:
-                    return val / float(MM_PER_INCH)
-                    
-                return val
-
-            # Caso B: Fracción Mixta ("5 3/8")
-            if ' ' in s:
-                parts = s.split()
-                # Filtrar espacios vacíos extra por si escriben "5  3/8"
-                parts = [p for p in parts if p.strip()]
-                
-                if len(parts) == 2:
-                    whole = float(parts[0])
-                    frac_parts = parts[1].split('/')
-                    if len(frac_parts) == 2:
-                        numerator = float(frac_parts[0])
-                        denominator = float(frac_parts[1])
-                        return whole + (numerator / denominator)
-            
-            # Caso C: Fracción Pura ("6/4")
-            if '/' in s:
-                parts = s.split('/')
-                if len(parts) == 2:
-                    return float(parts[0]) / float(parts[1])
-                    
-            return 0.0
-            
-        except Exception as e:
-            _logger.warning(f"Error parseando fracción/métrica '{fraction_str}': {e}")
-            return 0.0
-    
     # ==========================================================================
     # CONSTRAINTS: Validación de Octavos
     # ==========================================================================
@@ -683,7 +628,7 @@ class MadenatGuiaProcessingLine(models.Model):
                     pass # Todo bien, es una medida métrica
                 else:
                     try:
-                        value = self._parse_fraction(line.width_visual)
+                        value = parse_fraction_to_decimal_inch(line.width_visual)
                         decimal = value - int(value)
                         
                         # Verificar si la parte decimal encaja en un octavo válido (con tolerancia)

@@ -1,7 +1,7 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 9.2.0
-**Fecha de actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — riesgo de parseo disperso en madenat_guia_processing.py agregado a sección 5 -->
+**Versión documental:** 9.3.0
+**Fecha de actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — AD-41: primer piloto de estrangulamiento completado (_parse_fraction → utils_uom.py) -->
 **Estado:** ACTIVO — Checkpoint vivo para retoma técnica sin reconstrucción de contexto
 
 ---
@@ -111,8 +111,10 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 |---|---|---|
 | Constraint `stock_lot_check_cost_positive` | Alta | ABIERTO |
 | Monolito parcial en `lumber_reception.py` (3,054 líneas, 5 responsabilidades, parseo desacoplado en reception_parser.py) | Media | ABIERTO |
-| Parseo disperso en `madenat_guia_processing.py` (10 métodos sin dispatcher, 4,390 líneas, 8 responsabilidades) | Alta | ABIERTO |
+| Parseo disperso en `madenat_guia_processing.py` (9 métodos restantes sin dispatcher tras extracción de `_parse_fraction` vía AD-41, ~4,330 líneas, 8 responsabilidades) | Alta | ABIERTO — 1/10 métodos estrangulados |
 | Tolerancias no formalizadas | Media | ABIERTO |
 | T29–T32 sin evidencia formal | Media | PENDIENTE (no bloqueante para TEST) |
 
 **Nota (2026-07-08):** La lógica de negocio S2S vs Blank está correctamente aislada en `_compute_vol_shipment_m3` (L476-538, bifurcación en L510-516) y NO debe tocarse ni fusionarse en ninguna intervención futura sobre el parseo disperso de `madenat_guia_processing.py`.
+
+**Nota (2026-07-08):** Primer piloto de estrangulamiento incremental completado (AD-41, `_parse_fraction` → `utils_uom.py`). Validado con 12 tests unitarios, 0 impacto en negocio. Candidato para segundo piloto: `_parse_float_value` (11 callers, Categoría B — requiere evaluación de heurísticas de dominio antes de extraer, ver auditoría 2026-07-08).

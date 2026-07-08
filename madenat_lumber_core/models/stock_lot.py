@@ -24,7 +24,7 @@ import math
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import logging
-from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT
+from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch
 
 
 _logger = logging.getLogger(__name__)
@@ -1134,48 +1134,8 @@ class StockLotExtended(models.Model):
                 lot.cost_per_mbf_usd = 0.0
 
     def _parse_fraction_to_decimal(self, fraction_str):
-            """
-            🚀 PARSER INTELIGENTE (Bilingüe MM/Pulgadas):
-            Evita que el motor multiplique milímetros como si fueran pulgadas gigantes.
-            """
-            if not fraction_str:
-                return 0.0
-                
-            fraction_str = str(fraction_str).strip().lower()
-            
-            try:
-                # 🛡️ INTERCEPCIÓN EXPLÍCITA: Si trae la etiqueta 'mm' (ej: "195mm")
-                if 'mm' in fraction_str:
-                    val = float(fraction_str.replace('mm', '').strip())
-                    return val / float(MM_PER_INCH)  # Convertimos a pulgadas para la fórmula del motor
-                    
-                # Caso 1: Número decimal simple o entero (ej: "195" o "2.5")
-                if '/' not in fraction_str and ' ' not in fraction_str:
-                    val = float(fraction_str)
-                    
-                    # 🧠 HEURÍSTICA DE PROTECCIÓN (Sentido Común):
-                    # Ninguna tabla de madera comercial mide más de 24 pulgadas (60cm) de ancho.
-                    # Si el valor es mayor a 24, es ABSOLUTAMENTE SEGURO que son milímetros.
-                    if val > 24:
-                        return val / float(MM_PER_INCH)
-                        
-                    return val
-                
-                # Caso 2: Solo fracción ("5/8")
-                if '/' in fraction_str and ' ' not in fraction_str:
-                    numerator, denominator = fraction_str.split('/')
-                    return float(numerator) / float(denominator)
-                
-                # Caso 3: Número mixto ("4 5/8")
-                if ' ' in fraction_str and '/' in fraction_str:
-                    parts = fraction_str.split(' ')
-                    whole_part = float(parts[0])
-                    num, den = parts[1].split('/')
-                    return whole_part + (float(num) / float(den))
-                    
-            except Exception as e:
-                # Silenciamos el logger para no ensuciar, retornamos 0 de forma segura
-                return 0.0
+        """Delega en la utilidad compartida parse_fraction_to_decimal_inch (utils_uom.py)."""
+        return parse_fraction_to_decimal_inch(fraction_str)
     
     # ==============================================================================
     # UTILIDADES - CÁLCULO DE MBF
