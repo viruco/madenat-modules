@@ -1,9 +1,9 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 10.2.0
-**Fecha de actualización:** 2026-07-08
+**Versión documental:** 10.8.0
+**Fecha de actualización:** 2026-08-19
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
-**Responsable revisión:** AD-40 — corrección de vigencia post-auditoría 2026-07-08
+**Responsable revisión:** 2026-08-19 — AD-55: homologación UX de "Modificar origen" para Procesados (02/04/13 actualizados)
 
 ---
 
@@ -18,16 +18,16 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 
 | Archivo | Propósito | Versión | Fecha | Estado |
 |---|---|---|---|---|
-| `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones | 7.3.0 | 2026-07-08 | ✅ Vigente |
+| `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones | 7.5.0 | 2026-08-19 | ✅ Vigente |
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
-| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma | 9.2.0 | 2026-07-08 | ✅ Vigente |
+| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma | 11.7.0 | 2026-08-19 | ✅ Vigente |
 | `03_TESTS.md` | Matriz de validación funcional y técnica | 6.4.0 | 2026-06-16 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación | 6.4.0 | 2026-07-08 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación | 11.0.0 | 2026-08-19 | ✅ Vigente |
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases | 6.3.0 | 2026-06-16 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | — | 2026-06-15 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
-| `08_COSTEO.md` | Flujo canónico de costeo end-to-end | 1.1.0 | 2026-07-01 | ✅ Vigente |
+| `08_COSTEO.md` | Flujo canónico de costeo end-to-end | 1.5.0 | 2026-08-19 | ✅ Vigente |
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado — ARCHIVADO, checklist migrado a este índice | 1.1.0 | 2026-06-16 | 🏷️ ARCHIVADO — checklist A-F consolidado en Anexo A |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — ARCHIVADO en LEGADO/auditorias | — | 2026-06-04 | 🏷️ ARCHIVADO — Fase A completada, evidencia histórica |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Derivado vigente |
@@ -36,7 +36,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — plan no ejecutado |
 | `15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual | 1.1.0 | 2026-06-06 | ✅ Derivado vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 10.2.0 | 2026-07-08 | ✅ Vigente |
+| `13_CONSOLIDACION_OPERATIVA.md` | Consolidación operativa: ingesta (Producto/Procesados), reglas, trazabilidad, matriz de hallazgos y contradicciones | 1.5.0 | 2026-08-19 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 10.8.0 | 2026-08-19 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 

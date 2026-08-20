@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 6.4.0
-**Última actualización:** 2026-07-08  <!-- actualizado: 2026-07-08 — AD-41 registrado (extracción _parse_fraction a utils_uom.py) -->
+**Versión documental:** 11.0.0
+**Última actualización:** 2026-08-19  <!-- actualizado: 2026-08-19 — AD-55: homologación de 'Modificar origen' para Procesados mediante fachada ligera en Intake -->
 **Estado:** Canonical / activo
 
 ---
@@ -342,8 +342,8 @@ Esto causaba que blanks clear utilizara **2 factores simultáneamente** (f5085 +
 **Causa raíz:**
 - Código de decisión condicional incompleto en `stock_lot.py` → `@computed_field vol_shipment_m3`
 - La lógica no distinguía claramente entre:
-  - `blanks_clear` → **exclusivamente BLANK_CLEAR_FACTOR (f5085 = 0.6)**
-  - `s2s` → **FACE_DEDUCTION + S2S_WIDTH_ADJUSTMENT**
+  - `blanks_clear` → **exclusivamente BLANK_CLEAR_FACTOR (f5085 = 5085.312)**
+  - `s2s` → **S2S_WIDTH_ADJUSTMENT** (la deducción de cara `FACE_DEDUCTION_INCH` = 0.0625 es propia del flujo `blank_clear`, no de `s2s`)
 
 **Solución aplicada:**
 Refactorización de la lógica condicional en:
@@ -415,7 +415,7 @@ for lot in self:
 
 **Impacto:**
 - ✅ Blanks clear ahora usan **f5085 exclusivamente**
-- ✅ Volumen de embarque correcto (60% del nominal)
+- ✅ Volumen de embarque correcto conforme a la fórmula `blank_clear`
 - ✅ Sincronización entre stock.lot y guía de procesamiento
 - ✅ Sin regresión: S2S y otros perfiles mantienen comportamiento idéntico
 
@@ -1064,3 +1064,174 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Resultado neto:** ~110 líneas eliminadas entre los 2 archivos de modelo, duplicación consolidada. Comportamiento semánticamente idéntico.
 - **Deuda remanente:** Quedan 9 métodos de parseo disperso en `madenat_guia_processing.py`. Candidato para segundo piloto: `_parse_float_value` (11 callers, Categoría B — requiere evaluación de heurísticas de dominio CLP/espesor/ancho antes de extraer). No ejecutado en esta intervención.
 - **Sin impacto en:** `_parse_float_value`, `_compute_vol_shipment_m3`, reglas S2S/Blank, `ingestion_profile`.
+
+---
+
+### AD-47 — Notarización y bitácora inmutable para guía processing (BT-01 CERRADO)
+
+- **Contexto:** BT-01 identificaba que `madenat.guia.processing._create_or_get_lot()` (segundo write path a `stock.lot`) creaba/actualizaba lotes sin Gate 3 ni evidencia de auditoría equivalente a recepción. La bitácora `madenat.audit.log` solo tenía FK `reception_id`.
+- **Decisión:**
+  1. Cada ciclo exitoso de `action_validate()` firma un snapshot determinista específico de guía mediante SHA-256, **antes** del primer write a `stock.lot`.
+  2. El evento `madenat.audit.log` es la **fuente de verdad inmutable** de la evidencia (`audit_snapshot` + `audit_hash`), enlazado relacionalmente a la guía.
+  3. `action_reopen_to_draft()` y `action_force_cancel()` no borran ni alteran eventos previos; una revalidación genera un evento nuevo.
+  4. No se retro-notarizan los 19 lotes ni guías históricas; protege flujos nuevos.
+  5. `madenat.audit.log` gana `guia_processing_id` (Many2one, `ondelete='set null'`) + `audit_snapshot` + `audit_hash` + `action_type='validation_signature'`. `reception_id` no se vuelve obligatorio.
+- **Cambios (3 archivos):**
+  - `models/ingestion_gate.py` — `Gate3PreCommit.generate_processing_signature(guia, processing_lines)` (método nuevo; `generate_signature()` de recepción intacto).
+  - `models/madenat_audit_log.py` — `guia_processing_id`, `audit_snapshot`, `audit_hash`, valor `validation_signature`.
+  - `models/madenat_guia_processing.py` — `action_validate()` genera la firma antes del procesamiento y persiste el evento al final (misma transacción → rollback evita eventos huérfanos).
+- **Cobertura nueva:** `TestGuiaProcessingValidationSignature` (firma, persistencia, bloqueo sin evento, supervivencia ante cancelación).
+- **Validación:** `py_compile` OK; selector BT-01 4/4 passing; suite `madenat_lumber_core` 50 tests, 0 fallos, 0 errores.
+- **Sin impacto en:** recepción, Gate 3 existente, `lumber_reception.py`, `reception_service.py`, `stock_lot.py`, BT-02, fórmulas S2S/Blank, UoM, volúmenes, XML, seeds, Docker.
+- **Riesgo residual:** los 19 lotes históricos y 2 guías ya procesadas quedan sin firma retroactiva (decisión explícita: no fabricar evidencia histórica). BT-03 (bitácora de recepción con `reception_id` ondelete cascade ampliada solo con columna nueva, sin cubrir aún el ciclo de vida completo de procesados) permanece como deuda separada.
+
+---
+
+### AD-48 — Bitácora operativa de lotes en guía processing (BT-03 CERRADO)
+
+- **Contexto:** BT-03 identificaba que `madenat.audit.log` registraba eventos operativos (`lot_creation`, `lot_update`, `omission`) solo vía recepción; el flujo de Procesados no dejaba evidencia de creaciones, reutilizaciones ni omisiones.
+- **Decisión:**
+  1. `_create_or_get_lot()` emite `lot_creation` (create real) o `lot_update` (reutilización idempotente de lote sin `reception_id`, tanto en la rama normal como en la posterior a colisión UNIQUE), enlazados a `guia_processing_id`.
+  2. `_validar_y_enriquecer_lineas()` emite `omission` para líneas del Excel descartadas antes de estaging (sin código interno / cantidad <= 0 / dimensiones no numéricas o <= 0), reutilizando la semántica de recepción.
+  3. Un único evento por outcome confirmado; los `write()` de complemento de `do_full_processing` no duplican `lot_update`.
+  4. Se usa `batch_id` para registrar el lote/línea; no se añadieron más columnas relacionales (evita expandir el modelo sin necesidad).
+  5. La baja formal de lotes/etiquetas queda **fuera de alcance** (módulo inexistente); no se modelan eventos de "baja" ni "desvinculación histórica".
+- **Cambios (2 archivos):**
+  - `models/madenat_guia_processing.py` — helper `_register_lot_audit()` + emisión de `lot_creation`/`lot_update` en `_create_or_get_lot()` y `omission` en `_validar_y_enriquecer_lineas()`.
+- **Cobertura nueva:** `TestGuiaProcessingOperationalAudit` (A creación, B reutilización única, C omisión, D coexistencia con `validation_signature`).
+- **Validación:** `py_compile` OK; selector BT-03 4/4 passing; suite `madenat_lumber_core` 54 tests, 0 fallos, 0 errores.
+- **Sin impacto en:** recepción, Gate 1/2/3, `lumber_reception.py`, `reception_service.py`, `stock_lot.py`, BT-01, BT-02, fórmulas S2S/Blank, UoM, XML, seeds, Docker.
+- **Riesgo residual:** la bitácora cubre la evidencia operativa del flujo actual; la baja formal requiere un módulo futuro y sigue como BT-04.
+
+---
+
+### AD-49 — Salida controlada a proceso para guías service (BT-04 CERRADO)
+
+- **Contexto:** BT-04 identificaba que `madenat.guia.processing` trataba `compra` y `service` con el mismo write path entrante. En `service` (maquila sobre madera propia) los lotes crudos de origen nunca salían de stock, sin evidencia documental de la salida. `stock_scrap` se descartó semánticamente (el producto no se destruye: se transforma y retorna).
+- **Decisión:**
+  1. `compra` permanece intacta: sin salida de stock.
+  2. `service` genera **exactamente una** salida controlada hacia `Virtual Locations/Production` (picking `outgoing` con `stock.move` + `stock.move.line` por lote crudo), reutilizando el patrón de `madenat_toll_processing._create_consumption_picking`. No se usa `stock.scrap`.
+  3. Idempotencia vía `consumption_picking_id` (Many2one `stock.picking`, `copy=False`, `index=True`): una revalidación reutiliza la salida existente, no duplica el descuento.
+  4. Trazabilidad informativa (no genealogía contable): `source_lot_ids` (M2M) referencia los lotes crudos; no se fuerza `parent_lot_id`.
+  5. Reversión sin borrar historia: `_reverse_consumption_picking()` crea un retorno entrante inverso (`Return of …`) que repone el quant del lote crudo copiando las `move_line` originales. El picking original permanece en `done`.
+  6. Bloqueo de validación `service` sin lote crudo identificable (aborta la transacción completa, sin ingreso huérfano).
+  7. Evidencia auditiva: nuevo `action_type='consumption'` en `madenat.audit.log`, coherente con BT-03.
+- **Cambios (3 archivos):**
+  - `models/madenat_guia_processing.py` — campos `source_lot_ids`/`consumption_picking_id`; `_get_or_create_consumption_picking()`; `_reverse_consumption_picking()`; hook `action_validate()` (service); reversión en `action_force_cancel()` y `action_reopen_to_draft()`.
+  - `models/madenat_audit_log.py` — valor `consumption` en `action_type`.
+  - `tests/test_guia_processing.py` — clase `TestGuiaProcessingConsumptionBT04`.
+- **Cobertura nueva:** `TestGuiaProcessingConsumptionBT04` (A salida única, B revalidación sin duplicar, C compra sin salida, D reversión preservando historia, E bloqueo sin lote).
+- **Validación:** `py_compile` OK; selector `guia_processing` 46 tests, 0 fallos, 0 errores; suite `madenat_lumber_core` 79 tests, 0 fallos, 0 errores.
+- **Sin impacto en:** `compra`, Gate 1/2/3, `lumber_reception.py`, `reception_service.py`, `stock_lot.py`, BT-01/BT-02/BT-03, fórmulas S2S/Blank, UoM, XML, seeds, Docker.
+- **Riesgo residual:** las mermas reales del proceso (diferencia de yield) no se modelan como scrap; se documenta como deuda separada. No se retro-aplica la salida a las 2 guías `service` históricas ya validadas.
+
+---
+
+### AD-50 — `madenat_lumber_intake` como fachada de ingreso global (nombre + dependencia), no núcleo paralelo
+
+- **Fecha:** 2026-08-16
+- **Decisión:** Crear el módulo `madenat_lumber_intake` como **puerta única de ingreso global** (fachada), dependiente de `madenat_lumber_core`, sin lógica de negocio en su primera iteración. No reemplaza ni reescribe `lumber.reception` ni `madenat.guia.processing`; solo reutilizará sus Gates y piezas cuando se implemente el enrutamiento.
+- **Nombre técnico:** `madenat_lumber_intake` (coherente con el prefijo `madenat_lumber_*` del ecosistema y con la semántica de ingreso).
+- **Dependencia:** `madenat_lumber_core` como única dependencia directa. No depende de `madenat_lumber_logistics`, `costing`, `purchasing`, `billing` ni `vendor_payment`.
+- **Límites de la iteración actual (esqueleto):** solo un modelo mínimo `madenat.lumber.intake.wizard` (validación de instalación), vistas (form/list), acción y menú. **Sin** campos de archivo, parseo, Gates, firma ni relación con `lumber.reception` / `madenat.guia.processing`.
+- **Acceso:** ACL ligada a `madenat_lumber_core.group_madenat_operaciones` (r/w/c, sin unlink). Reglas de registro vacías hasta iteraciones futuras.
+- **Regla derivada:** `madenat_lumber_intake` es fachada, no un núcleo paralelo. Cualquier ingesta nueva debe delegar en los modelos/Gates existentes del core; se prohíbe duplicar modelos paralelos de `stock.lot`, `stock.picking` o `stock.move`.
+- **Validación:** instala limpio en `madenat_test` (87 módulos, 0 errores, 0 tracebacks). Ver `CANON/02_CONTINUIDAD.md` §8.
+
+---
+
+### AD-51 — Dos dominios de parseo deliberados en la puerta única de ingreso (Producto vs Procesado)
+
+- **Fecha:** 2026-08-16
+- **Decisión:** `madenat_lumber_intake` expone una sola puerta visible (Ingreso Global) pero implementa **dos dominios de parseo deliberadamente distintos**, sin estructura de datos única entre ambos flujos:
+  - **Producto / Madera Bruta / Compra** → `lumber.reception` vía `action_process_documents()` (Gate0/Gate1 nativos). La prelectura usa exclusivamente `madenat.reception.parser.parse_excel(bytes, profile)` como preview informativo; el core vuelve a procesar el archivo con su método canónico.
+  - **Procesado / Servicio / Maquila** → `madenat.guia.processing` vía `action_verify_data()` con el **Excel original** (sin prelectura ni preparseo). El parser nativo `_parse_excel_data_core()` es el único que implementa forward-fill de `N° LOTE`.
+- **Prohibición estricta (riesgo de pérdida de filas huérfanas):** para Procesados queda PROHIBIDO llamar `madenat.reception.parser.parse_excel()` (dropna package_no/pieces/volume_m3 elimina filas sin lote explícito), usar `force_packing_data`, traducir `lines`→`lineas` o inyectar datos preparseados.
+- **Volumen:** Intake nunca recalcula M3. El M3 fuente del Excel se conserva en Producto (flujo existente) y en Procesado (archivo fuente + reglas nativas de validación posteriores). No se implementan fórmulas, conversiones ni ajustes de volumen en intake.
+- **Costo de procesado:** `additional_cost` / `service_*` es costo de servicio/maquila; el core lo registra con `cost_type='processing'`. Intake NO mapea precio, costo, additional_cost, rate_usd ni service_unit_price_clp.
+- **Auditoría de origen:** cada derivación exitosa genera exactamente un evento en `madenat.audit.log`, reutilizando el contrato existente (sin action_type ni campos nuevos): `action_type='creation'`, `description` con tipo/modelo/id/archivos/guía, `batch_id='intake:<wizard_id>'`. No se duplica `validation_signature`, `lot_creation`, `lot_update` ni `omission`, ni se guardan binarios/hashes.
+- **Campos exigidos por Guía Procesado:** `tipo_recepcion='service'` (decisión funcional) y `assignment_location_id` expuesto como selector editable en el wizard (no se inventa un patio por defecto).
+- **Riesgo residual (fuera de alcance de intake):** un mismo `N° LOTE` + `Código Interno` repetido en varias filas puede causar overwrite en `_create_or_get_lot` del core.
+
+---
+
+### AD-52 — Blindaje server-side de vinculación de OC en Intake
+
+- **Fecha:** 2026-08-19
+- **Decisión:** La asociación manual de una `purchase.order` en la fachada de Producto (`madenat.lumber.intake`) queda blindada en servidor dentro de `madenat.lumber.intake.po.link.action_confirm_link()`, **antes** de escribir `purchase_id`. El dominio XML del selector es solo ayuda de UX; la barrera definitiva es la validación server-side (no eludible por RPC/contexto manipulado).
+- **Validaciones obligatorias (en orden):**
+  1. **Proveedor obligatorio:** la recepción debe tener `supplier_id`. Si falta, el wizard bloquea con: "Primero debe validar o corregir el proveedor de la recepción antes de vincular una Orden de Compra." (La ingesta preliminar NO queda bloqueada; solo la resolución manual de OC.)
+  2. **Proveedor de la OC:** la OC seleccionada debe tener `partner_id`. Una OC sin proveedor se rechaza.
+  3. **Coincidencia por `commercial_partner_id`:** se compara `reception.supplier_id.commercial_partner_id` vs `po.partner_id.commercial_partner_id`, soportando empresa matriz/sucursal sin comparar solo IDs directos.
+  4. **Compañía activa:** si `po.company_id` y `self.env.company` existen y difieren, se rechaza la OC de otra compañía (compatible single-company, sin hardcodear).
+  5. **Estado de OC:** solo `draft`, `sent`, `purchase`, `done`; se rechazan canceladas y archivadas (`active=False` si el campo existe).
+  6. **Estado de recepción:** se bloquea en `done`, `cancel`, `error` y cuando existen `lot_ids` o `picking_id` (avance real a stock).
+  7. **No sobrescritura silenciosa:** si la recepción ya tiene `purchase_id`, se bloquea el reemplazo automático; se exige una operación trazable para desvincular antes de vincular otra.
+- **Trazabilidad:** al vincular una OC válida, `message_post` registra OC asociada, proveedor validado y origen "vinculación manual desde Intake (Producto)". `oc_reference_raw` y `manual_po_name` no se sobrescriben. `oc_match_status='manual'` y `oc_match_note` conservan la referencia documental.
+- **Política de OC pendiente:** la OC pendiente **no bloquea** la ingesta preliminar ni el envío operativo inicial a stock. La exigencia final de OC resuelta pertenece a **Costeo y Valorización / cierre financiero**, no a Operaciones.
+- **Prohibido:** no se crea `purchase.order` automáticamente; no se crean proveedores, productos, precios, cantidades o referencias; no se toca stock, volúmenes, costos, lotes, pickings ni Procesado.
+
+---
+
+### AD-53 — Diferencia de política de OC: Procesados vs Producto
+
+- **Fecha:** 2026-08-19
+- **Contexto:** Tras auditoría de solo lectura del flujo real de Procesados (`madenat_guia_processing.py`, 4.549 líneas) se confirmó que la política de OC de Procesados es **intencionalmente distinta** de la política vigente de Producto (Intake, AD-52). La documentación previa (CANON 08 §9) no distinguía este comportamiento.
+- **Decisión (documental, sin cambio de código):**
+  1. **Procesados (core) bloqueaba en `action_validate` — ESTADO HISTÓRICO, superado por AD-54 (2026-08-19):** si `madenat.guia.processing.oc_reference_raw` existía y `order_id` estaba vacío, `action_validate()` (y `action_process_from_staging()`) lanzaba `UserError` impidiendo el envío a stock. Evidencia histórica: `madenat_guia_processing.py:1420-1427` y `1552-1559`. AD-54 sustituyó ese bloqueo por una advertencia no bloqueante con registro en chatter. El core ofrece el botón "📄 Crear OC desde PDF" (`action_create_purchase_order_from_document`) como vía explícita de creación de `purchase.order` en `draft`.
+  2. **Producto (Intake) no bloquea por OC pendiente:** la fachada expone `oc_pending`/`oc_pending_alert` como estado no bloqueante y la vinculación manual valida en servidor (AD-52).
+  3. **Ausencia de blindaje en Procesados:** Procesados **no** valida en servidor `commercial_partner_id`, compañía, estados de OC, ni impide sobrescritura silenciosa de `order_id`; tampoco deja trazabilidad en chatter al vincular manualmente una OC (solo al crear una PO nueva vía `action_create_purchase_order_from_document`, que sí usa `message_post`).
+  4. **Ausencia de wizards:** no existen wizards de vinculación manual de OC ni de corrección de proveedor para `madenat.guia.processing` (los existentes `madenat.lumber.intake.po.link`/`supplier.link` son exclusivos de Producto/lumber.reception).
+  5. **La política de Intake (AD-52) NO aplica directamente a Procesados:** AD-52 gobierna exclusivamente la vinculación manual del flujo Producto.
+- **Reglas derivadas:**
+  - Esta diferencia es **intencional** y **no debe alterarse en `madenat_lumber_core`**.
+  - La exigencia final de OC resuelta **sigue perteneciendo a Costeo/Valorización/cierre financiero** (ver `08_COSTEO` §9), pero Procesados tiene un blindaje adicional más temprano en el core.
+  - Cualquier ajuste futuro de la política de OC en Procesados debe venir de la **fachada Intake**, no del core.
+- **Fuente:** `madenat_guia_processing.py` (bloqueos L1420-1427, L1552-1559; creación de PO L2972-3074); `madenat_lumber_intake` (wizards Producto); `CANON/02_CONTINUIDAD` §9.
+- **Validación:** investigación de solo lectura; sin cambios de código. La diferencia queda registrada para evitar que se confunda con un defecto o una desalineación accidental.
+
+---
+
+### AD-54 — Excepción puntual autorizada: eliminación del bloqueo de OC pendiente en Procesados (core)
+
+- **Fecha:** 2026-08-19
+- **Autorizado por:** el responsable del proyecto (autorización explícita de fecha 2026-08-19). **Excepción puntual; no constituye precedente.**
+- **Contexto (evidencia) — antecedente histórico superado por esta decisión:** antes de AD-54, `madenat.guia.processing.action_validate()` bloqueaba el envío a stock con `UserError` si `oc_reference_raw` existía y `order_id` estaba vacío (`madenat_guia_processing.py:1552-1559`). Ese comportamiento diferenciaba a Procesados de Producto (Intake), donde la OC pendiente no bloquea (AD-52). AD-54 sustituyó el bloqueo por una advertencia no bloqueante con registro en chatter.
+- **Decisión:** se autoriza modificar **exclusivamente** este bloqueo específico dentro de `madenat_lumber_core`, en `action_validate()`, para convertirlo en **advertencia no bloqueante** (OC pendiente no impide el envío a stock), homologando así la política entre Producto y Procesados.
+- **Justificación:** alinear con la política global "OC pendiente no bloquea la ingesta ni el envío a stock" (AD-52), manteniendo la exigencia final de OC resuelta en Costeo/Valorización/cierre financiero (08_COSTEO §9).
+- **Alcance de la excepción — AMPLIADO 2026-08-19 (ÚNICAMENTE estos 2 métodos):**
+  - Bloqueo de OC en `action_validate` de `madenat.guia.processing` (L1552-1559).
+  - Bloqueo de OC en `action_process_from_staging` de `madenat.guia.processing` (L1420-1427).
+  - Sustitución por advertencia no bloqueante (log/warning + `message_post`), sin escribir stock.
+- **Justificación de la ampliación (2026-08-19):** `action_process_from_staging` es una etapa de borrador/staging previa a la validación final (`action_validate`); mantener el bloqueo ahí sería más restrictivo que la puerta final y rompería la homologación completa. Ambas vías hacia `do_full_processing()` deben compartir la política "OC pendiente no bloquea". `action_validate` conserva TODAS sus demás validaciones (nominales, subproductos, tipo de cambio, notarización BT-01) intactas; solo se remueve el bloqueo específico de OC en ambos métodos.
+- **Fuera del alcance (NO se toca):** BT-01/02/03/04, Gate 3, `do_full_processing`, `_create_or_get_lot`, `_create_picking_and_lines`, otras partes de `madenat.guia.processing`, stock, lotes, pickings, movimientos, volúmenes ni Procesado.
+- **Naturaleza:** excepción puntual y autorizada explícitamente. **No** deroga la regla general "prohibido modificar `madenat_lumber_core`".
+- **Regla general vigente:** sigue prohibido modificar `madenat_lumber_core` en cualquier otro caso no cubierto por esta excepción. Cualquier futura modificación del core requiere nueva autorización explícita.
+- **Relación con AD-53:** AD-53 (diferencia intencional de política Procesados vs Producto) queda **superado** por AD-54 en cuanto a la diferencia de bloqueo; se conserva como referencia histórica de la decisión previa.
+
+---
+
+### AD-55 — Homologación de "Modificar origen" para Procesados mediante fachada ligera en Intake
+
+- **Fecha:** 2026-08-19
+- **Contexto (evidencia):** en `madenat_lumber_intake/models/intake_console.py:417-451`, `action_open_source()` abre el registro origen real en formulario. Para Producto (`ingestion_type == 'product'`) asigna `view_id` explícito a `madenat_lumber_intake.view_lumber_reception_intake_facade_form` (fachada ligera dedicada "Modificar origen — Producto"). Para Procesados (`ingestion_type != 'product'`) **no asigna `view_id`**, por lo que Odoo abre la vista por defecto de `madenat.guia.processing`, que es el form estándar pesado del core (`guia_processing_views.xml`).
+- **Decisión:** crear una **vista de formulario ligera de `madenat.guia.processing` en `madenat_lumber_intake`** (equivalente en planteamiento a `view_lumber_reception_intake_facade_form`) y hacer que `action_open_source()` la seleccione cuando el flujo sea Procesados (`ingestion_type != 'product'`), manteniendo `terminal = src.state == 'validated'`.
+- **Alcance (ÚNICAMENTE Intake):**
+  - Nueva vista XML en `madenat_lumber_intake/views/` para `madenat.guia.processing` (fachada ligera).
+  - Ajuste de `action_open_source()` (Python en intake) para asignar el `view_id` de la nueva fachada en el flujo Procesados.
+- **Exclusiones explícitas:**
+  - NO tocar `madenat_lumber_core` para esta mejora (AD-54 aplica solo al desbloqueo de OC, no a vistas).
+  - NO modificar la vista estándar `guia_processing_views.xml` ni `guia_processing_list_search.xml`.
+  - NO crear wizard nuevo (la fachada es una vista, no un TransientModel).
+  - NO alterar lógica de negocio, stock, lotes, pickings, movimientos ni volúmenes.
+- **Justificación:** la diferencia reportada es **exclusivamente de UX/vista** (no de lógica de negocio): Procesados cae en la vista por defecto del core porque `action_open_source` no le asigna un `view_id` propio. Homologar la experiencia de usuario de "Modificar origen" entre Producto y Procesados requiere una fachada ligera propia en Intake, sin tocar la arquitectura del core.
+- **Regla derivada:** toda ventana de "Modificar origen" de flujos de ingesta debe abrir una vista ligera definida en `madenat_lumber_intake` (fachada), nunca la vista estándar completa del core. La vista estándar del core permanece como fallback/operación completa.
+- **Implementación (2026-08-19, alineada al código actual):** la fachada ligera de Procesados (`view_madenat_guia_processing_intake_facade_form`) fue implementada y alineada al patrón de Producto:
+  - Se abre desde `action_open_source` (consola) asignando `view_id` de la fachada en el flujo Procesados.
+  - Tabs visibles: `Guía y comercial`, `Proceso`, `Packing` (renombrado desde `Detalle`). No se expone `Trazabilidad` en la fachada.
+  - Acciones visibles: `Verificar Datos` (`action_verify_data`), `Volver a Ingreso Global` (`action_back_to_intake_console`), `⚡ Fijar Nominal Masivo` (acción window del core reutilizada). No se expone envío a stock (queda centralizado en la consola vía `action_send_to_stock`).
+  - `action_back_to_intake_console` abre el **registro concreto del hub** `madenat.lumber.intake.console` en vista form (`res_id=900000000+self.id`, `view_madenat_lumber_intake_console_form`), no una lista filtrada.
+- **Estado del frente:** implementado y alineado al código actual; **sujeto a validación funcional continua** (no se declara cerrado el frente Procesados/Intake).
+- **Validación:** verificación estática y funcional en base aislada `madenat_test` (tabs, retorno al hub, botones, upgrade 87 módulos sin errores); pruebas visuales definitivas pendientes de entorno con fixture `validated`.
+
+<!-- actualizado: 2026-08-19 — AD-55 registrado (homologación UX de 'Modificar origen' para Procesados via fachada ligera en Intake) — implementado y alineado, frente no cerrado -->
