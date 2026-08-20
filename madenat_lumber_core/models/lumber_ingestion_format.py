@@ -31,10 +31,10 @@ class LumberIngestionFormat(models.Model):
     # ── Identidad ──────────────────────────────────────────────────────────
     profile = fields.Selection(
         selection=[
-            ('f5085', 'Blanks Clear (Factor 5085 - Pies)'),
-            ('f1550', 'S2S / Rough (Factor 1550 - Métrico)'),
-            ('blanks', 'Blanks (Legado — métrico/imperial híbrido)'),
-            ('metric', 'Madera Bruta (Milimétrico Directo)'),
+            ('f5085', 'Madera Bruta — Grado Clear'),
+            ('f1550', 'Madera Aserrada S2S'),
+            ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
+            ('metric', 'Madera Bruta — Sistema Métrico'),
         ],
         string='Perfil de Ingesta',
         required=True,

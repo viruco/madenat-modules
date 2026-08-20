@@ -33,9 +33,9 @@ class MadenatLumberIntakeWizard(models.Model):
 
     ingestion_profile = fields.Selection(
         [
-            ('f1550', 'F1550'),
-            ('f5085', 'F5085'),
-            ('metric', 'Métrico'),
+            ('f1550', 'Madera Aserrada S2S'),
+            ('f5085', 'Madera Bruta — Grado Clear'),
+            ('metric', 'Madera Bruta — Sistema Métrico'),
         ],
         string='Perfil de lectura',
         default='metric',

@@ -29,9 +29,10 @@ class LumberThicknessVisualRule(models.Model):
     ]
 
     profile = fields.Selection([
-        ('f5085', 'Blanks Clear (f5085)'),
-        ('f1550', 'S2S / Rough (f1550)'),
-        ('metric', 'Madera Bruta (metrico)'),
+        ('f5085', 'Madera Bruta — Grado Clear'),
+        ('f1550', 'Madera Aserrada S2S'),
+        ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
+        ('metric', 'Madera Bruta — Sistema Métrico'),
     ], string='Perfil de Ingesta', required=True, index=True,
        help='Perfil al que aplica esta regla de espesor→visual.')
 

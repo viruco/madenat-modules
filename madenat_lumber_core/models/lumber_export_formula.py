@@ -38,9 +38,10 @@ class LumberExportFormula(models.Model):
     # ── Identidad ──────────────────────────────────────────────────────────
     profile = fields.Selection(
         selection=[
-            ('f5085', 'Blanks Clear (Factor 5085 - Pies)'),
-            ('f1550', 'S2S / Rough (Factor 1550 - Métrico)'),
-            ('metric', 'Madera Bruta (Milimétrico Directo)'),
+            ('f5085', 'Madera Bruta — Grado Clear'),
+            ('f1550', 'Madera Aserrada S2S'),
+            ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
+            ('metric', 'Madera Bruta — Sistema Métrico'),
         ],
         string='Perfil de Ingesta',
         required=True,
@@ -157,7 +158,7 @@ class LumberExportFormula(models.Model):
           3. Hardcode legacy
 
         Args:
-            profile (str): 'f5085', 'f1550', o 'metric'
+            profile (str): 'f5085', 'f1550', 'blanks' o 'metric'
 
         Returns:
             dict: {
@@ -201,6 +202,21 @@ class LumberExportFormula(models.Model):
                 'source': 'fallback_utils_uom',
             },
             'f1550': {
+                'formula_kind': 's2s_imperial',
+                'unit_mode': 'imperial_meters',
+                'principal_factor': float(utils_uom.INCH_SQ_METERS_TO_M3),
+                'deduction_factor': 0.0,
+                's2s_adjustment_mode': 'per_width',
+                'mbf_divisor': float(utils_uom.MBF_DIVISOR),
+                'source': 'fallback_utils_uom',
+            },
+            # DECISIÓN INTENCIONAL (FIX 2 auditoría 2026-08-20):
+            # 'blanks' NO resuelve como 'metric'. El parser
+            # (lumber_ingestion_format) mapea blanks → export_rule_outcome 'f1550'
+            # (imperial híbrido), por lo que su fórmula canónica es la S2S imperial
+            # en metros. Un registro Fase 3 con profile='blanks' tendrá prioridad
+            # si algún día se crea.
+            'blanks': {
                 'formula_kind': 's2s_imperial',
                 'unit_mode': 'imperial_meters',
                 'principal_factor': float(utils_uom.INCH_SQ_METERS_TO_M3),

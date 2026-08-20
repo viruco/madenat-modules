@@ -33,9 +33,9 @@ class LumberReceptionMassUpdate(models.TransientModel):
     
     # Campo normal (NO related) con inyección directa desde la BD mediante _get_default_profile
     ingestion_profile = fields.Selection([
-        ('f5085', 'Blanks/Clear (Factor 5085 - Pies)'),
-        ('f1550', 'S2S/RIP (Factor 1550 - Metros)'),
-        ('metric', 'Madera Bruta (Milimétrico Directo)')
+        ('f5085', 'Madera Bruta — Grado Clear'),
+        ('f1550', 'Madera Aserrada S2S'),
+        ('metric', 'Madera Bruta — Sistema Métrico')
     ], string="Perfil de Ingesta", default=_get_default_profile)
 
     # =========================================================================
@@ -385,9 +385,9 @@ class LumberReceptionMassUpdate(models.TransientModel):
 
         # ── 5. AUDITORÍA EN CHATTER ───────────────────────────────────────────
         perfil_label = {
-            'f5085':  '🪵 Blanks/Clear (Factor 5085 - Pies)',
-            'f1550':  '📐 S2S/RIP (Factor 1550 - Metros)',
-            'metric': '📏 Madera Bruta (mm directo)',
+            'f5085':  '🪵 Madera Bruta — Grado Clear',
+            'f1550':  '📐 Madera Aserrada S2S',
+            'metric': '📏 Madera Bruta — Sistema Métrico',
         }.get(self.ingestion_profile, self.ingestion_profile or 'N/D')
 
         msg = (

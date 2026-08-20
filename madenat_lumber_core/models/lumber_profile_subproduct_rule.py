@@ -9,6 +9,14 @@ Prioridad de fuentes (runtime):
   1. Este modelo (registros activos)
   2. ir.config_parameter 'madenat.profile_subproduct_filters' (Fase 1, fallback)
   3. Hardcode legacy: f5085->forbidden S2S/RIP, f1550->allowed S2S, metric->sin filtro
+
+LIMITACIÓN CONOCIDA (post-auditoría 2026-08-20):
+Este catálogo se indexa solo por `profile`, sin distinguir si la regla
+aplica a Producto (lumber.reception) o Procesados (madenat.guia.processing).
+Ambos flujos comparten el mismo universo de reglas por perfil. Si se
+requiere diferenciación futura, evaluar campo `origin_scope` propagado
+vía with_context desde los wizards de origen. Ver auditoría 2026-08-20
+para evidencia completa de líneas de código.
 """
 import logging
 from odoo import models, fields, api, _
@@ -25,9 +33,10 @@ class LumberProfileSubproductRule(models.Model):
     ]
 
     profile = fields.Selection([
-        ('f5085', 'Blanks Clear (f5085)'),
-        ('f1550', 'S2S / Rough (f1550)'),
-        ('metric', 'Madera Bruta (metrico)'),
+        ('f5085', 'Madera Bruta — Grado Clear'),
+        ('f1550', 'Madera Aserrada S2S'),
+        ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
+        ('metric', 'Madera Bruta — Sistema Métrico'),
     ], string='Perfil de Ingesta', required=True, index=True,
        help='Perfil al que aplica esta regla de subproducto.')
 

@@ -26,6 +26,8 @@ from .utils_uom import (
     decimal_inch_to_fraction_str,
     r3,
     r4,
+    decimal_inch_to_fraction_simple,
+    normalize_oc_key,
 )
 import base64
 import io
@@ -645,35 +647,8 @@ class LumberReceptionLine(models.Model):
         except: return 0.0
 
     def _get_fraction_text(self, value):
-            """
-            📐 CONVERSOR PROFESIONAL DE PULGADAS DECIMALES A FRACCIÓN
-            Soporta hasta 1/16 para Blanks y simplifica para S2S (1/2, 1/4, etc.)
-            """
-            if not value or value <= 0: 
-                return ""
-                
-            whole = int(value)
-            frac = value - whole
-            
-            # 🎯 Cambiamos a base 16 para capturar la precisión de los Blanks (9/16)
-            sixteenths = int(round(frac * 16))
-            
-            # Casos borde: redondeo al entero superior o sin fracción
-            if sixteenths == 16: 
-                return str(whole + 1)
-            if sixteenths == 0: 
-                return str(whole) if whole > 0 else ""
-                
-            # --- Lógica de Simplificación Automática ---
-            # (Ejemplo: 8/16 -> 1/2 | 4/16 -> 1/4 | 9/16 -> 9/16)
-            from math import gcd
-            common = gcd(sixteenths, 16)
-            num = sixteenths // common
-            den = 16 // common
-            
-            f_text = f"{num}/{den}"
-            
-            return f"{whole} {f_text}".strip() if whole > 0 else f_text
+        """Wrapper — delega en decimal_inch_to_fraction_simple (utils_uom.py). AD-43."""
+        return decimal_inch_to_fraction_simple(value, denominator=16, tolerance=None)
     # ==========================================================================
     # 🧮 LA REGLA DE ORO (MODIFICACIÓN QUIRÚRGICA)
     # Reemplaza SOLO el método _compute_export_golden_rule en lumber_reception.py
@@ -970,9 +945,9 @@ class LumberReception(models.Model):
     
 
     ingestion_profile = fields.Selection([
-            ('f1550', '🪚 Madera Aserrada / S2S'),
-            ('f5085', '📦 Blank Clear'),
-            ('metric', '📏 Madera Bruta / Métrico'),
+            ('f1550', '🪚 Madera Aserrada S2S'),
+            ('f5085', '📦 Madera Bruta — Grado Clear'),
+            ('metric', '📏 Madera Bruta — Sistema Métrico'),
         
         ], string='Tipo de Producto', required=True, default='f5085', tracking=True, 
         help="Seleccione el tipo de producto para determinar la regla de cálculo y los documentos requeridos.")
@@ -1869,10 +1844,8 @@ class LumberReception(models.Model):
     # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC — HELPERS (Patch 2026-06-18)
     # ══════════════════════════════════════════════════════════════════════════════
     def _normalize_oc_key(self, value):
-        """Normaliza referencia de OC: uppercase A-Z0-9, eliminar todo lo que no sea A-Z o 0-9, sin espacios."""
-        if not value:
-            return ''
-        return re.sub(r'[^A-Z0-9]+', '', (value or '').upper())
+        """Wrapper — delega en normalize_oc_key (utils_uom.py). AD-44."""
+        return normalize_oc_key(value)
 
     def _canonize_oc_display(self, value):
         """

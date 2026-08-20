@@ -47,9 +47,10 @@ class LumberBlankNominalMap(models.Model):
 
     profile = fields.Selection(
         selection=[
-            ('f5085', 'Blanks Clear (f5085)'),
-            ('f1550', 'S2S / Rough (f1550)'),
-            ('metric', 'Madera Bruta (métrico)'),
+            ('f5085', 'Madera Bruta — Grado Clear'),
+            ('f1550', 'Madera Aserrada S2S'),
+            ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
+            ('metric', 'Madera Bruta — Sistema Métrico'),
         ],
         string='Perfil de Ingesta',
         required=True,

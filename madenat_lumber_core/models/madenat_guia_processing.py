@@ -32,12 +32,15 @@ from .utils_uom import (
     r4,
     LUMBER_DIMENSION_MAP,
     parse_fraction_to_decimal_inch,
+    parse_float_value,
+    decimal_inch_to_fraction_simple,
+    normalize_oc_key,
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 🛡️ INTEGRACIÓN CON PIPELINE DE VALIDACIÓN (Opción C — Gates 0+1)
 # ══════════════════════════════════════════════════════════════════════════════
-from .ingestion_gate import Gate0PreUpload, Gate1DocumentReconciliation
+from .ingestion_gate import Gate0PreUpload, Gate1DocumentReconciliation, Gate3PreCommit
 
 _logger = logging.getLogger(__name__)
 
@@ -317,44 +320,6 @@ class MadenatGuiaProcessingLine(models.Model):
                 rec.length_ft = 0.0
    
 
-    # ==========================================================================
-    # HELPER: Buscar valor estándar más cercano
-    # ==========================================================================
-    
-    def _find_closest_standard(self, value_mm, dimension_type):
-        """
-        Busca el valor estándar más cercano en LUMBER_DIMENSION_MAP.
-        
-        Args:
-            value_mm (float): Valor en milímetros a buscar
-            dimension_type (str): 'thickness' o 'width'
-        
-        Returns:
-            float: Valor estándar más cercano o None si está fuera de tolerancia
-        
-        Example:
-            >>> self._find_closest_standard(58, 'thickness')
-            >>> 63  # Porque 63mm (10/4) está dentro de ±5mm
-        """
-        if dimension_type not in LUMBER_DIMENSION_MAP:
-            return None
-        
-        standards = LUMBER_DIMENSION_MAP[dimension_type].keys()
-        
-        closest = None
-        min_diff = float('inf')
-        
-        for std_mm in standards:
-            diff = abs(value_mm - std_mm)
-            if diff <= 5 and diff < min_diff:  # Tolerancia ±5mm
-                min_diff = diff
-                closest = std_mm
-        
-        return closest
-
-
-
-
     # 2. FÓRMULA FÍSICA (Pestaña 1): mm_real * mm_real * m / 1.000.000
     @api.depends('espesor_mm', 'ancho_mm', 'largo_m', 'pieces')
     def _compute_vol_physical_m3(self):
@@ -539,68 +504,8 @@ class MadenatGuiaProcessingLine(models.Model):
     # ==========================================================================
     
     def _get_fraction_text(self, value_in):
-        """
-        Convierte decimal a fracción visual (ej: 4.625 → "4 5/8").
-        
-        CORRECCIÓN v4.0 (2026-01-24):
-        - Tolerancia aumentada de 0.02 a 0.05 para compensar redondeos
-        - Manejo mejorado de valores cercanos a enteros
-        """
-        if not value_in:
-            return ""
-        
-        # Separar parte entera y decimal
-        integer = int(value_in)
-        decimal = value_in - integer
-        
-        # Mapeo de octavos estándar
-        fractions = {
-            0.000: "",       # Entero exacto
-            0.125: "1/8",
-            0.250: "1/4",
-            0.375: "3/8",
-            0.500: "1/2",
-            0.625: "5/8",
-            0.750: "3/4",
-            0.875: "7/8"
-        }
-        
-        frac_str = ""
-        
-        # ✅ CORRECCIÓN CRÍTICA: Aumentar tolerancia para compensar redondeos
-        # Ejemplo: 5.71 debería detectarse como 5 3/4 (5.75) o 5 5/8 (5.625)
-        TOLERANCE = 0.05  # 0.05" = 1.27mm de tolerancia
-        
-        # Buscar octavo más cercano
-        min_diff = float('inf')
-        best_frac = None
-        
-        for val, txt in fractions.items():
-            diff = abs(decimal - val)
-            if diff < min_diff:
-                min_diff = diff
-                best_frac = (val, txt)
-        
-        # Si la diferencia es menor que la tolerancia, usar esa fracción
-        if min_diff < TOLERANCE and best_frac:
-            frac_str = best_frac[1]
-        
-        # Formatear resultado
-        if frac_str:
-            result = f"{integer} {frac_str}".strip() if integer > 0 else frac_str
-            
-            # ✅ DEBUG: Log para verificar conversión
-            _logger.debug(
-                f"Conversión fracción: {value_in:.3f}\" → {result} (diff={min_diff:.4f})"
-            )
-            return result
-        
-        # Si no encaja en octavos, devolver decimal con advertencia
-        _logger.warning(
-            f"Valor {value_in:.3f}\" no encaja en octavos estándar (tolerancia {TOLERANCE}\"). "
-            f"Devolviendo decimal."
-        )
-        return f"{value_in:.2f}"
+        """Wrapper — delega en decimal_inch_to_fraction_simple (utils_uom.py). AD-43."""
+        return decimal_inch_to_fraction_simple(value_in, denominator=8, tolerance=0.05)
     
     # ==========================================================================
     # CONSTRAINTS: Validación de Octavos
@@ -714,6 +619,16 @@ class MadenatGuiaProcessing(models.Model):
     date_emission = fields.Date(string="Fecha de Emisión", required=True, default=fields.Date.context_today, tracking=True)
     partner_id = fields.Many2one('res.partner', string="Proveedor / Transportista", tracking=True)
     order_id = fields.Many2one('purchase.order', string="Orden de Compra", tracking=True)
+
+    # Perfil de ingesta (espejo de lumber.reception) — reactiva el candado
+    # anti-mezcla comercial en madenat_guia_mass_update.py:80-84.
+    # Values idénticos a lumber_reception.py:947-952 (FIX 1 auditoría 2026-08-20).
+    ingestion_profile = fields.Selection([
+        ('f1550', '🪚 Madera Aserrada S2S'),
+        ('f5085', '📦 Madera Bruta — Grado Clear'),
+        ('metric', '📏 Madera Bruta — Sistema Métrico'),
+    ], string='Tipo de Producto', required=True, default='f5085', tracking=True,
+       help="Seleccione el tipo de producto para determinar la regla de cálculo y los documentos requeridos.")
     
     # ══════════════════════════════════════════════════════════════════════════════
     # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC (Patch 2026-06-18)
@@ -762,6 +677,28 @@ class MadenatGuiaProcessing(models.Model):
     # Relaciones
     lot_ids = fields.Many2many('stock.lot', string="Lotes relacionados")
     carrier_id = fields.Many2one('res.partner', string="Transportista", domain=[('is_company', '=', True)])
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BT-04 (2026-08-16): referencia informativa/auditiva a los lotes crudos de
+    # origen para guías service. NO es genealogía contable dura (no parent_lot_id):
+    # es vínculo documental y respaldo de la salida controlada a proceso.
+    # ══════════════════════════════════════════════════════════════════════════
+    source_lot_ids = fields.Many2many(
+        'stock.lot',
+        'madenat_guia_processing_source_lot_rel',
+        'guia_processing_id',
+        'lot_id',
+        string='Lotes Crudos de Origen',
+        help='Materia prima enviada a proceso para una guía de servicio externo.'
+    )
+    consumption_picking_id = fields.Many2one(
+        'stock.picking',
+        string='Albarán de Salida a Proceso',
+        readonly=True,
+        copy=False,
+        index=True,
+        help='Salida controlada del material crudo hacia Virtual Locations/Production (solo service).'
+    )
     
     # ✅ Patio de Asignación
     assignment_location_id = fields.Many2one(
@@ -1490,13 +1427,24 @@ class MadenatGuiaProcessing(models.Model):
             )
         
         # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
+        # AD-54 ampliado (2026-08-19): excepción puntual autorizada en action_process_from_staging.
+        # Ya NO bloquea el avance del borrador si hay OC documental detectada sin vínculo real;
+        # emite advertencia no bloqueante. La OC pendiente no impide la ingesta ni el envío a
+        # stock (misma política que Producto/Intake, AD-52). La exigencia final de OC resuelta
+        # pertenece a Costeo/Valorización (CANON 08 §9).
         if self.oc_reference_raw and not self.order_id:
-            raise UserError(
-                "Debe vincular una orden de compra válida antes de procesar.\n\n"
-                "Se detectó la referencia documental '{}' en el PDF/Excel, "
-                "pero no se ha vinculado una Orden de Compra del sistema.\n"
-                "Use el botón 'Crear/Vincular OC' para asociar la OC correspondiente "
-                "antes de enviar a stock.".format(self.oc_reference_raw)
+            _logger.warning(
+                "OC pendiente (no bloqueante) en guía %s (staging): referencia documental '%s' "
+                "sin order_id vinculado. AD-54 permite continuar.",
+                self.name, self.oc_reference_raw,
+            )
+            self.message_post(
+                body=_(
+                    "⚠️ OC pendiente (no bloqueante, staging): referencia documental '%s' sin "
+                    "orden de compra vinculada. AD-54 — la ingesta continúa; la exigencia "
+                    "final de OC resuelta pertenece a Costeo/Valorización/cierre financiero."
+                ) % self.oc_reference_raw,
+                message_type='notification',
             )
 
         # 3. PREPARACIÓN DE LA 'TRIPLE VERDAD' (Payload)
@@ -1621,16 +1569,38 @@ class MadenatGuiaProcessing(models.Model):
             )
         
         # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
-        # Bloquea si hay OC documental detectada pero no existe vínculo real en el sistema.
+        # AD-54 (2026-08-19): excepción puntual autorizada. Ya NO bloquea el envío a
+        # stock si hay OC documental detectada pero no existe vínculo real en el sistema;
+        # solo emite advertencia no bloqueante. La OC pendiente no impide la ingesta
+        # ni el envío a stock (misma política que Producto/Intake, AD-52). La exigencia
+        # final de OC resuelta pertenece a Costeo/Valorización (CANON 08 §9).
         if self.oc_reference_raw and not self.order_id:
-            raise UserError(
-                "Debe vincular una orden de compra válida antes de procesar.\n\n"
-                "Se detectó la referencia documental '{}' en el PDF/Excel, "
-                "pero no se ha vinculado una Orden de Compra del sistema.\n"
-                "Use el botón 'Crear/Vincular OC' para asociar la OC correspondiente "
-                "antes de enviar a stock.".format(self.oc_reference_raw)
+            _logger.warning(
+                "OC pendiente (no bloqueante) en guía %s: referencia documental '%s' "
+                "sin order_id vinculado. AD-54 permite continuar.",
+                self.name, self.oc_reference_raw,
+            )
+            self.message_post(
+                body=_(
+                    "⚠️ OC pendiente (no bloqueante): referencia documental '%s' sin "
+                    "orden de compra vinculada. AD-54 — la ingesta continúa; la exigencia "
+                    "final de OC resuelta pertenece a Costeo/Valorización/cierre financiero."
+                ) % self.oc_reference_raw,
+                message_type='notification',
             )
         # =======================================================
+
+        # ═══════════════════════════════════════════════════════
+        # 🛡️ BT-01 — NOTARIZACIÓN Y BITÁCORA INMUTABLE (2026-08-16)
+        # Firma criptográfica del ciclo de validación, generada
+        # ANTES del primer write a stock.lot. El evento de auditoría
+        # solo se persiste al final si el ciclo termina con éxito
+        # (misma transacción → rollback impide eventos huérfanos).
+        # ═══════════════════════════════════════════════════════
+        gate3 = Gate3PreCommit(self.env)
+        snapshot_json, sha256_hash = gate3.generate_processing_signature(
+            self, self.processing_line_ids
+        )
 
         # =======================================================
         # 🔧 FASE 0: AUTORREPARACIÓN DE MAESTROS (CRÍTICO ODOO 18)
@@ -1656,6 +1626,17 @@ class MadenatGuiaProcessing(models.Model):
             self.do_full_processing()
             # Refrescar el recordset para obtener el estado actualizado y lot_ids
             self.invalidate_recordset()
+        # =======================================================
+
+        # =======================================================
+        # 🏭 FASE 1.5: BT-04 — SALIDA CONTROLADA A PROCESO (service)
+        # Solo para guías de servicio externo: descuenta el material
+        # crudo hacia Virtual Locations/Production antes de cerrar la
+        # validación. Idempotente vía consumption_picking_id; ante falta
+        # de lote crudo aborta la transacción completa (sin ingreso huérfano).
+        # =======================================================
+        if self.tipo_recepcion == 'service':
+            self._get_or_create_consumption_picking()
         # =======================================================
 
         # 2. Recuperar o Crear Picking
@@ -1783,6 +1764,21 @@ class MadenatGuiaProcessing(models.Model):
         
         if self.lot_ids:
             self.lot_ids.write({'estado_trazabilidad': 'recepcionado', 'technical_validation': 'approved'})
+
+        # ═══════════════════════════════════════════════════════
+        # 🛡️ BT-01 — PERSISTIR EVIDENCIA FIRMADA
+        # Solo se alcanza si el ciclo validó sin excepciones; ante
+        # cualquier error previo la transacción revierte y no queda
+        # evento huérfano. La bitácora es la fuente de verdad.
+        # ═══════════════════════════════════════════════════════
+        self.env['madenat.audit.log'].sudo().create({
+            'guia_processing_id': self.id,
+            'action_type': 'validation_signature',
+            'description': "🔐 Firma de validación de guía %s" % self.name,
+            'audit_snapshot': snapshot_json,
+            'audit_hash': sha256_hash,
+            'user_id': self.env.user.id,
+        })
 
         _logger.info("✅ [END] Validación Exitosa - Stock Generado.")
         
@@ -2582,42 +2578,8 @@ class MadenatGuiaProcessing(models.Model):
     # ==============================================================================================
 
     def _parse_float_value(self, value, context=''):
-        if pd.isna(value) or value is None: 
-            return 0.0
-        try:
-            s = str(value).strip()
-            if not s or s.lower() in ['nan', 'none', '']: 
-                return 0.0
-            clean = re.sub(r'[^\d\.,-]', '', s)
-            
-            # ══════════════════════════════════════════════════════════
-            # Detectar formato monetario chileno (CLP)
-            # ══════════════════════════════════════════════════════════
-            is_clp = any(x in context.lower() for x in ['clp', 'subtotal', 'unit_price', 'neto', 'total'])
-            
-            if ',' in clean and '.' in clean: 
-                # Formato europeo: 1.234,56 → 1234.56
-                clean = clean.replace('.', '').replace(',', '.')
-            elif ',' in clean: 
-                # Tiene solo coma: puede ser decimal o separador
-                clean = clean.replace(',', '.') if clean.count(',') == 1 else clean.replace(',', '')
-            elif '.' in clean and is_clp:
-                # Formato chileno CLP: 831.829 → 831829 (punto = separador de miles)
-                parts = clean.split('.')
-                if len(parts) == 2 and len(parts[1]) == 3 and parts[0].isdigit() and parts[1].isdigit():
-                    # Un solo punto con exactamente 3 dígitos después
-                    clean = clean.replace('.', '')
-            
-            val = float(clean)
-            
-            # Conversiones específicas por contexto
-            if 'largo' in context.lower() and val > 100: 
-                return val / 1000.0 
-            if any(x in context.lower() for x in ['espesor', 'ancho']) and val > 1000: 
-                return val / 10.0
-            return val
-        except: 
-            return 0.0
+        """Wrapper — delega en parse_float_value (utils_uom.py). Extraído vía AD-42."""
+        return parse_float_value(value, context)
 
         
     def _get_nominal_dimension(self, physical_mm, dim_type='width', tolerance=3):
@@ -2719,8 +2681,14 @@ class MadenatGuiaProcessing(models.Model):
             method = getattr(self, 'calculation_method', 'madenat_gold')
 
             for l in lineas:
+                lad_name = l.get('N° LOTE') or l.get('Codigo Interno') or '?'
                 # 1. Mantener validación de funcionalidad actual
                 if not l.get('Codigo Interno') or l.get('Cantidad', 0) <= 0:
+                    # BT-03: línea descartada sin llegar a staging, no produce lote.
+                    self._register_lot_audit(
+                        'omission', lad_name,
+                        f"Línea omitida (sin código interno o cantidad <= 0) desde guía {self.name}"
+                    )
                     continue
 
                 # 2. Extracción segura de tipos
@@ -2730,9 +2698,19 @@ class MadenatGuiaProcessing(models.Model):
                     a_mm = float(l.get('Ancho', 0))
                     l_m = float(l.get('Largo', 0))
                 except (ValueError, TypeError):
+                    # BT-03: línea descartada por dimensiones no numéricas.
+                    self._register_lot_audit(
+                        'omission', lad_name,
+                        f"Línea omitida (dimensiones no numéricas) desde guía {self.name}"
+                    )
                     continue
 
                 if e_mm <= 0 or a_mm <= 0 or l_m <= 0:
+                    # BT-03: línea descartada por dimensiones físicas <= 0.
+                    self._register_lot_audit(
+                        'omission', lad_name,
+                        f"Línea omitida (dimensiones físicas <= 0) desde guía {self.name}"
+                    )
                     continue
 
                 # 3. CALCULO DE VOLUMEN SEGÚN MÉTODO (Cerebro de la Guía)
@@ -3153,10 +3131,8 @@ class MadenatGuiaProcessing(models.Model):
     # 🏷️ TRAZABILIDAD DOCUMENTAL DE OC — HELPERS (Patch 2026-06-18)
     # ══════════════════════════════════════════════════════════════════════════════
     def _normalize_oc_key(self, value):
-        """Normaliza referencia de OC para matching técnico: solo A-Z0-9 mayúsculas, sin espacios ni puntuación."""
-        if not value:
-            return ''
-        return re.sub(r'[^A-Z0-9]+', '', (value or '').upper())
+        """Wrapper — delega en normalize_oc_key (utils_uom.py). AD-44."""
+        return normalize_oc_key(value)
 
     @api.depends('oc_reference_raw')
     def _compute_oc_reference_norm(self):
@@ -3323,6 +3299,20 @@ class MadenatGuiaProcessing(models.Model):
         
         return count
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # BT-03 (2026-08-16): bitácora operativa de eventos de lote en Procesados.
+    # madenat.audit.log es la fuente de verdad; cada outcome confirmado genera
+    # un único evento, enlazado a la guía. No modela todavía baja formal.
+    # ═══════════════════════════════════════════════════════════════════════
+    def _register_lot_audit(self, action_type, lot_name, description):
+        self.env['madenat.audit.log'].sudo().create({
+            'guia_processing_id': self.id,
+            'action_type': action_type,
+            'description': description,
+            'batch_id': lot_name,
+            'user_id': self.env.user.id,
+        })
+
     def _create_or_get_lot(self, guia_ref, product, qty, vol_purchase, vol_shipment, vol_real, lot_name, lot_dims, precio_usd,
                        purchase_order=None, thickness_visual='', width_visual='', vol_mbf=0.0,
                        technical_validation='pending', estado_trazabilidad='procesado', subproducto_id=False):
@@ -3373,6 +3363,7 @@ class MadenatGuiaProcessing(models.Model):
             ('name', '=', name), 
             ('product_id', '=', product.id),
             ('company_id', 'in', [self.env.company.id, False]),
+            ('reception_id', '=', False),
         ], limit=1, order='company_id DESC')
         
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3474,6 +3465,8 @@ class MadenatGuiaProcessing(models.Model):
                vals['reception_id'] = False
             
             lot.write(vals)
+            # BT-03: reutilización idempotente de lote sin reception_id.
+            self._register_lot_audit('lot_update', name, f"Lote {name} reutilizado desde guía {self.name}")
             return lot
         else:
             # ═══════════════════════════════════════════════════════
@@ -3504,7 +3497,10 @@ class MadenatGuiaProcessing(models.Model):
 
             try:
                 with self.env.cr.savepoint():
-                    return self.env['stock.lot'].create(vals)
+                    created_lot = self.env['stock.lot'].create(vals)
+                # BT-03: creación real de lote nuevo.
+                self._register_lot_audit('lot_creation', name, f"Lote {name} creado desde guía {self.name}")
+                return created_lot
             except (IntegrityError, ValidationError):
                 _logger.warning(
                     "⚠️ Colisión UNIQUE en stock.lot para name=%s product_id=%s company_id=%s — "
@@ -3517,9 +3513,12 @@ class MadenatGuiaProcessing(models.Model):
                     ('name', '=', name),
                     ('product_id', '=', product.id),
                     ('company_id', 'in', [self.env.company.id, False]),
+                    ('reception_id', '=', False),
                 ], limit=1, order='company_id DESC')
                 if lot:
                     lot.write(vals)
+                    # BT-03: reutilización idempotente tras colisión UNIQUE.
+                    self._register_lot_audit('lot_update', name, f"Lote {name} reutilizado tras colisión UNIQUE desde guía {self.name}")
                     return lot
                 raise
 
@@ -3577,6 +3576,237 @@ class MadenatGuiaProcessing(models.Model):
                 })
                 
         return picking
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BT-04 (2026-08-16) — SALIDA CONTROLADA A PROCESO (solo service)
+    # Mecanismo mínimo: picking outgoing interno → Virtual Locations/Production,
+    # análogo a _create_consumption_picking() del módulo toll, sin stock.scrap.
+    # La reversión es un retorno entrante inverso que conserva la historia.
+    # ══════════════════════════════════════════════════════════════════════════
+    def _get_or_create_consumption_picking(self):
+        """
+        Crea exactamente UNA salida de stock a proceso por guía service.
+        Idempotente: si ya existe consumption_picking_id vigente, lo reutiliza.
+        """
+        self.ensure_one()
+
+        # Guard de contrato: la salida a proceso SOLO aplica a service.
+        if self.tipo_recepcion != 'service':
+            raise UserError(
+                "⛔ La salida a proceso solo aplica a guías de tipo 'Servicio Externo'."
+            )
+
+        # Idempotencia: reutilizar salida ya existente y no cancelada.
+        if self.consumption_picking_id and self.consumption_picking_id.state != 'cancel':
+            _logger.info(
+                "♻️ Salida a proceso ya existente (%s) para guía %s — reutilizando.",
+                self.consumption_picking_id.name, self.name,
+            )
+            return self.consumption_picking_id
+
+        source_lots = self.source_lot_ids.filtered(lambda l: l.volumen_m3 > 0)
+        if not source_lots:
+            raise UserError(
+                "⛔ SALIDA A PROCESO BLOQUEADA\n\n"
+                "La guía de servicio no tiene lotes crudos de origen válidos "
+                "(source_lot_ids) o todos tienen volumen 0.\n"
+                "Asigne la materia prima a enviar a proceso antes de validar."
+            )
+
+        warehouse = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1
+        )
+        location_src = self.assignment_location_id or (warehouse.lot_stock_id if warehouse else False)
+        if not location_src:
+            raise UserError(
+                "⛔ No se pudo determinar la ubicación de origen para la salida a proceso."
+            )
+
+        location_dest = self.env['stock.location'].search(
+            [('usage', '=', 'production')], limit=1
+        )
+        if not location_dest:
+            try:
+                location_dest = self.env.ref('stock.location_production')
+            except ValueError:
+                location_dest = False
+        if not location_dest:
+            raise UserError(
+                "⛔ No existe la ubicación 'Virtual Locations/Production' requerida."
+            )
+
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'outgoing'),
+            ('warehouse_id', '=', warehouse.id),
+        ], limit=1)
+        if not picking_type:
+            raise UserError(
+                "⛔ No se encontró un tipo de operación de salida válido para el consumo."
+            )
+
+        uom_m3 = self.env.ref('uom.product_uom_cubic_meter')
+
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': location_src.id,
+            'location_dest_id': location_dest.id,
+            'origin': f"{self.name} - Salida a Proceso",
+            'partner_id': self.partner_id.id or False,
+            'move_type': 'direct',
+            'company_id': self.env.company.id,
+        })
+
+        for lot in source_lots:
+            qty = lot.volumen_m3
+            move = self.env['stock.move'].create({
+                'name': f"Salida a proceso {lot.name}",
+                'product_id': lot.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': uom_m3.id,
+                'picking_id': picking.id,
+                'location_id': location_src.id,
+                'location_dest_id': location_dest.id,
+                'company_id': self.env.company.id,
+            })
+            self.env['stock.move.line'].create({
+                'move_id': move.id,
+                'picking_id': picking.id,
+                'product_id': lot.product_id.id,
+                'lot_id': lot.id,
+                'quantity': qty,
+                'product_uom_id': uom_m3.id,
+                'location_id': location_src.id,
+                'location_dest_id': location_dest.id,
+            })
+
+        picking.action_confirm()
+        picking.action_assign()
+        picking.with_context(
+            skip_backorder=True,
+            skip_immediate=True,
+        ).button_validate()
+
+        self.consumption_picking_id = picking.id
+
+        # BT-04: evidencia auditiva coherente con BT-03 (sin subsistema nuevo).
+        self._register_lot_audit(
+            'consumption', '',
+            f"Salida a proceso {picking.name} para guía {self.name} "
+            f"({len(source_lots)} lote(s) crudo(s))."
+        )
+
+        self.message_post(
+            body=f"🏭 <strong>Salida a Proceso:</strong> {picking.name} — "
+                 f"{len(source_lots)} lote(s) crudo(s) enviado(s) a Production."
+        )
+        return picking
+
+    def _reverse_consumption_picking(self):
+        """
+        Reversión sin borrar historia: crea un retorno entrante inverso del
+        picking de salida a proceso y restaura el stock crudo. Idempotente.
+        """
+        self.ensure_one()
+        consumption = self.consumption_picking_id
+        if not consumption or consumption.state != 'done':
+            return consumption
+
+        # Idempotencia: si ya se generó el retorno, no repetir.
+        existing_return = self.env['stock.picking'].search([
+            ('origin', '=', f'Return of {consumption.name}'),
+            ('state', '=', 'done'),
+        ], limit=1)
+        if existing_return:
+            _logger.info(
+                "♻️ Retorno de salida a proceso ya generado (%s) para guía %s.",
+                existing_return.name, self.name,
+            )
+            return existing_return
+
+        moves_done = consumption.move_ids.filtered(lambda m: m.state == 'done')
+        if not moves_done:
+            return consumption
+
+        warehouse = consumption.picking_type_id.warehouse_id
+        if not warehouse:
+            raise UserError(
+                f"⛔ El albarán de salida '{consumption.name}' no tiene almacén asociado."
+            )
+
+        return_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'incoming'),
+            ('warehouse_id', '=', warehouse.id),
+            ('active', '=', True),
+        ], limit=1)
+        if not return_type:
+            return_type = self.env['stock.picking.type'].search([
+                ('code', '=', 'incoming'),
+                ('active', '=', True),
+            ], limit=1)
+        if not return_type:
+            raise UserError(
+                "⛔ No existe un tipo de operación 'Recepción' activo para revertir la salida a proceso."
+            )
+
+        return_picking = self.env['stock.picking'].create({
+            'picking_type_id': return_type.id,
+            'partner_id': consumption.partner_id.id,
+            'origin': f'Return of {consumption.name}',
+            'location_id': consumption.location_dest_id.id,
+            'location_dest_id': consumption.location_id.id,
+        })
+
+        for move in moves_done:
+            qty = move.quantity or move.product_uom_qty
+            return_move = self.env['stock.move'].create({
+                'name': f'Return of {move.name}',
+                'product_id': move.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': return_picking.id,
+                'location_id': move.location_dest_id.id,
+                'location_dest_id': move.location_id.id,
+                'origin_returned_move_id': move.id,
+                'to_refund': True,
+            })
+            # Restaurar trazabilidad de lote copiando las líneas originales,
+            # para que el retorno reponga el quant del lote crudo exacto.
+            for line in move.move_line_ids:
+                self.env['stock.move.line'].create({
+                    'move_id': return_move.id,
+                    'picking_id': return_picking.id,
+                    'product_id': line.product_id.id,
+                    'lot_id': line.lot_id.id,
+                    'quantity': line.quantity,
+                    'product_uom_id': line.product_uom_id.id,
+                    'location_id': return_move.location_id.id,
+                    'location_dest_id': return_move.location_dest_id.id,
+                })
+
+        return_picking.action_confirm()
+        return_picking.action_assign()
+        return_picking.with_context(
+            skip_backorder=True,
+            skip_immediate=True,
+            force_validate=True,
+            immediate_transfer=True,
+        ).button_validate()
+
+        # Desvincular para que una revalidación posterior cree salida nueva,
+        # SIN borrar el picking original (historia preservada vía retorno).
+        self.consumption_picking_id = False
+
+        self._register_lot_audit(
+            'consumption', '',
+            f"Salida a proceso revertida: {return_picking.name} "
+            f"(original {consumption.name}) para guía {self.name}."
+        )
+
+        self.message_post(
+            body=f"🔄 <strong>Salida a Proceso Revertida:</strong> "
+                 f"{return_picking.name} restauró el stock crudo de {consumption.name}."
+        )
+        return return_picking
 
     def _obtener_precio_desde_oc(self, po):
         if po and po.order_line: 
@@ -3670,6 +3900,14 @@ class MadenatGuiaProcessing(models.Model):
         """
         for rec in self:
             _logger.warning(f"🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: {rec.name}")
+
+            # ═══════════════════════════════════════════════════════
+            # 🛡️ BT-04 — Reversión de salida a proceso (service)
+            # Restaura el stock crudo antes de cualquier escudo
+            # financiero. La historia (picking original) se conserva.
+            # ═══════════════════════════════════════════════════════
+            rec._reverse_consumption_picking()
+            # ═══════════════════════════════════════════════════════
 
             # =======================================================
             # 1. ESCUDO LOGÍSTICO — Lotes en contenedores activos
@@ -3961,7 +4199,14 @@ class MadenatGuiaProcessing(models.Model):
         
         for rec in self:
             _logger.info(f"🚨 INICIANDO REVERSIÓN SEGURA - Guía {rec.name}")
-            
+
+            # ═══════════════════════════════════════════════════════
+            # 🛡️ BT-04 — Reversión de salida a proceso (service)
+            # Restaura el stock crudo antes de los escudos financieros.
+            # ═══════════════════════════════════════════════════════
+            rec._reverse_consumption_picking()
+            # ═══════════════════════════════════════════════════════
+
             # PASO 0: Snapshot de auditoría (Historial en Chatter)
             body_snapshot = (
                 f"📋 <strong>Snapshot previo a reversión:</strong><br/>"

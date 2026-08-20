@@ -189,6 +189,11 @@ class MadenatIngestionConfig(models.AbstractModel):
         legacy = {
             'f5085': {'allowed':[], 'forbidden':['S2S','RIP'], 'forbidden_in_lock':['S2S','RIP']},
             'f1550': {'allowed':['S2S'], 'forbidden':[], 'forbidden_in_lock':['ROUGH','BLANK']},
+            # FIX 2 (auditoría 2026-08-20): 'blanks' ya no cae a lista vacía en
+            # silencio. Se comporta como perfil legado sin filtros explícitos
+            # (misma semántica que 'metric') hasta que se parametrice un registro
+            # Fase 2/3 real con reglas para este perfil.
+            'blanks': {'allowed':[], 'forbidden':[], 'forbidden_in_lock':[]},
             'metric': {'allowed':[], 'forbidden':[], 'forbidden_in_lock':[]},
         }
         return legacy.get(profile, {}).get(rule_type, [])
