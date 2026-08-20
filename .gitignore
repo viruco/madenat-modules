@@ -4,6 +4,11 @@
 *.bak2
 *.bak3
 
+# ─── Backups operativos locales de sesión (AD-55/56/57) ───
+**/backups_*/
+**/*.bak_*
+**/*.Zone.Identifier
+
 # ─── Archivos temporales Python ───
 __pycache__/
 *.pyc
