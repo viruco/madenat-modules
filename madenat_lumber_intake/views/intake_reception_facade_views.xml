@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         FACHADA PRODUCTO — lumber.reception (vista ligera de corrección)
+         Reduce el ruido del form XXL del core. Foco: packing + contexto
+         comercial breve. Toda escritura sigue en el core.
+         ============================================================ -->
+    <record id="view_lumber_reception_intake_facade_form" model="ir.ui.view">
+        <field name="name">lumber.reception.intake.facade.form</field>
+        <field name="model">lumber.reception</field>
+        <field name="arch" type="xml">
+            <form string="Modificar origen — Producto">
+
+                <header>
+                    <field name="state" widget="badge"
+                           decoration-info="state == 'draft'"
+                           decoration-warning="state in ('processing', 'verified')"
+                           decoration-success="state == 'done'"
+                           decoration-muted="state in ('cancel', 'error', 'pending_link')"/>
+
+                    <!-- Acción del origen según estado (reusa métodos del core, sin lógica nueva) -->
+                    <button name="action_process_documents"
+                            type="object"
+                            string="Procesar Documentos"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_verify_data"
+                            type="object"
+                            string="Verificar Datos"
+                            class="btn-primary"
+                            invisible="state != 'processing'"/>
+                    <button name="action_cancel_intake"
+                            type="object"
+                            string="Cancelar"
+                            class="btn-secondary"
+                            invisible="not can_cancel_reception"/>
+
+                    <!-- Salida explícita hacia la consola principal de Ingreso
+                         Global. La validación final a stock se centraliza allí
+                         (action_send_to_stock). Esta fachada es solo edición. -->
+                    <button name="action_back_to_intake_console"
+                            type="object"
+                            string="Volver a Ingreso Global"
+                            class="btn-secondary"
+                            icon="fa-arrow-left"/>
+
+                    <!-- Contexto visual de OC: número resumido en el header.
+                         La fachada publica el vínculo operativo real (purchase_id)
+                         como bloque detallado en la pestaña "Guía y comercial". -->
+                    <field name="purchase_id" string="OC" nolabel="1"
+                           class="text-muted fw-bold"
+                           invisible="not purchase_id"/>
+                </header>
+
+                <sheet>
+                    <notebook>
+                        <page string="Guía y comercial" name="guides_commercial">
+                            <!-- Advertencia persistente y NO bloqueante de OC pendiente.
+                                 Desaparece automáticamente cuando existe purchase_id
+                                 o el registro está en estado terminal. -->
+                            <field name="oc_pending_alert" nolabel="1"/>
+                            <field name="supplier_pending_alert" nolabel="1"/>
+                            <group>
+                                <group string="Datos documentales">
+                                    <field name="name" string="Guía" readonly="1"/>
+                                    <field name="supplier_id" string="Proveedor" readonly="1"
+                                           options="{'no_create': True}"/>
+                                    <button name="action_resolve_supplier"
+                                            type="object"
+                                            string="Validar / corregir proveedor"
+                                            class="btn-secondary"
+                                            icon="fa-user"
+                                            invisible="state in ('done', 'cancel', 'error')"/>
+                                    <field name="reception_date" string="Fecha Recepción" readonly="1"/>
+                                    <field name="guia_numero" string="N° Guía Despacho" readonly="1"/>
+                                    <field name="guia_fecha" string="Fecha Guía" readonly="1"/>
+                                    <field name="ingestion_profile" string="Tipo de Producto" readonly="1"/>
+                                    <field name="cancel_reason" string="Motivo de cancelación"
+                                           readonly="1"
+                                           invisible="not cancel_reason"/>
+                                </group>
+                                <group string="Documentos (relectura)" invisible="state != 'draft'">
+                                    <field name="pdf_file" filename="pdf_filename" widget="binary"
+                                           string="Guía (PDF)"/>
+                                    <field name="pdf_filename" invisible="1"/>
+                                    <field name="excel_file" filename="excel_filename" widget="binary"
+                                           string="Packing (Excel)"/>
+                                    <field name="excel_filename" invisible="1"/>
+                                </group>
+
+                                <group string="Orden de Compra">
+                                    <field name="purchase_id" string="Orden de compra asociada"
+                                           readonly="1"
+                                           options="{'no_create': True}"/>
+                                    <field name="supplier_id" string="Proveedor asociado"
+                                           readonly="1" invisible="not purchase_id"/>
+                                    <field name="oc_reference_raw" string="Referencia OC del documento"
+                                           readonly="1"
+                                           invisible="not oc_reference_raw"/>
+                                    <field name="manual_po_name" string="Referencia manual"
+                                           readonly="1"
+                                           invisible="not manual_po_name"/>
+                                    <field name="oc_match_status" string="Estado de vinculación OC"
+                                           widget="badge" readonly="1"/>
+                                    <field name="oc_match_note" string="Observación de vinculación"
+                                           readonly="1"
+                                           invisible="not oc_match_note"/>
+                                    <!-- Solo se expone la acción explícita de resolución
+                                         cuando corresponde: sin OC operativa y aún preliminar.
+                                         No se muestra en cancelado, envío a stock o con OC ya asociada. -->
+                                    <button name="action_resolve_oc"
+                                            type="object"
+                                            string="Resolver OC"
+                                            class="btn-primary"
+                                            icon="fa-link"
+                                            invisible="purchase_id or state in ('done', 'cancel', 'error')"/>
+                                </group>
+
+                                <group string="Comercial">
+                                    <field name="exchange_rate" string="Tipo de Cambio (USD)" readonly="1"/>
+                                    <field name="total_amount_clp" string="Total Neto (CLP)"
+                                           widget="monetary" readonly="1"/>
+                                    <field name="commercial_volume_m3" string="Vol. Comercial (m³)" readonly="1"/>
+                                    <field name="physical_volume_m3" string="Vol. Físico (m³)" readonly="1"/>
+                                    <field name="total_volume_m3" string="Vol. Total (m³)" readonly="1"/>
+                                    <field name="volume_variance_percent" string="Variación %"
+                                           widget="percentage" readonly="1"/>
+                                    <field name="tolerance_status" string="Tolerancia"
+                                           widget="badge" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Packing" name="packing">
+                            <div class="mb-3 text-center" invisible="state == 'done'">
+                                <button name="%(madenat_lumber_core.action_lumber_reception_mass_update)d"
+                                        type="action"
+                                        string="Asignación Masiva"
+                                        class="btn-warning"
+                                        context="{'default_reception_id': id, 'default_ingestion_profile': ingestion_profile}"/>
+                            </div>
+
+                            <field name="reception_line_ids" readonly="state == 'done'">
+                                <list string="Packing" default_order="id asc"
+                                      create="false" edit="false" delete="false">
+                                    <button name="action_open_intake_line_editor"
+                                            type="object"
+                                            string="Editar"
+                                            icon="fa-pencil"/>
+                                    <field name="lot_name" string="Etiqueta / Lote" readonly="1"/>
+                                    <field name="excel_product_name" string="Producto (Excel)" readonly="1"/>
+                                    <field name="product_id" string="Producto" readonly="1"
+                                           options="{'no_open': True, 'no_create': True}"/>
+                                    <field name="subproduct_id" string="Grado" readonly="1"/>
+                                    <field name="thickness_nominal" string="Esp. Nom (mm)" readonly="1"/>
+                                    <field name="width_nominal" string="Ancho Nom (mm)" readonly="1"/>
+                                    <field name="thickness_visual" string="Esp. Comercial" readonly="1"/>
+                                    <field name="width_visual" string="Ancho Comercial" readonly="1"/>
+                                    <field name="length" string="Largo (m)" readonly="1"/>
+                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1"/>
+                                    <field name="vol_shipment_m3" string="Vol. Exp (m³)" readonly="1"/>
+                                    <field name="vol_mbf" string="Vol. MBF" readonly="1"/>
+                                    <field name="cost_clp_unit" string="Costo (CLP)" readonly="1"
+                                           widget="monetary"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         EDITOR INDIVIDUAL MODAL — lumber.reception.line
+         Abre el registro real (res_id), sin crear. El guardado recae
+         en el ORM del modelo línea (compute/onchange del core).
+         ============================================================ -->
+    <record id="view_lumber_reception_line_intake_editor_form" model="ir.ui.view">
+        <field name="name">lumber.reception.line.intake.editor.form</field>
+        <field name="model">lumber.reception.line</field>
+        <field name="arch" type="xml">
+            <form string="Editar paquete">
+                <sheet>
+                    <group string="Identidad del paquete">
+                        <field name="lot_name" string="Etiqueta / Lote" readonly="1"/>
+                        <field name="excel_product_name" string="Producto (Excel)" readonly="1"/>
+                    </group>
+
+                    <group string="Clasificación">
+                        <field name="product_id" string="Producto"
+                               options="{'no_open': True, 'no_create': True}"/>
+                        <field name="subproduct_id" string="Subproducto / Grado"
+                               options="{'no_create': False, 'no_open': False}"/>
+                    </group>
+
+                    <group string="Valores comerciales">
+                        <field name="thickness_nominal" string="Espesor Nom. (mm)"/>
+                        <field name="width_nominal" string="Ancho Nom. (mm)"/>
+                        <field name="thickness_visual" string="Espesor Comercial"/>
+                        <field name="width_visual" string="Ancho Comercial"/>
+                    </group>
+
+                    <group string="Largo">
+                        <field name="length_input_raw" string="Largo ingreso"/>
+                        <field name="lengthuom" string="Unidad"/>
+                        <field name="length" string="Largo (m)" readonly="1"/>
+                    </group>
+
+                    <group string="Resultados">
+                        <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1"/>
+                        <field name="vol_shipment_m3" string="Vol. Exp (m³)" readonly="1"/>
+                        <field name="vol_mbf" string="Vol. MBF" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

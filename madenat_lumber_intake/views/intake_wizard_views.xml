@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_lumber_intake_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.wizard.form</field>
+        <field name="model">madenat.lumber.intake.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ingreso Global">
+                <header>
+                    <button
+                        name="action_preview_document"
+                        type="object"
+                        string="Leer documento"
+                        class="btn-secondary"
+                        invisible="state not in ('draft', 'error')" />
+                    <button
+                        name="action_route_document"
+                        type="object"
+                        string="Continuar ingreso"
+                        class="btn-primary"
+                        invisible="state == 'routed'" />
+                    <button
+                        name="action_open_intake_target"
+                        type="object"
+                        string="Abrir registro creado"
+                        class="btn-primary"
+                        invisible="target_res_id == 0" />
+                    <field name="state" widget="statusbar" readonly="1" />
+                </header>
+
+                <sheet>
+                    <group string="Destino del ingreso">
+                        <group>
+                            <field name="tipo_ingreso" />
+                            <field
+                                name="ingestion_profile"
+                                invisible="tipo_ingreso != 'producto'"
+                                help="El perfil se usa para la lectura previa de compra; no se aplica a Procesados." />
+                            <field
+                                name="assignment_location_id"
+                                invisible="tipo_ingreso != 'procesado'" />
+                        </group>
+                    </group>
+
+                    <group string="Documentos">
+                        <group>
+                            <field name="excel_file" filename="excel_filename" required="1" />
+                            <field name="excel_filename" />
+                            <field name="pdf_file" filename="pdf_filename" />
+                            <field name="pdf_filename" />
+                        </group>
+                    </group>
+
+                    <group string="Vista previa de Producto"
+                           invisible="tipo_ingreso != 'producto' or state != 'previewed'">
+                        <group>
+                            <field name="preview_line_count" />
+                            <field name="preview_total_volume_m3" />
+                            <field name="preview_guide_no" />
+                            <field name="preview_data" nolabel="1" />
+                            <field name="preview_warnings" nolabel="1" />
+                        </group>
+                    </group>
+
+                    <div class="alert alert-info"
+                         invisible="tipo_ingreso != 'procesado'"
+                         role="alert">
+                        El Excel se conservará sin transformar y será interpretado
+                        por el flujo de Procesados, que mantiene varios paquetes
+                        por N° de lote.
+                    </div>
+
+                    <div class="alert alert-danger"
+                         invisible="state != 'error' or not error_message"
+                         role="alert">
+                        <field name="error_message" nolabel="1" />
+                    </div>
+
+                    <group string="Registro creado" invisible="state != 'routed'">
+                        <group>
+                            <field name="target_model" />
+                            <field name="target_res_id" />
+                            <field name="target_reference" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_madenat_lumber_intake_wizard_list" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.wizard.list</field>
+        <field name="model">madenat.lumber.intake.wizard</field>
+        <field name="arch" type="xml">
+            <list string="Ingreso Global">
+                <field name="tipo_ingreso" />
+                <field name="excel_filename" />
+                <field name="state" />
+                <field name="target_reference" />
+            </list>
+        </field>
+    </record>
+
+    <record id="action_madenat_lumber_intake_wizard" model="ir.actions.act_window">
+        <field name="name">Ingreso Global (Wizard)</field>
+        <field name="res_model">madenat.lumber.intake.wizard</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

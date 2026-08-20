@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =========================================================
+         LISTA: CONSOLA GLOBAL DE INGRESOS
+         ========================================================= -->
+    <record id="view_madenat_lumber_intake_console_list" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.console.list</field>
+        <field name="model">madenat.lumber.intake.console</field>
+        <field name="arch" type="xml">
+            <list string="Ingreso Global"
+                  default_order="guide_date desc, id desc"
+                  decoration-muted="review_state in ('cancel', 'error')"
+                  decoration-info="review_state == 'needs_review'"
+                  decoration-success="review_state == 'sent'"
+                  decoration-warning="review_state == 'ready'"
+                  decoration-danger="review_state == 'invalid'">
+
+                <header>
+                    <button name="%(action_madenat_lumber_intake_new)d"
+                            type="action"
+                            string="Nuevo Ingreso"
+                            class="btn-primary"
+                            display="always"/>
+                </header>
+
+                <field name="guide_name" string="Guía"/>
+                <field name="guide_date" string="Fecha"/>
+                <field name="partner_id" string="Proveedor"/>
+
+                <!-- Referencia documental, conservada para casos con OC manual o sin vínculo Many2one -->
+                <field name="purchase_reference" string="OC"/>
+
+                <!-- Estado legal de OC (Selection, no bloquea). Fuente: purchase_id. -->
+                <field name="oc_pending" string="OC" widget="badge"
+                       decoration-success="oc_pending == 'linked'"
+                       decoration-warning="oc_pending == 'pending'"/>
+
+                <field name="state" string="Estado"/>
+                <field name="ingestion_type" string="Tipo"/>
+                <field name="review_state" string="Revisión"/>
+                <field name="display_reference" string="Referencia"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         FORMULARIO: REVISIÓN DEL INGRESO
+         ========================================================= -->
+    <record id="view_madenat_lumber_intake_console_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.console.form</field>
+        <field name="model">madenat.lumber.intake.console</field>
+        <field name="arch" type="xml">
+            <form string="Ingreso Global — Revisión" create="false" edit="false">
+
+                <!-- =================================================
+                     ENCABEZADO OPERATIVO
+                     ================================================= -->
+                <header>
+                    <button name="action_send_to_stock"
+                            type="object"
+                            string="Enviar a Stock"
+                            class="btn-primary"
+                            confirm="¿Enviar este ingreso a stock? La operación validará y generará los movimientos de inventario correspondientes."
+                            invisible="review_state not in ('ready',)"/>
+
+                    <button name="action_open_source"
+                            type="object"
+                            string="Modificar origen"
+                            class="btn-secondary"
+                            invisible="review_state == 'invalid'"/>
+
+                    <!-- Descarga de documentos del origen (solo Producto) -->
+                    <button name="action_download_guide_pdf"
+                            type="object"
+                            string="Descargar Guía"
+                            class="btn-secondary"
+                            icon="fa-download"
+                            invisible="ingestion_type != 'product' or not review_guide_document or review_guide_document == 'Sin PDF'"/>
+                    <button name="action_download_packing_excel"
+                            type="object"
+                            string="Descargar Excel"
+                            class="btn-secondary"
+                            icon="fa-download"
+                            invisible="ingestion_type != 'product' or not review_excel_document or review_excel_document == 'Sin Excel'"/>
+
+                    <!-- Cancelación controlada con motivo obligatorio (solo Producto, antes de stock) -->
+                    <button name="action_cancel_intake"
+                            type="object"
+                            string="Cancelar"
+                            class="btn-secondary"
+                            confirm="Se solicitará un motivo obligatorio. El ingreso quedará en estado 'Cancelado' (evidencia preservada)."
+                            invisible="ingestion_type != 'product' or review_state in ('sent', 'cancel', 'invalid')"/>
+
+                    <!-- Reapertura de un cancelado preliminar (sin duplicar name, sin tocar stock) -->
+                    <button name="action_reopen_intake"
+                            type="object"
+                            string="Reabrir"
+                            class="btn-secondary"
+                            confirm="¿Reabrir este ingreso cancelado a Borrador para releer Guía y Packing?"
+                            invisible="ingestion_type != 'product' or review_state != 'cancel'"/>
+
+                    <div class="oe_header_indicators"
+                         style="margin-left:auto; display:flex; gap:16px; align-items:center; margin-right:15px; flex-wrap:wrap;">
+
+                        <div class="indicator">
+                            <span class="text-muted">Lotes/Líneas:</span>
+                            <field name="total_lots" nolabel="1" readonly="1" class="fw-bold"/>
+                        </div>
+
+                        <div class="indicator">
+                            <span class="text-muted">Total guía:</span>
+                            <field name="total_amount" nolabel="1" readonly="1" widget="monetary" class="fw-bold"/>
+                        </div>
+
+                        <div class="indicator">
+                            <span class="text-muted">Revisión:</span>
+                            <field name="review_state" nolabel="1" readonly="1" widget="badge"/>
+                        </div>
+                    </div>
+                </header>
+
+                <sheet>
+
+                    <!-- =================================================
+                         IDENTIFICACIÓN PRINCIPAL
+                         ================================================= -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <span class="fs-5 fw-bold">
+                            Guía
+                            <field name="guide_name" class="fs-5 fw-bold"/>
+                        </span>
+
+                        <span class="text-muted">·</span>
+
+                        <field name="ingestion_type" widget="badge"/>
+                        <field name="state" widget="badge"/>
+                    </div>
+
+                    <!-- =================================================
+                         RESUMEN Y EVIDENCIA
+                         ================================================= -->
+                    <group>
+                        <group string="Resumen del ingreso">
+                            <field name="guide_date" string="Fecha de guía"/>
+                            <field name="partner_id" string="Proveedor"/>
+
+                            <!-- Texto documental de la OC. Puede existir aunque no haya purchase_id. -->
+                            <field name="purchase_reference" string="OC documento"/>
+
+                            <!-- Vínculo Many2one a purchase.order. -->
+                            <field name="purchase_id" string="OC vinculada"/>
+
+                            <!-- Estado legal de OC (Selection, no bloquea). Fuente: purchase_id. -->
+                            <field name="oc_pending" string="OC" widget="badge"
+                                   decoration-success="oc_pending == 'linked'"
+                                   decoration-warning="oc_pending == 'pending'"/>
+
+                            <field name="display_reference" string="Referencia"/>
+                        </group>
+
+                        <group string="Evidencia documental">
+                            <field name="review_guide_document"
+                                   string="Guía (PDF)"
+                                   widget="badge"
+                                   decoration-info="review_guide_document and review_guide_document != 'Sin PDF'"/>
+
+                            <field name="review_excel_document"
+                                   string="Packing list (Excel)"
+                                   widget="badge"
+                                   decoration-info="review_excel_document and review_excel_document != 'Sin Excel'"/>
+                        </group>
+                    </group>
+
+                    <!-- =================================================
+                         DETALLE DEL PACKING LIST
+                         ================================================= -->
+                    <group string="DETALLE DEL PACKING LIST">
+
+                        <!-- Ingreso de productos — detalle mínimo para validación visual final.
+                             Muestra la versión editada (líneas vivas del origen) y la
+                             cantidad real que viajará a stock (vol_purchase_m3). -->
+                        <field name="product_packing_line_ids" invisible="ingestion_type != 'product'">
+                            <list default_order="id asc" create="false" edit="false" delete="false">
+                                <field name="lot_name" string="Etiqueta / Lote"/>
+                                <field name="product_id" string="Producto"/>
+                                <field name="subproduct_id" string="Grado"/>
+                                <field name="thickness_nominal" string="Esp. Nom (mm)"/>
+                                <field name="width_nominal" string="Ancho Nom (mm)"/>
+                                <field name="length" string="Largo (m)"/>
+                                <field name="pieces" string="Piezas"/>
+                                <field name="vol_purchase_m3" string="Vol. Stock (m³)" sum="Total Stock"/>
+                            </list>
+                        </field>
+
+                        <!-- Ingreso de productos procesados -->
+                        <field name="processed_packing_line_ids" invisible="ingestion_type != 'processed'">
+                            <list default_order="id asc" create="false" edit="false" delete="false">
+                                <field name="lot_name" string="Etiqueta / Lote"/>
+                                <field name="product_name_original" string="Producto"/>
+                                <field name="espesor_mm" string="Espesor (mm)"/>
+                                <field name="ancho_mm" string="Ancho (mm)"/>
+                                <field name="largo_m" string="Largo (m)"/>
+                                <field name="pieces" string="Piezas"/>
+                                <field name="vol_shipment_m3" string="Vol. (m³)"/>
+                            </list>
+                        </field>
+
+                        <!-- Totales del packing -->
+                        <group>
+                            <group>
+                                <field name="packing_volume_total" string="Volumen total" readonly="1"/>
+                                <field name="total_packages" string="Total paquetes" readonly="1"/>
+                            </group>
+                            <group/>
+                        </group>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         BÚSQUEDA Y AGRUPACIÓN
+         ========================================================= -->
+    <record id="view_madenat_lumber_intake_console_search" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.console.search</field>
+        <field name="model">madenat.lumber.intake.console</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Ingresos">
+                <field name="guide_name" string="Guía"/>
+                <field name="partner_id" string="Proveedor"/>
+
+                <!-- Búsqueda textual/documental de OC -->
+                <field name="purchase_reference" string="OC"/>
+
+                <!-- Búsqueda relacional de OC -->
+                <field name="purchase_id" string="Orden de Compra"/>
+
+                <field name="display_reference" string="Referencia"/>
+
+                <filter name="type_product" string="Producto" domain="[('ingestion_type', '=', 'product')]"/>
+                <filter name="type_processed" string="Procesado" domain="[('ingestion_type', '=', 'processed')]"/>
+                <separator/>
+
+                <filter name="filter_state_draft" string="Borrador" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_state_verified" string="Verificado" domain="[('state', '=', 'verified')]"/>
+                <filter name="filter_state_done" string="Recibido" domain="[('state', '=', 'done')]"/>
+                <filter name="filter_state_validated" string="Validado" domain="[('state', '=', 'validated')]"/>
+                <filter name="filter_state_cancelled" string="Cancelado" domain="[('state', '=', 'cancel')]"/>
+                <separator/>
+
+                <filter name="filter_open" string="Abiertos" domain="[('state', 'in', ('draft', 'processing', 'verified', 'pending_link'))]"/>
+                <filter name="filter_done" string="Finalizados" domain="[('state', 'in', ('done', 'validated'))]"/>
+                <separator/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_purchase" string="OC" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_partner" string="Proveedor" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_date" string="Fecha" context="{'group_by': 'guide_date:day'}"/>
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'ingestion_type'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         ACCIÓN PRINCIPAL
+         ========================================================= -->
+    <record id="action_madenat_lumber_intake_console" model="ir.actions.act_window">
+        <field name="name">Ingreso Global</field>
+        <field name="res_model">madenat.lumber.intake.console</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_madenat_lumber_intake_console_list"/>
+        <field name="search_view_id" ref="view_madenat_lumber_intake_console_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Consola Global de Ingresos MADENAT</p>
+            <p>Revise el resumen del ingreso y decida entre "Enviar a Stock" o "Modificar origen".</p>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         ACCIÓN: NUEVO INGRESO
+         ========================================================= -->
+    <record id="action_madenat_lumber_intake_new" model="ir.actions.act_window">
+        <field name="name">Nuevo Ingreso</field>
+        <field name="res_model">madenat.lumber.intake.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_madenat_lumber_intake_console"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+</odoo>

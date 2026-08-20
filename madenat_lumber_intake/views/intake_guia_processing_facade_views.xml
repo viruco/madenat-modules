@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         FACHADA PROCESADOS — madenat.guia.processing
+         Vista ligera de corrección (AD-55). Reduce el ruido del form
+         pesado del core. Foco: contexto comercial breve + detalle de
+         proceso/trazabilidad. Toda escritura sigue en el core.
+         Seleccionada explícitamente desde action_open_source (Intake).
+         NO reemplaza la vista estándar del core (fallback intacto).
+         ============================================================ -->
+    <record id="view_madenat_guia_processing_intake_facade_form" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.intake.facade.form</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="arch" type="xml">
+            <form string="Modificar origen — Procesados">
+
+                <header>
+                    <field name="state" widget="badge"
+                           decoration-info="state == 'draft'"
+                           decoration-warning="state in ('verified', 'processed')"
+                           decoration-success="state == 'validated'"
+                           decoration-muted="state == 'cancelled'"/>
+
+                    <!-- Contexto visual de OC: match resumido en el header -->
+                    <field name="oc_match_status" string="Match OC" nolabel="1"
+                           class="text-muted fw-bold"
+                           invisible="oc_match_status in ('not_found', False)"/>
+
+                    <!-- Fachada de edición/corrección (patrón Producto):
+                         - action_verify_data: validar los datos modificados.
+                         - action_back_to_intake_console: volver a Ingreso Global.
+                         El envío a stock se centraliza en la consola
+                         (action_send_to_stock), NO en esta fachada.
+                         Cancelar/reabrir pertenecen al flujo general de la
+                         consola, no a esta pantalla. -->
+                    <button name="action_verify_data"
+                            type="object"
+                            string="Verificar Datos"
+                            class="btn-primary"
+                            invisible="state not in ('draft', 'verified', 'processed')"/>
+                    <button name="action_back_to_intake_console"
+                            type="object"
+                            string="Volver a Ingreso Global"
+                            class="btn-secondary"
+                            icon="fa-arrow-left"/>
+
+                    <!-- Advertencia persistente y NO bloqueante de OC pendiente -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not oc_reference_raw or order_id or oc_match_status in ('single_match', 'manual', 'created')">
+                        <i class="fa fa-exclamation-triangle"/>
+                        OC documental sin vínculo real. AD-54 — la ingesta continúa;
+                        la exigencia final de OC resuelta pertenece a Costeo/Valorización.
+                    </div>
+                </header>
+
+                <sheet>
+                    <notebook>
+
+                        <!-- ================= GUÍA Y COMERCIAL ================= -->
+                        <page string="Guía y comercial" name="guides_commercial">
+
+                            <group>
+                                <group>
+                                    <field name="name" string="Número de Guía"/>
+                                    <field name="date_emission" string="Fecha de Emisión"/>
+                                    <field name="tipo_recepcion" string="Tipo de Recepción"/>
+                                    <field name="partner_id" string="Proveedor / Transportista"/>
+                                </group>
+                                <group>
+                                    <field name="oc_reference_raw" string="Referencia OC del documento"/>
+                                    <field name="order_id" string="Orden de compra vinculada"/>
+                                    <field name="oc_match_status" string="Estado de vinculación OC"/>
+                                    <field name="oc_match_note" string="Observación de vinculación"/>
+                                </group>
+                            </group>
+
+                            <!-- Totales mínimos operativos -->
+                            <group>
+                                <group>
+                                    <field name="total_paquetes" string="Total Paquetes"/>
+                                    <field name="total_lotes_unicos" string="Total Lotes"/>
+                                </group>
+                                <group>
+                                    <field name="vol_comercial" string="Vol. Comercial (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Embarque (m³)"/>
+                                </group>
+                            </group>
+
+                        </page>
+
+                        <!-- ================= PROCESO / SERVICIO ================= -->
+                        <page string="Proceso" name="process_info">
+
+                            <group>
+                                <group>
+                                    <field name="rate_usd" string="Tipo de Cambio USD"/>
+                                    <field name="rate_date" string="Fecha Tipo Cambio"/>
+                                    <field name="additional_cost" string="Costo Adicional"/>
+                                </group>
+                                <group>
+                                    <field name="service_product_name" string="Descripción del Servicio"/>
+                                    <field name="service_volume_m3" string="Volumen del Servicio (m³)"/>
+                                    <field name="service_unit_price_clp" string="Precio Unitario (CLP/m³)"/>
+                                    <field name="service_date" string="Fecha del Servicio"/>
+                                    <field name="service_code" string="Código del Servicio"/>
+                                </group>
+                            </group>
+
+                        </page>
+
+                        <!-- ================= PACKING (LÍNEAS) ================= -->
+                        <page string="Packing" name="detail_lines">
+
+                            <!-- Fijar nominal masivo: reutiliza la acción window del
+                                 core igual que Producto (mismo patrón, sin tocarlo). -->
+                            <div class="mb-2">
+                                <button name="%(madenat_lumber_core.action_madenat_guia_mass_update)d"
+                                        type="action"
+                                        string="⚡ Fijar Nominal Masivo"
+                                        class="btn-secondary"
+                                        icon="fa-ruler-combined"
+                                        context="{'active_id': id, 'active_ids': [id], 'active_model': 'madenat.guia.processing'}"/>
+                            </div>
+
+                            <field name="processing_line_ids">
+                                <list create="false" edit="true" delete="false">
+                                    <field name="lot_name" string="Etiqueta / Lote"/>
+                                    <field name="sku_original" string="SKU Original"/>
+                                    <field name="product_name_original" string="Producto"/>
+                                    <field name="pieces" string="Piezas"/>
+                                    <field name="espesor_nominal_mm" string="Esp. Nom (mm)"/>
+                                    <field name="ancho_nominal_mm" string="Ancho Nom (mm)"/>
+                                    <field name="largo_nominal_m" string="Largo Nom (m)"/>
+                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Embarque (m³)"/>
+                                </list>
+                            </field>
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

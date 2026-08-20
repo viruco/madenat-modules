@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_madenat_lumber_intake_supplier_link_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.supplier.link.form</field>
+        <field name="model">madenat.lumber.intake.supplier.link</field>
+        <field name="arch" type="xml">
+            <form string="Validar / corregir proveedor">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Solo se selecciona un proveedor existente. No se crea un
+                        partner nuevo desde aquí; si el proveedor no existe,
+                        reprocese el documento en Borrador para que el flujo
+                        canónico lo registre según el RUT de la Guía.
+                    </div>
+                    <group>
+                        <field name="reception_id" readonly="1" string="Recepción"/>
+                        <field name="supplier_id" string="Proveedor"
+                               options="{'no_create': True, 'no_open': False}"
+                               required="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_link"
+                            type="object"
+                            string="Guardar proveedor"
+                            class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_lumber_intake_supplier_link" model="ir.actions.act_window">
+        <field name="name">Validar / corregir proveedor</field>
+        <field name="res_model">madenat.lumber.intake.supplier.link</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

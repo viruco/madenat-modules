@@ -1,0 +1,399 @@
+# -*- coding: utf-8 -*-
+import base64
+
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError, ValidationError
+
+
+class MadenatLumberIntakeWizard(models.Model):
+    _name = 'madenat.lumber.intake.wizard'
+    _description = 'Ingreso Global — Fachada de ingreso operacional'
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Documentos (Excel obligatorio, PDF opcional)
+    # ─────────────────────────────────────────────────────────────────────
+    excel_file = fields.Binary(string='Packing list Excel', required=True)
+    excel_filename = fields.Char(string='Nombre del Excel')
+
+    pdf_file = fields.Binary(string='Guía o documento PDF')
+    pdf_filename = fields.Char(string='Nombre del PDF')
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Destino
+    # ─────────────────────────────────────────────────────────────────────
+    tipo_ingreso = fields.Selection(
+        [
+            ('producto', 'Madera bruta / compra'),
+            ('procesado', 'Madera procesada / servicio'),
+        ],
+        string='Tipo de ingreso',
+        default='producto',
+        required=True,
+    )
+
+    ingestion_profile = fields.Selection(
+        [
+            ('f1550', 'F1550'),
+            ('f5085', 'F5085'),
+            ('metric', 'Métrico'),
+        ],
+        string='Perfil de lectura',
+        default='metric',
+        help='Se utiliza únicamente para la vista previa de producto.',
+    )
+
+    # Patio de asignación para la rama Procesado (required en la Guía).
+    # Decisión funcional 2026-08-16: se expone como selector editable para
+    # no inventar una ubicación por defecto.
+    assignment_location_id = fields.Many2one(
+        'stock.location',
+        string='Patio de Asignación (Procesado)',
+        domain=[('usage', '=', 'internal')],
+        help='Solo requerido al derivar a Procesado; se traslada a '
+             'madenat.guia.processing.assignment_location_id.',
+    )
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Estado del wizard (persistente para evidencia e idempotencia)
+    # ─────────────────────────────────────────────────────────────────────
+    state = fields.Selection(
+        [
+            ('draft', 'Borrador'),
+            ('previewed', 'Leído'),
+            ('routed', 'Derivado'),
+            ('error', 'Error'),
+        ],
+        default='draft',
+        required=True,
+        readonly=True,
+    )
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Preview (solo Producto) — resumen informativo, no segunda representación
+    # ─────────────────────────────────────────────────────────────────────
+    preview_data = fields.Text(string='Resumen de lectura', readonly=True)
+    preview_line_count = fields.Integer(string='Líneas detectadas', readonly=True)
+    preview_total_volume_m3 = fields.Float(
+        string='Volumen fuente M3', readonly=True, digits=(16, 6)
+    )
+    preview_guide_no = fields.Char(string='Guía detectada', readonly=True)
+    preview_warnings = fields.Text(string='Advertencias de lectura', readonly=True)
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Destino derivado (idempotencia)
+    # ─────────────────────────────────────────────────────────────────────
+    target_model = fields.Char(readonly=True)
+    target_res_id = fields.Integer(readonly=True)
+    target_reference = fields.Char(readonly=True)
+
+    error_message = fields.Text(readonly=True)
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Detección asistida de destino (no determinista)
+    # ─────────────────────────────────────────────────────────────────────
+    @api.onchange('excel_filename', 'pdf_filename')
+    def _onchange_suggest_tipo_ingreso(self):
+        """Sugiere Procesado solo ante keywords conocidas del workflow core.
+
+        Reutiliza las mismas palabras normalizadas que reception_workflow
+        ('cepillado','servicio','proceso','maquila'), sin copiar su código.
+        Nunca fuerza Producto: si no hay match, conserva el valor actual.
+        """
+        for rec in self:
+            nombres = ' '.join([
+                rec.excel_filename or '',
+                rec.pdf_filename or '',
+            ]).casefold()
+
+            palabras_proceso = ['cepillado', 'servicio', 'proceso', 'maquila']
+            if any(p in nombres for p in palabras_proceso):
+                rec.tipo_ingreso = 'procesado'
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Lectura y preview — solo Producto
+    # ─────────────────────────────────────────────────────────────────────
+    def action_preview_document(self):
+        self.ensure_one()
+
+        if not self.excel_file:
+            raise UserError(_('Archivo Excel requerido.'))
+
+        if self.tipo_ingreso == 'procesado':
+            self.write({
+                'preview_data': False,
+                'preview_line_count': 0,
+                'preview_total_volume_m3': 0.0,
+                'preview_guide_no': False,
+                'preview_warnings': False,
+                'error_message': False,
+            })
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ingreso Procesado',
+                    'message': (
+                        'El documento será interpretado por el flujo nativo '
+                        'de Procesados al derivarlo; no se usa prelectura de '
+                        'Producto para preservar agrupaciones por lote y paquetes.'
+                    ),
+                    'type': 'info',
+                    'sticky': True,
+                },
+            }
+
+        try:
+            excel_bytes = base64.b64decode(self.excel_file)
+            parsed = self.env['madenat.reception.parser'].parse_excel(
+                excel_bytes,
+                self.ingestion_profile,
+            )
+        except (UserError, ValidationError) as e:
+            self.write({
+                'state': 'error',
+                'error_message': str(e),
+            })
+            raise UserError(_('Error al leer el documento de Producto:\n%s') % e)
+
+        lines = parsed.get('lines') or []
+
+        preview_lines = []
+        for line in lines[:5]:
+            preview_lines.append(
+                '%s | paquete %s | %s pzs | %s m³' % (
+                    line.get('product_code') or '',
+                    line.get('package_no') or '',
+                    line.get('pieces') or 0,
+                    line.get('volume_m3') or 0,
+                )
+            )
+
+        warnings_text = self._serialize_parser_feedback(parsed)
+
+        self.write({
+            'state': 'previewed',
+            'preview_data': '\n'.join(preview_lines),
+            'preview_line_count': len(lines),
+            'preview_total_volume_m3': parsed.get('total_volume_m3') or 0.0,
+            'preview_guide_no': parsed.get('guide_no') or False,
+            'preview_warnings': warnings_text,
+            'error_message': False,
+        })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Documento leído',
+                'message': '%s líneas detectadas.' % len(lines),
+                'type': 'success',
+            },
+        }
+
+    @api.model
+    def _serialize_parser_feedback(self, parsed, max_chars=4000):
+        """Serializa avisos/logs del parser de forma legible y acotada."""
+        parts = []
+        warnings = parsed.get('warnings') or []
+        logs = parsed.get('logs') or []
+        if warnings:
+            parts.extend(str(w) for w in warnings)
+        if logs:
+            parts.extend(str(l) for l in logs)
+        text = '\n'.join(parts).strip()
+        if text and len(text) > max_chars:
+            text = text[:max_chars] + '…'
+        return text or False
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Derivación idempotente y segura
+    # ─────────────────────────────────────────────────────────────────────
+    def action_route_document(self):
+        self.ensure_one()
+
+        # Idempotencia: tiene prioridad sobre las guardas de estado. Un wizard
+        # ya derivado (state='routed') debe redirigir al destino, no re-validar.
+        existing = self._existing_target()
+        if existing is not None:
+            return self._open_target_action(existing)
+
+        self._guard_route_document()
+
+        if self.tipo_ingreso == 'producto':
+            return self._route_producto()
+        return self._route_procesado()
+
+    def _guard_route_document(self):
+        self.ensure_one()
+
+        if not self.excel_file:
+            raise UserError(_('Archivo Excel requerido.'))
+
+        if self.tipo_ingreso == 'producto':
+            if self.state != 'previewed':
+                raise UserError(
+                    _('Debe leer el documento (preview) antes de derivar '
+                      'a Producto.')
+                )
+            if not self.pdf_file:
+                raise UserError(
+                    _('El PDF de Guía es obligatorio para la Recepción de '
+                      'Producto (contrato nativo lumber.reception).')
+                )
+        else:
+            if self.state not in ('draft', 'previewed'):
+                raise UserError(
+                    _('El ingreso Procesado no está en un estado derivable.')
+                )
+            if not self.assignment_location_id:
+                raise UserError(
+                    _('Seleccione el Patio de Asignación para derivar a '
+                      'Procesado.')
+                )
+
+    def _existing_target(self):
+        self.ensure_one()
+        if not self.target_model or not self.target_res_id:
+            return None
+        try:
+            record = self.env[self.target_model].browse(self.target_res_id)
+        except KeyError:
+            return None
+        return record if record.exists() else None
+
+    # ── Rama Producto ────────────────────────────────────────────────────
+    def _route_producto(self):
+        self.ensure_one()
+
+        try:
+            with self.env.cr.savepoint():
+                reception = self.env['lumber.reception'].create({
+                    'pdf_file': self.pdf_file,
+                    'pdf_filename': self.pdf_filename,
+                    'excel_file': self.excel_file,
+                    'excel_filename': self.excel_filename,
+                    'ingestion_profile': self.ingestion_profile,
+                })
+                # Método público canónico: Gate0/Gate1 nativos de Recepción.
+                reception.action_process_documents()
+
+                self._persist_target(reception)
+                self._log_intake_origin(reception)
+
+            return self._open_target_action(reception)
+        except (UserError, ValidationError) as e:
+            self.write({
+                'state': 'error',
+                'error_message': str(e),
+            })
+            # Forzar flush: el estado de error debe quedar visible aunque la
+            # excepción se re-lance y evite el flush implícito del RPC.
+            self.flush_recordset(['state', 'error_message'])
+            raise
+
+    # ── Rama Procesado ────────────────────────────────────────────────────
+    def _route_procesado(self):
+        self.ensure_one()
+
+        try:
+            with self.env.cr.savepoint():
+                vals = {
+                    'excel_file': self.excel_file,
+                    'excel_filename': self.excel_filename,
+                    'tipo_recepcion': 'service',
+                    'assignment_location_id': self.assignment_location_id.id,
+                }
+                if self.pdf_file:
+                    vals['guide_pdf_file'] = self.pdf_file
+                    vals['guide_pdf_filename'] = self.pdf_filename
+
+                guia = self.env['madenat.guia.processing'].create(vals)
+                # Parser nativo de Guía Processing (forward-fill N° LOTE).
+                guia.action_verify_data()
+
+                self._persist_target(guia)
+                self._log_intake_origin(guia)
+
+            return self._open_target_action(guia)
+        except (UserError, ValidationError) as e:
+            self.write({
+                'state': 'error',
+                'error_message': str(e),
+            })
+            self.flush_recordset(['state', 'error_message'])
+            raise
+
+    # ── Persistencia de destino ──────────────────────────────────────────
+    def _persist_target(self, destination):
+        self.ensure_one()
+        self.write({
+            'target_model': destination._name,
+            'target_res_id': destination.id,
+            'target_reference': destination.display_name,
+            'state': 'routed',
+            'error_message': False,
+        })
+
+    def _open_target_action(self, destination):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': destination._name,
+            'res_id': destination.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_open_intake_target(self):
+        """Botón de cabecera: abre el registro destino ya derivado."""
+        self.ensure_one()
+        existing = self._existing_target()
+        if existing is None:
+            raise UserError(_('No hay un registro creado que abrir.'))
+        return self._open_target_action(existing)
+
+    # ── Evento de auditoría de origen intake (sin modificar core) ─────────
+    def _log_intake_origin(self, destination):
+        """Registra exactamente un evento de trazabilidad de punto de entrada.
+
+        Reutiliza el contrato existente de madenat.audit.log sin agregar
+        action_type ni campos nuevos (Decisión 2026-08-16):
+          - action_type='creation' (semántica existente compatible);
+          - description embute tipo/modelo/id/referencia/archivos;
+          - batch_id enlaza al registro de wizard para trazabilidad.
+        No se guardan binarios, volúmenes recalculados ni firmas.
+        """
+        self.ensure_one()
+
+        link = {}
+        if destination._name == 'lumber.reception':
+            link['reception_id'] = destination.id
+        elif destination._name == 'madenat.guia.processing':
+            link['guia_processing_id'] = destination.id
+
+        guide_no = (self.preview_guide_no or '').strip() or '(sin guía detectada)'
+
+        description = (
+            'Registro creado desde Ingreso Global (madenat_lumber_intake).\n'
+            'Tipo de ingreso: %s\n'
+            'Destino: %s #%s (%s)\n'
+            'Excel: %s\n'
+            'PDF: %s\n'
+            'Guía detectada: %s'
+            % (
+                self.tipo_ingreso,
+                destination._name,
+                destination.id,
+                destination.display_name or '',
+                self.excel_filename or '(sin nombre)',
+                self.pdf_filename or '(sin PDF)',
+                guide_no,
+            )
+        )
+
+        self.env['madenat.audit.log'].sudo().create(dict(link, **{
+            'action_type': 'creation',
+            'description': description,
+            'batch_id': 'intake:%s' % self.id,
+            'user_id': self.env.user.id,
+        }))

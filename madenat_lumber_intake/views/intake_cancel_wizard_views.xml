@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_madenat_lumber_intake_cancel_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.cancel.form</field>
+        <field name="model">madenat.lumber.intake.cancel</field>
+        <field name="arch" type="xml">
+            <form string="Motivo de cancelación">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Cancelación preliminar de Producto.</strong>
+                        El ingreso quedará en estado "Cancelado" (evidencia preservada).
+                        No se modifica stock, lotes, picking ni volúmenes.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="reception_id" readonly="1" string="Recepción"/>
+                            <field name="reason" string="Motivo de cancelación" required="1"
+                                   placeholder="Indique por qué se cancela este ingreso preliminar."/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_cancel"
+                            type="object"
+                            string="Cancelar ingreso"
+                            class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_lumber_intake_cancel" model="ir.actions.act_window">
+        <field name="name">Motivo de cancelación</field>
+        <field name="res_model">madenat.lumber.intake.cancel</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

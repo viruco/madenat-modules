@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_madenat_lumber_intake_po_link_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.po.link.form</field>
+        <field name="model">madenat.lumber.intake.po.link</field>
+        <field name="arch" type="xml">
+            <form string="Resolver Orden de Compra">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Resolución manual de OC (Producto).</strong>
+                        Se vincula una Orden de Compra existente. No se crea una
+                        OC nueva, no se modifica la referencia documental original
+                        ni el stock/volúmenes.
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fa fa-info-circle" title="Información"/>
+                        <strong>Solo se pueden vincular Órdenes de Compra del
+                        proveedor indicado arriba.</strong>
+                        Si usa “Buscar más”, el listado general de Compras puede
+                        mostrar OCs de otros proveedores, pero estas no son
+                        válidas para este ingreso y el sistema las rechazará.
+                    </div>
+                    <group>
+                        <group string="Contexto del documento">
+                            <field name="reception_id" readonly="1" string="Recepción"/>
+                            <field name="supplier_id" readonly="1" string="Proveedor"/>
+                            <field name="oc_reference_raw" readonly="1"
+                                   string="Referencia OC del documento"/>
+                            <field name="manual_po_name" readonly="1"
+                                   string="Referencia manual"
+                                   invisible="not manual_po_name"/>
+                        </group>
+                        <group string="Vínculo">
+                            <field name="purchase_id" string="Orden de compra asociada"
+                                   domain="[('partner_id', '=', supplier_id), ('state', 'in', ['draft', 'sent', 'purchase', 'done'])]"
+                                              context="{'search_default_partner_id': supplier_id}"
+                                   options="{'no_create': True}"
+                                   required="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_link"
+                            type="object"
+                            string="Vincular OC"
+                            class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_lumber_intake_po_link" model="ir.actions.act_window">
+        <field name="name">Resolver Orden de Compra</field>
+        <field name="res_model">madenat.lumber.intake.po.link</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
