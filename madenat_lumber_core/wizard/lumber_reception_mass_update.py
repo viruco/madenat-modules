@@ -226,6 +226,8 @@ class LumberReceptionMassUpdate(models.TransientModel):
 
         for wizard in self:
             perfil = wizard.ingestion_profile
+            cfg = profiles_cfg.get(perfil, {})
+            forbidden_in_lock = cfg.get('forbidden_in_lock', [])
 
             # ── PRIORIDAD 1: Filtro estructural por fórmula ──────────────
             formula = Formula.search([
@@ -241,12 +243,9 @@ class LumberReceptionMassUpdate(models.TransientModel):
                     ('allowed_formula_ids', 'in', [formula.id]),
                     ('allowed_formula_ids', '=', False),
                 ]
-                wizard.allowed_subproduct_ids = self.env['madenat.subproducto'].search(
-                    domain_structural
-                )
+                subproductos = self.env['madenat.subproducto'].search(domain_structural)
             else:
                 # ── PRIORIDAD 2: Fallback textual legacy ─────────────────
-                cfg = profiles_cfg.get(perfil, {})
                 allowed = cfg.get('allowed_keywords', [])
                 forbidden = cfg.get('forbidden_keywords', [])
                 domain = [('allowed_formula_ids', '=', False)]
@@ -257,7 +256,20 @@ class LumberReceptionMassUpdate(models.TransientModel):
                         domain.append('|' * (len(allowed) - 1))
                     for kw in allowed:
                         domain.append(('name', 'ilike', kw))
-                wizard.allowed_subproduct_ids = self.env['madenat.subproducto'].search(domain)
+                subproductos = self.env['madenat.subproducto'].search(domain)
+
+            # FIX 2026-08-29: alinear el selector con el candado comercial de
+            # action_apply(). `forbidden_in_lock` son keywords que el lock
+            # rechaza de forma dura; antes el selector podía mostrarlas (por el
+            # filtro estructural por fórmula) y luego action_apply() fallaba,
+            # dejando el Subproducto/Grado sin guardar en las líneas.
+            if forbidden_in_lock and subproductos:
+                for kw in forbidden_in_lock:
+                    kw_upper = kw.upper()
+                    subproductos = subproductos.filtered(
+                        lambda s, kw_upper=kw_upper: kw_upper not in (s.name or '').upper()
+                    )
+            wizard.allowed_subproduct_ids = subproductos
 
     # =========================================================================
     # CAMPOS — CLASIFICACIÓN Y ALCANCE

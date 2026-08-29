@@ -25,6 +25,13 @@ class MadenatGuiaMassUpdate(models.TransientModel):
         help="Clasificación comercial (Ej: Rough, s2s)"
     )
 
+    # Subproductos visibles en el selector (alineado con el candado comercial).
+    allowed_subproducto_ids = fields.Many2many(
+        'madenat.subproducto',
+        compute='_compute_allowed_subproductos',
+        string="Subproductos Permitidos",
+    )
+
     # === PRODUCTO (OPCIONAL) ===
     product_id = fields.Many2one(
         'product.product',
@@ -54,6 +61,37 @@ class MadenatGuiaMassUpdate(models.TransientModel):
                 },
             }
         }
+
+    def _get_guide_profile(self):
+        """Devuelve el perfil de ingesta de la guía origen (desde el contexto)."""
+        guia_id = self.env.context.get('active_id')
+        if not guia_id:
+            return False
+        guia = self.env['madenat.guia.processing'].browse(guia_id)
+        return guia.ingestion_profile if guia.exists() else False
+
+    @api.depends_context('active_id')
+    def _compute_allowed_subproductos(self):
+        """Subproductos visibles excluyendo `forbidden_in_lock`.
+
+        Espejo del fix de `lumber.reception.mass.update`: el selector no debe
+        ofrecer subproductos que el candado comercial de `action_apply()`
+        rechazará después. Reutiliza `_get_profile_subproduct_filters` para no
+        duplicar la configuración de keywords.
+        """
+        for wizard in self:
+            perfil = wizard._get_guide_profile()
+            cfg = self._get_profile_subproduct_filters().get('profiles', {}).get(perfil, {})
+            forbidden_in_lock = cfg.get('forbidden_in_lock', [])
+
+            subproductos = self.env['madenat.subproducto'].search([])
+            if forbidden_in_lock and subproductos:
+                for kw in forbidden_in_lock:
+                    kw_upper = kw.upper()
+                    subproductos = subproductos.filtered(
+                        lambda s, kw_upper=kw_upper: kw_upper not in (s.name or '').upper()
+                    )
+            wizard.allowed_subproducto_ids = subproductos
 
     def action_apply(self):
         self.ensure_one()

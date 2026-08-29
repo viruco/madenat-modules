@@ -19,9 +19,11 @@
                                    class="oe_inline"/>
                         </group>
                         <group>
+                            <field name="allowed_subproducto_ids" invisible="1"/>
                             <field name="subproducto_id"
                                    placeholder="Opcional"
-                                   options="{'no_open': True}"/>
+                                   options="{'no_open': True}"
+                                   domain="[('id', 'in', allowed_subproducto_ids)]"/>
                         </group>
                         <group>
                             <field name="product_id"
