@@ -8,7 +8,7 @@
         <field name="name">madenat.lumber.intake.console.list</field>
         <field name="model">madenat.lumber.intake.console</field>
         <field name="arch" type="xml">
-            <list string="Ingreso Global"
+            <list string="Ingreso de Madera"
                   default_order="guide_date desc, id desc"
                   decoration-muted="review_state in ('cancel', 'error')"
                   decoration-info="review_state == 'needs_review'"
@@ -51,7 +51,7 @@
         <field name="name">madenat.lumber.intake.console.form</field>
         <field name="model">madenat.lumber.intake.console</field>
         <field name="arch" type="xml">
-            <form string="Ingreso Global — Revisión" create="false" edit="false">
+            <form string="Ingreso de Madera — Revisión" create="true" duplicate="false" edit="true">
 
                 <!-- =================================================
                      ENCABEZADO OPERATIVO
@@ -76,13 +76,13 @@
                             string="Descargar Guía"
                             class="btn-secondary"
                             icon="fa-download"
-                            invisible="ingestion_type != 'product' or not review_guide_document or review_guide_document == 'Sin PDF'"/>
+                            invisible="not review_guide_document or review_guide_document == 'Sin PDF'"/>
                     <button name="action_download_packing_excel"
                             type="object"
                             string="Descargar Excel"
                             class="btn-secondary"
                             icon="fa-download"
-                            invisible="ingestion_type != 'product' or not review_excel_document or review_excel_document == 'Sin Excel'"/>
+                            invisible="not review_excel_document or review_excel_document == 'Sin Excel'"/>
 
                     <!-- Cancelación controlada con motivo obligatorio (solo Producto, antes de stock) -->
                     <button name="action_cancel_intake"
@@ -142,6 +142,20 @@
                          ================================================= -->
                     <group>
                         <group string="Resumen del ingreso">
+                            <!-- 2026-08-29: combos de cabecera (editables, no
+                                 persistidos). Al guardar / click en "Aplicar" se
+                                 aplican vía el wizard existente del core. -->
+                            <field name="product_id" string="Producto"
+                                   options="{'no_create': True, 'no_quick_create': True}"
+                                   context="{'display_default_code': False}"/>
+                            <field name="subproduct_id" string="Subproducto"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <button name="action_apply_product_subproduct"
+                                    type="object"
+                                    string="Aplicar"
+                                    class="btn-primary"
+                                    icon="fa-check"
+                                    invisible="not product_id or not subproduct_id or review_state in ('sent', 'cancel', 'error')"/>
                             <field name="guide_date" string="Fecha de guía"/>
                             <field name="partner_id" string="Proveedor"/>
 
@@ -183,8 +197,9 @@
                         <field name="product_packing_line_ids" invisible="ingestion_type != 'product'">
                             <list default_order="id asc" create="false" edit="false" delete="false">
                                 <field name="lot_name" string="Etiqueta / Lote"/>
-                                <field name="product_id" string="Producto"/>
-                                <field name="subproduct_id" string="Grado"/>
+                                <field name="product_id" string="Producto"
+                                       context="{'display_default_code': False}"/>
+                                <field name="subproduct_id" string="Sub-producto"/>
                                 <field name="thickness_nominal" string="Esp. Nom (mm)"/>
                                 <field name="width_nominal" string="Ancho Nom (mm)"/>
                                 <field name="length" string="Largo (m)"/>
@@ -198,6 +213,7 @@
                             <list default_order="id asc" create="false" edit="false" delete="false">
                                 <field name="lot_name" string="Etiqueta / Lote"/>
                                 <field name="product_name_original" string="Producto"/>
+                                <field name="subproducto_id" string="Sub-producto"/>
                                 <field name="espesor_mm" string="Espesor (mm)"/>
                                 <field name="ancho_mm" string="Ancho (mm)"/>
                                 <field name="largo_m" string="Largo (m)"/>
@@ -270,7 +286,7 @@
          ACCIÓN PRINCIPAL
          ========================================================= -->
     <record id="action_madenat_lumber_intake_console" model="ir.actions.act_window">
-        <field name="name">Ingreso Global</field>
+        <field name="name">Ingreso de Madera</field>
         <field name="res_model">madenat.lumber.intake.console</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_madenat_lumber_intake_console_list"/>

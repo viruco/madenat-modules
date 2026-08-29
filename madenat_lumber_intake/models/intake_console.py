@@ -9,7 +9,7 @@ fuentes operacionales reales sin duplicar datos de negocio:
   - madenat.guia.processing -> guías Procesadas / Servicios  (ingestion_type='processed')
 
 Propósito:
-  Materializar la "puerta única" de Ingreso Global como cabina de validación
+  Materializar la "puerta única" de Ingreso de Madera como cabina de validación
   previa a stock: el operador sube documentos, revisa un resumen confiable y
   decide entre "Enviar a Stock" o "Modificar origen" para corregir.
 
@@ -23,15 +23,17 @@ Diseño:
 
 Unicidad de `id`:
   - Producto:      id = lumber_reception.id (positivo).
-  - Procesado:     id = 900_000_000 + madenat_guia_processing.id (offset fijo).
+  - Procesado:     id = CONSOLE_ID_OFFSET + madenat_guia_processing.id (offset fijo).
 """
 from odoo import api, fields, models, tools, _
 from odoo.exceptions import UserError
 
+from .intake_constants import CONSOLE_ID_OFFSET
+
 
 class MadenatLumberIntakeConsole(models.Model):
     _name = 'madenat.lumber.intake.console'
-    _description = 'Consola Global de Ingresos (readonly)'
+    _description = 'Consola de Ingreso de Madera (readonly)'
     _auto = False
     _rec_name = 'guide_name'
     _order = 'guide_date desc, id desc'
@@ -149,12 +151,35 @@ class MadenatLumberIntakeConsole(models.Model):
         readonly=True, digits=(16, 3),
     )
 
+    # ------------------------------------------------------------------
+    # Cabecera editable no almacenada (2026-08-29)
+    # "Ingreso Global" pasa a llamarse "Ingreso de Madera". Estos campos son
+    # editables y NO persistidos (store=False): muestran el Producto/Subproducto
+    # vigente y retienen la selección temporal del operador. Al guardar (clic en
+    # "Aplicar"), el inverse delega en el wizard existente del core; nunca se
+    # escribe directamente sobre las líneas.
+    # ------------------------------------------------------------------
+    product_id = fields.Many2one(
+        'product.product',
+        string='Producto',
+        compute='_compute_header_product_id',
+        inverse='_inverse_header_product_subproduct',
+        store=False,
+    )
+    subproduct_id = fields.Many2one(
+        'madenat.subproducto',
+        string='Subproducto',
+        compute='_compute_header_subproduct_id',
+        inverse='_inverse_header_product_subproduct',
+        store=False,
+    )
+
     def init(self):
         """Crea (o reemplaza) la vista SQL consolidada de solo lectura."""
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute(
-            """
-            CREATE OR REPLACE VIEW %s AS
+            f"""
+            CREATE OR REPLACE VIEW {self._table} AS
             SELECT
                 lr.id::integer AS id,
                 'lumber.reception'::text AS source_model,
@@ -172,7 +197,7 @@ class MadenatLumberIntakeConsole(models.Model):
             UNION ALL
 
             SELECT
-                (900000000 + gp.id)::integer AS id,
+                ({CONSOLE_ID_OFFSET} + gp.id)::integer AS id,
                 'madenat.guia.processing'::text AS source_model,
                 gp.id::integer AS source_res_id,
                 'processed'::text AS ingestion_type,
@@ -180,12 +205,12 @@ class MadenatLumberIntakeConsole(models.Model):
                 gp.date_emission AS guide_date,
                 gp.partner_id AS partner_id,
                 gp.order_id AS purchase_id,
-                COALESCE(po.name, '') AS purchase_reference,
+                COALESCE(po.name, gp.oc_reference_raw, '') AS purchase_reference,
                 (CASE WHEN gp.state = 'cancelled' THEN 'cancel' ELSE gp.state END) AS state,
                 ('Procesada ' || COALESCE(gp.name, '')) AS display_reference
             FROM madenat_guia_processing gp
             LEFT JOIN purchase_order po ON po.id = gp.order_id
-            """ % self._table,
+            """
         )
 
     # ------------------------------------------------------------------
@@ -265,7 +290,11 @@ class MadenatLumberIntakeConsole(models.Model):
                 rec.total_volume_m3 = src.vol_total_m3 or 0.0
                 rec.total_packages = src.total_paquetes or 0
                 rec.total_lots = src.total_lotes_unicos or 0
-                rec.total_amount = 0.0
+                # FIX 2026-08-21 (Auditoría 11): total monetario real de la guía
+                # Procesados ya existe en additional_cost (Subtotal Neto del PDF);
+                # antes se proyectaba 0.0 por hardcode. Criterio aditivo como
+                # Producto usa con total_amount_clp.
+                rec.total_amount = src.additional_cost or 0.0
                 rec.currency_id = src.currency_id
                 rec.review_guide_document = src.guide_pdf_filename or 'Sin PDF'
                 rec.review_excel_document = src.excel_filename or 'Sin Excel'
@@ -301,6 +330,126 @@ class MadenatLumberIntakeConsole(models.Model):
             rec.packing_volume_total = sum(
                 (l.vol_shipment_m3 or 0.0) for l in lines
             )
+
+    # ------------------------------------------------------------------
+    # Cabecera informativa Producto / Subproducto (solo lectura)
+    # ------------------------------------------------------------------
+    @api.depends('source_model', 'source_res_id', 'ingestion_type')
+    def _compute_header_product_id(self):
+        """Muestra el Producto cuando todas las líneas coinciden."""
+        for rec in self:
+            rec.product_id = False
+            src = rec._get_source_record()
+            if not src:
+                continue
+            lines = (src.reception_line_ids if rec.ingestion_type == 'product'
+                     else src.processing_line_ids)
+            products = lines.mapped('product_id')
+            if products and all(l.product_id == products[0] for l in lines):
+                rec.product_id = products[0].id
+
+    @api.depends('source_model', 'source_res_id', 'ingestion_type')
+    def _compute_header_subproduct_id(self):
+        """Muestra el Subproducto/Grado cuando todas las líneas coinciden."""
+        for rec in self:
+            rec.subproduct_id = False
+            src = rec._get_source_record()
+            if not src:
+                continue
+            if rec.ingestion_type == 'product':
+                lines = src.reception_line_ids
+                sub_field = 'subproduct_id'
+            else:
+                lines = src.processing_line_ids
+                sub_field = 'subproducto_id'
+            subs = lines.mapped(sub_field)
+            if subs and all(l[sub_field] == subs[0] for l in lines):
+                rec.subproduct_id = subs[0].id
+
+    def _inverse_header_product_subproduct(self):
+        """Al guardar, aplica la selección vía el wizard existente del core."""
+        for rec in self:
+            rec._apply_header_product_subproduct()
+
+    def action_apply_product_subproduct(self):
+        """Botón 'Aplicar': aplica Producto/Subproducto a TODA la guía.
+
+        Reutiliza `lumber.reception.mass.update.action_apply()` /
+        `madenat.guia.mass.update.action_apply()` tal cual existen; no duplica
+        su lógica. Al finalizar recarga la consola para reflejar el detalle.
+        """
+        self.ensure_one()
+        self._apply_header_product_subproduct()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Ingreso de Madera'),
+            'res_model': 'madenat.lumber.intake.console',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def _apply_header_product_subproduct(self):
+        """Aplica la selección a las líneas a través del wizard del core.
+
+        Idempotente: si los valores ya están aplicados de forma uniforme no
+        vuelve a ejecutar el wizard (evita escritura/chatter redundante).
+        """
+        self.ensure_one()
+        if not (self.product_id or self.subproduct_id):
+            return
+        src = self._get_source_record()
+        if not src:
+            return
+
+        # H1 (2026-08-29): no modificar Producto/Subproducto sobre guías ya
+        # cerradas/canceladas (defensa en profundidad; el botón también se oculta).
+        if self.ingestion_type == 'product':
+            if src.state in ('done', 'cancel', 'error'):
+                raise UserError(_('No se puede modificar Producto/Subproducto sobre una recepción ya cerrada o cancelada.'))
+        else:
+            if src.state in ('validated', 'cancelled'):
+                raise UserError(_('No se puede modificar Producto/Subproducto sobre una guía ya validada o cancelada.'))
+
+        if self.ingestion_type == 'product':
+            lines = src.reception_line_ids
+            if not lines:
+                return
+            already_applied = (
+                (not self.product_id or all(l.product_id == self.product_id for l in lines))
+                and (not self.subproduct_id or all(l.subproduct_id == self.subproduct_id for l in lines))
+            )
+            if already_applied:
+                return
+            wizard = self.env['lumber.reception.mass.update'].with_context(
+                active_id=src.id,
+                active_ids=lines.ids,
+                default_reception_id=src.id,
+            ).create({
+                'reception_id': src.id,
+                'ingestion_profile': src.ingestion_profile,
+                'product_id': self.product_id.id if self.product_id else False,
+                'subproduct_id': self.subproduct_id.id if self.subproduct_id else False,
+                'apply_to': 'all',
+            })
+            wizard.action_apply()
+        else:
+            lines = src.processing_line_ids
+            if not lines:
+                return
+            already_applied = (
+                (not self.product_id or all(l.product_id == self.product_id for l in lines))
+                and (not self.subproduct_id or all(l.subproducto_id == self.subproduct_id for l in lines))
+            )
+            if already_applied:
+                return
+            wizard = self.env['madenat.guia.mass.update'].with_context(
+                active_id=src.id,
+            ).create({
+                'product_id': self.product_id.id if self.product_id else False,
+                'subproducto_id': self.subproduct_id.id if self.subproduct_id else False,
+            })
+            wizard.action_apply()
 
     # ------------------------------------------------------------------
     # Validación previa a stock (errores bloqueantes vs advertencias)
@@ -349,8 +498,11 @@ class MadenatLumberIntakeConsole(models.Model):
             elif src.state != 'verified':
                 errors.append(_('La recepción debe estar en estado "Verificado".'))
         else:
-            if not (src.guide_pdf_file or src.excel_file):
-                errors.append(_('Falta el documento de la guía procesada (PDF o Excel).'))
+            # Regla canónica documental (decisión funcional 2026-08-22):
+            # para Procesado el Packing Excel es OBLIGATORIO; el PDF de guía es
+            # OPCIONAL (aporta costos/proveedor/OC pero no bloquea el envío).
+            if not (src.excel_attachment_id or src.excel_file):
+                errors.append(_('❌ Falta el archivo Excel de Packing.'))
             if not src.processing_line_ids:
                 errors.append(_('No hay líneas verificadas para procesar.'))
             if src.state == 'validated':
@@ -388,6 +540,8 @@ class MadenatLumberIntakeConsole(models.Model):
             )
 
         src = self._get_source_record()
+        if not src:
+            raise UserError(_('No se pudo recuperar el registro de origen. La operación fue abortada.'))
 
         if self.ingestion_type == 'product':
             result = src.action_confirm_reception()
@@ -396,7 +550,7 @@ class MadenatLumberIntakeConsole(models.Model):
 
         # Trazabilidad en chatter del origen (ambos heredan mail.thread).
         src.message_post(
-            body=_('Enviado a stock desde la consola Ingreso Global.'),
+            body=_('Enviado a stock desde la consola Ingreso de Madera.'),
             message_type='notification',
         )
 
@@ -462,16 +616,60 @@ class MadenatLumberIntakeConsole(models.Model):
         if terminal:
             action['flags'] = {'mode': 'readonly'}
 
-        return action
+        # FIX 2026-08-22 (payload views): el action dict interno debe incluir
+        # `views` explícito ([view_id, 'form']) porque la client action re-envía
+        # el dict a doAction/_preprocessAction que requiere views.map(...).
+        action['views'] = [(action['view_id'], 'form')]
+        action['view_mode'] = action.get('view_mode', 'form')
+
+        # FIX CABECERA GUÍA ORIGEN (2026-08-22): la fachada no desactiva
+        # create, y el modelo es creable → el header mostraba "Nuevo".
+        # Se desactiva SOLO la creación en la apertura de la guía (context
+        # create=0), preservando edición, paginador y botones de negocio.
+        # NO se toca el retorno a Ingreso de Madera (_get_intake_console_action).
+        if not terminal:
+            ctx = dict(action.get('context') or {})
+            ctx['create'] = 0
+            # 2026-08-29: los campos informativos de cabecera (Producto/
+            # Subproducto) pre-cargan el wizard de asignación masiva vía
+            # contexto. El botón "Asignación Masiva"/"Fijar Nominal Masivo" de
+            # la fachada los propaga como defaults sin reescribir su lógica.
+            if self.product_id:
+                ctx['default_product_id'] = self.product_id.id
+            if self.subproduct_id:
+                ctx['default_subproduct_id'] = self.subproduct_id.id
+                # madenat.guia.mass.update usa `subproducto_id` como campo.
+                ctx['default_subproducto_id'] = self.subproduct_id.id
+            action['context'] = ctx
+
+        # FIX 2026-08-22: envolver en client action para reemplazar el controller
+        # actual del action stack y evitar breadcrumbs repetidos del ciclo.
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'madenat_lumber_intake.replace_current_action',
+            'params': {'action_to_execute': action},
+        }
 
     # ------------------------------------------------------------------
     # Descarga de documentos del origen (reusa binarios reales)
     # ------------------------------------------------------------------
     def _download_source_field(self, field_name):
-        """Acción de descarga nativa para un binario del origen real."""
+        """Acción de descarga nativa para un binario del origen real.
+
+        Blindaje documental: no se genera URL si el binario requerido está
+        vacío en el registro origen. La descarga solo es coherente si el
+        documento realmente existe; en caso contrario se lanza UserError.
+        """
         self.ensure_one()
         if not self.source_model or not self.source_res_id:
             raise UserError(_('No hay registro origen vinculado.'))
+        src = self._get_source_record()
+        if src is None:
+            raise UserError(_('El registro origen ya no existe.'))
+        if not getattr(src, field_name, False):
+            if field_name in ('pdf_file', 'guide_pdf_file'):
+                raise UserError(_('La guía PDF es obligatoria para esta operación.'))
+            raise UserError(_('El archivo de Packing Excel es obligatorio para esta operación.'))
         return {
             'type': 'ir.actions.act_url',
             'url': '/web/content/%s/%s/%s?download=true' % (
@@ -483,17 +681,16 @@ class MadenatLumberIntakeConsole(models.Model):
         }
 
     def action_download_guide_pdf(self):
-        """Descarga la Guía / PDF desde lumber.reception.pdf_file."""
+        """Descarga la Guía / PDF del origen real (Producto o Procesado)."""
         self.ensure_one()
-        if self.ingestion_type != 'product':
-            raise UserError(_('Descarga de Guía disponible solo para Producto.'))
-        return self._download_source_field('pdf_file')
+        field = {'product': 'pdf_file', 'processed': 'guide_pdf_file'}.get(self.ingestion_type)
+        if not field:
+            raise UserError(_('Tipo de ingesta no soportado para descarga de guía: %s') % self.ingestion_type)
+        return self._download_source_field(field)
 
     def action_download_packing_excel(self):
-        """Descarga el Packing list Excel desde lumber.reception.excel_file."""
+        """Descarga el Packing list Excel del origen real (Producto o Procesado)."""
         self.ensure_one()
-        if self.ingestion_type != 'product':
-            raise UserError(_('Descarga de Packing disponible solo para Producto.'))
         return self._download_source_field('excel_file')
 
     # ------------------------------------------------------------------
@@ -517,13 +714,14 @@ class MadenatLumberIntakeConsole(models.Model):
         if src is None:
             raise UserError(_('El registro origen ya no existe.'))
 
-        if src.state == 'done' or src.lot_ids or src.picking_id:
+        # Delegación: la condición se evalúa en el helper del registro real;
+        # la consola conserva su texto visible ('reiniciar').
+        if src._has_intake_stock_advance():
             raise UserError(
                 _('El ingreso ya avanzó (enviado a stock). No se puede '
                   'reiniciar de forma preliminar.')
             )
-        if src.state == 'cancel':
-            raise UserError(_('El ingreso ya se encuentra cancelado.'))
+        src._check_intake_can_be_cancelled()
 
         return {
             'type': 'ir.actions.act_window',
@@ -547,7 +745,6 @@ class MadenatLumberIntakeConsole(models.Model):
         src = self._get_source_record()
         if src is None:
             raise UserError(_('El registro origen ya no existe.'))
-        if src.state != 'cancel':
-            raise UserError(_('Solo se puede reabrir un registro en estado "Cancelado".'))
+        src._check_intake_can_be_reopened()
 
         return src.action_reopen_cancelled_intake()

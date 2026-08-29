@@ -7,10 +7,12 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 
+from ..models.intake_constants import CONSOLE_ID_OFFSET
+
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
 class TestIntakeWizard(TransactionCase):
-    """Cobertura del orquestador Ingreso Global (fachada).
+    """Cobertura del orquestador Ingreso de Madera (fachada).
 
     No se verifica el parser ni los Gates (son del core): se mockean solo
     los métodos públicos externos para aislar el comportamiento de Intake.
@@ -105,6 +107,10 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(result['type'], 'ir.actions.client')
         self.assertEqual(result['tag'], 'display_notification')
 
+    @classmethod
+    def _facade_view_id(cls, xml_id):
+        return cls.env.ref(xml_id).id
+
     # ── T3: Producto — derivación canónica ───────────────────────────────
     def test_t3_producto_routes_canonical_method(self):
         wizard = self._make_wizard(tipo='producto', excel_raw=b'excel-bytes',
@@ -138,8 +144,14 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(len(audits), 1)
         self.assertEqual(audits.reception_id.id, reception.id)
 
-        self.assertEqual(action['res_model'], 'lumber.reception')
+        # Separación lectura/edición: la post-derivación SIEMPRE abre la CONSOLA
+        # de lectura, nunca la fachada de edición ni el form nativo del core.
+        self.assertEqual(action['res_model'], 'madenat.lumber.intake.console')
+        # Producto (lumber.reception): id de consola SIN offset (regla vista SQL).
         self.assertEqual(action['res_id'], reception.id)
+        self.assertEqual(action['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
 
     # ── T4: Procesado — deriva bytes crudos al parser nativo ─────────────
     def test_t4_procesado_routes_raw_bytes_to_native_parser(self):
@@ -178,8 +190,13 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(len(audits), 1)
         self.assertEqual(audits.guia_processing_id.id, guia.id)
 
-        self.assertEqual(action['res_model'], 'madenat.guia.processing')
-        self.assertEqual(action['res_id'], guia.id)
+        # Separación lectura/edición: la post-derivación SIEMPRE abre la CONSOLA
+        # de lectura, nunca la fachada de edición ni el form nativo del core.
+        self.assertEqual(action['res_model'], 'madenat.lumber.intake.console')
+        self.assertEqual(action['res_id'], CONSOLE_ID_OFFSET + guia.id)
+        self.assertEqual(action['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
 
     # ── T5: Idempotencia ────────────────────────────────────────────────
     def test_t5_idempotency_double_click(self):
@@ -195,8 +212,15 @@ class TestIntakeWizard(TransactionCase):
         guias = self.Guia.search([('excel_filename', '=', 'packing.xlsx')])
         self.assertEqual(len(guias), 1)
 
-        self.assertEqual(first['res_id'], guias.id)
-        self.assertEqual(second['res_id'], guias.id)
+        # Idempotencia: ambas aperturas usan la CONSOLA de lectura.
+        self.assertEqual(first['res_id'], CONSOLE_ID_OFFSET + guias.id)
+        self.assertEqual(second['res_id'], CONSOLE_ID_OFFSET + guias.id)
+        self.assertEqual(first['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
+        self.assertEqual(second['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
 
         # Un único evento de origen.
         audits = self.Audit.search([('batch_id', '=', 'intake:%s' % wizard.id)])
@@ -230,3 +254,52 @@ class TestIntakeWizard(TransactionCase):
         # Sin evento de origen exitoso (no hay recepción enlazada).
         audits = self.Audit.search([('batch_id', '=', 'intake:%s' % wizard.id)])
         self.assertEqual(len(audits), 0)
+
+    # ── T7: "Abrir registro creado" abre consola de lectura; edición queda en
+    # "Modificar origen" (action_open_source) ──────────────────────────────
+    def test_t7_open_created_target_uses_console_for_both_types(self):
+        """Toda apertura vía action_open_intake_target usa la CONSOLA de lectura."""
+        # Procesado: crear wizard derivado y abrir el registro existente.
+        wizard_proc = self._make_wizard(tipo='procesado', excel_raw=b'excel-raw')
+        guia_model = self.env['madenat.guia.processing']
+        with patch.object(
+            type(guia_model), 'action_verify_data', return_value=None
+        ):
+            wizard_proc.action_route_document()
+        wizard_proc.invalidate_recordset()
+        action_proc = wizard_proc.action_open_intake_target()
+        self.assertEqual(action_proc['res_model'], 'madenat.lumber.intake.console')
+        self.assertEqual(action_proc['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
+
+        # Producto: mismo flujo, consola de lectura.
+        wizard_prod = self._make_wizard(tipo='producto', excel_raw=b'excel-bytes',
+                                        state='previewed')
+        reception_model = self.env['lumber.reception']
+        with patch.object(
+            type(reception_model), 'action_process_documents', return_value=True
+        ):
+            wizard_prod.action_route_document()
+        wizard_prod.invalidate_recordset()
+        action_prod = wizard_prod.action_open_intake_target()
+        self.assertEqual(action_prod['res_model'], 'madenat.lumber.intake.console')
+        self.assertEqual(action_prod['view_id'], self._facade_view_id(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        ))
+
+        # La edición queda reservada a "Modificar origen" (consola):
+        # action_open_source debe abrir la fachada de edición correspondiente.
+        guia = self.Guia.search([('excel_filename', '=', 'packing.xlsx')], limit=1)
+        console_proc = self.env['madenat.lumber.intake.console'].search([
+            ('source_model', '=', 'madenat.guia.processing'),
+            ('source_res_id', '=', guia.id),
+        ], limit=1)
+        if console_proc:
+            edit_action = console_proc.action_open_source()
+            # FIX 2026-08-22: action_open_source ahora envuelve en client action
+            edit_action = edit_action['params']['action_to_execute']
+            self.assertEqual(edit_action['res_model'], 'madenat.guia.processing')
+            self.assertEqual(edit_action['view_id'], self._facade_view_id(
+                'madenat_lumber_intake.view_madenat_guia_processing_intake_facade_form'
+            ))

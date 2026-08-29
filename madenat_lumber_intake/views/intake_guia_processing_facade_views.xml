@@ -29,7 +29,7 @@
 
                     <!-- Fachada de edición/corrección (patrón Producto):
                          - action_verify_data: validar los datos modificados.
-                         - action_back_to_intake_console: volver a Ingreso Global.
+                         - action_back_to_intake_console: volver a Ingreso de Madera.
                          El envío a stock se centraliza en la consola
                          (action_send_to_stock), NO en esta fachada.
                          Cancelar/reabrir pertenecen al flujo general de la
@@ -41,7 +41,7 @@
                             invisible="state not in ('draft', 'verified', 'processed')"/>
                     <button name="action_back_to_intake_console"
                             type="object"
-                            string="Volver a Ingreso Global"
+                            string="Volver a Ingreso de Madera"
                             class="btn-secondary"
                             icon="fa-arrow-left"/>
 
@@ -51,6 +51,16 @@
                         <i class="fa fa-exclamation-triangle"/>
                         OC documental sin vínculo real. AD-54 — la ingesta continúa;
                         la exigencia final de OC resuelta pertenece a Costeo/Valorización.
+                    </div>
+
+                    <!-- FIX 2026-08-21: advertencia NO bloqueante de proveedor no resuelto.
+                         Visible cuando supplier_resolution_status es needs_manual/multi_match.
+                         Muestra la nota de resolución (supplier_resolution_note). -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="supplier_resolution_status not in ('needs_manual', 'multi_match')">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <strong>Proveedor documental pendiente de resolución.</strong><br/>
+                        <field name="supplier_resolution_note" nolabel="1"/>
                     </div>
                 </header>
 

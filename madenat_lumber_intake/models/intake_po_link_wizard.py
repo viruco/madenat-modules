@@ -90,7 +90,7 @@ class MadenatLumberIntakePoLink(models.TransientModel):
         if rec.lot_ids or rec.picking_id:
             raise UserError(
                 _('El ingreso ya avanzó a stock y no puede modificarse '
-                  'retroactivamente desde Ingreso Global.')
+                  'retroactivamente desde Ingreso de Madera.')
             )
 
         # 7. No sobrescritura silenciosa de una OC ya vinculada.
@@ -159,7 +159,7 @@ class MadenatLumberIntakePoLink(models.TransientModel):
 
         # Escritura mínima por ORM: vínculo + estado/nota de OC. No se altera
         # oc_reference_raw, manual_po_name, stock ni volúmenes.
-        note = _('Vinculado manualmente a %(po)s desde Ingreso Global. '
+        note = _('Vinculado manualmente a %(po)s desde Ingreso de Madera. '
                  'Referencia documental: %(ref)s') % {
             'po': po.name,
             'ref': rec.oc_reference_raw or '(sin referencia documental)',

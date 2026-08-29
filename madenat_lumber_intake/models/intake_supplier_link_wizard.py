@@ -62,7 +62,7 @@ class MadenatLumberIntakeSupplierLink(models.TransientModel):
         if rec.lot_ids or rec.picking_id:
             raise UserError(
                 _('El ingreso ya avanzó a stock y no puede modificarse '
-                  'retroactivamente desde Ingreso Global.')
+                  'retroactivamente desde Ingreso de Madera.')
             )
         if not self.supplier_id:
             raise UserError(_('Seleccione un proveedor.'))

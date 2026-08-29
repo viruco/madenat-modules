@@ -4,10 +4,12 @@ import base64
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
+from .intake_constants import CONSOLE_ID_OFFSET
+
 
 class MadenatLumberIntakeWizard(models.Model):
     _name = 'madenat.lumber.intake.wizard'
-    _description = 'Ingreso Global — Fachada de ingreso operacional'
+    _description = 'Ingreso de Madera — Fachada de ingreso operacional'
 
     # ─────────────────────────────────────────────────────────────────────
     # Documentos (Excel obligatorio, PDF opcional)
@@ -215,7 +217,7 @@ class MadenatLumberIntakeWizard(models.Model):
         # ya derivado (state='routed') debe redirigir al destino, no re-validar.
         existing = self._existing_target()
         if existing is not None:
-            return self._open_target_action(existing)
+            return self._open_read_view_action(existing)
 
         self._guard_route_document()
 
@@ -280,7 +282,8 @@ class MadenatLumberIntakeWizard(models.Model):
                 self._persist_target(reception)
                 self._log_intake_origin(reception)
 
-            return self._open_target_action(reception)
+            # Post-lectura: la única pantalla automática es la CONSOLA de lectura.
+            return self._open_read_view_action(reception)
         except (UserError, ValidationError) as e:
             self.write({
                 'state': 'error',
@@ -314,7 +317,8 @@ class MadenatLumberIntakeWizard(models.Model):
                 self._persist_target(guia)
                 self._log_intake_origin(guia)
 
-            return self._open_target_action(guia)
+            # Post-lectura: la única pantalla automática es la CONSOLA de lectura.
+            return self._open_read_view_action(guia)
         except (UserError, ValidationError) as e:
             self.write({
                 'state': 'error',
@@ -334,23 +338,74 @@ class MadenatLumberIntakeWizard(models.Model):
             'error_message': False,
         })
 
-    def _open_target_action(self, destination):
+    def _open_read_view_action(self, destination):
+        """Abre la CONSOLA de lectura en el registro del destino derivado.
+
+        Única pantalla automática post-lectura (regla de separación lectura/edición,
+        auditoría 2026-08-20). Sigue el patrón validado de:
+          intake_guia_processing.action_back_to_intake_console
+        El id canónico de consola depende del modelo origen (regla espejo de la
+        vista SQL): `madenat.guia.processing` usa CONSOLE_ID_OFFSET + id;
+        `lumber.reception` usa id sin offset. NUNCA abre aquí la fachada de
+        edición ni el form nativo del core.
+        """
         self.ensure_one()
+        if destination._name == 'madenat.guia.processing':
+            console_res_id = CONSOLE_ID_OFFSET + destination.id
+        elif destination._name == 'lumber.reception':
+            console_res_id = destination.id
+        else:
+            raise UserError(_(
+                'Modelo destino no soportado por la consola de Ingreso de Madera: %s'
+            ) % destination._name)
         return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'madenat.lumber.intake.console',
+            'res_id': console_res_id,
+            'view_mode': 'form',
+            'view_id': self.env.ref(
+                'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+            ).id,
+            'target': 'current',
+        }
+
+    def _open_edit_view_action(self, destination):
+        """Abre la FACHADA EDITABLE de Intake del destino (exclusivamente por
+        acción explícita del usuario, ej: 'Modificar origen').
+
+        Conserva el blindaje anti-form-nativo-del-core: cada modelo destino usa
+        su fachada Intake correspondiente. No se usa en rutas automáticas del
+        wizard. Espejo del mapeo de intake_console.action_open_source.
+        """
+        self.ensure_one()
+        action = {
             'type': 'ir.actions.act_window',
             'res_model': destination._name,
             'res_id': destination.id,
             'view_mode': 'form',
             'target': 'current',
         }
+        if destination._name == 'madenat.guia.processing':
+            action['view_id'] = self.env.ref(
+                'madenat_lumber_intake.view_madenat_guia_processing_intake_facade_form'
+            ).id
+        elif destination._name == 'lumber.reception':
+            action['view_id'] = self.env.ref(
+                'madenat_lumber_intake.view_lumber_reception_intake_facade_form'
+            ).id
+        return action
 
     def action_open_intake_target(self):
-        """Botón de cabecera: abre el registro destino ya derivado."""
+        """Botón de cabecera: abre la CONSOLA de lectura del destino ya derivado.
+
+        Regla de separación: este botón NUNCA abre edición; la edición queda
+        reservada a la acción explícita 'Modificar origen' (intake_console).
+        """
         self.ensure_one()
         existing = self._existing_target()
         if existing is None:
             raise UserError(_('No hay un registro creado que abrir.'))
-        return self._open_target_action(existing)
+        return self._open_read_view_action(existing)
 
     # ── Evento de auditoría de origen intake (sin modificar core) ─────────
     def _log_intake_origin(self, destination):
@@ -374,7 +429,7 @@ class MadenatLumberIntakeWizard(models.Model):
         guide_no = (self.preview_guide_no or '').strip() or '(sin guía detectada)'
 
         description = (
-            'Registro creado desde Ingreso Global (madenat_lumber_intake).\n'
+            'Registro creado desde Ingreso de Madera (madenat_lumber_intake).\n'
             'Tipo de ingreso: %s\n'
             'Destino: %s #%s (%s)\n'
             'Excel: %s\n'

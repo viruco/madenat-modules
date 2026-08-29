@@ -4,7 +4,7 @@
         <field name="name">madenat.lumber.intake.wizard.form</field>
         <field name="model">madenat.lumber.intake.wizard</field>
         <field name="arch" type="xml">
-            <form string="Ingreso Global">
+            <form string="Ingreso de Madera">
                 <header>
                     <button
                         name="action_preview_document"
@@ -91,7 +91,7 @@
         <field name="name">madenat.lumber.intake.wizard.list</field>
         <field name="model">madenat.lumber.intake.wizard</field>
         <field name="arch" type="xml">
-            <list string="Ingreso Global">
+            <list string="Ingreso de Madera">
                 <field name="tipo_ingreso" />
                 <field name="excel_filename" />
                 <field name="state" />
@@ -101,7 +101,7 @@
     </record>
 
     <record id="action_madenat_lumber_intake_wizard" model="ir.actions.act_window">
-        <field name="name">Ingreso Global (Wizard)</field>
+        <field name="name">Ingreso de Madera (Wizard)</field>
         <field name="res_model">madenat.lumber.intake.wizard</field>
         <field name="view_mode">list,form</field>
     </record>

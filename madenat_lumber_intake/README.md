@@ -4,10 +4,15 @@
 > cualquier desarrollador pueda retomar el proyecto sin depender del historial de
 > cambios ni de la memoria del último autor.
 >
-> **Estado consolidado:** 2026-08-17 · **Base verificada:** `madenat_test` (NO `madenattest`)
-> **Versión del módulo:** `18.0.0.3.0` · **Estado:** `installed`
+> **Estado consolidado:** 2026-08-29 · **Base verificada:** `madenat_test` (NO `madenattest`)
+> **Versión del módulo:** `18.0.0.4.0` · **Estado:** `installed`
 
 ---
+
+> **Cambios recientes (2026-08-29):**
+> - Subproducto visible y aplicable también en el detalle de guías **Procesadas** (columna "Sub-producto").
+> - Descarga de **Guía (PDF)** y **Packing list (Excel)** habilitada para ambos flujos (Producto y Procesado).
+> - Guarda de estado en el botón **"Aplicar"** de Producto/Subproducto (bloquea guías ya cerradas/canceladas).
 
 ## 1. Propósito y alcance
 
@@ -16,7 +21,7 @@ MADENAT. Resuelve la dispersión operativa entre los ingresos de Producto y
 Procesado mediante una sola bandeja de revisión, sin corromper, duplicar ni
 reemplazar los flujos históricos existentes.
 
-Consolida en una única bandeja ("Ingreso Global") dos fuentes operacionales reales:
+Consolida en una única bandeja ("Ingreso de Madera") dos fuentes operacionales reales:
 
 1. **`lumber.reception`** — Recepciones de Producto / Madera Bruta → `ingestion_type='product'`.
 2. **`madenat.guia.processing`** — Guías de Madera Procesada / Servicios → `ingestion_type='processed'`.
@@ -140,7 +145,7 @@ La vista SQL `madenat_lumber_intake_console` ejecuta `UNION ALL` sobre:
 | `guide_date` | `COALESCE(lr.guia_fecha, lr.reception_date::date)` | `gp.date_emission` |
 | `partner_id` | `lr.supplier_id` | `gp.partner_id` |
 | `purchase_id` | `lr.purchase_id` | `gp.order_id` |
-| `purchase_reference` | `lr.purchase_order` | `COALESCE(po.name, '')` (LEFT JOIN `purchase_order`) |
+| `purchase_reference` | `lr.purchase_order` | `COALESCE(po.name, gp.oc_reference_raw, '')` (LEFT JOIN `purchase_order`) |
 | `state` | `lr.state` | `CASE WHEN gp.state='cancelled' THEN 'cancel' ELSE gp.state END` |
 | `display_reference` | `('Recepción ' \|\| COALESCE(lr.name,''))` | `('Procesada ' \|\| COALESCE(gp.name,''))` |
 
@@ -152,16 +157,21 @@ La vista se crea/reemplaza en `init()` con `tools.drop_view_if_exists` +
 ## 7. Regla de identidad SQL y offset
 
 - **Producto:** `id = lumber_reception.id` (entero positivo).
-- **Procesado:** `id = 900_000_000 + madenat_guia_processing.id` (offset fijo).
+- **Procesado:** `id = CONSOLE_ID_OFFSET + madenat_guia_processing.id` (offset fijo).
 
-El offset `900000000` evita colisión entre las dos fuentes en la misma vista UNION ALL.
-Asunción implícita: los IDs de `lumber_reception` no alcanzan `900000000` en la práctica.
+`CONSOLE_ID_OFFSET` se define en `models/intake_constants.py` como fuente única de
+verdad del offset y es importada por `intake_console.py`, `intake_wizard.py` e
+`intake_guia_processing.py` (no repetir el valor numérico en otro lugar).
+
+El offset evita colisión entre las dos fuentes en la misma vista UNION ALL.
+Asunción implícita: los IDs de `lumber_reception` no alcanzan `CONSOLE_ID_OFFSET`
+en la práctica.
 
 ---
 
 ## 8. Flujo funcional end-to-end
 
-1. Operario abre **"Ingreso Global"** (`menu_madenat_lumber_intake_wizard` →
+1. Operario abre **"Ingreso de Madera"** (`menu_madenat_lumber_intake_wizard` →
    `action_madenat_lumber_intake_console`, consola readonly).
 2. **"Nuevo Ingreso"** lanza el wizard (`action_madenat_lumber_intake_new`, target=new).
 3. El operario carga **Excel (obligatorio)** y **PDF (opcional)**.
@@ -187,7 +197,7 @@ Asunción implícita: los IDs de `lumber_reception` no alcanzan `900000000` en l
 13. `action_send_to_stock` valida y delega en:
     - Producto → `action_confirm_reception()`.
     - Procesado → `action_validate()`.
-14. Se postea en el chatter del origen "Enviado a stock desde la consola Ingreso Global."
+14. Se postea en el chatter del origen "Enviado a stock desde la consola Ingreso de Madera."
 
 ---
 
@@ -262,14 +272,20 @@ la intención declarada.
 
 Coherente con "consola readonly" y "wizard de creación".
 
-### Reglas `ir.rule`
+### Permisos y reglas
 
-- `security/madenat_intake_security.xml` está **vacío** (sin reglas). Pendiente para
-  iteraciones futuras.
+- `security/ir.model.access.csv` otorga al grupo Operaciones acceso a los modelos
+  de intake. La consola `madenat.lumber.intake.console` tiene `perm_write=1` para
+  permitir el guardado de los campos no-almacenados `product_id`/`subproduct_id`
+  (cuyo `inverse` delega en los wizards del core). Es seguro: la consola es una
+  vista SQL (`_auto=False`) no editable y el resto de campos son `readonly=True`,
+  por lo que no se puede persistir nada en ella.
+- No hay reglas de registro (`ir.rule`); el aislamiento operativo se apoya en el
+  grupo `group_madenat_operaciones`.
 
 ### Navegación
 
-- Menú principal "Ingreso Global" (`menu_madenat_lumber_intake_wizard`) cuelga de
+- Menú principal "Ingreso de Madera" (`menu_madenat_lumber_intake_wizard`) cuelga de
   `madenat_lumber_core.menu_ops_reception_cat`, visible solo para
   `group_madenat_operaciones`.
 - Los accesos nativos `menu_lumber_reception_pending`, `menu_guia_processing_root` y
@@ -330,7 +346,7 @@ aislar el comportamiento del intake (no verifican parser ni gates, que son del c
 
 - `migrations/18.0.0.2.0/post-migrate.py`: limpia el menú raíz huérfano
   "Ingreso Global" (`parent_id IS NULL` y sin hijos). **Idempotente** (DELETE acotado).
-- La versión actual es `18.0.0.3.0`; **no existe migración para el salto 0.2.0 → 0.3.0**
+- La versión actual es `18.0.0.4.0`; **no existe migración para los saltos 0.2.0 → 0.4.0**
   (sin cambio de datos conocido; documentar si en el futuro se requiere).
 
 ---
@@ -358,7 +374,7 @@ Verificado en **`madenat_test`** (base activa de la instancia):
 | R3 | Media | `ir.rule` vacío; sin aislamiento por fila en consola/wizard | `security/madenat_intake_security.xml` |
 | R4 | Media | Ejecución delegada depende del ACL del core sobre `lumber.reception`, `madenat.guia.processing`, `madenat.audit.log` (no verificado) | `action_send_to_stock` / `_log_intake_origin` |
 | R5 | Baja | Compute por fila (`_compute_review_metrics`, `_compute_packing_lines`) puede generar N+1 | `intake_console.py:227-288` |
-| R6 | Baja | 12 archivos `.bak_20260817_*` en el módulo (ruido, no cargados) | inventario de archivos |
+| R6 | Resuelto | Backups internos (`backups_20260819_*`, `*.bak_*`) movidos a `_archive_pre_cleanup_20260822/` (2026-08-22) | limpieza de addons path |
 | R7 | Info | manifest en 0.3.0 sin migración 0.3.0 | `__manifest__.py` vs `migrations/` |
 
 **Límites conocidos:**
@@ -406,7 +422,7 @@ docker exec odoo18_db psql -U odoo -d madenat_test \
   -c "SELECT table_name FROM information_schema.views WHERE table_name='madenat_lumber_intake_console';"
 ```
 
-Comprobar que el menú "Ingreso Global" abre `madenat.lumber.intake.console` y que la
+Comprobar que el menú "Ingreso de Madera" abre `madenat.lumber.intake.console` y que la
 acción "Nuevo Ingreso" lanza `madenat.lumber.intake.wizard`.
 
 ---

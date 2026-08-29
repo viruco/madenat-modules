@@ -108,6 +108,40 @@ class LumberReceptionIntake(models.Model):
                     '</div>'
                 )
 
+    # ------------------------------------------------------------------
+    # Validaciones compartidas de cancelación / reapertura
+    # ------------------------------------------------------------------
+    def _has_intake_stock_advance(self):
+        """True si el ingreso ya avanzó a stock (finalizado, lotes o picking).
+
+        Condición compartida entre el flujo directo de lumber.reception y la
+        consola. No escribe ni lanza: cada llamador conserva su mensaje
+        'UserError' (flujo directo 'cancelar', consola 'reiniciar').
+        """
+        self.ensure_one()
+        return bool(self.state == 'done' or self.lot_ids or self.picking_id)
+
+    def _check_intake_can_be_cancelled(self):
+        """Valida precondiciones de cancelación (sin escribir ni abrir wizard).
+
+        Centraliza SOLO la guarda con mensaje idéntico entre rutas. La guarda
+        de avance (`_has_intake_stock_advance`) se evalúa en el llamador para
+        preservar el texto visible actual de cada flujo.
+        """
+        self.ensure_one()
+        if self.state == 'cancel':
+            raise UserError(_('El ingreso ya se encuentra cancelado.'))
+
+    def _check_intake_can_be_reopened(self):
+        """Valida que el ingreso cancelado pueda reabrirse (sin escribir)."""
+        self.ensure_one()
+        if self.state != 'cancel':
+            raise UserError(_('Solo se puede reabrir un registro en estado "Cancelado".'))
+        if self._has_intake_stock_advance():
+            raise UserError(
+                _('El ingreso ya avanzó a stock y no puede reabrirse de forma preliminar.')
+            )
+
     def action_reopen_cancelled_intake(self):
         """Reabre un registro cancelado y aún preliminar a `draft`.
 
@@ -119,17 +153,12 @@ class LumberReceptionIntake(models.Model):
         Devuelve la fachada de Producto en estado draft para releer documentos.
         """
         self.ensure_one()
-        if self.state != 'cancel':
-            raise UserError(_('Solo se puede reabrir un registro en estado "Cancelado".'))
-        if self.state == 'done' or self.lot_ids or self.picking_id:
-            raise UserError(
-                _('El ingreso ya avanzó a stock y no puede reabrirse de forma preliminar.')
-            )
+        self._check_intake_can_be_reopened()
 
         prev_reason = self.cancel_reason or _('(sin motivo registrado)')
         self.write({'state': 'draft'})
         self.message_post(
-            body=_('Reabierto a Borrador desde Ingreso Global. Motivo de cancelación previo: %s')
+            body=_('Reabierto a Borrador desde Ingreso de Madera. Motivo de cancelación previo: %s')
             % prev_reason,
             message_type='notification',
         )
@@ -146,29 +175,39 @@ class LumberReceptionIntake(models.Model):
         }
 
     def action_back_to_intake_console(self):
-        """Abre la consola principal de Ingreso Global en el registro padre."""
+        """Vuelve a Ingreso de Madera reemplazando la vista actual (client action).
+
+        Espejo de madenat.guia.processing.action_back_to_intake_console: evita
+        breadcrumbs duplicados y apilamiento de navegación en el ciclo.
+        Producto (lumber.reception) usa id de consola SIN offset (regla vista SQL).
+        """
         self.ensure_one()
-        return {
+        console_form_view = self.env.ref(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form')
+        inner = {
             'type': 'ir.actions.act_window',
             'res_model': 'madenat.lumber.intake.console',
             'res_id': self.id,
             'view_mode': 'form',
-            'view_id': self.env.ref(
-                'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
-            ).id,
+            'view_id': console_form_view.id,
+            'views': [(console_form_view.id, 'form')],
             'target': 'current',
+        }
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'madenat_lumber_intake.replace_current_action',
+            'params': {'action_to_execute': inner},
         }
 
     def action_cancel_intake(self):
         """Abre el wizard de cancelación con motivo obligatorio."""
         self.ensure_one()
-        if self.state == 'done' or self.lot_ids or self.picking_id:
+        if self._has_intake_stock_advance():
             raise UserError(
                 _('El ingreso ya avanzó (enviado a stock). No se puede '
                   'cancelar de forma preliminar.')
             )
-        if self.state == 'cancel':
-            raise UserError(_('El ingreso ya se encuentra cancelado.'))
+        self._check_intake_can_be_cancelled()
 
         return {
             'type': 'ir.actions.act_window',
@@ -196,7 +235,7 @@ class LumberReceptionIntake(models.Model):
         if self.lot_ids or self.picking_id:
             raise UserError(
                 _('El ingreso ya avanzó a stock y no puede modificarse '
-                  'retroactivamente desde Ingreso Global.')
+                  'retroactivamente desde Ingreso de Madera.')
             )
 
         return {
@@ -225,7 +264,7 @@ class LumberReceptionIntake(models.Model):
         if self.lot_ids or self.picking_id:
             raise UserError(
                 _('El ingreso ya avanzó a stock y no puede modificarse '
-                  'retroactivamente desde Ingreso Global.')
+                  'retroactivamente desde Ingreso de Madera.')
             )
 
         return {

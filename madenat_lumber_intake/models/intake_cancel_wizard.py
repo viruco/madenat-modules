@@ -40,7 +40,7 @@ class MadenatLumberIntakeCancel(models.TransientModel):
         # Cancelación canónica del core: escribe state='cancel' y deja bitácora.
         rec.action_cancel()
         rec.message_post(
-            body=_('Cancelado desde Ingreso Global. Motivo: %s') % reason,
+            body=_('Cancelado desde Ingreso de Madera. Motivo: %s') % reason,
             message_type='notification',
         )
 

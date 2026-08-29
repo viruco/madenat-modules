@@ -41,7 +41,7 @@
                          (action_send_to_stock). Esta fachada es solo edición. -->
                     <button name="action_back_to_intake_console"
                             type="object"
-                            string="Volver a Ingreso Global"
+                            string="Volver a Ingreso de Madera"
                             class="btn-secondary"
                             icon="fa-arrow-left"/>
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Ingreso Global — Puerta única de ingreso (fachada) de madenat_lumber_intake.
+        Ingreso de Madera — Puerta única de ingreso (fachada) de madenat_lumber_intake.
 
         El menú principal ahora abre la Consola Global de Ingresos (modelo
         consolidado readonly madenat.lumber.intake.console), no el historial
@@ -17,7 +17,7 @@
     -->
     <menuitem
         id="menu_madenat_lumber_intake_wizard"
-        name="Ingreso Global"
+        name="Ingreso de Madera"
         parent="madenat_lumber_core.menu_ops_reception_cat"
         action="action_madenat_lumber_intake_console"
         sequence="1"
@@ -25,20 +25,21 @@
 
     <!--
         Consolidación de navegación: los accesos nativos a los modelos fuente
-        (`Ingreso de Guías` y `Guías Procesadas`) pasan a ser técnicos/avanzados
-        para que el operador no tenga que distinguir entre flujos. Se sobreescribe
-        SOLO la visibilidad por grupo del menú del core; no se eliminan menús ni se
+        (`Ingreso de Guías` y `Guías Procesadas`) quedan reservados a Jefatura de
+        Operaciones (grupo avanzado/supervisión) para que el operador no tenga que
+        distinguir entre flujos y trabaje por Ingreso de Madera. Se sobreescribe SOLO
+        la visibilidad por grupo del menú del core; no se eliminan menús ni se
         modifica la acción subyacente (cambio reversible y sin pérdida funcional).
     -->
     <record id="madenat_lumber_core.menu_lumber_reception_pending" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('madenat_lumber_core.group_madenat_admin')])]"/>
+        <field name="groups_id" eval="[(6, 0, [ref('madenat_lumber_core.group_madenat_jefatura_operaciones')])]"/>
     </record>
 
     <record id="madenat_lumber_core.menu_guia_processing_root" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('madenat_lumber_core.group_madenat_admin')])]"/>
+        <field name="groups_id" eval="[(6, 0, [ref('madenat_lumber_core.group_madenat_jefatura_operaciones')])]"/>
     </record>
 
     <record id="madenat_lumber_core.menu_guia_processing_list" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('madenat_lumber_core.group_madenat_admin')])]"/>
+        <field name="groups_id" eval="[(6, 0, [ref('madenat_lumber_core.group_madenat_jefatura_operaciones')])]"/>
     </record>
 </odoo>
