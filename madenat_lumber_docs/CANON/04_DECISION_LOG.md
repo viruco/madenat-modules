@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 11.0.0
-**Última actualización:** 2026-08-19  <!-- actualizado: 2026-08-19 — AD-55: homologación de 'Modificar origen' para Procesados mediante fachada ligera en Intake -->
+**Versión documental:** 12.0.0
+**Última actualización:** 2026-08-20  <!-- actualizado: 2026-08-20 — AD-56..AD-59: robustecimiento Core commit 1466f24 (candado Procesados, catálogo blanks, labels sin tocar values, gap origin_scope) -->
 **Estado:** Canonical / activo
 
 ---
@@ -1143,7 +1143,7 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 ### AD-51 — Dos dominios de parseo deliberados en la puerta única de ingreso (Producto vs Procesado)
 
 - **Fecha:** 2026-08-16
-- **Decisión:** `madenat_lumber_intake` expone una sola puerta visible (Ingreso Global) pero implementa **dos dominios de parseo deliberadamente distintos**, sin estructura de datos única entre ambos flujos:
+- **Decisión:** `madenat_lumber_intake` expone una sola puerta visible (Ingreso de Madera) pero implementa **dos dominios de parseo deliberadamente distintos**, sin estructura de datos única entre ambos flujos:
   - **Producto / Madera Bruta / Compra** → `lumber.reception` vía `action_process_documents()` (Gate0/Gate1 nativos). La prelectura usa exclusivamente `madenat.reception.parser.parse_excel(bytes, profile)` como preview informativo; el core vuelve a procesar el archivo con su método canónico.
   - **Procesado / Servicio / Maquila** → `madenat.guia.processing` vía `action_verify_data()` con el **Excel original** (sin prelectura ni preparseo). El parser nativo `_parse_excel_data_core()` es el único que implementa forward-fill de `N° LOTE`.
 - **Prohibición estricta (riesgo de pérdida de filas huérfanas):** para Procesados queda PROHIBIDO llamar `madenat.reception.parser.parse_excel()` (dropna package_no/pieces/volume_m3 elimina filas sin lote explícito), usar `force_packing_data`, traducir `lines`→`lineas` o inyectar datos preparseados.
@@ -1229,9 +1229,37 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Implementación (2026-08-19, alineada al código actual):** la fachada ligera de Procesados (`view_madenat_guia_processing_intake_facade_form`) fue implementada y alineada al patrón de Producto:
   - Se abre desde `action_open_source` (consola) asignando `view_id` de la fachada en el flujo Procesados.
   - Tabs visibles: `Guía y comercial`, `Proceso`, `Packing` (renombrado desde `Detalle`). No se expone `Trazabilidad` en la fachada.
-  - Acciones visibles: `Verificar Datos` (`action_verify_data`), `Volver a Ingreso Global` (`action_back_to_intake_console`), `⚡ Fijar Nominal Masivo` (acción window del core reutilizada). No se expone envío a stock (queda centralizado en la consola vía `action_send_to_stock`).
+  - Acciones visibles: `Verificar Datos` (`action_verify_data`), `Volver a Ingreso de Madera` (`action_back_to_intake_console`), `⚡ Fijar Nominal Masivo` (acción window del core reutilizada). No se expone envío a stock (queda centralizado en la consola vía `action_send_to_stock`).
   - `action_back_to_intake_console` abre el **registro concreto del hub** `madenat.lumber.intake.console` en vista form (`res_id=900000000+self.id`, `view_madenat_lumber_intake_console_form`), no una lista filtrada.
 - **Estado del frente:** implementado y alineado al código actual; **sujeto a validación funcional continua** (no se declara cerrado el frente Procesados/Intake).
 - **Validación:** verificación estática y funcional en base aislada `madenat_test` (tabs, retorno al hub, botones, upgrade 87 módulos sin errores); pruebas visuales definitivas pendientes de entorno con fixture `validated`.
 
 <!-- actualizado: 2026-08-19 — AD-55 registrado (homologación UX de 'Modificar origen' para Procesados via fachada ligera en Intake) — implementado y alineado, frente no cerrado -->
+
+---
+
+## 2026-08-20 — Robustecimiento del Core de perfiles de ingesta (commit `1466f24`)
+
+### AD-56 — Reactivación del candado anti-mezcla comercial en Procesados vía `ingestion_profile`
+
+- **Decisión:** `madenat.guia.processing` incorpora `ingestion_profile` Selection con los mismos values de `lumber.reception` (`f1550`, `f5085`, `metric`; default `f5085`), visible/editable en el form del core. Con esto, el candado de `madenat_guia_mass_update` (`hasattr(guia, 'ingestion_profile')` + `forbidden_in_lock`) deja de ser código muerto y protege contra mezcla comercial real.
+- **Motivo:** auditoría confirmó que `madenat.guia.processing` no tenía el campo, por lo que el candado nunca se ejecutaba.
+- **Consecuencia práctica:** perfiles `f5085` vuelven a bloquear subproductos S2S/RIP en el candado; `f1550`/`metric` conservan su semántica. Cobertura de tests: `TestGuiaProcessingIngestionProfileLock`.
+
+### AD-57 — Completar catálogo `blanks` en los modelos hermanos y helper centralizado
+
+- **Decisión:** `lumber.blank.nominal.map`, `lumber.profile.subproduct.rule`, `lumber.export.formula` y `lumber.thickness.visual.rule` aceptan ahora el value `blanks` (antes solo lo tenía `lumber.ingestion.format`). `madenat.ingestion_config.get_profile_subproduct_rules` gana entrada legacy explícita para `blanks`.
+- **Motivo:** el fallback silencioso a Fase 1/hardcode legacy no dejaba warning ni registro visible al operador.
+- **Consecuencia práctica:** la selección de perfil `blanks` ya no cae a un vacío sin control; se documenta y prueba que `lumber_export_formula._resolve_for_profile('blanks')` resuelve **intencionalmente** a la ruta S2S/imperial definida por el dominio (el parser mapea blanks → `export_rule_outcome='f1550'`), **no** a `metric`. Cobertura de tests: `TestBlankProfileCatalogComplete`.
+
+### AD-58 — Renombrado de labels de Selection sin alterar values técnicos
+
+- **Decisión:** se renombraron únicamente los labels visibles de los Selection de perfiles en los módulos Core/Intake (`f5085→'Madera Bruta — Grado Clear'`, `f1550→'Madera Aserrada S2S'`, `blanks→'Blanks — Legado (métrico/imperial híbrido)'`, `metric→'Madera Bruta — Sistema Métrico'`; `ingestion_profile` de recepción/guía con emojis conservados).
+- **Motivo:** reducir confusión operativa entre profiles.
+- **Consecuencia práctica:** PostgreSQL solo persiste la key (`f5085`, `f1550`, `metric`, `blanks`); ninguna vista, dominio, filtro ni comparación depende del string del label (verificado por grep). **No requiere migración de datos.** Ningún value técnico cambió.
+
+### AD-59 — Gap diferido: `origin_scope` para diferenciar reglas por origen (Producto vs Procesados)
+
+- **Decisión:** NO se implementa `origin_scope` en esta iteración. El catálogo `lumber.profile.subproduct.rule` sigue indexado solo por `profile`, por lo que Producto (`lumber.reception`) y Procesados (`madenat.guia.processing`) comparten el mismo universo de reglas por perfil.
+- **Motivo:** la diferenciación por origen es una mejora estructural que requiere propagar un campo nuevo vía `with_context` desde los wizards de origen y extender el helper centralizado; se difiere para no ampliar el alcance del cierre técnico.
+- **Consecuencia práctica:** el cruce de reglas de subproducto sigue existiendo por diseño (limitación conocida). Queda documentada como deuda técnica explícita en el encabezado de `lumber_profile_subproduct_rule.py`, en `02_CONTINUIDAD.md` §11 y en esta entrada. Frente abierto en continuidad.

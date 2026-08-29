@@ -1,9 +1,9 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 10.8.0
-**Fecha de actualización:** 2026-08-19
+**Versión documental:** 10.9.0
+**Fecha de actualización:** 2026-08-29
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
-**Responsable revisión:** 2026-08-19 — AD-55: homologación UX de "Modificar origen" para Procesados (02/04/13 actualizados)
+**Responsable revisión:** 2026-08-29 — Actualización de naming: "Ingreso Global" → "Ingreso de Madera", alineado con el renombrado de `madenat_lumber_intake`.
 
 ---
 

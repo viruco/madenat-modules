@@ -1,8 +1,8 @@
 # 13 — Consolidación Operativa: Ingesta (Producto y Procesados), Reglas y Trazabilidad
 
-**Versión documental:** 1.5.0
-**Fecha de actualización:** 2026-08-19
-**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, y nota de homologación UX "Modificar origen" (AD-55).
+**Versión documental:** 1.6.0
+**Fecha de actualización:** 2026-08-23
+**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, nota de homologación UX "Modificar origen" (AD-55) y política de visibilidad de menús operativos (§12, 2026-08-23).
 
 > Este documento consolida decisiones, flujos y brechas que ya existen en la documentación del
 > proyecto. NO introduce funcionalidad, reglas, campos ni comportamientos nuevos. Cuando una regla
@@ -177,6 +177,27 @@ Confirmado en código y documentación (`12_FLUJOS_INGESTA` §3, `00_ARQUITECTUR
 
 - **DEC-002 — «No Modelar Procesamiento Físico de Madera» (2026-04-15):** **SUPERADA/EVOLUCIONADA.** La decisión original (no `mrp`, flujo lineal sin transformación) coexistió con la posterior aparición del flujo de **Procesados** (`madenat.guia.processing`, `tipo_recepcion='service'`), el módulo `madenat_toll_processing` y la genealogía `parent_lot_id`. La decisión original se mantiene como antecedente; el alcance actual exige distinguir **maquila/servicio externo** (soportado) de **manufactura interna MRP** (no instalado). Fuente: `WIKI/04_DECISIONES/DEC-002`, `madenat_guia_processing.py`, `stock_lot.py`.
 - **TD-004/TD-005 (centralización de constantes):** vigentes y confirmadas en `utils_uom.py`; no reemplazadas. **WIKI** (`02_TECNICO/arquitectura_ingesta_recepciones.md`).
+
+---
+
+## 12. Política de visibilidad operativa de menús (2026-08-23)
+
+Política funcional de navegación para el flujo de Intake, aplicada en código
+(`madenat_lumber_core/views/lumber_core_menu.xml`, `madenat_lumber_intake/views/intake_menus.xml`).
+Cambio mínimo y reversible: solo `groups` en menús, `flags` readonly en la acción de
+Historial y sin cambios de ACL.
+
+- **Operaciones (`group_madenat_operaciones`) ve:** `Ingreso de Madera`
+  (`menu_madenat_lumber_intake_wizard`) como única puerta operativa de Intake.
+- **Jefatura de Operaciones (`group_madenat_jefatura_operaciones`) ve:** `Ingreso de Madera`,
+  `Tablero de Recepciones`, `Pendientes de Stock`, `Historial de Ingresos`,
+  `Ingreso de Guías` y `Guías Procesadas`. El `Historial de Ingresos` abre en modo
+  consulta (readonly por `flags` en `action_lumber_reception_raw_only`).
+- **Ajustes Físicos (Stock)** (`menu_madenat_inventory_adjustments`) se trata como
+  utilidad transversal de inventario (grupo `stock.group_stock_manager`), no como
+  parte del flujo operativo de Intake.
+
+No se modificó ninguna ACL ni record rule en esta política.
 
 ---
 

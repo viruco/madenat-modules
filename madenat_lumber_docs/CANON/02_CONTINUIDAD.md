@@ -1,8 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 11.7.0
-**Fecha de actualización:** 2026-08-19  <!-- actualizado: 2026-08-19 — AD-54: OC pendiente no bloqueante en Procesados (staging y validación); AD-55: fachada ligera de Procesados alineada (3 tabs, sin Trazabilidad, retorno al hub form); frente no cerrado, sujeto a validación funcional continua -->
-**Estado:** ESTABLE PARA CONTINUIDAD TÉCNICA Y REFACTORIZACIÓN ESTRUCTURAL CERRADA. La consolidación documental está completada. Persisten brechas funcionales/técnicas y validaciones UAT pendientes.
+**Versión documental:** 12.0.0
+**Fecha de actualización:** 2026-08-20  <!-- actualizado: 2026-08-20 — Cierre técnico commit 1466f24: candado de Procesados reactivado vía ingestion_profile, catálogo 'blanks' completado, labels estandarizados sin tocar values; origin_scope pendiente como limitación conocida. Frente abierto en continuidad, técnico validado (49/49 tests). -->
+**Estado:** ESTABLE PARA CONTINUIDAD TÉCNICA Y REFACTORIZACIÓN ESTRUCTURAL CERRADA. La consolidación documental está completada. Persisten brechas funcionales/técnicas y validaciones UAT pendientes. **Último cierre técnico: `1466f24` (2026-08-20)** — robustecimiento del Core de perfiles de ingesta; el frente sigue **abierto en continuidad** aunque el técnico esté validado.
 
 ---
 
@@ -22,10 +22,10 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 - Target: Odoo 18 CE.
 - Ambiente: Docker en WSL (`odoo18_app`, `db`).
 - Arquitectura: modular parcial.
-- **Puerta única de ingreso:** `madenat_lumber_intake` (menú `Ingreso Global`) es la única puerta visible para Operaciones. Es una fachada/orquestador que NO reemplaza parsers, NO duplica Gates y NO modifica lógica del core.
+- **Puerta única de ingreso:** `madenat_lumber_intake` (menú `Ingreso de Madera`) es la única puerta visible para Operaciones. Es una fachada/orquestador que NO reemplaza parsers, NO duplica Gates y NO modifica lógica del core.
 
-### Ingreso Global (`madenat_lumber_intake`) — reglas vigentes (AD-51)
-1. **Puerta única visible:** Producto y Procesado se cargan desde `Ingreso Global`; el wizard deriva a `lumber.reception` (Producto) o `madenat.guia.processing` (Procesado).
+### Ingreso de Madera (`madenat_lumber_intake`) — reglas vigentes (AD-51)
+1. **Puerta única visible:** Producto y Procesado se cargan desde `Ingreso de Madera`; el wizard deriva a `lumber.reception` (Producto) o `madenat.guia.processing` (Procesado).
 2. **Dos dominios de parseo deliberados:** Producto usa `madenat.reception.parser.parse_excel()` solo como preview y delega a `lumber.reception.action_process_documents()` (Gate0/Gate1 nativos). Procesado entrega el Excel original crudo a `madenat.guia.processing.action_verify_data()`.
 3. **Prohibición para Procesados:** no usar `parse_excel()` de Recepción ni `force_packing_data` (riesgo de perder filas huérfanas/forward-fill de `N° LOTE`).
 4. **Volumen:** Intake no recalcula ni altera el M3 fuente; conserva el archivo/valor declarado por el proveedor.
@@ -291,7 +291,24 @@ se mantiene en `custom_addons/madenat_lumber_intake/README.md`.
 
 - **Implementación (2026-08-19, alineada al código actual):** la fachada ligera de Procesados (`view_madenat_guia_processing_intake_facade_form`) está implementada y operativa en `madenat_lumber_intake`. Detalles:
   - **Tabs visibles:** `Guía y comercial`, `Proceso`, `Packing` (renombrado desde `Detalle`). **No se expone `Trazabilidad`** en la fachada.
-  - **Acciones visibles:** `Verificar Datos` (`action_verify_data`), `Volver a Ingreso Global` (`action_back_to_intake_console`), `⚡ Fijar Nominal Masivo` (acción window del core reutilizada). El **envío a stock queda centralizado en la consola** (`action_send_to_stock`), no en la fachada.
+  - **Acciones visibles:** `Verificar Datos` (`action_verify_data`), `Volver a Ingreso de Madera` (`action_back_to_intake_console`), `⚡ Fijar Nominal Masivo` (acción window del core reutilizada). El **envío a stock queda centralizado en la consola** (`action_send_to_stock`), no en la fachada.
   - **Retorno:** `action_back_to_intake_console` abre el **registro concreto del hub** `madenat.lumber.intake.console` en vista form (`res_id=900000000+self.id`, `view_madenat_lumber_intake_console_form`), replicando el patrón de Producto. No abre lista filtrada.
 - **Estado del frente:** implementado y alineado al código actual; **sujeto a validación funcional continua** (no se declara cerrado el frente Procesados/Intake).
 - **Referencia:** `04_DECISION_LOG.md` AD-55 (implementación).
+
+---
+
+## 11. Cierre técnico 2026-08-20 — `1466f24 fix(core): restore ingestion profile safeguards and blanks catalog`
+
+**Contexto:** Commit técnico `1466f24` cierra un ciclo de robustecimiento del Core de perfiles de ingesta. Fundamentado en auditoría de solo lectura (evidencia completa en `INDICE_DOCUMENTACION.md` / RAW 2026-08-20). Complementa los commits documentales previos `634cf76` (fachada Intake + política OC), `5f1048d` (edición de origen Procesados en Intake) y `699552a` (higiene Git).
+
+### Estado tras el cierre técnico
+- **Intake + Procesados reforzados:** `madenat.guia.processing` ahora tiene `ingestion_profile` (values idénticos a `lumber.reception`), reactivando el candado anti-mezcla comercial de `madenat_guia_mass_update` que antes era código muerto (`hasattr` siempre `False`). Existe cobertura de tests para existencia/default, bloqueo/permiso por perfil.
+- **Catálogo `blanks` completado:** `lumber.blank.nominal.map`, `lumber.profile.subproduct.rule`, `lumber.export.formula` y `lumber.thickness.visual.rule` aceptan ahora `blanks`. El fallback ya no es silencioso: `lumber_export_formula._resolve_for_profile('blanks')` resuelve **intencionalmente** a la ruta S2S/imperial definida por el dominio (el parser mapea blanks → `export_rule_outcome='f1550'`), **no** a `metric`. Decisión documentada en código y probada.
+- **Labels estandarizados:** se renombraron los labels visibles de los Selection (`f5085→'Madera Bruta — Grado Clear'`, `f1550→'Madera Aserrada S2S'`, `blanks→'Blanks — Legado (métrico/imperial híbrido)'`, `metric→'Madera Bruta — Sistema Métrico'`; `ingestion_profile` de recepción/guía con emojis conservados) **sin tocar values técnicos** — solo texto de UI, sin migración de datos. Objetivo: reducir confusión operativa.
+- **Cobertura de tests:** clases `TestGuiaProcessingIngestionProfileLock` (5) y `TestBlankProfileCatalogComplete` (6) añadidas a `test_guia_processing.py`. Suite `madenat` **49/49 tests, 0 fallos, 0 errores** ejecutada sobre `madenat_test`.
+
+### Limitación conocida diferida (deuda técnica explícita)
+- **`origin_scope` pendiente:** el catálogo `lumber.profile.subproduct.rule` sigue indexado solo por `profile`, sin distinguir si la regla aplica a Producto (`lumber.reception`) o Procesados (`madenat.guia.processing`). Ambos flujos comparten el mismo universo de reglas por perfil. **No se implementó** la diferenciación por origen (campo `origin_scope` propagado vía `with_context` desde los wizards de origen) — queda como limitación conocida y pendiente, documentada en el encabezado del modelo y en `04_DECISION_LOG.md` AD-56.
+
+**Retoma:** el frente sigue **abierto en continuidad**. El técnico está validado; quedan pendientes UAT end-to-end (CANON/13) y la decisión futura de `origin_scope`. No reabrir refactors cerrados salvo hallazgo nuevo.
