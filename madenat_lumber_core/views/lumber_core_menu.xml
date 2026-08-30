@@ -119,7 +119,6 @@
         <menuitem id="menu_ops_main"
                   name="📦 Operaciones"
                   parent="menu_madenat_root"
-                  action="madenat_lumber_purchasing.action_madenat_purchase_order"
                   sequence="10"/>
 
         <menuitem id="menu_export_main"

@@ -34,10 +34,10 @@
         'views/guia_processing_list_search.xml',
         'views/lumber_reception_views.xml',
         'views/lumber_reception_kanban_views.xml',
-        'views/lumber_ingestion_config_views.xml',
 
         # 🏗️ 5. MENÚS
         'views/lumber_core_menu.xml',
+        'views/lumber_ingestion_config_views.xml',
 
         # 📊 6. REPORTES
         'reports/madenat_guia_report.xml',
