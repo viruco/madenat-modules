@@ -7,3 +7,4 @@ from . import intake_cancel_wizard
 from . import intake_po_link_wizard
 from . import intake_supplier_link_wizard
 from . import intake_guia_processing
+from . import guia_processing_nominal
