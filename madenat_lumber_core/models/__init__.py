@@ -13,6 +13,7 @@ from . import madenat_guia_processing
 from . import ingestion_gate
 from . import lumber_reception
 from . import madenat_subproducto
+from . import res_partner
 from . import res_config_settings
 # Fase 2 — Modelos persistentes de configuración de ingesta
 from . import lumber_blank_nominal_map

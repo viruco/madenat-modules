@@ -62,7 +62,7 @@
         <record id="action_lumber_blank_nominal_map" model="ir.actions.act_window">
             <field name="name">Mapa Físico→Nominal Blanks</field>
             <field name="res_model">lumber.blank.nominal.map</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
@@ -123,7 +123,7 @@
         <record id="action_lumber_width_s2s_map" model="ir.actions.act_window">
             <field name="name">Tabla Rough→S2S</field>
             <field name="res_model">lumber.width.s2s.map</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
@@ -191,7 +191,7 @@
         <record id="action_lumber_thickness_visual_rule" model="ir.actions.act_window">
             <field name="name">Rangos Espesor→Visual</field>
             <field name="res_model">lumber.thickness.visual.rule</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
@@ -253,7 +253,7 @@
         <record id="action_lumber_profile_subproduct_rule" model="ir.actions.act_window">
             <field name="name">Reglas Perfil↔Subproducto</field>
             <field name="res_model">lumber.profile.subproduct.rule</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
@@ -358,7 +358,7 @@
         <record id="action_lumber_export_formula" model="ir.actions.act_window">
             <field name="name">Fórmulas de Exportación (H8)</field>
             <field name="res_model">lumber.export.formula</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
@@ -437,7 +437,7 @@
         <record id="action_lumber_ingestion_format" model="ir.actions.act_window">
             <field name="name">Formatos de Ingesta (H9)</field>
             <field name="res_model">lumber.ingestion.format</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
 

@@ -343,11 +343,11 @@
                                    invisible="not oc_match_note"/>
                             <!-- 🏷️ FASE 2A: Botón Crear OC desde PDF (Patch 2026-06-18) -->
                             <button name="action_create_purchase_order_from_document"
-                                    string="📄 Crear OC desde PDF"
+                                    string="📄 Crear OC provisional"
                                     type="object"
                                     class="btn-primary"
                                     invisible="not oc_reference_raw or order_id or oc_match_status != 'not_found'"
-                                    help="Crea una Orden de Compra en borrador con la referencia documental detectada, adjunta el PDF de OC y la vincula a esta guía."
+                                    help="Crea una OC provisional en borrador con lineas en m3, precio 0 y revision obligatoria."
                                     style="margin-top: 12px;"/>
                         </group>
                     </group>

@@ -51,6 +51,24 @@
             <field name="comment">Recepción, staging, stock físico, contenedores, embarques y trazabilidad operativa.</field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- JEFATURA DE OPERACIONES (2026-08-23)                        -->
+        <!-- Operación avanzada / catálogos / supervisión de los modelos -->
+        <!-- MADENAT sin arrastrar Admin transversal, Costos ni Auditoría. -->
+        <!-- No implica group_madenat_admin, costos, contabilidad ni      -->
+        <!-- stock.group_stock_manager. ACL manager de los 5 modelos      -->
+        <!-- funcionales migrados desde stock.group_stock_manager.        -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <record id="group_madenat_jefatura_operaciones" model="res.groups">
+            <field name="name">Jefatura de Operaciones</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[
+                (4, ref('base.group_user')),
+                (4, ref('group_madenat_operaciones'))
+            ]"/>
+            <field name="comment">Operación avanzada y supervisión de los modelos MADENAT (reception, processing, subproducto, checklist). No otorga admin transversal, costos ni auditoría.</field>
+        </record>
+
         <!-- ========================================================= -->
         <!-- COSTOS                                                    -->
         <!-- ========================================================= -->

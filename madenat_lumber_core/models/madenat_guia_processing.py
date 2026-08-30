@@ -651,6 +651,7 @@ class MadenatGuiaProcessing(models.Model):
     )
     oc_match_status = fields.Selection([
         ('not_found', 'No encontrada'),
+        ('needs_review', 'Requiere revisión'),
         ('single_match', 'Coincidencia exacta'),
         ('multi_match', 'Múltiples coincidencias'),
         ('manual', 'Vinculación manual'),
@@ -661,6 +662,25 @@ class MadenatGuiaProcessing(models.Model):
         copy=False,
         help="Bitácora de reconciliación de OC."
     )
+
+    # ══════════════════════════════════════════════════════════
+    # 🆕 RESOLUCIÓN DE PROVEEDOR DOCUMENTAL (2026-08-21)
+    # Trazabilidad explícita del resultado de resolución del proveedor
+    # detectado en el PDF. Independiente de oc_match_note (OC).
+    # ══════════════════════════════════════════════════════════
+    supplier_resolution_note = fields.Text(
+        string="Nota de resolución de proveedor",
+        copy=False,
+        help="Explica cómo se resolvió (o por qué no) el proveedor documental. "
+             "Nunca vacío sin explicación: si no se resolvió, contiene la razón.",
+    )
+    supplier_resolution_status = fields.Selection([
+        ('resolved_vat', 'Resuelto por RUT'),
+        ('resolved_name', 'Resuelto por nombre'),
+        ('auto_created', 'Creado automáticamente'),
+        ('needs_manual', 'Requiere asignación manual'),
+        ('multi_match', 'Múltiples coincidencias'),
+    ], string="Estado de resolución de proveedor", default='needs_manual', copy=False, tracking=True)
     
     # Adjuntos
     pdf_attachment_id = fields.Many2one('ir.attachment', string="Archivo PDF Guía")
@@ -885,6 +905,43 @@ class MadenatGuiaProcessing(models.Model):
     # ==============================================================================================
     #                                     2. ORQUESTADOR PRINCIPAL
     # ==============================================================================================
+
+    # ══════════════════════════════════════════════════════════
+    # 🏷️ IDENTIDAD VISUAL (FIX 2026-08-21)
+    # Enriquecer display_name para navegación/selector: folio · proveedor ·
+    # fecha · tipo · ID. NUNCA modifica name (folio documental) ni la
+    # constraint UNIQUE(name, partner_id). Sin side effects ni escrituras.
+    # ══════════════════════════════════════════════════════════
+    @api.depends('name', 'partner_id', 'partner_id.name',
+                 'date_emission', 'tipo_recepcion')
+    def _compute_display_name(self):
+        for rec in self:
+            # FOLIO
+            folio = str(rec.name).strip() if rec.name else ''
+            folio = folio or 'Sin folio'
+            # PROVEEDOR
+            proveedor = ''
+            if rec.partner_id:
+                proveedor = str(rec.partner_id.display_name or '').strip()
+            proveedor = proveedor or 'Sin proveedor'
+            # FECHA
+            fecha = ''
+            if rec.date_emission:
+                fecha = rec.date_emission.strftime('%d/%m/%Y')
+            fecha = fecha or 'Sin fecha'
+            # TIPO (etiqueta real de la selection, sin dict duplicado)
+            tipo_label = ''
+            selection = self._fields['tipo_recepcion'].selection
+            if rec.tipo_recepcion and selection:
+                for value, label in selection:
+                    if value == rec.tipo_recepcion:
+                        tipo_label = str(label)
+                        break
+            tipo_label = tipo_label or 'Sin tipo'
+            # ETIQUETA
+            rec.display_name = '%s · %s · %s · %s · ID %s' % (
+                folio, proveedor, fecha, tipo_label, rec.id,
+            )
 
     def do_full_processing(self):
         """
@@ -1240,39 +1297,21 @@ class MadenatGuiaProcessing(models.Model):
                     update_vals['service_code'] = pdf_data['service_code']
                 
                 # ══════════════════════════════════════════════════════════
-                # 🆕 RESOLUCIÓN DE PROVEEDOR DESDE PDF (2026-06-30)
+                # 🆕 RESOLUCIÓN DE PROVEEDOR DESDE PDF (2026-08-21)
+                # Delegado al helper _resolve_or_create_supplier con blindaje
+                # completo A-E. Nunca deja partner_id NULL sin nota visible,
+                # nunca bloquea action_verify_data.
                 # ══════════════════════════════════════════════════════════
                 supplier_rut = pdf_data.get('rut_emisor')
-                supplier_name = pdf_data.get('nombre_emisor', '')
-                if supplier_rut and not self.partner_id:
-                    # Buscar por VAT — mismo patrón que lumber_reception
-                    partner = self.env['res.partner'].search(
-                        [('vat', '=', supplier_rut)], limit=1
-                    )
-                    if partner:
-                        update_vals['partner_id'] = partner.id
-                        _logger.info(
-                            f"🏢 Proveedor encontrado por RUT {supplier_rut}: "
-                            f"{partner.name} (ID={partner.id}) para Guía {self.name}"
-                        )
-                    elif supplier_name and len(supplier_name) > 2:
-                        # Crear partner nuevo — patrón documentado en lumber_reception
-                        partner = self.env['res.partner'].create({
-                            'name': supplier_name[:128],
-                            'vat': supplier_rut,
-                            'is_company': True,
-                        })
-                        update_vals['partner_id'] = partner.id
-                        _logger.info(
-                            f"🏢 Proveedor creado: {partner.name} "
-                            f"(RUT={supplier_rut}, ID={partner.id}) para Guía {self.name}"
-                        )
-                    else:
-                        _logger.warning(
-                            f"⚠️ RUT {supplier_rut} detectado pero sin nombre confiable. "
-                            f"Proveedor NO asignado para Guía {self.name}. "
-                            f"Asigne manualmente."
-                        )
+                supplier_name = pdf_data.get('nombre_emisor')
+                partner_resolved = self._resolve_or_create_supplier(
+                    supplier_rut, supplier_name
+                )
+                if partner_resolved:
+                    update_vals['partner_id'] = partner_resolved.id
+                # El estado/nota de resolución se persisten en update_vals
+                update_vals['supplier_resolution_status'] = self.supplier_resolution_status
+                update_vals['supplier_resolution_note'] = self.supplier_resolution_note
                 # Asignar fecha de emisión detectada en PDF
                 if pdf_data.get('fecha_emision'):
                     update_vals['date_emission'] = pdf_data['fecha_emision']
@@ -2337,27 +2376,20 @@ class MadenatGuiaProcessing(models.Model):
                         break
                 if supplier_rut:
                     break
-            # Extraer nombre emisor desde primeras líneas del PDF
+            # Extraer nombre emisor desde las primeras líneas del PDF.
+            # FIX 2026-08-21: la razón social real puede estar en líneas posteriores
+            # al RUT (caso guía 19827: RUT en lines[0], razón social en lines[2]).
+            # El helper descarta encabezados documentales, RUTs, fechas y montos.
+            # Devuelve None explícito si no hay candidata válida (distinto de '').
             lines = [l.strip() for l in texto.split('\n') if l.strip()]
-            if lines:
-                potential_name = lines[0]
-                if any(x in potential_name.upper() for x in ['GUIA', 'ELECTRONICA', 'FACTURA', 'GUÍA']):
-                    potential_name = lines[1] if len(lines) > 1 else potential_name
-                # Amputar RUT pegado (mismo patrón que lumber_reception)
-                clean_name = re.split(
-                    r'R\.?U\.?T\.?|[\d]{1,2}\.[\d]{3}\.',
-                    potential_name, flags=re.IGNORECASE
-                )[0]
-                clean_name = re.sub(r'[:\-\s\.,]+$', '', clean_name).strip()
-                if clean_name and len(clean_name) > 2:
-                    supplier_name_detected = clean_name[:128]
-            # Log defensivo
-            if supplier_rut:
-                _logger.info(
-                    f"📄 Emisor detectado en PDF: RUT={supplier_rut} "
-                    f"Nombre={supplier_name_detected or '(no detectado)'} "
-                    f"para Guía {self.name}"
-                )
+            extracted_name = self._find_emitter_company_name(lines)
+            supplier_name_detected = extracted_name if extracted_name else None
+            # Log defensivo siempre
+            _logger.info(
+                f"📄 Emisor detectado en PDF: RUT={supplier_rut} "
+                f"Nombre={supplier_name_detected or '(no detectado)'} "
+                f"para Guía {self.name}"
+            )
             # ══════════════════════════════════════════════════════════
 
             # ══════════════════════════════════════════════════════════
@@ -2382,6 +2414,183 @@ class MadenatGuiaProcessing(models.Model):
         except Exception as e: 
             raise UserError(f"Error procesando PDF: {e}")
 
+    def _find_emitter_company_name(self, lines):
+        """
+        FIX 2026-08-21 (Auditoría 11): detecta la razón social del emisor del PDF.
+
+        El parser anterior tomaba lines[0]; en guías DTE chilenas lines[0] suele
+        ser solo 'RUT: 77066489-6', y tras amputar el RUT el nombre quedaba vacío,
+        perdiendo la razón social real ubicada en líneas posteriores
+        (caso: guía 19827, emisor en lines[2]).
+
+        Reglas:
+        - Localiza la primera línea que contiene la palabra RUT (si existe).
+        - Inspecciona hasta 5 líneas a partir de ahí (o desde el inicio).
+        - Descarta encabezados documentales, fechas, montos, folios, volúmenes
+          y líneas vacías; acepta la primera candidata con texto de empresa.
+        - Mantiene compatibilidad con PDFs donde RUT y razón social comparten línea.
+        - Nunca crea un nombre falso: si no hay candidato válido, devuelve ''.
+        - No convierte transportista/conductor en proveedor (las líneas CONDUCTOR
+          y los nombres propios son descartados por la lista de encabezados).
+        """
+        if not lines:
+            return ''
+        header_words = {
+            'GUIA', 'GUÍA', 'ELECTRONICA', 'ELECTRÓNICA', 'ELECTRONIC', 'FACTURA',
+            'DESPACHO', 'REFERENCIAS', 'ORDEN', 'COMPRA', 'TIPO', 'DOCUMENTO', 'DOCUMENTOS',
+            'FOLIO', 'FECHA', 'CLIENTE', 'CONDUCTOR', 'RAZON', 'SOCIAL',
+            'GIRO', 'DOMICILIO', 'RESOLUCION', 'RESOLUCIÓN', 'TOTAL', 'SUBTOTAL',
+            'NETO', 'IVA', 'VOLUMEN',
+        }
+
+        def _is_valid_company_line(candidate):
+            if not candidate:
+                return False
+            u = candidate.strip()
+            if not u or len(u) < 3:
+                return False
+            # Solo números/fechas/montos/folios → no es razón social.
+            if re.match(r'^[\d\.,\$\s/:°º\-]+$', u):
+                return False
+            words = set(re.findall(r'[A-ZÁÉÍÓÚÑ]{2,}', u.upper()))
+            meaningful = words - {'DE', 'DEL', 'LA', 'EL', 'AL', 'Y', 'E', 'SPA',
+                                  'LTDA', 'LIMITADA', 'SA', 'SOC', 'EN'}
+            if not meaningful:
+                return False
+            # Si todas las palabras útiles son encabezados → descartar.
+            if meaningful and meaningful <= header_words:
+                return False
+            return True
+
+        # Localizar la primera línea con 'RUT' en las primeras 10 líneas.
+        start = 0
+        for i, line in enumerate(lines[:10]):
+            if 'RUT' in line.upper():
+                start = i
+                break
+
+        # Inspeccionar desde el RUT (o desde el inicio) hasta 5 líneas.
+        for line in lines[start:start + 5]:
+            # Remover RUT y números de RUT (con o sin puntos) de la candidata.
+            cleaned = re.split(
+                r'R\.?U\.?T\.?|[\d]{1,2}(?:\.\d{3}){2}-[\dkK]|[\d]{7,8}-[\dkK]',
+                line,
+                flags=re.IGNORECASE,
+            )[0]
+            # Amputar RUT pegado al inicio (ej: '77066489-6 FERRAMENTA SPA').
+            cleaned = re.sub(
+                r'^\s*[\d]{7,8}-[\dkK]\s*', '', cleaned, flags=re.IGNORECASE
+            ).strip()
+            cleaned = re.sub(r'[:\-\s\.,]+$', '', cleaned).strip()
+            if _is_valid_company_line(cleaned):
+                return cleaned[:128]
+        return ''
+
+    def _normalize_supplier_name(self, value):
+        """Clave normalizada conservadora para comparar nombres de proveedor."""
+        if not value:
+            return ''
+        return re.sub(r'[^A-Z0-9]+', '', str(value).upper())
+
+    def _resolve_or_create_supplier(self, rut_emisor, nombre_emisor):
+        """
+        FIX 2026-08-21: resolución blindada del proveedor documental.
+        Casos: A (VAT), B (nombre+VAT completado sin sobrescribir), C (auto-create),
+        D (sin datos → nota needs_manual), E (multi_match sin limit=1).
+        Nunca deja partner_id NULL sin nota visible ni bloquea action_verify_data.
+        """
+        self.ensure_one()
+        rut = (rut_emisor or '').strip()
+        nombre = (nombre_emisor or '').strip()
+
+        # CASO D — sin RUT y sin nombre utilizable
+        if not rut and not nombre:
+            self.supplier_resolution_status = 'needs_manual'
+            self.supplier_resolution_note = (
+                'Proveedor no identificado en el documento. Requiere asignación manual.'
+            )
+            _logger.info("🏢 Guía %s: proveedor no identificado.", self.name)
+            return self.env['res.partner']
+
+        # CASO A — VAT exacto
+        if rut:
+            partner = self.env['res.partner'].search([('vat', '=', rut)], limit=1)
+            if partner:
+                self.supplier_resolution_status = 'resolved_vat'
+                self.supplier_resolution_note = (
+                    'Proveedor resuelto por RUT %s: %s (id %s).' % (rut, partner.name, partner.id)
+                )
+                _logger.info("🏢 Resuelto por VAT %s: %s (id %s) para Guía %s.", rut, partner.name, partner.id, self.name)
+                return partner
+
+        # CASO B — nombre normalizado (comparación exacta, no ilike amplio)
+        nombre_key = self._normalize_supplier_name(nombre)
+        if nombre_key:
+            candidates = self.env['res.partner'].search([('name', '!=', False)]).filtered(
+                lambda p: self._normalize_supplier_name(p.name) == nombre_key
+            )
+            if len(candidates) == 1:
+                partner = candidates
+                if rut and not partner.vat:
+                    partner.write({'vat': rut})
+                    self.supplier_resolution_status = 'resolved_name'
+                    self.supplier_resolution_note = (
+                        'Proveedor resuelto por nombre "%s" (id %s); VAT completado a %s (estaba vacío).'
+                        % (partner.name, partner.id, rut)
+                    )
+                    _logger.info("🏢 Por nombre %s (id %s), VAT completado %s para Guía %s.", partner.name, partner.id, rut, self.name)
+                elif rut and partner.vat and partner.vat != rut:
+                    self.supplier_resolution_status = 'resolved_name'
+                    self.supplier_resolution_note = (
+                        'Proveedor resuelto por nombre "%s" (id %s), pero su VAT (%s) difiere '
+                        'del documento (%s). NO se sobrescribió; revisar manualmente.'
+                        % (partner.name, partner.id, partner.vat, rut)
+                    )
+                    _logger.warning("🏢 VAT contradictorio: %s (%s) vs (%s) para Guía %s; no se sobrescribe.", partner.name, partner.vat, rut, self.name)
+                else:
+                    self.supplier_resolution_status = 'resolved_name'
+                    self.supplier_resolution_note = (
+                        'Proveedor resuelto por nombre "%s" (id %s).' % (partner.name, partner.id)
+                    )
+                    _logger.info("🏢 Por nombre %s (id %s) para Guía %s.", partner.name, partner.id, self.name)
+                return partner
+
+            if len(candidates) > 1:
+                # CASO E — nunca limit=1 arbitrario
+                self.supplier_resolution_status = 'multi_match'
+                self.supplier_resolution_note = (
+                    "Múltiples proveedores coinciden con el nombre '%s'. "
+                    "Seleccionar manualmente. Candidatos: %s"
+                    % (nombre, ', '.join(str(c.id) for c in candidates))
+                )
+                _logger.warning("🏢 Múltiples coincidencias para %r en Guía %s: %s", nombre, self.name, candidates.ids)
+                return self.env['res.partner']
+
+        # CASO C — crear proveedor nuevo solo si nombre válido
+        if nombre and len(nombre) >= 2:
+            new_partner = self.env['res.partner'].create({
+                'name': nombre[:128],
+                'vat': rut or False,
+                'is_company': True,
+                'company_type': 'company',
+                'supplier_rank': 1,
+                'is_auto_created': True,
+            })
+            self.supplier_resolution_status = 'auto_created'
+            self.supplier_resolution_note = (
+                'Proveedor creado automáticamente desde documento: %s (RUT %s). '
+                'Verificar y completar datos fiscales si corresponde.' % (new_partner.name, rut or '(sin RUT)')
+            )
+            _logger.info("🏢 Proveedor creado auto: %s (RUT %s) para Guía %s.", new_partner.name, rut, self.name)
+            return new_partner
+
+        # Blindaje final
+        self.supplier_resolution_status = 'needs_manual'
+        self.supplier_resolution_note = (
+            'Proveedor no identificado en el documento (nombre no utilizable). '
+            'Requiere asignación manual.'
+        )
+        return self.env['res.partner']
 
     def _parse_packing_excel(self, attachment):
         # 🟢 HOOK : Si venimos de la validación visual, usamos esos datos
@@ -3020,67 +3229,93 @@ class MadenatGuiaProcessing(models.Model):
         - NO sobrescribe oc_reference_raw
         """
         self.ensure_one()
-        
-        # Si ya tiene OC vinculada, abrirla
+
+        # ── 0. CAPA ANTIDUPLICADO: ya existe OC vinculada ──
         if self.order_id:
             return self.action_open_po()
-        
-        # Validaciones
+
+        # ── 1. VALIDACIÓN DE ESTADO DE CONCILIACIÓN (matriz aprobada) ──
+        if self.oc_match_status in ('multi_match', 'needs_review'):
+            raise UserError(
+                "No se puede crear una OC provisional mientras existan múltiples "
+                "OCs candidatas o la guía requiera revisión. "
+                "Resuelva la conciliación manualmente."
+            )
+        if self.oc_match_status not in ('not_found', False):
+            if self.order_id:
+                return self.action_open_po()
+            raise UserError(
+                "La guía no está en estado 'not_found'; no se creará una OC provisional."
+            )
+
+        # ── 2. VALIDACIÓN DE ORIGEN DOCUMENTAL ──
         if not self.oc_reference_raw:
             raise UserError(
                 "No se puede crear una Orden de Compra sin referencia documental.\n\n"
                 "La guía no tiene una referencia de OC extraída del documento (oc_reference_raw). "
                 "Procese primero el PDF/Excel para detectar la referencia."
             )
-        
+
+        # ── 3. VALIDACIÓN DE PROVEEDOR ──
         if not self.partner_id:
             raise UserError(
                 "No se puede crear una Orden de Compra sin proveedor.\n\n"
                 "Asigne un Proveedor a la guía antes de crear la OC."
             )
-        
-        # ── 1. Extraer datos candidatos del PDF de OC si existe ──
-        extracted = {}
-        if self.oc_pdf_file:
-            extracted = self._extract_po_draft_values_from_oc_pdf()
-        
-        # ── 2. Crear purchase.order en draft ──
-        # Nombre canónico: SIEMPRE self.oc_reference_raw (referencia documental persistida).
-        # El nombre extraído del PDF (extracted['name']) es solo dato auxiliar, no reemplaza la referencia.
-        po_name = self._canonize_oc_name(self.oc_reference_raw)
-        po = self._create_basic_purchase_order(po_name)
-        
-        # ── 3. Enriquecer con datos extraídos del PDF (solo si son seguros) ──
-        # Si purchase.order tiene campo partner_ref y tenemos supplier_name
-        if extracted.get('supplier_name') and hasattr(self.env['purchase.order'], 'partner_ref'):
-            po.partner_ref = extracted['supplier_name'][:200]
-        
-        # Agregar nota de origen documental via message_post (NO depende de campo 'notes')
-        note_lines = [
-            f"OC creada manualmente desde guía {self.name}.",
-            f"Referencia documental: {self.oc_reference_raw}.",
-        ]
-        if extracted.get('name') and extracted['name'] != self.oc_reference_raw:
-            note_lines.append(f"Nombre detectado en PDF: {extracted['name']} (auxiliar, no vinculante).")
-        if extracted:
-            extras = []
-            if extracted.get('supplier_name'):
-                extras.append(f"Proveedor: {extracted['supplier_name']}")
-            if extracted.get('payment_terms_text'):
-                extras.append(f"Condición de pago: {extracted['payment_terms_text']}")
-            if extracted.get('delivery_window_text'):
-                extras.append(f"Entrega: {extracted['delivery_window_text']}")
-            if extracted.get('quoted_volume_text'):
-                extras.append(f"Volumen: {extracted['quoted_volume_text']} M3")
-            if extracted.get('quoted_price_text'):
-                extras.append(f"Precio: USD ${extracted['quoted_price_text']}/m3")
-            if extras:
-                note_lines.append("Datos extraídos del PDF de OC:")
-                note_lines.extend(f"  - {e}" for e in extras)
-        po.message_post(body='\n'.join(note_lines))
-        
-        # ── 4. Adjuntar PDF de OC a la purchase.order si existe ──
-        if self.oc_pdf_file:
+
+        # ── 4. CONSTRUCCIÓN DEL PAYLOAD NORMALIZADO ──
+        m3_uom = self.env.ref('uom.product_uom_cubic_meter')
+        lines = []
+        for line in self.processing_line_ids:
+            if not line.product_id:
+                raise UserError(
+                    "No se puede crear la OC provisional: la línea %s no posee producto "
+                    "resuelto." % (line.lot_name or line.id)
+                )
+            qty = line.vol_purchase_m3 or line.vol_shipment_m3 or 0.0
+            if qty <= 0:
+                raise UserError(
+                    "No se puede crear la OC provisional: la línea %s no posee una "
+                    "cantidad volumétrica válida." % (line.lot_name or line.id)
+                )
+            lines.append({
+                'product_id': line.product_id.id,
+                'name': line.product_id.display_name,
+                'product_qty': qty,
+                'product_uom': m3_uom.id,
+                'price_unit': 0.0,
+            })
+
+        payload = {
+            'partner_id': self.partner_id.id,
+            'partner_ref': self.oc_reference_raw,
+            'currency_id': self.currency_id.id,
+            'date_order': fields.Datetime.now(),
+            'origin': 'Guía #%s' % self.name,
+            'ingestion_source_ref': 'madenat.guia.processing,%s' % self.id,
+            'lines': lines,
+        }
+        policy = {'auto_create': True, 'provisional': True}
+
+        # ── 5. DELEGAR AL GATEKEEPER (madenat_lumber_purchasing) ──
+        result = self.env['purchase.order'].validate_or_create_po(payload, policy)
+        if not result.get('success'):
+            raise UserError(result.get('error', 'No se pudo crear la OC provisional.'))
+
+        po = self.env['purchase.order'].browse(result['po_id'])
+
+        # ── 6. NOTA DE REVISIÓN OBLIGATORIA ──
+        po.message_post(body=(
+            "OC provisional creada desde guía %s. Los precios de compra están "
+            "pendientes de revisión y aprobación." % self.name
+        ))
+
+        # ── 7. ADJUNTAR PDF DE OC si existe (opcional, no bloqueante) ──
+        if self.oc_pdf_file and not self.env['ir.attachment'].search([
+            ('res_model', '=', 'purchase.order'),
+            ('res_id', '=', po.id),
+            ('name', '=', self.oc_pdf_filename or 'OC PDF'),
+        ], limit=1):
             try:
                 self.env['ir.attachment'].create({
                     'name': self.oc_pdf_filename or 'OC PDF',
@@ -3089,33 +3324,24 @@ class MadenatGuiaProcessing(models.Model):
                     'res_id': po.id,
                     'type': 'binary',
                 })
-                _logger.info(
-                    f"PDF de OC adjuntado a purchase.order {po.name} (id={po.id}) "
-                    f"desde guía {self.name}"
-                )
             except Exception as e:
                 _logger.warning(
                     f"No se pudo adjuntar PDF de OC a PO {po.name}: {e}. "
                     f"La PO se creó igualmente."
                 )
-        
-        # ── 5. Vincular de vuelta a la guía ──
-        # NUNCA sobrescribir oc_reference_raw
+
+        # ── 8. VINCULAR DE VUELTA A LA GUÍA (idempotente) ──
         self.write({
             'order_id': po.id,
             'oc_match_status': 'created',
             'oc_match_note': (
-                f'OC creada manualmente desde guía {self.name} '
-                f'usando referencia documental {self.oc_reference_raw}.'
+                f'OC provisional creada manualmente desde guía {self.name} '
+                f'usando referencia documental {self.oc_reference_raw}. '
+                f'Precios pendientes de revisión.'
             ),
         })
-        
-        _logger.info(
-            f"✅ PO {po.name} (id={po.id}) creada en draft desde guía {self.name}. "
-            f"oc_match_status=created. oc_reference_raw preservado: {self.oc_reference_raw}"
-        )
-        
-        # ── 6. Abrir formulario de la purchase.order creada ──
+
+        # ── 9. ABRIR FORMULARIO DE LA OC ──
         return {
             'type': 'ir.actions.act_window',
             'name': f'Orden de Compra: {po.name}',
@@ -3216,24 +3442,47 @@ class MadenatGuiaProcessing(models.Model):
             _logger.debug("_match_purchase_order: referencia vacía tras normalización.")
             return False
 
-        # Buscar purchase.orders del partner en estados permitidos
-        domain = [('state', 'in', ['draft', 'sent', 'purchase', 'done'])]
-        if self.partner_id:
-            domain.append(('partner_id', '=', self.partner_id.id))
+        # FIX 2026-08-21: endurecimiento de conciliación.
+        # - Si el proveedor no está resuelto, NO se auto-vincula (needs_review).
+        #   Esto evita falsos positivos si dos proveedores reutilizan el mismo name.
+        # - Se compara name normalizado OR partner_ref normalizado (alineado con
+        #   flujo Producto). partner_ref suele traer la referencia del proveedor.
+        if not self.partner_id:
+            self.write({
+                'order_id': False,
+                'oc_match_status': 'needs_review',
+                'oc_match_note': (
+                    'OC no conciliada: proveedor documental no resuelto. '
+                    'Revisar manualmente antes de vincular.'
+                ),
+            })
+            _logger.info(
+                "_match_purchase_order: Guía %s sin proveedor resuelto → needs_review.",
+                self.name,
+            )
+            return False
+
+        # Proveedor resuelto: filtro obligatorio por partner + estados permitidos
+        domain = [
+            ('state', 'in', ['draft', 'sent', 'purchase', 'done']),
+            ('partner_id', '=', self.partner_id.id),
+        ]
         candidates = self.env['purchase.order'].search(domain)
 
-        # Comparar por nombre normalizado
+        # Comparar por nombre normalizado OR partner_ref normalizado
         matches = self.env['purchase.order']
         for po in candidates:
-            candidate_oc_raw = po.name or ''
-            candidate_oc_norm = self._normalize_oc_key(candidate_oc_raw)
-            oc_match_result = (candidate_oc_norm == normalized_ref)
+            candidate_oc_norm = self._normalize_oc_key(po.name or '')
+            candidate_ref_norm = self._normalize_oc_key(po.partner_ref or '')
+            oc_match_result = (
+                candidate_oc_norm == normalized_ref
+                or candidate_ref_norm == normalized_ref
+            )
             _logger.debug(
-                "_match_purchase_order | extracted_oc_raw=%r candidate_oc_raw=%r "
-                "extracted_oc_norm=%r candidate_oc_norm=%r oc_match_result=%s",
-                extracted_oc_raw, candidate_oc_raw,
-                extracted_oc_norm, candidate_oc_norm,
-                oc_match_result,
+                "_match_purchase_order | extracted_oc_raw=%r po.name=%r po.partner_ref=%r "
+                "name_norm=%r ref_norm=%r match=%s",
+                extracted_oc_raw, po.name, po.partner_ref,
+                candidate_oc_norm, candidate_ref_norm, oc_match_result,
             )
             if oc_match_result:
                 matches |= po
@@ -3833,12 +4082,14 @@ class MadenatGuiaProcessing(models.Model):
 
        
 
-    @api.depends('state', 'pdf_attachment_id', 'excel_attachment_id', 'guide_pdf_file', 'excel_file')
+    @api.depends('state', 'excel_attachment_id', 'excel_file')
     def _compute_can_process(self):
+        # Regla canónica documental (decisión funcional 2026-08-22):
+        # para Procesado, el Packing Excel es obligatorio para procesar/verificar;
+        # el PDF de guía es OPCIONAL (aporta costos/proveedor/OC pero no bloquea).
         for rec in self:
             rec.can_process = (
                 rec.state == 'draft' and 
-                (rec.pdf_attachment_id or rec.guide_pdf_file) and 
                 (rec.excel_attachment_id or rec.excel_file)
             )
 

@@ -190,34 +190,34 @@
                   parent="menu_ops_reception_cat"
                   action="action_lumber_reception_pending"
                   sequence="10"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <menuitem id="menu_lumber_reception_pending_stock"
                   name="⏳ Pendientes de Stock"
                   parent="menu_ops_reception_cat"
                   action="action_lumber_reception_pending_stock"
                   sequence="12"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <menuitem id="menu_lumber_reception_kanban"
                   name="📋 Tablero de Recepciones"
                   parent="menu_ops_reception_cat"
                   action="action_lumber_reception_kanban"
                   sequence="5"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <menuitem id="menu_guia_processing_root"
                   name="🏭 Guías Procesadas"
                   parent="menu_ops_reception_cat"
                   sequence="20"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <menuitem id="menu_lumber_reception"
                   name="📋 Historial de Ingresos"
                   parent="menu_ops_reception_cat"
                   action="action_lumber_reception_raw_only"
                   sequence="30"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <!-- ▸ Submenú de Guías Procesadas -->
         <menuitem id="menu_guia_processing_list"
@@ -225,7 +225,7 @@
                   parent="menu_guia_processing_root"
                   action="action_guia_processing_list"
                   sequence="10"
-                  groups="group_madenat_operaciones"/>
+                  groups="group_madenat_jefatura_operaciones"/>
 
         <!-- ▸ Auditoría → Trazabilidad 360° -->
         <menuitem id="menu_madenat_audit"
@@ -243,7 +243,8 @@
                   name="⚖️ Ajustes Físicos (Stock)"
                   parent="menu_ops_inventory"
                   action="action_madenat_inventory_adjustments"
-                  sequence="10"/>
+                  sequence="10"
+                  groups="stock.group_stock_manager"/>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- CONFIGURACIÓN (migrado desde reports)                          -->

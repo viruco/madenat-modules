@@ -1,3 +1,52 @@
+## [18.0.5.11.0] - 2026-08-16
+### Added
+- **BT-04: Salida controlada a proceso para guías service.**
+  - Guías `tipo_recepcion='service'` generan **exactamente una** salida de stock hacia `Virtual Locations/Production` (picking `outgoing`), reutilizando el patrón de consumo de `madenat_toll_processing`. No se usa `stock.scrap`.
+  - Nuevos campos en `madenat.guia.processing`: `source_lot_ids` (M2M, trazabilidad informativa del material crudo) y `consumption_picking_id` (Many2one `stock.picking`, idempotencia).
+  - `_get_or_create_consumption_picking()`: guard de contrato (service-only), bloqueo si no hay lote crudo válido, creación de picking/move/move.line por lote y validación automática.
+  - `_reverse_consumption_picking()`: retorno entrante inverso que repone el quant del lote crudo copiando las `move_line` originales; el picking original permanece en `done`.
+  - Hook `action_validate()` (solo service) antes del ingreso del lote procesado; reversión integrada en `action_force_cancel()` y `action_reopen_to_draft()`.
+  - `madenat.audit.log` gana el `action_type='consumption'`.
+  - `compra` queda intacto (sin salida).
+  - Cobertura nueva: `TestGuiaProcessingConsumptionBT04` (salida única, revalidación sin duplicar, compra sin salida, reversión sin borrar historia, bloqueo sin lote).
+  - Validación: `py_compile` OK; selector `guia_processing` 46 tests, 0 fallos, 0 errores; suite `madenat_lumber_core` 79 tests, 0 fallos, 0 errores.
+  - Riesgo residual: las mermas reales del proceso (yield) no se modelan como scrap; no se retro-aplica la salida a las 2 guías `service` históricas.
+
+## [18.0.5.10.0] - 2026-08-16
+### Fixed
+- **BT-01: Notarización y bitácora inmutable para guía processing.**
+  - `Gate3PreCommit.generate_processing_signature()` (nuevo) firma un snapshot determinista específico de guía con SHA-256. No modifica `generate_signature()` de recepción.
+  - `action_validate()` genera la firma ANTES del primer write a `stock.lot` y persiste al final, solo si el ciclo fue exitoso (misma transacción → sin eventos huérfanos).
+  - `madenat.audit.log` gana `guia_processing_id` (Many2one, `ondelete='set null'`), `audit_snapshot`, `audit_hash` y el `action_type='validation_signature'`. La bitácora es la fuente de verdad inmutable.
+  - Revalidación genera un evento nuevo; cancelar/reabrir no borra ni altera eventos previos.
+  - Recepción y Gate 3 existente conservan exactamente su comportamiento. BT-02 no se reabrió.
+  - Cobertura nueva: `TestGuiaProcessingValidationSignature` (firma, persistencia del evento, bloqueo sin evento, supervivencia ante cancelación).
+  - Validación: suite `madenat_lumber_core`, 50 tests, 0 fallos, 0 errores.
+
+- **BT-03: Bitácora operativa de lotes en guía processing.**
+  - `_create_or_get_lot()` emite `lot_creation` (lote nuevo) o `lot_update` (reutilización idempotente de lote sin `reception_id`), enlazados a `guia_processing_id` en `madenat.audit.log`.
+  - `_validar_y_enriquecer_lineas()` emite `omission` para líneas del Excel descartadas antes de crear lote (sin código interno / cantidad <= 0 / dimensiones no numéricas o <= 0), reutilizando la semántica de recepción.
+  - Un único evento por outcome confirmado; los `write()` posteriores de `do_full_processing` no duplican `lot_update`.
+  - No se modela todavía la baja formal de lotes/etiquetas (fuera de alcance).
+  - Cobertura nueva: `TestGuiaProcessingOperationalAudit` (creación, reutilización, omisión, coexistencia con `validation_signature`).
+  - Validación: suite `madenat_lumber_core`, 54 tests, 0 fallos, 0 errores.
+
+- **BT-02: Protección de lotes de recepción desde guía processing.**
+  - `_create_or_get_lot()` en `madenat_guia_processing.py` ahora excluye explícitamente lotes con `reception_id` en la búsqueda inicial y en el fallback posterior a `IntegrityError`: `('reception_id', '=', False)`.
+  - Un lote originado en recepción no puede reutilizarse ni sobrescribirse desde guía processing aunque coincidan nombre, producto y compañía.
+  - Se preserva la idempotencia de lotes sin `reception_id` del flujo de guía processing.
+  - Cobertura nueva: `TestCreateOrGetLotReceptionProtection` (protección de lote de recepción + reutilización legítima de lote sin recepción).
+  - Validación: suite `madenat_lumber_core`, 46 tests, 0 fallos, 0 errores.
+  - Sin cambios a Gate 3, auditoría, S2S/Blank, constraints, XML, seeds, Docker ni datos persistentes.
+
+## [18.0.5.9.0] - 2026-07-08
+### Refactored
+- **AD-43: Unificada `_get_fraction_text` duplicada** en `utils_uom.py` como `decimal_inch_to_fraction_simple(value, denominator=8, tolerance=0.05)`. Eliminadas dos implementaciones divergentes en `madenat_guia_processing.py:542` (base-8 con tolerancia 0.05) y `lumber_reception.py:647` (base-16 con gcd). Wrappers de 1 línea en ambos archivos. Comportamiento preservado: base-8 para guías/S2S, base-16 para recepciones/Blanks. Registry cargado en 2.657s, 0 errores.
+
+## [18.0.5.8.0] - 2026-07-08
+### Refactored
+- **AD-42:** Extraída `_parse_float_value` de `madenat_guia_processing.py` a utilidad compartida `parse_float_value` en `utils_uom.py`. Mismo patrón AD-41: función pura + wrapper delegado. 11 call sites. Heurísticas CLP, mm→m, mm→cm preservadas intactas. Registry cargado en 2.726s, 0 errores.
+
 ## [18.0.5.7.0] - 2026-07-08
 ### Refactored
 - Extraída `_parse_fraction` de `madenat_guia_processing.py` a utilidad compartida `parse_fraction_to_decimal_inch` en `utils_uom.py`. Consolidada duplicación con `stock_lot._parse_fraction_to_decimal`. Sin cambios de comportamiento (12 tests unitarios). AD-41.

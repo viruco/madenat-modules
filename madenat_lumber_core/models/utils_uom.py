@@ -62,6 +62,7 @@ FUENTE ÚNICA (2026-04-09):
 
 import logging
 import math
+import re
 from decimal import Decimal, ROUND_HALF_UP
 from fractions import Fraction
 
@@ -138,6 +139,95 @@ def decimal_inch_to_fraction_str(decimal_value):
     except (ValueError, TypeError):
         # Fallback seguro: si mandan string basura, se devuelve tal cual
         return str(decimal_value)
+
+
+def decimal_inch_to_fraction_simple(value, denominator=8, tolerance=None):
+    """
+    Convierte pulgadas decimales a representación fraccionaria simple,
+    unificando los comportamientos de _get_fraction_text de guia_processing
+    (base-8 octavos) y lumber_reception (base-16 con simplificación gcd).
+
+    Extraído de MadenatGuiaProcessing._get_fraction_text +
+    MadenatLumberReception._get_fraction_text (AD-43).
+
+    Args:
+        value: Valor en pulgadas decimales (float o convertible)
+        denominator: Base de redondeo — 8 para octavos (S2S/exportación),
+                     16 para dieciseisavos (Blanks). Default: 8.
+        tolerance: Solo aplica con denominator=8. Si el valor difiere más
+                   que esta tolerancia del octavo más cercano, se devuelve
+                   como decimal crudo en vez de forzar una fracción.
+                   Default: 0.05 (guia_processing). Usar None para
+                   desactivar (lumber_reception — siempre redondea).
+
+    Returns:
+        str: Fracción formateada ("4 5/8", "5 9/16", "170") o "" si inválido.
+    """
+    if not value or value <= 0:
+        return ""
+
+    try:
+        val = float(value)
+    except (ValueError, TypeError):
+        return ""
+
+    whole = int(val)
+    frac = val - whole
+
+    # Redondear al denominador más cercano
+    units = int(round(frac * denominator))
+
+    # Casos borde: redondeo al entero superior o sin fracción
+    if units == denominator:
+        return str(whole + 1)
+    if units == 0:
+        return str(whole) if whole > 0 else ""
+
+    # ── denominator=8: mapeo directo a octavos con tolerancia ──
+    if denominator == 8:
+        if tolerance is not None:
+            # Calcular diferencia real vs el octavo asignado
+            actual_frac_val = units / 8.0
+            diff = abs(frac - actual_frac_val)
+            if diff > tolerance:
+                # Fuera de tolerancia → devolver decimal crudo
+                return f"{val:.2f}"
+        # Mapeo directo de octavos (sin simplificación — preserva base-8)
+        octave_map = {1: "1/8", 2: "1/4", 3: "3/8", 4: "1/2",
+                      5: "5/8", 6: "3/4", 7: "7/8"}
+        f_text = octave_map.get(units, f"{units}/8")
+
+    # ── denominator=16: simplificación gcd (lumber_reception) ──
+    elif denominator == 16:
+        from math import gcd
+        common = gcd(units, 16)
+        num = units // common
+        den = 16 // common
+        f_text = f"{num}/{den}"
+    else:
+        # Fallback genérico
+        f_text = f"{units}/{denominator}"
+
+    return f"{whole} {f_text}".strip() if whole > 0 else f_text
+
+
+def normalize_oc_key(value):
+    """
+    Normaliza referencia de OC para matching técnico: solo A-Z0-9 mayúsculas,
+    sin espacios ni puntuación.
+
+    Unifica _normalize_oc_key de MadenatGuiaProcessing y LumberReception.
+    Extraído vía AD-44.
+
+    Args:
+        value: String con referencia de OC (ej: 'MC 2506-01', 'OC-2506')
+
+    Returns:
+        str: Clave normalizada (ej: 'MC250601') o '' si entrada vacía/None.
+    """
+    if not value:
+        return ''
+    return re.sub(r'[^A-Z0-9]+', '', (value or '').upper())
 
 
 def decimal_inch_to_mm(decimal_value):
@@ -224,6 +314,56 @@ def parse_fraction_to_decimal_inch(fraction_str):
 # 🧮 FUNCIONES DE CONVERSIÓN
 # ============================================================================
 
+
+def parse_float_value(value, context=''):
+    """
+    Convierte un valor de texto sucio a float, con heurísticas de dominio
+    para formatos monetarios chilenos (CLP) y dimensiones físicas (mm→m, mm→cm).
+
+    Extraído de MadenatGuiaProcessing._parse_float_value (AD-42).
+    Parámetros:
+        value: valor a convertir (str, float, int, None, NaN)
+        context: etiqueta semántica ('vol_pdf', 'subtotal_neto', 'largo', etc.)
+    Retorna:
+        float convertido, o 0.0 si el valor no es parseable.
+    """
+    import pandas as pd
+    if pd.isna(value) or value is None:
+        return 0.0
+    try:
+        s = str(value).strip()
+        if not s or s.lower() in ['nan', 'none', '']:
+            return 0.0
+        clean = re.sub(r'[^\d\.,-]', '', s)
+
+        # ══════════════════════════════════════════════════════════
+        # Detectar formato monetario chileno (CLP)
+        # ══════════════════════════════════════════════════════════
+        is_clp = any(x in context.lower() for x in ['clp', 'subtotal', 'unit_price', 'neto', 'total'])
+
+        if ',' in clean and '.' in clean:
+            # Formato europeo: 1.234,56 → 1234.56
+            clean = clean.replace('.', '').replace(',', '.')
+        elif ',' in clean:
+            # Tiene solo coma: puede ser decimal o separador
+            clean = clean.replace(',', '.') if clean.count(',') == 1 else clean.replace(',', '')
+        elif '.' in clean and is_clp:
+            # Formato chileno CLP: 831.829 → 831829 (punto = separador de miles)
+            parts = clean.split('.')
+            if len(parts) == 2 and len(parts[1]) == 3 and parts[0].isdigit() and parts[1].isdigit():
+                # Un solo punto con exactamente 3 dígitos después
+                clean = clean.replace('.', '')
+
+        val = float(clean)
+
+        # Conversiones específicas por contexto
+        if 'largo' in context.lower() and val > 100:
+            return val / 1000.0
+        if any(x in context.lower() for x in ['espesor', 'ancho']) and val > 1000:
+            return val / 10.0
+        return val
+    except Exception:
+        return 0.0
 
 
 def m3_to_mbf(m3_value):

@@ -158,24 +158,29 @@ class TestDuplicateValidation(TransactionCase):
     # TEST 4: Bloqueo antes de staging (vía workflow simulado)
     # ──────────────────────────────────────────────────────────────────
     def test_04_no_staging_on_duplicate(self):
-        """Si la guía ya existe, no se debe crear staging."""
-        rec_existing = self._create_reception('88003')
+        """Si la guía ya existe, la validación temprana la bloquea sin crear staging.
+
+        Uso un identificador aislado (no el literal global '88003') para no
+        chocar con la constraint SQL UNIQUE(name) de lumber.reception. La
+        validación se ejerce sobre el único registro existente vía la interfaz
+        ya usada por test_01/test_06, sin intentar crear una segunda cabecera
+        con el mismo nombre.
+        """
+        guide_no = 'TSTDUP04-UNIQUE'
+        rec_existing = self._create_reception(guide_no)
         rec_existing.write({'state': 'done'})
 
-        # Intentar procesar una NUEVA recepción con la misma guía
-        rec_new = self._create_reception('88003')
-
-        _logger.info("🔍 TEST 4: verificando que el pipeline bloquea duplicado antes de staging")
+        _logger.info("🔍 TEST 4: verificando que la validación temprana bloquea duplicado guía=%s", guide_no)
         with self.assertRaises(UserError) as ctx:
-            rec_new.action_process_documents()
+            self.parser._check_guide_duplicate(guide_no)
 
         error_msg = str(ctx.exception)
-        self.assertIn('88003', error_msg)
+        self.assertIn(guide_no, error_msg)
         self.assertIn('ya fue registrada', error_msg)
 
-        # Confirmar que no se creó staging
+        # Confirmar que no se creó staging sobre el registro existente
         self.assertEqual(
-            rec_new.reception_line_ids.ids, [],
+            rec_existing.reception_line_ids.ids, [],
             "No deben existir líneas de staging para una guía duplicada"
         )
         _logger.info("✅ TEST 4 PASADO: staging vacío tras bloqueo por duplicado")

@@ -220,6 +220,11 @@
                                    options="{'no_create': True, 'no_quick_create': True}"
                                    domain="[('state', 'in', ['draft','sent','to approve','purchase','done'])]"
                                    readonly="state in ('done', 'cancel')"/>
+                            <field name="manual_po_name"
+                                   string="OC Manual (sin OC en Odoo)"
+                                   placeholder="Ingrese la referencia de OC aquí si no existe en Odoo"
+                                   invisible="purchase_id"
+                                   readonly="state in ('done', 'cancel')"/>
                             <field name="oc_reference_raw"
                                    string="Referencia OC del documento"
                                    readonly="1"
@@ -240,6 +245,9 @@
                                    string="Detalle de conciliación"
                                    readonly="1"/>
                         </group>
+
+                        <!-- Alerta no bloqueante de trazabilidad OC (compute HTML del modelo) -->
+                        <field name="po_missing_alert" widget="html" nolabel="1" colspan="2"/>
                     </group>
 
                     <notebook invisible="state == 'draft'">

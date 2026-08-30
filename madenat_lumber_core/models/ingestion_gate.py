@@ -224,6 +224,41 @@ class Gate3PreCommit:
         sha256_hash = hashlib.sha256(json_snapshot.encode('utf-8')).hexdigest()
         return json_snapshot, sha256_hash
 
+    # ==========================================================================
+    # BT-01 (2026-08-16): Firma de un ciclo de validación de guía procesada.
+    # No modifica generate_signature() de recepción. Payload determinista propio.
+    # ==========================================================================
+    def generate_processing_signature(self, guia, processing_lines):
+        """
+        Genera un snapshot inmutable específico de guía processing y su hash SHA-256.
+
+        ARGS:
+            guia: recordset madenat.guia.processing
+            processing_lines: recordset madenat.guia.processing.line
+
+        RETURNS:
+            (json_snapshot, sha256_hash)
+        """
+        payload = {
+            "guia_id": guia.id,
+            "guia_no": guia.name,
+            "timestamp_utc": datetime.utcnow().isoformat(),
+            "operator_id": self.user.id,
+            "total_commercial_m3": guia.vol_comercial,
+            "lines": []
+        }
+        for line in processing_lines:
+            payload["lines"].append({
+                "lot_name": line.lot_name,
+                "vol_purchase_m3": line.vol_purchase_m3,
+                "vol_shipment_m3": line.vol_shipment_m3,
+                "pieces": line.pieces,
+            })
+
+        json_snapshot = json.dumps(payload, sort_keys=True)
+        sha256_hash = hashlib.sha256(json_snapshot.encode('utf-8')).hexdigest()
+        return json_snapshot, sha256_hash
+
 
 # =============================================================================
 # PUNTO DE INTEGRACIÓN — Cómo llamar los Gates desde lumber_reception.py

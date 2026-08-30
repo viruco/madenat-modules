@@ -361,22 +361,65 @@ class TestLumberReception(TransactionCase):
             'width_nominal': 139.7,      
         })
         
-        # T13 REFORZADO: blank debe tener valor EXACTO sin +1/8" de cepillado
-        # Fórmula: E_in x A_in x L_ft x Pzas / 5085.312 (sin recargo)
-        # linea_blk: espesor_nominal=44.45mm(1.75") x ancho_nominal=139.7mm(5.5") x 2.44m(8.005ft) x 20pzas
-        # MADENAT-FIX-BLANK-2026-06-02
-        _e = 44.45 / 25.4          # espesor nominal en pulgadas
-        _a = 139.7 / 25.4          # ancho nominal en pulgadas (SIN +1/8")
-        _l = 2.44 / 0.3048         # largo en pies
-        _p = 20                    # piezas
-        expected_blank_vol = round((_e * _a * _l * _p) / 5085.312, 3)
+        # T13 REFORZADO (2026-08-15): la validación de volumen exacto de Blank se
+        # separó a test_13b_* (golden records MSC VIRGO 5.399 / 5.062). Aquí T13
+        # conserva su responsabilidad original: S2S y Blank conviven sin contaminación.
         self.assertGreater(linea_std.vol_shipment_m3, 0,
             'T13: vol S2S debe ser > 0')
-        self.assertAlmostEqual(linea_blk.vol_shipment_m3, expected_blank_vol, places=3,
-            msg=f'T13: BLANK no debe tener +1/8". '
-                f'Esperado={expected_blank_vol}, Obtenido={linea_blk.vol_shipment_m3}')
         self.assertNotAlmostEqual(linea_std.vol_shipment_m3, linea_blk.vol_shipment_m3, places=3,
             msg='T13: S2S y blank deben tener volúmenes distintos')
+
+    def test_13b_blank_msc_virgo_golden_records(self):
+        """T13b: Golden records Blank MSC VIRGO.
+
+        Evidencia primaria: LISTADO Y TARJAS MN MSC VIRGO FA610R.xlsx
+        (reconciliación 2026-08-15). La fórmula productiva de la rama blank_clear
+        de `_compute_export_values` produce estos volúmenes; aquí NO se recalcula
+        la fórmula: se aserta contra los valores redondeados a 3 decimales de dos
+        tarjas reales validadas:
+          - A: 1.5625" × 2.625" × 16 ft × 416 = 5.399 m³
+          - B: 1.5625" × 3.625" × 16 ft × 286 = 5.062 m³
+        """
+        def _make_case(recepcion, idx, width_document_value, pieces):
+            # El guard de `_compute_export_values` exige largo en metros > 0
+            # (l_m = length_nominal si > 0, sino length). Se usa length_nominal
+            # (16 ft = 4.8768 m) para satisfacerlo sin disparar la validación
+            # dimensional del create (que exige thickness/width válidos en mm).
+            return self.LumberReceptionLine.create({
+                'reception_id': recepcion.id,
+                'lot_name': f'MSC-{idx}',
+                'product_id': self.product.id,
+                'subproduct_id': self.subproduct.id,
+                'thickness_document_value': '1.5625',
+                'width_document_value': width_document_value,
+                'length_nominal': 4.8768,
+                'length_input_raw': 16.0,
+                'lengthuom': 'ft',
+                'pieces': pieces,
+                'export_calculation_rule': 'f5085',
+            })
+
+        # Caso MSC VIRGO A
+        recepcion_a = self.LumberReception.create({
+            'name': 'TEST-T13B-MSCA',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'f5085',
+        })
+        linea_a = _make_case(recepcion_a, 'A', '2.625', 416)
+        self.env.flush_all()
+        self.assertAlmostEqual(linea_a.vol_shipment_m3, 5.399, places=3,
+            msg='T13b: MSC VIRGO A debe dar 5.399 m³')
+
+        # Caso MSC VIRGO B
+        recepcion_b = self.LumberReception.create({
+            'name': 'TEST-T13B-MSCB',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'f5085',
+        })
+        linea_b = _make_case(recepcion_b, 'B', '3.625', 286)
+        self.env.flush_all()
+        self.assertAlmostEqual(linea_b.vol_shipment_m3, 5.062, places=3,
+            msg='T13b: MSC VIRGO B debe dar 5.062 m³')
 
     def test_14_edge_cases_volumen_nulo_bloquea(self):
         """T14: Edge cases volumen nulo - bloquea confirmación"""

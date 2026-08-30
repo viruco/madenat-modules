@@ -65,6 +65,71 @@ class TestMadenatGuiaProcessing(TransactionCase):
         self.assertFalse(guia.can_process,
             "can_process debe ser False sin adjuntos Excel ni PDF")
 
+    def test_03b_can_process_con_excel_sin_pdf(self):
+        """can_process debe ser True en draft con Excel presente y PDF ausente
+        (regla canónica 2026-08-22: PDF opcional, Excel obligatorio)."""
+        import base64
+        guia = self.GuiaModel.create({
+            'name': 'TEST-003B',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'excel_file': base64.b64encode(b'fake').decode(),
+            'excel_filename': 'packing.xlsx',
+        })
+        self.assertTrue(guia.can_process,
+            "can_process debe ser True con Excel y sin PDF (PDF opcional)")
+
+    def test_03c_can_process_sin_excel(self):
+        """can_process debe ser False en draft sin Excel aunque exista PDF."""
+        import base64
+        guia = self.GuiaModel.create({
+            'name': 'TEST-003C',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'guide_pdf_file': base64.b64encode(b'%PDF-fake').decode(),
+            'guide_pdf_filename': 'guia.pdf',
+        })
+        self.assertFalse(guia.can_process,
+            "can_process debe ser False sin Excel aunque exista PDF")
+
+    def test_verify_data_sin_excel_bloquea(self):
+        """action_verify_data debe bloquear si falta el Excel de Packing (regla core)."""
+        guia = self.GuiaModel.create({
+            'name': 'TEST-003D',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+        })
+        with self.assertRaises(UserError) as ctx:
+            guia.action_verify_data()
+        self.assertIn('Excel de Packing', str(ctx.exception))
+
+    def test_verify_data_con_excel_sin_pdf_permitido(self):
+        """action_verify_data debe permitir verificar con Excel presente y PDF ausente
+        (usa hook force_packing_data para evitar parser externo)."""
+        import base64
+        guia = self.GuiaModel.create({
+            'name': 'TEST-003E',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'excel_file': base64.b64encode(b'fake').decode(),
+            'excel_filename': 'packing.xlsx',
+        })
+        # Hook del parser: retorno directo sin tocar archivo real.
+        packing_data = {'lineas': [{
+            'Codigo Interno': 'X100',
+            'N° LOTE': 'L1',
+            'Cantidad': 1,
+            'Volumen': 1.0,
+            'Espesor': 10,
+            'Ancho': 100,
+            'Largo': 2.0,
+            'product_name': 'Madera Test',
+            'espesor_nominal_mm': 0.0,
+        }]}
+        guia.with_context(force_packing_data=packing_data).action_verify_data()
+        self.assertEqual(guia.state, 'verified',
+            "La guía debe quedar en verified con Excel y sin PDF")
+
     # ─── GRUPO 2: State machine ────────────────────────────────────────────
 
     def test_04_state_machine_transiciones_validas(self):
