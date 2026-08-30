@@ -18,7 +18,7 @@ Capacidades:
     'author': 'MADENAT',
     'license': 'LGPL-3',
     'category': 'Inventory/Lumber',
-    'depends': ['madenat_lumber_core'],
+    'depends': ['madenat_lumber_core', 'madenat_toll_processing'],
     'data': [
         'security/ir.model.access.csv',
         'views/intake_wizard_views.xml',

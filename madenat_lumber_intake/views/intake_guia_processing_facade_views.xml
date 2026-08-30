@@ -76,6 +76,9 @@
                                     <field name="date_emission" string="Fecha de Emisión"/>
                                     <field name="tipo_recepcion" string="Tipo de Recepción"/>
                                     <field name="partner_id" string="Proveedor / Transportista"/>
+                                    <field name="toll_order_id"
+                                           invisible="tipo_recepcion != 'service'"
+                                           readonly="state in ('validated','processed')"/>
                                 </group>
                                 <group>
                                     <field name="oc_reference_raw" string="Referencia OC del documento"/>

@@ -135,9 +135,11 @@ class MadenatLumberIntakeWizard(models.Model):
                 'params': {
                     'title': 'Ingreso Procesado',
                     'message': (
-                        'El documento será interpretado por el flujo nativo '
-                        'de Procesados al derivarlo; no se usa prelectura de '
-                        'Producto para preservar agrupaciones por lote y paquetes.'
+                        'El documento fue leído correctamente y será interpretado '
+                        'por el flujo de Procesados. Se conservará la estructura '
+                        'del Excel, incluidos los paquetes agrupados por número de '
+                        'lote. Puede continuar el ingreso; posteriormente deberá '
+                        'asignar el producto y subproducto antes de enviarlo a stock.'
                     ),
                     'type': 'info',
                     'sticky': True,
