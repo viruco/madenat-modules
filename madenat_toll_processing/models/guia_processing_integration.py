@@ -28,10 +28,16 @@ class MadenatGuiaProcessing(models.Model):
         Al seleccionar una orden de procesamiento:
         1. Cambia el tipo de guía a 'servicio' (retorno de maquila).
         2. Asigna automáticamente el proveedor (procesador).
+        3. Propaga los lotes crudos de origen (source_lot_ids) desde la orden
+           hacia la guía para la validación BT-04 de salida a proceso.
         """
         if self.toll_order_id:
-            self.tipo_recepcion = 'servicio'
+            self.tipo_recepcion = 'service'
             self.partner_id = self.toll_order_id.processor_id
+            if self.toll_order_id.source_lot_ids:
+                self.source_lot_ids = [
+                    (6, 0, self.toll_order_id.source_lot_ids.ids)
+                ]
 
     # =========================================================================
     # 3) HERENCIA DE COSTOS DESDE LOTES ORIGEN HACIA LOTES PROCESADOS
