@@ -306,6 +306,7 @@ class MadenatLumberIntakeWizard(models.Model):
                     'excel_file': self.excel_file,
                     'excel_filename': self.excel_filename,
                     'tipo_recepcion': 'service',
+                    'intake_direct_stock': True,
                     'assignment_location_id': self.assignment_location_id.id,
                 }
                 if self.pdf_file:

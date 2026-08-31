@@ -6,13 +6,25 @@ para exponer navegación de retorno al Ingreso de Madera sin modificar el core.
 No se añade lógica de negocio: solo un método de UX que devuelve la consola
 de intake filtrada por el registro origen actual.
 """
-from odoo import models, _
+from odoo import models, fields, _
 
 from .intake_constants import CONSOLE_ID_OFFSET
 
 
 class MadenatGuiaProcessingIntake(models.Model):
     _inherit = 'madenat.guia.processing'
+
+    intake_direct_stock = fields.Boolean(
+        string='Recepción Directa (Intake)',
+        default=False,
+        help='Guía creada por Intake como recepción directa a stock, sin consumo de materia prima.'
+    )
+
+    def _get_or_create_consumption_picking(self):
+        self.ensure_one()
+        if self.intake_direct_stock:
+            return False
+        return super()._get_or_create_consumption_picking()
 
     def _get_intake_console_action(self):
         """Acción canónica de retorno a Ingreso de Madera (FIX 2026-08-21).
