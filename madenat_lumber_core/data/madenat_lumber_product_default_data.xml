@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- PRODUCTO MAESTRO (Fase 1 — Fundación)                          -->
+        <!-- El único producto aprobado explícitamente para toda la operación. -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <record id="product_madera_aserrada_seca" model="product.product">
+            <field name="name">Madera Aserrada Seca</field>
+            <field name="default_code">MADERA_ASERRADA_SECA</field>
+            <field name="type">consu</field>
+            <field name="tracking">lot</field>
+            <field name="categ_id" ref="product.product_category_all"/>
+            <field name="uom_id" ref="uom.product_uom_cubic_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_cubic_meter"/>
+            <field name="sale_line_warn">no-message</field>
+            <field name="purchase_line_warn">no-message</field>
+            <field name="sale_ok" eval="True"/>
+            <field name="purchase_ok" eval="True"/>
+        </record>
+
+        <!-- Reglas de producto maestro por tipo de ingreso -->
+        <record id="product_default_bruta" model="madenat.lumber.product.default">
+            <field name="tipo_ingreso">bruta</field>
+            <field name="product_id" ref="product_madera_aserrada_seca"/>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="product_default_procesado" model="madenat.lumber.product.default">
+            <field name="tipo_ingreso">procesado</field>
+            <field name="product_id" ref="product_madera_aserrada_seca"/>
+            <field name="sequence">20</field>
+        </record>
+
+    </data>
+</odoo>

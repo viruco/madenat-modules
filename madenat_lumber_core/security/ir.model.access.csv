@@ -29,3 +29,5 @@ access_lumber_export_formula_config,lumber.export.formula.config,model_lumber_ex
 access_lumber_export_formula_user,lumber.export.formula.user,model_lumber_export_formula,base.group_user,1,0,0,0
 access_lumber_ingestion_format_config,lumber.ingestion.format.config,model_lumber_ingestion_format,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
 access_lumber_ingestion_format_user,lumber.ingestion.format.user,model_lumber_ingestion_format,base.group_user,1,0,0,0
+access_madenat_lumber_product_default_user,madenat.lumber.product.default.user,model_madenat_lumber_product_default,base.group_user,1,0,0,0
+access_madenat_lumber_product_default_manager,madenat.lumber.product.default.manager,model_madenat_lumber_product_default,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1

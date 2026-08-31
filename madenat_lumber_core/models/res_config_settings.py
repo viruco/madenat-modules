@@ -13,6 +13,15 @@ class ResConfigSettings(models.TransientModel):
         help='Si está activado, el sistema creará productos automáticamente cuando no existan en el packing list'
     )
 
+    allow_subproduct_creation = fields.Boolean(
+        string='Permitir creación automática de subproductos',
+        config_parameter='madenat.allow_subproduct_creation',
+        default=False,
+        help='Si está activado, el sistema podrá crear subproductos '
+             '(madenat.subproducto) automáticamente cuando no existan al '
+             'leer un documento de ingreso. Fase 2: aún no conectado a parsers.'
+    )
+
     omission_threshold = fields.Integer(
         string='Umbral máximo de omisiones por importación',
         config_parameter='madenat.omission_threshold',

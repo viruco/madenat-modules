@@ -17,7 +17,8 @@ USO:
 """
 import json
 import logging
-from odoo import models, api
+from odoo import models, api, _
+from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 class MadenatIngestionConfig(models.AbstractModel):
@@ -228,3 +229,51 @@ class MadenatIngestionConfig(models.AbstractModel):
         # Fuente 2: Hardcode legacy
         _logger.warning("IngestionConfig: usando hardcode legacy s2s_exclusion_widths")
         return [150.0, 160.0, 170.0, 180.0, 200.0]
+
+    # =====================================================================
+    # 7. PRODUCTO MAESTRO POR TIPO DE INGRESO (Fase 1)
+    # =====================================================================
+    @api.model
+    def get_default_product(self, tipo_ingreso, profile=None):
+        """Resuelve el producto maestro configurado para un tipo de ingreso.
+
+        Prioridad de búsqueda (de mayor a menor):
+          1. coincidencia exacta tipo + perfil, de la compañía activa;
+          2. coincidencia exacta tipo + perfil, global (sin compañía);
+          3. fallback solo por tipo (perfil vacío), de la compañía activa;
+          4. fallback solo por tipo (perfil vacío), global (sin compañía).
+
+        Devuelve un recordset `product.product` único. Si no hay regla activa,
+        lanza `UserError` accionable y nunca crea un producto dinámico.
+        """
+        Rule = self.env['madenat.lumber.product.default']
+        company_id = self.env.company.id if self.env.company else False
+
+        def _find(prof, comp):
+            domain = [
+                ('tipo_ingreso', '=', tipo_ingreso),
+                ('ingestion_profile', '=', prof or False),
+                ('company_id', '=', comp),
+                ('active', '=', True),
+            ]
+            return Rule.sudo().search(domain, order='sequence, id', limit=1)
+
+        rule = False
+        if profile:
+            rule = _find(profile, company_id) or _find(profile, False)
+        if not rule:
+            rule = _find(False, company_id) or _find(False, False)
+
+        if not rule:
+            tipo_label = dict(Rule._fields['tipo_ingreso'].selection).get(
+                tipo_ingreso, tipo_ingreso)
+            raise UserError(_(
+                "No hay un Producto Maestro configurado para el tipo de "
+                "ingreso '%(tipo)s'.\n\n"
+                "Operaciones debe completar la configuración en "
+                "MADENAT Lumber → Configuración Ingesta → Productos Maestros "
+                "por Tipo y activar una regla para '%(tipo)s'.\n\n"
+                "No se creó ningún producto automáticamente."
+            ) % {'tipo': tipo_label})
+
+        return rule.product_id

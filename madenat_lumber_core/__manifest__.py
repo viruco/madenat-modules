@@ -9,6 +9,10 @@
         'stock',
         'product',
         'purchase',
+        # 'sale' garantiza el orden de carga: su columna NOT NULL
+        # product_template.sale_line_warn debe existir al cargar el dato de
+        # producto maestro de este módulo (esquema preexistente en madenat_test).
+        'sale',
         'account',
         'mail',
         'sms',
@@ -38,6 +42,7 @@
         # 🏗️ 5. MENÚS
         'views/lumber_core_menu.xml',
         'views/lumber_ingestion_config_views.xml',
+        'views/madenat_lumber_product_default_views.xml',
 
         # 📊 6. REPORTES
         'reports/madenat_guia_report.xml',
@@ -50,6 +55,7 @@
 
         # 🌱 8. DATOS SEMILLA
         'data/madenat_subproducto_data.xml',
+        'data/madenat_lumber_product_default_data.xml',
 
         # 🎨 9. RANGOS VISUALES NOMINAL COMERCIAL
         'data/thickness_visual_ranges_seed.xml',

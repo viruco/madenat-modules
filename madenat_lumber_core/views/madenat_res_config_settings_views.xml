@@ -23,6 +23,15 @@
                                 </div>
                             </div>
                         </setting>
+
+                        <setting>
+                            <field name="allow_subproduct_creation"/>
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Crear subproductos automáticamente al leer documentos de ingreso
+                                </div>
+                            </div>
+                        </setting>
                         
                         <setting>
                             <field name="omission_threshold"/>
