@@ -5,3 +5,4 @@ from . import test_duplicate_validation
 from . import test_supplier_resolution
 from . import test_guia_processing_display_name
 from . import test_product_default
+from . import test_subproducto_contract

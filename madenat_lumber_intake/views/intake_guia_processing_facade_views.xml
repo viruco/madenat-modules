@@ -140,8 +140,11 @@
                                 <list create="false" edit="true" delete="false">
                                     <field name="lot_name" string="Etiqueta / Lote"/>
                                     <field name="sku_original" string="SKU Original"/>
-                                    <field name="product_name_original" string="Producto"/>
+                                    <field name="product_id" string="Producto Maestro" readonly="1"/>
+                                    <field name="subproducto_id" string="Subproducto / Grado"/>
+                                    <field name="product_name_original" string="Texto Excel"/>
                                     <field name="pieces" string="Piezas"/>
+                                    <field name="espesor_mm" string="Esp. Físico (mm)"/>
                                     <field name="espesor_nominal_mm" string="Esp. Nom (mm)"/>
                                     <field name="ancho_nominal_mm" string="Ancho Nom (mm)"/>
                                     <field name="largo_nominal_m" string="Largo Nom (m)"/>

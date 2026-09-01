@@ -155,6 +155,38 @@ class LumberIngestMixin(models.AbstractModel):
                 # Aseguramos que el fallback también esté sano
                 if fallback: self.validate_product_lumber_config(fallback)
                 return fallback
+
+    # ==========================================================================
+    # 2b. FUNCIÓN DE SUBPRODUCTO (Fase 2 — contrato Producto/Subproducto)
+    # ==========================================================================
+    @api.model
+    def find_or_create_lumber_subproducto(self, raw_value):
+        """Resuelve o crea un `madenat.subproducto` desde el texto del Excel.
+
+        - Normaliza el texto y genera un código técnico estable.
+        - Busca por código normalizado y luego por nombre case-insensitive.
+        - Si no existe, lo crea automáticamente (autocreación de subproductos).
+        - Texto vacío: devuelve recordset vacío (no crea catálogo).
+        - Nunca crea ni modifica `product.product`.
+        """
+        raw = str(raw_value or '').strip()
+        if not raw or raw.lower() in ('nan', 'none'):
+            return self.env['madenat.subproducto']
+
+        code = re.sub(r'[^A-Z0-9]+', '-', raw.upper()).strip('-')[:30]
+        Sub = self.env['madenat.subproducto']
+
+        sub = Sub.search([('code', '=', code)], limit=1)
+        if not sub:
+            sub = Sub.search([('name', '=ilike', raw)], limit=1)
+        if sub:
+            return sub
+
+        return Sub.create({
+            'name': raw,
+            'code': code,
+            'description': 'Creado automáticamente desde ingesta (Fase 2).',
+        })
     # ========================================================================
     # NUEVA LÓGICA DE CÁLCULO (Nominal vs Real)
     # ========================================================================

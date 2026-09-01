@@ -149,10 +149,12 @@
                                             string="Editar"
                                             icon="fa-pencil"/>
                                     <field name="lot_name" string="Etiqueta / Lote" readonly="1"/>
-                                    <field name="excel_product_name" string="Producto (Excel)" readonly="1"/>
-                                    <field name="product_id" string="Producto" readonly="1"
+                                    <field name="excel_product_name" string="Texto Excel" readonly="1"/>
+                                    <field name="product_id" string="Producto Maestro" readonly="1"
                                            options="{'no_open': True, 'no_create': True}"/>
-                                    <field name="subproduct_id" string="Grado" readonly="1"/>
+                                    <field name="subproduct_id" string="Subproducto / Grado" readonly="1"/>
+                                    <field name="thickness" string="Esp. Físico (mm)" readonly="1"/>
+                                    <field name="width" string="Ancho Físico (mm)" readonly="1"/>
                                     <field name="thickness_nominal" string="Esp. Nom (mm)" readonly="1"/>
                                     <field name="width_nominal" string="Ancho Nom (mm)" readonly="1"/>
                                     <field name="thickness_visual" string="Esp. Comercial" readonly="1"/>

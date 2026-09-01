@@ -2057,14 +2057,18 @@ class LumberReception(models.Model):
         lines_to_create = []
         raw_lines = pl_data.get('lines', [])
         
+        # Fase 2 — Producto maestro fijo por tipo de ingreso (no desde el Excel).
+        product = self.env['madenat.ingestion.config'].get_default_product(
+            'bruta', profile=self.ingestion_profile)
+
         # Invocamos la inteligencia del Mixin
         IngestMixin = self.env['madenat.lumber.ingest.mixin']
         
         for item in raw_lines:
-            # A. Obtención de Producto
-            p_code = item.get('product_code', '') 
-            p_name = item.get('product_name', 'Madera Genérica')
-            product = IngestMixin.find_or_create_lumber_product(p_code, p_name)
+            # A. Subproducto desde el texto del Excel (Fase 2).
+            p_code = item.get('product_code', '')
+            p_name = str(item.get('product_name') or '').strip()
+            subproducto = IngestMixin.find_or_create_lumber_subproducto(p_name)
             
             vol_detectado = item.get('volume_m3', 0.0)
             
@@ -2075,6 +2079,8 @@ class LumberReception(models.Model):
                 # 🔥 IDENTIDAD REAL: Se mantiene tu lógica original
                 'lot_name': p_code if p_code else f"S/N-{item.get('package_no', 0)}", 
                 'product_id': product.id,
+                'subproduct_id': subproducto.id if subproducto else False,
+                'excel_product_name': p_name,
                 'pieces': item.get('pieces', 0),
                 
                 # 💎 REALIDADES VOLUMÉTRICAS
@@ -2682,6 +2688,10 @@ class LumberReception(models.Model):
         workbook = load_workbook(filename=io.BytesIO(excel_bytes))
         sheet = workbook.active
         
+        # Fase 2 — Producto maestro fijo por tipo de ingreso.
+        product = self.env['madenat.ingestion.config'].get_default_product(
+            'bruta', profile=self.ingestion_profile)
+
         lines = []
         IngestMixin = self.env['madenat.lumber.ingest.mixin'] # Instanciar el Mixin
         
@@ -2696,19 +2706,23 @@ class LumberReception(models.Model):
                 
                 if not lote: continue
                 
-                # Inteligencia del Mixin
-                product_obj = IngestMixin.find_or_create_lumber_product(lote, prod)
-                calc = IngestMixin.calculate_normalized_volumes(product_obj, vol, 'm3')
+                # Fase 2 — Subproducto desde el texto del Excel.
+                subproducto = IngestMixin.find_or_create_lumber_subproducto(prod)
+                calc = IngestMixin.calculate_normalized_volumes(product, vol, 'm3')
                 
                 lines.append({
                     'reception_id': self.id,
                     'lot_name': lote,
-                    'product_id': product_obj.id,
+                    'product_id': product.id,
+                    'subproduct_id': subproducto.id if subproducto else False,
+                    'excel_product_name': prod,
                     'pieces': qty,
                     'vol_shipment_m3': calc['vol_shipment_m3'], # Real
                     'vol_purchase_m3': calc['volume_purchase_m3'], # Nominal
                     'calc_method': calc['method']
                 })
+            except UserError:
+                raise
             except Exception:
                 continue
         

@@ -1183,7 +1183,11 @@ class MadenatGuiaProcessing(models.Model):
 
         archivo_excel = self.excel_attachment_id or self._store_binary_as_attachment('excel_file', 'excel_filename', 'Packing Excel')
         packing_data = self._parse_packing_excel(archivo_excel)
-        
+
+        # Fase 2 — Producto maestro fijo por tipo de ingreso (no desde el Excel).
+        product = self.env['madenat.ingestion.config'].get_default_product(
+            'procesado', profile=self.ingestion_profile)
+
         lines_to_create = []
         
         for row in packing_data.get('lineas', []):
@@ -1194,11 +1198,9 @@ class MadenatGuiaProcessing(models.Model):
                 qty = row.get('Cantidad', 0)
                 vol_raw = row.get('Volumen', 0.0)
                 
-                # Gestión Producto
-                prod_name = row.get('product_name', 'Madera Genérica').strip() or 'Madera Genérica'
-                prod_code_base = prod_name if len(prod_name) > 3 else code
-                clean_group_code = re.sub(r'[^A-Z0-9]', '_', prod_code_base.upper())
-                product = self.find_or_create_product(clean_group_code, prod_name)
+                # Fase 2 — Subproducto desde el texto del Excel (no producto).
+                prod_name = str(row.get('product_name') or '').strip()
+                subproducto = self.find_or_create_lumber_subproducto(prod_name)
                 
                 # Visuales Exportación (Calculados por el parser o helper)
                 txt_nom_esp = row.get('espesor_nominal')
@@ -1215,6 +1217,7 @@ class MadenatGuiaProcessing(models.Model):
                     'sku_original': code,            
                     'product_name_original': prod_name,
                     'product_id': product.id,
+                    'subproducto_id': subproducto.id if subproducto else False,
                     'pieces': qty,
                     
                     'vol_physical_m3': vol_raw,
@@ -1225,9 +1228,9 @@ class MadenatGuiaProcessing(models.Model):
                     'ancho_mm': row.get('Ancho', 0),
                     'largo_m': row.get('Largo', 0),
                     
-                    # Nominal de Compra: Respetamos el Excel. Si es 0, queda en 0.
-                    # Luego usarás el botón 'action_assign_commercial_defaults'
-                    'espesor_nominal_mm': row.get('espesor_nominal_mm', 0.0),
+                    # Nominal de Compra: respeta el Excel; si no viene, el
+                    # espesor físico alimenta el nominal (Fase 2).
+                    'espesor_nominal_mm': row.get('espesor_nominal_mm', 0.0) or row.get('Espesor', 0.0),
                     
                     # Exportación
                     'thickness_visual': txt_nom_esp,
@@ -1235,6 +1238,8 @@ class MadenatGuiaProcessing(models.Model):
                     
                     'technical_validation': 'pending'
                 })
+            except UserError:
+                raise
             except Exception as e:
                 _logger.warning(f"⚠️ Error línea Excel: {e}")
                 continue
@@ -2714,7 +2719,7 @@ class MadenatGuiaProcessing(models.Model):
                     col_map['ancho'] = i
                 elif 'largo' in cs: 
                     col_map['largo'] = i
-                elif 'producto' in cs or 'descripcion' in cs: 
+                elif 'producto' in cs or 'descripcion' in cs or 'especie' in cs or 'subproducto' in cs:
                     col_map['producto'] = i
 
             lineas = []
