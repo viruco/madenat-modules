@@ -1,9 +1,9 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.4.0`
-**Fecha de actualización:** 2026-07-08
-**Estado:** ✅ Vigente — AD-41: _parse_fraction extraído a utils_uom.py como utilidad compartida. Tabla 3.1 y sección 3.3 actualizadas.
+**Versión documental:** `7.5.0`
+**Fecha de actualización:** 2026-08-19
+**Estado:** ✅ Vigente — Actualización de §4.2 al estado real de `lumber.reception` y campos canónicos de OC (evidencia código `lumber_reception.py`).
 **Compatibilidad objetivo:** Odoo 18 CE
 
 ---
@@ -41,7 +41,7 @@ El módulo no opera en un pipeline vertical estricto: actúa como **núcleo de i
 | `reception_service.py` | Escritura a `stock.lot` vía `LumberReceptionService._create_lots_from_packing()` |
 | `reception_workflow.py` | Clase de orquestación de estados vía import inline (`from .reception_workflow import LumberReceptionWorkflow` en lumber_reception.py:2694). No es un mixin de herencia Odoo. |
 | `validation_checklist_mixin.py` | Mixin de checklist de validación para líneas de ingesta |
-| `mixin_lumber_ingest.py` | Mixin de cálculo volumétrico (regla de oro compartida) |
+| `mixin_lumber_ingest.py` | Mixin de cálculo volumétrico (regla de oro compartida) + `find_or_create_lumber_subproducto` (Fase 2) |
 | `stock_lot.py` | Extensión de `stock.lot`: `vol_shipment_m3`, `_compute_estado_trazabilidad`, `_compute_processing_loss` |
 | `stock_lot_cost_line.py` | Extensión de `stock.lot.cost.line` con cálculos de costeo |
 | `stock_picking.py` | Extensión de `stock.picking` para recepciones de lumber |
@@ -64,7 +64,8 @@ El runtime actual incluye modelos para reglas de ingesta parametrizables con UI 
 | `lumber.profile.subproduct.rule` | Reglas perfil↔subproducto (7 reglas) | AD-29 |
 | `lumber.export.formula` | Fórmulas exportación por perfil (3 registros: f5085, f1550, metric) | AD-30 |
 | `lumber.ingestion.format` | Formatos ingesta/parsing por perfil (4 registros) | AD-30 |
-| `madenat.ingestion.config` | Helper AbstractModel con cadena de fallback de 3 niveles | AD-29 |
+| `madenat.ingestion.config` | Helper AbstractModel con cadena de fallback de 3 niveles + `get_default_product()` | AD-29, AD-ING-001 |
+| `madenat.lumber.product.default` | Producto maestro por tipo de ingreso (perfil/compañía) | AD-ING-001 |
 
 ### 3.3 Componente aún concentrado
 
@@ -126,13 +127,18 @@ Cabecera del flujo (`_name = 'lumber.reception'`).
 
 **Campos relevantes:**
 - `reception_line_ids` — One2many → `lumber.reception.line`
-- `state` — Selection: draft / staging / confirmed / cancelled
-- `ingestion_profile` — Selection: f5085 / f1550 / metric / blanks_clear
+- `state` — Selection: draft / processing / verified / done / cancel / error / pending_link
+- `ingestion_profile` — Selection: f5085 / f1550 / metric (nota: `blanks_clear` es el rótulo semántico del flujo Blank; el valor real del selector es `f5085`. Diagnóstico 2026-08-15.)
 - `audit_snapshot`, `audit_hash`
 - `can_process_reception`, `can_reopen_reception`, `can_cancel_reception` (compute desde `reception_workflow.py`)
 - `guia_numero` (Char), `guia_fecha` (Date)
 - `supplier_id` — Many2one → `res.partner`
 - `order_id` / `purchase_id` — Many2one → `purchase.order`
+- `oc_reference_raw` — Char (readonly, copy=False): referencia documental de OC extraída de la Guía/PDF. Nunca se sobrescribe al vincular una `purchase.order`.
+- `oc_reference_norm` — Char (compute, store): clave normalizada para matching (`parser.normalize_po_key`).
+- `oc_match_status` — Selection: `not_found` / `single_match` / `multi_match` / `manual` / `created`. Estado de resolución de OC.
+- `oc_match_note` — Text: bitácora de reconciliación de OC.
+- `po_missing_alert` — Html (compute, sanitize=False): alerta visual de OC ausente o con referencia manual, NO bloqueante.
 
 **Métodos arquitectónicos clave:**
 - `action_confirm_reception()` → GB-1 → Gate2 → Gate3 → `LumberReceptionService._create_lots_from_packing()`.
@@ -153,6 +159,35 @@ Extensión post-Gate3 de `stock.lot`. Campos y computes:
 - `volume_purchase_m3` — Volumen nominal de compra.
 - `_compute_estado_trazabilidad()` — Batch query de trazabilidad.
 - `_compute_processing_loss()` — Pérdida entre compra y embarque.
+
+### 4.5 Contrato Producto Maestro / Subproducto (AD-ING-001, AD-ING-002)
+
+**Producto maestro** (`madenat.lumber.product.default`):
+- Configuración persistente que resuelve `product_id` por tipo de ingreso (`bruta`/`procesado`), refinable por perfil y compañía.
+- Único punto de resolución: `madenat.ingestion.config.get_default_product(tipo_ingreso, profile=None)`.
+- El producto maestro **no** se deriva del texto del Excel ni se hardcodea en Python.
+
+**Subproducto** (desde el Excel):
+- La columna `Producto`/`Descripción`/`Especie`/`Subproducto` se asigna a:
+  - Procesado: `subproducto_id` (`madenat.guia.processing.line`);
+  - Bruta: `subproduct_id` (`lumber.reception.line`).
+- Si no existe, se **autocrea** en `madenat.subproducto` (`find_or_create_lumber_subproducto`).
+- Trazabilidad del texto original: `product_name_original` (Procesado) / `excel_product_name` (Bruta).
+
+**Nominales:**
+- Procesado: `espesor_mm` se usa como fallback de `espesor_nominal_mm` cuando el Excel no informa nominal.
+- Bruta: conserva los defaults existentes desde dimensiones físicas. No hay lookup automático de ancho.
+
+**Volúmenes (presentación):**
+- `Volumen total (m³)` = Σ `vol_shipment_m3`.
+- `Volumen stock (m³)` = Σ `vol_purchase_m3`.
+- Toda salida volumétrica usa 3 decimales; no se muestran totales numéricos sin etiqueta.
+
+**Separación de responsabilidades:**
+- Core: configuración, mapeo y creación de catálogos.
+- Intake: fachada, revisión operativa y presentación.
+- Sin cambios en BT-04, Toll, `action_validate` e `intake_direct_stock`.
+- La hipótesis de una ingesta unificada queda como investigación futura, fuera de alcance.
 
 ---
 
@@ -197,3 +232,4 @@ Si el código cambia en: layout de largo, campos de staging, gates, modularizaci
 | 7.1.0 | 2026-06-30 | Auditoría documental. Consolidación post-limpieza. |
 | 7.2.0 | 2026-07-01 | Validación cruzada contra código. Corrección de naming (`length_input_raw`), gates reales (0–3 + GB-1), modelos Fase 2/3 agregados, `stock_lot.py` y `ingestion_gate.py` documentados, wizards listados, cadena funcional ajustada a grafo horizontal. |
 | 7.3.0 | 2026-07-08 | Corrección de vigencia post-auditoría: `core_utils.py` y `product_template.py` marcados como huérfanos/muertos, archivos faltantes agregados a tabla 3.1 (`validation_checklist_mixin`, `stock_lot_cost_line`, `stock_picking`, `stock_move`, `product_product`), parseo disperso de `madenat_guia_processing.py` documentado en sección 3.3. Sin cambios de código. |
+| 7.5.0 | 2026-08-19 | Alineación con código: estados reales de `lumber.reception` (`draft/processing/verified/done/cancel/error/pending_link`) y campos canónicos de OC documentados en §4.2 (`oc_reference_raw`, `oc_reference_norm`, `oc_match_status`, `oc_match_note`, `po_missing_alert`). Sin cambios de código. |

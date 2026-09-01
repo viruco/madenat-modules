@@ -49,7 +49,7 @@ No avanzar a consolidaciones mayores mientras la base técnica siga generando ri
 |----|-------------|--------|---------|
 | C1 | Renombrar menú raíz "Ingreso de Guías Dentro de Recepción" | ✅ Cerrado — commit 2e0c7ca | — |
 | C2 | Labels operativos tipo producto (Aserrada/Blank) visibles en Recepción | ✅ Cerrado — commit c6d8812 + 0cda416 | — |
-| C3 | Volúmenes Blank: confirmar deduction_factor 0.0625 vs 0.0 | 🔒 Bloqueado (parcial: reglas nominal 6/4-8/4 ✅ commit 5732fd5) | Cristhian confirma regla negocio |
+| C3 | Volúmenes Blank: confirmar deduction_factor 0.0625 vs 0.0 | ✅ **Resuelto por evidencia Excel** (MSC VIRGO confirma `0.0625`, 2026-08-15) | Confirmado por planilla real; pendiente solo alinear test T13 |
 | C4 | Restricción documental Packing/Guía obligatorio por tipo producto | ✅ Cerrado — commit 0cda416 | — |
 
 **Estimado post-desbloqueo (C3):**
@@ -73,7 +73,7 @@ Extender la madurez operativa hacia los módulos contables de Odoo.
 
 1. Validar commit `3ba43575` (R7/R8 group_by + OC column) en máquina remota de test.
 2. Validar nuevos features en staging: kanban, dashboards, wizard period_close, búsqueda OC, stock_landed_cost.
-3. Confirmar deduction_factor Blank con Cristhian (C3).
+3. ~~Confirmar deduction_factor Blank con Cristhian (C3)~~ → Resuelto por evidencia Excel (MSC VIRGO confirma 0.0625); solo falta alinear test T13.
 4. Diseño conceptual de integración contable (FASE 7).
 5. Parametrización de tolerancias (FASE 5).
 
@@ -94,3 +94,9 @@ Extender la madurez operativa hacia los módulos contables de Odoo.
 ## REGLA DE PRIORIZACIÓN
 
 No abrir un frente mayor nuevo (Fase 7) mientras existan bloqueos de instalación, o pruebas pendientes sin evidenciar en la matriz canónica `03_TESTS.md`.
+
+---
+
+## INVESTIGACIÓN FUTURA (no aprobada)
+
+- [ ] **Investigación:** evaluar unificación de Bruta y Procesado en un único flujo de ingesta con staging común, preservando contratos de inventario y trazabilidad. Fuera de alcance del cierre actual (AD-ING-001/AD-ING-002 no la habilitan).

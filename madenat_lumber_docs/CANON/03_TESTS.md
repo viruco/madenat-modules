@@ -75,9 +75,12 @@ Estos casos definen la validación funcional del ingreso de largo con unidad sel
 - **Fecha:** 2026-06-02
 - **Alcance:** `stock_lot.py`, `madenat_guia_processing.py`
 - **Problema corregido:** El ajuste volumétrico S2S (cepillado) se aplicaba indebidamente a líneas de blanks clear, distorsionando el cálculo de volumen de embarque.
-- **Solución:** Corrección en la lógica condicional para que las líneas con perfil `blanks_clear` usen exclusivamente `BLANK_CLEAR_FACTOR` (f5085), sin aplicar deducciones de cepillado (`FACE_DEDUCTION_INCH`, `S2S_WIDTH_ADJUSTMENT_INCH`).
+- **Solución:** Separación de rutas de cálculo (no son equivalentes):
+  1. **`stock_lot._compute_vol_shipment_m3`** (post-Gate3): el lote con `largo_ft_frac` usa `(espesor_in × ancho_in × largo_ft × piezas) / 5085.312`, **sin** deducción de cara ni +1/8".
+  2. **`lumber_reception._compute_export_values`** (staging / M3 comercial): la rama `blank_clear` usa `(espesor_in − 0.0625) × (ancho_in + 0.125) × largo_ft × piezas / 5085.312`, **con** deducción de cara (`FACE_DEDUCTION_INCH`) e incremento de ancho (`S2S_WIDTH_ADJUSTMENT_INCH`).
+  - La evidencia Excel (tarjas MSC VIRGO, 2026-08-15) respalda la ruta **(2)**: los casos `1.5625"×2.625"×16ft×416 = 5.399` y `1.5625"×3.625"×16ft×286 = 5.062` solo se reproducen aplicando −1/16" al espesor y +1/8" al ancho.
 - **Validación local:** Módulo actualiza sin error de registry. Cálculo volumétrico verificado en recepción con blanks.
-- **Estado:** CERRADO (Evidencia local)
+- **Estado:** CERRADO (Evidencia local) — la afirmación previa "sin aplicar deducciones de cepillado" era válida únicamente para la ruta `stock_lot.py`, no para `lumber_reception.py`.
 
 ---
 
@@ -125,6 +128,10 @@ Estas suites existen en código pero no tienen trazabilidad en la matriz documen
 | `tests/test_ingestion_gate.py` | TestGate1DocumentReconciliation | 10 | Gate 1: reconciliación, mismatch, duplicado, TC, volumen, OC |
 | `tests/test_duplicate_validation.py` | TestDuplicateValidation | 8 | Duplicados PDF, guia_processing, staging, mensajes error |
 | `tests/test_guia_processing.py` | TestMadenatGuiaProcessing | 13 | Creación, state machine, cancel, unlink, volúmenes, TD-007 duplicados |
+| `tests/test_guia_processing.py` | TestCreateOrGetLotReceptionProtection | 2 | BT-02: protección de lote con `reception_id` + reutilización legítima de lote sin recepción |
+| `tests/test_guia_processing.py` | TestGuiaProcessingValidationSignature | 4 | BT-01: firma SHA-256, persistencia del evento, bloqueo sin evento, supervivencia ante cancelación |
+| `tests/test_guia_processing.py` | TestGuiaProcessingOperationalAudit | 4 | BT-03: lot_creation, lot_update, omission, coexistencia con validation_signature |
+| `tests/test_guia_processing.py` | TestGuiaProcessingConsumptionBT04 | 5 | BT-04: salida única a proceso (service), revalidación sin duplicar, compra sin salida, reversión sin borrar historia, bloqueo sin lote |
 | `tests/test_guia_processing.py` | TestMadenatGuiaProcessingLine | 2 | staging, vol_purchase |
 | `tests/test_lumber_reception.py` | TestLumberReception | 14 | T01–T14: suma m3, mbf, triple capa, dedup, volúmenes, width map, gate 3, trazabilidad, edge cases |
 | `tests/test_length_uom_and_subproducto.py` | TestLengthUomAndSubproducto | 4 | T29–T32: ft, mm, m, quick-create subproducto |
@@ -192,3 +199,33 @@ Para asistir en la validación y debugging:
 - Evidencia: Registro verificado en tabla `lumber_reception_line` tras trigger de compute.
 - Estado: PENDIENTE (Evidencia registrada)
 - Hallazgos: El sistema aplica correctamente el factor 0.3048 y respeta la precisión de 3 decimales definida en T28.
+
+---
+
+## 5. Cobertura nueva — Cierre técnico 2026-08-20 (`1466f24`)
+
+Commit `1466f24 fix(core): restore ingestion profile safeguards and blanks catalog` añade cobertura automatizada en `madenat_lumber_core/tests/test_guia_processing.py`:
+
+| Clase | Cobertura | Tests |
+|---|---|---|
+| `TestGuiaProcessingIngestionProfileLock` | Candado de Procesados reactivado (`ingestion_profile` en `madenat.guia.processing`): existencia/default `f5085`, values coinciden con `lumber.reception`, bloqueo S2S en f5085, permiso en f1550, permiso en metric | 5 |
+| `TestBlankProfileCatalogComplete` | Catálogo `blanks` aceptado en los 4 modelos hermanos, `_resolve_for_profile('blanks')` **no** resuelve `metric` sino S2S/imperial (decisión intencional), legacy de subproducto no vacío | 6 |
+
+Suite `madenat` (Core + Intake) ejecutada sobre `madenat_test`: **49/49 tests, 0 fallos, 0 errores**. Esta cobertura automatizada complementa (no sustituye) las pruebas UAT end-to-end pendientes de `CANON/13`.
+
+<!-- actualizado: 2026-08-20 — nota de cobertura automatizada para el candado de Procesados y catálogo 'blanks' (commit 1466f24) -->
+
+---
+
+## 6. Cobertura — Contrato Producto/Subproducto (Fase 2)
+
+| Archivo | Clase | Cobertura | Tests |
+|---|---|---|---|
+| `madenat_lumber_core/tests/test_product_default.py` | `TestMadenatLumberProductDefault` | Resolución de producto maestro por tipo, perfil y compañía; `UserError` sin configuración; rechazo de reglas activas ambiguas | 5 |
+| `madenat_lumber_core/tests/test_subproducto_contract.py` | `TestSubproductoContract` | Autocreación de subproducto desde Excel, reutilización sin duplicar, texto vacío, mapeo Bruta (`_fill_staging_table`) y Procesado (`action_verify_data`) | 6 |
+
+**Validación de volumen (Intake):** `packing_volume_total` (Σ `vol_shipment_m3`) y `stock_volume_total` (Σ `vol_purchase_m3`) se presentan con 3 decimales; no se muestran totales numéricos sin etiqueta.
+
+**Fallos ajenos:** los fallos existentes de `madenat_lumber_billing` (`TestBillingConsolidation.test_02_no_duplicar_consolidacion`) y `madenat_lumber_costing` (errores en `setUpClass`) son preexistentes y **no** autorizan modificar esos módulos dentro de este cierre.
+
+<!-- actualizado: 2026-08-31 — cobertura Fase 2 contrato producto/subproducto y validación de volumen -->

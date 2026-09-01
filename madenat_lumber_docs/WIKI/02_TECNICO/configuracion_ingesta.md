@@ -1,8 +1,8 @@
 # Configuración de Ingesta — Arquitectura Fase 1 + Fase 2 + Fase 3
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 2.0.0
-**Fecha:** 2026-06-02
+**Versión documental:** 2.1.0
+**Fecha:** 2026-06-02  <!-- actualizado: 2026-08-20 — nota operativa post commit 1466f24: labels visibles estandarizados, perfil 'blanks' disponible en todos los catálogos, candado de Procesados activo -->
 **Estado:** CANONICAL — Cierre Fase 3
 
 ---
@@ -25,6 +25,11 @@ La solución se implementó en dos fases:
 | **Fase 2** | Modelos persistentes Odoo con UI de mantenimiento | COMPLETADA (AD-29) |
 | **Fase 3** | Parametrización H8, H9 + cierre brecha s2s_exclusion_widths | COMPLETADA (AD-30) |
 
+> **Nota operativa (2026-08-20, commit `1466f24`):**
+> - **Labels visibles estandarizados:** los perfiles se muestran ahora como `Madera Bruta — Grado Clear` (f5085), `Madera Aserrada S2S` (f1550), `Blanks — Legado (métrico/imperial híbrido)` (blanks) y `Madera Bruta — Sistema Métrico` (metric). Solo cambió el texto visible; los values técnicos (`f5085`, `f1550`, `blanks`, `metric`) no cambiaron y no requieren migración.
+> - **Perfil `blanks` completo:** ya no existe solo en `lumber.ingestion.format`; también está disponible en `lumber.blank.nominal.map`, `lumber.profile.subproduct.rule`, `lumber.export.formula` y `lumber.thickness.visual.rule`. Su fallback de exportación resuelve a la ruta S2S/imperial (no a `metric`) por decisión de dominio.
+> - **Candado de Procesados activo:** `madenat.guia.processing` tiene ahora `ingestion_profile`; el bloqueo anti-mezcla de subproducto del wizard de actualización masiva de guías ya se ejecuta de verdad.
+
 ---
 
 ## 2. Arquitectura de Lectura (Runtime)
@@ -45,6 +50,44 @@ El helper centralizado `madenat.ingestion.config` (AbstractModel) implementa una
 ```
 
 **Regla:** Ningún consumidor (parser, wizard, modelo) debe leer directamente los modelos Fase 2 ni `ir.config_parameter`. Todo debe pasar por `madenat.ingestion.config`.
+
+---
+
+## 2.1 Producto Maestro por Tipo de Ingreso
+
+### Modelo `madenat.lumber.product.default`
+
+Configuración persistente que resuelve el `product_id` maestro por tipo de ingreso:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `tipo_ingreso` | Selection | `bruta` / `procesado` |
+| `ingestion_profile` | Selection | Refinamiento opcional por perfil (f5085/f1550/blanks/metric) |
+| `product_id` | Many2one → `product.product` | Producto maestro (requerido) |
+| `company_id` | Many2one → `res.company` | Opcional; regla específica de compañía |
+| `sequence` | Integer | Orden de prioridad |
+| `active` | Boolean | Soft-delete |
+
+**Constraint:** `@api.constrains` bloquea dos reglas activas para el mismo tipo/perfil/compañía.
+
+### Helper `get_default_product(tipo_ingreso, profile=None)`
+
+Único punto de resolución del producto maestro. Prioridades:
+1. coincidencia exacta tipo + perfil, de la compañía activa;
+2. coincidencia exacta tipo + perfil, global (sin compañía);
+3. fallback solo por tipo, de la compañía activa;
+4. fallback solo por tipo, global.
+
+Si no hay regla activa, lanza `UserError` accionable; nunca crea producto dinámico.
+
+### Catálogo `madenat.subproducto`
+
+- Gestión vía menú de mantenimiento: Configuración → Subproductos y Grados.
+- **Autocreación desde Excel:** el texto de la columna Producto/Descripción/Especie/Subproducto se resuelve o autocrea en `madenat.subproducto` (`find_or_create_lumber_subproducto`), conservando el texto original para trazabilidad.
+
+### Menú de mantenimiento del producto maestro
+
+- Configuración Ingesta → Productos Maestros por Tipo (`madenat.lumber.product.default`).
 
 ---
 
@@ -263,6 +306,8 @@ Parametriza el motor `_compute_export_values` en `lumber_reception.py`.
 **Constraints:** UNIQUE(profile, active). CHECK positivos.
 **Seed Fase 3:** 3 registros (f5085, f1550, metric).
 **Consumidor:** `lumber_reception._compute_export_values()` vía `lumber.export.formula._resolve_for_profile()`.
+
+> **Nota (2026-08-15):** para el perfil `f5085` (`blank_clear`), `s2s_adjustment_mode='none'` es semánticamente ambiguo: la rama `blank_clear` de `lumber_reception._compute_export_values` aplica el incremento de ancho `+1/8"` (`S2S_WIDTH_ADJUSTMENT_INCH` = 0.125) de forma **hardcoded** (L732), independientemente de este modo. El resultado numérico es correcto (coincide con la evidencia Excel), pero `'none'` no describe literalmente el `+1/8"` del ancho. No afecta el M3.
 
 ### 10.2 `lumber.ingestion.format` — Formatos de Ingesta (H9)
 

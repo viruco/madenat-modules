@@ -1263,3 +1263,31 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Decisión:** NO se implementa `origin_scope` en esta iteración. El catálogo `lumber.profile.subproduct.rule` sigue indexado solo por `profile`, por lo que Producto (`lumber.reception`) y Procesados (`madenat.guia.processing`) comparten el mismo universo de reglas por perfil.
 - **Motivo:** la diferenciación por origen es una mejora estructural que requiere propagar un campo nuevo vía `with_context` desde los wizards de origen y extender el helper centralizado; se difiere para no ampliar el alcance del cierre técnico.
 - **Consecuencia práctica:** el cruce de reglas de subproducto sigue existiendo por diseño (limitación conocida). Queda documentada como deuda técnica explícita en el encabezado de `lumber_profile_subproduct_rule.py`, en `02_CONTINUIDAD.md` §11 y en esta entrada. Frente abierto en continuidad.
+
+---
+
+## 2026-08-31 — Contrato Producto Maestro / Subproducto (Fase 2)
+
+### AD-ING-001 — Producto maestro configurable por tipo de ingreso
+
+- **Fecha:** 2026-08-31
+- **Contexto:** el valor extraído del Excel/guía se trataba como `product_id`, generando un producto distinto por guía.
+- **Decisión:** `product_id` es una categoría general mantenible resuelta desde `madenat.lumber.product.default` por tipo de ingreso (`bruta`/`procesado`), refinable por perfil y compañía. Único punto de resolución: `madenat.ingestion.config.get_default_product(...)`. No se hardcodea ni se deriva del Excel.
+- **Consecuencias:** cada línea de ingesta recibe un producto maestro estable; la clasificación comercial vive en el subproducto.
+- **Módulos afectados:** `madenat_lumber_core` (modelo + helper), `madenat_lumber_intake` (presentación).
+
+### AD-ING-002 — Texto Excel como subproducto con autocreación controlada
+
+- **Fecha:** 2026-08-31
+- **Contexto:** la columna `Producto`/`Descripción`/`Especie`/`Subproducto` del Excel representa la clasificación comercial, no el producto.
+- **Decisión:** el texto se asigna a `subproducto_id` (Procesado) / `subproduct_id` (Bruta). Si no existe, se autocrea en `madenat.subproducto` vía `find_or_create_lumber_subproducto`. Se conserva el texto original (`product_name_original`/`excel_product_name`) para trazabilidad.
+- **Consecuencias:** no hay bloqueo de ingesta por subproducto inexistente; el catálogo crece de forma controlada desde el Excel.
+- **Módulos afectados:** `madenat_lumber_core` (mixin + mapeos), `madenat_lumber_intake` (vistas).
+
+### AD-INT-001 — Precisión volumétrica estándar de tres decimales
+
+- **Fecha:** 2026-08-31
+- **Contexto:** el total de la columna "Vol. Stock" se mostraba con 2 decimales (`51,87` en vez de `51,874`).
+- **Decisión:** toda salida de volumen se muestra con exactamente 3 decimales. `Volumen total (m³)` = Σ `vol_shipment_m3`; `Volumen stock (m³)` = Σ `vol_purchase_m3`. No se muestran totales numéricos sin etiqueta. No se modifica cálculo ni datos almacenados.
+- **Consecuencias:** claridad visual y consistencia con la política documentada de 3 decimales.
+- **Módulos afectados:** `madenat_lumber_intake` (`intake_console`).
