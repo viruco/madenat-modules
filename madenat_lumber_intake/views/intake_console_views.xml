@@ -204,7 +204,7 @@
                                 <field name="width_nominal" string="Ancho Nom (mm)"/>
                                 <field name="length" string="Largo (m)"/>
                                 <field name="pieces" string="Piezas"/>
-                                <field name="vol_purchase_m3" string="Vol. Stock (m³)" sum="Total Stock"/>
+                                <field name="vol_purchase_m3" string="Vol. Stock (m³)"/>
                             </list>
                         </field>
 
@@ -225,7 +225,8 @@
                         <!-- Totales del packing -->
                         <group>
                             <group>
-                                <field name="packing_volume_total" string="Volumen total" readonly="1"/>
+                                <field name="packing_volume_total" string="Volumen total (m³)" readonly="1"/>
+                                <field name="stock_volume_total" string="Volumen stock (m³)" readonly="1"/>
                                 <field name="total_packages" string="Total paquetes" readonly="1"/>
                             </group>
                             <group/>

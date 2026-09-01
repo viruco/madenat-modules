@@ -150,6 +150,10 @@ class MadenatLumberIntakeConsole(models.Model):
         string='Volumen del detalle (m³)', compute='_compute_packing_lines',
         readonly=True, digits=(16, 3),
     )
+    stock_volume_total = fields.Float(
+        string='Volumen stock (m³)', compute='_compute_packing_lines',
+        readonly=True, digits=(16, 3),
+    )
 
     # ------------------------------------------------------------------
     # Cabecera editable no almacenada (2026-08-29)
@@ -329,6 +333,9 @@ class MadenatLumberIntakeConsole(models.Model):
             lines = product_lines or processed_lines
             rec.packing_volume_total = sum(
                 (l.vol_shipment_m3 or 0.0) for l in lines
+            )
+            rec.stock_volume_total = sum(
+                (l.vol_purchase_m3 or 0.0) for l in lines
             )
 
     # ------------------------------------------------------------------
