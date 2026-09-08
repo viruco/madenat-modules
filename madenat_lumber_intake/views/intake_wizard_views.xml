@@ -30,7 +30,7 @@
                 <sheet>
                     <group string="Destino del ingreso">
                         <group>
-                            <field name="tipo_ingreso" />
+                            <field name="tipo_ingreso" invisible="1"/>
                             <field
                                 name="ingestion_profile"
                                 invisible="tipo_ingreso != 'producto'"

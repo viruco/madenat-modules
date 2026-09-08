@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 12.0.0
-**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-60: ampliación de regex de RUT (patrón "sin puntos") en reception_parser; Defecto B (bloqueo UserError) permanece abierto -->
+**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-61: clasificación de tipo_ingreso por contenido del documento (routing Intake) con fallback manual visible; nunca por proveedor/RUT -->
 **Estado:** Canonical / activo
 
 ---
@@ -1277,6 +1277,21 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Evidencia:** la sesión previa de tests de aislamiento registró 4 failed / 8 tests (`rut_sin_puntos`, `fixture_regresion_26270`, `sin_rut_visible_no_crashea`, `sin_rut_no_bloquea`). Tras el fix: **6 PASS / 2 FAIL** — los 2 fallos restantes son exclusivamente del Defecto B (`sin_rut_visible_no_crashea`, `sin_rut_no_bloquea`). Suite completa del módulo sin regresiones atribuibles a este cambio (los fallos residuales de `test_supplier_resolution` y `test_guia_processing` son data preexistente en la BD dev, no relacionados).
 - **Módulos afectados:** `madenat_lumber_core` (`models/reception_parser.py`).
 - **Relación con BT-05:** cierra la divergencia puntual del regex de RUT entre Producto y Procesado, sin abordar aún la unificación estructural del parseo disperso (deuda de mediano plazo).
+
+---
+
+## 2026-09-08 — Clasificación de tipo de ingreso por contenido (routing Intake)
+
+### AD-61 — Clasificación de `tipo_ingreso` por contenido del documento, con fallback manual visible
+
+- **Fecha:** 2026-09-08
+- **Problema (contexto):** el routing Producto/Procesado del wizard de Intake se decidía por el **nombre de archivo** (`_onchange_suggest_tipo_ingreso` solo inspeccionaba `excel_filename`/`pdf_filename`), con `default='producto'` silencioso y el campo `tipo_ingreso` oculto (`invisible="1"`). La guía real 26270 —cuya glosa es "SERVICIO DE CEPILLADO"— cayó a Producto porque el nombre de archivo (`26270.pdf`) no traía keyword. Confirmado por tests de aislamiento (4 failed / 5 tests contra el código previo).
+- **Decisión:** clasificar por el **CONTENIDO del documento** (texto extraído del PDF con `document_extractor._extract_pdf_text`, reutilizada sin duplicar lógica), conservando el nombre de archivo como señal adicional (OR). Se agrega `tipo_ingreso_auto_detectado` (Boolean). Si hay match → `tipo_ingreso='procesado'` y `auto_detectado=True`. Si **no** hay match → `auto_detectado=False` + `warning` visible, y el campo `tipo_ingreso` se vuelve editable (`invisible="tipo_ingreso_auto_detectado"`). **No** se fuerza `tipo_ingreso` silenciosamente.
+- **Regla de clasificación (NUNCA por proveedor):** la clasificación es **por documento**, nunca por `supplier_id`/`partner_id`/RUT. Evidencia: el proveedor `77066489-6` (FERRAMENTA) tiene 3 guías Procesado y puede emitir también guías de venta de madera (Producto); usar el RUT forzaría un flujo único y erróneo.
+- **Evidencia:** `test_intake_tipo_ingreso_content.py` (5 tests) pasa **5/5**. Suite completa `madenat_lumber_intake`: **63 tests, 0 failed, 0 errors**. Suite `madenat_lumber_core`: sin regresiones cruzadas.
+- **Módulos afectados:** `madenat_lumber_intake` (`models/intake_wizard.py`, `views/intake_wizard_views.xml`).
+- **Relación con BT-05:** reduce otra arista del parseo disperso (la clasificación de flujo ahora se basa en el texto extraído, no en metadata del archivo). La unificación estructural del parseo sigue como deuda de mediano plazo.
+- **Decisión de UX (Product Owner, confirmada 2026-09-08):** el campo `tipo_ingreso` permanece **SIEMPRE oculto** (`invisible='1'`), priorizando velocidad operativa y la visión de reducir fricción del operador (objetivo a futuro: prescindir de doble ingesta manual). Se investigó exhaustivamente el repositorio (WIKI, decisiones, minutas, git log/stash/reflog) sin encontrar respaldo documental de esta política previa a esta fecha — se deja registrada aquí formalmente para que futuras sesiones no repitan la incertidumbre. La mitigación de riesgo para el caso 'sin keyword detectada' es el warning emergente (no bloqueante) más la mejora de detección por CONTENIDO (no por nombre de archivo), que reduce significativamente la tasa de fallos silenciosos observada en el caso real de la guía 26270, aunque no la elimina al 100% para redacciones no cubiertas por las 4 keywords actuales.
 
 ---
 

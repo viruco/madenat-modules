@@ -6,6 +6,11 @@ from odoo.exceptions import UserError, ValidationError
 
 from .intake_constants import CONSOLE_ID_OFFSET
 
+from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
+    DocumentExtractionError,
+    _extract_pdf_text,
+)
+
 
 class MadenatLumberIntakeWizard(models.Model):
     _name = 'madenat.lumber.intake.wizard'
@@ -42,6 +47,13 @@ class MadenatLumberIntakeWizard(models.Model):
         string='Perfil de lectura',
         default='metric',
         help='Se utiliza únicamente para la vista previa de producto.',
+    )
+
+    tipo_ingreso_auto_detectado = fields.Boolean(
+        string='Tipo de ingreso detectado automáticamente',
+        default=False, copy=False,
+        help='True si el contenido del documento permitió clasificar el '
+             'tipo de ingreso sin intervención manual.',
     )
 
     # Patio de asignación para la rama Procesado (required en la Guía).
@@ -93,23 +105,59 @@ class MadenatLumberIntakeWizard(models.Model):
     # ─────────────────────────────────────────────────────────────────────
     # Detección asistida de destino (no determinista)
     # ─────────────────────────────────────────────────────────────────────
-    @api.onchange('excel_filename', 'pdf_filename')
+    @api.onchange('excel_filename', 'pdf_filename', 'pdf_file', 'excel_file')
     def _onchange_suggest_tipo_ingreso(self):
-        """Sugiere Procesado solo ante keywords conocidas del workflow core.
+        """Clasifica Producto/Procesado por el CONTENIDO del documento.
 
-        Reutiliza las mismas palabras normalizadas que reception_workflow
-        ('cepillado','servicio','proceso','maquila'), sin copiar su código.
-        Nunca fuerza Producto: si no hay match, conserva el valor actual.
+        AD-61 (2026-09-08): la fuente primaria es el texto extraído del PDF
+        (glosa del documento), no el nombre de archivo. El nombre de archivo
+        se conserva como señal adicional (OR). Nunca se usa supplier_id/RUT.
+
+        - Match → tipo_ingreso='procesado' y auto_detectado=True.
+        - Sin match → auto_detectado=False + warning visible; NO se fuerza
+          tipo_ingreso silenciosamente.
         """
+        palabras_proceso = ['cepillado', 'servicio', 'proceso', 'maquila']
+
         for rec in self:
+            # Señal adicional (OR): nombre de archivo.
             nombres = ' '.join([
                 rec.excel_filename or '',
                 rec.pdf_filename or '',
             ]).casefold()
 
-            palabras_proceso = ['cepillado', 'servicio', 'proceso', 'maquila']
-            if any(p in nombres for p in palabras_proceso):
+            # Fuente primaria: texto extraído del PDF (glosa del documento).
+            texto_pdf = ''
+            if rec.pdf_file:
+                try:
+                    pdf_bytes = base64.b64decode(rec.pdf_file)
+                except Exception:
+                    pdf_bytes = None
+                if pdf_bytes:
+                    try:
+                        texto_pdf = _extract_pdf_text(
+                            pdf_bytes, rec.pdf_filename or 'guia.pdf'
+                        )
+                    except DocumentExtractionError:
+                        texto_pdf = ''
+
+            texto = (nombres + ' ' + texto_pdf).casefold()
+
+            if any(p in texto for p in palabras_proceso):
                 rec.tipo_ingreso = 'procesado'
+                rec.tipo_ingreso_auto_detectado = True
+            else:
+                rec.tipo_ingreso_auto_detectado = False
+                return {
+                    'warning': {
+                        'title': _('No se pudo determinar el tipo de ingreso automáticamente'),
+                        'message': _(
+                            'No fue posible clasificar el documento como Producto '
+                            'o Procesado a partir de su contenido. Seleccione '
+                            'manualmente el "Tipo de ingreso" antes de continuar.'
+                        ),
+                    }
+                }
 
     # ─────────────────────────────────────────────────────────────────────
     # Lectura y preview — solo Producto
