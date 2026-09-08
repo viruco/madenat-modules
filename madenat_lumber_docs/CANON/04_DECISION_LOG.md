@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 12.0.0
-**Última actualización:** 2026-08-20  <!-- actualizado: 2026-08-20 — AD-56..AD-59: robustecimiento Core commit 1466f24 (candado Procesados, catálogo blanks, labels sin tocar values, gap origin_scope) -->
+**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-60: ampliación de regex de RUT (patrón "sin puntos") en reception_parser; Defecto B (bloqueo UserError) permanece abierto -->
 **Estado:** Canonical / activo
 
 ---
@@ -1263,6 +1263,20 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Decisión:** NO se implementa `origin_scope` en esta iteración. El catálogo `lumber.profile.subproduct.rule` sigue indexado solo por `profile`, por lo que Producto (`lumber.reception`) y Procesados (`madenat.guia.processing`) comparten el mismo universo de reglas por perfil.
 - **Motivo:** la diferenciación por origen es una mejora estructural que requiere propagar un campo nuevo vía `with_context` desde los wizards de origen y extender el helper centralizado; se difiere para no ampliar el alcance del cierre técnico.
 - **Consecuencia práctica:** el cruce de reglas de subproducto sigue existiendo por diseño (limitación conocida). Queda documentada como deuda técnica explícita en el encabezado de `lumber_profile_subproduct_rule.py`, en `02_CONTINUIDAD.md` §11 y en esta entrada. Frente abierto en continuidad.
+
+---
+
+## 2026-09-08 — Asimetría de regex de RUT entre Producto y Procesado (Defecto A, BT-05)
+
+### AD-60 — Ampliación del regex de RUT del proveedor en `reception_parser` (patrón "sin puntos")
+
+- **Fecha:** 2026-09-08
+- **Problema (contexto):** el flujo Producto (`reception_parser.parse_dispatch_guide`) usaba un único regex de RUT que solo admitía formato **con puntos** (`\d{1,2}\.\d{3}\.\d{3}-[\dkK]`), mientras que el flujo Procesado (`madenat_guia_processing._parse_dispatch_pdf`, L2372-2375) ya soportaba **con y sin puntos** (`\d{7,8}-[\dkK]`). Esta asimetría (BT-05, parseo disperso) hizo que la guía real 26270 —cuyo RUT de proveedor es `77066489-6` (sin puntos)— fallara la extracción y, aguas abajo, `lumber_reception._find_or_create_po_intelligent` lanzara "No se detectó RUT del proveedor en el PDF".
+- **Decisión:** ampliar el regex en `reception_parser.py` (L565) agregando el patrón "sin puntos" (`\d{7,8}-[\dkK]`) como alternativa OR, **conservando intacto** el patrón "con puntos" existente. Se normaliza también el filtro de exclusión del RUT MADENAT (L569) para operar contra ambos formatos: se compara el cuerpo del RUT sin puntos (`76103087`) sobre `found_rut.replace('.', '')`, sin hardcodear un segundo literal.
+- **Alcance explícito:** cubre **únicamente el Defecto A (regex)**. NO se modifica el `raise UserError` de `lumber_reception._find_or_create_po_intelligent` (L2302-2306). El **Defecto B** (bloqueo ante RUT ausente / caso legítimo "PDF sin RUT") permanece **abierto** y pendiente de decisión de producto, identificado como **Defecto B (bloqueo UserError)**.
+- **Evidencia:** la sesión previa de tests de aislamiento registró 4 failed / 8 tests (`rut_sin_puntos`, `fixture_regresion_26270`, `sin_rut_visible_no_crashea`, `sin_rut_no_bloquea`). Tras el fix: **6 PASS / 2 FAIL** — los 2 fallos restantes son exclusivamente del Defecto B (`sin_rut_visible_no_crashea`, `sin_rut_no_bloquea`). Suite completa del módulo sin regresiones atribuibles a este cambio (los fallos residuales de `test_supplier_resolution` y `test_guia_processing` son data preexistente en la BD dev, no relacionados).
+- **Módulos afectados:** `madenat_lumber_core` (`models/reception_parser.py`).
+- **Relación con BT-05:** cierra la divergencia puntual del regex de RUT entre Producto y Procesado, sin abordar aún la unificación estructural del parseo disperso (deuda de mediano plazo).
 
 ---
 

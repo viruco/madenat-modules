@@ -562,11 +562,15 @@ class MadenatReceptionParser(models.AbstractModel):
         full_text = _normalizar_texto_pdf(full_text)
 
         # 1. RUT Proveedor
-        rut_matches = re.finditer(r'R[\.\s]*U[\.\s]*T[\.\s]*[:\s]*(\d{1,2}\.\d{3}\.\d{3}-[\dkK])', full_text, re.IGNORECASE)
+        # AD-60: patrón "sin puntos" (\d{7,8}-[\dkK]) agregado como OR,
+        # replicando madenat_guia_processing._parse_dispatch_pdf (L2374).
+        rut_matches = re.finditer(r'R[\.\s]*U[\.\s]*T[\.\s]*[:\s]*(\d{1,2}\.\d{3}\.\d{3}-[\dkK]|\d{7,8}-[\dkK])', full_text, re.IGNORECASE)
         supplier_rut = None
         for m in rut_matches:
             found_rut = m.group(1).strip()
-            if '76.103.087' not in found_rut:
+            # Exclusión RUT MADENAT normalizada (strip de puntos): cubre
+            # 76.103.087-6 y 76103087-6 sin hardcodear un segundo literal.
+            if '76103087' not in found_rut.replace('.', ''):
                 supplier_rut = found_rut
                 break
 
