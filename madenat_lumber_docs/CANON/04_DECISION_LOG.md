@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 12.0.0
-**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-61: clasificación de tipo_ingreso por contenido del documento (routing Intake) con fallback manual visible; nunca por proveedor/RUT -->
+**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-62: tipo de cambio no registrado no bloquea ingreso a stock (aviso no bloqueante) -->
 **Estado:** Canonical / activo
 
 ---
@@ -1292,6 +1292,35 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Módulos afectados:** `madenat_lumber_intake` (`models/intake_wizard.py`, `views/intake_wizard_views.xml`).
 - **Relación con BT-05:** reduce otra arista del parseo disperso (la clasificación de flujo ahora se basa en el texto extraído, no en metadata del archivo). La unificación estructural del parseo sigue como deuda de mediano plazo.
 - **Decisión de UX (Product Owner, confirmada 2026-09-08):** el campo `tipo_ingreso` permanece **SIEMPRE oculto** (`invisible='1'`), priorizando velocidad operativa y la visión de reducir fricción del operador (objetivo a futuro: prescindir de doble ingesta manual). Se investigó exhaustivamente el repositorio (WIKI, decisiones, minutas, git log/stash/reflog) sin encontrar respaldo documental de esta política previa a esta fecha — se deja registrada aquí formalmente para que futuras sesiones no repitan la incertidumbre. La mitigación de riesgo para el caso 'sin keyword detectada' es el warning emergente (no bloqueante) más la mejora de detección por CONTENIDO (no por nombre de archivo), que reduce significativamente la tasa de fallos silenciosos observada en el caso real de la guía 26270, aunque no la elimina al 100% para redacciones no cubiertas por las 4 keywords actuales.
+
+---
+
+## 2026-09-08 — Tipo de cambio no registrado no bloquea el ingreso a stock (guías service)
+
+### AD-62 — `rate_usd=1.0` como marca de "no registrado" (aviso no bloqueante)
+
+- **Fecha:** 2026-09-08
+- **Problema:** guías de servicio sin tipo de cambio impreso en el PDF (caso real: guía 26270, PDF completo verificado, sin línea "T/C U$") bloqueaban el ingreso a stock con `rate_usd=1.0` mediante `UserError` en `action_process_from_staging` (L1463) y `action_validate` (L1605), impidiendo la operación diaria pese a que el dato simplemente no existe en el documento origen del proveedor.
+- **Decisión:** `rate_usd=1.0` se mantiene como marca de "no registrado en la guía" (valor imposible de confundir con un T/C real, que en los casos reales del sistema ronda 959-963). Se reemplaza el `raise UserError` bloqueante por un aviso no bloqueante, usando exactamente el mecanismo ya implementado y probado:
+  ```python
+  _logger.warning(
+      "Tipo de cambio no registrado en la guía %s (rate_usd=1.0). "
+      "Aviso no bloqueante: verificar antes del cierre de costeo.",
+      self.name,
+  )
+  self.message_post(
+      body=_(
+          "⚠️ Tipo de cambio no registrado en la guía (rate_usd=1.0). "
+          "Verificar antes del cierre de costeo."
+      ),
+      message_type='notification',
+  )
+  ```
+  Se preserva intacto el bloqueo de `rate_usd <= 0` (campo realmente vacío/inválido, distinto del default 1.0).
+- **Alcance explícito:** la responsabilidad de completar/verificar el tipo de cambio se traslada al cierre de Costeo (Fase 4) y Auditoría, no a Operaciones en el punto de ingreso. PENDIENTE (fuera de esta sesión): agregar filtro/columna visible en `madenat_lumber_reports` o en `lumber.shipment.cost.line` para que Costeo detecte fácilmente estas guías antes del cierre financiero, filtrando por `rate_usd=1.0` AND `tipo_recepcion='service'`.
+- **Evidencia:** simulación real vía odoo shell con savepoint (rollback) confirmó procesamiento completo sin bloqueo y advertencia visible en chatter (3 mensajes registrados). Suite completa `madenat_lumber_core`: 114 tests, 6 failed — los mismos 6 fallos preexistentes/esperados ya documentados en AD-60/AD-61 (Defecto B + data residual dev), 0 regresiones nuevas atribuibles a este cambio.
+- **Relación con BT-05 / Defecto B:** aplica el mismo principio de "no bloquear operación por dato ausente, marcar y resolver aguas abajo" ya recomendado para el Defecto B (RUT ausente en flujo Producto), que sigue ABIERTO y pendiente de implementación — no confundir ambos defectos, son independientes.
+- **Módulos afectados:** `madenat_lumber_core` (`models/madenat_guia_processing.py`).
 
 ---
 

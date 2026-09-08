@@ -1461,13 +1461,19 @@ class MadenatGuiaProcessing(models.Model):
                 .format(self.rate_usd)
             )
         if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
-            raise UserError(
-                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
-                "El tipo de cambio USD es 1.0 (valor por defecto), "
-                "y esta guía es de tipo 'Servicio Externo' donde el T/C real "
-                "es obligatorio para distribuir correctamente los costos del servicio "
-                "a los lotes generados.\n"
-                "Ingrese manualmente el tipo de cambio correcto antes de enviar a stock."
+            # rate_usd=1.0 = "no registrado en la guía" (no bloqueante).
+            # La exigencia de T/C real se traslada a Costeo/cierre financiero.
+            _logger.warning(
+                "Tipo de cambio no registrado en la guía %s (rate_usd=1.0). "
+                "Aviso no bloqueante: verificar antes del cierre de costeo.",
+                self.name,
+            )
+            self.message_post(
+                body=_(
+                    "⚠️ Tipo de cambio no registrado en la guía (rate_usd=1.0). "
+                    "Verificar antes del cierre de costeo."
+                ),
+                message_type='notification',
             )
         
         # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
@@ -1603,13 +1609,19 @@ class MadenatGuiaProcessing(models.Model):
                 .format(self.rate_usd)
             )
         if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
-            raise UserError(
-                "Debe ingresar un tipo de cambio válido antes de procesar.\n\n"
-                "El tipo de cambio USD es 1.0 (valor por defecto), "
-                "y esta guía es de tipo 'Servicio Externo' donde el T/C real "
-                "es obligatorio para distribuir correctamente los costos del servicio "
-                "a los lotes generados.\n"
-                "Ingrese manualmente el tipo de cambio correcto antes de enviar a stock."
+            # rate_usd=1.0 = "no registrado en la guía" (no bloqueante).
+            # La exigencia de T/C real se traslada a Costeo/cierre financiero.
+            _logger.warning(
+                "Tipo de cambio no registrado en la guía %s (rate_usd=1.0). "
+                "Aviso no bloqueante: verificar antes del cierre de costeo.",
+                self.name,
+            )
+            self.message_post(
+                body=_(
+                    "⚠️ Tipo de cambio no registrado en la guía (rate_usd=1.0). "
+                    "Verificar antes del cierre de costeo."
+                ),
+                message_type='notification',
             )
         
         # 🛡️ BLINDAJE VÍNCULO REAL DE OC (2026-06-30)
