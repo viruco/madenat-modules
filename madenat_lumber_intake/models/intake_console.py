@@ -374,89 +374,75 @@ class MadenatLumberIntakeConsole(models.Model):
                 rec.subproduct_id = subs[0].id
 
     def _inverse_header_product_subproduct(self):
-        """Al guardar, aplica la selección vía el wizard existente del core."""
-        for rec in self:
-            rec._apply_header_product_subproduct()
+        """La cabecera es solo informativa; la aplicación real se hace desde
+        el botón 'Aplicar cambios' → wizard → 'Aplicar Cambios'."""
+        return True
+
+    def _common_many2one(self, lines, field_name):
+        """Devuelve el valor común del campo Many2one si todas las líneas
+        coinciden; si hay valores mixtos o vacío, devuelve recordset vacío."""
+        values = lines.mapped(field_name)
+        if values and all(l[field_name] == values[0] for l in lines):
+            return values[0]
+        return values.browse()
 
     def action_apply_product_subproduct(self):
-        """Botón 'Aplicar': aplica Producto/Subproducto a TODA la guía.
+        """Botón 'Aplicar cambios': abre el wizard masivo existente con defaults.
 
-        Reutiliza `lumber.reception.mass.update.action_apply()` /
-        `madenat.guia.mass.update.action_apply()` tal cual existen; no duplica
-        su lógica. Al finalizar recarga la consola para reflejar el detalle.
+        No ejecuta el wizard silenciosamente; la confirmación explícita ocurre
+        en el botón 'Aplicar Cambios' del wizard del core, que escribe
+        Producto, Subproducto y nominales sobre las líneas reales.
         """
         self.ensure_one()
-        self._apply_header_product_subproduct()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Ingreso de Madera'),
-            'res_model': 'madenat.lumber.intake.console',
-            'res_id': self.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-    def _apply_header_product_subproduct(self):
-        """Aplica la selección a las líneas a través del wizard del core.
-
-        Idempotente: si los valores ya están aplicados de forma uniforme no
-        vuelve a ejecutar el wizard (evita escritura/chatter redundante).
-        """
-        self.ensure_one()
-        if not (self.product_id or self.subproduct_id):
-            return
         src = self._get_source_record()
         if not src:
-            return
+            raise UserError(_('El registro origen ya no existe.'))
 
-        # H1 (2026-08-29): no modificar Producto/Subproducto sobre guías ya
-        # cerradas/canceladas (defensa en profundidad; el botón también se oculta).
         if self.ingestion_type == 'product':
             if src.state in ('done', 'cancel', 'error'):
                 raise UserError(_('No se puede modificar Producto/Subproducto sobre una recepción ya cerrada o cancelada.'))
-        else:
-            if src.state in ('validated', 'cancelled'):
-                raise UserError(_('No se puede modificar Producto/Subproducto sobre una guía ya validada o cancelada.'))
-
-        if self.ingestion_type == 'product':
             lines = src.reception_line_ids
-            if not lines:
-                return
-            already_applied = (
-                (not self.product_id or all(l.product_id == self.product_id for l in lines))
-                and (not self.subproduct_id or all(l.subproduct_id == self.subproduct_id for l in lines))
-            )
-            if already_applied:
-                return
-            wizard = self.env['lumber.reception.mass.update'].with_context(
-                active_id=src.id,
-                active_ids=lines.ids,
-                default_reception_id=src.id,
-            ).create({
-                'reception_id': src.id,
-                'ingestion_profile': src.ingestion_profile,
-                'product_id': self.product_id.id if self.product_id else False,
-                'subproduct_id': self.subproduct_id.id if self.subproduct_id else False,
-                'apply_to': 'all',
-            })
-            wizard.action_apply()
-        else:
-            lines = src.processing_line_ids
-            if not lines:
-                return
-            already_applied = (
-                (not self.product_id or all(l.product_id == self.product_id for l in lines))
-                and (not self.subproduct_id or all(l.subproducto_id == self.subproduct_id for l in lines))
-            )
-            if already_applied:
-                return
-            wizard = self.env['madenat.guia.mass.update'].with_context(
-                active_id=src.id,
-            ).create({
-                'product_id': self.product_id.id if self.product_id else False,
-                'subproducto_id': self.subproduct_id.id if self.subproduct_id else False,
-            })
-            wizard.action_apply()
+            common_product = self._common_many2one(lines, 'product_id')
+            common_sub = self._common_many2one(lines, 'subproduct_id')
+            context = {
+                'default_reception_id': src.id,
+                'default_ingestion_profile': src.ingestion_profile,
+            }
+            if common_product:
+                context['default_product_id'] = common_product.id
+            if common_sub:
+                context['default_subproduct_id'] = common_sub.id
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Asignación Masiva'),
+                'res_model': 'lumber.reception.mass.update',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': context,
+            }
+
+        if src.state in ('validated', 'cancelled'):
+            raise UserError(_('No se puede modificar Producto/Subproducto sobre una guía ya validada o cancelada.'))
+        lines = src.processing_line_ids
+        common_product = self._common_many2one(lines, 'product_id')
+        common_sub = self._common_many2one(lines, 'subproducto_id')
+        context = {
+            'active_id': src.id,
+            'active_ids': [src.id],
+            'active_model': 'madenat.guia.processing',
+        }
+        if common_product:
+            context['default_product_id'] = common_product.id
+        if common_sub:
+            context['default_subproducto_id'] = common_sub.id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Fijar valores comerciales masivos'),
+            'res_model': 'madenat.guia.mass.update',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': context,
+        }
 
     # ------------------------------------------------------------------
     # Validación previa a stock (errores bloqueantes vs advertencias)

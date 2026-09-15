@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_ingestion_document_form" model="ir.ui.view">
+        <field name="name">madenat.ingestion.document.form</field>
+        <field name="model">madenat.ingestion.document</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_extract" string="Procesar documento"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,extracted,error"/>
+                </header>
+
+                <div class="alert alert-info" role="alert"
+                     invisible="state != 'draft'">
+                    Suba el archivo Excel o PDF del proveedor y presione
+                    <strong>"Procesar documento"</strong>. El sistema extraerá
+                    la información exactamente como fue declarada por el
+                    proveedor (unidades, texto de producto y dimensiones),
+                    sin modificarla. Podrá revisar el resultado completo
+                    antes de continuar.
+                </div>
+
+                <div class="alert alert-success" role="alert"
+                     invisible="state != 'extracted'">
+                    Documento procesado correctamente. Revise las pestañas
+                    <strong>"Líneas extraídas"</strong> y
+                    <strong>"Advertencias"</strong> antes de continuar. Este
+                    registro queda bloqueado para edición: si el archivo
+                    tenía un error, cargue un documento nuevo en vez de
+                    modificar este.
+                </div>
+
+                <div class="alert alert-danger" role="alert"
+                     invisible="state != 'error'">
+                    <strong>No fue posible procesar este documento.</strong>
+                    Cargue un documento nuevo con el archivo corregido.
+                    <br/>
+                    <field name="error_message" readonly="1" nolabel="1"/>
+                </div>
+
+                <sheet>
+                    <group>
+                        <group string="Identificación">
+                            <field name="name" string="N° de Ingesta"/>
+                        </group>
+                        <group string="Resultado del Procesamiento" invisible="state == 'draft'">
+                            <field name="detected_profile_code" string="Perfil de Ingesta Detectado"/>
+                            <field name="sheet_name_used" string="Hoja Procesada"/>
+                            <field name="warning_count" string="Cantidad de Advertencias"/>
+                        </group>
+                    </group>
+
+                    <group string="Documento a Ingresar">
+                        <field name="file" filename="filename" string="Archivo (Excel o PDF)"/>
+                        <field name="filename" invisible="1"/>
+                    </group>
+
+                    <group string="Resultado de la Extracción" invisible="state == 'draft'">
+                        <group string="Identificación del Documento">
+                            <field name="guide_number" string="N° de Guía"/>
+                            <field name="guide_date" string="Fecha de Guía"/>
+                            <field name="oc_reference" string="Referencia OC (documental)"/>
+                        </group>
+                        <group string="Proveedor y Cliente">
+                            <field name="supplier_rut" string="RUT Proveedor"/>
+                            <field name="supplier_name" string="Nombre Proveedor"/>
+                            <field name="customer_rut" string="RUT Cliente"/>
+                            <field name="customer_name" string="Nombre Cliente"/>
+                        </group>
+                        <group string="Transporte (si aplica)">
+                            <field name="carrier_name" string="Transportista"/>
+                            <field name="carrier_rut" string="RUT Transportista"/>
+                            <field name="carrier_phone" string="Teléfono Transportista"/>
+                            <field name="license_plate" string="Patente"/>
+                        </group>
+                        <group string="Totales y Destino">
+                            <field name="destination_label" string="Destino Declarado"/>
+                            <field name="total_volume_m3" string="Volumen Total (m³)"/>
+                            <field name="net_total" string="Neto"/>
+                            <field name="tax_total" string="IVA"/>
+                            <field name="total" string="Total"/>
+                            <field name="exchange_rate" string="Tipo de Cambio"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Líneas extraídas">
+                            <field name="line_ids" nolabel="1">
+                                <list>
+                                    <field name="source_row_number" string="Fila"/>
+                                    <field name="has_warning" string="⚠"
+                                           help="Esta fila generó una advertencia durante la extracción"/>
+                                    <field name="package_no" string="N° Paquete"/>
+                                    <field name="product_code" string="Código"/>
+                                    <field name="product_name_original" string="Producto (texto original)"/>
+                                    <field name="thickness_value_raw" string="Espesor (declarado, decimal)"/>
+                                    <field name="thickness_display" string="Espesor (fracción)"/>
+                                    <field name="thickness_unit" string="Unidad"/>
+                                    <field name="width_value_raw" string="Ancho (declarado, decimal)"/>
+                                    <field name="width_display" string="Ancho (fracción)"/>
+                                    <field name="width_unit" string="Unidad"/>
+                                    <field name="length_value_raw" string="Largo"/>
+                                    <field name="length_unit" string="Unidad"/>
+                                    <field name="pieces" string="Piezas"/>
+                                    <field name="volume_m3" string="Volumen (m³)"/>
+                                    <field name="lot_number" string="N° Lote"/>
+                                    <field name="rows" string="Filas (paquete)" optional="hide"/>
+                                    <field name="columns" string="Columnas (paquete)" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Advertencias">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="warning_count == 0">
+                                Se detectaron
+                                <field name="warning_count" nolabel="1" readonly="1"/>
+                                advertencia(s) durante la extracción. No bloquean el
+                                proceso, pero deben revisarse antes de continuar.
+                            </div>
+                            <div class="alert alert-success" role="alert"
+                                 invisible="warning_count != 0">
+                                Sin advertencias en este documento.
+                            </div>
+                            <field name="warning_ids" nolabel="1">
+                                <list>
+                                    <field name="row_number" string="Fila (0 = general)"/>
+                                    <field name="message" string="Detalle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <record id="view_madenat_ingestion_document_list" model="ir.ui.view">
+        <field name="name">madenat.ingestion.document.list</field>
+        <field name="model">madenat.ingestion.document</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'error'" decoration-success="state == 'extracted'">
+                <field name="name" string="N° de Ingesta"/>
+                <field name="filename" string="Archivo"/>
+                <field name="state" string="Estado"/>
+                <field name="detected_profile_code" string="Perfil Detectado"/>
+                <field name="warning_count" string="Advertencias"/>
+                <field name="create_date" string="Fecha de Carga"/>
+            </list>
+        </field>
+    </record>
+</odoo>

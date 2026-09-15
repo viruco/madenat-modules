@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_madenat_ingestion_document" model="ir.actions.act_window">
+        <field name="name">Documentos de Ingesta</field>
+        <field name="res_model">madenat.ingestion.document</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- Nombre "Ingreso de Madera New" es una etiqueta temporal para
+         comparación de desarrollador entre este motor de ingesta y el
+         flujo real de Ingreso de Madera (madenat_lumber_intake /
+         madenat_lumber_core). No implica integración de producción ni
+         reemplazo de la puerta única definida en AD-51.
+
+         Se anida como hermano de "Ingreso de Guías", "Tablero de
+         Recepciones", "Guías Procesadas" e "Historial de Ingresos"
+         dentro de madenat_lumber_core.menu_ops_reception_cat
+         (Operaciones > Abastecimiento > Gestión de Entradas), para
+         permitir comparación visual lado a lado con el mismo usuario.
+
+         Esto NO agrega una dependencia nueva: madenat_ingestion_engine
+         ya depende de madenat_lumber_core desde la migración de
+         seguridad de la sesión anterior. No se modifica ningún archivo
+         de madenat_lumber_core; solo se referencia su menú como padre.
+
+         Grupo usado: madenat_lumber_core.group_madenat_operaciones
+         (Operaciones general), confirmado por decisión explícita del
+         usuario — NO group_madenat_jefatura_operaciones. -->
+    <menuitem id="menu_madenat_ingestion_root"
+              name="Ingreso de Madera New"
+              parent="madenat_lumber_core.menu_ops_reception_cat"
+              sequence="40"
+              groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_cost_auditor"/>
+
+
+    <menuitem id="menu_madenat_ingestion_document"
+              parent="menu_madenat_ingestion_root"
+              name="Documentos de Ingesta"
+              action="action_madenat_ingestion_document"
+              sequence="10"/>
+</odoo>

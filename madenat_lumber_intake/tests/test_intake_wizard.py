@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 import base64
+import io
 
 from unittest.mock import patch
+
+from openpyxl import Workbook
 
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 
 from ..models.intake_constants import CONSOLE_ID_OFFSET
+from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -37,6 +41,37 @@ class TestIntakeWizard(TransactionCase):
         return base64.b64encode(raw).decode()
 
     @classmethod
+    def _packing_excel_bytes(cls, thickness):
+        """Genera un packing list sintético de una sola línea con el espesor
+        indicado (mm métrico si >= 10, pulgadas imperial si < 10)."""
+        header = [
+            'N°', 'CODIGOS', 'PRODUCTO', 'LOTE', 'ESPESOR', 'ANCHO',
+            'LARGO', 'FILAS', 'COLUMNAS', 'PIEZAS', 'VOLUMEN',
+        ]
+        row = [
+            '1', '0000000000001', 'MADERA DE PRUEBA', 'LOTE-1',
+            thickness, 170, 4.05, 25, 6, 150, 3.8862,
+        ]
+        wb = Workbook()
+        ws = wb.active
+        ws.append(header)
+        ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    @classmethod
+    def _excel_rows_bytes(cls, rows):
+        """Genera un XLSX en memoria a partir de una lista de filas."""
+        wb = Workbook()
+        ws = wb.active
+        for row in rows:
+            ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    @classmethod
     def _make_wizard(cls, tipo='producto', excel_raw=b'fake bytes', state='draft',
                      assign_location=True):
         vals = {
@@ -44,59 +79,37 @@ class TestIntakeWizard(TransactionCase):
             'excel_file': cls._b64(excel_raw),
             'excel_filename': 'packing.xlsx',
             'state': state,
+            'pdf_file': cls._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
         }
         if tipo == 'producto':
-            vals['pdf_file'] = cls._b64(b'%PDF-fake')
-            vals['pdf_filename'] = 'guia.pdf'
             vals['ingestion_profile'] = 'metric'
-        else:
-            if assign_location:
-                vals['assignment_location_id'] = cls.location.id
+        if assign_location:
+            vals['assignment_location_id'] = cls.location.id
         return cls.Wizard.create(vals)
 
-    @classmethod
-    def _fake_parsed(cls):
-        return {
-            'lines': [
-                {'product_code': 'P1', 'package_no': '1001', 'pieces': 10,
-                 'volume_m3': 2.5},
-                {'product_code': 'P2', 'package_no': '1002', 'pieces': 20,
-                 'volume_m3': 5.0},
-            ],
-            'total_volume_m3': 7.5,
-            'guide_no': '1234',
-            'logs': ['ok'],
-            'warnings': ['warn'],
-        }
+    # ── T1: Producto — preview utiliza extract_document del motor ─────────
+    def test_t1_producto_preview_uses_extract_document(self):
+        excel_raw = self._packing_excel_bytes(38.1)
+        wizard = self._make_wizard(tipo='producto', excel_raw=excel_raw)
 
-    # ── T1: Producto — preview utiliza parser universal ──────────────────
-    def test_t1_producto_preview_uses_universal_parser(self):
-        wizard = self._make_wizard(tipo='producto', excel_raw=b'excel-bytes')
-        parser_model = self.env['madenat.reception.parser']
-
-        with patch.object(
-            type(parser_model), 'parse_excel',
-            return_value=self._fake_parsed(),
-        ) as mock:
-            wizard.action_preview_document()
-
-        mock.assert_called_once_with(b'excel-bytes', 'metric')
+        result = wizard.action_preview_document()
 
         self.assertEqual(wizard.state, 'previewed')
-        self.assertEqual(wizard.preview_line_count, 2)
-        self.assertEqual(wizard.preview_total_volume_m3, 7.5)
-        self.assertEqual(wizard.preview_guide_no, '1234')
-        self.assertIn('P1', wizard.preview_data)
-        # El M3 es el retornado por el parser, sin cálculo adicional.
-        self.assertEqual(wizard.preview_total_volume_m3, 7.5)
+        self.assertEqual(wizard.preview_line_count, 1)
+        self.assertAlmostEqual(wizard.preview_total_volume_m3, 3.8862, places=4)
+        self.assertIn('0000000000001', wizard.preview_data)
+        # Sin etiqueta "guía despacho" en el Excel → guide_no queda vacío.
+        self.assertFalse(wizard.preview_guide_no)
+        self.assertEqual(result['type'], 'ir.actions.client')
+        self.assertEqual(result['tag'], 'display_notification')
 
-    # ── T2: Procesado — preview NO invoca parser de Recepción ────────────
-    def test_t2_procesado_preview_does_not_invoke_reception_parser(self):
+    # ── T2: Procesado — preview NO invoca extract_document ───────────────
+    def test_t2_procesado_preview_does_not_invoke_extract_document(self):
         wizard = self._make_wizard(tipo='procesado')
-        parser_model = self.env['madenat.reception.parser']
 
         with patch.object(
-            type(parser_model), 'parse_excel',
+            intake_wizard_module, 'extract_document',
             side_effect=AssertionError('No debe invocarse en Procesado'),
         ) as mock:
             result = wizard.action_preview_document()
@@ -106,6 +119,68 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(wizard.preview_total_volume_m3, 0.0)
         self.assertEqual(result['type'], 'ir.actions.client')
         self.assertEqual(result['tag'], 'display_notification')
+
+    # ── Producto — Excel sin cabecera reconocible → error controlado ─────
+    def test_preview_producto_sin_cabecera_error(self):
+        """Sin cabecera reconocible: DocumentExtractionError → UserError + state=error."""
+        excel_raw = self._excel_rows_bytes([
+            ['foo', 'bar', 'baz'],
+            ['1', '2', '3'],
+        ])
+        wizard = self._make_wizard(tipo='producto', excel_raw=excel_raw)
+
+        with patch.object(
+            type(wizard), 'write', return_value=True
+        ) as mock_write:
+            with self.assertRaises(UserError) as ctx:
+                wizard.action_preview_document()
+
+        # La causa (cabecera no reconocible) llega al mensaje de error.
+        self.assertIn('cabecera', str(ctx.exception))
+
+        # El método intenta persistir state='error' + error_message antes de
+        # relanzar. TransactionCase revierte la escritura tras el re-raise
+        # (mismo patrón que T6), por eso se valida sobre la llamada a write.
+        error_writes = []
+        for call_obj in mock_write.call_args_list:
+            args = call_obj.args
+            if args and isinstance(args[0], dict) and args[0].get('state') == 'error':
+                error_writes.append(args[0])
+
+        self.assertTrue(error_writes)
+        self.assertTrue(error_writes[0].get('error_message'))
+
+    # ── tipo_ingreso: default e onchange siguen intactos ─────────────────
+    def test_tipo_ingreso_default_and_onchange_intact(self):
+        """El campo tipo_ingreso conserva default 'producto' y su onchange."""
+        wizard = self.Wizard.create({
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'guia cepillado.xlsx',
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
+            'assignment_location_id': self.location.id,
+        })
+
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+
+        wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'procesado')
+
+    # ── Trazabilidad de unidades en la consola (valor declarado + mm/m) ──
+    def test_console_view_exposes_declared_dimensions(self):
+        """La vista de consola expone el valor declarado junto al convertido."""
+        view = self.env.ref(
+            'madenat_lumber_intake.view_madenat_lumber_intake_console_form'
+        )
+        arch = view.arch
+        # Producto (lumber.reception.line): valor documental original.
+        self.assertIn('thickness_document_display', arch)
+        self.assertIn('width_document_display', arch)
+        self.assertIn('length_input_raw', arch)
+        # Procesado (madenat.guia.processing.line): visual/imperial original.
+        self.assertIn('thickness_visual', arch)
+        self.assertIn('width_visual', arch)
+        self.assertIn('length_ft', arch)
 
     @classmethod
     def _facade_view_id(cls, xml_id):
@@ -303,3 +378,182 @@ class TestIntakeWizard(TransactionCase):
             self.assertEqual(edit_action['view_id'], self._facade_view_id(
                 'madenat_lumber_intake.view_madenat_guia_processing_intake_facade_form'
             ))
+
+    # ─── Validación común de requisitos: Excel, PDF, Patio ────────────────
+    # ── TC1: Producto sin PDF debe fallar ───────────────────────────────
+    def test_tc1_producto_fails_without_pdf(self):
+        """Validación común: Producto requiere PDF."""
+        wizard = self._make_wizard(tipo='producto', state='previewed',
+                                   assign_location=True)
+        wizard.pdf_file = False
+        wizard.pdf_filename = False
+
+        with self.assertRaises(UserError) as ctx:
+            wizard.action_route_document()
+
+        self.assertIn('Guía/PDF requerido', str(ctx.exception))
+        # No debe crear recepción
+        receptions = self.Reception.search([
+            ('excel_filename', '=', 'packing.xlsx')
+        ])
+        self.assertEqual(len(receptions), 0)
+
+    # ── TC2: Producto sin Patio debe fallar ──────────────────────────────
+    def test_tc2_producto_fails_without_patio(self):
+        """Validación común: Producto requiere Patio."""
+        wizard = self._make_wizard(tipo='producto', state='previewed',
+                                   assign_location=False)
+        wizard.assignment_location_id = False
+
+        with self.assertRaises(UserError) as ctx:
+            wizard.action_route_document()
+
+        self.assertIn('Patio de Asignación', str(ctx.exception))
+        # No debe crear recepción
+        receptions = self.Reception.search([
+            ('excel_filename', '=', 'packing.xlsx')
+        ])
+        self.assertEqual(len(receptions), 0)
+
+    # ── TC3: Procesado sin PDF debe fallar ───────────────────────────────
+    def test_tc3_procesado_fails_without_pdf(self):
+        """Validación común: Procesado requiere PDF."""
+        wizard = self._make_wizard(tipo='procesado', assign_location=True)
+        wizard.pdf_file = False
+        wizard.pdf_filename = False
+
+        with self.assertRaises(UserError) as ctx:
+            wizard.action_route_document()
+
+        self.assertIn('Guía/PDF requerido', str(ctx.exception))
+        # No debe crear guía
+        guias = self.Guia.search([('excel_filename', '=', 'packing.xlsx')])
+        self.assertEqual(len(guias), 0)
+
+    # ── TC4: Procesado sin Patio debe fallar ─────────────────────────────
+    def test_tc4_procesado_fails_without_patio(self):
+        """Validación común: Procesado requiere Patio."""
+        wizard = self._make_wizard(tipo='procesado', assign_location=False)
+        wizard.assignment_location_id = False
+
+        with self.assertRaises(UserError) as ctx:
+            wizard.action_route_document()
+
+        self.assertIn('Patio de Asignación', str(ctx.exception))
+        # No debe crear guía
+        guias = self.Guia.search([('excel_filename', '=', 'packing.xlsx')])
+        self.assertEqual(len(guias), 0)
+
+    # ── TC5: Producto transfiere location_id ──────────────────────────────
+    def test_tc5_producto_transfers_location_id(self):
+        """Mapeo: Intake assignment_location_id → lumber.reception.location_id."""
+        wizard = self._make_wizard(tipo='producto', state='previewed',
+                                   assign_location=True)
+        reception_model = self.env['lumber.reception']
+
+        with patch.object(
+            type(reception_model), 'action_process_documents', return_value=True
+        ):
+            wizard.action_route_document()
+
+        receptions = self.Reception.search([
+            ('excel_filename', '=', 'packing.xlsx')
+        ])
+        self.assertEqual(len(receptions), 1)
+        reception = receptions
+        # Verificar que location_id se transfirió
+        self.assertEqual(reception.location_id.id, self.location.id)
+        self.assertEqual(reception.location_id.id, wizard.assignment_location_id.id)
+
+    # ── TC6: Procesado siempre transfiere PDF ────────────────────────────
+    def test_tc6_procesado_always_transfers_pdf(self):
+        """Mapeo: Intake pdf_file/pdf_filename → madenat.guia.processing.guide_pdf_file/guide_pdf_filename."""
+        wizard = self._make_wizard(tipo='procesado', assign_location=True)
+        guia_model = self.env['madenat.guia.processing']
+
+        with patch.object(
+            type(guia_model), 'action_verify_data', return_value=None
+        ):
+            wizard.action_route_document()
+
+        guias = self.Guia.search([('excel_filename', '=', 'packing.xlsx')])
+        self.assertEqual(len(guias), 1)
+        guia = guias
+        # Verificar que PDF se transfirió
+        self.assertEqual(guia.guide_pdf_file, wizard.pdf_file)
+        self.assertEqual(guia.guide_pdf_filename, wizard.pdf_filename)
+
+    # ── Sugerencia asistida de perfil de lectura (ingestion_profile) ──────
+    # El onchange analiza el Excel real con extract_document() y sugiere
+    # metric / f5085 / f1550; el caso imperial sin palabra clave solo advierte.
+
+    def test_suggest_profile_metric_excel(self):
+        """Excel métrico (espesor >= 10 mm) sugiere 'metric'."""
+        wizard = self._make_wizard(
+            tipo='producto',
+            excel_raw=self._packing_excel_bytes(38.1),
+        )
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'metric')
+        self.assertIsNone(result)
+
+    def test_suggest_profile_imperial_blank_keyword(self):
+        """Excel imperial + 'blank' en nombre sugiere 'f5085'."""
+        wizard = self._make_wizard(
+            tipo='producto',
+            excel_raw=self._packing_excel_bytes(1.5625),
+        )
+        wizard.excel_filename = 'packing blank.xlsx'
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'f5085')
+        self.assertIsNone(result)
+
+    def test_suggest_profile_imperial_s2s_keyword(self):
+        """Excel imperial + 's2s' en nombre sugiere 'f1550'."""
+        wizard = self._make_wizard(
+            tipo='producto',
+            excel_raw=self._packing_excel_bytes(1.5625),
+        )
+        wizard.excel_filename = 'packing s2s.xlsx'
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'f1550')
+        self.assertIsNone(result)
+
+    def test_suggest_profile_imperial_no_keyword_warns(self):
+        """Excel imperial sin palabra clave no cambia el valor y retorna warning."""
+        wizard = self._make_wizard(
+            tipo='producto',
+            excel_raw=self._packing_excel_bytes(1.5625),
+        )
+        wizard.excel_filename = 'packing.xlsx'
+        wizard.ingestion_profile = 'metric'
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'metric')
+        self.assertIsNotNone(result)
+        self.assertIn('warning', result)
+        self.assertEqual(
+            result['warning']['title'],
+            'Verifique el perfil de lectura antes de continuar',
+        )
+        self.assertIn('pulgadas', result['warning']['message'])
+        self.assertIn('no bloquea', result['warning']['message'])
+
+    def test_suggest_profile_no_excel_file_noop(self):
+        """Sin excel_file el onchange no lanza excepción ni modifica el perfil."""
+        wizard = self._make_wizard(tipo='producto', excel_raw=b'excel-bytes')
+        wizard.excel_file = False
+        wizard.ingestion_profile = 'f1550'
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'f1550')
+        self.assertIsNone(result)
+
+    def test_suggest_profile_corrupt_excel_noop(self):
+        """Excel corrupto: sin excepción visible y el perfil conserva su valor."""
+        wizard = self._make_wizard(
+            tipo='producto',
+            excel_raw=b'not a valid excel at all',
+        )
+        wizard.ingestion_profile = 'metric'
+        result = wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, 'metric')
+        self.assertIsNone(result)

@@ -8,6 +8,7 @@ from .intake_constants import CONSOLE_ID_OFFSET
 
 from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionError,
+    extract_document,
     _extract_pdf_text,
 )
 
@@ -159,6 +160,67 @@ class MadenatLumberIntakeWizard(models.Model):
                     }
                 }
 
+    @api.onchange('excel_file', 'excel_filename', 'pdf_filename')
+    def _onchange_suggest_ingestion_profile(self):
+        """Sugiere el perfil de lectura (ingestion_profile) analizando el
+        contenido real del Excel con madenat_ingestion_engine.extract_document().
+
+        Reutiliza la detección de perfil (heurística de rango de espesor) del
+        motor de ingesta, y un desempate por palabra clave en el nombre de
+        archivo para el caso imperial ambiguo (Grado Clear vs S2S).
+
+        Comportamiento "asistido, no determinista", igual que
+        _onchange_suggest_tipo_ingreso:
+          - Nunca lanza una excepción visible al usuario.
+          - Nunca sobrescribe con una decisión de baja confianza; en el caso
+            ambiguo, solo advierte, no cambia el valor.
+        """
+        for rec in self:
+            if not rec.excel_file:
+                continue
+
+            try:
+                excel_bytes = base64.b64decode(rec.excel_file)
+            except Exception:
+                continue
+
+            try:
+                result = extract_document(
+                    excel_bytes, rec.excel_filename or 'packing.xlsx'
+                )
+            except (DocumentExtractionError, Exception):
+                continue
+
+            detected = getattr(result, 'detected_profile_code', None)
+
+            if detected == 'packing_metrico_aserrada':
+                rec.ingestion_profile = 'metric'
+                continue
+
+            if detected == 'packing_imperial_blanks':
+                nombres = ' '.join([
+                    rec.excel_filename or '',
+                    rec.pdf_filename or '',
+                ]).casefold()
+
+                if 'blank' in nombres or 'clear' in nombres:
+                    rec.ingestion_profile = 'f5085'
+                elif 's2s' in nombres:
+                    rec.ingestion_profile = 'f1550'
+                else:
+                    return {
+                        'warning': {
+                            'title': _('Verifique el perfil de lectura antes de continuar'),
+                            'message': _(
+                                'Este packing está en pulgadas. Por el nombre del archivo no '
+                                'fue posible sugerir automáticamente si corresponde a Grado '
+                                'Clear (f5085) o S2S (f1550). Seleccione el perfil correcto en '
+                                'el campo "Perfil de lectura"; esto no bloquea la lectura, solo '
+                                'asegura que se interprete correctamente.'
+                            ),
+                        }
+                    }
+
     # ─────────────────────────────────────────────────────────────────────
     # Lectura y preview — solo Producto
     # ─────────────────────────────────────────────────────────────────────
@@ -196,18 +258,23 @@ class MadenatLumberIntakeWizard(models.Model):
 
         try:
             excel_bytes = base64.b64decode(self.excel_file)
-            parsed = self.env['madenat.reception.parser'].parse_excel(
-                excel_bytes,
-                self.ingestion_profile,
+            result = extract_document(
+                excel_bytes, self.excel_filename or 'packing.xlsx'
             )
-        except (UserError, ValidationError) as e:
+        except DocumentExtractionError as e:
             self.write({
                 'state': 'error',
                 'error_message': str(e),
             })
             raise UserError(_('Error al leer el documento de Producto:\n%s') % e)
+        except Exception as e:
+            self.write({
+                'state': 'error',
+                'error_message': str(e),
+            })
+            raise UserError(_('Error inesperado al leer el documento:\n%s') % e)
 
-        lines = parsed.get('lines') or []
+        lines = result.lines or []
 
         preview_lines = []
         for line in lines[:5]:
@@ -220,14 +287,15 @@ class MadenatLumberIntakeWizard(models.Model):
                 )
             )
 
-        warnings_text = self._serialize_parser_feedback(parsed)
+        total_volume = sum((l.get('volume_m3') or 0) for l in lines)
+        warnings_text = '\n'.join(result.warnings or []) or False
 
         self.write({
             'state': 'previewed',
             'preview_data': '\n'.join(preview_lines),
             'preview_line_count': len(lines),
-            'preview_total_volume_m3': parsed.get('total_volume_m3') or 0.0,
-            'preview_guide_no': parsed.get('guide_no') or False,
+            'preview_total_volume_m3': total_volume,
+            'preview_guide_no': (result.header or {}).get('guide_number') or False,
             'preview_warnings': warnings_text,
             'error_message': False,
         })
@@ -241,21 +309,6 @@ class MadenatLumberIntakeWizard(models.Model):
                 'type': 'success',
             },
         }
-
-    @api.model
-    def _serialize_parser_feedback(self, parsed, max_chars=4000):
-        """Serializa avisos/logs del parser de forma legible y acotada."""
-        parts = []
-        warnings = parsed.get('warnings') or []
-        logs = parsed.get('logs') or []
-        if warnings:
-            parts.extend(str(w) for w in warnings)
-        if logs:
-            parts.extend(str(l) for l in logs)
-        text = '\n'.join(parts).strip()
-        if text and len(text) > max_chars:
-            text = text[:max_chars] + '…'
-        return text or False
 
     # ─────────────────────────────────────────────────────────────────────
     # Derivación idempotente y segura
@@ -278,29 +331,31 @@ class MadenatLumberIntakeWizard(models.Model):
     def _guard_route_document(self):
         self.ensure_one()
 
+        # Validación común para ambos tipos de ingreso
         if not self.excel_file:
             raise UserError(_('Archivo Excel requerido.'))
 
+        if not self.pdf_file:
+            raise UserError(
+                _('Guía/PDF requerido para continuar el ingreso.')
+            )
+
+        if not self.assignment_location_id:
+            raise UserError(
+                _('Seleccione el Patio de Asignación para continuar el ingreso.')
+            )
+
+        # Validaciones específicas por tipo
         if self.tipo_ingreso == 'producto':
             if self.state != 'previewed':
                 raise UserError(
                     _('Debe leer el documento (preview) antes de derivar '
                       'a Producto.')
                 )
-            if not self.pdf_file:
-                raise UserError(
-                    _('El PDF de Guía es obligatorio para la Recepción de '
-                      'Producto (contrato nativo lumber.reception).')
-                )
         else:
             if self.state not in ('draft', 'previewed'):
                 raise UserError(
                     _('El ingreso Procesado no está en un estado derivable.')
-                )
-            if not self.assignment_location_id:
-                raise UserError(
-                    _('Seleccione el Patio de Asignación para derivar a '
-                      'Procesado.')
                 )
 
     def _existing_target(self):
@@ -325,6 +380,7 @@ class MadenatLumberIntakeWizard(models.Model):
                     'excel_file': self.excel_file,
                     'excel_filename': self.excel_filename,
                     'ingestion_profile': self.ingestion_profile,
+                    'location_id': self.assignment_location_id.id,
                 })
                 # Método público canónico: Gate0/Gate1 nativos de Recepción.
                 reception.action_process_documents()
@@ -356,10 +412,9 @@ class MadenatLumberIntakeWizard(models.Model):
                     'tipo_recepcion': 'service',
                     'intake_direct_stock': True,
                     'assignment_location_id': self.assignment_location_id.id,
+                    'guide_pdf_file': self.pdf_file,
+                    'guide_pdf_filename': self.pdf_filename,
                 }
-                if self.pdf_file:
-                    vals['guide_pdf_file'] = self.pdf_file
-                    vals['guide_pdf_filename'] = self.pdf_filename
 
                 guia = self.env['madenat.guia.processing'].create(vals)
                 # Parser nativo de Guía Processing (forward-fill N° LOTE).

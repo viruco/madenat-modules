@@ -28,6 +28,12 @@
                 </header>
 
                 <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <p class="text-muted">
+                            <strong>Requisitos obligatorios:</strong> Archivo Excel, Guía/PDF y Patio de Asignación.
+                        </p>
+                    </div>
+
                     <group string="Destino del ingreso">
                         <group>
                             <field name="tipo_ingreso" invisible="1"/>
@@ -36,8 +42,7 @@
                                 invisible="tipo_ingreso != 'producto'"
                                 help="El perfil se usa para la lectura previa de compra; no se aplica a Procesados." />
                             <field
-                                name="assignment_location_id"
-                                invisible="tipo_ingreso != 'procesado'" />
+                                name="assignment_location_id" />
                         </group>
                     </group>
 
@@ -45,7 +50,7 @@
                         <group>
                             <field name="excel_file" filename="excel_filename" required="1" />
                             <field name="excel_filename" />
-                            <field name="pdf_file" filename="pdf_filename" />
+                            <field name="pdf_file" filename="pdf_filename" required="1" />
                             <field name="pdf_filename" />
                         </group>
                     </group>
@@ -60,6 +65,17 @@
                             <field name="preview_warnings" nolabel="1" />
                         </group>
                     </group>
+
+                    <div class="alert alert-info"
+                         role="alert"
+                         invisible="state != 'previewed'">
+                        Este resumen refleja los valores <strong>tal como fueron declarados
+                        en el archivo</strong>, sin conversión de unidades ni descarte de
+                        filas inválidas. El volumen final que se registrará en stock al
+                        presionar "Continuar ingreso" puede diferir levemente, ya que el
+                        sistema aplicará en ese momento las reglas de conversión y
+                        validación correspondientes.
+                    </div>
 
                     <div class="alert alert-info"
                          invisible="tipo_ingreso != 'procesado'"

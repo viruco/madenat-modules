@@ -148,14 +148,13 @@
                             <field name="product_id" string="Producto"
                                    options="{'no_create': True, 'no_quick_create': True}"
                                    context="{'display_default_code': False}"/>
-                            <field name="subproduct_id" string="Subproducto"
-                                   options="{'no_create': True, 'no_open': True}"/>
                             <button name="action_apply_product_subproduct"
                                     type="object"
-                                    string="Aplicar"
+                                    string="Aplicar cambios"
                                     class="btn-primary"
                                     icon="fa-check"
-                                    invisible="not product_id or not subproduct_id or review_state in ('sent', 'cancel', 'error')"/>
+                                    help="Abre la edición masiva de producto, subproducto y nominales antes de enviar a stock."
+                                    invisible="review_state in ('sent', 'cancel', 'error')"/>
                             <field name="guide_date" string="Fecha de guía"/>
                             <field name="partner_id" string="Proveedor"/>
 
@@ -200,9 +199,13 @@
                                 <field name="product_id" string="Producto"
                                        context="{'display_default_code': False}"/>
                                 <field name="subproduct_id" string="Sub-producto"/>
-                                <field name="thickness_nominal" string="Esp. Nom (mm)"/>
-                                <field name="width_nominal" string="Ancho Nom (mm)"/>
-                                <field name="length" string="Largo (m)"/>
+                                <field name="thickness_nominal" string="Esp. Nom (mm)" optional="show"/>
+                                <field name="thickness_document_display" string="Esp. declarado"/>
+                                <field name="width_nominal" string="Ancho Nom (mm)" optional="show"/>
+                                <field name="width_document_display" string="Ancho declarado"/>
+                                <field name="length" string="Largo (m)" optional="show"/>
+                                <field name="length_input_raw" string="Largo declarado"/>
+                                <field name="lengthuom" string="Unidad"/>
                                 <field name="pieces" string="Piezas"/>
                                 <field name="vol_purchase_m3" string="Vol. Stock (m³)"/>
                             </list>
@@ -215,8 +218,11 @@
                                 <field name="product_name_original" string="Producto"/>
                                 <field name="subproducto_id" string="Sub-producto"/>
                                 <field name="espesor_mm" string="Espesor (mm)"/>
+                                <field name="thickness_visual" string="Esp. declarado"/>
                                 <field name="ancho_mm" string="Ancho (mm)"/>
+                                <field name="width_visual" string="Ancho declarado"/>
                                 <field name="largo_m" string="Largo (m)"/>
+                                <field name="length_ft" string="Largo declarado (ft)"/>
                                 <field name="pieces" string="Piezas"/>
                                 <field name="vol_shipment_m3" string="Vol. (m³)"/>
                             </list>

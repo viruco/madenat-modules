@@ -13,6 +13,9 @@
 > - Subproducto visible y aplicable también en el detalle de guías **Procesadas** (columna "Sub-producto").
 > - Descarga de **Guía (PDF)** y **Packing list (Excel)** habilitada para ambos flujos (Producto y Procesado).
 > - Guarda de estado en el botón **"Aplicar"** de Producto/Subproducto (bloquea guías ya cerradas/canceladas).
+>
+> **Cambio reciente (2026-09-02):**
+> - Sugerencia asistida del **Perfil de lectura** (`metric` / `f5085` / `f1550`) analizando el Excel real con `madenat_ingestion_engine.extract_document()`. Es no determinista: el caso imperial sin palabra clave solo advierte y no cambia el valor.
 
 ## 1. Propósito y alcance
 
@@ -86,11 +89,36 @@ y XML IDs del core (`madenat_lumber_core`), que es dependencia declarada.
 
 ---
 
-## 4. Dependencias
+## 4. Requisitos comunes del wizard
 
-- **`madenat_lumber_core`** (única dependencia).
-- Reutiliza del core: `madenat.reception.parser`, `madenat.audit.log`, y los XML IDs de
-  menú/grupo:
+Todo ingreso iniciado desde el wizard `madenat.lumber.intake.wizard` requiere obligatoriamente
+los siguientes tres elementos **antes de derivar** a cualquiera de los dos destinos:
+
+1. **Archivo Excel** (`excel_file`, `excel_filename`) — Packing List con detalle de lotes/paquetes.
+2. **Guía/PDF** (`pdf_file`, `pdf_filename`) — Documento de despacho/guía comercial.
+3. **Patio de Asignación** (`assignment_location_id`) — Ubicación física de recepción.
+
+### Mapeo a destinos
+
+| Campo Wizard | Destino: Recepción Directa | Destino: Guía Procesada |
+|---|---|---|
+| `excel_file`, `excel_filename` | `lumber.reception.excel_file`, `excel_filename` | `madenat.guia.processing.excel_file`, `excel_filename` |
+| `pdf_file`, `pdf_filename` | `lumber.reception.pdf_file`, `pdf_filename` | `madenat.guia.processing.guide_pdf_file`, `guide_pdf_filename` |
+| `assignment_location_id` | `lumber.reception.location_id` | `madenat.guia.processing.assignment_location_id` |
+
+### Validación
+
+La validación de estos tres requisitos se ejecuta en `_guard_route_document()` **antes** de crear
+el registro destino. Si alguno falta, se levanta `UserError` bloqueando la derivación y sin crear
+destino alguno. Esta regla aplica por igual a ambos flujos (Producto y Procesado).
+
+---
+
+## 5. Dependencias
+
+- **`madenat_lumber_core`** y **`madenat_ingestion_engine`**.
+- Preview de Producto usa `madenat_ingestion_engine.extract_document()`; reutiliza del
+  core `madenat.audit.log` y los XML IDs de menú/grupo:
   - `madenat_lumber_core.menu_ops_reception_cat`
   - `madenat_lumber_core.menu_lumber_reception_pending`
   - `madenat_lumber_core.menu_guia_processing_root`
@@ -100,7 +128,7 @@ y XML IDs del core (`madenat_lumber_core`), que es dependencia declarada.
 
 ---
 
-## 5. Modelos y responsabilidades
+## 6. Modelos y responsabilidades
 
 ### 5.1 `madenat.lumber.intake.console` (readonly)
 
@@ -131,7 +159,7 @@ y XML IDs del core (`madenat_lumber_core`), que es dependencia declarada.
 
 ---
 
-## 6. Fuentes consolidadas
+## 7. Fuentes consolidadas
 
 La vista SQL `madenat_lumber_intake_console` ejecuta `UNION ALL` sobre:
 
@@ -178,9 +206,10 @@ en la práctica.
 4. `_onchange_suggest_tipo_ingreso` sugiere `procesado` si el nombre de archivo
    contiene keywords (`cepillado`, `servicio`, `proceso`, `maquila`).
 5. `action_preview_document`:
-   - **Producto** → prelectura con `madenat.reception.parser.parse_excel`.
-   - **Procesado** → no parsea con el parser de Recepción; informa que el flujo
-     nativo interpretará el documento.
+   - **Producto** → prelectura con `madenat_ingestion_engine.extract_document()`
+     (resumen informativo; sin conversión de unidades ni descarte de filas).
+   - **Procesado** → no usa `extract_document()`; informa que el flujo nativo
+     interpretará el documento.
 6. `action_route_document` (idempotente vía `_existing_target`):
    - **Producto** → crea `lumber.reception` (pdf/excel/ingestion_profile) y llama
      `action_process_documents()`.
@@ -324,15 +353,16 @@ Coherente con "consola readonly" y "wizard de creación".
 
 | Test | Cubre |
 |---|---|
-| T1 | Producto — preview usa `madenat.reception.parser.parse_excel` |
-| T2 | Procesado — preview NO invoca parser de Recepción |
+| T1 | Producto — preview usa `madenat_ingestion_engine.extract_document()` |
+| T2 | Procesado — preview NO invoca `extract_document()` |
 | T3 | Producto — derivación canónica (crea `lumber.reception` + `action_process_documents`) |
 | T4 | Procesado — deriva bytes al parser nativo (`action_verify_data`) |
 | T5 | Idempotencia (doble clic → único destino y único evento de origen) |
 | T6 | Error conocido → sin destino ni evento de origen |
 
-Los tests mockean `parse_excel`, `action_process_documents` y `action_verify_data` para
-aislar el comportamiento del intake (no verifican parser ni gates, que son del core).
+Los tests de preview ejercitan `extract_document()` real con Excel sintético; los de
+derivación mockean `action_process_documents` y `action_verify_data` para aislar el
+comportamiento del intake (no verifican parser ni gates, que son del core).
 
 ### Gaps de cobertura (no cubiertos)
 
