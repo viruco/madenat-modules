@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 from odoo import _
-from odoo.exceptions import UserError
-from odoo.tools.float_utils import float_round
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_compare, float_round
+from psycopg2.errors import IntegrityError
 
 _logger = logging.getLogger(__name__)
 
@@ -17,89 +18,160 @@ class LumberReceptionService:
     def create_lots_from_staging(self, reception):
         """
         Mueve los datos de lumber.reception.line (Staging) a stock.lot real.
-        
-        🛡️ IDEMPOTENCIA v2.0 (2026-06-11):
-        - search-before-create por clave natural: name + reception_id + product_id
-        - Si el lote ya existe para esta recepción, se reutiliza (actualiza) en vez de duplicar.
-        - Si no existe, se crea.
-        - Logging explícito de cada decisión para trazabilidad forense.
+
+        IDEMPOTENCIA v3.0 (2026-09-02):
+        - Agrupa el staging por clave de identidad (producto, lote normalizado,
+          compañía) y valida compatibilidad de atributos de nivel de lote ANTES
+          de cualquier escritura de stock.
+        - Crea o reutiliza un único stock.lot por grupo, acotado a la misma
+          recepción (reception_id) y con savepoint + re-búsqueda ante colisión
+          UNIQUE (principios de _create_or_get_lot de Procesados, adaptados a
+          recepción directa).
+        - La composición por fila (largo, piezas, volumen) se preserva luego en
+          stock.move.line, no en el lote.
         """
         stats = {'created': 0, 'updated': 0, 'skipped': 0, 'omitted': 0}
-        
-        # Pre-cargar todos los lotes existentes de esta recepción en un solo query
-        StockLot = self.env['stock.lot']
-        existing_lots = StockLot.search([
-            ('reception_id', '=', reception.id)
-        ])
-        # Índice por (name, product_id) para lookup O(1)
-        existing_index = {}
-        for lot in existing_lots:
-            key = (lot.name, lot.product_id.id)
-            existing_index[key] = lot
-        
+        company = self.env.company
+
+        # 1. Agrupar por clave de identidad y validar compatibilidad.
+        groups = {}
         for line in reception.reception_line_ids:
-            lot_name = line.lot_name
-            product_id = line.product_id.id
-            lookup_key = (lot_name, product_id)
-            
-            # ── BASE VALS (compartidos entre create y update) ──
-            lot_vals = {
-                'name': lot_name,
-                'ref': lot_name,
-                'product_id': product_id,
-                'reception_id': reception.id,
-                'subproducto_id': line.subproduct_id.id if line.subproduct_id else False,
-                'piezas': line.pieces,
-                'espesor_mm': line.thickness,
-                'ancho_mm': line.width,
-                'largo_m': line.length,
-                'volume_purchase_m3': line.vol_purchase_m3,
-                'volumen_m3': line.vol_purchase_m3,
-                'vol_shipment_m3': line.vol_shipment_m3,
-                'espesor_inch_frac': line.thickness_visual or '',
-                'ancho_inch_frac': line.width_visual or '',
-                'thickness_visual': line.thickness_visual or '',
-                'width_visual': line.width_visual or '',
-                'length_ft': line.length_input_raw if line.lengthuom == 'ft' else False,
-                # HOMOLOGACIÓN OC 2026-06-21: escritura directa para consistencia con guia_processing._create_or_get_lot:3272
-                # Defensa en profundidad: el compute _compute_purchase_info también lo resuelve, pero la escritura
-                # directa garantiza el valor desde el momento de creación del lote, sin depender del trigger ORM.
-                'purchase_order_id': reception.purchase_id.id if reception.purchase_id else False,
-                'supplier_id': reception.supplier_id.id if reception.supplier_id else False,
-                # HOMOLOGACIÓN NOMINALES 2026-06-22: propagar nominales a stock.lot
-                # Equivalente a _create_or_get_lot() en madenat_guia_processing.py
-                # Referencia: INVESTIGACION_NOMINALES_HOMOLOGACION_20260622.md Gap #2 y #3
-                'espesor_nominal_mm': line.thickness_nominal or 0.0,
-                'ancho_nominal_mm': line.width_nominal or 0.0,
-            }
-            
-            existing = existing_index.get(lookup_key)
-            
-            if existing:
-                # ♻️ REUTILIZAR: actualizar dimensiones y volúmenes
-                _logger.info(
-                    "♻️ LumberReceptionService: reutilizando lote existente "
-                    "name=%s product_id=%s lot_id=%s reception=%s",
-                    lot_name, product_id, existing.id, reception.name
-                )
-                existing.write(lot_vals)
-                stats['updated'] += 1
+            lot_name = (line.lot_name or '').strip()
+            key = (line.product_id.id, lot_name, company.id)
+            if key in groups:
+                self._check_lot_compatibility(groups[key][0], line, lot_name)
+                groups[key].append(line)
             else:
-                # ✨ CREAR: primer procesamiento de esta línea
-                _logger.info(
-                    "✨ LumberReceptionService: creando nuevo lote "
-                    "name=%s product_id=%s reception=%s",
-                    lot_name, product_id, reception.name
-                )
-                StockLot.create(lot_vals)
-                stats['created'] += 1
-        
+                groups[key] = [line]
+
+        # 2. Un stock.lot por grupo (create-or-get idempotente).
+        for (product_id, lot_name, company_id), lines in groups.items():
+            lot_vals = self._build_lot_vals(reception, lines[0], lines)
+            lot, created = self._create_or_get_reception_lot(
+                reception, product_id, lot_name, company_id, lot_vals
+            )
+            stats['created' if created else 'updated'] += 1
+            self._audit_lot(
+                reception,
+                'lot_creation' if created else 'lot_update',
+                lot_name,
+                lot,
+                created,
+            )
+
         _logger.info(
             "📊 LumberReceptionService: resumen recepción %s — "
             "creados=%d actualizados=%d omitidos=%d",
             reception.name, stats['created'], stats['updated'], stats['omitted']
         )
         return stats
+
+    def _check_lot_compatibility(self, ref, line, lot_name):
+        """Valida que dos filas del mismo lote compartan los atributos de nivel de
+        lote. Las variaciones por fila (largo, piezas, volumen) se preservan en
+        stock.move.line y no invalidan la reutilización del lote."""
+        conflicts = []
+        if float_compare(ref.thickness, line.thickness, precision_digits=6) != 0:
+            conflicts.append('espesor')
+        if float_compare(ref.width, line.width, precision_digits=6) != 0:
+            conflicts.append('ancho')
+        if float_compare(ref.thickness_nominal or 0.0, line.thickness_nominal or 0.0, precision_digits=6) != 0:
+            conflicts.append('espesor nominal')
+        if float_compare(ref.width_nominal or 0.0, line.width_nominal or 0.0, precision_digits=6) != 0:
+            conflicts.append('ancho nominal')
+        ref_sub = ref.subproduct_id.id if ref.subproduct_id else False
+        line_sub = line.subproduct_id.id if line.subproduct_id else False
+        if ref_sub != line_sub:
+            conflicts.append('subproducto')
+        if conflicts:
+            raise UserError(
+                _("El lote '%s' aparece en varias filas con atributos de nivel de "
+                  "lote incompatibles (%s). Corrija las líneas %s y %s antes de "
+                  "enviar a inventario.")
+                % (lot_name, ', '.join(conflicts), ref.id, line.id)
+            )
+
+    def _build_lot_vals(self, reception, ref_line, lines):
+        """Construye los vals del lote: atributos comunes de la primera fila y
+        totales consolidados (piezas y volúmenes) del grupo completo."""
+        total_pieces = int(sum((l.pieces or 0) for l in lines))
+        total_purchase = sum((l.vol_purchase_m3 or 0.0) for l in lines)
+        total_shipment = sum((l.vol_shipment_m3 or 0.0) for l in lines)
+        lot_name = (ref_line.lot_name or '').strip()
+        return {
+            'name': lot_name,
+            'ref': lot_name,
+            'product_id': ref_line.product_id.id,
+            'reception_id': reception.id,
+            'subproducto_id': ref_line.subproduct_id.id if ref_line.subproduct_id else False,
+            'piezas': total_pieces,
+            'espesor_mm': ref_line.thickness,
+            'ancho_mm': ref_line.width,
+            'largo_m': ref_line.length,
+            'volume_purchase_m3': total_purchase,
+            'volumen_m3': total_purchase,
+            'vol_shipment_m3': total_shipment,
+            'espesor_inch_frac': ref_line.thickness_visual or '',
+            'ancho_inch_frac': ref_line.width_visual or '',
+            'thickness_visual': ref_line.thickness_visual or '',
+            'width_visual': ref_line.width_visual or '',
+            'length_ft': ref_line.length_input_raw if ref_line.lengthuom == 'ft' else False,
+            'purchase_order_id': reception.purchase_id.id if reception.purchase_id else False,
+            'supplier_id': reception.supplier_id.id if reception.supplier_id else False,
+            'espesor_nominal_mm': ref_line.thickness_nominal or 0.0,
+            'ancho_nominal_mm': ref_line.width_nominal or 0.0,
+        }
+
+    def _create_or_get_reception_lot(self, reception, product_id, lot_name,
+                                     company_id, lot_vals):
+        """Crea o recupera el stock.lot de esta recepción para la clave dada.
+
+        Reutiliza los principios de _create_or_get_lot de Procesados, pero con el
+        discriminador de origen correcto para recepción directa: reception_id.
+        """
+        StockLot = self.env['stock.lot']
+        domain = [
+            ('reception_id', '=', reception.id),
+            ('name', '=', lot_name),
+            ('product_id', '=', product_id),
+            ('company_id', 'in', [company_id, False]),
+        ]
+        StockLot.flush_model(['name', 'product_id', 'company_id', 'reception_id'])
+        lot = StockLot.search(domain, limit=1)
+        if lot:
+            lot.write(lot_vals)
+            return lot, False
+        try:
+            with self.env.cr.savepoint():
+                lot = StockLot.create(lot_vals)
+            return lot, True
+        except (IntegrityError, ValidationError):
+            _logger.warning(
+                "⚠️ Colisión UNIQUE en stock.lot para name=%s product_id=%s "
+                "reception_id=%s — reutilizando lote de la misma recepción.",
+                lot_name, product_id, reception.id
+            )
+            StockLot.flush_model(['name', 'product_id', 'company_id', 'reception_id'])
+            StockLot.invalidate_model(['name', 'product_id', 'company_id', 'reception_id'])
+            lot = StockLot.search(domain, limit=1)
+            if lot:
+                lot.write(lot_vals)
+                return lot, False
+            raise
+
+    def _audit_lot(self, reception, action_type, lot_name, lot, created):
+        """Registra en madenat.audit.log el outcome del lote (creación/reuso),
+        siguiendo el contrato de auditoría de recepción (reception_id + batch_id)."""
+        self.env['madenat.audit.log'].sudo().create({
+            'reception_id': reception.id,
+            'action_type': action_type,
+            'description': (
+                "Lote '%s' %s (stock.lot #%s) en la recepción %s."
+                % (lot_name, 'creado' if created else 'reutilizado', lot.id, reception.name)
+            ),
+            'batch_id': lot_name,
+            'user_id': self.env.user.id,
+        })
 
     def create_stock_picking(self, reception):
         """
@@ -128,33 +200,46 @@ class LumberReceptionService:
             'company_id': self.env.company.id,
         })
 
-        # 3. Generación de Movimientos
-        for lot in reception.lot_ids:
-            safe_qty = float_round(lot.volume_purchase_m3, precision_digits=3)
+        # 3. Generación de Movimientos: una stock.move.line por fila de staging.
+        lots = self.env['stock.lot'].search([('reception_id', '=', reception.id)])
+        lot_by_key = {(l.name, l.product_id.id): l for l in lots}
+
+        groups = {}
+        for line in reception.reception_line_ids:
+            key = ((line.lot_name or '').strip(), line.product_id.id)
+            groups.setdefault(key, []).append(line)
+
+        for key, lines in groups.items():
+            lot = lot_by_key.get(key)
+            if not lot:
+                continue
+            total_qty = sum((l.vol_purchase_m3 or 0.0) for l in lines)
 
             move = self.env['stock.move'].create({
                 'name': f"Lote: {lot.name}",
                 'product_id': lot.product_id.id,
-                'product_uom_qty': safe_qty,
+                'product_uom_qty': float_round(total_qty, precision_digits=3),
                 'product_uom': uom_cubic.id,
                 'picking_id': picking.id,
                 'location_id': picking.location_id.id,
                 'location_dest_id': picking.location_dest_id.id,
                 'company_id': self.env.company.id,
-                'picked': True, 
-            })
-            
-            self.env['stock.move.line'].create({
-                'move_id': move.id,
-                'picking_id': picking.id,
-                'product_id': lot.product_id.id,
-                'lot_id': lot.id,
-                'quantity': safe_qty,
-                'product_uom_id': uom_cubic.id,
-                'location_id': picking.location_id.id,
-                'location_dest_id': picking.location_dest_id.id,
                 'picked': True,
             })
+
+            for line in lines:
+                line_qty = float_round(line.vol_purchase_m3 or 0.0, precision_digits=3)
+                self.env['stock.move.line'].create({
+                    'move_id': move.id,
+                    'picking_id': picking.id,
+                    'product_id': lot.product_id.id,
+                    'lot_id': lot.id,
+                    'quantity': line_qty,
+                    'product_uom_id': uom_cubic.id,
+                    'location_id': picking.location_id.id,
+                    'location_dest_id': picking.location_dest_id.id,
+                    'picked': True,
+                })
 
         # 4. VALIDACIÓN FINAL
         if picking.move_ids:

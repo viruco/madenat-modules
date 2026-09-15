@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError, ValidationError
 from odoo.addons.madenat_lumber_core.models.width_mapping import WidthMappingTable
@@ -467,3 +469,225 @@ class TestLumberReception(TransactionCase):
                 'width_nominal': 100.0,
                 'length_nominal': 2.0,
             })
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Lotes repetidos en packing (idempotencia intra-recepción + detalle por fila)
+    # ──────────────────────────────────────────────────────────────────────
+    def _reception_product(self):
+        uom_cubic = self.env.ref('uom.product_uom_cubic_meter')
+        product = self.env['product.product'].search(
+            [('uom_id', '=', uom_cubic.id)], limit=1
+        )
+        if not product:
+            product = self.env['product.product'].search([], limit=1)
+        self.assertTrue(product, 'Se requiere un product.product')
+        return product
+
+    def test_15_repeated_lot_single_lot_two_move_lines(self):
+        """Un lote con dos filas (mismo espesor/ancho/subproducto, distinto largo
+        y piezas) produce UN stock.lot y UNA stock.move.line por fila."""
+        product = self._reception_product()
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-001',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        base = {
+            'reception_id': reception.id,
+            'lot_name': '0000000000446',
+            'product_id': product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness': 37.0,
+            'width': 100.0,
+            'thickness_nominal': 37.0,
+            'width_nominal': 100.0,
+        }
+        self.LumberReceptionLine.create({**base, 'length': 4.05, 'pieces': 240})
+        self.LumberReceptionLine.create({**base, 'length': 3.70, 'pieces': 50})
+
+        service = LumberReceptionService(self.env)
+        stats = service.create_lots_from_staging(reception)
+
+        lots = self.StockLot.search([('reception_id', '=', reception.id)])
+        self.assertEqual(len(lots), 1)
+        lot = lots
+        self.assertEqual(lot.name, '0000000000446')
+        self.assertEqual(lot.product_id.id, product.id)
+        self.assertEqual(lot.reception_id.id, reception.id)
+        self.assertFalse(lot.guia_processing_id)
+        self.assertEqual(lot.piezas, 290)
+        self.assertAlmostEqual(lot.volume_purchase_m3, 4.281, places=3)
+        self.assertEqual(stats['created'], 1)
+
+        # Una stock.move.line por fila de staging, mismo lot_id.
+        with patch.object(type(self.env['stock.picking']), 'action_confirm', return_value=True), \
+             patch.object(type(self.env['stock.picking']), 'action_assign', return_value=True), \
+             patch.object(type(self.env['stock.picking']), 'button_validate', return_value=True):
+            picking = service.create_stock_picking(reception)
+
+        self.assertTrue(picking)
+        move_lines = picking.move_ids.move_line_ids
+        self.assertEqual(len(move_lines), 2)
+        self.assertEqual(len(move_lines.mapped('lot_id')), 1)
+        self.assertEqual(move_lines.mapped('lot_id').id, lot.id)
+        quantities = sorted(move_lines.mapped('quantity'))
+        # Preserva las dos filas: cantidades distintas (240×4.05m vs 50×3.70m).
+        self.assertGreater(quantities[1], quantities[0])
+
+    def test_16_repeated_lot_incompatible_width_raises(self):
+        """Dos filas del mismo lote con ancho incompatible deben abortar sin stock."""
+        product = self._reception_product()
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-002',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        base = {
+            'reception_id': reception.id,
+            'lot_name': 'LOTE-DUP',
+            'product_id': product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness': 37.0,
+            'thickness_nominal': 37.0,
+        }
+        self.LumberReceptionLine.create({
+            **base, 'width': 100.0, 'width_nominal': 100.0,
+            'length': 4.05, 'pieces': 10,
+        })
+        self.LumberReceptionLine.create({
+            **base, 'width': 150.0, 'width_nominal': 150.0,
+            'length': 3.70, 'pieces': 5,
+        })
+
+        service = LumberReceptionService(self.env)
+        with self.assertRaises(UserError):
+            service.create_lots_from_staging(reception)
+        self.assertEqual(
+            self.StockLot.search_count([('reception_id', '=', reception.id)]), 0
+        )
+
+    def test_17_reception_does_not_reuse_other_reception_lot(self):
+        """Un lote de OTRA recepción no se reutiliza ni sobrescribe (fail-safe)."""
+        product = self._reception_product()
+        other = self.LumberReception.create({
+            'name': 'TEST-LOTREP-OTHER',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        other_lot = self.StockLot.create({
+            'name': 'LOTE-SHARED',
+            'product_id': product.id,
+            'company_id': self.env.company.id,
+            'reception_id': other.id,
+            'volume_purchase_m3': 999.0,
+        })
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-003',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        self.LumberReceptionLine.create({
+            'reception_id': reception.id,
+            'lot_name': 'LOTE-SHARED',
+            'product_id': product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness': 37.0, 'width': 100.0, 'length': 2.0, 'pieces': 10,
+            'thickness_nominal': 37.0, 'width_nominal': 100.0,
+        })
+
+        service = LumberReceptionService(self.env)
+        with self.assertRaises(Exception):
+            service.create_lots_from_staging(reception)
+
+        other_lot.invalidate_recordset()
+        self.assertEqual(other_lot.reception_id.id, other.id)
+        self.assertAlmostEqual(other_lot.volume_purchase_m3, 999.0, places=3)
+        self.assertFalse(other_lot.guia_processing_id)
+
+    def test_18_reception_does_not_reuse_guia_lot(self):
+        """Un lote originado en Procesados no se reutiliza desde Recepción."""
+        product = self._reception_product()
+        guia = self.env['madenat.guia.processing'].create({
+            'name': 'TEST-LOTREP-GUIA',
+            'partner_id': self.supplier.id,
+            'assignment_location_id': self.env['stock.location'].search(
+                [('usage', '=', 'internal')], limit=1
+            ).id,
+        })
+        guia_lot = self.StockLot.create({
+            'name': 'LOTE-GUIA',
+            'product_id': product.id,
+            'company_id': self.env.company.id,
+            'guia_processing_id': guia.id,
+            'volume_purchase_m3': 5.0,
+        })
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-004',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        self.LumberReceptionLine.create({
+            'reception_id': reception.id,
+            'lot_name': 'LOTE-GUIA',
+            'product_id': product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness': 37.0, 'width': 100.0, 'length': 2.0, 'pieces': 10,
+            'thickness_nominal': 37.0, 'width_nominal': 100.0,
+        })
+
+        service = LumberReceptionService(self.env)
+        with self.assertRaises(Exception):
+            service.create_lots_from_staging(reception)
+        guia_lot.invalidate_recordset()
+        self.assertFalse(guia_lot.reception_id)
+        self.assertTrue(guia_lot.guia_processing_id)
+
+    def test_19_distinct_lots_remain_two_lots(self):
+        """Regresión: dos lot_name distintos siguen produciendo dos lotes."""
+        product = self._reception_product()
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-005',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        for name in ('LOTE-A', 'LOTE-B'):
+            self.LumberReceptionLine.create({
+                'reception_id': reception.id,
+                'lot_name': name,
+                'product_id': product.id,
+                'subproduct_id': self.subproduct.id,
+                'thickness': 37.0, 'width': 100.0, 'length': 2.0, 'pieces': 10,
+                'thickness_nominal': 37.0, 'width_nominal': 100.0,
+            })
+
+        service = LumberReceptionService(self.env)
+        service.create_lots_from_staging(reception)
+        lots = self.StockLot.search([('reception_id', '=', reception.id)])
+        self.assertEqual(len(lots), 2)
+        self.assertEqual(set(lots.mapped('name')), {'LOTE-A', 'LOTE-B'})
+
+    def test_20_repeated_lot_idempotent_reprocess(self):
+        """Reproceso del mismo Gate 3 reutiliza el lote ya creado (sin duplicar)."""
+        product = self._reception_product()
+        reception = self.LumberReception.create({
+            'name': 'TEST-LOTREP-006',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'metric',
+        })
+        self.LumberReceptionLine.create({
+            'reception_id': reception.id,
+            'lot_name': 'LOTE-IDEM',
+            'product_id': product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness': 37.0, 'width': 100.0, 'length': 2.0, 'pieces': 10,
+            'thickness_nominal': 37.0, 'width_nominal': 100.0,
+        })
+
+        service = LumberReceptionService(self.env)
+        service.create_lots_from_staging(reception)
+        stats2 = service.create_lots_from_staging(reception)
+
+        self.assertEqual(stats2['updated'], 1)
+        self.assertEqual(
+            self.StockLot.search_count([('reception_id', '=', reception.id)]), 1
+        )
