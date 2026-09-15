@@ -1,9 +1,9 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.5.0`
-**Fecha de actualización:** 2026-08-19
-**Estado:** ✅ Vigente — Actualización de §4.2 al estado real de `lumber.reception` y campos canónicos de OC (evidencia código `lumber_reception.py`).
+**Versión documental:** `7.7.0`
+**Fecha de actualización:** 2026-09-12
+**Estado:** ✅ Vigente — Se documenta el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6. Sin cambios de código.
 **Compatibilidad objetivo:** Odoo 18 CE
 
 ---
@@ -51,6 +51,7 @@ El módulo no opera en un pipeline vertical estricto: actúa como **núcleo de i
 | `width_mapping.py` | Tabla Rough→S2S + helper `get_s2s_adjustment()` |
 | `core_utils.py` | ❌ CÓDIGO MUERTO — 0 referencias, fuera de `__init__.py` (confirmado 2026-07-08). No fue archivado por AD-39 (ese AD solo cubrió el método `_cleanup_orphan_moves`). |
 | `product_template.py` | ❌ HUÉRFANO NO ARCHIVADO — extensión de `product.template` nunca desplegada, pendiente de mover a `_archive/` (confirmado 2026-07-08). |
+| `madenat_ingestion_engine` (módulo hermano) | Motor de extracción/normalización de documentos de ingreso (Excel/PDF) agnóstico del destino. Consumido por `madenat_lumber_intake` (`extract_document()` para preview/perfil; `_extract_pdf_text()` para auto-clasificación Producto/Procesado). Estado verificado: `installed` en `madenat_test` (18.0.1.0.0). Gaps: extracción PDF solo cabecera por regex (tablas con layout configurable NO cubiertas); `ingestion_column_profile.py` es esqueleto de 4 campos sin layout. Ver AD-63. |
 
 ### 3.2 Modelos persistentes (Fase 2 + Fase 3 — AD-29, AD-30)
 
@@ -174,6 +175,18 @@ Extensión post-Gate3 de `stock.lot`. Campos y computes:
 - Si no existe, se **autocrea** en `madenat.subproducto` (`find_or_create_lumber_subproducto`).
 - Trazabilidad del texto original: `product_name_original` (Procesado) / `excel_product_name` (Bruta).
 
+### 4.6 Recepción a Granel + Balance de Masa + Consolidación Administrativa (AD-65 — diseño aprobado, pendiente de implementación)
+
+Flujo de diseño aprobado (no implementado) para madera que llega por **volumen total** a un patio sin desglose de piezas, destinada a procesamiento externo:
+
+- **Extracción (AD-63/AD-65):** un único motor (extensión de `madenat_ingestion_engine`) degrada en cascada: tabla PDF de columnas fijas configurables → subtotales por grupo → total de encabezado (mínimo garantizado). Nunca bloquea; genera `ingestion_document_warning` no bloqueante.
+- **Patio:** `stock.location` nativo (`location_id` en `lumber.reception`); se crea bajo demanda, nunca se elimina con stock. Sin modelo propio.
+- **Envío a proceso (Balance de Masa, ISO 22095):** se resta una **cantidad** del pool de volumen del patio (no un lote completo) y el retorno se registra como stock nuevo independiente, **sin** genealogía `parent_lot_id`/`child_lot_ids` (alineado con DEC-002). Requiere extender `_get_or_create_consumption_picking` para consumo parcial (gap AD-64).
+- **Consolidación administrativa:** manual y opcional; granularidad adaptativa (etiqueta/paquete/volumen) con volumen como denominador común. Complementa, no reemplaza, los discriminadores `reception_id`/`guia_processing_id` (ver `12_FLUJOS_INGESTA.md` §11).
+- **Prohibición normativa:** no se valida correspondencia de detalle entre envío y retorno; la relación es balance agregado (texto íntegro en AD-65 §1.7).
+- **Costeo:** fuera de esta etapa; el valor se entrega a Costeo/Auditoría.
+- **Reporte de conciliación:** extensión de `madenat_lumber_reports`, informativo, factor de rendimiento configurable; uso exclusivo de Auditoría.
+
 **Nominales:**
 - Procesado: `espesor_mm` se usa como fallback de `espesor_nominal_mm` cuando el Excel no informa nominal.
 - Bruta: conserva los defaults existentes desde dimensiones físicas. No hay lookup automático de ancho.
@@ -233,3 +246,5 @@ Si el código cambia en: layout de largo, campos de staging, gates, modularizaci
 | 7.2.0 | 2026-07-01 | Validación cruzada contra código. Corrección de naming (`length_input_raw`), gates reales (0–3 + GB-1), modelos Fase 2/3 agregados, `stock_lot.py` y `ingestion_gate.py` documentados, wizards listados, cadena funcional ajustada a grafo horizontal. |
 | 7.3.0 | 2026-07-08 | Corrección de vigencia post-auditoría: `core_utils.py` y `product_template.py` marcados como huérfanos/muertos, archivos faltantes agregados a tabla 3.1 (`validation_checklist_mixin`, `stock_lot_cost_line`, `stock_picking`, `stock_move`, `product_product`), parseo disperso de `madenat_guia_processing.py` documentado en sección 3.3. Sin cambios de código. |
 | 7.5.0 | 2026-08-19 | Alineación con código: estados reales de `lumber.reception` (`draft/processing/verified/done/cancel/error/pending_link`) y campos canónicos de OC documentados en §4.2 (`oc_reference_raw`, `oc_reference_norm`, `oc_match_status`, `oc_match_note`, `po_missing_alert`). Sin cambios de código. |
+| 7.6.0 | 2026-09-12 | Se documenta `madenat_ingestion_engine` (módulo consumido por `madenat_lumber_intake`) en §3.1: estado real verificado (`installed` 18.0.1.0.0) y gaps (extracción PDF de tablas no cubierta; perfil de columnas esqueleto). Sin cambios de código. |
+| 7.7.0 | 2026-09-12 | Se documenta el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6. Sin cambios de código. |

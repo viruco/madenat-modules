@@ -51,3 +51,11 @@ Thumbs.db
 *.mo
 .qwen/
 *_BACKUP_*/
+
+# ─── Checksums de respaldo local (no son código) ───
+*.sha256
+
+# ─── Datos operativos de embarques (Excel/XLS reales, no forman parte del código) ───
+madenat_lumber_docs/RAW/*.xlsx
+madenat_lumber_docs/RAW/*.xls
+*:Zone.Identifier

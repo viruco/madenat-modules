@@ -1,9 +1,9 @@
 # CANON/08_COSTEO — FLUJO CANÓNICO DE COSTEO END-TO-END
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 ## Fecha: 2026-06-05
-## Última revisión: 2026-08-19  <!-- actualizado: 2026-08-19 — §9.5 actualizada por AD-54 (diferencia Procesados/Producto resuelta) -->
+## Última revisión: 2026-09-12  <!-- actualizado: 2026-09-12 — §1.4 estado real de costeo (AD-64) -->
 ## Estado: DOCUMENTO CANÓNICO (creado cierre Fase A)
-## Versión: 1.5.0
+## Versión: 1.6.0
 ## Refs: FASE-A, AD-XX-MONETARIO, Anexo de Saneamiento Monetario 2026-06-04
 
 ---
@@ -46,6 +46,12 @@
 - `product_id` es el **producto maestro por tipo de ingreso** (configurable, no derivado del Excel).
 - `subproducto_id` contiene la **clasificación comercial** proveniente del Excel.
 - El costeo conserva `product_id` como dimensión estable; los análisis de detalle futuros deben exponer `subproducto_id` como clasificador.
+
+## 1.4 Nota — Estado real verificado (AD-64, 2026-09-12)
+
+- **Costeo nativo de Odoo desactivado de facto:** `property_cost_method` es `NULL` en las 4 categorías; el producto maestro de ingesta (`madenat_lumber_product_default`) resuelve a un producto `type='consu'` (consumible), por lo que no hay valorización automática (sin `stock.valuation.layer`/COGS).
+- **`wood_cost_usd` es costo TOTAL del lote (no unitario)** y sigue `fields.Float` (AD-38 vigente); `total_cost_usd = wood_cost_usd + purchase_cost_usd + Σ(cost_line_ids)`.
+- **Sin prorrateo por consumo parcial:** `_get_or_create_consumption_picking` consume `qty = lot.volumen_m3` completo; no hay prorrateo de costo por salida parcial (brecha AD-64).
 
 ---
 

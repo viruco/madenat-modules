@@ -1,9 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.1.0  
-**Fecha:** 2026-06-16  
-**Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo)  
+**Versión documental:** 1.3.0  
+**Fecha:** 2026-09-12  
+**Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65)  
 **Responsable de actualización:** Arquitecto / Tech Lead
 
 ---
@@ -331,4 +331,24 @@ Script idempotente que copia `lumber_reception_id → reception_id` en `stock_pi
 ---
 
 *Documento creado: 2026-06-16 — Sesión de auditoría documental canónica.*  
-*Versión: 1.2.0 — Agregada sección 10: migración picking layer `lumber_reception_id` → `reception_id`.*
+*Versión: 1.3.0 — Agregada sección 10 (migración picking layer `lumber_reception_id` → `reception_id`) y sección 11 (consolidación administrativa como tercera vía complementaria, AD-65).*
+
+---
+
+## 11. Consolidación administrativa — tercera vía de resolución de origen (AD-65, diseño aprobado)
+
+### 11.1 Naturaleza
+
+La **consolidación administrativa** (AD-65, pendiente de implementación) es una vía de **resolución de origen a nivel administrativo** para la recepción a granel: el operador puede, manual y opcionalmente, asignar/consolidar el saldo de una guía de procesado contra una o más guías de origen enviadas a proceso. Funciona incluso sin guías de origen candidatas.
+
+### 11.2 Relación con los discriminadores canónicos
+
+Esta vía **no reemplaza** los discriminadores `reception_id` / `guia_processing_id` de las secciones 2–5; **los complementa**. Los discriminadores siguen siendo la fuente de verdad de origen de cada `stock.lot`; la consolidación administrativa es una relación de **saldo agregado (Mass Balance)** entre guías de origen y de retorno, sin vínculo lote a lote (coherente con DEC-002).
+
+### 11.3 Regla normativa (textual, AD-65 §1.7)
+
+> El sistema no debe validar, exigir, ni asumir correspondencia de detalle (volumen, piezas, paquetes) entre lo enviado a proceso y lo retornado procesado. La relación es de balance agregado administrativo (Mass Balance), nunca de igualdad ni de correspondencia física o numérica exacta.
+
+### 11.4 Nota de mantenimiento
+
+Se cumple el criterio de §9.4 ("se agrega un tercer flujo de ingesta"): esta sección aclara que la consolidación es **administrativa y complementaria**, no un tercer flujo de creación de `stock.lot`.

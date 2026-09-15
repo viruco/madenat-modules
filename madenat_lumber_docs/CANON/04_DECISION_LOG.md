@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.0.0
-**Última actualización:** 2026-09-08  <!-- actualizado: 2026-09-08 — AD-62: tipo de cambio no registrado no bloquea ingreso a stock (aviso no bloqueante) -->
+**Versión documental:** 12.2.0
+**Última actualización:** 2026-09-12  <!-- actualizado: 2026-09-12 — AD-64 (costeo real: AVCO desactivado, sin prorrateo parcial) y AD-65 (diseño aprobado: recepción a granel + Balance de Masa + consolidación administrativa) -->
 **Estado:** Canonical / activo
 
 ---
@@ -1349,3 +1349,61 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Decisión:** toda salida de volumen se muestra con exactamente 3 decimales. `Volumen total (m³)` = Σ `vol_shipment_m3`; `Volumen stock (m³)` = Σ `vol_purchase_m3`. No se muestran totales numéricos sin etiqueta. No se modifica cálculo ni datos almacenados.
 - **Consecuencias:** claridad visual y consistencia con la política documentada de 3 decimales.
 - **Módulos afectados:** `madenat_lumber_intake` (`intake_console`).
+
+---
+
+## 2026-09-12 — Diagnóstico de `madenat_ingestion_engine` (módulo sin trazabilidad CANON)
+
+### AD-63 — Estado real y brechas de `madenat_ingestion_engine` (registro de diagnóstico, sin diseño)
+
+- **Fecha:** 2026-09-12
+- **Naturaleza:** diagnóstico de solo lectura (sin cambios de código, BD ni configuración). Registra una brecha de trazabilidad y alcance; **no** decide una solución ni un diseño.
+- **Hechos verificados:**
+  - `madenat_ingestion_engine` está `installed` en `madenat_test` (`ir_module_module`: `18.0.1.0.0`, write_date 2026-09-08) y tiene un consumidor activo real: `madenat_lumber_intake` declara `depends` sobre él e invoca `extract_document()` (preview/perfil) y `_extract_pdf_text()` (auto-clasificación Producto/Procesado) en `intake_wizard.py`.
+  - El contenido es código funcional, no stubs: extracción Excel con perfiles métrico/imperial, scoring de columnas, forward-fill, síntesis de lote y warnings por fila. Excepción: `ingestion_column_profile.py` es un esqueleto explícito de 4 campos (`name`, `sequence`, `active`, `notes`), sin campos de layout/posiciones/regex/unidades.
+  - La extracción PDF hoy solo cubre cabecera por regex: `extract_document()` sobre PDF devuelve `lines=[]`; no hay extracción de tablas con layout configurable.
+  - El módulo no tiene historial en CANON ni en git (directorio untracked, nunca commiteado). Su documentación vive solo en su propio `README.md`/`docs/`, con inconsistencias internas (declara "fase 0 esqueleto / sin integración" pese a estar integrado y activo).
+  - Superposición de responsabilidad con `reception_parser.py` (ambos parsean Excel/PDF con pandas/openpyxl/pdfplumber); hoy complementarios por consumidor distinto, con duplicación latente.
+  - Los tests del módulo no fueron ejecutados en este diagnóstico (la restricción de solo lectura evita `--test-enable`); solo hay evidencia indirecta de compilación (`.pyc` presentes, módulo instalado sin error).
+- **Brechas pendientes (sin propuesta de diseño):** (1) extracción de tablas PDF con layout configurable no cubierta; (2) "recepción a granel sin detalle de piezas" no modelada en ningún esquema actual (todo asume línea por línea); (3) trazabilidad CANON/git del módulo pendiente.
+- **Criterio registrado (diagnóstico de viabilidad, no diseño):** la evidencia indica que extender el motor existente (reutilizando perfiles, `column_matching`, `DocumentExtractionResult` y warnings) es más barato que reconstruir desde cero; el escenario "granel sin detalle" requiere modelado nuevo, no solo configuración.
+- **Módulos afectados:** `madenat_ingestion_engine` (estado documentado), `madenat_lumber_intake` (consumidor).
+
+---
+
+## 2026-09-12 — Método de costeo real verificado (AVCO desactivado, `wood_cost_usd` total, sin prorrateo parcial)
+
+### AD-64 — Estado real del costeo y brecha de consumo parcial de lote (diagnóstico)
+
+- **Fecha:** 2026-09-12
+- **Naturaleza:** diagnóstico de solo lectura (sin cambios de código). Registra el estado real del costeo frente a `CANON/08_COSTEO.md` y una brecha estructural.
+- **Hechos verificados:**
+  - **Costeo nativo de Odoo desactivado de facto para madera:** `property_cost_method` es `NULL` en las 4 categorías de producto; 11 de 12 productos de madera son `type='consu'`; el producto maestro de ingesta (`madenat_lumber_product_default`, tanto `bruta` como `procesado`) resuelve a `product_template 215` (`consu`). Consumible ⇒ sin valorización automática (sin `stock.valuation.layer`/COGS).
+  - **`wood_cost_usd` es `fields.Float` (AD-38 vigente) y un costo TOTAL del lote, no unitario:** `action_calculate_wood_cost` computa `wood_cost_usd = volumen_m3 × (reception.total_amount_usd / physical_volume_m3)`.
+  - **`total_cost_usd`** = `wood_cost_usd + purchase_cost_usd + Σ(cost_line_ids.amount_usd)` (+ logistic/process/other desde `madenat_lumber_costing`), `store=False`.
+  - **Sin prorrateo por salida parcial:** `_get_or_create_consumption_picking` consume `qty = lot.volumen_m3` completo (todo-o-nada); `wood_cost_usd`/`volumen_m3` son documentales estáticos, no ligados a `stock.move`/`stock.quant`.
+- **Brecha registrada:** el sistema **no soporta consumo parcial de un lote agregado con prorrateo de costo correcto** (severidad equivalente a BT-01/BT-02). Sin resolverla, una salida parcial dejaría el costo total intacto y `cost_per_m3_usd` inconsistente con el stock físico.
+- **Módulos afectados:** `madenat_lumber_core` (`stock_lot.py`, `madenat_guia_processing.py`), `madenat_lumber_costing`.
+
+---
+
+## 2026-09-12 — Diseño aprobado: Recepción a Granel + Balance de Masa + Consolidación Administrativa
+
+### AD-65 — Diseño de recepción a granel, envío a proceso por Balance de Masa y consolidación administrativa (APROBADO, implementación pendiente)
+
+- **Fecha:** 2026-09-12
+- **Tipo:** diseño aprobado en sesión (Mauricio, Arquitecto/Tech Lead). **Pendiente de implementación** (esta pasada no escribe código).
+- **Problema de origen (1.1):** (a) proveedores con packing list en PDF de tabla de columnas fijas; (b) madera que llega por volumen total a un patio sin desglose de piezas, destinada a procesamiento externo.
+- **Principio rector (1.2) — motor de mejor esfuerzo, no dos features:** un único motor (extensión de `madenat_ingestion_engine`) con degradación en cascada: tabla completa (columnas fijas configurables, no hardcodeadas) → subtotales por grupo → total de encabezado (guía, fecha, volumen, especie, patio — mínimo garantizado). Nunca bloquea; cualquier dato no hallado genera `ingestion_document_warning` no bloqueante.
+- **Selección de detalle manual (1.3):** el operador elige explícitamente en el wizard si el documento es detalle línea por línea o agregado; no se infiere (mismo criterio ya aplicado a Producto/Procesado).
+- **Reclasificación auditada (1.4):** wizard nuevo `intake.tipo_ingreso.reclassify.wizard`, disponible solo mientras el lote no esté notarizado por Gate 3; cada uso se registra en `madenat.audit_log`.
+- **Patio = stock.location nativo (1.5):** `location_id` ya existe en `lumber.reception`; se crea bajo demanda y nunca se elimina con stock (comportamiento nativo Odoo, cero desarrollo). Sin modelo propio de patios.
+- **Envío a proceso por Balance de Masa (1.6):** se descarta genealogía lote a lote (`parent_lot_id`/`child_lot_ids`) para procesadores externos (mezcla física real); el envío resta una **cantidad** del pool de volumen del patio (no un lote completo) y el retorno se registra como stock nuevo independiente (alineado con DEC-002). Gap técnico a resolver: `_get_or_create_consumption_picking` hoy consume `qty = lot.volumen_m3` completo → debe soportar consumo de una cantidad parcial del pool (ver AD-64).
+- **Prohibición NO NEGOCIABLE (1.7):**
+  > **El sistema no debe validar, exigir, ni asumir correspondencia de detalle (volumen, piezas, paquetes) entre lo enviado a proceso y lo retornado procesado. La relación es de balance agregado administrativo (Mass Balance), nunca de igualdad ni de correspondencia física o numérica exacta. Cualquier factor de rendimiento en reportes de conciliación es informativo, jamás bloqueante ni validante de una asignación individual.**
+- **Consolidación administrativa (1.8):** manual, opcional, disponible en cualquier momento (al registrar o después). Granularidad adaptativa (etiqueta individual / paquete-fardo / volumen total) con el volumen como denominador común. Una sola pantalla: lista de guías candidatas (cronológica, filtrable por proveedor/producto), saldo disponible en la unidad correspondiente, asignación con un clic, reparto entre varias guías (patrón visual de `lumber_cost_distribution.py`). Aviso no bloqueante si excede saldo. Funciona incluso sin guías de origen candidatas.
+- **Costeo fuera de esta etapa (1.9):** el valor extraído se entrega tal cual a Costeo/Auditoría; ninguna valorización/prorrateo se resuelve en ingesta/consolidación.
+- **Reporte de conciliación (1.10):** extensión de `madenat_lumber_reports` (no módulo nuevo), informativo, por procesador/período, contra un factor de rendimiento configurable; uso exclusivo de Auditoría; nunca valida asignaciones individuales (ver 1.7).
+- **Menú Toll para Operaciones (1.11):** campo opcional "Enviar a proceso" con selección de procesador (patio↔procesador es N:M, no se automatiza; se sugiere el procesador más frecuente, editable); un solo botón genera lote + orden Toll (`create_toll_order_wizard` existente, sin modificar su lógica); se ajusta `ir.model.access.csv` de `madenat_toll_processing` para Operaciones.
+- **No se modifica (1.12):** Gates 0-3, `reception_parser.py` (sin ramas nuevas), lógica interna de `madenat_toll_processing`, esquema de `stock.lot` más allá de lo estrictamente necesario para consumo parcial de pool (1.6); ningún módulo nuevo.
+- **Módulos afectados (implementación futura):** `madenat_lumber_core`, `madenat_ingestion_engine`, `madenat_lumber_reports`, `madenat_lumber_intake`, `madenat_toll_processing` (solo ACL).

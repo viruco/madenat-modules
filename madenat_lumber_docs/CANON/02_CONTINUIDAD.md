@@ -1,7 +1,7 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.0.0
-**Fecha de actualización:** 2026-08-20  <!-- actualizado: 2026-08-20 — Cierre técnico commit 1466f24: candado de Procesados reactivado vía ingestion_profile, catálogo 'blanks' completado, labels estandarizados sin tocar values; origin_scope pendiente como limitación conocida. Frente abierto en continuidad, técnico validado (49/49 tests). -->
+**Versión documental:** 12.2.0
+**Fecha de actualización:** 2026-09-12  <!-- actualizado: 2026-09-12 — AD-64 (costeo real, sin prorrateo parcial) y AD-65 (diseño aprobado recepción a granel + Balance de Masa + consolidación) registrados como frentes activos. -->
 **Estado:** ESTABLE PARA CONTINUIDAD TÉCNICA Y REFACTORIZACIÓN ESTRUCTURAL CERRADA. La consolidación documental está completada. Persisten brechas funcionales/técnicas y validaciones UAT pendientes. **Último cierre técnico: `1466f24` (2026-08-20)** — robustecimiento del Core de perfiles de ingesta; el frente sigue **abierto en continuidad** aunque el técnico esté validado.
 
 ---
@@ -133,6 +133,9 @@ Debe permitir retomar el trabajo sin reconstruir el contexto desde cero.
 | **BT-04** — Baja de producto enviado a proceso sin implementación | ~~Alta~~ | ~~ABIERTO~~ **CERRADO (2026-08-16)** — salida controlada solo `service` (idempotente y reversible); ver CHANGELOG 18.0.5.11.0 |
 | **BT-03** — Bitácora `madenat.audit.log` sin cobertura de procesados | ~~Media~~ | ~~ABIERTO~~ **CERRADO (2026-08-16)** — `lot_creation`/`lot_update`/`omission` enlazados a guía; ver CHANGELOG 18.0.5.10.0 |
 | **BT-05** — Parseo disperso en `madenat_guia_processing.py` (sin dispatcher) | Media | ABIERTO — posterior a integridad |
+| `madenat_ingestion_engine` — módulo instalado con consumidor activo (`madenat_lumber_intake`) pero sin trazabilidad CANON/git; extracción PDF limitada a cabecera (tablas con layout configurable NO cubiertas) y `ingestion_column_profile.py` esqueleto | Media | ABIERTO — diagnóstico AD-63 (2026-09-12) |
+| Costeo nativo desactivado (productos `consu`, sin método de costeo) + `wood_cost_usd` total sin prorrateo por consumo parcial de lote | Alta | ABIERTO — diagnóstico AD-64 (2026-09-12) |
+| Recepción a granel + Balance de Masa + Consolidación administrativa | Alta | DISEÑO APROBADO, IMPLEMENTACIÓN PENDIENTE — AD-65 (2026-09-12) |
 | Constraint `stock_lot_check_cost_positive` | Alta | ABIERTO (histórico) |
 | Monolito parcial en `lumber_reception.py` (3,054 líneas, 5 responsabilidades, parseo desacoplado en reception_parser.py) | Media | ABIERTO (histórico) |
 | Tolerancias no formalizadas | Media | ABIERTO (histórico) |
