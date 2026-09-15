@@ -23,7 +23,7 @@
         <record id="action_purchase_tracking" model="ir.actions.act_window">
             <field name="name">Seguimiento de Compras</field>
             <field name="res_model">purchase.order</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="view_id" ref="view_purchase_tracking_tree"/>
             <field name="search_view_id" ref="purchase.view_purchase_order_filter"/>
             <field name="context">{'search_default_current_year': 1}</field>

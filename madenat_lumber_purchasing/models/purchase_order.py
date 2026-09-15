@@ -337,6 +337,15 @@ class PurchaseOrderLumber(models.Model):
                     'error': _('Se requiere ID del Proveedor (partner_id)')
                 }
 
+            # FIX 2026-08-21: validar que el partner exista y esté activo
+            partner = self.env['res.partner'].browse(payload['partner_id'])
+            if not partner.exists() or not partner.active:
+                return {
+                    'success': False,
+                    'error': _('El proveedor no existe o está inactivo. '
+                               'Resuelva el proveedor antes de crear la OC provisional.')
+                }
+
             # ================================================================
             # REGLA DE ORO: Asegurar que MADERA_GENERICA existe
             # ================================================================
@@ -348,8 +357,41 @@ class PurchaseOrderLumber(models.Model):
             existing_po = None
             partner_ref = payload.get('partner_ref')
             partner_id = payload.get('partner_id')
+            source_ref = payload.get('ingestion_source_ref')
 
-            if (not auto_create) and partner_ref and partner_id:
+            # ── FIX 2026-08-21 (idempotencia fuerte): búsqueda SIEMPRE por origen ──
+            # La verificación por ingestion_source_ref es incondicional (aunque
+            # auto_create=True). Evita duplicados por doble clic/reintento/doble
+            # llamada. Cruza draft/sent/purchase/done, no solo borradores.
+            if source_ref:
+                existing_by_source = self.search([
+                    ('ingestion_source_ref', '=', source_ref),
+                    ('state', 'in', ['draft', 'sent', 'purchase', 'done']),
+                ])
+                if len(existing_by_source) > 1:
+                    return {
+                        'success': False,
+                        'error': _(
+                            'Ya existen múltiples OCs para el origen %s (%s). '
+                            'Resuelva manualmente antes de crear una OC provisional.'
+                        ) % (source_ref, ', '.join(existing_by_source.mapped('name'))),
+                    }
+                if existing_by_source:
+                    # Coincidencia inequívoca por origen: reutilizar SIN importar
+                    # auto_create=True (idempotencia fuerte), retornando el dict
+                    # idempotente con la PO existente.
+                    po_existente = existing_by_source
+                    return {
+                        'success': True,
+                        'po_id': po_existente.id,
+                        'state': 'linked',
+                        'message': _(
+                            'OC existente reutilizada para el origen %s: %s'
+                        ) % (source_ref, po_existente.name),
+                        'po_name': po_existente.name,
+                    }
+
+            if not existing_po and (not auto_create) and partner_ref and partner_id:
                 existing_po = self.search([
                     ('partner_ref', '=', partner_ref),
                     ('partner_id', '=', partner_id),
@@ -380,7 +422,7 @@ class PurchaseOrderLumber(models.Model):
                     'date_order': fields.Datetime.now(),
                     'origin': payload.get('origin', ''),
                     'ingestion_source_ref': payload.get('ingestion_source_ref', ''),
-                    'state': 'draft' if provisional else 'sent',
+                    'state': 'draft',  # FIX 2026-08-21: nuevas OCs SIEMPRE draft
                     'provisional': provisional,
                 }
 
@@ -551,9 +593,18 @@ class PurchaseOrderLumber(models.Model):
                 
                 # ============================================================
                 # VALIDACIÓN 2: Unidad de medida
+                # FIX 2026-08-21: nunca representar volumen m³ con UoM de unidades.
                 # ============================================================
                 product_uom = line_data.get('product_uom')
                 if not product_uom:
+                    product_uom = product.uom_po_id.id or product.uom_id.id
+                uom_unit = self.env.ref('uom.product_uom_unit')
+                qty_value = float(line_data.get('product_qty', line_data.get('qty', 0)) or 0)
+                if product_uom == uom_unit.id and qty_value > 0:
+                    raise UserError(
+                        _("Cantidad volumétrica no puede usar la unidad 'Unidad'. "
+                          "Use m³ (o señalice MBF en el payload para conversión).")
+                    )
                     product = self.env['product.product'].browse(product_id)
                     product_uom = product.uom_po_id.id or product.uom_id.id
                 
