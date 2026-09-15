@@ -67,7 +67,7 @@
         <record id="action_lumber_shipping_rule" model="ir.actions.act_window">
             <field name="name">Reglas de Cubicación</field>
             <field name="res_model">lumber.shipping.rule</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>
         <!-- Ítem de Menú -->
         <menuitem 
