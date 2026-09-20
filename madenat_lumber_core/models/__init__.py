@@ -32,6 +32,7 @@ from . import stock_picking
 from . import stock_move
 from . import product_product
 from . import reception_service
+from . import madenat_guia_processing_source_lot_line
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🔥 VALIDACIONES AUTOMÁTICAS DE STARTUP

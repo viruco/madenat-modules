@@ -1,3 +1,13 @@
+## [18.0.5.5.0] - 2026-09-20
+### Added
+- **AD-66: Consumo parcial de lote/pool para salida a proceso.**
+  - Nuevo modelo `madenat.guia.processing.source.lot.line` (`guia_processing_id` M2O cascade, `lot_id` M2O `stock.lot` ondelete restrict, `qty_to_consume` Float `digits=(16,3)`), con constraint de rango `0 < qty_to_consume <= lot.volumen_m3`.
+  - Nuevo campo `source_lot_line_ids` (One2many) en `madenat.guia.processing`, coexistiendo con `source_lot_ids` (M2M legacy/fallback) sin reemplazarlo.
+  - `_get_or_create_consumption_picking()`: rama condicional — si `source_lot_line_ids` tiene datos usa `qty_to_consume` por línea; si está vacío, fallback a `qty = lot.volumen_m3` (cero regresión). Auditoría y chatter reportan la cantidad real por lote.
+  - `_reverse_consumption_picking()` y `action_force_cancel()` sin cambios (ya leen `move.quantity or move.product_uom_qty`).
+  - ACL para el nuevo modelo (`base.group_user`, patrón de `madenat.guia.processing.line`).
+  - Cobertura nueva: `TestGuiaProcessingConsumptionPartialAD66` (consumo parcial, bloqueo por exceso, bloqueo por cero/negativo, fallback legacy, reversión parcial).
+
 ## [18.0.5.11.0] - 2026-08-16
 ### Added
 - **BT-04: Salida controlada a proceso para guías service.**

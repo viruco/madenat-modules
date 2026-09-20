@@ -709,7 +709,18 @@ class MadenatGuiaProcessing(models.Model):
         'guia_processing_id',
         'lot_id',
         string='Lotes Crudos de Origen',
-        help='Materia prima enviada a proceso para una guía de servicio externo.'
+        help='Materia prima enviada a proceso para una guía de servicio externo. '
+             'Vía legacy de consumo total; source_lot_line_ids (AD-66) permite '
+             'consumo parcial y coexiste con este campo (ver 04_DECISION_LOG.md AD-66).'
+    )
+    source_lot_line_ids = fields.One2many(
+        'madenat.guia.processing.source.lot.line',
+        'guia_processing_id',
+        string='Líneas de Consumo Parcial (AD-66)',
+        help='Vía nueva para especificar cantidad parcial a consumir por lote de origen. '
+             'Si está vacío, el sistema usa el comportamiento legacy (consumo total vía '
+             'source_lot_ids, ver AD-66 en 04_DECISION_LOG.md). Coexistencia deliberada '
+             'y transitoria — no eliminar source_lot_ids.',
     )
     consumption_picking_id = fields.Many2one(
         'stock.picking',
@@ -3871,11 +3882,14 @@ class MadenatGuiaProcessing(models.Model):
             return self.consumption_picking_id
 
         source_lots = self.source_lot_ids.filtered(lambda l: l.volumen_m3 > 0)
-        if not source_lots:
+        # AD-66: una guía puede alimentar la salida a proceso vía el M2M legacy
+        # (source_lot_ids) o vía las líneas de consumo parcial (source_lot_line_ids).
+        if not source_lots and not self.source_lot_line_ids:
             raise UserError(
                 "⛔ SALIDA A PROCESO BLOQUEADA\n\n"
                 "La guía de servicio no tiene lotes crudos de origen válidos "
-                "(source_lot_ids) o todos tienen volumen 0.\n"
+                "(source_lot_ids) ni líneas de consumo parcial "
+                "(source_lot_line_ids), o todos tienen volumen 0.\n"
                 "Asigne la materia prima a enviar a proceso antes de validar."
             )
 
@@ -3922,8 +3936,21 @@ class MadenatGuiaProcessing(models.Model):
             'company_id': self.env.company.id,
         })
 
-        for lot in source_lots:
-            qty = lot.volumen_m3
+        # AD-66: consumo parcial (source_lot_line_ids) con fallback a consumo
+        # total legacy (source_lot_ids). La cantidad se lee del propio registro,
+        # sin agregar parámetros al método.
+        if self.source_lot_line_ids:
+            consumption_items = [
+                (line.lot_id, line.qty_to_consume)
+                for line in self.source_lot_line_ids
+            ]
+        else:
+            consumption_items = [
+                (lot, lot.volumen_m3)
+                for lot in source_lots
+            ]
+
+        for lot, qty in consumption_items:
             move = self.env['stock.move'].create({
                 'name': f"Salida a proceso {lot.name}",
                 'product_id': lot.product_id.id,
@@ -3954,16 +3981,24 @@ class MadenatGuiaProcessing(models.Model):
 
         self.consumption_picking_id = picking.id
 
-        # BT-04: evidencia auditiva coherente con BT-03 (sin subsistema nuevo).
+        # BT-04/AD-66: evidencia auditiva con la cantidad real consumida por lote.
+        if self.source_lot_line_ids:
+            summary = ", ".join(
+                f"{line.lot_id.name} = {line.qty_to_consume:.3f} m³"
+                for line in self.source_lot_line_ids
+            )
+        else:
+            summary = f"{len(source_lots)} lote(s) crudo(s)"
+
         self._register_lot_audit(
             'consumption', '',
             f"Salida a proceso {picking.name} para guía {self.name} "
-            f"({len(source_lots)} lote(s) crudo(s))."
+            f"({summary})."
         )
 
         self.message_post(
             body=f"🏭 <strong>Salida a Proceso:</strong> {picking.name} — "
-                 f"{len(source_lots)} lote(s) crudo(s) enviado(s) a Production."
+                 f"{summary}."
         )
         return picking
 

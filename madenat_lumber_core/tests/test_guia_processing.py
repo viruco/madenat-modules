@@ -1301,3 +1301,157 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         except UserError as e:
             self.assertNotIn('No puede asignar', str(e),
                 "FIX1: metric no debe bloquear subproductos")
+
+
+@tagged('post_install', '-at_install', 'madenat', 'guia_processing')
+class TestGuiaProcessingConsumptionPartialAD66(TransactionCase):
+    """
+    AD-66: consumo parcial de lote crudo para salida a proceso.
+
+    - consumo parcial: el stock.move resultante usa la cantidad exacta, no el
+      volumen completo del lote.
+    - bloqueo por exceso: qty_to_consume > lot.volumen_m3 lanza ValidationError.
+    - bloqueo por cantidad cero/negativa: lanza ValidationError.
+    - fallback: sin source_lot_line_ids se conserva el consumo total legacy.
+    - reversión parcial: restaura exactamente la cantidad parcial movida.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.GuiaModel = cls.env['madenat.guia.processing']
+        cls.SourceLotLineModel = cls.env['madenat.guia.processing.source.lot.line']
+        cls.Picking = cls.env['stock.picking']
+        cls.Move = cls.env['stock.move']
+        cls.Quant = cls.env['stock.quant']
+        cls.StockLot = cls.env['stock.lot']
+
+        cls.company = cls.env.company
+        cls.warehouse = cls.env['stock.warehouse'].search(
+            [('company_id', '=', cls.company.id)], limit=1
+        )
+        cls.location = cls.warehouse.lot_stock_id
+
+        cls.partner = cls.env['res.partner'].create({'name': 'AD66 Processor'})
+
+        uom_m3 = cls.env.ref('uom.product_uom_cubic_meter')
+        cls.product = cls.env['product.product'].create({
+            'name': 'AD66 Lumber Storable',
+            'is_storable': True,
+            'tracking': 'lot',
+            'uom_id': uom_m3.id,
+            'uom_po_id': uom_m3.id,
+        })
+
+    def _make_source_lot(self, name='AD66-SRC', qty=10.0):
+        lot = self.StockLot.create({
+            'name': name,
+            'product_id': self.product.id,
+            'volumen_m3': qty,
+            'company_id': self.company.id,
+        })
+        self.Quant._update_available_quantity(
+            self.product, self.location, qty, lot_id=lot
+        )
+        return lot
+
+    def _make_service_guia(self, name='AD66-SERVICE', source_lot=None, qty=None):
+        vals = {
+            'name': name,
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'state': 'draft',
+            'tipo_recepcion': 'service',
+            'rate_usd': 800.0,
+        }
+        if source_lot and qty is None:
+            # Fallback legacy: consumo total vía source_lot_ids (M2M).
+            vals['source_lot_ids'] = [(6, 0, [source_lot.id])]
+        guia = self.GuiaModel.create(vals)
+        if source_lot and qty is not None:
+            # Vía nueva: consumo parcial vía source_lot_line_ids (One2many).
+            self.SourceLotLineModel.create({
+                'guia_processing_id': guia.id,
+                'lot_id': source_lot.id,
+                'qty_to_consume': qty,
+            })
+        return guia
+
+    def _lot_qty_at_stock(self, lot):
+        quants = self.Quant.search([
+            ('lot_id', '=', lot.id),
+            ('location_id', '=', self.location.id),
+        ])
+        return sum(quants.mapped('quantity'))
+
+    def test_consumo_parcial_crea_move_con_cantidad_exacta(self):
+        source_lot = self._make_source_lot(qty=10.0)
+        guia = self._make_service_guia(
+            name='AD66-PARTIAL', source_lot=source_lot, qty=3.0
+        )
+
+        picking = guia._get_or_create_consumption_picking()
+
+        self.assertTrue(picking, "Debe crearse la salida a proceso")
+        move = self.Move.search([('picking_id', '=', picking.id)])
+        self.assertEqual(len(move), 1, "Debe generarse un único movimiento")
+        self.assertEqual(
+            move.product_uom_qty, 3.0,
+            "La cantidad debe ser la parcial, no el volumen total del lote"
+        )
+        # El stock solo se redujo en la cantidad parcial.
+        self.assertAlmostEqual(self._lot_qty_at_stock(source_lot), 7.0, places=3)
+
+    def test_bloqueo_por_exceso(self):
+        source_lot = self._make_source_lot(qty=10.0)
+        guia = self._make_service_guia(name='AD66-EXCESS')
+
+        with self.assertRaises(ValidationError):
+            self.SourceLotLineModel.create({
+                'guia_processing_id': guia.id,
+                'lot_id': source_lot.id,
+                'qty_to_consume': 15.0,
+            })
+
+    def test_bloqueo_por_cantidad_cero_o_negativa(self):
+        source_lot = self._make_source_lot(qty=10.0)
+        guia = self._make_service_guia(name='AD66-ZERO')
+
+        for bad_qty in (0.0, -1.0):
+            with self.assertRaises(ValidationError):
+                self.SourceLotLineModel.create({
+                    'guia_processing_id': guia.id,
+                    'lot_id': source_lot.id,
+                    'qty_to_consume': bad_qty,
+                })
+
+    def test_fallback_sin_lineas_comportamiento_legacy(self):
+        source_lot = self._make_source_lot(qty=10.0)
+        guia = self._make_service_guia(
+            name='AD66-FALLBACK', source_lot=source_lot
+        )
+
+        picking = guia._get_or_create_consumption_picking()
+
+        self.assertTrue(picking)
+        move = self.Move.search([('picking_id', '=', picking.id)])
+        self.assertEqual(
+            move.product_uom_qty, 10.0,
+            "Sin líneas debe consumir el volumen completo del lote"
+        )
+        self.assertLessEqual(self._lot_qty_at_stock(source_lot), 0.0)
+
+    def test_reversion_consumo_parcial_restaura_cantidad_exacta(self):
+        source_lot = self._make_source_lot(qty=10.0)
+        guia = self._make_service_guia(
+            name='AD66-REVERSE', source_lot=source_lot, qty=3.0
+        )
+
+        picking = guia._get_or_create_consumption_picking()
+        self.assertAlmostEqual(self._lot_qty_at_stock(source_lot), 7.0, places=3)
+
+        return_picking = guia._reverse_consumption_picking()
+
+        self.assertTrue(return_picking, "Debe generarse un retorno")
+        # Restaura exactamente la cantidad parcial movida (3.0), no el total.
+        self.assertAlmostEqual(self._lot_qty_at_stock(source_lot), 10.0, places=3)
