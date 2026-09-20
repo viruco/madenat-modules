@@ -1412,7 +1412,7 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 
 ## 2026-09-20 — Diseño validado: consumo parcial de lote/pool para salida a proceso (resuelve gap AD-64)
 
-### AD-66 — Modelo de línea `source_lot_line_ids` para consumo parcial en `_get_or_create_consumption_picking` (diseño auditado y aprobado, implementación pendiente)
+### AD-66 — Modelo de línea `source_lot_line_ids` para consumo parcial en `_get_or_create_consumption_picking` (implementado y validado)
 
 - **Fecha:** 2026-09-20
 - **Tipo:** diseño técnico validado mediante auditoría de código independiente (Cline/DeepSeek), sobre propuesta previa de sesión de arquitectura (2026-09-15). Resuelve el prerequisito bloqueante documentado en AD-64. Pendiente de implementación (esta pasada no escribe código).
@@ -1434,6 +1434,16 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 1. **Validación de rango:** la nueva rama debe exigir `0 < qty_to_consume <= lot.volumen_m3`.
 2. **Doble fuente de verdad documentada como transitoria:** `source_lot_ids` (legacy/fallback) y `source_lot_line_ids` (vía nueva) coexistirán deliberadamente.
 3. **Separación de responsabilidad respecto al costeo:** este diseño resuelve el consumo parcial a nivel de `stock.move`/`stock.lot` (volumen físico). El prorrateo de `wood_cost_usd`/`total_cost_usd` sigue siendo una brecha distinta, ya diferida a Costeo por AD-65 §1.9.
+
+### Implementación y validación (2026-09-20)
+
+- **Commit:** `4ae406f` en `main` (`viruco/madenat-modules`), 7 archivos, 265 inserciones / 10 eliminaciones. Incluye modelo nuevo `madenat_guia_processing_source_lot_line.py`, modificación de `madenat_guia_processing.py`, ACL, `CHANGELOG.md` y tests. Push confirmado a `origin/main` (`869502a..4ae406f`).
+- **Validación de rango implementada exactamente como se exigió en el punto 1 de Ajustes obligatorios:** `_check_qty_to_consume_range()` en el modelo nuevo bloquea `qty_to_consume <= 0` y `qty_to_consume > lot_id.volumen_m3`.
+- **Cobertura de tests ejecutada en runtime real (Odoo 18.0-20260817, puerto 8069, `docker compose run --service-ports`), 13/13 verdes, 0 failed, 0 errors:**
+  - `TestGuiaProcessingConsumptionBT04` (5 tests) — comportamiento legacy sin regresión, confirmando la rama de fallback.
+  - `TestGuiaProcessingConsumptionPartialAD66` (5 tests) — bloqueo por cantidad cero/negativa, bloqueo por exceso, consumo parcial con cantidad exacta en el `stock.move`, fallback sin líneas, reversión exacta.
+  - `TestIntakeDirectStock` (3 tests) — override de `madenat_lumber_intake` verificado sin regresión cruzada, confirmando el aislamiento señalado en el hallazgo colateral de esta misma decisión.
+- **Sin cambios fuera del alcance declarado:** el diff tocó únicamente `madenat_lumber_core`, tal como se limitó en "Alcance y límites de esta decisión".
 
 ### Hallazgo colateral registrado durante la validación (no forma parte de AD-66, pendiente de diseño futuro)
 
