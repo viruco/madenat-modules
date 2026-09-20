@@ -1407,3 +1407,44 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Menú Toll para Operaciones (1.11):** campo opcional "Enviar a proceso" con selección de procesador (patio↔procesador es N:M, no se automatiza; se sugiere el procesador más frecuente, editable); un solo botón genera lote + orden Toll (`create_toll_order_wizard` existente, sin modificar su lógica); se ajusta `ir.model.access.csv` de `madenat_toll_processing` para Operaciones.
 - **No se modifica (1.12):** Gates 0-3, `reception_parser.py` (sin ramas nuevas), lógica interna de `madenat_toll_processing`, esquema de `stock.lot` más allá de lo estrictamente necesario para consumo parcial de pool (1.6); ningún módulo nuevo.
 - **Módulos afectados (implementación futura):** `madenat_lumber_core`, `madenat_ingestion_engine`, `madenat_lumber_reports`, `madenat_lumber_intake`, `madenat_toll_processing` (solo ACL).
+
+---
+
+## 2026-09-20 — Diseño validado: consumo parcial de lote/pool para salida a proceso (resuelve gap AD-64)
+
+### AD-66 — Modelo de línea `source_lot_line_ids` para consumo parcial en `_get_or_create_consumption_picking` (diseño auditado y aprobado, implementación pendiente)
+
+- **Fecha:** 2026-09-20
+- **Tipo:** diseño técnico validado mediante auditoría de código independiente (Cline/DeepSeek), sobre propuesta previa de sesión de arquitectura (2026-09-15). Resuelve el prerequisito bloqueante documentado en AD-64. Pendiente de implementación (esta pasada no escribe código).
+- **Problema de origen (AD-64):** `_get_or_create_consumption_picking()` (`madenat_lumber_core/models/madenat_guia_processing.py:3852`) consume `qty = lot.volumen_m3` completo por cada lote en `source_lot_ids`, sin soporte de cantidad parcial. Esto bloquea la implementación de AD-65 (Balance de Masa), que requiere restar una cantidad del pool de volumen del patio, no un lote completo.
+- **Decisión de diseño:** agregar un modelo de línea nuevo y aditivo, `madenat.guia.processing.source.lot.line` (`guia_processing_id` M2O cascade, `lot_id` M2O `stock.lot` required, `qty_to_consume` Float `digits=(16,3)` required), expuesto como `source_lot_line_ids` (One2many) en `madenat.guia.processing`. El campo `source_lot_ids` (Many2many) existente no se elimina ni se reemplaza; coexiste como fallback.
+- **Rama condicional en `_get_or_create_consumption_picking()`:** si `source_lot_line_ids` tiene datos, usar `qty_to_consume` por línea (flujo nuevo, consumo parcial); si está vacío, usar el comportamiento actual `qty = lot.volumen_m3` (flujo legacy, cero regresión).
+- **`_reverse_consumption_picking()` y `action_force_cancel()` no requieren cambios:** verificado por auditoría de código que ambos leen `qty = move.quantity or move.product_uom_qty` (líneas ~4026 y ~4313 respectivamente) — la cantidad real movida en el `stock.move`, sin recalcular desde `lot.volumen_m3`. Ambos son agnósticos a si el consumo fue total o parcial.
+
+### Validación por auditoría de código (Cline/DeepSeek, 2026-09-20)
+
+- **Mapeo de dependencias confirmado:** no hay vistas XML de `madenat.guia.processing` que referencien su campo `source_lot_ids` (las referencias XML a un campo homónimo pertenecen a `toll.processing.order` en `toll_processing_order_views.xml:59,86`); el único consumidor productivo cross-módulo del campo de la guía es `madenat_toll_processing` (`guia_processing_integration.py:37-40` lo escribe; `stock_lot.py:62` lo lee en un dominio de vista). El fallback preserva esta dependencia sin requerir cambios en `madenat_toll_processing`.
+- **Compatibilidad con tests confirmada por lectura línea a línea:** los 5 tests de `TestGuiaProcessingConsumptionBT04` en `test_guia_processing.py` (líneas 1006-1084) no pueblan `source_lot_line_ids`, por lo que caen en el fallback y preservan su comportamiento exacto. Los 3 tests de `test_intake_direct_stock.py` ejercitan el override de `madenat_lumber_intake`, no el método core.
+- **Sin duplicación de modelos existentes:** se verificaron `lumber.shipment.line`, `stock.lot.cost.line`, `lumber.cost.distribution.line`, `madenat.guia.processing.line` y `stock.move.line` — ninguno ofrece una relación editable "lote + cantidad a consumir" equivalente. El modelo nuevo está justificado, no es una duplicación.
+- **Sin consumo parcial preexistente en el repo:** `madenat_toll_processing/models/toll_processing_order.py:369` también consume `volumen_m3` completo; ningún módulo del repo resuelve hoy este problema.
+- **Re-verificación de citas (2026-09-20):** las 10 referencias de archivo:línea usadas en este diseño fueron confirmadas exactas contra el estado real del repo, sin corrimientos de línea. Working tree limpio al momento de la verificación.
+
+### Ajustes obligatorios incorporados al diseño (no opcionales)
+
+1. **Validación de rango:** la nueva rama debe exigir `0 < qty_to_consume <= lot.volumen_m3`.
+2. **Doble fuente de verdad documentada como transitoria:** `source_lot_ids` (legacy/fallback) y `source_lot_line_ids` (vía nueva) coexistirán deliberadamente.
+3. **Separación de responsabilidad respecto al costeo:** este diseño resuelve el consumo parcial a nivel de `stock.move`/`stock.lot` (volumen físico). El prorrateo de `wood_cost_usd`/`total_cost_usd` sigue siendo una brecha distinta, ya diferida a Costeo por AD-65 §1.9.
+
+### Hallazgo colateral registrado durante la validación (no forma parte de AD-66, pendiente de diseño futuro)
+
+La ruta Procesado del wizard de intake (`madenat_lumber_intake/models/intake_wizard.py:413`) fija `intake_direct_stock=True`, lo que hace que `_get_or_create_consumption_picking()` sea saltado por completo (ver override en `intake_guia_processing.py:17-27`). El flujo de "granel → patio → envío a proceso por Balance de Masa" de AD-65 §1.6 necesitará una tercera vía de derivación en el wizard que no fije ese flag. Registrado como pendiente en `05_BACKLOG.md` v7.1.0.
+
+### Alcance y límites de esta decisión
+
+- No se modifica `_reverse_consumption_picking()`, `action_force_cancel()`, Gates 0-3, `reception_parser.py`, ni la lógica interna de `madenat_toll_processing` (solo verificación de compatibilidad).
+- No se resuelve en esta decisión el prorrateo de costo por consumo parcial, ni la tercera derivación de intake, ni el diagnóstico de `reception_id` no poblado.
+- **Módulos afectados (implementación futura):** `madenat_lumber_core` (modelo nuevo, método modificado, ACL, tests). Sin cambios en `madenat_lumber_intake`, `madenat_toll_processing`, `madenat_lumber_costing` en esta etapa.
+
+### Corrección documental asociada (registrada en la misma sesión)
+
+AD-63 (2026-09-12) afirmaba que `madenat_ingestion_engine` era "directorio untracked, nunca commiteado". Esa afirmación quedó obsoleta desde el commit `843ed0d` (2026-09-15), que trackeó los 22 archivos del módulo. AD-63 se mantiene como registro histórico válido para la fecha en que fue escrita; esta nota deja constancia de que el hecho que describía ya cambió. La brecha de trazabilidad canónica (entrada propia del módulo en CANON) sigue abierta, distinta de la trazabilidad git ya resuelta.
