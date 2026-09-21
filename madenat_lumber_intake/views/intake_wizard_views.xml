@@ -43,6 +43,9 @@
                                 help="El perfil se usa para la lectura previa de compra; no se aplica a Procesados." />
                             <field
                                 name="assignment_location_id" />
+                            <field
+                                name="tipo_detalle_granel"
+                                invisible="tipo_ingreso != 'granel'" />
                         </group>
                     </group>
 

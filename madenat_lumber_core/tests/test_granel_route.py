@@ -205,3 +205,59 @@ class TestGranelRouteCore(TransactionCase):
 
         # El volumen descontado coincide con lo declarado en source_lot_line_ids.
         self.assertAlmostEqual(self._lot_qty_at_stock(granel_lot), 7.0, places=3)
+
+    # ── AD-72: selección manual de detalle (línea por línea vs agregado) ──
+    def test_09_detail_lines_crea_lineas_por_lote(self):
+        """3 líneas con volumen y lot_number → 3 líneas con lot_name propio."""
+        guia = self._make_granel_guia()
+        lines = guia._create_granel_detail_lines([
+            {'lot_number': 'LOTE-A', 'volume_m3': 4.0, 'pieces': 10,
+             'product_name_original': 'MADERA', 'product_code': 'C1'},
+            {'lot_number': 'LOTE-B', 'volume_m3': 6.0, 'pieces': 15,
+             'product_name_original': 'MADERA', 'product_code': 'C2'},
+            {'lot_number': 'LOTE-C', 'volume_m3': 2.5, 'pieces': 5,
+             'product_name_original': 'MADERA', 'product_code': 'C3'},
+        ])
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(set(lines.mapped('lot_name')),
+                         {'LOTE-A', 'LOTE-B', 'LOTE-C'})
+        bruta = self.env['madenat.ingestion.config'].get_default_product('bruta')
+        self.assertTrue(all(l.product_id == bruta for l in lines))
+        self.assertAlmostEqual(sum(l.vol_purchase_m3 for l in lines), 12.5, places=3)
+
+    def test_10_detail_lines_sin_lot_number_fallback(self):
+        """Línea sin lot_number → lot_name cae a 'GRANEL'."""
+        guia = self._make_granel_guia()
+        lines = guia._create_granel_detail_lines([
+            {'lot_number': '', 'volume_m3': 4.0, 'pieces': 10},
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines.lot_name, 'GRANEL')
+
+    def test_11_detail_lines_volumen_invalido_excluido(self):
+        """Líneas con volume_m3 0/ausente se excluyen sin excepción."""
+        guia = self._make_granel_guia()
+        lines = guia._create_granel_detail_lines([
+            {'lot_number': 'LOTE-A', 'volume_m3': 4.0},
+            {'lot_number': 'LOTE-B', 'volume_m3': 0},
+            {'lot_number': 'LOTE-C'},  # sin volume_m3
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines.lot_name, 'LOTE-A')
+
+    def test_12_detail_lines_todas_invalidas_error(self):
+        """Sin ninguna línea con volumen válido → UserError."""
+        guia = self._make_granel_guia()
+        with self.assertRaises(UserError):
+            guia._create_granel_detail_lines([
+                {'lot_number': 'LOTE-A', 'volume_m3': 0},
+                {'lot_number': 'LOTE-B'},  # sin volume
+            ])
+
+    def test_13_detail_lines_pieces_fallback(self):
+        """pieces ausente → fallback a 1."""
+        guia = self._make_granel_guia()
+        lines = guia._create_granel_detail_lines([
+            {'lot_number': 'LOTE-A', 'volume_m3': 4.0},
+        ])
+        self.assertEqual(lines.pieces, 1)

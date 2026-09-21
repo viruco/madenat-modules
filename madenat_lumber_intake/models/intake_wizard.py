@@ -58,6 +58,16 @@ class MadenatLumberIntakeWizard(models.Model):
              'tipo de ingreso sin intervención manual.',
     )
 
+    tipo_detalle_granel = fields.Selection(
+        [('agregado', 'Agregado (volumen total de cabecera)'),
+         ('linea_por_linea', 'Línea por línea (usar tabla del PDF si existe)')],
+        string='Nivel de detalle',
+        default='agregado',
+        help='Solo aplica a tipo_ingreso == "granel" (AD-72). Define si la guía '
+             'granel crea un lote sintético con el volumen total o un lote real '
+             'por cada línea de detalle extraída del PDF.',
+    )
+
     # Patio de asignación para la rama Procesado (required en la Guía).
     # Decisión funcional 2026-08-16: se expone como selector editable para
     # no inventar una ubicación por defecto.
@@ -482,8 +492,16 @@ class MadenatLumberIntakeWizard(models.Model):
                 }
                 guia = self.env['madenat.guia.processing'].create(vals)
 
-                # Poblar la línea sintética de resumen con el volumen agregado.
-                guia._create_granel_summary_line(total_volume)
+                # Poblar las líneas según el nivel de detalle elegido (AD-72).
+                if self.tipo_detalle_granel == 'linea_por_linea' and result.lines:
+                    guia._create_granel_detail_lines(result.lines)
+                else:
+                    if self.tipo_detalle_granel == 'linea_por_linea':
+                        guia.message_post(body=_(
+                            "Se solicitó detalle línea por línea, pero el PDF no trajo tabla "
+                            "reconocible (solo total de cabecera vía cascada AD-71 Nivel 4). "
+                            "Se usó resumen agregado en su lugar."))
+                    guia._create_granel_summary_line(total_volume)
 
                 # Estado equivalente al post-action_verify_data del flujo Procesado.
                 guia.write({'state': 'verified'})

@@ -54,7 +54,7 @@ Si un tema ya quedó evidenciado, debe vivir en `03_TESTS.md`.
 ### Tareas de implementación de AD-65 (una vez resuelto el prerequisito AD-64)
 
 - [x] Extender `madenat_ingestion_engine` con el motor de "mejor esfuerzo" en cascada: tabla PDF de columnas fijas configurables → subtotales por grupo → total de encabezado mínimo garantizado. (Implementado como AD-71, 2026-09-21: cascada de 4 niveles — tabla con bordes → clustering de palabras → suma de líneas → regex de cabecera. 49/49 tests verdes.)
-- [ ] Implementar selección manual de tipo de detalle (línea por línea vs. agregado) en el wizard de intake.
+- [x] Implementar selección manual de tipo de detalle (línea por línea vs. agregado) en el wizard de intake. (Implementado como AD-72, 2026-09-21: campo `tipo_detalle_granel` + `_create_granel_detail_lines()`. 38/38 tests verdes.)
 - [ ] Implementar wizard `intake.tipo_ingreso.reclassify.wizard` con registro en `madenat.audit_log`, disponible solo antes de Gate 3.
 - [ ] Implementar registro de "Patio" como `stock.location` nativo bajo demanda (sin modelo propio).
 - [ ] Implementar consolidación administrativa: pantalla única con guías candidatas, saldo disponible, asignación con un clic.

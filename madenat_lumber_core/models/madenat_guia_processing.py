@@ -1162,6 +1162,87 @@ class MadenatGuiaProcessing(models.Model):
         })
         return line
 
+    def _create_granel_detail_lines(self, extracted_lines):
+        """Crea una línea real por cada línea de detalle del PDF granel (AD-72).
+
+        Hermano de `_create_granel_summary_line()` para el modo 'línea por línea':
+        preserva `lot_number` por línea cuando el proveedor lo declaró, habilitando
+        Balance de Masa por lote real (AD-64/66) en vez del lote sintético agregado.
+
+        - Producto maestro: `get_default_product('bruta', ...)` (materia prima cruda).
+        - Subproducto resuelto desde `product_name_original` (fallback 'GRANEL').
+        - Dimensiones físicas en 0 y nominales placeholder (el PDF granel no trae
+          dimensiones confiables — fidelidad AD-51 §4: no inventar valores).
+        - Líneas con `volume_m3` ausente o <= 0 se excluyen sin excepción (P3).
+        - Si ninguna línea es creable, lanza UserError sugiriendo el modo agregado.
+        """
+        self.ensure_one()
+
+        product = self.env['madenat.ingestion.config'].get_default_product(
+            'bruta', profile=self.ingestion_profile)
+
+        vals_list = []
+        for line in (extracted_lines or []):
+            volume = line.get('volume_m3')
+            try:
+                volume = float(volume)
+            except (TypeError, ValueError):
+                volume = None
+            if volume is None or volume <= 0:
+                continue
+
+            lot_name = str(line.get('lot_number') or '').strip() or 'GRANEL'
+            product_name = str(line.get('product_name_original') or '').strip()
+            subproducto = self.find_or_create_lumber_subproducto(
+                product_name or 'GRANEL')
+
+            pieces = line.get('pieces')
+            try:
+                pieces = int(round(float(pieces)))
+            except (TypeError, ValueError):
+                pieces = 1
+            if pieces <= 0:
+                pieces = 1
+
+            vals_list.append({
+                'processing_id': self.id,
+                'lot_name': lot_name,
+                'sku_original': str(line.get('product_code') or '').strip() or lot_name,
+                'product_name_original': product_name,
+                'product_id': product.id,
+                'subproducto_id': subproducto.id if subproducto else False,
+                'pieces': pieces,
+                'vol_purchase_m3': volume,
+                'vol_shipment_m3': volume,
+                'vol_physical_m3': volume,
+                'espesor_mm': 0.0,
+                'ancho_mm': 0.0,
+                'largo_m': 0.0,
+                'espesor_nominal_mm': 1.0,
+                'ancho_nominal_mm': 0.0,
+                'largo_nominal_m': 0.0,
+                'technical_validation': 'approved',
+            })
+
+        if not vals_list:
+            raise UserError(
+                "⛔ Ninguna línea del PDF tiene volumen válido (> 0). "
+                "Use el modo 'Agregado' (volumen total de cabecera) para esta guía."
+            )
+
+        lines = self.env['madenat.guia.processing.line'].create(vals_list)
+
+        # Reforzar los volúmenes ante el recomputo geométrico (dimensiones 0),
+        # igual que `_create_granel_summary_line`.
+        for record, vals in zip(lines, vals_list):
+            record.write({
+                'vol_purchase_m3': vals['vol_purchase_m3'],
+                'vol_shipment_m3': vals['vol_shipment_m3'],
+                'vol_physical_m3': vals['vol_physical_m3'],
+            })
+
+        return lines
+
     def _sync_purchase_order_lines(self, order, lot_data, price_unit):
         """
         Helper para sincronizar líneas de OC sin ensuciar la función principal.

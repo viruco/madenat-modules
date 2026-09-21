@@ -120,3 +120,52 @@ class TestGranelRouteIntake(TransactionCase):
             wizard.action_route_document()  # no debe lanzar UserError
         guia = self.Guia.search([('guide_pdf_filename', '=', 'guia.pdf')])
         self.assertEqual(len(guia), 1)
+
+    # ── AD-72: selección manual de detalle ─────────────────────────────────
+    def _pdf_result_lines(self):
+        return DocumentExtractionResult(
+            header={'total_volume_m3': 10.0, 'guide_number': 'GRANEL-1'},
+            lines=[
+                {'lot_number': 'LOTE-A', 'volume_m3': 4.0, 'pieces': 10,
+                 'product_name_original': 'MADERA', 'product_code': 'C1'},
+                {'lot_number': 'LOTE-B', 'volume_m3': 6.0, 'pieces': 15,
+                 'product_name_original': 'MADERA', 'product_code': 'C2'},
+            ],
+            warnings=[],
+        )
+
+    def test_10_linea_por_linea_con_detalle(self):
+        """linea_por_linea con PDF que trae líneas → N líneas de detalle."""
+        wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
+        wizard.tipo_detalle_granel = 'linea_por_linea'
+        with patch.object(intake_wizard_module, 'extract_document',
+                          return_value=self._pdf_result_lines()):
+            wizard.action_route_document()
+        guia = self.Guia.search([('guide_pdf_filename', '=', 'guia.pdf')])
+        self.assertEqual(len(guia), 1)
+        self.assertEqual(len(guia.processing_line_ids), 2)
+        self.assertEqual(set(guia.processing_line_ids.mapped('lot_name')),
+                         {'LOTE-A', 'LOTE-B'})
+
+    def test_11_linea_por_linea_sin_tabla_degrade_a_agregado(self):
+        """linea_por_linea sin tabla (Nivel 4) → degrada a resumen agregado + mensaje."""
+        wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
+        wizard.tipo_detalle_granel = 'linea_por_linea'
+        with patch.object(intake_wizard_module, 'extract_document',
+                          return_value=self._pdf_result(10.0)):  # lines=[]
+            wizard.action_route_document()
+        guia = self.Guia.search([('guide_pdf_filename', '=', 'guia.pdf')])
+        self.assertEqual(len(guia.processing_line_ids), 1)
+        self.assertEqual(guia.processing_line_ids.lot_name, 'GRANEL')
+        self.assertTrue(any('agregado' in (m.body or '') for m in guia.message_ids))
+
+    def test_12_agregado_default_ignora_detalle(self):
+        """Modo 'agregado' (default) crea 1 línea sintética aunque el PDF traiga detalle."""
+        wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
+        # tipo_detalle_granel queda en default 'agregado'
+        with patch.object(intake_wizard_module, 'extract_document',
+                          return_value=self._pdf_result_lines()):
+            wizard.action_route_document()
+        guia = self.Guia.search([('guide_pdf_filename', '=', 'guia.pdf')])
+        self.assertEqual(len(guia.processing_line_ids), 1)
+        self.assertEqual(guia.processing_line_ids.lot_name, 'GRANEL')

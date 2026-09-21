@@ -1544,3 +1544,38 @@ el motor probado en producción para todos los proveedores.
 Módulos afectados: madenat_ingestion_engine (services/document_extractor.py,
 services/ingestion_profiles.py, tests/test_document_extractor.py). Sin
 cambios en madenat_lumber_intake ni madenat_lumber_core.
+
+### AD-72 (2026-09-21) — Selección manual de detalle en recepción Granel
+Cierra el ítem "Implementar selección manual de tipo de detalle (línea por
+línea vs. agregado) en el wizard de intake" (05_BACKLOG.md línea 57).
+
+Desde AD-71 el motor PDF puede devolver result.lines con detalle real por
+fila (incluyendo lot_number por línea, _LINE_KEYS). AD-72 expone esa vía al
+operador: campo nuevo tipo_detalle_granel en el wizard ('agregado' default /
+'linea_por_linea'), visible solo cuando tipo_ingreso == 'granel'.
+
+Método _create_granel_detail_lines() en madenat.guia.processing, hermano de
+_create_granel_summary_line(): crea en batch (una sola llamada create()) una
+línea real por cada línea del PDF con volume_m3 > 0, preservando lot_number
+(fallback 'GRANEL'), subproducto resuelto desde product_name_original
+(fallback 'GRANEL'), pieces (fallback 1) y los tres volúmenes igualados a
+volume_m3. Dimensiones físicas 0 y nominales placeholder (espesor_nominal_mm
+=1.0), producto maestro 'bruta'. Líneas sin volumen válido se excluyen sin
+excepción (P3); si ninguna es creable, UserError sugiriendo el modo agregado.
+
+_route_granel() bifurca: 'linea_por_linea' con result.lines → detail lines;
+si no hay líneas (cascada AD-71 Nivel 4), degrada a resumen agregado con
+mensaje visible en el chatter de la guía. 'agregado' (default) conserva el
+comportamiento previo sin cambios.
+
+Riesgo residual heredado de AD-51 (no resuelto aquí): si dos líneas del PDF
+granel comparten lot_number, la colisión en _create_or_get_lot() es la misma
+que ya existe para Excel. No se agrega prorrateo de costo por línea (AD-70,
+diferido a Costeo/Auditoría).
+
+Tests: 38/38 verdes (8 nuevos de AD-72: 5 en madenat_lumber_core +
+3 en madenat_lumber_intake; regresión AD-66/67/68/69 sin cambios).
+
+Módulos afectados: madenat_lumber_core (método _create_granel_detail_lines),
+madenat_lumber_intake (campo tipo_detalle_granel, rama en _route_granel,
+vista). Sin cambios en madenat_ingestion_engine.
