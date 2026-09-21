@@ -1,8 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 7.1.0
-**Fecha de actualización:** 2026-09-20
-**Estado:** ACTIVO — Diseño de AD-64 auditado y aprobado con ajustes (Cline/DeepSeek, 2026-09-20). Listo para implementación. Frente principal AD-65 sigue pendiente de las tareas de UI/wizard.
+**Versión documental:** 7.2.0
+**Fecha de actualización:** 2026-09-21
+**Estado:** ACTIVO — AD-68/AD-69 cerrados (ruta granel en intake + fix disparo BT-04); higiene de `reception_workflow.py` cerrada (2026-09-21). Frente principal AD-65 sigue pendiente de las tareas de UI/wizard.
 
 ---
 
@@ -186,5 +186,6 @@ No abrir un frente mayor nuevo mientras existan bloqueos de instalación o prueb
 | 6.3.0 | 2026-06-16 | Última versión previa a la reconstrucción. |
 | 7.0.0 | 2026-09-15 | Reconstrucción completa contra los 5 documentos canónicos. Cierre de BT-01 a BT-04 y C1-C4 reflejado. |
 | 7.1.0 | 2026-09-20 | Incorpora resultados de auditoría de código independiente: diseño AD-64 aprobado con 3 ajustes obligatorios, corrección de AD-63, corrección de mapeo de dependencias, nueva pieza detectada (tercera derivación de intake), deuda de higiene reconfirmada, discrepancias documentales registradas. |
+| 7.2.0 | 2026-09-21 | Cierre de AD-68/AD-69 (ruta granel en intake, fix disparo BT-04) e higiene de reception_workflow.py. |
 - [x] AD-68/AD-69: ruta granel en intake + fix disparo BT-04 (2026-09-21)
 - [x] Higiene: migrar `palabras_proceso` duplicado en reception_workflow.py a madenat.ingestion.config (2026-09-21, post-AD-68)

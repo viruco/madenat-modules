@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.2.0
-**Última actualización:** 2026-09-12  <!-- actualizado: 2026-09-12 — AD-64 (costeo real: AVCO desactivado, sin prorrateo parcial) y AD-65 (diseño aprobado: recepción a granel + Balance de Masa + consolidación administrativa) -->
+**Versión documental:** 12.3.0
+**Última actualización:** 2026-09-21  <!-- actualizado: 2026-09-21 — AD-67 (volumen_restante_m3), AD-68 (ruta granel en intake), AD-69 (fix disparo BT-04 para granel) -->
 **Estado:** Canonical / activo
 
 ---

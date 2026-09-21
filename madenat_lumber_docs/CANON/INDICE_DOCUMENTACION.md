@@ -22,8 +22,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
 | `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma | 12.2.0 | 2026-09-12 | ✅ Vigente |
 | `03_TESTS.md` | Matriz de validación funcional y técnica | 6.4.0 | 2026-06-16 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación | 12.2.0 | 2026-09-12 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases | 6.3.0 | 2026-06-16 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación | 12.3.0 | 2026-09-21 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases | 7.2.0 | 2026-09-21 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | — | 2026-06-15 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
