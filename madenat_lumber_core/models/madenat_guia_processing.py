@@ -604,7 +604,8 @@ class MadenatGuiaProcessing(models.Model):
 
     tipo_recepcion = fields.Selection([
         ('compra', 'Compra de Producto (Aserradero)'),
-        ('service', 'Servicio Externo (Cepillado/Procesamiento)')
+        ('service', 'Servicio Externo (Cepillado/Procesamiento)'),
+        ('granel', 'Recepción a Granel (Sin Desglose)')
     ], string='Tipo de Recepción', required=True, default='compra', tracking=True)
     
     state = fields.Selection([
@@ -1104,6 +1105,63 @@ class MadenatGuiaProcessing(models.Model):
                 rec.message_post(body=f"✅ <strong>PROCESADO (EXPORT DRIVEN)</strong><br/>"
                                       f"Volumen Stock: {total_vol:.3f} m³")
 
+    def _create_granel_summary_line(self, total_volume_m3):
+        """Inserta una línea de resumen sintética para guías 'granel' (AD-68).
+
+        Una guía granel no tiene Excel de detalle (solo un PDF con el total de
+        cabecera), por lo que no pasa por `action_verify_data()`. Esta entrada
+        sintética puebla `processing_line_ids` con el volumen agregado extraído
+        del PDF, suficiente para pasar el gate de `do_full_processing()`
+        (processing_line_ids no vacío) y permitir llegar a `state='validated'`.
+
+        Producto maestro: `get_default_product('bruta', ...)` (material crudo),
+        NO 'procesado'. Sin desglose de piezas por espesor/ancho: una única
+        línea con el volumen total y un espesor nominal placeholder para
+        satisfacer los gates de validación nominal/subproducto.
+        """
+        self.ensure_one()
+        volume = float(total_volume_m3 or 0.0)
+        if volume <= 0:
+            raise UserError(
+                "⛔ El volumen agregado de la guía granel es 0 o no fue detectado. "
+                "No se puede crear la línea de resumen."
+            )
+
+        product = self.env['madenat.ingestion.config'].get_default_product(
+            'bruta', profile=self.ingestion_profile)
+        subproducto = self.find_or_create_lumber_subproducto('GRANEL')
+
+        line = self.env['madenat.guia.processing.line'].create({
+            'processing_id': self.id,
+            'lot_name': 'GRANEL',
+            'sku_original': 'GRANEL',
+            'product_name_original': 'Recepción a granel (sin desglose)',
+            'product_id': product.id,
+            'subproducto_id': subproducto.id if subproducto else False,
+            'pieces': 1,
+            'vol_purchase_m3': volume,
+            'vol_shipment_m3': volume,
+            'vol_physical_m3': volume,
+            'espesor_mm': 0.0,
+            'ancho_mm': 0.0,
+            'largo_m': 0.0,
+            'espesor_nominal_mm': 1.0,
+            'ancho_nominal_mm': 0.0,
+            'largo_nominal_m': 0.0,
+            'technical_validation': 'approved',
+        })
+
+        # Reforzar el volumen agregado ante cualquier recomputo del compute
+        # geométrico (vol_purchase_m3/vol_shipment_m3 dependen de dimensiones
+        # que para granel son 0). `_compute_vol_shipment_m3` usa como fallback
+        # vol_purchase_m3 cuando no hay thickness_visual/width_visual.
+        line.write({
+            'vol_purchase_m3': volume,
+            'vol_shipment_m3': volume,
+            'vol_physical_m3': volume,
+        })
+        return line
+
     def _sync_purchase_order_lines(self, order, lot_data, price_unit):
         """
         Helper para sincronizar líneas de OC sin ensuciar la función principal.
@@ -1471,7 +1529,7 @@ class MadenatGuiaProcessing(models.Model):
                 "Verifique los datos extraídos del PDF o ingrese el valor manualmente."
                 .format(self.rate_usd)
             )
-        if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
+        if self.rate_usd == 1.0 and self.tipo_recepcion in ('service', 'granel'):
             # rate_usd=1.0 = "no registrado en la guía" (no bloqueante).
             # La exigencia de T/C real se traslada a Costeo/cierre financiero.
             _logger.warning(
@@ -1619,7 +1677,7 @@ class MadenatGuiaProcessing(models.Model):
                 "Verifique los datos extraídos del PDF o ingrese el valor manualmente."
                 .format(self.rate_usd)
             )
-        if self.rate_usd == 1.0 and self.tipo_recepcion == 'service':
+        if self.rate_usd == 1.0 and self.tipo_recepcion in ('service', 'granel'):
             # rate_usd=1.0 = "no registrado en la guía" (no bloqueante).
             # La exigencia de T/C real se traslada a Costeo/cierre financiero.
             _logger.warning(
@@ -1696,11 +1754,15 @@ class MadenatGuiaProcessing(models.Model):
         # =======================================================
 
         # =======================================================
-        # 🏭 FASE 1.5: BT-04 — SALIDA CONTROLADA A PROCESO (service)
-        # Solo para guías de servicio externo: descuenta el material
-        # crudo hacia Virtual Locations/Production antes de cerrar la
-        # validación. Idempotente vía consumption_picking_id; ante falta
-        # de lote crudo aborta la transacción completa (sin ingreso huérfano).
+        # 🏭 FASE 1.5: BT-04 — SALIDA CONTROLADA A PROCESO (solo service)
+        # El disparo automático es exclusivo de service: descuenta el material
+        # crudo hacia Virtual Locations/Production antes de cerrar la validación.
+        # Idempotente vía consumption_picking_id; ante falta de lote crudo aborta
+        # la transacción completa (sin ingreso huérfano).
+        # AD-69: una guía 'granel' NO se consume aquí; su lote de patio se consume
+        # vía una invocación posterior e independiente de
+        # _get_or_create_consumption_picking() desde una guía service que lo
+        # declare como origen (source_lot_line_ids, AD-66/AD-68).
         # =======================================================
         if self.tipo_recepcion == 'service':
             self._get_or_create_consumption_picking()
@@ -3867,10 +3929,10 @@ class MadenatGuiaProcessing(models.Model):
         """
         self.ensure_one()
 
-        # Guard de contrato: la salida a proceso SOLO aplica a service.
-        if self.tipo_recepcion != 'service':
+        # Guard de contrato: la salida a proceso aplica a service y granel.
+        if self.tipo_recepcion not in ('service', 'granel'):
             raise UserError(
-                "⛔ La salida a proceso solo aplica a guías de tipo 'Servicio Externo'."
+                "⛔ La salida a proceso solo aplica a guías de tipo 'Servicio Externo' o 'Granel'."
             )
 
         # Idempotencia: reutilizar salida ya existente y no cancelada.

@@ -20,7 +20,7 @@ class MadenatLumberIntakeWizard(models.Model):
     # ─────────────────────────────────────────────────────────────────────
     # Documentos (Excel obligatorio, PDF opcional)
     # ─────────────────────────────────────────────────────────────────────
-    excel_file = fields.Binary(string='Packing list Excel', required=True)
+    excel_file = fields.Binary(string='Packing list Excel')
     excel_filename = fields.Char(string='Nombre del Excel')
 
     pdf_file = fields.Binary(string='Guía o documento PDF')
@@ -33,6 +33,7 @@ class MadenatLumberIntakeWizard(models.Model):
         [
             ('producto', 'Madera bruta / compra'),
             ('procesado', 'Madera procesada / servicio'),
+            ('granel', 'Madera a granel / volumen total'),
         ],
         string='Tipo de ingreso',
         default='producto',
@@ -118,7 +119,9 @@ class MadenatLumberIntakeWizard(models.Model):
         - Sin match → auto_detectado=False + warning visible; NO se fuerza
           tipo_ingreso silenciosamente.
         """
-        palabras_proceso = ['cepillado', 'servicio', 'proceso', 'maquila']
+        config = self.env['madenat.ingestion.config']
+        keywords_procesado = config.get_tipo_ingreso_keywords('procesado')
+        keywords_granel = config.get_tipo_ingreso_keywords('granel')
 
         for rec in self:
             # Señal adicional (OR): nombre de archivo.
@@ -144,21 +147,41 @@ class MadenatLumberIntakeWizard(models.Model):
 
             texto = (nombres + ' ' + texto_pdf).casefold()
 
-            if any(p in texto for p in palabras_proceso):
+            if any(p in texto for p in keywords_procesado):
                 rec.tipo_ingreso = 'procesado'
                 rec.tipo_ingreso_auto_detectado = True
-            else:
-                rec.tipo_ingreso_auto_detectado = False
-                return {
-                    'warning': {
-                        'title': _('No se pudo determinar el tipo de ingreso automáticamente'),
-                        'message': _(
-                            'No fue posible clasificar el documento como Producto '
-                            'o Procesado a partir de su contenido. Seleccione '
-                            'manualmente el "Tipo de ingreso" antes de continuar.'
-                        ),
-                    }
+                continue
+
+            if any(g in texto for g in keywords_granel):
+                rec.tipo_ingreso = 'granel'
+                rec.tipo_ingreso_auto_detectado = True
+                continue
+
+            # AD-68 — Señal de respaldo granel: sin Excel y PDF cuyo header
+            # trae total_volume_m3 → sugerir 'granel' antes del warning.
+            if not rec.excel_file and rec.pdf_file:
+                try:
+                    pdf_bytes = base64.b64decode(rec.pdf_file)
+                    result = extract_document(
+                        pdf_bytes, rec.pdf_filename or 'guia.pdf')
+                    if result.header.get('total_volume_m3'):
+                        rec.tipo_ingreso = 'granel'
+                        rec.tipo_ingreso_auto_detectado = True
+                        continue
+                except Exception:
+                    pass
+
+            rec.tipo_ingreso_auto_detectado = False
+            return {
+                'warning': {
+                    'title': _('No se pudo determinar el tipo de ingreso automáticamente'),
+                    'message': _(
+                        'No fue posible clasificar el documento como Producto, '
+                        'Procesado o Granel a partir de su contenido. Seleccione '
+                        'manualmente el "Tipo de ingreso" antes de continuar.'
+                    ),
                 }
+            }
 
     @api.onchange('excel_file', 'excel_filename', 'pdf_filename')
     def _onchange_suggest_ingestion_profile(self):
@@ -227,7 +250,7 @@ class MadenatLumberIntakeWizard(models.Model):
     def action_preview_document(self):
         self.ensure_one()
 
-        if not self.excel_file:
+        if self.tipo_ingreso in ('producto', 'procesado') and not self.excel_file:
             raise UserError(_('Archivo Excel requerido.'))
 
         if self.tipo_ingreso == 'procesado':
@@ -326,13 +349,15 @@ class MadenatLumberIntakeWizard(models.Model):
 
         if self.tipo_ingreso == 'producto':
             return self._route_producto()
+        if self.tipo_ingreso == 'granel':
+            return self._route_granel()
         return self._route_procesado()
 
     def _guard_route_document(self):
         self.ensure_one()
 
         # Validación común para ambos tipos de ingreso
-        if not self.excel_file:
+        if self.tipo_ingreso in ('producto', 'procesado') and not self.excel_file:
             raise UserError(_('Archivo Excel requerido.'))
 
         if not self.pdf_file:
@@ -424,6 +449,48 @@ class MadenatLumberIntakeWizard(models.Model):
                 self._log_intake_origin(guia)
 
             # Post-lectura: la única pantalla automática es la CONSOLA de lectura.
+            return self._open_read_view_action(guia)
+        except (UserError, ValidationError) as e:
+            self.write({
+                'state': 'error',
+                'error_message': str(e),
+            })
+            self.flush_recordset(['state', 'error_message'])
+            raise
+
+    # ── Rama Granel ────────────────────────────────────────────────────────
+    def _route_granel(self):
+        self.ensure_one()
+
+        try:
+            with self.env.cr.savepoint():
+                pdf_bytes = base64.b64decode(self.pdf_file) if self.pdf_file else None
+                if not pdf_bytes:
+                    raise UserError(_('Guía/PDF requerido para el ingreso a granel.'))
+
+                # AD-68: extraer el volumen agregado desde el PDF (sin Excel).
+                result = extract_document(
+                    pdf_bytes, self.pdf_filename or 'guia.pdf')
+                total_volume = result.header.get('total_volume_m3') or 0.0
+
+                vals = {
+                    'tipo_recepcion': 'granel',
+                    'intake_direct_stock': False,
+                    'assignment_location_id': self.assignment_location_id.id,
+                    'guide_pdf_file': self.pdf_file,
+                    'guide_pdf_filename': self.pdf_filename,
+                }
+                guia = self.env['madenat.guia.processing'].create(vals)
+
+                # Poblar la línea sintética de resumen con el volumen agregado.
+                guia._create_granel_summary_line(total_volume)
+
+                # Estado equivalente al post-action_verify_data del flujo Procesado.
+                guia.write({'state': 'verified'})
+
+                self._persist_target(guia)
+                self._log_intake_origin(guia)
+
             return self._open_read_view_action(guia)
         except (UserError, ValidationError) as e:
             self.write({

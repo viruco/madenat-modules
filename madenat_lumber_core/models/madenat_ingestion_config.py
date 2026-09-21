@@ -277,3 +277,44 @@ class MadenatIngestionConfig(models.AbstractModel):
             ) % {'tipo': tipo_label})
 
         return rule.product_id
+
+    # =====================================================================
+    # 8. KEYWORDS DE CLASIFICACIÓN DE TIPO DE INGRESO (AD-68)
+    # =====================================================================
+    @api.model
+    def get_tipo_ingreso_keywords(self, tipo_ingreso):
+        """Retorna la lista de keywords (lowercase) para clasificar un tipo de
+        ingreso a partir del CONTENIDO del documento (glosa del PDF + nombre de
+        archivo), usada por `intake_wizard._onchange_suggest_tipo_ingreso`.
+
+        Fuentes (cascada):
+          1. ir.config_parameter 'madenat.tipo_ingreso_keywords' (JSON dict).
+          2. Hardcode legacy.
+        """
+        # Fuente 1: ir.config_parameter Fase 1
+        try:
+            param_obj = self.env['ir.config_parameter'].sudo()
+            raw = param_obj.get_param('madenat.tipo_ingreso_keywords', '')
+            if raw:
+                config = json.loads(raw)
+                keywords = config.get(tipo_ingreso, [])
+                if keywords:
+                    _logger.info(
+                        "IngestionConfig: tipo_ingreso_keywords desde Fase1 (%s, %d kw)",
+                        tipo_ingreso, len(keywords),
+                    )
+                    return [str(k).lower() for k in keywords]
+        except Exception as e:
+            _logger.warning(
+                "IngestionConfig: fallo Fase1 tipo_ingreso_keywords: %s", e)
+
+        # Fuente 2: Hardcode legacy
+        legacy = {
+            'procesado': ['cepillado', 'servicio', 'proceso', 'maquila'],
+            'granel': ['granel', 'volumen total', 'a granel', 'sin desglose'],
+        }
+        _logger.warning(
+            "IngestionConfig: usando hardcode legacy tipo_ingreso_keywords (%s)",
+            tipo_ingreso,
+        )
+        return legacy.get(tipo_ingreso, [])

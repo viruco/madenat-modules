@@ -8,3 +8,4 @@ from . import test_product_default
 from . import test_subproducto_contract
 from . import test_reception_supplier_rut_extraction
 from . import test_volumen_restante
+from . import test_granel_route

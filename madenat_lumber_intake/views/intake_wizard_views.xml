@@ -48,7 +48,8 @@
 
                     <group string="Documentos">
                         <group>
-                            <field name="excel_file" filename="excel_filename" required="1" />
+                            <field name="excel_file" filename="excel_filename"
+                                   required="tipo_ingreso in ('producto', 'procesado')" />
                             <field name="excel_filename" />
                             <field name="pdf_file" filename="pdf_filename" required="1" />
                             <field name="pdf_filename" />

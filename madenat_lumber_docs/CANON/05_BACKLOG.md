@@ -186,3 +186,4 @@ No abrir un frente mayor nuevo mientras existan bloqueos de instalación o prueb
 | 6.3.0 | 2026-06-16 | Última versión previa a la reconstrucción. |
 | 7.0.0 | 2026-09-15 | Reconstrucción completa contra los 5 documentos canónicos. Cierre de BT-01 a BT-04 y C1-C4 reflejado. |
 | 7.1.0 | 2026-09-20 | Incorpora resultados de auditoría de código independiente: diseño AD-64 aprobado con 3 ajustes obligatorios, corrección de AD-63, corrección de mapeo de dependencias, nueva pieza detectada (tercera derivación de intake), deuda de higiene reconfirmada, discrepancias documentales registradas. |
+- [x] AD-68/AD-69: ruta granel en intake + fix disparo BT-04 (2026-09-21)

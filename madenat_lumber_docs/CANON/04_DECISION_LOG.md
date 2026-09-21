@@ -1474,3 +1474,25 @@ AD-63 (2026-09-12) afirmaba que `madenat_ingestion_engine` era "directorio untra
 - **Fuera de alcance (diferido a AD-68, pendiente de revisión con Costeo/Auditoría):** el prorrateo de `wood_cost_usd`/`total_cost_usd`/`cost_per_m3_usd` ante consumo parcial. Los precios de compra provienen directamente de las guías de proceso/producto (USD o CLP) durante la ingesta, con advertencias no bloqueantes si faltan (patrón ya existente); la corrección de costeo específica para consumo parcial se diseñará por separado.
 - **Tests:** 13/13 verdes (0 failed, 0 errors) ejecutados en runtime real (Odoo 18, puerto 8069, `docker compose run --service-ports`): `TestGuiaProcessingConsumptionBT04` (5), `TestGuiaProcessingConsumptionPartialAD66` (5), `TestVolumenRestante` (3).
 - **Módulos afectados:** `madenat_lumber_core` (campo nuevo, vista), `madenat_lumber_reports` (modelo y vista de reporte).
+
+### AD-68 (2026-09-21) — Ruta "Granel" en wizard de intake
+Nuevo tipo_recepcion='granel' en madenat.guia.processing para recepción por
+volumen total sin desglose de piezas (AD-65 §1.6). Producto maestro 'bruta'.
+Línea sintética en processing_line_ids con volumen extraído del header del
+PDF vía madenat_ingestion_engine.extract_document() (sin cambios al motor).
+Detección por keywords migrada a madenat.ingestion.config (cascada
+config→hardcode). 3 candados de excel_file relajados condicionalmente
+(campo, vista, action_preview_document). additional_cost/
+_assign_costs_to_generated_lots excluido para granel (exclusivo de
+'service'/maquila). 14 tests nuevos, suite completa en verde.
+
+### AD-69 (2026-09-21) — Fix: BT-04 no dispara automático para granel
+Corrección post-AD-68: el disparo automático de _get_or_create_consumption_
+picking() en action_validate() vuelve a ser exclusivo de tipo_recepcion==
+'service'. Una guía granel debe poder validar y quedar como stock de patio
+sin origen/destino de proceso asignado; el consumo ocurre después, como
+acción independiente, cuando una guía service declare ese lote como origen
+(source_lot_line_ids, AD-66). Guard de contrato de
+_get_or_create_consumption_picking() sigue aceptando 'granel' sin cambios.
+3 tests nuevos (granel puro sin bloqueo, service sigue bloqueando sin
+origen, integración granel→service con descuento de volumen verificado).
