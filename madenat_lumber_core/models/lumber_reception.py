@@ -3017,8 +3017,15 @@ class LumberReception(models.Model):
             return super(LumberReception, self).unlink()
 
         # 2. SEGURIDAD USUARIO
+        allow_verified_reclassify = self.env.context.get(
+            'madenat_reclassify_allow_verified_unlink'
+        )
         for rec in self:
-            if rec.state not in ('draft', 'cancel'):
+            allowed_states = ('draft', 'cancel')
+            if allow_verified_reclassify:
+                allowed_states += ('verified',)
+
+            if rec.state not in allowed_states:
                 raise UserError(
                     "⛔ SEGURIDAD MADENAT:\n"
                     f"No puede eliminar la guía '{rec.name}' porque está en estado '{rec.state}'.\n"

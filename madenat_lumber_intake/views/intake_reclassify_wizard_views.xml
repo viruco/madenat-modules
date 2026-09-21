@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_lumber_intake_reclassify_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.reclassify.wizard.form</field>
+        <field name="model">madenat.lumber.intake.reclassify.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reclasificar Tipo de Ingreso">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <strong>Se eliminará el registro actual y se creará un nuevo ingreso.</strong>
+                        El tipo correcto elegido abajo será el punto de partida. Los documentos
+                        (Guía/PDF y Excel) deberán volver a adjuntarse en el nuevo ingreso.
+                    </div>
+                    <group string="Registro a reclasificar">
+                        <group>
+                            <field name="source_model" readonly="1"/>
+                            <field name="source_display_name" readonly="1"/>
+                            <field name="source_create_date" readonly="1"/>
+                        </group>
+                        <group string="Tipo correcto">
+                            <field name="tipo_ingreso_correcto" required="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_reclassify"
+                            type="object"
+                            string="Confirmar Reclasificación"
+                            class="btn-primary"
+                            confirm="¿Reclasificar este ingreso? El registro actual se eliminará y se creará un nuevo ingreso."/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

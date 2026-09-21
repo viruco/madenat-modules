@@ -45,6 +45,12 @@
                             class="btn-secondary"
                             icon="fa-arrow-left"/>
 
+                    <button name="action_reclassify"
+                            type="object"
+                            string="Reclasificar Tipo de Ingreso"
+                            class="btn-secondary"
+                            invisible="state not in ('draft', 'processing', 'verified')"/>
+
                     <!-- Contexto visual de OC: número resumido en el header.
                          La fachada publica el vínculo operativo real (purchase_id)
                          como bloque detallado en la pestaña "Guía y comercial". -->
