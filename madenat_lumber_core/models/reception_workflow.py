@@ -171,7 +171,7 @@ class LumberReceptionWorkflow:
 
     def _check_file_integrity(self, reception):
         nombres = f"{reception.pdf_filename or ''} {reception.excel_filename or ''}".lower()
-        palabras_proceso = ['cepillado', 'servicio', 'proceso', 'maquila']
+        palabras_proceso = self.env['madenat.ingestion.config'].get_tipo_ingreso_keywords('procesado')
         if any(p in nombres for p in palabras_proceso):
             raise UserError("⛔ El documento parece ser un Servicio de Proceso. Use el menú correspondiente.")
 
