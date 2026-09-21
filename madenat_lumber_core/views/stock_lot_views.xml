@@ -110,7 +110,8 @@
                 <field name="largo_m" string="Largo (m)"/>
               </group>
               <group>
-                <field name="volumen_m3" string="Volumen Físico (m³)" readonly="1" decoration-bf="1"/>
+                <field name="volumen_m3" string="Volumen Origen (m³)" readonly="1" decoration-bf="1"/>
+                <field name="volumen_restante_m3" string="Volumen Disponible (m³)" readonly="1"/>
                 <field name="volumen_mbf" string="Volumen MBF" readonly="1"/>
                 <field name="estado_trazabilidad" string="Estado Actual" widget="badge"/>
               </group>

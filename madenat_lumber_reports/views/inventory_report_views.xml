@@ -148,7 +148,8 @@
                 <field name="lot_escuadria" string="Escuadría" optional="show"/>
                 <field name="lot_largo_m" string="Largo (m)" optional="show"/>
                 <field name="lot_piezas" string="Piezas" optional="show" sum="Total Piezas"/>
-                <field name="lot_volumen_m3" string="Vol. (m³)" optional="show" sum="Total Vol."/>
+                <field name="lot_volumen_m3" string="Vol. Origen (m³)" optional="show" sum="Total Vol. Origen"/>
+                <field name="lot_volumen_restante_m3" string="Vol. Disponible (m³)" optional="show" sum="Total Vol. Disp."/>
                 <field name="lot_container_name" string="Contenedor" optional="hide"/>
             </list>
         </field>

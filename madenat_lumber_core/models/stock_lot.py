@@ -589,6 +589,16 @@ class StockLotExtended(models.Model):
         - Pre-procesamiento: usa volume_purchase_m3
         - Post-procesamiento: usa vol_shipment_m3"""
     )
+    volumen_restante_m3 = fields.Float(
+        string='Volumen Remanente (m³)',
+        compute='_compute_volumen_restante_m3',
+        store=True,
+        digits=(16, 3),
+        help='Volumen físico real disponible en stock, calculado desde stock.quant.quantity '
+             '(no desde volumen_m3, que es el volumen documental de origen y no se ajusta '
+             'tras consumos parciales — ver AD-67). Útil para distinguir volumen original '
+             'de volumen realmente disponible tras un envío parcial a proceso (AD-66).'
+    )
     volumen_mbf = fields.Float(
         string='Volumen MBF', 
         compute='_compute_volumes', 
@@ -977,6 +987,13 @@ class StockLotExtended(models.Model):
                 lot.volumen_m3 = r3(lot.volumen_m3)
             if lot.volumen_mbf > 0:
                 lot.volumen_mbf = r3(lot.volumen_mbf)
+
+    @api.depends('quant_ids.quantity', 'quant_ids.location_id')
+    def _compute_volumen_restante_m3(self):
+        """Volumen físico remanente = suma de stock.quant.quantity en ubicaciones internas."""
+        for lot in self:
+            quants = lot.quant_ids.filtered(lambda q: q.location_id.usage == 'internal')
+            lot.volumen_restante_m3 = sum(quants.mapped('quantity'))
     # ==============================================================================
     # MÉTODOS COMPUTADOS - SECCIÓN 2: GENEALOGÍA ⭐ NUEVO
     # ==============================================================================

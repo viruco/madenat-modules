@@ -1458,3 +1458,19 @@ La ruta Procesado del wizard de intake (`madenat_lumber_intake/models/intake_wiz
 ### Corrección documental asociada (registrada en la misma sesión)
 
 AD-63 (2026-09-12) afirmaba que `madenat_ingestion_engine` era "directorio untracked, nunca commiteado". Esa afirmación quedó obsoleta desde el commit `843ed0d` (2026-09-15), que trackeó los 22 archivos del módulo. AD-63 se mantiene como registro histórico válido para la fecha en que fue escrita; esta nota deja constancia de que el hecho que describía ya cambió. La brecha de trazabilidad canónica (entrada propia del módulo en CANON) sigue abierta, distinta de la trazabilidad git ya resuelta.
+
+---
+
+## 2026-09-21 — Diseño e implementación: volumen remanente físico tras consumo parcial (alcance Logística/Inventario)
+
+### AD-67 — Campo `volumen_restante_m3` como fuente de verdad física, reporte de inventario corregido (implementado y validado)
+
+- **Fecha:** 2026-09-21
+- **Tipo:** corrección preventiva de inconsistencia de inventario, derivada de investigación de impacto downstream de AD-66. Alcance limitado a Logística/Inventario; el costeo de consumo parcial queda explícitamente fuera de esta decisión (ver "Fuera de alcance").
+- **Problema de origen:** `stock.lot.volumen_m3` es documental (no se ajusta tras consumo parcial vía AD-66); `lumber_stock_report.py` mostraba m³ documental mientras filtraba existencia por `quantity` física, generando inconsistencia visible en el reporte de inventario.
+- **Decisión:** se agrega `stock.lot.volumen_restante_m3` (Float, compute store=True, depende de `quant_ids.quantity` en ubicaciones internas) como fuente de verdad de volumen físico disponible. `volumen_m3` se conserva sin cambios como volumen documental de origen. El reporte de inventario expone ambas columnas, claramente etiquetadas.
+- **Fundamento de la fuente de verdad física:** el producto maestro usa `uom_id`/`uom_po_id` = `uom.product_uom_cubic_meter` (m³ nativo, `madenat_lumber_product_default_data.xml:15-16`), confirmando que `stock.quant.quantity` es una medida física real en m³, no una unidad distinta que requiera conversión.
+- **No se modifica `estado_trazabilidad`:** se evaluó y descartó agregar un valor nuevo a este Selection, porque se usa en un `domain` operativo real (`lumber_container_views.xml:362`, filtro de asignación a contenedor). Un valor nuevo excluiría silenciosamente lotes parcialmente consumidos de la asignación a embarque.
+- **Fuera de alcance (diferido a AD-68, pendiente de revisión con Costeo/Auditoría):** el prorrateo de `wood_cost_usd`/`total_cost_usd`/`cost_per_m3_usd` ante consumo parcial. Los precios de compra provienen directamente de las guías de proceso/producto (USD o CLP) durante la ingesta, con advertencias no bloqueantes si faltan (patrón ya existente); la corrección de costeo específica para consumo parcial se diseñará por separado.
+- **Tests:** 13/13 verdes (0 failed, 0 errors) ejecutados en runtime real (Odoo 18, puerto 8069, `docker compose run --service-ports`): `TestGuiaProcessingConsumptionBT04` (5), `TestGuiaProcessingConsumptionPartialAD66` (5), `TestVolumenRestante` (3).
+- **Módulos afectados:** `madenat_lumber_core` (campo nuevo, vista), `madenat_lumber_reports` (modelo y vista de reporte).

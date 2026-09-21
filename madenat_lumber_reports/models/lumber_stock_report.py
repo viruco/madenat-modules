@@ -139,12 +139,21 @@ class LumberStockReport(models.Model):
     )
 
     lot_volumen_m3 = fields.Float(
-        string='Volumen (m³)',
+        string='Volumen Origen (m³)',
         related='lot_id.volumen_m3',
         store=True,
         readonly=True,
         digits=(16, 3),
-        help="Volumen en m³ del lote."
+        help="Volumen documental de origen del lote (no se ajusta tras consumos parciales)."
+    )
+
+    lot_volumen_restante_m3 = fields.Float(
+        string='Volumen Disponible (m³)',
+        related='lot_id.volumen_restante_m3',
+        store=True,
+        readonly=True,
+        digits=(16, 3),
+        help="Volumen físico real disponible en stock, calculado desde stock.quant.quantity."
     )
 
     lot_piezas = fields.Integer(
@@ -256,15 +265,16 @@ class LumberStockReport(models.Model):
         sheet = workbook.add_worksheet('R1_Stock_Real_Patio')
         sty = self._report_xlsx_styles(workbook)
 
-        # 13 columnas — anchos compactos al estilo embarque
-        widths = [16, 22, 14, 16, 16, 22, 24, 18, 16, 10, 8, 13, 16]
+        # 14 columnas — anchos compactos al estilo embarque
+        widths = [16, 22, 14, 16, 16, 22, 24, 18, 16, 10, 8, 13, 13, 16]
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
         cols = [
             'Patio', 'Etiqueta Lote', 'Fecha Recepción', 'N° Guía',
             'N° Orden', 'Proveedor', 'Producto', 'Subproducto',
-            'Escuadría', 'Largo (m)', 'Piezas', 'Vol. (m³)', 'Contenedor',
+            'Escuadría', 'Largo (m)', 'Piezas', 'Vol. Origen (m³)',
+            'Vol. Disponible (m³)', 'Contenedor',
         ]
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R1 — Detalle por Patio — Stock Real', sty['title'])
@@ -311,7 +321,8 @@ class LumberStockReport(models.Model):
                 escuadria = q.lot_escuadria or ''
                 length = q.lot_largo_m or 0.0
                 pieces = q.lot_piezas or 0
-                m3 = q.lot_volumen_m3 or 0.0
+                m3_origen = q.lot_volumen_m3 or 0.0
+                m3 = q.lot_volumen_restante_m3 or 0.0
                 container = q.lot_container_name or ''
 
                 s_str = sty['data_str_alt'] if alt else sty['data_str']
@@ -329,8 +340,9 @@ class LumberStockReport(models.Model):
                 sheet.write(row, 8, escuadria, s_str)
                 sheet.write(row, 9, length, s_num)
                 sheet.write(row, 10, pieces, s_int)
-                sheet.write(row, 11, m3, s_num)
-                sheet.write(row, 12, container, s_str)
+                sheet.write(row, 11, m3_origen, s_num)
+                sheet.write(row, 12, m3, s_num)
+                sheet.write(row, 13, container, s_str)
 
                 patio_pieces += pieces
                 patio_m3 += m3
@@ -341,8 +353,9 @@ class LumberStockReport(models.Model):
             for c in range(1, 10):
                 sheet.write(row, c, '', sty['footer'])
             sheet.write(row, 10, patio_pieces, sty['footer_int'])
-            sheet.write(row, 11, patio_m3, sty['footer_num'])
-            sheet.write(row, 12, '', sty['footer'])
+            sheet.write(row, 11, '', sty['footer'])
+            sheet.write(row, 12, patio_m3, sty['footer_num'])
+            sheet.write(row, 13, '', sty['footer'])
             grand_pieces += patio_pieces
             grand_m3 += patio_m3
             row += 1
@@ -355,8 +368,9 @@ class LumberStockReport(models.Model):
         for c in range(1, 10):
             sheet.write(row, c, '', sty['grand_footer'])
         sheet.write(row, 10, grand_pieces, sty['grand_footer_int'])
-        sheet.write(row, 11, grand_m3, sty['grand_footer_num'])
-        sheet.write(row, 12, '', sty['grand_footer'])
+        sheet.write(row, 11, '', sty['grand_footer'])
+        sheet.write(row, 12, grand_m3, sty['grand_footer_num'])
+        sheet.write(row, 13, '', sty['grand_footer'])
 
         _logger.info("📊 R1: %d patios, %d quants, %d piezas totales",
                      len(patio_order), len(quants), grand_pieces)
@@ -393,7 +407,7 @@ class LumberStockReport(models.Model):
             if key not in agg:
                 agg[key] = {'pieces': 0, 'm3': 0.0, 'mbf': 0.0}
             agg[key]['pieces'] += self._report_get_canonical_pieces(q)
-            agg[key]['m3'] += self._report_get_canonical_volume_m3(q)
+            agg[key]['m3'] += (q.lot_volumen_restante_m3 or 0.0)
             agg[key]['mbf'] += self._report_get_canonical_mbf(q)
 
         output = io.BytesIO()
@@ -405,7 +419,7 @@ class LumberStockReport(models.Model):
         for i, w in enumerate(widths):
             sheet.set_column(i, i, w)
 
-        cols = ['Patio', 'Producto', 'Subproducto', 'Total Piezas', 'Total M3', 'Total MBF']
+        cols = ['Patio', 'Producto', 'Subproducto', 'Total Piezas', 'Total M3 Disp.', 'Total MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R2 — Resumen por Patio — Stock Real (stock.quant)', sty['title'])
         for i, c in enumerate(cols):
@@ -465,7 +479,7 @@ class LumberStockReport(models.Model):
 
         cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción', 'Producto',
                 'Subproducto', 'Espesor', 'Ancho', 'Largo (m)',
-                'Piezas', 'M3', 'MBF']
+                'Piezas', 'M3 Disp.', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R5 — Detalle por Proveedor — Stock Real (stock.quant)', sty['title'])
         for i, c in enumerate(cols):
@@ -478,9 +492,9 @@ class LumberStockReport(models.Model):
             x.product_id.name or ''
         )):
             data = self._report_build_detail_row(q, include_oc=False)
-            # Usar volumen_m3 del lote directamente (stock real)
+            # Usar volumen remanente físico del lote (stock real)
             lot = q.lot_id
-            m3 = lot.volumen_m3 if lot else 0.0
+            m3 = lot.volumen_restante_m3 if lot else 0.0
             mbf = lot.volumen_mbf if lot else 0.0
 
             sheet.write(row, 0, data['patio'], sty['data_str'])
@@ -542,7 +556,7 @@ class LumberStockReport(models.Model):
         cols = ['Patio', 'Proveedor', 'Guía', 'Fecha de recepción',
                 'Orden de Compra', 'Producto', 'Subproducto',
                 'Espesor', 'Ancho', 'Largo (m)',
-                'Piezas', 'M3', 'MBF']
+                'Piezas', 'M3 Disp.', 'MBF']
         sheet.merge_range(0, 0, 0, len(cols) - 1,
                           'R7 — Detalle por Orden de Compra — Stock Real (stock.quant)', sty['title'])
         for i, c in enumerate(cols):
@@ -556,7 +570,7 @@ class LumberStockReport(models.Model):
         )):
             lot = q.lot_id
             data = self._report_build_detail_row(q, include_oc=True)
-            m3 = lot.volumen_m3 if lot else 0.0
+            m3 = lot.volumen_restante_m3 if lot else 0.0
             mbf = lot.volumen_mbf if lot else 0.0
 
             sheet.write(row, 0, data['patio'], sty['data_str'])

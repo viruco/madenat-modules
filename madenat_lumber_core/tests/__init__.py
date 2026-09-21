@@ -7,3 +7,4 @@ from . import test_guia_processing_display_name
 from . import test_product_default
 from . import test_subproducto_contract
 from . import test_reception_supplier_rut_extraction
+from . import test_volumen_restante

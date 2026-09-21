@@ -163,6 +163,8 @@ No confundir con `madenat_lumber_billing` ni `madenat_vendor_payment`, ambos ya 
 | T29-T32 sin evidencia formal | Media | Evidenciar en `03_TESTS.md` | PENDIENTE |
 | Discrepancias documentales (índice, README, backlog) | Baja | Corregir en cada documento fuente | NUEVO — 2026-09-20 |
 
+> **Nota AD-67 (2026-09-21):** para la fila "Costeo sin prorrateo por consumo parcial", la parte de **inventario/volumen** quedó resuelta por AD-67 (`stock.lot.volumen_restante_m3` + reporte de inventario corregido). El **costeo específico** (prorrateo de `wood_cost_usd`/`total_cost_usd`/`cost_per_m3_usd`) queda como **AD-68 pendiente**, sujeto a revisión con Costeo/Auditoría (Felipe).
+
 ---
 
 ## REGLA DE PRIORIZACIÓN
