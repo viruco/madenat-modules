@@ -1496,3 +1496,51 @@ acción independiente, cuando una guía service declare ese lote como origen
 _get_or_create_consumption_picking() sigue aceptando 'granel' sin cambios.
 3 tests nuevos (granel puro sin bloqueo, service sigue bloqueando sin
 origen, integración granel→service con descuento de volumen verificado).
+
+### AD-71 (2026-09-21) — Motor de mejor esfuerzo en cascada para detalle PDF
+Implementa el ítem de "Tareas de implementación de AD-65" (05_BACKLOG.md
+línea 56): _extract_pdf() en madenat_ingestion_engine/services/
+document_extractor.py deja de depender exclusivamente de regex de cabecera
+para total_volume_m3. Cascada de 4 niveles, función pura (sin self.env,
+sin ORM): Nivel 1, tabla con bordes reales vía pdfplumber.extract_tables()
++ mapeo de columnas por perfil (build_column_mapping, min_score=40,
+mismo mecanismo que Excel). Nivel 2, tabla sin bordes reconstruida por
+clustering de palabras (extract_words(), tolerancias nombradas
+_WORD_CLUSTER_X_TOLERANCE=8.0pt / _WORD_CLUSTER_Y_TOLERANCE=5.0pt,
+agrupación por fila (top) antes que por columna (x0)). Nivel 3, suma de
+volume_m3 de las líneas extraídas en Nivel 1/2 (derivado, no función
+aparte). Nivel 4, regex de cabecera preexistente (r"(\d{2,4})\s*M3"),
+usado solo si 1/2/3 no producen líneas con volumen.
+
+Prioridad: la suma de líneas de detalle (Nivel 1/2/3) siempre prevalece
+sobre el regex de cabecera (Nivel 4) cuando ambos están disponibles;
+discrepancias se registran como warning de auditoría sin lanzar excepción
+(P5/P6). Nunca lanza DocumentExtractionError por ausencia de tabla —
+degrada de nivel con warning explícito (P3).
+
+Extensibilidad multi-proveedor: clave opcional `pdf_table_strategy` en
+ingestion_profiles.py ('lines'/'word_cluster'/'none'/autodetección),
+documentada pero sin uso obligatorio en los 2 perfiles existentes
+(ambos usan autodetección Nivel 1 → Nivel 2).
+
+_route_granel() en madenat_lumber_intake no se modifica: sigue leyendo
+result.header.get('total_volume_m3'), ahora resuelto por la cascada de
+forma transparente. Test de regresión de integración granel→service
+(AD-68/AD-69) verificado sin cambios.
+
+Tests: 49/49 verdes (0 failed, 0 errors) — 21 preexistentes de
+TestDocumentExtractor + 6 nuevos de TestPdfDetailCascade (Nivel 1 métrico,
+Nivel 2 clustering con resultado idéntico a Nivel 1, Nivel 4 solo regex,
+discrepancia suma-vs-regex con priorización de suma, perfil imperial,
+regresión solo-regex).
+
+Deuda técnica anotada (no bloqueante): el test de Nivel 2 usa una grilla
+de palabras sintética perfectamente regular (espaciado muy superior a las
+tolerancias de clustering), validando el mecanismo pero no la robustez
+frente a PDFs reales de proveedores con columnas desalineadas. Pendiente
+validar Nivel 2 contra al menos un PDF real sin bordes antes de considerar
+el motor probado en producción para todos los proveedores.
+
+Módulos afectados: madenat_ingestion_engine (services/document_extractor.py,
+services/ingestion_profiles.py, tests/test_document_extractor.py). Sin
+cambios en madenat_lumber_intake ni madenat_lumber_core.

@@ -89,6 +89,18 @@ PACKING_IMPERIAL_BLANKS = {
 
 DEFAULT_PROFILES = [PACKING_METRICO_ASERRADA, PACKING_IMPERIAL_BLANKS]
 
+# ──────────────────────────────────────────────────────────────────────────
+# Clave opcional ``pdf_table_strategy`` por perfil (AD-68 cascada PDF):
+#   - "lines"         → Nivel 1: tabla con bordes vía extract_tables().
+#   - "word_cluster"  → Nivel 2: tabla sin bordes por clustering de palabras.
+#   - "none"          → saltar directo a Nivel 4 (regex de cabecera).
+#   - ausente         → autodetección: Nivel 1 y luego Nivel 2.
+# Los perfiles actuales no la fijan (usan autodetección), por lo que la
+# cascada itera ambos niveles y elige el primer perfil con cabecera
+# reconocible. Los proveedores con layouts fijos pueden declararla para
+# saltarse el intento fallido de nivel.
+# ──────────────────────────────────────────────────────────────────────────
+
 
 def _get_numeric(values):
     """Devuelve los valores numéricos de una lista de celdas."""

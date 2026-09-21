@@ -327,3 +327,89 @@ class TestDocumentExtractor(TransactionCase):
         self.assertEqual(len(result.lines), 1)
         self.assertEqual(result.lines[0]["thickness_value_raw"], "N/A")
         self.assertFalse(any("unidades" in w for w in result.warnings))
+
+
+def _patch_pdf_full(text, tables=None, words=None):
+    """Mockea pdfplumber.open con extract_text + extract_tables + extract_words."""
+    fake_page = mock.Mock()
+    fake_page.extract_text.return_value = text
+    fake_page.extract_tables.return_value = tables if tables is not None else []
+    fake_page.extract_words.return_value = words if words is not None else []
+    fake_pdf = mock.Mock()
+    fake_pdf.pages = [fake_page]
+    fake_pdf.__enter__ = mock.Mock(return_value=fake_pdf)
+    fake_pdf.__exit__ = mock.Mock(return_value=False)
+    return mock.patch("pdfplumber.open", return_value=fake_pdf)
+
+
+def _table_to_words(rows):
+    """Convierte una tabla (lista de filas) a palabras con x0/top regulares."""
+    words = []
+    for r, row in enumerate(rows):
+        for c, cell in enumerate(row):
+            if cell in (None, ""):
+                continue
+            words.append({"x0": c * 100.0, "top": r * 20.0, "text": str(cell)})
+    return words
+
+
+class TestPdfDetailCascade(TransactionCase):
+    """Cascada de 4 niveles para detalle PDF (motor de mejor esfuerzo)."""
+
+    def test_nivel1_tabla_bordes_metrica(self):
+        table = [METRIC_HEADER,
+                 _metric_row("1", "0000000000001", "LOTE-1"),
+                 _metric_row("2", "0000000000002", "LOTE-2")]
+        with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[table]):
+            result = extract_document(b"pdf", "test.pdf")
+        self.assertEqual(len(result.lines), 2)
+        self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
+        self.assertEqual(result.detected_profile_code, "packing_metrico_aserrada")
+        self.assertTrue(any("Nivel 1" in w for w in result.warnings))
+
+    def test_nivel2_clustering_sin_bordes_mismo_resultado(self):
+        table = [METRIC_HEADER,
+                 _metric_row("1", "0000000000001", "LOTE-1"),
+                 _metric_row("2", "0000000000002", "LOTE-2")]
+        words = _table_to_words(table)
+        with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[], words=words):
+            result = extract_document(b"pdf", "test.pdf")
+        self.assertEqual(len(result.lines), 2)
+        self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
+        self.assertEqual(result.lines[0]["volume_m3"], 3.8862)
+        self.assertTrue(any("Nivel 2" in w for w in result.warnings))
+
+    def test_nivel4_regex_sin_tabla(self):
+        with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[], words=[]):
+            result = extract_document(b"pdf", "test.pdf")
+        self.assertEqual(result.lines, [])
+        self.assertAlmostEqual(result.header["total_volume_m3"], 130.0, places=3)
+        self.assertTrue(any("Nivel 4" in w for w in result.warnings))
+
+    def test_discrepancia_suma_vs_regex_prioriza_suma(self):
+        table = [METRIC_HEADER,
+                 _metric_row("1", "0000000000001", "LOTE-1"),
+                 _metric_row("2", "0000000000002", "LOTE-2")]
+        with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[table]):
+            result = extract_document(b"pdf", "test.pdf")
+        # Prioriza la suma de líneas (7.7724), no el regex (130).
+        self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
+        self.assertTrue(any("Discrepancia" in w for w in result.warnings))
+
+    def test_nivel1_imperial_segundo_perfil(self):
+        table = [IMPERIAL_HEADER,
+                 _imperial_row("1", "A1M001", "LOTE-A"),
+                 _imperial_row("2", "A1M002", "LOTE-B")]
+        with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[table]):
+            result = extract_document(b"pdf", "test.pdf")
+        self.assertEqual(len(result.lines), 2)
+        self.assertEqual(result.detected_profile_code, "packing_imperial_blanks")
+        self.assertEqual(result.lines[0]["thickness_unit"], "inch")
+        self.assertAlmostEqual(result.header["total_volume_m3"], 5.0616 * 2, places=3)
+
+    def test_regresion_solo_regex_igual_que_antes(self):
+        """Un PDF sin tabla sigue resolviendo el total vía regex (Nivel 4)."""
+        with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[], words=[]):
+            result = extract_document(b"pdf", "test.pdf")
+        self.assertAlmostEqual(result.header["total_volume_m3"], 130.0, places=3)
+        self.assertEqual(result.lines, [])

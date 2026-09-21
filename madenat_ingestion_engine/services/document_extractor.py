@@ -530,19 +530,253 @@ def _extract_pdf_header(text):
     return header
 
 
+# ── Nivel 2 — clustering de palabras (tablas PDF sin bordes) ─────────────
+# Tolerancias de agrupación en puntos PDF (1 punto ≈ 1/72 pulgada).
+_WORD_CLUSTER_X_TOLERANCE = 8.0   # horizontal: palabras de la misma columna
+_WORD_CLUSTER_Y_TOLERANCE = 5.0   # vertical: palabras de la misma fila
+
+
+def _clean_table_rows(rows):
+    """Normaliza celdas de pdfplumber (None → '', strip, sin saltos de línea)."""
+    cleaned = []
+    for row in rows:
+        cleaned_row = []
+        for cell in row:
+            if cell is None:
+                cleaned_row.append("")
+            else:
+                cleaned_row.append(re.sub(r"\s+", " ", str(cell)).strip())
+        cleaned.append(cleaned_row)
+    return cleaned
+
+
+def _extract_pdf_table_bordered(file_bytes, filename):
+    """Nivel 1 — tabla con bordes reales vía page.extract_tables().
+
+    Retorna una lista de filas (listas de celdas) de la primera tabla con al
+    menos una fila de datos no vacía, o None si no se encontró ninguna tabla
+    utilizable. Nunca lanza: ante cualquier error devuelve None.
+    """
+    import pdfplumber
+    try:
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    if not table:
+                        continue
+                    rows = _clean_table_rows(table)
+                    if len(rows) >= 2 and any(not _is_row_empty(r) for r in rows[1:]):
+                        return rows
+    except Exception:
+        pass
+    return None
+
+
+def _cluster_words_to_rows(words):
+    """Agrupa palabras (dicts con ``x0``/``top``/``text``) en filas y columnas.
+
+    Paso 1: agrupa por fila (``top``, tolerancia ``_WORD_CLUSTER_Y_TOLERANCE``).
+    Paso 2: dentro de cada fila, agrupa por columna (``x0``, tolerancia
+    ``_WORD_CLUSTER_X_TOLERANCE``).
+    """
+    if not words:
+        return None
+
+    sorted_words = sorted(
+        words, key=lambda w: (w.get("top", 0) or 0, w.get("x0", 0) or 0))
+    rows_by_y = []
+    for word in sorted_words:
+        top = word.get("top", 0) or 0
+        for row in rows_by_y:
+            if abs(row["top"] - top) <= _WORD_CLUSTER_Y_TOLERANCE:
+                row["words"].append(word)
+                break
+        else:
+            rows_by_y.append({"top": top, "words": [word]})
+
+    result_rows = []
+    for row in rows_by_y:
+        cols = []
+        for word in sorted(row["words"], key=lambda w: w.get("x0", 0) or 0):
+            x0 = word.get("x0", 0) or 0
+            for col in cols:
+                if abs(col["x0"] - x0) <= _WORD_CLUSTER_X_TOLERANCE:
+                    col["text"] = (col["text"] + " " + word.get("text", "")).strip()
+                    break
+            else:
+                cols.append({"x0": x0, "text": word.get("text", "")})
+        result_rows.append([col["text"] for col in cols])
+
+    return result_rows
+
+
+def _extract_pdf_table_word_cluster(file_bytes, filename):
+    """Nivel 2 — tabla sin bordes reconstruida por clustering de palabras.
+
+    Retorna una lista de filas (listas de celdas) o None. Nunca lanza.
+    """
+    import pdfplumber
+    try:
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                words = page.extract_words() or []
+                rows = _cluster_words_to_rows(words)
+                if rows and any(not _is_row_empty(r) for r in rows):
+                    return rows
+    except Exception:
+        pass
+    return None
+
+
+def _resolve_pdf_table_strategies(column_profile):
+    """Estrategias de extracción de tabla PDF a intentar, en orden.
+
+    - 'lines' → solo Nivel 1 (tabla con bordes).
+    - 'word_cluster' → solo Nivel 2 (clustering de palabras).
+    - 'none' → saltar directo a Nivel 4.
+    - sin clave / autodetección → Nivel 1 y luego Nivel 2.
+    """
+    if column_profile is not None:
+        strategy = column_profile.get("pdf_table_strategy")
+        if strategy == "none":
+            return []
+        if strategy == "lines":
+            return ["lines"]
+        if strategy == "word_cluster":
+            return ["word_cluster"]
+        return ["lines", "word_cluster"]
+    return ["lines", "word_cluster"]
+
+
+def _select_pdf_profile_mapping(rows, column_profile):
+    """Igual que _select_profile_and_mapping pero sin lanzar: retorna
+    (profile, header_idx, mapping) o (None, None, None)."""
+    if column_profile is not None:
+        header_idx = _find_header_row(rows, column_profile["column_aliases"])
+        if header_idx is None:
+            return None, None, None
+        mapping = build_column_mapping(rows[header_idx], column_profile["column_aliases"])
+        return column_profile, header_idx, mapping
+
+    best = None
+    for profile in DEFAULT_PROFILES:
+        header_idx = _find_header_row(rows, profile["column_aliases"])
+        if header_idx is None:
+            continue
+        mapping = build_column_mapping(rows[header_idx], profile["column_aliases"])
+        detected = detect_profile(rows[header_idx], rows[header_idx + 1:header_idx + 8], [profile])
+        if detected is not None:
+            return profile, header_idx, mapping
+        if best is None or len(mapping) > len(best[2]):
+            best = (profile, header_idx, mapping)
+    if best is None:
+        return None, None, None
+    return best
+
+
+def _resolve_pdf_detail(file_bytes, filename, column_profile, header, text):
+    """Cascada de 4 niveles para extraer detalle + total_volume_m3 de un PDF.
+
+    Nivel 1 (tabla con bordes) → Nivel 2 (clustering de palabras) → Nivel 3
+    (suma de volúmenes de las líneas, derivado de 1/2) → Nivel 4 (regex de
+    cabecera). Se detiene en el primer nivel que produce líneas con volumen.
+
+    Nunca lanza DocumentExtractionError por no encontrar tabla: degrada de
+    nivel y deja auditoría explícita en ``warnings`` (P5). Retorna
+    (lines, warnings, total_volume_m3, detected_profile_code).
+    """
+    warnings = []
+    lines = []
+    profile_code = None
+
+    strategies = _resolve_pdf_table_strategies(column_profile)
+
+    rows = None
+    level_used = None
+    for strategy in strategies:
+        if strategy == "lines":
+            candidate = _extract_pdf_table_bordered(file_bytes, filename)
+        else:
+            candidate = _extract_pdf_table_word_cluster(file_bytes, filename)
+        if candidate is not None:
+            rows = candidate
+            level_used = 1 if strategy == "lines" else 2
+            break
+
+    detail_total = None
+    if rows is not None:
+        profile, header_idx, mapping = _select_pdf_profile_mapping(rows, column_profile)
+        if profile is not None:
+            profile_code = profile.get("code")
+            lines, build_warnings = _build_lines(rows, header_idx, mapping, profile)
+            warnings.extend(build_warnings)
+            volumes = [l.get("volume_m3") for l in lines if l.get("volume_m3") is not None]
+            if volumes:
+                detail_total = round(sum(volumes), 3)
+                level_label = (
+                    "Nivel 1 (tabla con bordes)" if level_used == 1
+                    else "Nivel 2 (tabla sin bordes, clustering de palabras)"
+                )
+                warnings.append(
+                    f"'total_volume_m3' resuelto vía {level_label}, {len(lines)} líneas; "
+                    f"no se usó fallback."
+                )
+            else:
+                warnings.append(
+                    f"Se detectó una tabla PDF ({'Nivel %d' % level_used}) pero sin volúmenes; "
+                    f"se usará el regex de cabecera."
+                )
+        else:
+            warnings.append(
+                "Se detectó una tabla PDF pero sin cabecera reconocible; "
+                "se usará el regex de cabecera."
+            )
+
+    regex_total = header.get("total_volume_m3")
+
+    if detail_total is not None:
+        # Priorizar siempre la suma de líneas de detalle sobre el regex.
+        if regex_total is not None:
+            diff = round(abs(detail_total - regex_total), 3)
+            if diff > 0.001:
+                warnings.append(
+                    f"Discrepancia: suma de líneas = {detail_total} m3 vs. regex de cabecera = "
+                    f"{regex_total} m3 (diferencia {diff} m3, tolerancia superada)"
+                )
+        return lines, warnings, detail_total, profile_code
+
+    if regex_total is not None:
+        warnings.append(
+            "'total_volume_m3' resuelto vía Nivel 4 (regex de cabecera); "
+            "no se detectó tabla de detalle."
+        )
+        return lines, warnings, regex_total, profile_code
+
+    return lines, warnings, None, profile_code
+
+
 def _extract_pdf(file_bytes, filename, column_profile):
     text = _extract_pdf_text(file_bytes, filename)
     header = _extract_pdf_header(text)
     warnings = []
+
+    lines, detail_warnings, total_volume, profile_code = _resolve_pdf_detail(
+        file_bytes, filename, column_profile, header, text)
+    warnings.extend(detail_warnings)
+
+    if total_volume is not None:
+        header["total_volume_m3"] = total_volume
+
     if not header.get("guide_number"):
         warnings.append(
             "PDF sin folio de guía reconocible: no se pudo extraer 'guide_number'."
         )
+
     return DocumentExtractionResult(
         header=header,
-        lines=[],
+        lines=lines,
         warnings=warnings,
-        detected_profile_code=None,
+        detected_profile_code=profile_code,
         sheet_name_used=None,
     )
 

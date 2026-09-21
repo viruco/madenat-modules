@@ -33,27 +33,27 @@ Si un tema ya quedó evidenciado, debe vivir en `03_TESTS.md`.
 
 ## FRENTE PRINCIPAL — AD-65: Recepción a Granel + Balance de Masa + Consolidación Administrativa
 
-**Estado:** Diseño aprobado (2026-09-12). Prerequisito AD-64 con diseño ya auditado y aprobado (2026-09-20), pendiente de implementación de código.
+**Estado:** Diseño aprobado (2026-09-12). Prerequisito AD-64 implementado y validado como AD-66 (13/13 tests). Tercera derivación implementada como parte de AD-68/AD-69 (test de integración granel→service con descuento de volumen verificado). AD-65 queda sin prerequisitos pendientes; resta únicamente la sección "Tareas de implementación de AD-65".
 
 ### Prerequisito AD-64 — diseño aprobado, con 3 ajustes obligatorios antes de codificar
 
-- [ ] Implementar modelo nuevo `madenat.guia.processing.source.lot.line` (`guia_processing_id` M2O cascade, `lot_id` M2O `stock.lot` required, `qty_to_consume` Float `digits=(16,3)` required), expuesto como `source_lot_line_ids` (One2many) en `madenat.guia.processing`, junto al `source_lot_ids` (M2M) existente sin reemplazarlo.
-- [ ] Ajuste 1 — Validación de rango: exigir `0 < qty_to_consume <= lot.volumen_m3` en la nueva rama de `_get_or_create_consumption_picking()`.
-- [ ] Ajuste 2 — Documentar la doble fuente de verdad como transitoria: `source_lot_ids` (M2M, legacy/fallback) y `source_lot_line_ids` (O2M, vía nueva) coexisten deliberadamente, preservando compatibilidad con `madenat_toll_processing` y con `TestGuiaProcessingConsumptionBT04`.
-- [ ] Ajuste 3 — No confundir volumen con costeo: este diseño resuelve el consumo parcial a nivel de stock, pero el prorrateo de `wood_cost_usd`/`total_cost_usd` sigue siendo brecha separada (diferida a Costeo por AD-65 §1.9).
-- [ ] Modificar `_get_or_create_consumption_picking()` (`madenat_guia_processing.py:3852`) con rama condicional: `source_lot_line_ids` con datos → usar `qty_to_consume` por línea; vacío → fallback a `qty = lot.volumen_m3`.
-- [ ] No modificar `_reverse_consumption_picking()` ni `action_force_cancel()` — ambos ya leen `qty = move.quantity or move.product_uom_qty` (líneas ~4026 y ~4313), agnósticos a consumo parcial.
-- [ ] Agregar ACL para el nuevo modelo en `madenat_lumber_core/security/ir.model.access.csv`.
-- [ ] Agregar tests nuevos en `test_guia_processing.py` (clase separada, sin tocar `TestGuiaProcessingConsumptionBT04`): consumo parcial por línea, bloqueo por `qty > volumen_m3`, fallback sin líneas.
-- [ ] Verificar que `madenat_toll_processing/models/guia_processing_integration.py:37-40` sigue funcionando con el fallback (solo verificación, sin modificación en esta etapa).
+- [x] Implementar modelo nuevo `madenat.guia.processing.source.lot.line` (`guia_processing_id` M2O cascade, `lot_id` M2O `stock.lot` required, `qty_to_consume` Float `digits=(16,3)` required), expuesto como `source_lot_line_ids` (One2many) en `madenat.guia.processing`, junto al `source_lot_ids` (M2M) existente sin reemplazarlo.
+- [x] Ajuste 1 — Validación de rango: exigir `0 < qty_to_consume <= lot.volumen_m3` en la nueva rama de `_get_or_create_consumption_picking()`.
+- [x] Ajuste 2 — Documentar la doble fuente de verdad como transitoria: `source_lot_ids` (M2M, legacy/fallback) y `source_lot_line_ids` (O2M, vía nueva) coexisten deliberadamente, preservando compatibilidad con `madenat_toll_processing` y con `TestGuiaProcessingConsumptionBT04`.
+- [x] Ajuste 3 — No confundir volumen con costeo: este diseño resuelve el consumo parcial a nivel de stock, pero el prorrateo de `wood_cost_usd`/`total_cost_usd` sigue siendo brecha separada (diferida a Costeo por AD-65 §1.9).
+- [x] Modificar `_get_or_create_consumption_picking()` (`madenat_guia_processing.py:3852`) con rama condicional: `source_lot_line_ids` con datos → usar `qty_to_consume` por línea; vacío → fallback a `qty = lot.volumen_m3`.
+- [x] No modificar `_reverse_consumption_picking()` ni `action_force_cancel()` — ambos ya leen `qty = move.quantity or move.product_uom_qty` (líneas ~4026 y ~4313), agnósticos a consumo parcial.
+- [x] Agregar ACL para el nuevo modelo en `madenat_lumber_core/security/ir.model.access.csv`.
+- [x] Agregar tests nuevos en `test_guia_processing.py` (clase separada, sin tocar `TestGuiaProcessingConsumptionBT04`): consumo parcial por línea, bloqueo por `qty > volumen_m3`, fallback sin líneas.
+- [x] Verificar que `madenat_toll_processing/models/guia_processing_integration.py:37-40` sigue funcionando con el fallback (solo verificación, sin modificación en esta etapa).
 
 ### Prerequisito adicional detectado — tercera derivación en intake
 
-- [ ] Diseñar (no implementar todavía) una tercera derivación en `intake_wizard.py` para el flujo de recepción a granel que NO fije `intake_direct_stock=True`, permitiendo que la guía resultante pueble `source_lot_line_ids` para envío parcial a proceso vía Balance de Masa.
+- [x] Diseñar (no implementar todavía) una tercera derivación en `intake_wizard.py` para el flujo de recepción a granel que NO fije `intake_direct_stock=True`, permitiendo que la guía resultante pueble `source_lot_line_ids` para envío parcial a proceso vía Balance de Masa. (Implementado en `_route_granel`, AD-68/AD-69: `intake_direct_stock=False` + test de integración granel→service.)
 
 ### Tareas de implementación de AD-65 (una vez resuelto el prerequisito AD-64)
 
-- [ ] Extender `madenat_ingestion_engine` con el motor de "mejor esfuerzo" en cascada: tabla PDF de columnas fijas configurables → subtotales por grupo → total de encabezado mínimo garantizado.
+- [x] Extender `madenat_ingestion_engine` con el motor de "mejor esfuerzo" en cascada: tabla PDF de columnas fijas configurables → subtotales por grupo → total de encabezado mínimo garantizado. (Implementado como AD-71, 2026-09-21: cascada de 4 niveles — tabla con bordes → clustering de palabras → suma de líneas → regex de cabecera. 49/49 tests verdes.)
 - [ ] Implementar selección manual de tipo de detalle (línea por línea vs. agregado) en el wizard de intake.
 - [ ] Implementar wizard `intake.tipo_ingreso.reclassify.wizard` con registro en `madenat.audit_log`, disponible solo antes de Gate 3.
 - [ ] Implementar registro de "Patio" como `stock.location` nativo bajo demanda (sin modelo propio).
