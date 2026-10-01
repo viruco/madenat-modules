@@ -65,3 +65,24 @@ class TestBillingConsolidation(TransactionCase):
                 active_ids=[shipment_draft.id],
                 active_id=shipment_draft.id,
             ).run()
+
+    def test_04_puede_recrear_tras_cancelar(self):
+        """Tras cancelar la consolidación activa, se puede crear otra."""
+        first = self.Consolidation.create({
+            'shipment_id': self.shipment.id,
+            'state': 'draft',
+        })
+        first.write({'state': 'cancelled'})
+
+        second = self.Consolidation.create({
+            'shipment_id': self.shipment.id,
+            'state': 'draft',
+        })
+        self.assertTrue(second.exists())
+
+        # Una tercera activa sigue bloqueada (índice único parcial + guarda).
+        with self.assertRaises(Exception):
+            self.Consolidation.create({
+                'shipment_id': self.shipment.id,
+                'state': 'draft',
+            })

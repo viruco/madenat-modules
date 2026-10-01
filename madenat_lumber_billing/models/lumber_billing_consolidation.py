@@ -473,10 +473,45 @@ class LumberBillingConsolidation(models.Model):
     # ============================================================================
     # CRUD METHODS
     # ============================================================================
-    
+
+    def init(self):
+        """Índice único PARCIAL: una sola consolidación ACTIVA por embarque.
+
+        El índice es parcial (`WHERE state <> 'cancelled'`) para permitir
+        recrear la consolidación tras cancelar la anterior. Odoo 18: se usa
+        `CREATE UNIQUE INDEX IF NOT EXISTS` para que sea idempotente en cada
+        actualización del módulo.
+        """
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                lumber_billing_consolidation_shipment_active_uniq
+            ON lumber_billing_consolidation (shipment_id)
+            WHERE state <> 'cancelled'
+        """)
+
     @api.model_create_multi
     def create(self, vals_list):
-            """Genera número de secuencia al crear."""
+            """Genera número de secuencia al crear y evita duplicados activos.
+
+            Guarda legible (UserError) ANTES de escribir: una consolidación
+            no cancelada por embarque. El índice único parcial es la última
+            línea de defensa (concurrencia / importaciones).
+            """
+            for vals in vals_list:
+                shipment_id = vals.get('shipment_id')
+                state = vals.get('state') or 'draft'
+                if shipment_id and state != 'cancelled':
+                    existing = self.search([
+                        ('shipment_id', '=', shipment_id),
+                        ('state', '!=', 'cancelled'),
+                    ], limit=1)
+                    if existing:
+                        raise UserError(_(
+                            "Ya existe una consolidación activa (%s) para el "
+                            "embarque %s.\n"
+                            "Cancele la existente antes de crear una nueva "
+                            "consolidación para este embarque."
+                        ) % (existing.name, existing.shipment_id.display_name))
             for vals in vals_list:
                 if vals.get('name', _('Nuevo')) == _('Nuevo'):
                     vals['name'] = self.env['ir.sequence'].next_by_code(
