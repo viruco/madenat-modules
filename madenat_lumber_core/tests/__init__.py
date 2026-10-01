@@ -9,3 +9,21 @@ from . import test_subproducto_contract
 from . import test_reception_supplier_rut_extraction
 from . import test_volumen_restante
 from . import test_granel_route
+from . import test_parse_excel_core
+from . import test_excel_table_detection
+from . import test_volume_guide_header
+
+# 🏷️ Programa SV — gestión operativa de etiquetas SV.
+from . import test_sv_operation_ledger
+from . import test_sv_rename
+from . import test_sv_volume_regularization
+from . import test_sv_rebaja
+from . import test_sv_reversal_lot_specific
+from . import test_sv_escalation_security
+# 🔐 Endurecimiento Fase 2.1: anti-bypass y concurrencia real.
+from . import test_sv_rpc_bypass
+from . import test_sv_concurrency
+# 🏷️ Fase 2 (AD-80): reversa SV visible en la UI (ledger + formulario Guía).
+from . import test_sv_reverse_ui
+# 🧪 Modo A autoservicio sin `--test-enable` (vía ir.config_parameter).
+from . import test_sv_dev_cleanup_param

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- F3.1 — Identidad operativa de los Lotes Volumen (Ingreso por Volúmenes).
+             Etiqueta global SV + 11 dígitos: SV00000000001, SV00000000002, ...
+             Secuencia única por compañía (company_id = False) y sin rango de
+             fechas: la etiqueta es un identificador permanente, no un
+             correlativo periódico. Mismo convenio que
+             madenat_toll_processing/data/sequences.xml. -->
+        <record id="seq_madenat_volume_lot" model="ir.sequence">
+            <field name="name">Lote Volumen (SV)</field>
+            <field name="code">madenat.volume.lot</field>
+            <field name="prefix">SV</field>
+            <field name="padding">11</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="use_date_range" eval="False"/>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

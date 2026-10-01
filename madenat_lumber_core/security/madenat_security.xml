@@ -104,6 +104,18 @@
         </record>
 
         <!-- ========================================================= -->
+        <!-- GRUPO FUNCIONAL: AUDITORÍA (Programa SV)                  -->
+        <!-- Perfil funcional real de auditoría documental/trazabilidad. -->
+        <!-- NO reutiliza Auditoría de Costos ni grupos huérfanos.      -->
+        <!-- ========================================================= -->
+        <record id="group_madenat_auditoria" model="res.groups">
+            <field name="name">Auditoría</field>
+            <field name="category_id" ref="module_category_madenat"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Auditoría documental y de trazabilidad MADENAT: aprueba aumentos de baseline documental y excepciones de trazabilidad de etiquetas SV.</field>
+        </record>
+
+        <!-- ========================================================= -->
         <!-- GRUPO TÉCNICO OPCIONAL: AUDITORÍA COSTO / SEGURIDAD       -->
         <!-- ========================================================= -->
         <record id="group_madenat_cost_auditor_plus" model="res.groups">

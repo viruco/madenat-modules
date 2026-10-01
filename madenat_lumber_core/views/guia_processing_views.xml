@@ -352,6 +352,41 @@
                         </group>
                     </group>
 
+
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- 📄 EVIDENCIA DOCUMENTAL (PDF / Packing / Líneas)        -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <group string="📄 Evidencia documental" class="mt-3">
+                        <group>
+                            <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)"
+                                   readonly="1" digits="[16, 3]"
+                                   help="Volumen declarado en la guía/PDF. 0,000 = no disponible."/>
+                            <field name="packing_volume_declared_m3" string="Vol. Packing (m³)"
+                                   readonly="1" digits="[16, 3]"
+                                   help="Total de volumen declarado en el Packing. 0,000 = no disponible."/>
+                            <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)"
+                                   readonly="1" digits="[16, 3]"
+                                   help="Suma del volumen documental por línea del Packing."/>
+                        </group>
+                        <group>
+                            <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)"
+                                   readonly="1" digits="[16, 3]"
+                                   help="0,000 = alguna fuente documental no disponible."/>
+                            <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)"
+                                   readonly="1" digits="[16, 3]"
+                                   help="0,000 = alguna fuente documental no disponible."/>
+                            <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
+                            <field name="packing_package_count_declared" string="Paquetes Packing" readonly="1"/>
+                            <field name="documental_conciliation_state"
+                                   widget="badge"
+                                   readonly="1"
+                                   decoration-success="documental_conciliation_state == 'consistent'"
+                                   decoration-warning="documental_conciliation_state == 'partial'"
+                                   decoration-danger="documental_conciliation_state == 'difference'"
+                                   decoration-muted="documental_conciliation_state == 'not_available'"/>
+                        </group>
+                    </group>
+
                     <!-- ═══════════════════════════════════════════════════════ -->
                     <!-- SECCIÓN INDEPENDIENTE: Detalle del Servicio (del PDF)  -->
                     <!-- Solo visible cuando se procesa un PDF con datos         -->
@@ -517,6 +552,11 @@
                                         <field name="largo_m" string="Largo (m) Real" class="text-center" width="90px"/>
 
                                         <field name="pieces" sum="Total Piezas" string="Piezas" class="text-end" width="90px"/>
+
+                                        <field name="vol_documental_m3" sum="Total Documental"
+                                               string="Vol. Documental (m³)"
+                                               class="text-end" width="120px" readonly="1" digits="[16, 3]"/>
+                                        <field name="raw_dims" string="Dimensiones (origen)" class="text-muted" width="140px" readonly="1"/>
 
                                         <field name="vol_physical_m3" sum="Total m³ Físico" string="Vol. Físico (m³)"
                                                decoration-bf="1" class="text-end" width="120px" readonly="1" digits="[16, 3]"/>

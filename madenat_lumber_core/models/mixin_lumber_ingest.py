@@ -311,6 +311,14 @@ class LumberIngestLineMixin(models.AbstractModel):
     vol_purchase_m3 = fields.Float('Vol. Nominal (Compra)', digits=(16, 3), 
                                    help="Volumen Comercial Pagado (Costeo)")
     
+    vol_documental_m3 = fields.Float(
+        'Volumen documental (m³)',
+        digits=(16, 3),
+        help='Volumen declarado por línea en el Packing de origen. '
+             'Evidencia documental: no es volumen geométrico, nominal, de '
+             'embarque ni operativo.'
+    )
+
     pieces = fields.Integer('Piezas')
     
     # Trazabilidad de origen

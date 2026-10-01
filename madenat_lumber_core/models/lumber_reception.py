@@ -1231,6 +1231,18 @@ class LumberReception(models.Model):
         help="Volumen según packing list recibido (medición física)"
     )
 
+    # --- TOTALES DECLARADOS DE PACKING (evidencia documental, no operativo) ---
+    packing_volume_declared_m3 = fields.Float(
+        digits=(16, 3),
+        string='Vol. Packing declarado (m³)',
+        help='Total de volumen declarado en el Packing Excel de origen.')
+    packing_pieces_declared = fields.Integer(
+        string='Piezas Packing declaradas',
+        help='Total de piezas declarado en el Packing Excel de origen.')
+    packing_package_count_declared = fields.Integer(
+        string='Paquetes Packing declarados',
+        help='Total de paquetes declarado en el Packing Excel de origen.')
+
     physical_volume_mbf = fields.Float(
         digits=(16, 3), 
         string='Volumen Físico MBF',
@@ -2086,6 +2098,7 @@ class LumberReception(models.Model):
                 # 💎 REALIDADES VOLUMÉTRICAS
                 'vol_shipment_m3': vol_detectado, 
                 'vol_purchase_m3': vol_detectado, 
+                'vol_documental_m3': vol_detectado,
                 
                 # 🪞 CAPA ESPEJO (UI)
                 # FIX v5.5: Comentamos la inyección directa del Parser. 
@@ -2299,10 +2312,23 @@ class LumberReception(models.Model):
                     "⚠️ No se detectó referencia de OC en el PDF.\n"
                     "Por favor, complete el campo 'OC Manual' para continuar el procesamiento."
                 )
-            if not supplier_rut:
-                raise UserError(
-                    "⚠️ No se detectó RUT del proveedor en el PDF.\n"
-                    "Debe seleccionar o crear el Proveedor manualmente antes de procesar."
+
+            # 🏢 2.b PROVEEDOR — RESOLUCIÓN DIFERIDA Y NO BLOQUEANTE (T1)
+            # Política MADENAT §2.1/§2.4: la captura documental no se bloquea por
+            # un RUT ausente en el PDF. Sin RUT NO se busca por VAT vacío/Falsy
+            # (evitaría casar partners con VAT nulo), NO se asocia proveedor
+            # arbitrario y NO se crea proveedor: la resolución se difiere al
+            # usuario y la exigencia definitiva queda en el envío irreversible a
+            # stock. Si el usuario ya seleccionó supplier_id, se respeta.
+            supplier = self.env['res.partner']
+            if supplier_rut:
+                supplier = self.env['res.partner'].search(
+                    [('vat', '=', supplier_rut)], limit=1)
+            elif self.supplier_id:
+                supplier = self.supplier_id
+                self._add_log(
+                    f"🏢 Proveedor seleccionado manualmente: {supplier.name} "
+                    f"(el PDF no informó RUT)."
                 )
 
             # ✂️ 3. RIGOR TÉCNICO: LIMPIEZA DEL NOMBRE DEL PROVEEDOR
@@ -2315,15 +2341,16 @@ class LumberReception(models.Model):
             detected_name = re.sub(r'[:\-\s\.,]+$', '', detected_name).strip()
 
             # 🛡️ 4. GESTIÓN DE PROVEEDOR (PARTNER)
-            supplier = self.env['res.partner'].search([('vat', '=', supplier_rut)], limit=1)
-            
-            if supplier:
+            # La curación de nombre aplica solo al proveedor resuelto por RUT. La
+            # creación automática exige RUT documental: sin RUT no se inventa una
+            # identidad fiscal ni se duplica un proveedor existente.
+            if supplier and supplier_rut:
                 # Auditoría de Calidad: Si el nombre en BD es genérico o tiene el RUT pegado, lo curamos.
                 is_generic = any(x in supplier.name for x in ["Proveedor", supplier_rut])
                 if is_generic and detected_name and len(detected_name) > 2:
                     supplier.write({'name': detected_name[:128]})
                     self._add_log(f"🔄 Datos Maestros: Nombre actualizado a '{detected_name}' (VAT preservado)")
-            else:
+            elif not supplier and supplier_rut:
                 # Creación profesional: RUT limpio en VAT y Nombre limpio en Name.
                 name_to_use = detected_name or f"Proveedor {supplier_rut}"
                 supplier = self.env['res.partner'].create({
@@ -2335,16 +2362,20 @@ class LumberReception(models.Model):
                 self._add_log(f"📝 Nuevo proveedor registrado en BD: {supplier.name}")
 
             # 🔎 5. BÚSQUEDA DE OC (CASO 1: EXISTENTE EN SISTEMA)
-            candidate_pos = self.env['purchase.order'].search([
-                ('partner_id', '=', supplier.id),
-                ('state', 'in', ['draft', 'sent', 'to approve', 'purchase', 'done'])
-            ])
+            # Sin proveedor identificable no existe dominio posible: se resuelve
+            # por el fallback manual no bloqueante (T1).
+            po = self.env['purchase.order']
+            if supplier:
+                candidate_pos = self.env['purchase.order'].search([
+                    ('partner_id', '=', supplier.id),
+                    ('state', 'in', ['draft', 'sent', 'to approve', 'purchase', 'done'])
+                ])
 
-            # Match tolerante por clave (compara contra nombre Odoo y referencia proveedor)
-            po = candidate_pos.filtered(
-                lambda p: parser.normalize_po_key(p.partner_ref or '') == po_key
-                    or parser.normalize_po_key(p.name or '') == po_key
-            )[:1]
+                # Match tolerante por clave (compara contra nombre Odoo y referencia proveedor)
+                po = candidate_pos.filtered(
+                    lambda p: parser.normalize_po_key(p.partner_ref or '') == po_key
+                        or parser.normalize_po_key(p.name or '') == po_key
+                )[:1]
 
             if po:
                 self._add_log(f"✅ OC ENCONTRADA: {po.name} vinculada exitosamente.")
@@ -2385,22 +2416,36 @@ class LumberReception(models.Model):
             # ⚠️ 6. GESTIÓN DE OC (FALLBACK MANUAL / NO BLOQUEANTE)
             self._add_log(f"⚠️ OC '{po_ref}' sin coincidencia → Modo Referencia Manual habilitado.")
             
-            # Guardamos la intención del PDF en manual_po_name para guiar al usuario
-            self.write({
+            # Guardamos la intención del PDF en manual_po_name para guiar al usuario.
+            # El supplier_id elegido por el usuario NUNCA se sobrescribe (ni con False).
+            write_vals = {
                 'state': 'processing',
                 'purchase_id': False,
                 'manual_po_name': po_ref,
-                'supplier_id': supplier.id,
                 'oc_match_status': 'not_found',
-                'oc_match_note': f'OC {po_ref} no encontrada. Vincular manualmente o crear con supervisión.',
-            })
+                'oc_match_note': (
+                    f'OC {po_ref} no encontrada. Vincular manualmente o crear '
+                    f'con supervisión.'
+                ) if supplier else (
+                    f'OC {po_ref} no encontrada y proveedor PENDIENTE DE ASIGNACIÓN '
+                    f'MANUAL: el PDF no informó RUT y no se creó ningún proveedor.'
+                ),
+            }
+            if supplier:
+                write_vals['supplier_id'] = supplier.id
+            self.write(write_vals)
             
             # Notificación en Chatter para auditoría futura
+            proveedor_txt = (
+                f"{supplier.name} (RUT: {supplier_rut or 'sin RUT documental'})"
+                if supplier else
+                "<b>PENDIENTE DE ASIGNACIÓN MANUAL</b> (el PDF no informó RUT)"
+            )
             self.message_post(
                 body=(
                     f"🔎 <b>Información de Ingesta OCR:</b><br/>"
                     f"Referencia detectada: <b>{po_ref}</b><br/>"
-                    f"Proveedor: {supplier.name} (RUT: {supplier_rut})<br/><br/>"
+                    f"Proveedor: {proveedor_txt}<br/><br/>"
                     f"<i>Aviso: La Orden de Compra no existe en Odoo. El sistema ha activado el flujo manual "
                     f"para que el usuario realice la vinculación definitiva antes de validar.</i>"
                 )
@@ -2738,6 +2783,16 @@ class LumberReception(models.Model):
         else:
             raise UserError("No se leyeron datos.")
 
+
+    def _documentary_pending_lines(self):
+        """Líneas de staging con evidencia documental (vol_documental_m3 > 0 y
+        piezas > 0) pero sin geometría física separada válida. No se promueven
+        a lote/stock."""
+        return self.reception_line_ids.filtered(
+            lambda l: l.vol_documental_m3 > 0 and l.pieces > 0
+            and (l.thickness <= 0 or l.width <= 0 or l.length <= 0)
+        )
+
     def action_confirm_reception(self):
 
             """
@@ -2774,6 +2829,28 @@ class LumberReception(models.Model):
                 )
 
             # 🛡️ GATE GB-1: Validación pre-Gate 3 — staging completo (CANON/14, C17)
+            # Separación documental/operativa. El método de creación de lotes de
+            # recepción (reception_service) no filtra líneas por geometría, por lo
+            # que ante evidencia documental pendiente se BLOQUEA la promoción
+            # completa: ninguna línea documental llega a stock.
+            documentales = self._documentary_pending_lines()
+            if documentales:
+                self.env['madenat.audit.log'].sudo().create({
+                    'reception_id': self.id,
+                    'action_type': 'omission',
+                    'description': (
+                        "GB-1 rechazado: %d línea(s) documental(es) sin dimensiones "
+                        "físicas separadas." % len(documentales)),
+                    'user_id': self.env.user.id,
+                })
+                raise UserError(
+                    "🛑 LÍNEAS DOCUMENTALES PENDIENTES\n\n"
+                    "%d línea(s) tienen evidencia documental pero no tienen "
+                    "Espesor/Ancho/Largo separados.\n\n"
+                    "Estas líneas no pueden crear lotes ni stock. Complete las "
+                    "dimensiones físicas separadas para continuar la promoción."
+                    % len(documentales)
+                )
             incomplete = self.reception_line_ids.filtered(
                 lambda l: not l.product_id or not l.subproduct_id
                 or not l.thickness_nominal or not l.width_nominal
@@ -2795,6 +2872,32 @@ class LumberReception(models.Model):
                     "4. Verifique que todos los nominales estén en verde\n"
                     "5. Vuelva a intentar 'Validar Recepción'"
                     % len(incomplete)
+                )
+
+            # 🛡️ GATE GB-1 (T1) — PROVEEDOR IDENTIFICABLE OBLIGATORIO
+            # La captura documental puede diferir el proveedor (política §2.1),
+            # pero el envío irreversible a stock exige un proveedor identificable:
+            # de él dependen el partner de los lotes, el picking y la
+            # valorización. Bloquea AQUÍ, antes de Gate 3, de los lotes, de
+            # stock.lot, del picking, de los movimientos y de cualquier quant.
+            if not self.supplier_id:
+                self.env['madenat.audit.log'].sudo().create({
+                    'reception_id': self.id,
+                    'action_type': 'omission',
+                    'description': (
+                        "GB-1 rechazado: proveedor no identificable antes de la "
+                        "creación de stock (lotes/picking)."
+                    ),
+                    'user_id': self.env.user.id,
+                })
+                raise UserError(
+                    "🛑 PROVEEDOR NO IDENTIFICADO\n\n"
+                    "No es posible enviar a stock sin un proveedor identificable.\n"
+                    "El documento no aportó el RUT y no hay proveedor seleccionado.\n\n"
+                    "🔧 ACCIÓN REQUERIDA:\n"
+                    "1. Revise la pestaña 'Información General'.\n"
+                    "2. Seleccione el Proveedor existente o créelo con su RUT.\n"
+                    "3. Vuelva a intentar 'Validar Recepción'."
                 )
 
             self.env['madenat.audit.log'].sudo().create({

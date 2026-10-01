@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══ asistentes de Etiquetas SV (Programa SV) ═══ -->
+
+    <record id="view_madenat_sv_rename_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.sv.rename.wizard.form</field>
+        <field name="model">madenat.sv.rename.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Modificar etiqueta SV">
+                <group>
+                    <field name="lot_id" options="{'no_open': True}"/>
+                    <field name="guia_processing_id"/>
+                    <field name="current_label"/>
+                    <field name="sv_available_m3"/>
+                </group>
+                <group string="Nueva etiqueta">
+                    <field name="new_label" placeholder="SV00000000008"/>
+                </group>
+                <div class="alert alert-info" role="alert">
+                    La etiqueta anterior queda registrada como alias histórico y
+                    no podrá reutilizarse. No se modifica volumen, piezas,
+                    producto, guía, movimientos, costos ni consolidación.
+                </div>
+                <field name="reason" placeholder="Motivo de la modificación"/>
+                <footer>
+                    <button name="action_submit" string="Aplicar"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_volume_regularize_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.sv.volume.regularize.wizard.form</field>
+        <field name="model">madenat.sv.volume.regularize.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Regularizar volumen de etiqueta SV">
+                <group>
+                    <field name="lot_id" options="{'no_open': True}"/>
+                    <field name="guia_processing_id"/>
+                </group>
+                <group string="Situación actual">
+                    <field name="current_baseline_m3"/>
+                    <field name="current_rebajado_m3"/>
+                    <field name="current_available_m3"/>
+                    <field name="documentary_volume_m3"/>
+                    <field name="documentary_warning" invisible="1"/>
+                </group>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not documentary_warning">
+                    El volumen oficial de la Guía difiere del volumen original
+                    del lote. La regularización documental no altera el
+                    inventario físico.
+                </div>
+                <group string="Regularización">
+                    <field name="new_volume_m3"/>
+                    <field name="difference_m3"/>
+                    <field name="requires_auditoria" invisible="1"/>
+                    <field name="requires_contabilidad" invisible="1"/>
+                </group>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not (requires_auditoria or requires_contabilidad)">
+                    Esta regularización aumenta el baseline documental o tiene
+                    impacto financiero: requiere aprobación de Auditoría y/o
+                    Contabilidad.
+                </div>
+                <group>
+                    <field name="evidence_attachment_id"/>
+                    <field name="evidence_reference"/>
+                </group>
+                <field name="reason" placeholder="Motivo y respaldo documental"/>
+                <footer>
+                    <button name="action_submit" string="Aplicar"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_rebaja_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.sv.rebaja.wizard.form</field>
+        <field name="model">madenat.sv.rebaja.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rebajar etiqueta SV">
+                <group>
+                    <field name="lot_id" options="{'no_open': True}"/>
+                    <field name="guia_processing_id"/>
+                    <field name="current_label"/>
+                    <field name="available_volume_m3"/>
+                    <field name="pieces_enabled" invisible="1"/>
+                    <field name="available_pieces"
+                           invisible="not pieces_enabled"/>
+                </group>
+                <group string="Rebaja">
+                    <field name="rebaja_volume_m3"/>
+                    <field name="rebaja_pieces" invisible="not pieces_enabled"/>
+                </group>
+                <div class="alert alert-info" role="alert">
+                    La rebaja consume saldo disponible sin modificar el volumen
+                    original ni el baseline documental.
+                </div>
+                <group>
+                    <field name="destination_reference"/>
+                </group>
+                <field name="reason" placeholder="Motivo de la rebaja"/>
+                <footer>
+                    <button name="action_submit" string="Aplicar"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_rebaja_reverse_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.sv.rebaja.reverse.wizard.form</field>
+        <field name="model">madenat.sv.rebaja.reverse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reversar rebaja de etiqueta SV">
+                <group>
+                    <field name="origin_operation_id" options="{'no_open': True}"/>
+                    <field name="lot_id"/>
+                    <field name="rebaja_volume_m3"/>
+                    <field name="rebaja_pieces"/>
+                    <field name="destination_reference"/>
+                </group>
+                <div class="alert alert-warning" role="alert">
+                    La reversa crea una operación nueva que referencia la rebaja
+                    original; la rebaja original nunca se modifica ni se elimina.
+                </div>
+                <field name="reason" placeholder="Motivo de la reversa"/>
+                <footer>
+                    <button name="action_submit" string="Reversar"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

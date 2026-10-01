@@ -8,6 +8,7 @@ GENEALOGÍA: parent_lot_id = Lote Bruto (obligatorio)
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools import float_compare
 from psycopg2.errors import IntegrityError
 import pandas as pd
 import pdfplumber
@@ -41,6 +42,11 @@ from .utils_uom import (
 # 🛡️ INTEGRACIÓN CON PIPELINE DE VALIDACIÓN (Opción C — Gates 0+1)
 # ══════════════════════════════════════════════════════════════════════════════
 from .ingestion_gate import Gate0PreUpload, Gate1DocumentReconciliation, Gate3PreCommit
+from .document_format import detect_document_format
+from .excel_table_detection import (
+    detect_excel_table,
+    detect_excel_table_across_sheets,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -605,7 +611,7 @@ class MadenatGuiaProcessing(models.Model):
     tipo_recepcion = fields.Selection([
         ('compra', 'Compra de Producto (Aserradero)'),
         ('service', 'Servicio Externo (Cepillado/Procesamiento)'),
-        ('granel', 'Recepción a Granel (Sin Desglose)')
+        ('granel', 'Recepción por Volumen')
     ], string='Tipo de Recepción', required=True, default='compra', tracking=True)
     
     state = fields.Selection([
@@ -678,6 +684,7 @@ class MadenatGuiaProcessing(models.Model):
     supplier_resolution_status = fields.Selection([
         ('resolved_vat', 'Resuelto por RUT'),
         ('resolved_name', 'Resuelto por nombre'),
+        ('resolved_manual', 'Resuelto manualmente'),
         ('auto_created', 'Creado automáticamente'),
         ('needs_manual', 'Requiere asignación manual'),
         ('multi_match', 'Múltiples coincidencias'),
@@ -813,6 +820,88 @@ class MadenatGuiaProcessing(models.Model):
     vol_total_m3 = fields.Float(string="Volumen Total m³", digits=(16, 3), compute='_compute_all_totals', store=True)
     vol_comercial_pdf = fields.Float(string="Vol. Guía PDF (m³)", digits=(16, 3))
 
+    # --- TOTALES DECLARADOS DE PACKING (evidencia documental, no operativo) ---
+    packing_volume_declared_m3 = fields.Float(
+        string='Vol. Packing declarado (m³)', digits=(16, 3),
+        help='Total de volumen declarado en el Packing Excel de origen.')
+    packing_pieces_declared = fields.Integer(
+        string='Piezas Packing declaradas',
+        help='Total de piezas declarado en el Packing Excel de origen.')
+    packing_package_count_declared = fields.Integer(
+        string='Paquetes Packing declarados',
+        help='Total de paquetes declarado en el Packing Excel de origen.')
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 🏷️ RECEPCIÓN POR VOLUMEN — CABECERA DECLARADA (tipo_recepcion='granel')
+    # ──────────────────────────────────────────────────────────────────────────
+    # Cinco campos documentales PLANOS, opcionales y editables en todos los
+    # estados, incluido 'validated'. Registran lo declarado en la Guía: son
+    # referenciales. NO se calculan, NO se concilian contra las líneas de
+    # detalle y NO bloquean la recepción. Sin compute, inverse, related,
+    # default, onchange, constraint ni lógica de escritura.
+    # ──────────────────────────────────────────────────────────────────────────
+    anchos_variables = fields.Char(
+        string='Anchos Variables (RW)',
+    )
+    largos_variables = fields.Char(
+        string='Largos Variables (RL)',
+    )
+    espesor_nominal_texto = fields.Char(
+        string='Espesor Nominal',
+    )
+    piezas_declaradas = fields.Integer(
+        string='Piezas Declaradas',
+    )
+    volumen_declarado_m3 = fields.Float(
+        string='Volumen Declarado (m³)',
+        digits=(16, 3),
+    )
+
+    # Relación de solo lectura con la ÚNICA etiqueta SV de la guía (F3.1).
+    # Solo localiza el lote por su identidad documental permanente; no lo crea,
+    # no lo escribe, no lo elimina y no participa del flujo de stock ni de la
+    # validación de la guía.
+    volume_lot_id = fields.Many2one(
+        'stock.lot',
+        string='Etiqueta SV',
+        compute='_compute_volume_lot_id',
+        readonly=True,
+    )
+
+    # --- CONCILIACIÓN DE EVIDENCIA DOCUMENTAL (solo lectura, no operativo) ---
+    sum_vol_documental_m3 = fields.Float(
+        string='Suma Vol. Documental líneas (m³)',
+        compute='_compute_sum_vol_documental_m3', store=True, digits=(16, 3),
+        help='Suma del volumen documental declarado por línea en el Packing.')
+    diff_pdf_packing_m3 = fields.Float(
+        string='Δ PDF vs Packing (m³)',
+        compute='_compute_diff_pdf_packing_m3', store=True, digits=(16, 3),
+        help='Diferencia entre el volumen declarado en PDF/Guía y el total '
+             'declarado en Packing. 0,000 cuando falta alguna fuente documental.')
+    diff_packing_lineas_m3 = fields.Float(
+        string='Δ Packing vs Líneas (m³)',
+        compute='_compute_diff_packing_lineas_m3', store=True, digits=(16, 3),
+        help='Diferencia entre el total declarado en Packing y la suma de '
+             'volúmenes documentales por línea. 0,000 cuando falta una fuente.')
+
+    documental_conciliation_state = fields.Selection(
+        [
+            ('not_available', 'Sin evidencia'),
+            ('partial', 'Parcial'),
+            ('consistent', 'Consistente'),
+            ('difference', 'Con diferencia'),
+        ],
+        string='Estado de evidencia documental',
+        compute='_compute_documental_conciliation_state',
+        store=True,
+        readonly=True,
+        help=(
+            'Estado informativo calculado a partir del volumen declarado '
+            'por PDF/guía, el total declarado del Packing y la suma de '
+            'volúmenes documentales de sus líneas.'
+        ),
+    )
+
     # --- VOLÚMENES MBF (Todos usan _compute_all_totals) ---
     vol_comercial_mbf = fields.Float(string="Vol. Comercial MBF", digits=(16, 3), compute='_compute_all_totals', store=True)
     vol_fisico_mbf = fields.Float(string="Vol. Físico MBF", digits=(16, 3), compute='_compute_all_totals', store=True)
@@ -891,6 +980,78 @@ class MadenatGuiaProcessing(models.Model):
                 rec.diff_pct = (rec.diff_m3 / rec.vol_comercial) * 100
             else:
                 rec.diff_pct = 0.0
+
+
+    @api.depends('processing_line_ids.vol_documental_m3')
+    def _compute_sum_vol_documental_m3(self):
+        """Suma el volumen documental por línea del Packing (evidencia)."""
+        for rec in self:
+            rec.sum_vol_documental_m3 = sum(
+                (line.vol_documental_m3 or 0.0)
+                for line in rec.processing_line_ids
+                if line.vol_documental_m3 and line.vol_documental_m3 > 0
+            )
+
+    @api.depends('vol_comercial_pdf', 'packing_volume_declared_m3')
+    def _compute_diff_pdf_packing_m3(self):
+        """Diferencia PDF/Guía vs Packing (solo si ambas fuentes existen)."""
+        for rec in self:
+            pdf = rec.vol_comercial_pdf or 0.0
+            packing = rec.packing_volume_declared_m3 or 0.0
+            if pdf > 0 and packing > 0:
+                rec.diff_pdf_packing_m3 = pdf - packing
+            else:
+                rec.diff_pdf_packing_m3 = 0.0
+
+    @api.depends('packing_volume_declared_m3', 'sum_vol_documental_m3')
+    def _compute_diff_packing_lineas_m3(self):
+        """Diferencia Packing vs suma de líneas documentales (solo si ambas)."""
+        for rec in self:
+            packing = rec.packing_volume_declared_m3 or 0.0
+            lineas = rec.sum_vol_documental_m3 or 0.0
+            if packing > 0 and lineas > 0:
+                rec.diff_packing_lineas_m3 = packing - lineas
+            else:
+                rec.diff_packing_lineas_m3 = 0.0
+
+
+    @api.depends(
+        'vol_comercial_pdf',
+        'packing_volume_declared_m3',
+        'sum_vol_documental_m3',
+    )
+    def _compute_documental_conciliation_state(self):
+        """Estado informativo de conciliación de evidencia documental.
+
+        Separa "coincidencia" de "evidencia ausente" usando float_compare
+        con precisión 0.001 (mismo decimal que los campos fuente). No escribe
+        en otros campos, no cambia estado de guía ni genera acciones.
+        """
+        for rec in self:
+            pdf = rec.vol_comercial_pdf or 0.0
+            packing = rec.packing_volume_declared_m3 or 0.0
+            lineas = rec.sum_vol_documental_m3 or 0.0
+
+            has_pdf = float_compare(pdf, 0.0, precision_rounding=0.001) > 0
+            has_packing = float_compare(packing, 0.0, precision_rounding=0.001) > 0
+            has_lineas = float_compare(lineas, 0.0, precision_rounding=0.001) > 0
+            available = sum([has_pdf, has_packing, has_lineas])
+
+            if available == 0:
+                state = 'not_available'
+            elif available < 3:
+                state = 'partial'
+            else:
+                consistent = (
+                    float_compare(pdf, packing, precision_rounding=0.001) == 0
+                    and float_compare(pdf, lineas, precision_rounding=0.001) == 0
+                    and float_compare(packing, lineas, precision_rounding=0.001) == 0
+                )
+                state = 'consistent' if consistent else 'difference'
+
+            rec.documental_conciliation_state = state
+
+
 
     @api.depends('processing_line_ids', 'lot_ids', 'state')
     def _compute_package_stats(self):
@@ -988,6 +1149,16 @@ class MadenatGuiaProcessing(models.Model):
             
             for item in rec.processing_line_ids:
                  
+                 # 🛡️ Separación documental/operativa: una línea con evidencia
+                 # documental (vol_documental_m3>0, piezas>0) pero sin geometría
+                 # separada NUNCA se promueve a lote/stock.
+                if (item.vol_documental_m3 > 0 and item.pieces > 0
+                        and (item.espesor_mm <= 0 or item.ancho_mm <= 0 or item.largo_m <= 0)):
+                    _logger.info(
+                        "Línea %s (guía %s) es documental pendiente: se conserva en "
+                        "staging y no se promueve a lote.", item.id, rec.name)
+                    continue
+
                  # --- A. DEFINICIÓN DE LA VERDAD (REGLA DE ORO) ---
                 # v_purchase: Es el metraje comercial (Nominal). Es lo que Odoo mueve en Stock.
                 v_purchase = item.vol_purchase_m3 
@@ -1116,12 +1287,17 @@ class MadenatGuiaProcessing(models.Model):
 
         Producto maestro: `get_default_product('bruta', ...)` (material crudo),
         NO 'procesado'. Sin desglose de piezas por espesor/ancho: una única
-        línea con el volumen total y un espesor nominal placeholder para
-        satisfacer los gates de validación nominal/subproducto.
+        línea con el volumen total.
+
+        Ingreso por Volúmenes opera con el volumen documental/operacional sin
+        dimensiones físicas separadas. No se inventan dimensiones físicas ni
+        nominales: cuando la fuente no las declara, las dimensiones físicas y
+        nominales permanecen en 0.0. El valor operacional se gestiona por la
+        ruta de Volúmenes, no por cubicación geométrica.
         """
         self.ensure_one()
         volume = float(total_volume_m3 or 0.0)
-        if volume <= 0:
+        if float_compare(volume, 0.0, precision_rounding=0.001) <= 0:
             raise UserError(
                 "⛔ El volumen agregado de la guía granel es 0 o no fue detectado. "
                 "No se puede crear la línea de resumen."
@@ -1145,7 +1321,7 @@ class MadenatGuiaProcessing(models.Model):
             'espesor_mm': 0.0,
             'ancho_mm': 0.0,
             'largo_m': 0.0,
-            'espesor_nominal_mm': 1.0,
+            'espesor_nominal_mm': 0.0,
             'ancho_nominal_mm': 0.0,
             'largo_nominal_m': 0.0,
             'technical_validation': 'approved',
@@ -1171,8 +1347,12 @@ class MadenatGuiaProcessing(models.Model):
 
         - Producto maestro: `get_default_product('bruta', ...)` (materia prima cruda).
         - Subproducto resuelto desde `product_name_original` (fallback 'GRANEL').
-        - Dimensiones físicas en 0 y nominales placeholder (el PDF granel no trae
-          dimensiones confiables — fidelidad AD-51 §4: no inventar valores).
+        - Ingreso por Volúmenes opera con el volumen documental/operacional sin
+          dimensiones físicas separadas. No se inventan dimensiones físicas ni
+          nominales: cuando la fuente no las declara, las dimensiones físicas y
+          nominales permanecen en 0.0 (fidelidad AD-51 §4: no inventar valores).
+        - El valor operacional se gestiona por la ruta de Volúmenes, no por
+          cubicación geométrica.
         - Líneas con `volume_m3` ausente o <= 0 se excluyen sin excepción (P3).
         - Si ninguna línea es creable, lanza UserError sugiriendo el modo agregado.
         """
@@ -1218,7 +1398,7 @@ class MadenatGuiaProcessing(models.Model):
                 'espesor_mm': 0.0,
                 'ancho_mm': 0.0,
                 'largo_m': 0.0,
-                'espesor_nominal_mm': 1.0,
+                'espesor_nominal_mm': 0.0,
                 'ancho_nominal_mm': 0.0,
                 'largo_nominal_m': 0.0,
                 'technical_validation': 'approved',
@@ -1316,6 +1496,19 @@ class MadenatGuiaProcessing(models.Model):
     # MÉTODOS DE BOTONES (VISTA XML)
     # ==========================================================================
 
+
+    def _documentary_pending_lines(self):
+        """Líneas de staging con evidencia documental (vol_documental_m3 > 0 y
+        piezas > 0) pero sin geometría física separada válida.
+
+        Estas líneas se conservan como evidencia documental y NUNCA se
+        promueven a lote/stock/costo/embarque/facturación.
+        """
+        return self.processing_line_ids.filtered(
+            lambda l: l.vol_documental_m3 > 0 and l.pieces > 0
+            and (l.espesor_mm <= 0 or l.ancho_mm <= 0 or l.largo_m <= 0)
+        )
+
     def action_verify_data(self):
         """
         PASO 1: CARGA Y VERIFICACIÓN (Staging)
@@ -1340,7 +1533,10 @@ class MadenatGuiaProcessing(models.Model):
 
         lines_to_create = []
         
-        for row in packing_data.get('lineas', []):
+        lineas_para_crear = list(packing_data.get('lineas', [])) + list(
+            packing_data.get('lineas_documentales', []))
+
+        for row in lineas_para_crear:
             try:
                 # Datos básicos
                 code = row.get('Codigo Interno', '')
@@ -1373,6 +1569,7 @@ class MadenatGuiaProcessing(models.Model):
                     'vol_physical_m3': vol_raw,
                     'vol_shipment_m3': vol_raw,
                     'vol_purchase_m3': vol_raw, # Inicial temporal
+                    'vol_documental_m3': row.get('vol_documental_m3', 0.0),
                     
                     'espesor_mm': row.get('Espesor', 0),
                     'ancho_mm': row.get('Ancho', 0),
@@ -1597,8 +1794,36 @@ class MadenatGuiaProcessing(models.Model):
         if not self.processing_line_ids:
             raise UserError("❌ Error: La tabla de verificación está vacía.")
 
-        # Verificar nominales de espesor
-        lines_sin_nominal = self.processing_line_ids.filtered(lambda l: l.espesor_nominal_mm <= 0)
+        # 🛡️ Separación documental/operativa: las líneas documentales pendientes
+        # (vol_documental_m3>0, piezas>0, sin geometría) NO se promueven a stock.
+        documentales = self._documentary_pending_lines()
+        elegibles = self.processing_line_ids - documentales
+        if not elegibles:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Solo evidencia documental',
+                    'message': (
+                        'No hay líneas con dimensiones físicas separadas para '
+                        'promover. Las líneas documentales se conservan en '
+                        'staging sin crear lotes ni stock. Complete '
+                        'Espesor/Ancho/Largo para continuar.'
+                    ),
+                    'type': 'warning',
+                    'sticky': True,
+                },
+            }
+
+        # Verificar nominales de espesor (solo líneas elegibles).
+        # T2 — Recepción por Volumen ('granel'): el ingreso se gobierna con el
+        # volumen oficial documental, sin cubicación geométrica ni espesor
+        # nominal real; la exigencia dimensional se acota a los flujos
+        # dimensionales (compra/service). No se inventa espesor para Volumen.
+        lines_sin_nominal = elegibles.filtered(
+            lambda l: self.tipo_recepcion != 'granel'
+            and l.espesor_nominal_mm <= 0
+        )
         if lines_sin_nominal:
             raise UserError(f"⚠️ Validación de Dimensiones Fallida: Hay {len(lines_sin_nominal)} líneas sin espesor nominal.")
 
@@ -1648,11 +1873,11 @@ class MadenatGuiaProcessing(models.Model):
             )
 
         # 3. PREPARACIÓN DE LA 'TRIPLE VERDAD' (Payload)
-        total_vol = sum(self.processing_line_ids.mapped('vol_shipment_m3'))
-        lotes_unicos = set(self.processing_line_ids.mapped('lot_name'))
+        total_vol = sum(elegibles.mapped('vol_shipment_m3'))
+        lotes_unicos = set(elegibles.mapped('lot_name'))
         lineas_maestras = []
         
-        for line in self.processing_line_ids:
+        for line in elegibles:
             lineas_maestras.append({
                 'Codigo Interno': line.sku_original,
                 'product_name': line.product_name_original,
@@ -1675,7 +1900,7 @@ class MadenatGuiaProcessing(models.Model):
             })
 
         packing_simulado = {
-            'total_paquetes': len(self.processing_line_ids),
+            'total_paquetes': len(elegibles),
             'total_volumen': total_vol,
             'total_lotes': len(lotes_unicos),
             'lineas': lineas_maestras, 
@@ -1723,9 +1948,25 @@ class MadenatGuiaProcessing(models.Model):
         # =======================================================
         # 🛡️ BLINDAJE DE INTEGRIDAD OPERATIVA (2026-06-18)
         # Bloquea el ingreso a stock cuando hay datos críticos inválidos.
+        # Las líneas documentales pendientes se excluyen de la promoción.
         # =======================================================
-        lines_sin_espesor = self.processing_line_ids.filtered(
-            lambda l: not l.espesor_nominal_mm or l.espesor_nominal_mm <= 0
+        documentales = self._documentary_pending_lines()
+        elegibles = self.processing_line_ids - documentales
+        if not elegibles:
+            raise ValidationError(
+                "⛔ SIN LÍNEAS OPERATIVAS\n\n"
+                "No hay líneas con dimensiones físicas separadas para aprobar. "
+                "Las líneas documentales se conservan en staging sin crear "
+                "lotes ni stock. Complete Espesor/Ancho/Largo para continuar."
+            )
+
+        # T2 — Recepción por Volumen ('granel'): el volumen oficial documental
+        # gobierna el ingreso y no existe cubicación geométrica; la exigencia de
+        # espesor nominal se acota a los flujos dimensionales (compra/service).
+        # El flujo Volumen conserva su espesor nominal en 0.0 (no se inventa).
+        lines_sin_espesor = elegibles.filtered(
+            lambda l: self.tipo_recepcion != 'granel'
+            and (not l.espesor_nominal_mm or l.espesor_nominal_mm <= 0)
         )
         if lines_sin_espesor:
             raise ValidationError(
@@ -1736,7 +1977,7 @@ class MadenatGuiaProcessing(models.Model):
                 "antes de aprobar el ingreso a stock.".format(len(lines_sin_espesor))
             )
 
-        lines_sin_subproducto = self.processing_line_ids.filtered(
+        lines_sin_subproducto = elegibles.filtered(
             lambda l: not l.subproducto_id
         )
         if lines_sin_subproducto:
@@ -2663,16 +2904,21 @@ class MadenatGuiaProcessing(models.Model):
             return ''
         return re.sub(r'[^A-Z0-9]+', '', str(value).upper())
 
-    def _resolve_or_create_supplier(self, rut_emisor, nombre_emisor):
+    def _resolve_or_create_supplier(self, rut_emisor, nombre_emisor, confidence=None):
         """
         FIX 2026-08-21: resolución blindada del proveedor documental.
         Casos: A (VAT), B (nombre+VAT completado sin sobrescribir), C (auto-create),
         D (sin datos → nota needs_manual), E (multi_match sin limit=1).
         Nunca deja partner_id NULL sin nota visible ni bloquea action_verify_data.
+
+        ``confidence`` ('high'/'medium'/'low'/'none') proviene del extractor de
+        partes del PDF. Con confianza 'low'/'none' NO se crea partner
+        automáticamente (solo se intenta match por RUT/nombre existente).
         """
         self.ensure_one()
         rut = (rut_emisor or '').strip()
         nombre = (nombre_emisor or '').strip()
+        allow_auto_create = confidence not in ('low', 'none')
 
         # CASO D — sin RUT y sin nombre utilizable
         if not rut and not nombre:
@@ -2737,8 +2983,9 @@ class MadenatGuiaProcessing(models.Model):
                 _logger.warning("🏢 Múltiples coincidencias para %r en Guía %s: %s", nombre, self.name, candidates.ids)
                 return self.env['res.partner']
 
-        # CASO C — crear proveedor nuevo solo si nombre válido
-        if nombre and len(nombre) >= 2:
+        # CASO C — crear proveedor nuevo solo si nombre válido y confianza
+        # suficiente (no crear por detección de baja confianza).
+        if nombre and len(nombre) >= 2 and allow_auto_create:
             new_partner = self.env['res.partner'].create({
                 'name': nombre[:128],
                 'vat': rut or False,
@@ -2754,6 +3001,20 @@ class MadenatGuiaProcessing(models.Model):
             )
             _logger.info("🏢 Proveedor creado auto: %s (RUT %s) para Guía %s.", new_partner.name, rut, self.name)
             return new_partner
+
+        # Confianza baja/sin detección: conservar documental, no crear partner.
+        if nombre and not allow_auto_create:
+            self.supplier_resolution_status = 'needs_manual'
+            self.supplier_resolution_note = (
+                'Proveedor documental "%s" (RUT %s) con confianza %s: no se crea '
+                'partner automáticamente. Revisar y vincular manualmente.'
+                % (nombre, rut or '(sin RUT)', confidence or 'none')
+            )
+            _logger.info(
+                "🏢 Guía %s: proveedor '%s' con confianza %s → needs_manual.",
+                self.name, nombre, confidence,
+            )
+            return self.env['res.partner']
 
         # Blindaje final
         self.supplier_resolution_status = 'needs_manual'
@@ -2775,6 +3036,8 @@ class MadenatGuiaProcessing(models.Model):
             if not result or not result.get('lineas'): 
                 raise UserError("El Excel se leyó pero no tiene líneas válidas.")
 
+            self._persist_packing_declared_totals(result.get('declared_totals'))
+
             result['oc_reference'] = self._find_oc_reference_in_excel(attachment)
 
             # Extraer número de guía desde el Excel (lectura de encabezado, no bloqueante)
@@ -2790,15 +3053,21 @@ class MadenatGuiaProcessing(models.Model):
             except Exception:
                 pass  # No bloqueante: _generate_lot_details_json usará self.name como fallback
 
-            lineas_validadas = self._validar_y_enriquecer_lineas(result['lineas'])
-            if not lineas_validadas: 
-                raise UserError("Validación fallida de líneas.")
+            rechazos = []
+            documentales = []
+            lineas_validadas = self._validar_y_enriquecer_lineas(
+                result['lineas'], rechazos, documentales)
+            if not lineas_validadas and not documentales:
+                raise UserError(
+                    self._build_rejection_diagnostic(rechazos, len(result['lineas']))
+                )
 
             total_vol = sum(l.get('Volumen', 0) for l in lineas_validadas)
             lotes_unicos = len(set(l['N° LOTE'] for l in lineas_validadas))
             
             result.update({
                 'lineas': lineas_validadas,
+                'lineas_documentales': documentales,
                 'total_volumen': total_vol,
                 'total_volumen_mbf': m3_to_mbf(total_vol),
                 'total_paquetes': len(lineas_validadas),
@@ -2842,115 +3111,129 @@ class MadenatGuiaProcessing(models.Model):
                     vals['name'] = guide_num
         return super().write(vals)
 
+    def _read_excel_sheets(self, file_path):
+        """Lee todas las hojas de un Excel como ``[(nombre, rows)]``.
+
+        Elige el lector por el formato binario detectado (nunca openpyxl sobre
+        OLE2). Devuelve filas como listas con ``None`` para celdas vacías.
+        """
+        with open(file_path, 'rb') as _fh:
+            _fmt = detect_document_format(_fh.read())
+
+        if _fmt == 'xls':
+            sheets_df = pd.read_excel(file_path, sheet_name=None, header=None, engine='xlrd')
+            sheets = []
+            for name, df in sheets_df.items():
+                rows = [[None if pd.isna(v) else v for v in row] for row in df.values.tolist()]
+                sheets.append((str(name), rows))
+            return sheets
+
+        if _fmt == 'xlsx':
+            wb = load_workbook(file_path, data_only=True, read_only=True)
+            sheets = []
+            for ws in wb.worksheets:
+                rows = [list(row) for row in ws.iter_rows(values_only=True)]
+                sheets.append((ws.title, rows))
+            wb.close()
+            return sheets
+
+        raise UserError(f"Formato de Excel no soportado: {_fmt}")
+
     def _parse_excel_data_core(self, attachment):
         file_path = attachment._full_path(attachment.store_fname)
         try:
-            try: 
-                wb = load_workbook(file_path, data_only=True)
-                data = [row for row in wb.active.iter_rows(values_only=True)]
-                df = pd.DataFrame(data)
-            except: 
-                df = pd.read_excel(file_path, header=None, engine='openpyxl')
-
-            if df.empty: 
+            sheets = self._read_excel_sheets(file_path)
+            if not sheets:
                 raise UserError("Excel vacío")
 
-            header_idx = None
-            target_headers = ['Codigo', 'Cantidad', 'M3', 'LOTE', 'Espesor', 'Ancho', 'Largo']
-            for idx in range(min(20, len(df))):
-                row_str = '|'.join([str(c) for c in df.iloc[idx] if pd.notna(c)])
-                if sum(1 for h in target_headers if h.lower() in row_str.lower()) >= 3: 
-                    header_idx = idx
-                    break
-            
-            if header_idx is None: 
-                raise UserError("No se detectaron encabezados válidos")
+            table = detect_excel_table_across_sheets(sheets, flow='procesado')
 
-            col_map = {}
-            for i, c in enumerate(df.iloc[header_idx]):
-                if pd.isna(c): 
-                    continue
-                cs = str(c).lower()
-                if 'codigo' in cs: 
-                    col_map['codigo'] = i
-                elif 'cantidad' in cs or 'piezas' in cs: 
-                    col_map['cantidad'] = i
-                elif 'm3' in cs or 'volumen' in cs: 
-                    col_map['m3'] = i
-                elif 'lote' in cs: 
-                    col_map['lote'] = i
-                elif 'espesor' in cs: 
-                    col_map['espesor'] = i
-                elif 'ancho' in cs: 
-                    col_map['ancho'] = i
-                elif 'largo' in cs: 
-                    col_map['largo'] = i
-                elif 'producto' in cs or 'descripcion' in cs or 'especie' in cs or 'subproducto' in cs:
-                    col_map['producto'] = i
+            if not table.get('field_columns'):
+                diag = '; '.join(table.get('diagnosis') or []) or 'sin tabla estructurable'
+                raise UserError("No se detectaron encabezados válidos (%s)." % diag)
 
             lineas = []
-            curr_lote = None
-            for i in range(header_idx + 1, len(df)):
-                row = df.iloc[i]
-                if row.isna().all(): 
+            current_explicit_lot = None
+            for line in table['lines']:
+                code = str(
+                    line.get('ticket_code')
+                    or line.get('product_code')
+                    or line.get('lot_or_package')
+                    or ''
+                ).strip()
+                prod_name = str(line.get('description') or '').strip()
+
+                if not code or len(code) < 3:
                     continue
-                
-                try:
-                    def get_val(key): 
-                        return row[col_map[key]] if key in col_map and col_map[key] < len(row) else None
-
-                    code = str(get_val('codigo') or '').strip()
-                    prod_name = str(get_val('producto') or '').strip()
-
-                    if not code or len(code) < 3 or any(x in code.lower() for x in ['nan', 'none', 'total', 'subtotal', 'totales']): 
-                        continue
-                    if any(x in prod_name.lower() for x in ['total', 'subtotal']): 
-                        continue
-
-                    qty = int(self._parse_float_value(get_val('cantidad'), 'qty')) if 'cantidad' in col_map else 0
-                    lote_raw = str(get_val('lote') or '').strip()
-                    if lote_raw and lote_raw.lower() not in ['nan', 'none']: 
-                        curr_lote = lote_raw
-                    elif not curr_lote and code: 
-                        curr_lote = f"LOTE-{code}"
-
-                    if qty <= 0: 
-                        continue
-
-                    vol = self._parse_float_value(get_val('m3'), 'm3') if 'm3' in col_map else 0
-                    esp = self._parse_float_value(get_val('espesor'), 'espesor') if 'espesor' in col_map else 0
-                    anc = self._parse_float_value(get_val('ancho'), 'ancho') if 'ancho' in col_map else 0
-                    lar = self._parse_float_value(get_val('largo'), 'largo') if 'largo' in col_map else 0
-                    
-                    if not prod_name or prod_name.lower() == 'nan': 
-                        prod_name = None
-                    if vol <= 0 and esp and anc and lar: 
-                        vol = (esp/1000) * (anc/1000) * lar * qty
-
-                    # ✅ NUEVO: Calcular dimensiones nominales comerciales
-                    # Convierte valores físicos (45mm, 125mm) → nominales ("6/4", "4 5/8")
-                    espesor_nominal = self._get_nominal_dimension(esp, 'thickness')
-                    ancho_nominal = self._get_nominal_dimension(anc, 'width')
-
-                    lineas.append({
-                        'Codigo Interno': code, 
-                        'N° LOTE': curr_lote, 
-                        'Cantidad': qty, 
-                        'Volumen': vol, 
-                        'Espesor': esp,              # Valor físico (45mm)
-                        'Ancho': anc,                # Valor físico (125mm)
-                        'Largo': lar, 
-                        'product_name': prod_name,
-                        # ✅ NUEVO: Agregar valores nominales
-                        'espesor_nominal': espesor_nominal,  # "6/4"
-                        'ancho_nominal': ancho_nominal        # "4 5/8"
-                    })
-
-                except: 
+                if any(x in code.lower() for x in ('nan', 'none', 'total', 'subtotal', 'totales')):
                     continue
-            
-            return {'lineas': lineas}
-        except Exception as e: 
+                if any(x in prod_name.lower() for x in ('total', 'subtotal')):
+                    continue
+
+                qty = int(round(float(line.get('pieces') or 0)))
+                lote_raw = str(line.get('lot_or_package') or '').strip()
+                # Identidad por línea: separa lote explícito (forward-fill
+                # válido para celdas fusionadas) del lote sintético derivado
+                # del código (solo para ESA fila, nunca se propaga).
+                if lote_raw and lote_raw.lower() not in ('nan', 'none'):
+                    current_explicit_lot = lote_raw
+                    lot = lote_raw
+                elif current_explicit_lot:
+                    lot = current_explicit_lot
+                elif code:
+                    lot = "LOTE-%s" % code
+                else:
+                    lot = ''
+
+                if qty <= 0:
+                    continue
+
+                vol_documental = float(line.get('volume_m3') or 0)
+                vol = vol_documental
+                esp = float(line.get('thickness') or 0)
+                anc = float(line.get('width') or 0)
+                lar = float(line.get('length') or 0)
+
+                if not prod_name or prod_name.lower() == 'nan':
+                    prod_name = None
+                if vol <= 0 and esp and anc and lar:
+                    vol = (esp / 1000) * (anc / 1000) * lar * qty
+
+                # ✅ NUEVO: Calcular dimensiones nominales comerciales
+                # Convierte valores físicos (45mm, 125mm) → nominales ("6/4", "4 5/8")
+                espesor_nominal = self._get_nominal_dimension(esp, 'thickness')
+                ancho_nominal = self._get_nominal_dimension(anc, 'width')
+
+                linea = {
+                    'Codigo Interno': code,
+                    'N° LOTE': lot,
+                    'Cantidad': qty,
+                    'Volumen': vol,
+                    'vol_documental_m3': vol_documental,
+                    'Espesor': esp,              # Valor físico (45mm)
+                    'Ancho': anc,                # Valor físico (125mm)
+                    'Largo': lar,
+                    'product_name': prod_name,
+                    # ✅ NUEVO: Agregar valores nominales
+                    'espesor_nominal': espesor_nominal,  # "6/4"
+                    'ancho_nominal': ancho_nominal        # "4 5/8"
+                }
+                # Datos crudos conservados SOLO para diagnóstico (no persistentes).
+                # No alimentan vol_* ni dimensiones; los consumidores actuales
+                # (action_verify_data) solo leen claves conocidas.
+                for _raw_key in ('dimensions_raw', 'document_item', 'reference',
+                                 'currency_or_unit', 'certificate', 'price'):
+                    if line.get(_raw_key) not in (None, ''):
+                        linea[_raw_key] = line[_raw_key]
+                lineas.append(linea)
+
+            return {
+                'lineas': lineas,
+                'declared_totals': table.get('declared_totals'),
+            }
+        except UserError:
+            raise
+        except Exception as e:
             raise UserError(f"Error leyendo datos: {e}")
 
     # ==============================================================================================
@@ -3049,26 +3332,47 @@ class MadenatGuiaProcessing(models.Model):
 
    
 
-    def _validar_y_enriquecer_lineas(self, lineas):
+    def _validar_y_enriquecer_lineas(self, lineas, rejections=None, documentales=None):
             """
             🏛️ ENRIQUECIMIENTO ARQUITECTÓNICO CONSOLIDADO:
             - Valida integridad sin recortar funcionalidades.
             - Sincroniza el cálculo de m3 con la visualización del Staging.
             - Elimina el error de visualización del 195mm (7 5/8).
+            - (Opción C) Recolecta rechazos estructurados para diagnóstico
+              sin alterar ninguna decisión de aceptación/descarte.
             """
                 
             validas = []
             method = getattr(self, 'calculation_method', 'madenat_gold')
 
-            for l in lineas:
+            def _reject(idx, l, rule, fields):
                 lad_name = l.get('N° LOTE') or l.get('Codigo Interno') or '?'
+                self._register_lot_audit(
+                    'omission', lad_name,
+                    f"Línea omitida ({rule}) desde guía {self.name}"
+                )
+                if rejections is not None:
+                    rejections.append({
+                        'index': idx + 1,
+                        'rule': rule,
+                        'fields': list(fields),
+                        'documental': {
+                            'identifier': l.get('Codigo Interno'),
+                            'dimensions_raw': l.get('dimensions_raw'),
+                            'volume_m3': l.get('Volumen'),
+                            'pieces': l.get('Cantidad'),
+                        },
+                    })
+
+            for idx, l in enumerate(lineas):
                 # 1. Mantener validación de funcionalidad actual
-                if not l.get('Codigo Interno') or l.get('Cantidad', 0) <= 0:
+                if not l.get('Codigo Interno'):
                     # BT-03: línea descartada sin llegar a staging, no produce lote.
-                    self._register_lot_audit(
-                        'omission', lad_name,
-                        f"Línea omitida (sin código interno o cantidad <= 0) desde guía {self.name}"
-                    )
+                    _reject(idx, l, 'REQUIERE_IDENTIFICADOR', ['Codigo Interno'])
+                    continue
+                if l.get('Cantidad', 0) <= 0:
+                    # BT-03: línea descartada sin llegar a staging, no produce lote.
+                    _reject(idx, l, 'REQUIERE_CANTIDAD', ['Cantidad'])
                     continue
 
                 # 2. Extracción segura de tipos
@@ -3079,18 +3383,25 @@ class MadenatGuiaProcessing(models.Model):
                     l_m = float(l.get('Largo', 0))
                 except (ValueError, TypeError):
                     # BT-03: línea descartada por dimensiones no numéricas.
-                    self._register_lot_audit(
-                        'omission', lad_name,
-                        f"Línea omitida (dimensiones no numéricas) desde guía {self.name}"
-                    )
+                    _reject(idx, l, 'REQUIERE_DIMENSIONES_NUMERICAS',
+                            ['Espesor', 'Ancho', 'Largo'])
                     continue
 
                 if e_mm <= 0 or a_mm <= 0 or l_m <= 0:
                     # BT-03: línea descartada por dimensiones físicas <= 0.
-                    self._register_lot_audit(
-                        'omission', lad_name,
-                        f"Línea omitida (dimensiones físicas <= 0) desde guía {self.name}"
-                    )
+                    _faltantes = [
+                        name for name, val in (
+                            ('Espesor', e_mm), ('Ancho', a_mm), ('Largo', l_m)
+                        ) if val <= 0
+                    ]
+                    _reject(idx, l, 'REQUIERE_DIMENSIONES_SEPARADAS', _faltantes)
+                    # Evidencia documental persistible: identificador + piezas +
+                    # volumen documental positivo, sin geometría separada.
+                    if documentales is not None and (
+                            l.get('vol_documental_m3', 0) > 0
+                            and l.get('Cantidad', 0) > 0
+                            and l.get('Codigo Interno')):
+                        documentales.append(l)
                     continue
 
                 # 3. CALCULO DE VOLUMEN SEGÚN MÉTODO (Cerebro de la Guía)
@@ -3133,6 +3444,70 @@ class MadenatGuiaProcessing(models.Model):
                 validas.append(l)
 
             return validas
+
+
+    def _build_rejection_diagnostic(self, rechazos, total_detalle):
+        """Construye un diagnóstico estructurado y explicable de rechazos.
+
+        Opción C: NO cambia ninguna decisión de aceptación/descarte. Solo
+        reemplaza el mensaje opaco por una recopilación de: línea, regla
+        incumplida, campos faltantes y valores documentales detectados
+        (en formato seguro). Sin datos particulares de archivos de prueba.
+        """
+        lines = [
+            "El documento contiene %d línea(s) de detalle, pero ninguna pudo validarse:" % total_detalle,
+            "",
+        ]
+        for r in rechazos or []:
+            fields = ", ".join(r.get('fields') or [])
+            lines.append("• Línea %s: %s — %s" % (
+                r.get('index'), r.get('rule'), fields))
+            doc = r.get('documental') or {}
+            extras = []
+            if doc.get('identifier'):
+                extras.append("identificador: %s" % doc['identifier'])
+            if doc.get('dimensions_raw'):
+                extras.append("dimensiones crudas: %s" % doc['dimensions_raw'])
+            if doc.get('volume_m3') not in (None, ''):
+                extras.append("volumen documental: %s" % doc['volume_m3'])
+            if extras:
+                lines.append("    %s" % "; ".join(extras))
+        lines += [
+            "",
+            "Las dimensiones físicas separadas (Espesor/Ancho/Largo) son obligatorias "
+            "porque los volúmenes persistentes se calculan geométricamente; el volumen "
+            "documental no puede usarse como volumen operativo.",
+            "No se creó ninguna línea.",
+        ]
+        return "\n".join(lines)
+
+
+    def _persist_packing_declared_totals(self, declared_totals):
+        """Persiste los totales declarados del Packing en campos documentales
+        planos de cabecera.
+
+        Solo persiste si ``kind`` es 'total' o 'grand_total' (los subtotales
+        se dejan solo en la salida del detector). El detector ya deja en
+        ``None`` cualquier total ambiguo; aquí no se fabrica nada.
+        No escribe commercial_volume_m3, vol_comercial_pdf, physical_volume_m3,
+        varianza ni tolerance_status.
+        """
+        if not declared_totals:
+            return
+        if declared_totals.get('kind') not in ('total', 'grand_total'):
+            return
+        vals = {}
+        vol = declared_totals.get('volume_m3')
+        if vol is not None and vol > 0:
+            vals['packing_volume_declared_m3'] = vol
+        pieces = declared_totals.get('pieces')
+        if pieces is not None and pieces > 0:
+            vals['packing_pieces_declared'] = pieces
+        packages = declared_totals.get('package_count')
+        if packages is not None and packages > 0:
+            vals['packing_package_count_declared'] = packages
+        if vals:
+            self.write(vals)
 
     def _find_oc_reference_in_excel(self, attachment):
         """
@@ -4277,6 +4652,27 @@ class MadenatGuiaProcessing(models.Model):
 
        
 
+    @api.depends('tipo_recepcion', 'lot_ids')
+    def _compute_volume_lot_id(self):
+        """Etiqueta SV única de la Guía por Volumen (solo lectura).
+
+        - Guía no 'granel' → sin etiqueta SV (False).
+        - Guía 'granel' → localiza el lote por su identidad documental
+          permanente (`volume_source_guia_id` = guía actual y
+          `lot_flow_type` = 'volume'), `limit=1`.
+
+        No crea, escribe ni elimina lotes, y no interviene en el alta del
+        lote: esa lógica pertenece a F3.1 y permanece intacta.
+        """
+        for rec in self:
+            if rec.tipo_recepcion != 'granel' or not rec.id:
+                rec.volume_lot_id = False
+                continue
+            rec.volume_lot_id = self.env['stock.lot'].search([
+                ('volume_source_guia_id', '=', rec.id),
+                ('lot_flow_type', '=', 'volume'),
+            ], limit=1)
+
     @api.depends('state', 'excel_attachment_id', 'excel_file')
     def _compute_can_process(self):
         # Regla canónica documental (decisión funcional 2026-08-22):
@@ -4335,6 +4731,147 @@ class MadenatGuiaProcessing(models.Model):
             'context': dict(self.env.context),
         }
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🏷️ PROGRAMA SV — REVERSA ESPECÍFICA POR LOTE SV (solo Volumen)
+    # ═══════════════════════════════════════════════════════════════════════
+    SV_REVERSE_NO_BALANCE_MSG = (
+        'No existe saldo disponible del lote SV asociado para realizar la '
+        'reversa.')
+
+    def _sv_reverse_volume_receipts(self):
+        """Reversa exclusiva por lote SV para guías por Volumen ('granel').
+
+        - Retorna SOLO las líneas de movimiento del lote SV de esta Guía
+          (criterio técnico `stock.move.line.lot_id`, nunca `origin` textual).
+        - Crea `stock.move.line` de retorno con `lot_id` explícito.
+        - Idempotente vía `origin_returned_move_id` (relación técnica).
+        - Valida el saldo del lote SV ANTES de crear picking/movimientos.
+        - Si no hay saldo suficiente, lanza ValidationError con el mensaje
+          aprobado y NO sustituye con quants de otros lotes.
+        - Nunca produce una segunda devolución del mismo movimiento original.
+        """
+        self.ensure_one()
+        empty = self.env['stock.picking']
+        if self.tipo_recepcion != 'granel':
+            return empty
+        lot = self.volume_lot_id
+        if not lot:
+            _logger.warning(
+                '⚠️ Reversa SV omitida: la guía %s no tiene etiqueta SV.', self.name)
+            return empty
+
+        move_line_model = self.env['stock.move.line']
+        entry_lines = move_line_model.search([
+            ('lot_id', '=', lot.id),
+            ('state', '=', 'done'),
+            ('location_dest_id.usage', '=', 'internal'),
+            ('move_id.origin_returned_move_id', '=', False),
+        ])
+        if not entry_lines:
+            _logger.info(
+                'ℹ️ Reversa SV: sin líneas de ingreso del lote %s para la guía %s.',
+                lot.name, self.name)
+            return empty
+
+        created_pickings = empty
+        for picking in entry_lines.mapped('picking_id'):
+            lines = entry_lines.filtered(lambda l: l.picking_id == picking)
+            moves = lines.mapped('move_id')
+            # Idempotencia por relación técnica: si ya existe retorno técnico
+            # para alguno de los movimientos originales, no se crea otro.
+            already_returned = self.env['stock.move'].search_count([
+                ('origin_returned_move_id', 'in', moves.ids),
+                ('state', '!=', 'cancel'),
+            ])
+            if already_returned:
+                _logger.info(
+                    '♻️ Reversa SV %s omitida: ya existe retorno técnico.',
+                    picking.name)
+                continue
+
+            required_qty = sum(lines.mapped('quantity'))
+            available_qty = self.env['stock.quant']._get_available_quantity(
+                lot.product_id, picking.location_dest_id, lot_id=lot)
+            if float_compare(
+                    available_qty, required_qty,
+                    precision_rounding=0.001) < 0:
+                raise ValidationError(_(self.SV_REVERSE_NO_BALANCE_MSG))
+            created_pickings |= self._sv_create_volume_return(
+                picking, moves, lines, lot, required_qty)
+        return created_pickings
+
+    def _sv_create_volume_return(self, picking, moves, lines, lot, required_qty):
+        """Crea y valida el albarán de retorno del lote SV (una sola vez)."""
+        self.ensure_one()
+        warehouse = picking.picking_type_id.warehouse_id
+        return_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'incoming'),
+            ('warehouse_id', '=', warehouse.id if warehouse else False),
+            ('active', '=', True),
+            ('sequence_code', 'not ilike', 'EMB'),
+        ], limit=1)
+        if not return_type:
+            return_type = self.env['stock.picking.type'].search([
+                ('code', '=', 'incoming'),
+                ('active', '=', True),
+                ('sequence_code', 'not ilike', 'EMB'),
+            ], limit=1)
+        if not return_type:
+            raise UserError(_(
+                'No existe un tipo de operación "Recepción" (incoming) activo '
+                'para reversar %s.') % picking.name)
+
+        with self.env.cr.savepoint():
+            return_picking = self.env['stock.picking'].create({
+                'picking_type_id': return_type.id,
+                'partner_id': picking.partner_id.id,
+                'origin': 'Return of %s' % picking.name,
+                'location_id': picking.location_dest_id.id,
+                'location_dest_id': picking.location_id.id,
+            })
+            for move in moves:
+                move_lines = lines.filtered(lambda l: l.move_id == move)
+                qty = sum(move_lines.mapped('quantity'))
+                return_move = self.env['stock.move'].create({
+                    'name': 'Return of %s' % move.name,
+                    'product_id': move.product_id.id,
+                    'product_uom_qty': qty,
+                    'product_uom': move.product_uom.id,
+                    'picking_id': return_picking.id,
+                    'location_id': move.location_dest_id.id,
+                    'location_dest_id': move.location_id.id,
+                    'origin_returned_move_id': move.id,
+                    'to_refund': True,
+                })
+                # Trazabilidad de lote EXPLÍCITA (nunca quants de otro lote).
+                for line in move_lines:
+                    self.env['stock.move.line'].create({
+                        'move_id': return_move.id,
+                        'picking_id': return_picking.id,
+                        'product_id': line.product_id.id,
+                        'lot_id': lot.id,
+                        'quantity': line.quantity,
+                        'product_uom_id': line.product_uom_id.id,
+                        'location_id': return_move.location_id.id,
+                        'location_dest_id': return_move.location_dest_id.id,
+                    })
+            return_picking.action_confirm()
+            return_picking.action_assign()
+            return_picking.with_context(
+                force_validate=True,
+                skip_immediate=True,
+                skip_backorder=True,
+                immediate_transfer=True,
+            ).button_validate()
+            # Relación técnica de retorno (equivalente al wizard nativo).
+            return_picking.return_id = picking.id
+        self.message_post(
+            body=_(
+                '🏷️ <strong>Reversa por lote SV:</strong> albarán <b>%s</b> '
+                'revertido con el lote <b>%s</b> (%.3f m³). Retorno: <b>%s</b>.'
+            ) % (picking.name, lot.name, required_qty, return_picking.name))
+        return return_picking
+
     def action_force_cancel(self):
         """
         🛡️ CANCELACIÓN SEGURA MADENAT v2.0
@@ -4392,6 +4929,11 @@ class MadenatGuiaProcessing(models.Model):
                          "Existen costos registrados. Los movimientos se mantienen intactos."
                 )
                 continue
+            # 🏷️ PROGRAMA SV — Guías por Volumen: la devolución se limita al
+            # lote SV de la Guía (reversa técnica, idempotente y validada).
+            # El flujo general de Producto/Servicio/Tarja no se modifica.
+            if rec.tipo_recepcion == 'granel':
+                rec._sv_reverse_volume_receipts()
             # ✅ CASO B: Pickings done sin costos → reversión simétrica via ORM
             #
             # ARQUITECTURA DEL RETORNO (Odoo 18 CE):
@@ -4412,6 +4954,10 @@ class MadenatGuiaProcessing(models.Model):
             #   que el albarán de retorno sea una RECEPCIÓN y no una SALIDA (WH/IN, no WH/OUT).
             # ─────────────────────────────────────────────────────────────────
             for picking in albaranes_hechos:
+                if rec.tipo_recepcion == 'granel':
+                    # Reversa por lote SV ya ejecutada arriba: no se usa el
+                    # retorno genérico (evita consumir quants de otros lotes).
+                    break
                 try:
                     with self.env.cr.savepoint():
 
@@ -4640,6 +5186,13 @@ class MadenatGuiaProcessing(models.Model):
         🔄 REVERSIÓN ARQUITECTÓNICA MADENAT (Path B - Blindado UX v2):
         Mantiene funcionalidades originales pero permite reversión si los movimientos
         validados son ÚNICAMENTE internos (bodega a bodega).
+
+        🏷️ Tarea B-1 (2026-09-28) — Diseño B: tras limpiar la trazabilidad OC,
+        la referencia documental (`oc_reference_raw`) se RE-EXTRAE del documento
+        adjunto (`_reopen_reextract_oc()`) y se re-ejecuta el match de OC, de
+        modo que la OC vigente siempre provenga del documento realmente adjunto
+        y nunca se pierda en silencio. Fail-soft: si el documento no es legible,
+        el campo queda vacío y el chatter lo informa, sin interrumpir el reset.
         """
         from odoo.exceptions import UserError
         
@@ -4832,6 +5385,11 @@ class MadenatGuiaProcessing(models.Model):
                     rec.name, e,
                 )
 
+            # 🛡️ Tarea B-1 (2026-09-28) — Opción 3: se captura la OC documental
+            # vigente ANTES del reset, como resguardo por si la re-extracción
+            # posterior no es posible (ver más abajo).
+            previous_oc = rec.oc_reference_raw
+
             # =======================================================
             # 🔄 FASE 4: RESET A BORRADOR (LIMPIEZA COMPLETA DE TRAZABILIDAD)
             # =======================================================
@@ -4854,7 +5412,12 @@ class MadenatGuiaProcessing(models.Model):
                 'lot_details_data': False,
                 'grouping_details_json': False,
                 # ═══════════════════════════════════════════════════════
-                # 🏷️ Fase 2B: limpieza de trazabilidad OC
+                # 🏷️ Fase 2B — Trazabilidad OC: el reset limpia la referencia
+                # documental para NO arrastrar datos de una verificación previa
+                # con un PDF distinto; INMEDIATAMENTE después se re-extrae del
+                # documento adjunto (`_reopen_reextract_oc()`, Tarea B-1
+                # 2026-09-28), de modo que la OC vigente siempre provenga del
+                # documento realmente adjunto y nunca quede vacía en silencio.
                 # ═══════════════════════════════════════════════════════
                 'order_id': False,
                 'oc_reference_raw': False,
@@ -4879,12 +5442,166 @@ class MadenatGuiaProcessing(models.Model):
                 'vol_comercial_pdf': 0.0,
             })
 
+            # 🏷️ TAREA B-1 (2026-09-28) — Diseño B: la OC documental se
+            # RE-EXTRAE del documento adjunto inmediatamente después del reset
+            # (fail-soft: nunca interrumpe la reversión).
+            reextracted_oc = rec._reopen_reextract_oc()
+
+            # 🛡️ Opción 3 (Tarea B-1, 2026-09-28) — FAILSAFE del valor previo:
+            # si no fue posible re-extraer la OC y la guía ya tenía una
+            # referencia documental, se conserva como resguardo. NO se tocan
+            # `order_id` ni `oc_match_status` (quedan como los dejó el reset)
+            # para no fingir una vinculación que no fue re-confirmada.
+            if not reextracted_oc and previous_oc:
+                rec.write({'oc_reference_raw': previous_oc})
+                rec.message_post(body=(
+                    "↩️ No fue posible re-extraer la OC del documento; se "
+                    "conservó el valor previo ('%s') como resguardo. Verifique "
+                    "que corresponda al documento actualmente adjunto."
+                    % previous_oc
+                ))
+
             rec.message_post(
                 body="🔄 **Reversión Exitosa:** Guía reseteada a borrador. "
-                     "Trazabilidad OC, lotes, staging y campos financieros/PDF limpiados. "
+                     "La trazabilidad OC quedó según el mensaje anterior "
+                     "(re-extraída del documento adjunto o conservada como "
+                     "resguardo); lotes, staging y campos financieros/PDF "
+                     "quedaron limpios. "
                      "Albaranes internos previos desvinculados."
             )
 
+
+    # ── Re-extracción de OC tras el reset (Tarea B-1, 2026-09-28) ────────
+    def _reopen_source_attachments(self):
+        """Adjuntos del documento fuente de la guía (PDF y Excel), o vacío.
+
+        Usa primero el adjunto explícito (`pdf_attachment_id` /
+        `excel_attachment_id`) y, si no existe, el adjunto del campo binario
+        correspondiente. Lectura pura: nunca crea ni modifica adjuntos.
+        """
+        self.ensure_one()
+        Attachment = self.env['ir.attachment'].sudo()
+        base = [('res_model', '=', self._name), ('res_id', '=', self.id)]
+        pdf = self.pdf_attachment_id
+        if not pdf:
+            pdf = Attachment.search(
+                base + [('res_field', '=', 'guide_pdf_file')], limit=1)
+        excel = self.excel_attachment_id
+        if not excel:
+            excel = Attachment.search(
+                base + [('res_field', '=', 'excel_file')], limit=1)
+        return pdf, excel
+
+    def _reopen_reextract_oc(self):
+        """Re-extrae la OC documental desde el documento adjunto tras el reset.
+
+        Tarea B-1 (2026-09-28) — Diseño B (B-min + B2):
+
+        1. Obtiene el documento fuente adjunto (PDF y Excel) sin crearlo.
+        2. Re-extrae la OC, por orden: (a) intento RÁPIDO y LOCAL sobre el
+           texto del PDF con el patrón de la etiqueta real «O/C»
+           (`O\\s*/\\s*C\\s*[:.]?\\s*([^\\n]+)`, validado con
+           `_is_plausible_oc_reference()`), que evita los ~14 s del parser
+           histórico; (b) respaldo `_parse_dispatch_pdf()` (prioridad histórica,
+           PDF); (c) respaldo `_find_oc_reference_in_excel()` (Excel).
+        3. Persiste `oc_reference_raw` con la MISMA regla de comparación que
+           usa `action_verify_data()` (duplicación mínima deliberada: aquí el
+           `write()` del reset ya vació el campo, por lo que el valor
+           re-extraído pasa a ser el vigente).
+        4. Re-ejecuta `_match_purchase_order()` (B2) para restaurar `order_id` /
+           `oc_match_status` de forma consistente con la OC re-extraída.
+        5. Registra en el chatter el resultado REAL de la re-extracción.
+
+        FAIL-SOFT: ninguna excepción de parseo puede propagarse. Si algo falla,
+        `oc_reference_raw` queda vacío y el chatter lo informa; el reset siempre
+        se completa. No toca ningún otro campo del reset.
+        """
+        self.ensure_one()
+        detected = False
+        source_label = False
+
+        try:
+            pdf_attachment, excel_attachment = self._reopen_source_attachments()
+        except Exception as e:  # pragma: no cover - defensivo
+            _logger.warning(
+                "⚠️ [B-1] No se pudieron localizar los adjuntos de la guía %s: %s",
+                self.name, e)
+            pdf_attachment, excel_attachment = False, False
+
+        if pdf_attachment:
+            # ── Opción 2 (Tarea B-1, 2026-09-28) — intento RÁPIDO y local ──
+            # Las guías de despacho reales etiquetan la OC como «O/C», que los
+            # patrones de `_parse_dispatch_pdf` (MC/OC/Orden) NO cubren y que en
+            # este documento además cuesta ~14 s. Bloque local mínimo y
+            # fail-soft: duplicación deliberada y acotada (aprobada); no se
+            # toca ningún método compartido.
+            try:
+                file_path = pdf_attachment._full_path(
+                    pdf_attachment.store_fname)
+                texto_pdf = ''
+                with pdfplumber.open(file_path) as pdf:
+                    for page in pdf.pages:
+                        texto_pdf += page.extract_text() or ''
+                local_match = re.search(
+                    r"O\s*/\s*C\s*[:.]?\s*([^\n]+)", texto_pdf, re.I)
+                if local_match:
+                    candidate = re.sub(
+                        r'\s+', ' ', local_match.group(1).strip())
+                    if self._is_plausible_oc_reference(candidate):
+                        detected = candidate
+                        source_label = 'PDF (O/C local)'
+            except Exception as e:
+                _logger.warning(
+                    "⚠️ [B-1] Fallback local O/C fallido (guía %s): %s",
+                    self.name, e)
+            # ── Respaldo: parser histórico del core (solo si el local falló) ──
+            if not detected:
+                try:
+                    detected = self._parse_dispatch_pdf(
+                        pdf_attachment).get('orden_compra')
+                    source_label = 'PDF'
+                except Exception as e:
+                    detected = False
+                    _logger.warning(
+                        "⚠️ [B-1] Re-extracción de OC desde PDF fallida "
+                        "(guía %s): %s", self.name, e)
+        if not detected and excel_attachment:
+            try:
+                detected = self._find_oc_reference_in_excel(excel_attachment)
+                source_label = 'Excel'
+            except Exception as e:
+                detected = False
+                _logger.warning(
+                    "⚠️ [B-1] Re-extracción de OC desde Excel fallida "
+                    "(guía %s): %s", self.name, e)
+
+        if detected:
+            try:
+                self.write({'oc_reference_raw': detected})
+            except Exception as e:  # pragma: no cover - defensivo
+                _logger.error(
+                    "❌ [B-1] No se pudo persistir oc_reference_raw (%s) en "
+                    "guía %s: %s", detected, self.name, e)
+                detected = False
+
+        if detected:
+            try:
+                self._match_purchase_order()  # B2 — re-vinculación (fail-soft)
+            except Exception as e:
+                _logger.warning(
+                    "⚠️ [B-1] Match de OC fallido tras el reset (guía %s): %s",
+                    self.name, e)
+            self.message_post(body=(
+                "🔎 OC re-extraída automáticamente tras el reset: "
+                "'%s' (fuente: %s)." % (detected, source_label or 'documento')
+            ))
+        else:
+            self.message_post(body=(
+                "⚠️ No fue posible re-extraer la OC documental del documento "
+                "adjunto tras el reset. El campo «OC documento» queda vacío; "
+                "puede vincularse manualmente."
+            ))
+        return bool(detected)
 
     # ========================================
     # Métodos de Adjuntos (Attachment Helpers)
@@ -4922,6 +5639,12 @@ class MadenatGuiaProcessing(models.Model):
         🛡️ BLINDAJE DE CABECERA - madenat.guia.processing
         v1.0 — Con limpieza de stock.moves huérfanos
         """
+        # 0. Excepción test-only (marcador + entorno de pruebas): permite la
+        # limpieza de datos de integración sin abrir un permiso funcional.
+        if self.env['madenat.sv.internal.marker'].sudo(
+                )._sv_test_cleanup_allowed('madenat.guia.processing', self.ids):
+            return super().unlink()
+
         # 1. SEGURIDAD USUARIO
         for rec in self:
             if rec.state not in ('draft', 'cancelled'):
