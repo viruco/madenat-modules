@@ -261,7 +261,7 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 | AL-01 | **Imputación pendiente** | Imputación en `pending` > umbral de días (a decidir) | Operaciones |
 | AL-02 | **Saldo por procesador ≠ 0 al cierre** | Σ quant en `Procesadores/*` > 0 al cierre de período | Operaciones / Auditoría |
 | AL-03 | **SV sin retorno** | SV con antigüedad > umbral sin imputación | Operaciones |
-| AL-04 | **Desviación de volumen** | `|nominal − propuesta| > tolerancia` | Auditoría |
+| AL-04 | **Desviación de volumen** | `abs(nominal − propuesta) > tolerancia` | Auditoría |
 | AL-05 | **Costo fuera de rango** | `cost_per_m3_usd` fuera del histórico | Costos / Auditoría |
 | AL-06 | **Merma sin documento** | Diferencia SV enviado − retorno imputado sin evento de merma | Auditoría |
 | AL-07 | **Procesador/ubicación no registrados** | `is_processor=False` o sin ubicación hija | Operaciones |
