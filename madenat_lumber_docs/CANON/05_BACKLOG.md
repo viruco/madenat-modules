@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 7.9.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — se añade la sección «Rebaja de contenedor / nave (AD-82/AD-84/AD-83) — IMPLEMENTADO» y «Auditoría 2026-10-01 — pendientes por área» (H-01..H-16 y N-01..N-10). Ver 16_AUDITORIA_20261001.md y 18_CONSOLIDACION_Y_REBAJA.md -->
+**Versión documental:** 8.0.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (2) — se añade la sección «Imputación SV y Procesadores (AD-87/AD-88) — PLAN (fases I1..I6)». Ver 19_IMPUTACION_SV_Y_PROCESADORES.md -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -367,7 +367,44 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [ ] **Q-07** Rebaja por nave: **permiso/alcance** (implementado **provisional** en Jefatura de Operaciones / Gerencia).
 - [ ] **H-N1** `_check_lot_duplication` impide el **mismo lote en dos contenedores activos**; evaluar si el negocio lo requiere
       (bloquea la prueba literal de «un lote SV en dos contenedores»).
-- [ ] Extracción del **módulo propio de rebaja SV** (AD-83): **diferida** hasta después de probar la regla de descuento actual.
+- [ ] Extracción del **módulo propio de rebaja SV**: **⛔ REEMPLAZADA por AD-87** (no se extrae módulo; el descuento por procesados es la **imputación**). Ver `19_IMPUTACION_SV_Y_PROCESADORES.md`.
 - [ ] Fuera de alcance en esta fase: facturación, +1/8" (170/180 mm), **P.O. del comprador**, consignatarios, `booking_id`,
       armador/naviera, rolleo como evento, tarja por paquete.
+
+---
+
+## Imputación SV y Procesadores (AD-87 · AD-88, 2026-10-01) — PLAN (fases I1..I6)
+
+> Especificación y detalle por fase (dependencias, riesgos, criterios de aceptación): `19_IMPUTACION_SV_Y_PROCESADORES.md` §16.
+> Decisiones D1–D10. **Sin código en esta fase** (documental).
+
+### I1 — Cimientos: ubicaciones y saldo por procesador
+- [ ] `stock.location` **`Procesadores`** + hijas `Procesadores/<X>` bajo demanda (`usage='internal'`; inventario MADENAT).
+- [ ] Reporte de **saldo por procesador** (`madenat.processor.balance`).
+- [ ] Marcar procesadores (`res.partner.is_processor`).
+- **Depende de:** AD-65 §1.5. **Aceptación:** T-09.
+
+### I2 — Modelo de imputación
+- [ ] `madenat.sv.imputation` (+`.line`, +`.sv.line`); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`.
+- **Depende de:** I1. **Aceptación:** T-01..T-03, T-06.
+
+### I3 — Salida nativa del SV + ledger `imputacion` + invariantes
+- [ ] `action_type='imputacion'`; vínculo `imputation_id`; `stock.move` a `Virtual Locations/Production`; idempotencia `picking_id`.
+- [ ] Invariantes AD-84 ampliados (`19` §7.3).
+- **Depende de:** I2; AD-82/AD-84. **Aceptación:** T-01..T-05, T-07, T-11; sin regresiones.
+
+### I4 — UX: asistente de imputación + propuesta automática
+- [ ] Asistente al recibir la **guía de procesados**; propuesta por **proveedor / producto / antigüedad**.
+- [ ] Ocultar lotes **SV** por defecto en el asistente de contenedores (D9); **motivo** obligatorio ante desviación.
+- **Depende de:** I2/I3. **Aceptación:** T-06; SV seleccionables.
+
+### I5 — Costo
+- [ ] Costo por m3 editable; **promedio ponderado** de SV; `stock.lot.cost.line` (`wood`); **fuente del costo del SV** (brecha `19` §5.5).
+- **Depende de:** I3. **Aceptación:** T-08.
+
+### I6 — `parent_lot_id` opcional + auditoría/alertas + cierre de bloqueos
+- [ ] `parent_lot_id` **opcional** (paso controlado, D10); alertas §8; clasificación de bloqueos §14 (zarpe / saldo SV → advertencia con motivo).
+- **Depende de:** I1..I5. **Aceptación:** T-10, T-12.
+
+**Preguntas abiertas (sin decidir por el usuario):** Q-19-1..Q-19-8 (`19` §17).
 
