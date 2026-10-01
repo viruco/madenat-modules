@@ -10,6 +10,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+import hashlib
+
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_logistics')
 class TestRebajaContenedor(TransactionCase):
@@ -52,6 +54,10 @@ class TestRebajaContenedor(TransactionCase):
             'base.group_user',
             'madenat_lumber_core.group_madenat_jefatura_operaciones'])
         cls.user_plain = _mk_user('reb_plain', ['base.group_user'])
+        # AD-88 (B-03/B-06): Gerencia puede autorizar el override de reversa.
+        cls.user_ger = _mk_user('reb_ger', [
+            'base.group_user',
+            'madenat_lumber_core.group_madenat_gerencia'])
 
     # ── Fábricas ─────────────────────────────────────────────────────────
     def _make_guia(self, name):
@@ -254,18 +260,25 @@ class TestRebajaContenedor(TransactionCase):
         with self.assertRaises(UserError):
             container.with_user(self.user_jef).action_reverse_rebaja()
 
-    def test_07_zarpe_exige_rebaja_y_no_mueve_stock(self):
+    def test_07_zarpe_abre_asistente_sin_rebaja_y_no_mueve_stock(self):
         guia = self._make_guia('REB-07')
         lot = self._make_lot(guia, 'REB-LOT-07', 3.0, 3.0)
         container, shipment = self._rebajable_container('07', [(lot, 0.0)])
         shipment.state = 'confirmed'
-        with self.assertRaises(ValidationError):
-            shipment.action_set_in_transit()
+        # B-01 (AD-88): zarpe sin rebajar ya NO bloquea: abre el asistente.
+        action = shipment.action_set_in_transit()
+        self.assertIsInstance(action, dict)
+        self.assertEqual(
+            action.get('res_model'), 'lumber.shipment.zarpe.wizard')
+        self.assertEqual(shipment.state, 'confirmed')
+        self.assertEqual(container.state, 'loaded')
+        # Con el contenedor rebajado, el zarpe es directo y no mueve stock.
         container.with_user(self.user_oper).action_rebajar()
         moves_before = self.env['stock.move'].search_count([])
         pickings_before = self.env['stock.picking'].search_count(
             [('origin', 'ilike', shipment.name)])
-        shipment.action_set_in_transit()
+        result = shipment.action_set_in_transit()
+        self.assertTrue(result)
         self.assertEqual(container.state, 'shipped')
         self.assertEqual(shipment.state, 'in_transit')
         self.assertEqual(self.env['stock.move'].search_count([]), moves_before)
@@ -293,4 +306,174 @@ class TestRebajaContenedor(TransactionCase):
                 'vessel_id': vessel.id, 'voyage_id': voyage.id})
         with self.assertRaises(AccessError):
             wizard.action_rebajar()
+
+    def test_10_rebaja_con_email_confirmacion_activo(self):
+        """I0.2: «Rebajar contenedor» funciona con el correo de confirmación
+        de albaranes ACTIVO (no debe romper por el picking outgoing)."""
+        self.company.stock_move_email_validation = True
+        try:
+            guia = self._make_guia('REB-10')
+            lot = self._make_lot(guia, 'REB-LOT-10', 3.0, 3.0)
+            container, _ = self._rebajable_container('10', [(lot, 0.0)])
+            container.with_user(self.user_oper).action_rebajar()
+            self.assertEqual(container.state, 'rebajado')
+            self.assertAlmostEqual(self._quant_of(lot), 0.0, places=3)
+        finally:
+            self.company.stock_move_email_validation = False
+
+    # ══════════════════════════════════════════════════════════════════════
+    # I0 / I1 — Endurecimiento y ablandamiento (2026-10-01)
+    # ══════════════════════════════════════════════════════════════════════
+
+    def _make_sv_lot_wizard(self, guia, label, disponible):
+        """Etiqueta SV que SÍ cumple el dominio del asistente (guía viva)."""
+        lot = self.StockLot.create({
+            'name': label, 'product_id': self.product.id,
+            'company_id': self.company.id, 'lot_flow_type': 'volume',
+            'guia_processing_id': guia.id,
+            'volume_source_guia_id': guia.id, 'piezas': 1,
+            'technical_validation': 'approved',
+            'estado_trazabilidad': 'procesado',
+            'volume_purchase_m3': disponible, 'vol_shipment_m3': disponible,
+        })
+        if disponible > 0:
+            self.env['stock.quant']._update_available_quantity(
+                self.product, self.location, disponible, lot_id=lot)
+        lot.invalidate_recordset()
+        return lot
+
+    def test_11_sv_oculto_por_defecto_con_filtro(self):
+        """I1.8 (D9): los lotes SV se ocultan por defecto; el check los muestra."""
+        guia = self._make_guia('REB-11')
+        sv_lot = self._make_sv_lot_wizard(guia, 'SV00000000311', 10.0)
+        normal_lot = self._make_lot(guia, 'REB-LOT-11', 3.0, 3.0)
+        shipment = self._make_shipment('EMB-11')
+        container = self._make_container('CONT-11', shipment)
+        wizard = self.env['lumber.container.lot.wizard'].create(
+            {'container_id': container.id})
+        self.assertNotIn(sv_lot, wizard.available_lot_ids)
+        self.assertIn(normal_lot, wizard.available_lot_ids)
+        wizard.show_sv_lots = True
+        self.assertIn(sv_lot, wizard.available_lot_ids)
+        self.assertIn(normal_lot, wizard.available_lot_ids)
+
+    def test_12_auditoria_rebaja_con_snapshot_y_hash(self):
+        """I0.3: rebaja y reversa dejan snapshot + SHA-256 en madenat.audit.log."""
+        guia = self._make_guia('REB-12')
+        lot = self._make_lot(guia, 'REB-LOT-12', 3.0, 3.0)
+        container, _ = self._rebajable_container('12', [(lot, 0.0)])
+        container.with_user(self.user_oper).action_rebajar()
+        self._assert_audit_signed(container, 'rebaja')
+        container.with_user(self.user_jef).action_reverse_rebaja()
+        self._assert_audit_signed(container, 'rebaja_reverse')
+
+    def _assert_audit_signed(self, container, action_type):
+        batch = ','.join(str(i) for i in container.line_ids.ids)
+        log = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', action_type),
+            ('batch_id', '=', batch)], order='id desc', limit=1)
+        self.assertTrue(log, 'Falta evento %s' % action_type)
+        self.assertTrue(log.audit_snapshot, 'Falta snapshot')
+        self.assertEqual(len(log.audit_hash or ''), 64, 'Hash inválido')
+        self.assertEqual(
+            log.audit_hash,
+            hashlib.sha256(log.audit_snapshot.encode('utf-8')).hexdigest())
+
+    def test_13_rolleo_no_actua_sobre_rebajado(self):
+        """I0.1: el rolleo rechaza un contenedor «rebajado» con ruta clara."""
+        guia = self._make_guia('REB-13')
+        lot = self._make_lot(guia, 'REB-LOT-13', 3.0, 3.0)
+        container, _ = self._rebajable_container('13', [(lot, 0.0)])
+        container.with_user(self.user_oper).action_rebajar()
+        self.assertEqual(container.state, 'rebajado')
+        wizard = self.env['lumber.container.rollover.wizard'].create({
+            'container_id': container.id, 'motive': 'logistics',
+            'note': 'Prueba de guarda de rolleo sobre contenedor rebajado.',
+            'new_seal': 'SEAL-NEW-13'})
+        with self.assertRaises(UserError) as cm:
+            wizard.action_confirm_rollover()
+        self.assertIn('Revertir rebaja', str(cm.exception))
+
+    def test_14_zarpe_wizard_excepcion_registra_desviacion(self):
+        """I1.6 (B-01): zarpe con excepción exige motivo y audita."""
+        guia = self._make_guia('REB-14')
+        lot = self._make_lot(guia, 'REB-LOT-14', 3.0, 3.0)
+        container, shipment = self._rebajable_container('14', [(lot, 0.0)])
+        shipment.state = 'confirmed'
+        wizard = self.env['lumber.shipment.zarpe.wizard'].create(
+            {'shipment_id': shipment.id})
+        self.assertEqual(wizard.pending_count, 1)
+        with self.assertRaises(UserError):
+            wizard.action_zarpar_con_excepcion()
+        wizard.reason = 'Autorizado: zarpe urgente por corte de booking.'
+        wizard.action_zarpar_con_excepcion()
+        self.assertEqual(shipment.state, 'in_transit')
+        self.assertEqual(container.state, 'shipped')
+        log = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'deviation')], order='id desc', limit=1)
+        self.assertIn('B-01', log.description)
+        self.assertEqual(len(log.audit_hash or ''), 64)
+
+    def test_15_zarpe_wizard_rebajar_y_zarpar(self):
+        """I1.6 (B-01): «Rebajar y zarpar» rebaja y zarpa sin excepción."""
+        guia = self._make_guia('REB-15')
+        lot = self._make_lot(guia, 'REB-LOT-15', 3.0, 3.0)
+        container, shipment = self._rebajable_container('15', [(lot, 0.0)])
+        shipment.state = 'confirmed'
+        wizard = self.env['lumber.shipment.zarpe.wizard'].with_user(
+            self.user_oper).create({'shipment_id': shipment.id})
+        wizard.action_rebajar_y_zarpar()
+        self.assertEqual(container.state, 'shipped')
+        self.assertEqual(shipment.state, 'in_transit')
+        self.assertAlmostEqual(self._quant_of(lot), 0.0, places=3)
+
+    def test_16_reversa_override_gerencia(self):
+        """I1.7 (B-03): reversa con embarque entregado exige Gerencia + motivo."""
+        guia = self._make_guia('REB-16')
+        lot = self._make_lot(guia, 'REB-LOT-16', 3.0, 3.0)
+        container, shipment = self._rebajable_container('16', [(lot, 0.0)])
+        container.with_user(self.user_oper).action_rebajar()
+        shipment.state = 'delivered'
+        # Jefatura (sin Gerencia) → bloqueado.
+        with self.assertRaises(UserError):
+            container.with_user(self.user_jef).action_reverse_rebaja()
+        # Gerencia → abre el wizard de override.
+        action = container.with_user(self.user_ger).action_reverse_rebaja()
+        self.assertEqual(
+            action.get('res_model'),
+            'lumber.container.rebaja.reverse.wizard')
+        wizard = self.env[
+            'lumber.container.rebaja.reverse.wizard'].with_user(
+            self.user_ger).create({
+                'container_id': container.id,
+                'reason': 'Cliente autorizó devolución posterior a entrega.'})
+        wizard.action_confirm_override()
+        container.invalidate_recordset()
+        self.assertEqual(container.state, 'loaded')
+        log = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'deviation')], order='id desc', limit=1)
+        self.assertIn('B-03', log.description)
+
+    def test_17_guard_deviation_hard_y_blando(self):
+        """I1.5 (AD-88): helper común _guard_deviation hard/blando."""
+        guia = self._make_guia('REB-17')
+        lot = self._make_lot(guia, 'REB-LOT-17', 3.0, 3.0)
+        container, _ = self._rebajable_container('17', [(lot, 0.0)])
+        # Duro → bloquea.
+        with self.assertRaises(UserError):
+            container._guard_deviation(
+                'B-02', 'Mensaje duro.', reason='x', hard=True)
+        # Blando sin motivo → bloquea por falta de motivo.
+        with self.assertRaises(UserError):
+            container._guard_deviation(
+                'B-01', 'Mensaje blando.', reason='', hard=False)
+        # Blando con motivo → audita y continúa.
+        self.assertTrue(container._guard_deviation(
+            'B-01', 'Mensaje blando.', reason='Motivo válido de prueba.'))
+        log = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'deviation')], order='id desc', limit=1)
+        self.assertIn('B-01', log.description)
+        self.assertEqual(
+            log.audit_hash,
+            hashlib.sha256(log.audit_snapshot.encode('utf-8')).hexdigest())
 
