@@ -136,8 +136,8 @@
                                     <field name="seal_number"/>
                                     <field name="packages" sum="Total Paquetes"/>
                               
-                                    <field name="total_volume_purchase_m3" string="Vol. Físico" sum="Total Físico" digits="[16, 3]"/>
-                                    <field name="volume_m3" string="Vol. de Embarque" sum="Total m³ Embarque" digits="[16, 3]"/>
+                                    <field name="total_volume_purchase_m3" string="Vol. Nominal (m³)" sum="Total Nominal" digits="[16, 3]"/>
+                                    <field name="volume_m3" string="Vol. Exportación (m³)" sum="Total Exportación" digits="[16, 3]"/>
                                     <field name="volume_mbf" string="Vol. MBF" sum="Total MBF" digits="[16, 3]"/>
                                     <field name="gross_weight_kg" sum="Total Peso Kg"/>
                                     <field name="state" widget="badge" 

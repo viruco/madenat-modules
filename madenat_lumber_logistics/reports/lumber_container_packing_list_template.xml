@@ -26,7 +26,7 @@
                                 <th>PAQUETES</th>
                                 <th>LOTES</th>
                                 <th>V. STOCK NOMINAL (m³)</th>
-                                <th style="background-color: #d1ecf1;">VOL. EMBARQUE REAL (m³)</th>
+                                <th style="background-color: #d1ecf1;">VOL. EXPORTACIÓN (m³)</th>
                                 <th>TOTAL MBF</th>
                             </tr>
                         </thead>

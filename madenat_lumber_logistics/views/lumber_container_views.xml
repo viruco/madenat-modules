@@ -152,8 +152,8 @@
                        optional="hide"/>
                 
                 <field name="total_vol_shipment_m3"
-                       string="Vol. Físico (m³)"
-                       sum="Total Físico"
+                       string="Vol. Exportación (m³)"
+                       sum="Total Exportación"
                        optional="show"
                        digits="[16, 3]"/>
                        
@@ -313,7 +313,7 @@
 
                                 <group string="Volúmenes y Rendimiento">
                                     <label for="total_vol_shipment_m3"
-                                           string="Volumen Físico (Facturable)"/>
+                                           string="Volumen Exportación (facturable)"/>
                                     <div class="o_row">
                                         <field name="total_vol_shipment_m3"
                                                decoration-bf="1"

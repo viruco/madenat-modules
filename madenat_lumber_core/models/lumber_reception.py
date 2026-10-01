@@ -308,7 +308,7 @@ class LumberReceptionLine(models.Model):
     # 1. Volumen Físico REAL (Solo Informativo/Staging)
     # Este calcula mm * mm * m. Sirve para ver "cuánto perdemos/ganamos" vs el nominal.
     vol_physical_real_m3 = fields.Float(
-        string="Vol. Físico Real (Staging)",
+        string="Vol. métrico físico (staging)",
         digits=(16, 3),
         compute="_compute_volume_physical_real",
         store=True,
@@ -318,7 +318,7 @@ class LumberReceptionLine(models.Model):
     # 2. Volumen Compra/Inventario (LA VERDAD DE BODEGA)
     # Este es el nominal. Y según tu regla, ESTE es el que manda en bodega.
     vol_physical_m3 = fields.Float(
-        string="Vol. Físico (m³)",
+        string="Vol. métrico físico",
         compute="_compute_vol_physical_strict",
         store=True,
         readonly=True,

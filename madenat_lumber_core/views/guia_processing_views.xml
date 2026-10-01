@@ -50,7 +50,7 @@
 
                 <!-- Indicadores de Volumen (KPIs) -->
                 <field name="vol_comercial" string="Vol. Comercial m³" digits="[16, 3]"/>
-                <field name="vol_fisico" string="Vol. Físico m³" digits="[16, 3]"/>
+                <field name="vol_fisico" string="Vol. Nominal (stock)" digits="[16, 3]"/>
 
                 <!-- Control de Calidad: Diferencia Porcentual -->
                 <field name="diff_pct" string="Dif. %"
@@ -578,7 +578,7 @@
                                 </field>
 
                                 <group class="oe_subtotal_footer oe_right">
-                                    <field name="vol_fisico" string="Total Volumen Físico (m³)"/>
+                                    <field name="vol_fisico" string="Total Volumen Nominal (m³)"/>
                                     <field name="total_paquetes" string="Total Paquetes"/>
                                 </group>
                             </page>
@@ -1084,7 +1084,7 @@
 
                 <field name="vol_comercial" string="Vol. Comercial m³" sum="Total Comercial Pendiente" digits="[16, 3]"/>
 
-                <field name="vol_fisico" string="Vol. Físico m³" sum="Total Físico Pendiente" digits="[16, 3]"/>
+                <field name="vol_fisico" string="Vol. Nominal (stock)" sum="Total Nominal Pendiente" digits="[16, 3]"/>
 
                 <field name="diff_pct" string="Diferencia %"
                        widget="percentage"

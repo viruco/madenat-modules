@@ -116,11 +116,11 @@ class LumberContainer(models.Model):
     
     # 1. Base de Facturación y Carga (El Real)
     total_vol_shipment_m3 = fields.Float(
-        'Vol. Físico Real (Facturable)', 
+        'Vol. Exportación (facturable)', 
         compute='_compute_volume_totals', 
         store=True,
         digits=(16, 3),
-        help="Volumen geométrico real. Base para la FACTURACIÓN de exportación y cálculo de espacio."
+        help="Volumen de exportación (documental). Base para la FACTURACIÓN de exportación y cálculo de espacio."
     )
     
     # 2. Referencia de Costos (El Nominal)
@@ -143,11 +143,11 @@ class LumberContainer(models.Model):
 
     # 4. Campo Estructural (Legacy/Core) - Mapeado al Físico
     volume_m3 = fields.Float(
-        'Volumen m³ (Total)',
+        'Vol. Exportación (total)',
         compute='_compute_volume_totals', 
         store=True,
         digits=(16, 3),
-        help="Volumen total ocupado (Alias de Vol. Físico)."
+        help="Alias de Vol. Exportación (documental, total)."
     )
     
     volume_mbf = fields.Float(
@@ -811,6 +811,9 @@ class LumberContainer(models.Model):
                 sheet.merge_range(2, offset+6, 2, offset+7, reserva, header_fmt)
                 cols = ['Embarcador', 'Producto', 'Planta', 'Etiqueta', 'Pqts', 'Subprod.', 'Espesor', 'Ancho', 'Largo', 'Pzas', 'M3', 'Guia', 'Fecha']
                 for i, c in enumerate(cols):
+                    # A3: columna 'M3' diferenciada por lado (izq=EXPORT, der=NOMINAL)
+                    if i == 10:
+                        c = 'M3 EXP' if offset == 0 else 'M3 NOM'
                     sheet.write(3, offset+i, c, header_fmt)
 
             # --- AGRUPACIÓN ---
