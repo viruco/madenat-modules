@@ -187,6 +187,154 @@ class LumberStockReport(models.Model):
                 q.lot_container_name = ''
 
     # ──────────────────────────────────────────────────────
+    # CAMPOS DE PRESENTACIÓN OPERATIVA — PROGRAMACIÓN 1 (R1)
+    # 'granel' es una clasificación técnica interna del flujo. En la vista R1
+    # se presenta como 'Lote Volumen'. NO se altera stock.lot.name ni los
+    # datos históricos: la búsqueda por "GRANEL 4495589" sigue operativa vía
+    # el campo técnico lot_id.
+    # ──────────────────────────────────────────────────────
+
+    GRANEL_TECHNICAL_TOKEN = 'GRANEL'
+    GRANEL_OPERATIONAL_LABEL = 'Lote Volumen'
+
+    @api.model
+    def _is_volume_lot_name(self, lot_name):
+        """True si el nombre del lote comienza con el token técnico 'GRANEL'.
+
+        Fuente ÚNICA de detección del flujo por volumen (la usan el campo
+        técnico `is_volume_lot` y la etiqueta de presentación). Normaliza
+        espacios, por lo que '  GRANEL  4495589 ' también coincide. No se
+        detectan tokens parciales ('GRANELITO') ni el token en medio del
+        nombre ('MAD-001 GRANEL').
+        """
+        name = ' '.join((lot_name or '').split())
+        return name == self.GRANEL_TECHNICAL_TOKEN or name.startswith(
+            self.GRANEL_TECHNICAL_TOKEN + ' '
+        )
+
+    @api.model
+    def _present_lot_operational_label(self, lot_name):
+        """Reemplaza EXCLUSIVAMENTE el token inicial 'GRANEL' por 'Lote Volumen'.
+
+        - 'GRANEL 4495589' → 'Lote Volumen 4495589'
+        - 'GRANEL'         → 'Lote Volumen'
+        - Otros nombres    → se devuelven intactos (sin reemplazos parciales
+          ni globales dentro del nombre).
+        """
+        name = (lot_name or '').strip()
+        if not name:
+            return ''
+        if not self._is_volume_lot_name(name):
+            return name
+        remainder = name[len(self.GRANEL_TECHNICAL_TOKEN):].strip()
+        return f"{self.GRANEL_OPERATIONAL_LABEL} {remainder}".strip()
+
+    lot_operational_label = fields.Char(
+        string='Lote / Etiqueta',
+        compute='_compute_lot_operational_label',
+        store=True,
+        readonly=True,
+        help="Etiqueta operativa de presentación (Programación 1). El token "
+             "técnico inicial 'GRANEL' se presenta como 'Lote Volumen' sin "
+             "modificar stock.lot.name ni los datos históricos."
+    )
+
+    @api.depends('lot_id', 'lot_id.name')
+    def _compute_lot_operational_label(self):
+        for q in self:
+            q.lot_operational_label = self._present_lot_operational_label(
+                q.lot_id.name if q.lot_id else ''
+            )
+
+    is_volume_lot = fields.Boolean(
+        string='Es Lote Volumen',
+        compute='_compute_is_volume_lot',
+        store=True,
+        index=True,
+        readonly=True,
+        help="True si el lote proviene del flujo por volumen (token técnico "
+             "'GRANEL' al inicio de stock.lot.name). Criterio TÉCNICO, "
+             "independiente de la etiqueta de presentación 'Lote Volumen'."
+    )
+
+    @api.depends('lot_id', 'lot_id.name')
+    def _compute_is_volume_lot(self):
+        for q in self:
+            q.is_volume_lot = self._is_volume_lot_name(
+                q.lot_id.name if q.lot_id else ''
+            )
+
+    lot_entry_datetime = fields.Datetime(
+        string='Fecha/Hora de ingreso',
+        compute='_compute_lot_entry_datetime',
+        store=True,
+        readonly=True,
+        help="Recepción de compra: fecha/hora documental de recepción. "
+             "Guía de procesamiento sin recepción: fecha/hora de creación del "
+             "lote (fallback, ver campo 'Origen Fecha/Hora'). Sin ninguna de "
+             "las dos fuentes: se muestra vacío (no se infieren fechas)."
+    )
+
+    lot_entry_datetime_source = fields.Selection(
+        selection=[
+            ('reception', 'Recepción de compra'),
+            ('lot_creation', 'Creación del lote (fallback)'),
+        ],
+        string='Origen Fecha/Hora',
+        compute='_compute_lot_entry_datetime',
+        store=True,
+        readonly=True,
+        help="Distingue si la fecha/hora de ingreso proviene de una recepción "
+             "documental o del fallback de creación del lote."
+    )
+
+    @api.depends('lot_reception_date',
+                 'lot_id.guia_processing_id',
+                 'lot_id.create_date')
+    def _compute_lot_entry_datetime(self):
+        for q in self:
+            if q.lot_reception_date:
+                # 1) Fecha documental de recepción de compra
+                q.lot_entry_datetime = q.lot_reception_date
+                q.lot_entry_datetime_source = 'reception'
+            elif q.lot_id and q.lot_id.guia_processing_id and q.lot_id.create_date:
+                # 2) Fallback explícito: creación del lote (guía de procesamiento)
+                q.lot_entry_datetime = q.lot_id.create_date
+                q.lot_entry_datetime_source = 'lot_creation'
+            else:
+                # 3) Sin fuente real: vacío (no se inventan fechas)
+                q.lot_entry_datetime = False
+                q.lot_entry_datetime_source = False
+
+    lot_origin_document = fields.Char(
+        string='Documento origen',
+        compute='_compute_lot_origin_document',
+        store=True,
+        readonly=True,
+        help="Documento real enlazado al lote: recepción de compra o guía de "
+             "procesamiento. Vacío cuando el lote no tiene documento de "
+             "origen enlazado (no se generan textos de relleno)."
+    )
+
+    @api.depends('lot_id.reception_id',
+                 'lot_id.reception_id.name',
+                 'lot_id.guia_processing_id',
+                 'lot_id.guia_processing_id.name')
+    def _compute_lot_origin_document(self):
+        for q in self:
+            lot = q.lot_id
+            if not lot:
+                q.lot_origin_document = ''
+            elif lot.reception_id:
+                # Documento 1: recepción de compra (madera nueva)
+                q.lot_origin_document = lot.reception_id.name or ''
+            elif lot.guia_processing_id:
+                # Documento 2: guía de procesamiento (transformación interna)
+                q.lot_origin_document = lot.guia_processing_id.name or ''
+            else:
+                q.lot_origin_document = ''
+
+    # ──────────────────────────────────────────────────────
     # HELPERS LEGACY (mantenidos por compatibilidad)
     # ──────────────────────────────────────────────────────
 

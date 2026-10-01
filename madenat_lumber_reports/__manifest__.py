@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Intelligence & OS',
-    'version': '18.0.2.2.0',
+    'version': '18.0.2.3.0',
     'summary': 'Cerebro de Gestión y Remapeo - MADENAT',
     'license': 'LGPL-3',
     'post_init_hook': 'post_init_hook',
