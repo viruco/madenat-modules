@@ -792,8 +792,17 @@ class LumberContainer(models.Model):
             sheet.set_column(13, 13, 2)
 
             # --- CABECERAS ---
-            nave = self.shipment_id.name if self.shipment_id else 'S/N'
-            reserva = self.shipment_id.name if self.shipment_id else 'S/N'
+            # A4: 'MN' muestra nave/viaje reales; 'RESERVA' muestra el booking
+            # del embarque (antes ambas usaban shipment.name).
+            if self.shipment_id:
+                vessel = self.shipment_id.vessel_id.name or ''
+                voyage = (self.shipment_id.voyage_id.voyage_reference
+                          if self.shipment_id.voyage_id else '')
+                nave = ' / '.join(p for p in (vessel, voyage) if p) or 'S/N'
+                reserva = self.shipment_id.booking_reference or 'S/N'
+            else:
+                nave = 'S/N'
+                reserva = 'S/N'
             
             for offset in [0, 14]:
                 sheet.merge_range(0, offset, 0, offset+9, f'MN {nave}', title_fmt)
