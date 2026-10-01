@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Intake',
-    'version': '18.0.0.4.0',
+    'version': '18.0.0.11.0',
     'summary': 'Puerta única de ingreso de madera — fachada sobre Recepción y Guía Processing',
     'description': """
 Módulo fachada para el ingreso operacional simplificado ("Ingreso de Madera").
@@ -23,16 +23,21 @@ Capacidades:
         'security/ir.model.access.csv',
         'views/intake_wizard_views.xml',
         'views/intake_console_views.xml',
+        'views/intake_volume_detail_line_views.xml',
         'views/intake_reception_facade_views.xml',
         'views/intake_guia_processing_facade_views.xml',
         'views/intake_cancel_wizard_views.xml',
         'views/intake_po_link_wizard_views.xml',
         'views/intake_supplier_link_wizard_views.xml',
+        'views/intake_reclassify_wizard_views.xml',
+        'views/intake_guide_lifecycle_wizard_views.xml',
         'views/intake_menus.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'madenat_lumber_intake/static/src/js/replace_current_action.js',
+            # Pulido UX del bloque «DATOS DECLARADOS DE LA GUÍA» (Consola).
+            'madenat_lumber_intake/static/src/scss/declared_grid_ux.scss',
         ],
     },
     'installable': True,

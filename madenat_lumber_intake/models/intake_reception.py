@@ -275,3 +275,18 @@ class LumberReceptionIntake(models.Model):
             'target': 'new',
             'context': {'default_reception_id': self.id},
         }
+
+    def action_reclassify(self):
+        """Abre el wizard de reclasificación de tipo de ingreso (AD-73)."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reclasificar Tipo de Ingreso'),
+            'res_model': 'madenat.lumber.intake.reclassify.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_source_model': 'lumber.reception',
+                'default_source_res_id': self.id,
+            },
+        }

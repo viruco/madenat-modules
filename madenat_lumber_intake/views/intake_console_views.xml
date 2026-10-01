@@ -13,7 +13,7 @@
                   decoration-muted="review_state in ('cancel', 'error')"
                   decoration-info="review_state == 'needs_review'"
                   decoration-success="review_state == 'sent'"
-                  decoration-warning="review_state == 'ready'"
+                  decoration-warning="review_state in ('ready', 'documental_pending')"
                   decoration-danger="review_state == 'invalid'">
 
                 <header>
@@ -28,13 +28,17 @@
                 <field name="guide_date" string="Fecha"/>
                 <field name="partner_id" string="Proveedor"/>
 
-                <!-- Referencia documental, conservada para casos con OC manual o sin vínculo Many2one -->
-                <field name="purchase_reference" string="OC"/>
+                <!-- OC documento: referencia de OC extraída del documento
+                     (COALESCE de la OC vinculada y de la referencia documental
+                     cruda). Nunca se muestra como un segundo título «OC». -->
+                <field name="purchase_reference" string="OC documento"/>
 
-                <!-- Estado legal de OC (Selection, no bloquea). Fuente: purchase_id. -->
-                <field name="oc_pending" string="OC" widget="badge"
-                       decoration-success="oc_pending == 'linked'"
-                       decoration-warning="oc_pending == 'pending'"/>
+                <!-- Estado OC documental (3 estados, no bloquea): vinculada,
+                     pendiente de vinculación o no indicada en documento. -->
+                <field name="oc_documentary_status" string="Estado OC" widget="badge"
+                       decoration-success="oc_documentary_status == 'linked'"
+                       decoration-warning="oc_documentary_status == 'pending'"
+                       decoration-muted="oc_documentary_status == 'not_informed'"/>
 
                 <field name="state" string="Estado"/>
                 <field name="ingestion_type" string="Tipo"/>
@@ -70,6 +74,12 @@
                             class="btn-secondary"
                             invisible="review_state == 'invalid'"/>
 
+                    <button name="action_reclassify"
+                            type="object"
+                            string="Reclasificar Tipo de Ingreso"
+                            class="btn-secondary"
+                            invisible="(ingestion_type == 'product' and state not in ('draft', 'processing')) or (ingestion_type == 'processed' and state not in ('draft', 'verified'))"/>
+
                     <!-- Descarga de documentos del origen (solo Producto) -->
                     <button name="action_download_guide_pdf"
                             type="object"
@@ -100,22 +110,48 @@
                             confirm="¿Reabrir este ingreso cancelado a Borrador para releer Guía y Packing?"
                             invisible="ingestion_type != 'product' or review_state != 'cancel'"/>
 
+                    <!-- Fase 2 (AD-80): ciclo de vida controlado de la Guía
+                         (Modos A–D) con diagnóstico de bloqueadores, motivo
+                         obligatorio y auditoría. No elimina nada por sí solo. -->
+                    <button name="action_open_guide_lifecycle"
+                            type="object"
+                            string="Ciclo de vida de la guía"
+                            class="btn-secondary"
+                            icon="fa-recycle"
+                            invisible="ingestion_type not in ('processed', 'volume')"/>
+
                     <div class="oe_header_indicators"
                          style="margin-left:auto; display:flex; gap:16px; align-items:center; margin-right:15px; flex-wrap:wrap;">
 
-                        <div class="indicator">
+                        <!-- Indicador de datos: se oculta en la pantalla
+                             operativa de Volumen (D4). -->
+                        <div class="indicator" invisible="ingestion_type == 'volume'">
                             <span class="text-muted">Lotes/Líneas:</span>
                             <field name="total_lots" nolabel="1" readonly="1" class="fw-bold"/>
                         </div>
 
-                        <div class="indicator">
+                        <div class="indicator" invisible="ingestion_type == 'volume'">
                             <span class="text-muted">Total guía:</span>
                             <field name="total_amount" nolabel="1" readonly="1" widget="monetary" class="fw-bold"/>
                         </div>
 
-                        <div class="indicator">
+                        <!-- Fase 2 (AD-80): para el Ingreso por Volúmenes NO se
+                             muestra un agregado competidor "Volumen:" en el
+                             encabezado. El único volumen primario es el
+                             volumen oficial del bloque "VOLUMEN OFICIAL DE LA
+                             GUÍA". -->
+                        <div class="indicator" invisible="ingestion_type == 'volume'">
+                            <span class="text-muted">Vol. total declarado:</span>
+                            <field name="total_volume_m3" nolabel="1" readonly="1" class="fw-bold"/>
+                            <span class="text-muted">m³</span>
+                        </div>
+
+                        <!-- Indicador de datos: se oculta en la pantalla
+                             operativa de Volumen (D4). -->
+                        <div class="indicator" invisible="ingestion_type == 'volume'">
                             <span class="text-muted">Revisión:</span>
-                            <field name="review_state" nolabel="1" readonly="1" widget="badge"/>
+                            <field name="review_state" nolabel="1" readonly="1" widget="badge"
+                                   decoration-warning="review_state == 'documental_pending'"/>
                         </div>
                     </div>
                 </header>
@@ -123,28 +159,21 @@
                 <sheet>
 
                     <!-- =================================================
-                         IDENTIFICACIÓN PRINCIPAL
+                         PRODUCTO / PROCESADO — sin cambios visuales
                          ================================================= -->
-                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1"
+                         invisible="ingestion_type == 'volume'">
                         <span class="fs-5 fw-bold">
                             Guía
                             <field name="guide_name" class="fs-5 fw-bold"/>
                         </span>
-
                         <span class="text-muted">·</span>
-
                         <field name="ingestion_type" widget="badge"/>
                         <field name="state" widget="badge"/>
                     </div>
 
-                    <!-- =================================================
-                         RESUMEN Y EVIDENCIA
-                         ================================================= -->
-                    <group>
+                    <group invisible="ingestion_type == 'volume'">
                         <group string="Resumen del ingreso">
-                            <!-- 2026-08-29: combos de cabecera (editables, no
-                                 persistidos). Al guardar / click en "Aplicar" se
-                                 aplican vía el wizard existente del core. -->
                             <field name="product_id" string="Producto"
                                    options="{'no_create': True, 'no_quick_create': True}"
                                    context="{'display_default_code': False}"/>
@@ -157,27 +186,18 @@
                                     invisible="review_state in ('sent', 'cancel', 'error')"/>
                             <field name="guide_date" string="Fecha de guía"/>
                             <field name="partner_id" string="Proveedor"/>
-
-                            <!-- Texto documental de la OC. Puede existir aunque no haya purchase_id. -->
                             <field name="purchase_reference" string="OC documento"/>
-
-                            <!-- Vínculo Many2one a purchase.order. -->
                             <field name="purchase_id" string="OC vinculada"/>
-
-                            <!-- Estado legal de OC (Selection, no bloquea). Fuente: purchase_id. -->
                             <field name="oc_pending" string="OC" widget="badge"
                                    decoration-success="oc_pending == 'linked'"
                                    decoration-warning="oc_pending == 'pending'"/>
-
                             <field name="display_reference" string="Referencia"/>
                         </group>
-
                         <group string="Evidencia documental">
                             <field name="review_guide_document"
                                    string="Guía (PDF)"
                                    widget="badge"
                                    decoration-info="review_guide_document and review_guide_document != 'Sin PDF'"/>
-
                             <field name="review_excel_document"
                                    string="Packing list (Excel)"
                                    widget="badge"
@@ -186,9 +206,679 @@
                     </group>
 
                     <!-- =================================================
+                         EVIDENCIA DOCUMENTAL (PROCESADO, solo lectura)
+                         ================================================== -->
+                    <group string="📄 Evidencia documental"
+                           invisible="ingestion_type != 'processed'" col="4">
+                        <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)" readonly="1" digits="[16, 3]"/>
+                        <field name="packing_volume_declared_m3" string="Vol. Packing (m³)" readonly="1" digits="[16, 3]"/>
+                        <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)" readonly="1" digits="[16, 3]"/>
+                        <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)" readonly="1" digits="[16, 3]"/>
+                        <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)" readonly="1" digits="[16, 3]"/>
+                        <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
+                        <field name="packing_package_count_declared" string="Paquetes Packing" readonly="1"/>
+                        <field name="documental_conciliation_state" string="Conciliación documental" widget="badge"
+                               decoration-success="documental_conciliation_state == 'consistent'"
+                               decoration-warning="documental_conciliation_state == 'partial'"
+                               decoration-danger="documental_conciliation_state == 'difference'"
+                               decoration-muted="documental_conciliation_state == 'not_available'"/>
+                    </group>
+
+                    <!-- Aviso informativo de líneas documentales pendientes -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="ingestion_type != 'processed' or documental_pending_count &lt;= 0">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <strong>Líneas documentales pendientes:</strong>
+                        <field name="documental_pending_count" nolabel="1" readonly="1"/>
+                    </div>
+
+                    <!-- =================================================
+                        VOLUMEN — cabecera y control en una sola franja
+                        ================================================== -->
+                    <div invisible="ingestion_type != 'volume'">
+
+                        <!-- Identificación breve de la guía -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                            <span class="fs-5 fw-bold">
+                                Guía
+                                <field name="guide_name" class="fs-5 fw-bold"/>
+                            </span>
+
+                            <field name="ingestion_type" widget="badge"/>
+                            <field name="state" widget="badge"/>
+                        </div>
+
+                        <!-- =================================================
+                             VOLUMEN OFICIAL DE LA GUÍA (referencia única)
+                             Único bloque oficial del Ingreso por Volúmenes:
+                             total declarado en la Guía/PDF o, en su defecto,
+                             Packing Excel / Packing declarado. La suma del
+                             detalle documental NO es una alternativa oficial.
+                             ================================================= -->
+                        <!-- Nodo conservado por contrato de vista (nunca se
+                             elimina del XML): el volumen oficial crudo ya no
+                             se muestra por separado en la pantalla operativa.
+                             El volumen oficial VIGENTE (documental o
+                             regularizado) se muestra en el bloque «DATOS
+                             DECLARADOS DE LA GUÍA». Sin contenedor bootstrap
+                             row/col-*: al ser invisible="1" estático dejaba
+                             una fila/columna vacía antes de BLOQUE 1. -->
+                        <group string="VOLUMEN OFICIAL DE LA GUÍA"
+                               invisible="1">
+                            <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                                <span class="fs-3 fw-bold">
+                                    <field name="official_volume_m3"
+                                           nolabel="1" readonly="1"
+                                           digits="[16, 3]"/>
+                                    m³
+                                </span>
+                                <span class="text-muted">
+                                    Fuente:
+                                    <field name="official_volume_source"
+                                           nolabel="1" readonly="1"/>
+                                </span>
+                            </div>
+                            <div class="text-muted">
+                                Gobierna stock, conciliación y consolidación.
+                            </div>
+                        </group>
+
+                        <!-- El bloque «ETIQUETA SV» (con sus acciones) vive
+                             DENTRO de «DATOS DECLARADOS DE LA GUÍA», en la
+                             misma franja que el volumen oficial vigente: así
+                             se respeta el orden de los tres bloques visibles
+                             de la pantalla operativa de Volumen
+                             (DATOS DE LA GUÍA → DATOS DECLARADOS DE LA GUÍA
+                             → ETIQUETA SV). -->
+
+                        <!-- =================================================
+                             BLOQUE 1 — DATOS DE LA GUÍA (pantalla operativa
+                             de Volumen). Referencia documental primaria:
+                             emisor del PDF, fecha de emisión y OC. «OC
+                             documento» es la referencia extraída del documento
+                             (`oc_reference_raw`), que NUNCA se sobrescribe al
+                             vincular una OC real; «OC vinculada» es la orden
+                             interna de Odoo relacionada y «Estado OC»
+                             distingue ambos casos. No bloquea ninguna acción.
+                             ================================================= -->
+                        <group string="DATOS DE LA GUÍA" col="2">
+                            <!-- Redistribución UX: tres columnas responsivas
+                                 DENTRO del mismo grupo titulado (3 en lg, 2 en
+                                 md y 1 en pantallas angostas). Grupos sin
+                                 título + contenedores row/col; los subtítulos
+                                 atenuados NO crean grupos titulados nuevos. -->
+                            <div class="row g-3" colspan="2">
+                                <!-- Columna «Documento» -->
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <div class="text-muted small fw-bold mb-1">Documento</div>
+                                    <group col="1">
+                                        <field name="guide_date" string="Fecha"/>
+                                        <field name="display_reference"
+                                               string="Referencia"/>
+                                    </group>
+                                </div>
+
+                                <!-- Columna «Proveedor» -->
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <div class="text-muted small fw-bold mb-1">Proveedor</div>
+                                    <group col="1">
+                                        <!-- Proveedor documental (emisor PDF) y
+                                             vínculo manual. No bloquea. -->
+                                        <field name="supplier_documental_name"
+                                            string="Proveedor documental"
+                                            placeholder="No identificado"/>
+                                        <field name="supplier_documental_rut"
+                                            string="RUT documental"
+                                            invisible="not supplier_documental_rut"/>
+                                        <field name="partner_id"
+                                            string="Proveedor asociado"
+                                            placeholder="No vinculado"/>
+                                        <!-- Fase 3 UX: fila completa cuando es
+                                             visible (antes dejaba media fila). -->
+                                        <button name="action_assign_supplier"
+                                            type="object"
+                                            string="Asignar proveedor"
+                                            class="btn-secondary"
+                                            colspan="2"
+                                            icon="fa-pencil"
+                                            invisible="partner_id"/>
+                                        <field name="supplier_resolution_status"
+                                            string="Estado proveedor"
+                                            widget="badge"
+                                            decoration-warning="supplier_resolution_status == 'needs_manual' or supplier_resolution_status == 'multi_match'"/>
+                                    </group>
+                                </div>
+
+                                <!-- Columna «Orden de compra» -->
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <div class="text-muted small fw-bold mb-1">Orden de compra</div>
+                                    <group col="1">
+
+                                        <!-- Etiqueta, valor y fallback en la
+                                             MISMA línea por fila: cada valor
+                                             junto a su etiqueta. -->
+                                        <div class="d-flex align-items-baseline gap-2 flex-wrap"
+                                             colspan="2">
+                                            <span class="text-muted">OC documento:</span>
+                                            <field name="oc_reference_documental"
+                                                   nolabel="1" readonly="1"/>
+                                            <span class="text-muted"
+                                                  invisible="oc_reference_documental">
+                                                No indicada en documento
+                                            </span>
+                                        </div>
+
+                                        <div class="d-flex align-items-baseline gap-2 flex-wrap"
+                                             colspan="2">
+                                            <span class="text-muted">OC vinculada:</span>
+                                            <field name="purchase_id" nolabel="1" readonly="1"/>
+                                            <span class="text-muted" invisible="purchase_id">
+                                                Pendiente de vinculación
+                                            </span>
+                                        </div>
+
+                                        <field name="oc_documentary_status"
+                                            string="Estado OC"
+                                            widget="badge"
+                                            decoration-success="oc_documentary_status == 'linked'"
+                                            decoration-warning="oc_documentary_status == 'pending'"
+                                            decoration-muted="oc_documentary_status == 'not_informed'"/>
+                                    </group>
+                                </div>
+                            </div>
+
+                            <!-- Leyenda de OC a ancho completo bajo las tres
+                                 columnas (no genera fila parcial). -->
+                            <div class="text-muted mt-1" colspan="2">
+                                «OC documento» es la referencia extraída del
+                                documento y no se sobrescribe. «OC vinculada» es
+                                la orden de compra interna de Odoo relacionada.
+                            </div>
+                        </group>
+
+                        <!-- =================================================
+                             BLOQUE 2 — DATOS DECLARADOS DE LA GUÍA (solo
+                             Volúmenes). Encabeza el VOLUMEN OFICIAL VIGENTE
+                             (documental o regularizado por Operaciones) con su
+                             fuente y la acción «Modificar volumen oficial»,
+                             seguido de los datos declarados editables.
+                             Proxies no almacenados hacia madenat.guia.processing:
+                             opcionales y no bloqueantes, no calculan, no
+                             concilian ni disparan acciones de stock.
+                             ================================================= -->
+                                <group string="DATOS DECLARADOS DE LA GUÍA"
+                                       class="o_madenat_declared_group"
+                                       invisible="ingestion_type != 'volume'">
+                                    <!-- =================================================
+                                         FILA SUPERIOR — VOLUMEN OFICIAL VIGENTE (izquierda) y
+                                         ETIQUETA SV (derecha) en la misma franja: aprovecha el ancho
+                                         disponible sin apilar los dos bloques en vertical.
+                                         ================================================= -->
+                                    <div class="row g-2 mb-0" colspan="2">
+                                        <div class="col-12 col-lg-6">
+                                            <!-- Volumen oficial VIGENTE: gobierna stock,
+                                                 conciliación y consolidación. Con una
+                                                 regularización aplicada rige el baseline
+                                                 regularizado de la etiqueta SV; sin ella,
+                                                 el volumen oficial documental de la Guía.
+                                                 Franja en UNA línea: etiqueta + valor con
+                                                 «m³» pegado (text-nowrap + &#160;) + Fuente,
+                                                 con wrap SOLO entre pares (flex-wrap). -->
+                                            <div class="d-flex align-items-baseline flex-wrap gap-2">
+                                                <span class="text-muted text-nowrap">Volumen oficial de la Guía:</span>
+                                                <span class="fs-4 fw-bold text-nowrap">
+                                                    <field name="official_volume_effective_m3"
+                                                           nolabel="1" readonly="1"
+                                                           digits="[16, 3]"/>&#160;m³
+                                                </span>
+                                                <span class="text-muted text-nowrap">
+                                                    Fuente:
+                                                    <field name="official_volume_effective_source"
+                                                           nolabel="1" readonly="1"/>
+                                                </span>
+                                                <!-- D2: única instancia del botón, junto al
+                                                     volumen oficial vigente y fuera del bloque
+                                                     «ETIQUETA SV». Oculto sin lote SV real (la
+                                                     acción exige el lote para operar). -->
+                                                <button name="action_sv_regularize_volume"
+                                                        type="object"
+                                                        string="Modificar volumen oficial"
+                                                        class="btn-secondary btn-sm"
+                                                        invisible="not declared_sv_lot_id"/>
+                                            </div>
+                                            <div class="text-muted mb-0">
+                                                Gobierna stock, conciliación y consolidación.
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-6">
+                                            <!-- ETIQUETA SV (solo Volúmenes), DENTRO del bloque
+                                                 «DATOS DECLARADOS DE LA GUÍA»: mismos nodos y acciones,
+                                                 nada duplicado. Las acciones delegan en los wizards y en
+                                                 el ledger append-only: la Consola NUNCA escribe
+                                                 stock.lot.name, volumen ni saldo. -->
+                                            <div invisible="ingestion_type != 'volume' or not declared_sv_lot_id">
+                                                <group string="ETIQUETA SV" class="o_madenat_declared_sv">
+                                                    <group colspan="2">
+                                                        <field name="sv_lot_label" readonly="1"
+                                                               nolabel="1" class="fs-5 fw-bold"/>
+                                                        <field name="sv_available_m3" readonly="1"
+                                                               string="Saldo disponible"
+                                                               invisible="1"/>
+                                                        <field name="sv_original_volume_m3" readonly="1"
+                                                               invisible="1"/>
+                                                        <field name="sv_regularized_baseline_m3" readonly="1"
+                                                               invisible="1"/>
+                                                        <field name="sv_rebajado_m3" readonly="1"
+                                                               invisible="1"/>
+                                                        <field name="sv_pieces_enabled" invisible="1"/>
+                                                        <field name="sv_available_pieces" readonly="1"
+                                                               invisible="1"/>
+                                                        <field name="sv_documentary_warning" readonly="1"
+                                                               string="Advertencia documental"
+                                                               invisible="1"/>
+                                                        <field name="sv_reversible_rebaja_id" invisible="1"/>
+                                                    </group>
+                                                </group>
+                                                <!-- Advertencia documental SV conservada por
+                                                     contrato de vista, retirada de la pantalla
+                                                     operativa simplificada. -->
+                                                <div class="alert alert-warning py-2 mb-2" colspan="2" role="alert"
+                                                     invisible="1">
+                                                    <strong>Advertencia documental:</strong>
+                                                    el volumen oficial de la Guía difiere del volumen
+                                                    original del lote, o la etiqueta usa el piezas=1
+                                                    técnico. Use «Regularizar volumen» para dejar
+                                                    constancia documental.
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-2" colspan="2">
+                                                    <button name="action_sv_rename" type="object"
+                                                            string="Modificar etiqueta SV" class="btn-secondary"/>
+                                                    <button name="action_sv_rebaja" type="object"
+                                                            string="Rebajar etiqueta" class="btn-secondary"/>
+                                                    <button name="action_sv_reverse_rebaja" type="object"
+                                                            string="Reversar rebaja" class="btn-secondary"
+                                                            invisible="not sv_reversible_rebaja_id"/>
+                                                    <button name="action_open_sv_history" type="object"
+                                                            string="Ver historial SV" class="btn-link"
+                                                            icon="fa-history"/>
+                                                </div>
+                                            </div>
+                                            <!-- Sin lote SV: la Consola informa el placeholder y,
+                                                 además, la PRÓXIMA etiqueta ESTIMADA (solo lectura
+                                                 y referencial: el número real se acuña al enviar a
+                                                 stock y puede diferir si otra guía consume antes la
+                                                 secuencia). Sin botones: sin lote no hay mutación. -->
+                                            <div invisible="ingestion_type != 'volume' or declared_sv_lot_id">
+                                                <group string="ETIQUETA SV" class="o_madenat_declared_sv">
+                                                    <div class="text-muted mt-0 mb-1" colspan="2">
+                                                        Se asignará al enviar a stock.
+                                                    </div>
+                                                    <div class="text-muted mt-0 mb-1" colspan="2"
+                                                         invisible="not sv_next_label_estimate">
+                                                        Próxima etiqueta estimada:
+                                                        <field name="sv_next_label_estimate"
+                                                               nolabel="1" readonly="1"/>
+                                                        (referencial: puede cambiar si otra guía
+                                                        consume la secuencia antes del envío).
+                                                    </div>
+                                                </group>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- =================================================
+                                         FILA DE CAPTURA — los cuatro datos declarados en UNA sola
+                                         fila (cuatro columnas en pantallas anchas; se apilan solas en
+                                         pantallas angostas) seguidas del botón que los aplica y de su
+                                         nota. Cada sugerencia documental vive en la MISMA celda de su
+                                         campo.
+                                         ================================================= -->
+                                    <group colspan="2" col="4" class="mb-0">
+                                        <group>
+                                            <field name="declared_pieces"
+                                                   class="o_madenat_declared_capture"/>
+                                            <div class="text-muted" invisible="not suggested_pieces">
+                                                Sugerido desde Packing:
+                                                <field name="suggested_pieces" readonly="1" nolabel="1"/>
+                                            </div>
+                                        </group>
+                                        <group>
+                                            <field name="declared_widths_text"
+                                                   class="o_madenat_declared_capture"
+                                                   placeholder="Ej: RW / 4 1/2 — 6 1/4"/>
+                                            <!-- La sugerencia solo se muestra cuando
+                                                 aporta información nueva (distinta del
+                                                 texto declarado visible). -->
+                                            <div class="text-muted"
+                                                 invisible="not suggested_widths_text or suggested_widths_text == declared_widths_text">
+                                                Sugerido: <field name="suggested_widths_text" readonly="1" nolabel="1"/>
+                                            </div>
+                                        </group>
+                                        <group>
+                                            <field name="declared_lengths_text"
+                                                   class="o_madenat_declared_capture"
+                                                   placeholder="Ej: RL / 8 — 12"/>
+                                            <div class="text-muted"
+                                                 invisible="not suggested_lengths_text or suggested_lengths_text == declared_lengths_text">
+                                                Sugerido: <field name="suggested_lengths_text" readonly="1" nolabel="1"/>
+                                            </div>
+                                        </group>
+                                        <group>
+                                            <field name="declared_thickness_text"
+                                                   class="o_madenat_declared_capture"
+                                                   placeholder="Ej: 7/4"/>
+                                            <!-- Sin sugerencia de espesor: nunca se infiere.
+                                                 El nodo existe para el contrato de vista, invisible. -->
+                                            <field name="suggested_thickness_text" invisible="1"/>
+                                        </group>
+                                        <!-- Fase 3 UX: el botón de sugerencias es
+                                             parte del grid interno de datos
+                                             declarados (antes era un ítem hermano
+                                             del OuterGroup y quedaba separado a la
+                                             derecha por space-between, dejando una
+                                             franja ancha vacía). -->
+                                        <!-- UX: botón COMPACTO (ancho automático)
+                                             alineado a la izquierda dentro de un
+                                             contenedor flex; nunca como barra gris de
+                                             ancho completo. Mismo texto, acción y
+                                             visibilidad. -->
+                                        <div class="d-flex justify-content-start align-items-end"
+                                             colspan="1">
+                                            <button name="action_apply_declared_volume_suggestions"
+                                                    type="object"
+                                                    string="Aplicar datos documentales"
+                                                    class="btn-secondary"
+                                                    invisible="not suggested_widths_text and not suggested_lengths_text and not suggested_pieces and not suggested_volume_m3"/>
+                                        </div>
+                                        <field name="declared_volume_m3"
+                                               string="M³ declarado por Operaciones (referencia)"
+                                               invisible="ingestion_type == 'volume'"/>
+                                        <!-- Notas declaradas: ambas en UNA sola
+                                             línea atenuada y con la MISMA condición
+                                             de visibilidad del placeholder SV (un
+                                             único nodo `div[@invisible='declared_sv_lot_id']`
+                                             con ese texto, según el contrato vigente).
+                                             La etiqueta SV se muestra una sola vez,
+                                             en el bloque «ETIQUETA SV». -->
+                                        <div class="text-muted mb-0" colspan="4"
+                                             invisible="declared_sv_lot_id">
+                                            No gobierna stock ni reemplaza el volumen oficial. Se asignará al enviar a stock
+                                        </div>
+                                        <field name="declared_sv_lot_id" readonly="1"
+                                               invisible="1"/>
+                                        <!-- Nodos conservados por contrato de vista para
+                                             compatibilidad: el valor sugerido NO se muestra
+                                             aquí para no competir con el volumen oficial. -->
+                                        <field name="suggested_volume_m3" readonly="1" invisible="1"/>
+                                        <field name="suggested_volume_source" readonly="1" invisible="1"/>
+                                    </group>
+
+                                    <!-- =================================================
+                                         GRILLA DECLARADA — a ancho completo: contador, grilla
+                                         editable, estado vacío y totales del detalle documental.
+                                         Proyecta SOLO las filas declaradas ('header'/'manual'): el
+                                         detalle del PDF/Excel sigue intacto en la pestaña Packing de
+                                         la fachada.
+                                         ================================================= -->
+                                    <!-- FASE UX «Piezas Declaradas»: grilla
+                                         one2many de las filas DECLARADAS de la
+                                         Guía (fila de cabecera declarada y
+                                         capturas manuales del operador). El
+                                         detalle del PDF/Excel vive en la
+                                         pestaña Packing de la fachada y NO se
+                                         proyecta aquí. Permite revisar,
+                                         capturar y corregir las piezas
+                                         declaradas ANTES de enviar a stock. Es
+                                         DOCUMENTAL: nunca reemplaza el volumen
+                                         oficial ni la grilla operativa de
+                                         stock, y queda en solo lectura en los
+                                         estados terminales (validada /
+                                         cancelada). -->
+                                    <div colspan="2">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="text-muted">Piezas declaradas en líneas:</span>
+                                            <span class="fs-5 fw-bold">
+                                                <field name="declared_lines_pieces"
+                                                       nolabel="1" readonly="1"/>
+                                            </span>
+                                            <!-- Punto de entrada explícito para
+                                                 crear un ítem con Descripción y
+                                                 Observación. Compacto, junto al
+                                                 contador; oculto en estados
+                                                 terminales (el servidor lo
+                                                 rechaza igual). La acción devuelve
+                                                 el diálogo «Agregar ítem a piezas
+                                                 declaradas». -->
+                                            <button name="action_add_declared_piece_line"
+                                                    type="object"
+                                                    string="Agregar ítem"
+                                                    class="btn-primary btn-sm"
+                                                    icon="fa-plus"
+                                                    help="Crear un ítem manual con descripción y observación"
+                                                    invisible="state in ('validated', 'cancelled')"/>
+                                        </div>
+                                        <field name="declared_piece_line_ids"
+                                               readonly="state in ('validated', 'cancelled')">
+                                            <list default_order="source_line_no, id"
+                                                  editable="bottom"
+                                                  open_form_view="1">
+                                                <!-- Anchos y jerarquía de la grilla:
+                                                     - Descripción es la columna más
+                                                       ancha: NO declara ancho y
+                                                       absorbe el espacio sobrante.
+                                                     - Observación es la segunda más
+                                                       ancha (ancho fijo amplio).
+                                                     - N°, Código, Piezas, RW, RL,
+                                                       Espesor, Volumen, Origen y
+                                                       Ajuste manual usan anchos fijos
+                                                       razonables.
+                                                     Descripción y Observación con
+                                                     `widget="text"` para leer el
+                                                     texto completo con salto de línea
+                                                     sin desbordar. -->
+                                                <field name="line_no" string="N°" readonly="1"
+                                                       width="60px"/>
+                                                <field name="material_code" string="Código"
+                                                       width="130px"/>
+                                                <field name="description" string="Descripción"
+                                                       widget="text"/>
+                                                <field name="pieces" string="Piezas"
+                                                       width="80px"/>
+                                                <field name="width_declared" string="Ancho (RW)"
+                                                       width="100px"/>
+                                                <field name="length_declared" string="Largo (RL)"
+                                                       width="100px"/>
+                                                <field name="thickness_declared" string="Espesor nominal"
+                                                       width="120px"/>
+                                                <field name="volume_m3" string="Volumen (m³)"
+                                                       width="110px"/>
+                                                <field name="observation" string="Observación"
+                                                       widget="text" width="220px"/>
+                                                <field name="origin" string="Origen" readonly="1"
+                                                       width="150px"/>
+                                                <field name="manually_adjusted" string="Ajuste manual" readonly="1"
+                                                       width="90px"/>
+                                            </list>
+                                            <!-- Formulario de detalle de la fila: se
+                                                 abre con el botón «Ver» de la grilla
+                                                 (open_form_view). Descripción y
+                                                 Observación son de VARIAS LÍNEAS; el
+                                                 resto replica la captura. Origen y
+                                                 Ajuste manual son evidencia: solo
+                                                 lectura. El readonly del campo completo
+                                                 por estado (validated/cancelled) hace
+                                                 que el formulario sea solo lectura en
+                                                 estados terminales. -->
+                                            <form>
+                                                <group>
+                                                    <field name="description" widget="text"
+                                                           placeholder="Descripción declarada de la línea"/>
+                                                    <field name="observation" widget="text"
+                                                           placeholder="Observación del operador (varias líneas)"/>
+                                                </group>
+                                                <group>
+                                                    <field name="material_code" string="Código"/>
+                                                    <field name="pieces" string="Piezas"/>
+                                                    <field name="width_declared" string="Ancho (RW)"/>
+                                                    <field name="length_declared" string="Largo (RL)"/>
+                                                    <field name="thickness_declared" string="Espesor nominal"/>
+                                                    <field name="volume_m3" string="Volumen (m³)"/>
+                                                    <field name="origin" string="Origen" readonly="1"/>
+                                                    <field name="manually_adjusted" string="Ajuste manual" readonly="1"/>
+                                                </group>
+                                            </form>
+                                        </field>
+                                        <div class="text-muted mt-2 mb-0" invisible="declared_piece_line_ids">
+                                            Sin piezas declaradas. Use «Agregar ítem» o «Aplicar datos documentales» para comenzar.
+                                        </div>
+                                        <div class="text-muted small mt-1 mb-0">
+                                            <!-- Pies de VOLUMEN: describen el DETALLE
+                                                 DOCUMENTAL DEL PDF/EXCEL (no la grilla
+                                                 declarada). El agregado excluye la fila de
+                                                 cabecera (anti doble conteo). Cada métrica es
+                                                 un par «etiqueta: valor m³» con `text-nowrap`
+                                                 (el valor y su m³ nunca se separan) y el
+                                                 contenedor hace `flex-wrap` entre pares. Se
+                                                 conservan las cuatro piezas de texto. -->
+                                            <div class="d-flex flex-wrap align-items-baseline gap-2">
+                                                <span class="d-inline-flex align-items-baseline gap-1 text-nowrap"
+                                                      invisible="not declared_piece_line_ids">
+                                                    Volumen del detalle documental del PDF/Excel:
+                                                    <field name="declared_lines_volume_m3" nolabel="1"
+                                                           readonly="1" digits="[16, 3]"/>
+                                                    <span>m³</span>
+                                                </span>
+                                                <span class="d-inline-flex align-items-baseline gap-1 text-nowrap"
+                                                      invisible="not declared_piece_line_ids or not official_volume_effective_m3">
+                                                    Diferencia del detalle documental vs volumen oficial:
+                                                    <field name="declared_lines_vs_official_m3" nolabel="1"
+                                                           readonly="1" digits="[16, 3]"/>
+                                                    <span>m³</span>
+                                                </span>
+                                                <span>
+                                                    El detalle de piezas es documental y no reemplaza
+                                                    el volumen oficial de la guía.
+                                                </span>
+                                                <span>
+                                                    La grilla muestra solo las piezas declaradas (cabecera
+                                                    y filas manuales); la fila «Cabecera declarada»
+                                                    refleja el volumen oficial y no se suma al total.
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Referencia OPERATIVA retirada de la
+                                         pantalla operativa de Volumen (nodos
+                                         conservados con invisible aplicado). -->
+                                    <group string="Volumen operativo de referencia (no gobierna stock)"
+                                           invisible="ingestion_type == 'volume'">
+                                        <field name="volume_operational_m3"
+                                               string="Volumen operativo (m³)"
+                                               invisible="ingestion_type == 'volume'"/>
+                                        <field name="volume_operational_source"
+                                               string="Fuente operativa"
+                                               invisible="ingestion_type == 'volume'"/>
+                                        <field name="volume_operational_note"
+                                               string="Motivo del cambio"
+                                               invisible="ingestion_type == 'volume'"/>
+                                        <field name="review_state"
+                                               string="Estado de validación"
+                                               widget="badge"
+                                               invisible="ingestion_type == 'volume'"/>
+                                    </group>
+                                    <div class="alert alert-info" role="alert"
+                                         invisible="ingestion_type == 'volume'">
+                                        <p class="mb-1">
+                                            Los datos documentales corresponden a la información declarada en la Guía PDF.
+                                        </p>
+                                        <p class="mb-1">
+                                            RW y RL se sugieren como designaciones comerciales; el espesor se registra según la documentación disponible.
+                                        </p>
+                                        <p class="mb-0">
+                                            El volumen oficial de la Guía se muestra en “VOLUMEN OFICIAL DE LA GUÍA”. El detalle documental y su diferencia se visualizan en “Control documental interno”.
+                                        </p>
+                                    </div>
+                                </group>
+
+                                <!-- =================================================
+                                     CONTROL DOCUMENTAL INTERNO (solo Volúmenes)
+                                     RETIRADO de la pantalla operativa de Volumen:
+                                     sus nodos y su leyenda se conservan en el XML
+                                     (nunca se eliminan) con invisible aplicado, para
+                                     no romper referencias del ORM ni el acceso desde
+                                     el Historial SV o la fachada de la Guía. Guardaba
+                                     la evidencia de auditoría (total de líneas del PDF
+                                     y su diferencia contra el volumen oficial).
+                                     ================================================= -->
+                                <group string="Control documental interno (auditoría)"
+                                       col="2"
+                                       invisible="1">
+
+                                    <field name="volume_detail_m3"
+                                        string="Total de líneas del detalle PDF (control interno)"
+                                        readonly="1" digits="[16, 3]"
+                                        invisible="ingestion_type == 'volume'"/>
+
+                                    <field name="official_vs_detail_diff_m3"
+                                        string="Diferencia vs volumen oficial"
+                                        readonly="1" digits="[16, 3]"
+                                        invisible="ingestion_type == 'volume'"/>
+
+                                    <field name="conciliation_status"
+                                        string="Conciliación" widget="badge"
+                                        invisible="ingestion_type == 'volume'"/>
+
+                                    <field name="conciliation_summary"
+                                        string="Resumen conciliación"
+                                        invisible="ingestion_type == 'volume'"/>
+
+                                    <field name="conciliation_manual_note"
+                                        string="Motivo confirmación"
+                                        invisible="ingestion_type == 'volume'"/>
+
+                                    <button name="action_confirm_conciliation"
+                                        type="object" string="Confirmar conciliación"
+                                        class="btn-secondary"
+                                        invisible="ingestion_type == 'volume' or conciliation_status not in ('needs_manual_review', 'incompatible')"/>
+
+                                    <!-- Leyenda única de auditoría: el detalle
+                                         nunca reemplaza el volumen oficial. -->
+                                    <div class="text-muted">
+                                        El detalle es evidencia documental y no
+                                        reemplaza el volumen oficial.
+                                    </div>
+                                </group>
+
+                    </div>
+
+                    <!-- El bloque «ETIQUETA SV» vive DENTRO del bloque «DATOS
+                         DECLARADOS DE LA GUÍA»: en la misma franja superior, a
+                         la derecha del volumen oficial vigente y antes de los
+                         campos declarados, sin duplicar nodos ni acciones. -->
+
+                    <!-- =================================================
+                         VOLUMEN — evidencia documental (fila «Guía (PDF)» /
+                         «Packing List (Excel)») RETIRADA de la pantalla operativa
+                         de Volumen: los nodos se conservan en el XML con invisible
+                         aplicado (nunca se eliminan).
+                         ================================================= -->
+                    <div class="d-flex align-items-center gap-3 flex-wrap"
+                         invisible="1">
+                        <span class="text-muted">Guía (PDF):</span>
+                        <field name="review_guide_document"
+                               widget="badge"
+                               decoration-info="review_guide_document and review_guide_document != 'Sin PDF'"/>
+                        <span class="text-muted">Packing List (Excel):</span>
+                        <field name="review_excel_document"
+                               widget="badge"
+                               decoration-info="review_excel_document and review_excel_document != 'Sin Excel'"/>
+                    </div>
+
+                    <!-- =================================================
                          DETALLE DEL PACKING LIST
                          ================================================= -->
-                    <group string="DETALLE DEL PACKING LIST">
+                    <group string="DETALLE DEL PACKING LIST"
+                           invisible="ingestion_type == 'volume'">
 
                         <!-- Ingreso de productos — detalle mínimo para validación visual final.
                              Muestra la versión editada (líneas vivas del origen) y la
@@ -215,6 +905,8 @@
                         <field name="processed_packing_line_ids" invisible="ingestion_type != 'processed'">
                             <list default_order="id asc" create="false" edit="false" delete="false">
                                 <field name="lot_name" string="Etiqueta / Lote"/>
+                                <field name="sku_original" string="SKU Original"/>
+                                <field name="raw_dims" string="Dim. Origen"/>
                                 <field name="product_name_original" string="Producto"/>
                                 <field name="subproducto_id" string="Sub-producto"/>
                                 <field name="espesor_mm" string="Espesor (mm)"/>
@@ -224,12 +916,30 @@
                                 <field name="largo_m" string="Largo (m)"/>
                                 <field name="length_ft" string="Largo declarado (ft)"/>
                                 <field name="pieces" string="Piezas"/>
+                                <field name="vol_documental_m3" string="Vol. Doc. (m³)"/>
                                 <field name="vol_shipment_m3" string="Vol. (m³)"/>
                             </list>
                         </field>
 
-                        <!-- Totales del packing -->
-                        <group>
+                        <!-- Ingreso por Volúmenes — intercambio de superficie UI (solo Volumen):
+                             la grilla documental de Volumen ya NO se muestra en la consola;
+                             se revisa en la Fachada de origen, página "Packing".
+                             El nodo y su lista se conservan intactos, ocultamiento solo visual. -->
+                        <field name="volume_detail_line_ids" invisible="1">
+                            <list default_order="source_line_no, id" editable="bottom">
+                                <field name="lot_or_package" string="Lote/Paquete"/>
+                                <field name="material_code" string="Código"/>
+                                <field name="description" string="Descripción"/>
+                                <field name="volume_m3" string="Volumen (m³)"/>
+                                <field name="uom" string="U/M"/>
+                                <field name="unit_price" string="Precio unitario"/>
+                                <field name="line_amount" string="Total línea"/>
+                                <field name="observation" string="Observación"/>
+                            </list>
+                        </field>
+
+                        <!-- Totales del packing (solo Producto/Procesado). -->
+                        <group invisible="ingestion_type == 'volume'">
                             <group>
                                 <field name="packing_volume_total" string="Volumen total (m³)" readonly="1"/>
                                 <field name="stock_volume_total" string="Volumen stock (m³)" readonly="1"/>
@@ -255,16 +965,18 @@
                 <field name="guide_name" string="Guía"/>
                 <field name="partner_id" string="Proveedor"/>
 
-                <!-- Búsqueda textual/documental de OC -->
-                <field name="purchase_reference" string="OC"/>
+                <!-- Búsqueda textual/documental de OC (mismo rótulo que la
+                     columna de la lista: «OC documento», nunca «OC»). -->
+                <field name="purchase_reference" string="OC documento"/>
 
-                <!-- Búsqueda relacional de OC -->
-                <field name="purchase_id" string="Orden de Compra"/>
+                <!-- Búsqueda relacional de OC vinculada -->
+                <field name="purchase_id" string="OC vinculada"/>
 
                 <field name="display_reference" string="Referencia"/>
 
                 <filter name="type_product" string="Producto" domain="[('ingestion_type', '=', 'product')]"/>
                 <filter name="type_processed" string="Procesado" domain="[('ingestion_type', '=', 'processed')]"/>
+                <filter name="type_volume" string="Volúmenes" domain="[('ingestion_type', '=', 'volume')]"/>
                 <separator/>
 
                 <filter name="filter_state_draft" string="Borrador" domain="[('state', '=', 'draft')]"/>

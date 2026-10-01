@@ -14,7 +14,10 @@
                         canónico lo registre según el RUT de la Guía.
                     </div>
                     <group>
-                        <field name="reception_id" readonly="1" string="Recepción"/>
+                        <field name="reception_id" readonly="1" string="Recepción"
+                               invisible="not reception_id"/>
+                        <field name="guia_id" readonly="1" string="Guía"
+                               invisible="not guia_id"/>
                         <field name="supplier_id" string="Proveedor"
                                options="{'no_create': True, 'no_open': False}"
                                required="1"/>

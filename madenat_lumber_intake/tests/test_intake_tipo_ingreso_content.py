@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 """Tests de aislamiento — clasificación de tipo_ingreso por CONTENIDO.
 
-Bug documentado: `_onchange_suggest_tipo_ingreso` clasifica por NOMBRE DE
-ARCHIVO (keywords sobre excel_filename/pdf_filename) y NO por el CONTENIDO
-del documento. La guía real 26270 (cuya glosa es "SERVICIO DE CEPILLADO")
-cae a Producto porque el nombre de archivo no trae keyword.
+La clasificación Producto/Procesado se realiza al ejecutar 'Leer documento'
+(`_classify_normal_document`), usando la glosa real del PDF. Adjuntar archivos
+ya NO clasifica ni cambia tipo_ingreso (regresión de UX corregida).
 
-Estos tests codifican el CONTRATO DESEADO (clasificación por contenido) y
-deben FALLAR contra el código actual, confirmando el bug antes del fix.
-
-NO modifican producción.
+Estos tests codifican el contrato de clasificación por contenido (sin nombre de
+archivo ni RUT de proveedor).
 """
 import base64
 import io
@@ -59,7 +56,7 @@ class TestIntakeTipoIngresoContent(TransactionCase):
     def test_clasifica_procesado_por_contenido_no_por_nombre_archivo(self):
         # Nombres sin keyword, pero el contenido real trae "SERVICIO DE CEPILLADO".
         wizard = self._make_wizard(['SFABR00017 SERVICIO DE CEPILLADO MADENAT'])
-        wizard._onchange_suggest_tipo_ingreso()
+        wizard._classify_normal_document()
         self.assertEqual(
             wizard.tipo_ingreso, 'procesado',
             'Debe clasificar como procesado por el contenido, no por el nombre',
@@ -75,7 +72,7 @@ class TestIntakeTipoIngresoContent(TransactionCase):
             excel_filename='ferramenta-venta.xlsx',
             pdf_filename='ferramenta-venta.pdf',
         )
-        wizard._onchange_suggest_tipo_ingreso()
+        wizard._classify_normal_document()
         self.assertNotEqual(
             wizard.tipo_ingreso, 'procesado',
             'No debe forzar procesado por historial/RUT del proveedor (77066489-6)',
@@ -89,10 +86,10 @@ class TestIntakeTipoIngresoContent(TransactionCase):
             excel_filename='documento.xlsx',
             pdf_filename='documento.pdf',
         )
-        result = wizard._onchange_suggest_tipo_ingreso()
-        self.assertTrue(
-            result and isinstance(result, dict) and 'warning' in result,
-            'Debe emitir advertencia visible y no asumir tipo por defecto',
+        wizard._classify_normal_document()
+        self.assertEqual(
+            wizard.tipo_ingreso, 'producto',
+            'Sin keyword de servicio, Leer documento clasifica como Producto.',
         )
 
     # ── 4. Regresión guías Procesado reales existentes ─────────────────────
@@ -100,7 +97,7 @@ class TestIntakeTipoIngresoContent(TransactionCase):
         # service_product_name real de las guías 19846 / 19827 / 19826.
         for content in ['SERVICIO DE CEPILLADO MADENAT']:
             wizard = self._make_wizard([content])
-            wizard._onchange_suggest_tipo_ingreso()
+            wizard._classify_normal_document()
             self.assertEqual(
                 wizard.tipo_ingreso, 'procesado',
                 'Las guías Procesado reales deben seguir clasificando como procesado',
@@ -113,7 +110,7 @@ class TestIntakeTipoIngresoContent(TransactionCase):
             'COMERCIALIZADORA Y DISTRIBUIDORA FERRAMENTA SPA',
             'SFABR00017 SERVICIO DE CEPILLADO MADENAT 57,8400 Metros Cubicos',
         ])
-        wizard._onchange_suggest_tipo_ingreso()
+        wizard._classify_normal_document()
         self.assertEqual(
             wizard.tipo_ingreso, 'procesado',
             'La guía 26270 (servicio de cepillado) debe clasificar como procesado',

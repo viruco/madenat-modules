@@ -111,7 +111,10 @@ class TestIntakeWizard(TransactionCase):
         with patch.object(
             intake_wizard_module, 'extract_document',
             side_effect=AssertionError('No debe invocarse en Procesado'),
-        ) as mock:
+        ) as mock, patch.object(
+            intake_wizard_module, '_extract_pdf_text',
+            return_value='SERVICIO DE CEPILLADO MADENAT',
+        ):
             result = wizard.action_preview_document()
 
         self.assertFalse(mock.called)
@@ -150,9 +153,10 @@ class TestIntakeWizard(TransactionCase):
         self.assertTrue(error_writes)
         self.assertTrue(error_writes[0].get('error_message'))
 
-    # ── tipo_ingreso: default e onchange siguen intactos ─────────────────
+    # ── tipo_ingreso: default e onchange (normal no clasifica al adjuntar) ──
     def test_tipo_ingreso_default_and_onchange_intact(self):
-        """El campo tipo_ingreso conserva default 'producto' y su onchange."""
+        """Adjuntar documentos NO cambia tipo_ingreso en modalidad normal;
+        la clasificación Producto/Procesado ocurre al ejecutar Leer documento."""
         wizard = self.Wizard.create({
             'excel_file': self._b64(b'excel-bytes'),
             'excel_filename': 'guia cepillado.xlsx',
@@ -164,7 +168,7 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(wizard.tipo_ingreso, 'producto')
 
         wizard._onchange_suggest_tipo_ingreso()
-        self.assertEqual(wizard.tipo_ingreso, 'procesado')
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
 
     # ── Trazabilidad de unidades en la consola (valor declarado + mm/m) ──
     def test_console_view_exposes_declared_dimensions(self):
@@ -557,3 +561,83 @@ class TestIntakeWizard(TransactionCase):
         result = wizard._onchange_suggest_ingestion_profile()
         self.assertEqual(wizard.ingestion_profile, 'metric')
         self.assertIsNone(result)
+
+    # ── Regresión UX: adjuntar documentos no debe alterar decisión manual ──
+    def test_normal_excel_solo_no_clasifica_ni_oculta_perfil(self):
+        """Normal + Excel: tipo_ingreso no cambia, perfil intacto, sin warning."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'ingestion_profile': 'metric',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'packing.xlsx',
+            'assignment_location_id': self.location.id,
+        })
+        result = wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertEqual(wizard.ingestion_profile, 'metric')
+        self.assertIsNone(result)
+
+    def test_normal_pdf_solo_total_no_asigna_granel(self):
+        """Normal + PDF con volumen total: no se asigna granel."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
+            'assignment_location_id': self.location.id,
+        })
+        wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertFalse(wizard.tipo_ingreso_auto_detectado)
+
+    def test_normal_pdf_excel_perfil_visible_modalidad_normal(self):
+        """Normal + PDF + Excel: perfil y patio intactos, modalidad normal."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'ingestion_profile': 'metric',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'packing.xlsx',
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
+            'assignment_location_id': self.location.id,
+        })
+        wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertEqual(wizard.ingestion_profile, 'metric')
+        self.assertEqual(wizard.intake_modality, 'normal')
+        self.assertTrue(wizard.assignment_location_id)
+
+    def test_leer_documento_normal_procesado_clasifica(self):
+        """Leer documento en normal clasifica Procesado por contenido real."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'packing.xlsx',
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
+            'assignment_location_id': self.location.id,
+        })
+        with patch.object(intake_wizard_module, '_extract_pdf_text',
+                          return_value='SERVICIO DE CEPILLADO MADENAT'):
+            wizard.action_preview_document()
+        self.assertEqual(wizard.tipo_ingreso, 'procesado')
+        self.assertEqual(wizard.classification_result, 'Procesado')
+        self.assertTrue(wizard.tipo_ingreso_auto_detectado)
+
+    def test_volume_excel_no_ejecuta_onchange_perfil(self):
+        """Volúmenes + Excel: granel técnico y sin onchange de perfil."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'volume',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'packing.xlsx',
+            'assignment_location_id': self.location.id,
+        })
+        wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'granel')
+        self.assertFalse(wizard.tipo_ingreso_auto_detectado)
+        profile = wizard.ingestion_profile
+        wizard._onchange_suggest_ingestion_profile()
+        self.assertEqual(wizard.ingestion_profile, profile)

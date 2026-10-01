@@ -45,6 +45,48 @@
                             class="btn-secondary"
                             icon="fa-arrow-left"/>
 
+                    <button name="action_reclassify"
+                            type="object"
+                            string="Reclasificar Tipo de Ingreso"
+                            class="btn-secondary"
+                            invisible="state not in ('draft', 'verified')"/>
+
+                    <!-- 🏷️ Programa SV — historial de la etiqueta SV de la Guía
+                         por Volumen (solo lectura; las operaciones se ejecutan
+                         desde la etiqueta o su asistente controlado). -->
+                    <!-- 🏷️ Programa SV — acciones SV aprobadas (Fase 2, AD-80).
+                         Todas delegan en los wizards controlados y en el ledger
+                         append-only del core; la fachada no escribe lotes,
+                         volumen, saldo ni stock. -->
+                    <field name="volume_lot_id" readonly="1" invisible="1"/>
+                    <field name="intake_sv_reversible_rebaja_id" invisible="1"/>
+                    <button name="action_sv_rename"
+                            type="object"
+                            string="Modificar etiqueta SV"
+                            class="btn-secondary"
+                            invisible="tipo_recepcion != 'granel' or not volume_lot_id"/>
+                    <button name="action_sv_regularize_volume"
+                            type="object"
+                            string="Regularizar volumen"
+                            class="btn-secondary"
+                            invisible="tipo_recepcion != 'granel' or not volume_lot_id"/>
+                    <button name="action_sv_rebaja"
+                            type="object"
+                            string="Rebajar etiqueta"
+                            class="btn-secondary"
+                            invisible="tipo_recepcion != 'granel' or not volume_lot_id"/>
+                    <button name="action_intake_sv_reverse_rebaja"
+                            type="object"
+                            string="Reversar rebaja"
+                            class="btn-secondary"
+                            invisible="tipo_recepcion != 'granel' or not intake_sv_reversible_rebaja_id"/>
+                    <button name="action_open_sv_history"
+                            type="object"
+                            string="🏷️ Ver historial SV"
+                            class="btn-secondary"
+                            icon="fa-history"
+                            invisible="tipo_recepcion != 'granel' or not volume_lot_id"/>
+
                     <!-- Advertencia persistente y NO bloqueante de OC pendiente -->
                     <div class="alert alert-warning" role="alert"
                          invisible="not oc_reference_raw or order_id or oc_match_status in ('single_match', 'manual', 'created')">
@@ -100,6 +142,29 @@
                                 </group>
                             </group>
 
+                            <!-- Evidencia documental (solo lectura) -->
+                            <group string="📄 Evidencia documental" col="4">
+                                <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)" readonly="1" digits="[16, 3]"/>
+                                <field name="packing_volume_declared_m3" string="Vol. Packing (m³)" readonly="1" digits="[16, 3]"/>
+                                <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)" readonly="1" digits="[16, 3]"/>
+                                <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)" readonly="1" digits="[16, 3]"/>
+                                <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)" readonly="1" digits="[16, 3]"/>
+                                <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
+                                <field name="packing_package_count_declared" string="Paquetes Packing" readonly="1"/>
+                                <field name="documental_conciliation_state" string="Conciliación documental" widget="badge"
+                                       decoration-success="documental_conciliation_state == 'consistent'"
+                                       decoration-warning="documental_conciliation_state == 'partial'"
+                                       decoration-danger="documental_conciliation_state == 'difference'"
+                                       decoration-muted="documental_conciliation_state == 'not_available'"/>
+                            </group>
+
+                            <!-- 🏷️ Programa SV — etiqueta SV y su historial -->
+                            <group string="🏷️ Etiqueta SV" col="4"
+                                   invisible="tipo_recepcion != 'granel'">
+                                <field name="volume_lot_id" string="Etiqueta SV" readonly="1"/>
+                                <field name="sv_operation_count" string="Operaciones SV" readonly="1"/>
+                            </group>
+
                         </page>
 
                         <!-- ================= PROCESO / SERVICIO ================= -->
@@ -132,24 +197,45 @@
                                         type="action"
                                         string="⚡ Fijar Nominal Masivo"
                                         class="btn-secondary"
+                                        invisible="tipo_recepcion == 'granel'"
                                         icon="fa-ruler-combined"
                                         context="{'active_id': id, 'active_ids': [id], 'active_model': 'madenat.guia.processing'}"/>
                             </div>
 
-                            <field name="processing_line_ids">
+                            <field name="processing_line_ids" invisible="tipo_recepcion == 'granel'">
                                 <list create="false" edit="true" delete="false">
                                     <field name="lot_name" string="Etiqueta / Lote"/>
                                     <field name="sku_original" string="SKU Original"/>
+                                    <field name="raw_dims" string="Dim. Origen"/>
                                     <field name="product_id" string="Producto Maestro" readonly="1"/>
                                     <field name="subproducto_id" string="Subproducto / Grado"/>
                                     <field name="product_name_original" string="Texto Excel"/>
                                     <field name="pieces" string="Piezas"/>
+                                    <field name="vol_documental_m3" string="Vol. Doc. (m³)"/>
                                     <field name="espesor_mm" string="Esp. Físico (mm)"/>
                                     <field name="espesor_nominal_mm" string="Esp. Nom (mm)"/>
                                     <field name="ancho_nominal_mm" string="Ancho Nom (mm)"/>
                                     <field name="largo_nominal_m" string="Largo Nom (m)"/>
                                     <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
                                     <field name="vol_shipment_m3" string="Vol. Embarque (m³)"/>
+                                </list>
+                            </field>
+
+                            <!-- Ingreso por Volumen — detalle documental del Packing
+                                 (mismo conjunto de filas que exponía la consola).
+                                 Informativo, no bloqueante; editable para corrección. -->
+                            <field name="volume_detail_line_ids"
+                                   invisible="tipo_recepcion != 'granel'"
+                                   editable="bottom">
+                                <list>
+                                    <field name="lot_or_package"/>
+                                    <field name="material_code"/>
+                                    <field name="description"/>
+                                    <field name="volume_m3"/>
+                                    <field name="uom"/>
+                                    <field name="unit_price"/>
+                                    <field name="line_amount"/>
+                                    <field name="observation"/>
                                 </list>
                             </field>
 

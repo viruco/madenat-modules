@@ -1,0 +1,44 @@
+// Pulido UX (solo PRESENTACIÓN) del bloque «DATOS DECLARADOS DE LA GUÍA» de
+// la Consola de Ingresos (guías de Volumen).
+//
+// Mínimo y acotado al bloque declarado: no altera modelos, campos, botones,
+// textos, condiciones de visibilidad ni ninguna funcionalidad. Se limita a
+// dar acabado visual a la franja superior, a la fila de captura y a la
+// etiqueta SV.
+
+// 1) Bloque declarado: menos aire vertical entre sus filas (franja superior,
+//    fila de captura y grilla). El grupo es un `.o_group.row`, por lo que
+//    basta con reducir su gutter vertical.
+.o_group.o_madenat_declared_group {
+    --bs-gutter-y: 0.5rem;
+}
+
+// 2) ETIQUETA SV: acerca el título («ETIQUETA SV») y su contenido, sin tocar
+//    textos ni condiciones de visibilidad. Odoo usa un grid (row-gap de
+//    spacer 2) para las filas del inner group; se reduce a la mitad.
+.o_inner_group.o_madenat_declared_sv {
+    row-gap: 0.25rem;
+}
+
+// 3) Fila de captura: los cuatro datos declarados (Piezas, RW, RL, Espesor) se
+//    ven como campos editables con un recuadro sutil en reposo, con el MISMO
+//    estilo en los cuatro. El recuadro lo aporta el contenedor del campo, de
+//    modo que se ve igual en reposo (lectura) y en edición.
+.o_madenat_declared_capture {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    border-radius: var(--bs-border-radius, 0.375rem);
+    padding: 0.125rem 0.4rem;
+
+    // El input interno no dibuja un segundo borde (evita el doble recuadro).
+    input {
+        border: 0 !important;
+        box-shadow: none !important;
+        background-color: transparent;
+    }
+
+    // Afinidad con el resto del tema al enfocar cualquiera de los cuatro.
+    &:focus-within {
+        border-color: var(--bs-primary, #017e84);
+        box-shadow: 0 0 0 0.15rem rgba(1, 126, 132, 0.15);
+    }
+}

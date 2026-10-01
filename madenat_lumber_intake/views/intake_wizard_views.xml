@@ -29,10 +29,19 @@
 
                 <sheet>
                     <div class="alert alert-info" role="alert">
-                        <p class="text-muted">
-                            <strong>Requisitos obligatorios:</strong> Archivo Excel, Guía/PDF y Patio de Asignación.
-                        </p>
+                        <field name="requirements_info" readonly="1" nolabel="1"/>
                     </div>
+
+                    <group string="Modalidad de Ingesta">
+                        <field name="intake_modality" widget="radio"/>
+                        <div class="text-muted" invisible="intake_modality != 'normal'">
+                            Ingreso normal: PDF/Guía y Excel obligatorios.
+                        </div>
+                        <div class="text-muted" invisible="intake_modality != 'volume'">
+                            Ingreso por Volúmenes: puede adjuntar PDF, Excel o ambos.
+                            Si adjunta ambos, se realiza conciliación documental.
+                        </div>
+                    </group>
 
                     <group string="Destino del ingreso">
                         <group>
@@ -42,19 +51,23 @@
                                 invisible="tipo_ingreso != 'producto'"
                                 help="El perfil se usa para la lectura previa de compra; no se aplica a Procesados." />
                             <field
+                                name="classification_result"
+                                string="Clasificación documental detectada"
+                                invisible="intake_modality != 'normal' or not classification_result" />
+                            <field
                                 name="assignment_location_id" />
                             <field
                                 name="tipo_detalle_granel"
-                                invisible="tipo_ingreso != 'granel'" />
+                                invisible="intake_modality != 'volume'" />
                         </group>
                     </group>
 
                     <group string="Documentos">
                         <group>
                             <field name="excel_file" filename="excel_filename"
-                                   required="tipo_ingreso in ('producto', 'procesado')" />
+                                   required="intake_modality == 'normal'" />
                             <field name="excel_filename" />
-                            <field name="pdf_file" filename="pdf_filename" required="1" />
+                            <field name="pdf_file" filename="pdf_filename" required="intake_modality == 'normal'" />
                             <field name="pdf_filename" />
                         </group>
                     </group>
@@ -70,6 +83,43 @@
                         </group>
                     </group>
 
+                    <group string="Resumen documental — Ingreso por Volúmenes"
+                           invisible="intake_modality != 'volume' or state != 'previewed'">
+                        <group>
+                            <field name="preview_guide_no" />
+                            <field name="preview_guide_date" />
+                            <field name="preview_supplier" />
+                            <field name="preview_oc" />
+                            <field name="preview_origin" />
+                        </group>
+                        <group>
+                            <field name="preview_exchange_rate" />
+                            <field name="preview_total_packages" />
+                            <field name="preview_total_volume_m3" />
+                        </group>
+                        <group string="Nivel de detalle">
+                            <field name="detalle_aplicado" />
+                            <field name="detalle_motivo" invisible="not detalle_motivo" />
+                            <field name="preview_line_count" />
+                            <field name="preview_line_volume_m3" />
+                        </group>
+                        <group>
+                            <field name="preview_warnings" nolabel="1" />
+                        </group>
+                    </group>
+
+                    <notebook invisible="intake_modality != 'volume' or state != 'previewed'">
+                        <page string="Detalle documental PDF" name="volume_document_detail">
+                            <div class="text-muted" invisible="preview_has_detail">
+                                Detalle documental no estructurado para este formato.
+                                El PDF adjunto se conserva como fuente documental de consulta.
+                            </div>
+                            <div invisible="not preview_has_detail">
+                                <field name="preview_document_lines" nolabel="1" />
+                            </div>
+                        </page>
+                    </notebook>
+
                     <div class="alert alert-info"
                          role="alert"
                          invisible="state != 'previewed'">
@@ -82,11 +132,19 @@
                     </div>
 
                     <div class="alert alert-info"
-                         invisible="tipo_ingreso != 'procesado'"
+                         invisible="tipo_ingreso != 'procesado' or intake_modality != 'normal'"
                          role="alert">
                         El Excel se conservará sin transformar y será interpretado
                         por el flujo de Procesados, que mantiene varios paquetes
                         por N° de lote.
+                    </div>
+
+                    <div class="alert alert-info"
+                         invisible="intake_modality != 'volume'"
+                         role="alert">
+                        El documento se procesará como Ingreso por Volúmenes.
+                        El Packing List Excel es opcional y, si se adjunta, se
+                        utilizará como respaldo o detalle adicional.
                     </div>
 
                     <div class="alert alert-danger"

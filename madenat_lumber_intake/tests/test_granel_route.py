@@ -32,7 +32,10 @@ class TestGranelRouteIntake(TransactionCase):
         return base64.b64encode(raw).decode()
 
     def _make_wizard(self, tipo='granel', excel=True, pdf=True, assign_location=True):
-        vals = {'tipo_ingreso': tipo}
+        vals = {
+            'tipo_ingreso': tipo,
+            'intake_modality': 'volume' if tipo == 'granel' else 'normal',
+        }
         if excel:
             vals['excel_file'] = self._b64(b'excel-bytes')
             vals['excel_filename'] = 'packing.xlsx'
@@ -78,29 +81,29 @@ class TestGranelRouteIntake(TransactionCase):
         self.assertIn('granel', kw)
         self.assertIn('volumen total', kw)
 
-    def test_04_onchange_procesado_por_filename(self):
+    def test_04_onchange_normal_no_clasifica_por_filename(self):
+        """En modalidad normal, adjuntar NO clasifica por nombre de archivo."""
         wizard = self._make_wizard(tipo='producto', excel=True, pdf=True)
         wizard.pdf_filename = 'guia servicio.pdf'
         wizard._onchange_suggest_tipo_ingreso()
-        self.assertEqual(wizard.tipo_ingreso, 'procesado')
-        self.assertTrue(wizard.tipo_ingreso_auto_detectado)
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertFalse(wizard.tipo_ingreso_auto_detectado)
 
-    def test_05_onchange_granel_por_filename(self):
+    def test_05_onchange_normal_no_clasifica_granel_por_filename(self):
         wizard = self._make_wizard(tipo='producto', excel=True, pdf=True)
         wizard.pdf_filename = 'recepcion granel.pdf'
         wizard._onchange_suggest_tipo_ingreso()
-        self.assertEqual(wizard.tipo_ingreso, 'granel')
-        self.assertTrue(wizard.tipo_ingreso_auto_detectado)
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertFalse(wizard.tipo_ingreso_auto_detectado)
 
-    # ── Señal de respaldo: sin Excel + PDF con total_volume_m3 ──────────────
-    def test_06_onchange_respaldo_granel_sin_excel(self):
+    # ── Sin respaldo granel en normal: PDF sin Excel con total_volume_m3 ────
+    def test_06_onchange_normal_sin_respaldo_granel(self):
         wizard = self._make_wizard(tipo='producto', excel=False, pdf=True)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):
-            result = wizard._onchange_suggest_tipo_ingreso()
-        self.assertEqual(wizard.tipo_ingreso, 'granel')
-        self.assertTrue(wizard.tipo_ingreso_auto_detectado)
-        self.assertIsNone(result)
+            wizard._onchange_suggest_tipo_ingreso()
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertFalse(wizard.tipo_ingreso_auto_detectado)
 
     # ── Candados de excel_file ──────────────────────────────────────────────
     def test_07_excel_obligatorio_producto(self):
@@ -148,7 +151,7 @@ class TestGranelRouteIntake(TransactionCase):
                          {'LOTE-A', 'LOTE-B'})
 
     def test_11_linea_por_linea_sin_tabla_degrade_a_agregado(self):
-        """linea_por_linea sin tabla (Nivel 4) → degrada a resumen agregado + mensaje."""
+        """linea_por_linea sin tabla → degrada a resumen agregado + mensaje."""
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
         wizard.tipo_detalle_granel = 'linea_por_linea'
         with patch.object(intake_wizard_module, 'extract_document',
@@ -157,7 +160,9 @@ class TestGranelRouteIntake(TransactionCase):
         guia = self.Guia.search([('guide_pdf_filename', '=', 'guia.pdf')])
         self.assertEqual(len(guia.processing_line_ids), 1)
         self.assertEqual(guia.processing_line_ids.lot_name, 'GRANEL')
-        self.assertTrue(any('agregado' in (m.body or '') for m in guia.message_ids))
+        self.assertTrue(any(
+            'Nivel aplicado: Consolidado' in (m.body or '')
+            for m in guia.message_ids))
 
     def test_12_agregado_default_ignora_detalle(self):
         """Modo 'agregado' (default) crea 1 línea sintética aunque el PDF traiga detalle."""

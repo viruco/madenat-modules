@@ -3,6 +3,7 @@ import base64
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare
 
 from .intake_constants import CONSOLE_ID_OFFSET
 
@@ -58,26 +59,70 @@ class MadenatLumberIntakeWizard(models.Model):
              'tipo de ingreso sin intervención manual.',
     )
 
+    # Indicador readonly del resultado de clasificación (Producto/Procesado)
+    # aplicado al leer el documento. No es editable; informa al operador.
+    classification_result = fields.Char(
+        string='Clasificación documental detectada', readonly=True,
+        help='Resultado de la clasificación Producto/Procesado aplicada al '
+             'leer el documento (no cambia al adjuntar archivos).',
+    )
+
     tipo_detalle_granel = fields.Selection(
-        [('agregado', 'Agregado (volumen total de cabecera)'),
+        [('agregado', 'Consolidado (volumen total de cabecera)'),
          ('linea_por_linea', 'Línea por línea (usar tabla del PDF si existe)')],
         string='Nivel de detalle',
         default='agregado',
-        help='Solo aplica a tipo_ingreso == "granel" (AD-72). Define si la guía '
-             'granel crea un lote sintético con el volumen total o un lote real '
-             'por cada línea de detalle extraída del PDF.',
+        help='Solo aplica a la modalidad "Ingreso por Volúmenes". Define si la '
+             'guía crea una única línea consolidada con el volumen total o una '
+             'línea real por cada línea de detalle extraída del PDF.',
     )
 
-    # Patio de asignación para la rama Procesado (required en la Guía).
-    # Decisión funcional 2026-08-16: se expone como selector editable para
-    # no inventar una ubicación por defecto.
+    # Modalidad de Ingesta: decide el flujo interno del wizard. El Patio de
+    # Asignación es únicamente el destino físico; no decide la ruta.
+    intake_modality = fields.Selection(
+        [
+            ('normal', 'Ingesta normal'),
+            ('volume', 'Ingreso por Volúmenes'),
+        ],
+        string='Modalidad de Ingesta',
+        required=True,
+        default='normal',
+        help='Ingesta normal: madera bruta o procesada, la ruta la decide el '
+             'tipo de ingreso detectado del documento. Ingreso por Volúmenes: '
+             'guías a granel o con volumen total, deriva directo al flujo '
+             'Granel.',
+    )
+
+    # Patio de Asignación: destino físico del ingreso (no decide la ruta).
     assignment_location_id = fields.Many2one(
         'stock.location',
-        string='Patio de Asignación (Procesado)',
+        string='Patio de Asignación',
         domain=[('usage', '=', 'internal')],
-        help='Solo requerido al derivar a Procesado; se traslada a '
-             'madenat.guia.processing.assignment_location_id.',
+        help='Patio de destino físico del ingreso. Acepta cualquier modalidad '
+             'de ingesta; no clasifica ni restringe Producto, Procesado o '
+             'Volumen.',
     )
+
+    # Mensaje informativo de requisitos (dependiente de la modalidad).
+    requirements_info = fields.Char(
+        string='Requisitos del ingreso',
+        compute='_compute_requirements_info',
+    )
+
+    @api.depends('intake_modality')
+    def _compute_requirements_info(self):
+        for rec in self:
+            if rec.intake_modality == 'volume':
+                rec.requirements_info = (
+                    'Requisito obligatorio: Patio de Asignación. '
+                    'Adjunte al menos una evidencia documental: Guía/PDF, '
+                    'Archivo Excel o ambos.'
+                )
+            else:
+                rec.requirements_info = (
+                    'Requisitos obligatorios: Guía/PDF, Archivo Excel y Patio '
+                    'de Asignación.'
+                )
 
     # ─────────────────────────────────────────────────────────────────────
     # Estado del wizard (persistente para evidencia e idempotencia)
@@ -105,6 +150,25 @@ class MadenatLumberIntakeWizard(models.Model):
     preview_guide_no = fields.Char(string='Guía detectada', readonly=True)
     preview_warnings = fields.Text(string='Advertencias de lectura', readonly=True)
 
+    # Resumen documental compacto para Ingreso por Volúmenes (paridad Normal).
+    preview_guide_date = fields.Char(string='Fecha guía', readonly=True)
+    preview_supplier = fields.Char(string='Proveedor (RUT)', readonly=True)
+    preview_oc = fields.Char(string='OC', readonly=True)
+    preview_origin = fields.Char(string='Pedido/Origen', readonly=True)
+    preview_exchange_rate = fields.Float(
+        string='Tipo de cambio', readonly=True, digits=(16, 2))
+    preview_total_packages = fields.Integer(string='Paquetes', readonly=True)
+    preview_document_lines = fields.Text(string='Detalle documental', readonly=True)
+    preview_has_detail = fields.Boolean(string='Tiene detalle', readonly=True)
+
+    # Resultado del nivel de detalle (separado de la selección).
+    detalle_aplicado = fields.Selection(
+        [('line_by_line', 'Línea por Línea'), ('consolidated', 'Consolidado')],
+        string='Nivel aplicado', readonly=True)
+    detalle_motivo = fields.Char(string='Motivo', readonly=True)
+    preview_line_volume_m3 = fields.Float(
+        string='Volumen de líneas', readonly=True, digits=(16, 3))
+
     # ─────────────────────────────────────────────────────────────────────
     # Destino derivado (idempotencia)
     # ─────────────────────────────────────────────────────────────────────
@@ -119,79 +183,19 @@ class MadenatLumberIntakeWizard(models.Model):
     # ─────────────────────────────────────────────────────────────────────
     @api.onchange('excel_filename', 'pdf_filename', 'pdf_file', 'excel_file')
     def _onchange_suggest_tipo_ingreso(self):
-        """Clasifica Producto/Procesado por el CONTENIDO del documento.
-
-        AD-61 (2026-09-08): la fuente primaria es el texto extraído del PDF
-        (glosa del documento), no el nombre de archivo. El nombre de archivo
-        se conserva como señal adicional (OR). Nunca se usa supplier_id/RUT.
-
-        - Match → tipo_ingreso='procesado' y auto_detectado=True.
-        - Sin match → auto_detectado=False + warning visible; NO se fuerza
-          tipo_ingreso silenciosamente.
-        """
-        config = self.env['madenat.ingestion.config']
-        keywords_procesado = config.get_tipo_ingreso_keywords('procesado')
-        keywords_granel = config.get_tipo_ingreso_keywords('granel')
-
+        """Al adjuntar documentos NO se clasifica ni se cambia tipo_ingreso en
+        modalidad normal: la clasificación Producto/Procesado ocurre al ejecutar
+        'Leer documento'. En modalidad volume la selección manual prevalece
+        (tipo_ingreso técnico = granel) y no se emite warning."""
         for rec in self:
-            # Señal adicional (OR): nombre de archivo.
-            nombres = ' '.join([
-                rec.excel_filename or '',
-                rec.pdf_filename or '',
-            ]).casefold()
-
-            # Fuente primaria: texto extraído del PDF (glosa del documento).
-            texto_pdf = ''
-            if rec.pdf_file:
-                try:
-                    pdf_bytes = base64.b64decode(rec.pdf_file)
-                except Exception:
-                    pdf_bytes = None
-                if pdf_bytes:
-                    try:
-                        texto_pdf = _extract_pdf_text(
-                            pdf_bytes, rec.pdf_filename or 'guia.pdf'
-                        )
-                    except DocumentExtractionError:
-                        texto_pdf = ''
-
-            texto = (nombres + ' ' + texto_pdf).casefold()
-
-            if any(p in texto for p in keywords_procesado):
-                rec.tipo_ingreso = 'procesado'
-                rec.tipo_ingreso_auto_detectado = True
-                continue
-
-            if any(g in texto for g in keywords_granel):
+            if rec.intake_modality == 'volume':
                 rec.tipo_ingreso = 'granel'
-                rec.tipo_ingreso_auto_detectado = True
+                rec.tipo_ingreso_auto_detectado = False
+                rec.classification_result = False
                 continue
-
-            # AD-68 — Señal de respaldo granel: sin Excel y PDF cuyo header
-            # trae total_volume_m3 → sugerir 'granel' antes del warning.
-            if not rec.excel_file and rec.pdf_file:
-                try:
-                    pdf_bytes = base64.b64decode(rec.pdf_file)
-                    result = extract_document(
-                        pdf_bytes, rec.pdf_filename or 'guia.pdf')
-                    if result.header.get('total_volume_m3'):
-                        rec.tipo_ingreso = 'granel'
-                        rec.tipo_ingreso_auto_detectado = True
-                        continue
-                except Exception:
-                    pass
-
+            # normal: no clasificar al adjuntar; solo limpiar indicadores previos.
             rec.tipo_ingreso_auto_detectado = False
-            return {
-                'warning': {
-                    'title': _('No se pudo determinar el tipo de ingreso automáticamente'),
-                    'message': _(
-                        'No fue posible clasificar el documento como Producto, '
-                        'Procesado o Granel a partir de su contenido. Seleccione '
-                        'manualmente el "Tipo de ingreso" antes de continuar.'
-                    ),
-                }
-            }
+            rec.classification_result = False
 
     @api.onchange('excel_file', 'excel_filename', 'pdf_filename')
     def _onchange_suggest_ingestion_profile(self):
@@ -209,6 +213,9 @@ class MadenatLumberIntakeWizard(models.Model):
             ambiguo, solo advierte, no cambia el valor.
         """
         for rec in self:
+            # Volúmenes no usa perfil de lectura: no se sugiere ni modifica.
+            if rec.intake_modality == 'volume':
+                continue
             if not rec.excel_file:
                 continue
 
@@ -257,10 +264,227 @@ class MadenatLumberIntakeWizard(models.Model):
     # ─────────────────────────────────────────────────────────────────────
     # Lectura y preview — solo Producto
     # ─────────────────────────────────────────────────────────────────────
+    def _resolve_granel_volume(self, result):
+        """Resuelve el volumen total de una extracción Granel/Volumen.
+
+        Fuentes en orden:
+          1. Total explícito del header (si es > 0).
+          2. Suma de volúmenes de las líneas de detalle.
+        Devuelve (total_volume_m3, warnings); emite warning de coherencia
+        cuando el total explícito y la suma difieren más que la tolerancia.
+        """
+        warnings = list(result.warnings or [])
+
+        explicit = result.header.get('total_volume_m3')
+        line_sum = None
+        volumes = [
+            l.get('volume_m3')
+            for l in (result.lines or [])
+            if l.get('volume_m3') is not None
+        ]
+        if volumes:
+            line_sum = round(sum(volumes), 3)
+
+        total = explicit if (explicit is not None and explicit > 0) else None
+
+        if total is not None and line_sum is not None:
+            diff = round(abs(total - line_sum), 3)
+            if diff > 0.001:
+                warnings.append(
+                    'Discrepancia de volumen: total explícito %.3f m³ vs suma de '
+                    'líneas %.3f m³ (diferencia %.3f m³, tolerancia superada). '
+                    'Se usa el total explícito.' % (total, line_sum, diff))
+            else:
+                warnings.append(
+                    'Volumen validado: total explícito %.3f m³ coincide con la '
+                    'suma de líneas %.3f m³.' % (total, line_sum))
+
+        if total is None and line_sum is not None and line_sum > 0:
+            total = line_sum
+            warnings.append(
+                'Sin total explícito: se usó la suma de líneas de detalle '
+                '(%.3f m³).' % line_sum)
+
+        return total, warnings
+
+    def _preview_volume(self):
+        """Lectura para modalidad 'volume': PDF o Excel (al menos uno).
+
+        Extrae el volumen desde la fuente disponible (PDF prioritario, Excel
+        como alternativa independiente) y deja el wizard en 'previewed' para
+        permitir _route_granel(). No exige tipo_ingreso.
+        """
+        self.ensure_one()
+
+        if not self.pdf_file and not self.excel_file:
+            raise UserError(
+                _('Debe adjuntar al menos un documento: Guía/PDF o Packing Excel.'))
+
+        total_volume = 0.0
+        guide_no = False
+        warnings_text = False
+        line_count = 0
+        header = {}
+        document_lines_text = False
+        line_volume = 0.0
+        detalle_aplicado = 'consolidated'
+        detalle_motivo = False
+        extraction_warning = False
+
+        source_bytes = None
+        source_filename = None
+        if self.pdf_file:
+            source_bytes = base64.b64decode(self.pdf_file)
+            source_filename = self.pdf_filename or 'guia.pdf'
+        elif self.excel_file:
+            source_bytes = base64.b64decode(self.excel_file)
+            source_filename = self.excel_filename or 'packing.xlsx'
+        if source_bytes:
+            try:
+                result = extract_document(source_bytes, source_filename)
+                header = result.header or {}
+                total_volume, warnings = self._resolve_granel_volume(result)
+                total_volume = total_volume or 0.0
+                guide_no = header.get('guide_number') or False
+                warnings_text = '\n'.join(warnings) or False
+                line_count = len(result.lines or [])
+
+                line_volume = round(
+                    sum(l.get('volume_m3') or 0 for l in result.lines), 3) \
+                    if result.lines else 0.0
+
+                if self.tipo_detalle_granel == 'linea_por_linea' and result.lines:
+                    detalle_aplicado = 'line_by_line'
+                    detalle_motivo = False
+                else:
+                    detalle_aplicado = 'consolidated'
+                    detalle_motivo = (
+                        'Tabla PDF no reconocida'
+                        if self.tipo_detalle_granel == 'linea_por_linea' else False)
+
+                if result.lines:
+                    document_lines_text = '\n'.join(
+                        '#%d | Lote=%s | Código=%s | %s | Vol=%s m³ | %s | '
+                        'Precio=%s | Total=%s' % (
+                            idx,
+                            l.get('lot_or_package_ref')
+                            or l.get('lot_number') or '',
+                            l.get('material_code')
+                            or l.get('product_code') or '',
+                            l.get('description')
+                            or l.get('product_name_original') or '',
+                            l.get('volume_m3') or 0,
+                            l.get('uom') or '',
+                            l.get('unit_price') or '',
+                            l.get('line_amount') or '',
+                        )
+                        for idx, l in enumerate(result.lines, start=1)
+                    )
+            except DocumentExtractionError as e:
+                # Volúmenes: la estructura/cabecera no reconocida NO bloquea.
+                # Se conserva el adjunto como evidencia y se permite completar
+                # cabecera, volumen operativo o detalle manualmente.
+                extraction_warning = str(e)
+            except Exception as e:
+                self.write({'state': 'error', 'error_message': str(e)})
+                raise UserError(_('Error inesperado al leer el documento:\n%s') % e)
+
+        if extraction_warning:
+            manual_msg = _(
+                'No fue posible extraer automáticamente la estructura del '
+                'documento. Complete cabecera, volumen operativo o detalle '
+                'manualmente.')
+            warnings_text = '\n'.join(
+                filter(None, [warnings_text, manual_msg])) or False
+
+        self.write({
+            'state': 'previewed',
+            'preview_data': False,
+            'preview_line_count': line_count,
+            'preview_total_volume_m3': total_volume,
+            'preview_guide_no': guide_no,
+            'preview_warnings': warnings_text,
+            'preview_guide_date': header.get('guide_date') or False,
+            'preview_supplier': header.get('supplier_rut') or False,
+            'preview_oc': header.get('oc_reference') or False,
+            'preview_origin': header.get('origin_reference') or False,
+            'preview_exchange_rate': header.get('exchange_rate') or 0.0,
+            'preview_total_packages': header.get('total_packages') or 0,
+            'preview_document_lines': document_lines_text,
+            'preview_has_detail': bool(document_lines_text),
+            'preview_line_volume_m3': line_volume,
+            'detalle_aplicado': detalle_aplicado,
+            'detalle_motivo': detalle_motivo,
+            'error_message': False,
+        })
+
+        if extraction_warning:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Documento adjunto conservado'),
+                    'message': _(
+                        'No fue posible extraer automáticamente la estructura. '
+                        'Complete cabecera, volumen operativo o detalle manualmente.'),
+                    'type': 'warning',
+                    'sticky': True,
+                },
+            }
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Documento de Volumen leído',
+                'message': 'Volumen total detectado: %.3f m³.' % total_volume,
+                'type': 'success',
+            },
+        }
+
+    def _classify_normal_document(self):
+        """Clasifica Producto/Procesado desde el contenido real del documento
+        (glosa del PDF). No usa nombre de archivo ni asigna 'granel'."""
+        self.ensure_one()
+        config = self.env['madenat.ingestion.config']
+        keywords_procesado = config.get_tipo_ingreso_keywords('procesado')
+
+        texto = ''
+        if self.pdf_file:
+            try:
+                pdf_bytes = base64.b64decode(self.pdf_file)
+                texto = _extract_pdf_text(
+                    pdf_bytes, self.pdf_filename or 'guia.pdf') or ''
+            except Exception:
+                texto = ''
+
+        texto = (texto or '').casefold()
+        if any(p in texto for p in keywords_procesado):
+            self.write({
+                'tipo_ingreso': 'procesado',
+                'tipo_ingreso_auto_detectado': True,
+                'classification_result': 'Procesado',
+            })
+        else:
+            self.write({
+                'tipo_ingreso': 'producto',
+                'tipo_ingreso_auto_detectado': False,
+                'classification_result': 'Producto',
+            })
+
     def action_preview_document(self):
         self.ensure_one()
 
-        if self.tipo_ingreso in ('producto', 'procesado') and not self.excel_file:
+        # Modalidad por Volúmenes: solo PDF; Excel opcional (respaldo/detalle).
+        if self.intake_modality == 'volume':
+            return self._preview_volume()
+
+        # Modalidad normal: clasificación Producto/Procesado por contenido real,
+        # al ejecutar Leer documento (no al adjuntar).
+        self._classify_normal_document()
+
+        # Normal requiere Excel para el detalle/preview.
+        if not self.excel_file:
             raise UserError(_('Archivo Excel requerido.'))
 
         if self.tipo_ingreso == 'procesado':
@@ -357,41 +581,61 @@ class MadenatLumberIntakeWizard(models.Model):
 
         self._guard_route_document()
 
+        # Modalidad por Volúmenes → deriva directo al flujo Granel existente.
+        if self.intake_modality == 'volume':
+            return self._route_granel()
+
+        # Modalidad normal → el tipo de ingreso detectado decide la ruta.
         if self.tipo_ingreso == 'producto':
             return self._route_producto()
-        if self.tipo_ingreso == 'granel':
-            return self._route_granel()
-        return self._route_procesado()
+        if self.tipo_ingreso == 'procesado':
+            return self._route_procesado()
+
+        raise UserError(
+            _('No se pudo determinar el tipo de ingreso (Producto o '
+              'Procesado) desde el documento. Verifique los archivos o use la '
+              'modalidad "Ingreso por Volúmenes" si corresponde.')
+        )
 
     def _guard_route_document(self):
         self.ensure_one()
-
-        # Validación común para ambos tipos de ingreso
-        if self.tipo_ingreso in ('producto', 'procesado') and not self.excel_file:
-            raise UserError(_('Archivo Excel requerido.'))
-
-        if not self.pdf_file:
-            raise UserError(
-                _('Guía/PDF requerido para continuar el ingreso.')
-            )
 
         if not self.assignment_location_id:
             raise UserError(
                 _('Seleccione el Patio de Asignación para continuar el ingreso.')
             )
 
-        # Validaciones específicas por tipo
-        if self.tipo_ingreso == 'producto':
+        if self.assignment_location_id.usage != 'internal':
+            raise UserError(
+                _('El Patio de Asignación debe ser una ubicación interna.')
+            )
+
+        # Documentos independientes: la modalidad Volúmenes acepta PDF o Excel
+        # (o ambos); la modalidad normal conserva PDF obligatorio + Excel.
+        if self.intake_modality == 'volume':
+            if not self.pdf_file and not self.excel_file:
+                raise UserError(
+                    _('Debe adjuntar al menos un documento: Guía/PDF o Packing Excel.')
+                )
+        else:
+            if not self.pdf_file:
+                raise UserError(
+                    _('Guía/PDF requerido para continuar el ingreso.')
+                )
+            if not self.excel_file:
+                raise UserError(_('Archivo Excel requerido.'))
+
+        # Validaciones de estado según modalidad y tipo.
+        if self.intake_modality == 'normal' and self.tipo_ingreso == 'producto':
             if self.state != 'previewed':
                 raise UserError(
                     _('Debe leer el documento (preview) antes de derivar '
                       'a Producto.')
                 )
-        else:
-            if self.state not in ('draft', 'previewed'):
-                raise UserError(
-                    _('El ingreso Procesado no está en un estado derivable.')
-                )
+        elif self.state not in ('draft', 'previewed'):
+            raise UserError(
+                _('El ingreso no está en un estado derivable.')
+            )
 
     def _existing_target(self):
         self.ensure_one()
@@ -468,20 +712,210 @@ class MadenatLumberIntakeWizard(models.Model):
             self.flush_recordset(['state', 'error_message'])
             raise
 
+    # ── Helpers de lectura y conciliación para Volúmenes ────────────────────
+    def _read_volume_document(self, is_pdf):
+        """Decodifica y extrae un documento (PDF o Excel) o devuelve None."""
+        if is_pdf:
+            if not self.pdf_file:
+                return None
+            data = base64.b64decode(self.pdf_file)
+            filename = self.pdf_filename or 'guia.pdf'
+        else:
+            if not self.excel_file:
+                return None
+            data = base64.b64decode(self.excel_file)
+            filename = self.excel_filename or 'packing.xlsx'
+        try:
+            return extract_document(data, filename)
+        except Exception:
+            return None
+
+    def _document_volume(self, result):
+        """Volumen documental de una extracción (evidencia de la fuente).
+
+        Fase 2 (Bug #1): si la extracción expone el volumen DECLARADO por la
+        cabecera del documento (`declared_volume_m3`, solo PDF), ese es el
+        volumen documental de la fuente. Si la clave no existe (Excel, o
+        extracciones previas al fix), se conserva EXACTAMENTE el
+        comportamiento anterior: `total_volume_m3` y, en su defecto, la suma
+        de las líneas del detalle.
+        """
+        if result is None:
+            return 0.0
+        header = result.header or {}
+        declared = header.get('declared_volume_m3')
+        if declared is not None and declared > 0:
+            return round(float(declared), 3)
+        total = header.get('total_volume_m3')
+        if total is not None and total > 0:
+            return round(float(total), 3)
+        line_sum = round(
+            sum(l.get('volume_m3') or 0.0 for l in (result.lines or [])), 3)
+        return line_sum if line_sum > 0 else 0.0
+
+    def _conciliate_documents(self, pdf_result, excel_result):
+        """Compara PDF y Excel y devuelve (status, summary).
+
+        Estados: not_compared (una sola fuente), auto_matched,
+        matched_with_differences, incompatible, needs_manual_review.
+        """
+        if pdf_result is None and excel_result is None:
+            return 'not_compared', ''
+        if pdf_result is None or excel_result is None:
+            return 'not_compared', _('Solo existe una fuente documental.')
+
+        ph = pdf_result.header or {}
+        eh = excel_result.header or {}
+        p_vol = self._document_volume(pdf_result)
+        e_vol = self._document_volume(excel_result)
+
+        diffs = []
+        p_guide = str(ph.get('guide_number') or '').strip()
+        e_guide = str(eh.get('guide_number') or '').strip()
+        if p_guide and e_guide and p_guide != e_guide:
+            diffs.append('Nº guía distinto (PDF=%s, Excel=%s)' % (p_guide, e_guide))
+        p_rut = str(ph.get('supplier_rut') or '').strip()
+        e_rut = str(eh.get('supplier_rut') or '').strip()
+        if p_rut and e_rut and p_rut != e_rut:
+            diffs.append('RUT proveedor distinto (PDF=%s, Excel=%s)' % (p_rut, e_rut))
+        p_oc = str(ph.get('oc_reference') or '').strip()
+        e_oc = str(eh.get('oc_reference') or '').strip()
+        if p_oc and e_oc and p_oc != e_oc:
+            diffs.append('OC distinta (PDF=%s, Excel=%s)' % (p_oc, e_oc))
+        if p_vol > 0 and e_vol > 0 and abs(p_vol - e_vol) > 0.001:
+            diffs.append('Volumen distinto (PDF=%.3f, Excel=%.3f)' % (p_vol, e_vol))
+
+        strong_conflict = bool(p_guide and e_guide and p_guide != e_guide) or \
+            bool(p_rut and e_rut and p_rut != e_rut)
+
+        if strong_conflict:
+            status = 'incompatible'
+        elif diffs:
+            status = 'matched_with_differences'
+        elif (p_guide and p_guide == e_guide) or \
+                (p_vol > 0 and abs(p_vol - e_vol) <= 0.001):
+            status = 'auto_matched'
+        else:
+            status = 'needs_manual_review'
+
+        summary = '; '.join(diffs) if diffs else _('Documentos coherentes.')
+        return status, summary
+
+    def _resolve_operational_volume(self, pdf_vol, excel_vol, detail_sum,
+                                    prefer_detail):
+        """Prellena el volumen operativo y su fuente (sin borrar evidencia)."""
+        if prefer_detail and detail_sum > 0:
+            return detail_sum, 'detail'
+        if pdf_vol > 0:
+            return pdf_vol, 'pdf'
+        if excel_vol > 0:
+            return excel_vol, 'excel'
+        if detail_sum > 0:
+            return detail_sum, 'detail'
+        return 0.0, 'manual'
+
+    def _build_volume_detail_vals(self, lines, origin):
+        """Convierte líneas extraídas a vals de detalle documental.
+
+        Designaciones comerciales por fila (`width_declared`,
+        `length_declared`, `thickness_declared`): se persisten SOLO cuando el
+        documento las trae explícitas (`*_value_raw` del contrato de
+        extracción). Si la clave no existe en la extracción, la celda queda
+        vacía: nunca se derivan del encabezado ni se inventan.
+
+        `pieces` (piezas declaradas por línea): la fila transporta el valor
+        EXACTO que entregó el motor (`int` cuando el documento declara una
+        columna de piezas inequívoca, `None` cuando no la declara). El valor NO
+        se persiste en el `create`: lo aplica
+        `madenat.lumber.volume.detail.line._apply_documental_pieces()`, único
+        escritor, de forma idempotente y protegiendo el ajuste manual. El
+        marcador técnico histórico (`pieces=1` de la ruta PDF genérica) fue
+        eliminado del motor: ya no existe dato fabricado que transportar.
+        """
+        vals_list = []
+        for idx, line in enumerate(lines or [], start=1):
+            vals_list.append({
+                'lot_or_package': (
+                    line.get('lot_or_package_ref')
+                    or line.get('lot_number') or ''),
+                'material_code': (
+                    line.get('material_code')
+                    or line.get('product_code') or ''),
+                'description': (
+                    line.get('description')
+                    or line.get('product_name_original') or ''),
+                'volume_m3': line.get('volume_m3') or 0.0,
+                'uom': line.get('uom') or '',
+                'unit_price': line.get('unit_price') or 0.0,
+                'line_amount': line.get('line_amount') or 0.0,
+                'width_declared': line.get('width_value_raw') or '',
+                'length_declared': line.get('length_value_raw') or '',
+                'thickness_declared': line.get('thickness_value_raw') or '',
+                'source_page': line.get('source_page') or 0,
+                'source_line_no': idx,
+                'confidence': line.get('confidence') or 0.0,
+                'origin': origin,
+                # Solo transporte: lo aplica `_apply_documental_pieces`.
+                'pieces': line.get('pieces'),
+            })
+        return vals_list
+
     # ── Rama Granel ────────────────────────────────────────────────────────
     def _route_granel(self):
         self.ensure_one()
 
         try:
             with self.env.cr.savepoint():
-                pdf_bytes = base64.b64decode(self.pdf_file) if self.pdf_file else None
-                if not pdf_bytes:
-                    raise UserError(_('Guía/PDF requerido para el ingreso a granel.'))
+                # PDF y Excel son fuentes independientes: se leen por separado.
+                pdf_result = self._read_volume_document(is_pdf=True)
+                excel_result = self._read_volume_document(is_pdf=False)
+                # Documento adjunto pero no extraíble: NO bloquea. Se conserva
+                # como evidencia y se permite completar manualmente.
+                extraction_failed = (pdf_result is None and excel_result is None)
 
-                # AD-68: extraer el volumen agregado desde el PDF (sin Excel).
-                result = extract_document(
-                    pdf_bytes, self.pdf_filename or 'guia.pdf')
-                total_volume = result.header.get('total_volume_m3') or 0.0
+                # Evidencia original por documento (independiente, no se pisa).
+                volume_pdf_m3 = self._document_volume(pdf_result)
+                volume_excel_m3 = self._document_volume(excel_result)
+
+                conciliation_status, conciliation_summary = \
+                    self._conciliate_documents(pdf_result, excel_result)
+
+                # Detalle documental combinado (PDF + Excel) con origen real.
+                detail_vals = []
+                if pdf_result and pdf_result.lines:
+                    detail_vals += self._build_volume_detail_vals(
+                        pdf_result.lines, 'pdf')
+                if excel_result and excel_result.lines:
+                    detail_vals += self._build_volume_detail_vals(
+                        excel_result.lines, 'excel')
+                detail_sum = round(sum(v['volume_m3'] for v in detail_vals), 3)
+
+                prefer_detail = (
+                    self.tipo_detalle_granel == 'linea_por_linea' and detail_sum > 0)
+                operational_volume, operational_source = \
+                    self._resolve_operational_volume(
+                        volume_pdf_m3, volume_excel_m3, detail_sum, prefer_detail)
+
+                warnings = []
+                if pdf_result:
+                    warnings = list(pdf_result.warnings or [])
+                if excel_result:
+                    warnings += list(excel_result.warnings or [])
+
+                if extraction_failed:
+                    warnings.append(_(
+                        'No fue posible extraer automáticamente la estructura '
+                        'del documento. Complete cabecera, volumen operativo o '
+                        'detalle manualmente.'))
+
+                # Coherencia interna PDF: total explícito vs suma de detalle.
+                if (volume_pdf_m3 > 0 and detail_sum > 0
+                        and abs(volume_pdf_m3 - detail_sum) > 0.001):
+                    warnings.append(
+                        'Discrepancia de volumen: total explícito %.3f m³ vs '
+                        'suma de líneas %.3f m³.' % (volume_pdf_m3, detail_sum))
+
+                result = pdf_result or excel_result
 
                 vals = {
                     'tipo_recepcion': 'granel',
@@ -489,22 +923,165 @@ class MadenatLumberIntakeWizard(models.Model):
                     'assignment_location_id': self.assignment_location_id.id,
                     'guide_pdf_file': self.pdf_file,
                     'guide_pdf_filename': self.pdf_filename,
+                    'excel_file': self.excel_file,
+                    'excel_filename': self.excel_filename,
+                    # Evidencia documental original (inmutable).
+                    'volume_pdf_m3': volume_pdf_m3,
+                    'volume_excel_m3': volume_excel_m3,
+                    # Volumen operativo prellenado (editable en consola).
+                    'volume_operational_m3': operational_volume,
+                    'volume_operational_source': operational_source,
+                    # Conciliación documental PDF–Excel.
+                    'conciliation_status': conciliation_status,
+                    'conciliation_summary': conciliation_summary,
+                    # Retrocompatibilidad: conservar el volumen PDF comercial.
+                    'vol_comercial_pdf': volume_pdf_m3 or operational_volume,
                 }
                 guia = self.env['madenat.guia.processing'].create(vals)
 
-                # Poblar las líneas según el nivel de detalle elegido (AD-72).
-                if self.tipo_detalle_granel == 'linea_por_linea' and result.lines:
-                    guia._create_granel_detail_lines(result.lines)
+                # Paridad documental: persistir cabecera del PDF en la guía
+                # (número, fecha, OC, tipo de cambio y proveedor), igual que la
+                # ingesta normal. Sin datos de transporte.
+                header = (result.header or {}) if result is not None else {}
+                header_update = {}
+                if header.get('guide_number'):
+                    header_update['name'] = header['guide_number']
+                if header.get('guide_date'):
+                    header_update['date_emission'] = header['guide_date']
+                if header.get('oc_reference'):
+                    header_update['oc_reference_raw'] = header['oc_reference']
+                if header.get('exchange_rate'):
+                    header_update['rate_usd'] = header['exchange_rate']
+
+                supplier_rut = header.get('supplier_rut')
+                supplier_name = header.get('supplier_name')
+                # Persistir el proveedor documental (nombre y RUT) separado del
+                # partner resuelto en Odoo, con fuente y confianza para auditoría.
+                header_update['supplier_name'] = supplier_name or False
+                header_update['supplier_rut'] = supplier_rut or False
+                header_update['supplier_source'] = (
+                    header.get('supplier_source') or False)
+                header_update['supplier_confidence'] = (
+                    header.get('supplier_confidence') or 'none')
+
+                # Resolver partner con AMBOS datos (nombre y RUT) y confianza;
+                # nunca solo RUT.
+                if supplier_rut or supplier_name:
+                    partner = guia._resolve_or_create_supplier(
+                        supplier_rut, supplier_name,
+                        confidence=header.get('supplier_confidence'),
+                    )
+                    if partner:
+                        header_update['partner_id'] = partner.id
+                    header_update['supplier_resolution_status'] = (
+                        guia.supplier_resolution_status)
+                    header_update['supplier_resolution_note'] = (
+                        guia.supplier_resolution_note)
+
+                if header_update:
+                    guia.write(header_update)
+
+                # Pedido/Origen se conserva de forma independiente (no se
+                # mezcla con la OC). Sin campo equivalente, va al chatter
+                # claramente etiquetado.
+                if header.get('origin_reference'):
+                    guia.message_post(
+                        body='Pedido/Origen: %s' % header['origin_reference'])
+
+                # Detalle documental: persiste las líneas realmente extraídas
+                # (PDF y/o Excel), conservando el origen de cada fila.
+                if detail_vals:
+                    # `pieces` viaja en la fila pero NO se crea aquí: lo aplica
+                    # `_apply_documental_pieces` (único escritor de piezas
+                    # documentales, idempotente y con protección del ajuste
+                    # manual).
+                    detail_lines = self.env[
+                        'madenat.lumber.volume.detail.line'].create([
+                            {key: value for key, value in vals.items()
+                             if key != 'pieces'} | {'guia_id': guia.id}
+                            for vals in detail_vals])
+                    pieces_summary = detail_lines._apply_documental_pieces(
+                        detail_vals)
+                    if pieces_summary['invalid']:
+                        warnings.append(_(
+                            'Piezas declaradas: %(count)s fila(s) con valor '
+                            'ambiguo o inválido en el documento; no se '
+                            'persistió cantidad. Referencias: %(refs)s'
+                        ) % {
+                            'count': len(pieces_summary['invalid']),
+                            'refs': ', '.join(pieces_summary['invalid'][:10]),
+                        })
+                    if pieces_summary['mismatch']:
+                        warnings.append(_(
+                            'Piezas declaradas: %(count)s fila(s) sin '
+                            'equivalencia inequívoca en el detalle '
+                            'documental; no se modificó nada. Referencias: '
+                            '%(refs)s'
+                        ) % {
+                            'count': len(pieces_summary['mismatch']),
+                            'refs': ', '.join(pieces_summary['mismatch'][:10]),
+                        })
+                    detail_lines_text = [
+                        '#%d | Origen=%s | Lote=%s | Código=%s | %s | Piezas=%s | '
+                        'Vol=%s m³ | %s | Precio=%s | Total=%s' % (
+                            idx,
+                            v['origin'] or '',
+                            v['lot_or_package'] or '',
+                            v['material_code'] or '',
+                            v['description'] or '',
+                            detail_lines[idx - 1].pieces or 0,
+                            v['volume_m3'] or 0,
+                            v['uom'] or '',
+                            v['unit_price'] or '',
+                            v['line_amount'] or '',
+                        )
+                        for idx, v in enumerate(detail_vals, start=1)
+                    ]
+                    guia.message_post(
+                        body='Detalle documental: %d líneas estructuradas '
+                             'disponibles.\n%s'
+                             % (len(detail_lines_text),
+                                '\n'.join(detail_lines_text)))
+                else:
+                    guia.message_post(
+                        body='Detalle documental no estructurado para este '
+                             'formato. Los adjuntos se conservan como fuente '
+                             'documental de consulta.')
+
+                for warning in warnings:
+                    guia.message_post(body=warning)
+
+                # Poblar la línea consolidada según el nivel elegido (AD-72).
+                # El lote sintético consolidado se crea en la validación usando
+                # volume_operational_m3; el staging conserva el detalle elegido.
+                raw_lines = []
+                if pdf_result and pdf_result.lines:
+                    raw_lines += list(pdf_result.lines)
+                if excel_result and excel_result.lines:
+                    raw_lines += list(excel_result.lines)
+
+                nivel_aplicado = 'consolidated'
+                if float_compare(
+                        operational_volume, 0.0, precision_rounding=0.001) <= 0:
+                    # Sin volumen válido: el usuario completará el volumen
+                    # operativo manualmente antes de enviar a stock.
+                    guia.message_post(body=_(
+                        "Sin volumen válido detectado: complete el volumen "
+                        "operativo manualmente antes de enviar a stock."))
+                elif self.tipo_detalle_granel == 'linea_por_linea' and raw_lines:
+                    guia._create_granel_detail_lines(raw_lines)
+                    nivel_aplicado = 'line_by_line'
                 else:
                     if self.tipo_detalle_granel == 'linea_por_linea':
                         guia.message_post(body=_(
-                            "Se solicitó detalle línea por línea, pero el PDF no trajo tabla "
-                            "reconocible (solo total de cabecera vía cascada AD-71 Nivel 4). "
-                            "Se usó resumen agregado en su lugar."))
-                    guia._create_granel_summary_line(total_volume)
+                            "Nivel solicitado: Línea por Línea. "
+                            "Nivel aplicado: Consolidado. "
+                            "Motivo: no se pudo reconocer una tabla válida."))
+                    guia._create_granel_summary_line(operational_volume)
 
                 # Estado equivalente al post-action_verify_data del flujo Procesado.
-                guia.write({'state': 'verified'})
+                guia.write({'state': 'verified',
+                            'detalle_aplicado': nivel_aplicado})
 
                 self._persist_target(guia)
                 self._log_intake_origin(guia)

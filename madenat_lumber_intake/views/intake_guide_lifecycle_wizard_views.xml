@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         CICLO DE VIDA CONTROLADO DE GUÍAS (Fase 2, AD-80)
+         Asistente único de los Modos A (eliminar definitivamente),
+         B (cancelar conservando trazabilidad), C (purgar de forma
+         controlada) y D (bloquear y escalar). No usa SQL, no usa
+         CASCADE y nunca borra movimientos, pickings, quants ni
+         operaciones SV aplicadas/reversadas.
+         ============================================================ -->
+    <record id="view_madenat_lumber_intake_guide_lifecycle_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.intake.guide.lifecycle.form</field>
+        <field name="model">madenat.lumber.intake.guide.lifecycle</field>
+        <field name="arch" type="xml">
+            <form string="Ciclo de vida de la guía">
+                <group>
+                    <field name="guia_name" readonly="1"/>
+                    <field name="guia_state" widget="badge"
+                           decoration-success="guia_state == 'draft'"
+                           decoration-muted="guia_state == 'cancelled'"
+                           decoration-warning="guia_state in ('verified', 'processed')"
+                           decoration-info="guia_state == 'validated'"/>
+                    <field name="tipo_recepcion" readonly="1"/>
+                    <field name="has_volume_lot" readonly="1"/>
+                    <field name="technical_lots_text" readonly="1"/>
+                </group>
+
+                <group string="Diagnóstico de bloqueadores">
+                    <field name="blocker_count" readonly="1"/>
+                    <field name="blockers" nolabel="1" readonly="1"
+                           invisible="not blockers"/>
+                    <field name="purge_blockers" nolabel="1" readonly="1"
+                           invisible="not purge_blockers"/>
+                </group>
+
+                <group string="Modo de ciclo de vida">
+                    <field name="mode" widget="radio"/>
+                </group>
+                <group>
+                    <field name="reason" placeholder="Motivo obligatorio"/>
+                    <field name="acknowledge" invisible="mode != 'A'"/>
+                    <field name="confirmation" invisible="mode != 'C'"
+                           placeholder="Escriba PURGAR para confirmar"/>
+                </group>
+
+                <div class="alert alert-danger" role="alert"
+                     invisible="mode not in ('A', 'C') or requirements_ok">
+                    El modo seleccionado no cumple sus precondiciones. Use
+                    «D. Bloquear y escalar» para ver las rutas correctas o
+                    corrija las trazas detectadas.
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="mode != 'D'">
+                    «Bloquear y escalar» no elimina nada: registra el evento de
+                    auditoría y ofrece las rutas correctas (cancelar, reversar,
+                    regularizar o gestionar la etiqueta SV).
+                </div>
+
+                <group string="Rutas correctas" invisible="mode != 'D'">
+                    <button name="action_route_cancel_and_keep" type="object"
+                            string="Cancelar conservando trazabilidad"
+                            class="btn-secondary"/>
+                    <button name="action_route_open_sv_history" type="object"
+                            string="Gestionar etiqueta SV (historial)"
+                            class="btn-secondary"/>
+                    <button name="action_route_regularize_sv" type="object"
+                            string="Regularizar volumen (SV)"
+                            class="btn-secondary"/>
+                </group>
+
+                <footer>
+                    <button name="action_run" type="object" string="Ejecutar"
+                            class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

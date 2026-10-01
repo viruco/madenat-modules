@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Formulario de detalle de una línea del detalle documental (Volumen).
+         Es la vista que abre el botón «Ver» de la grilla declarada de la
+         Consola de Ingresos: en Odoo 18 el atributo `open_form_view` de una
+         lista x2many editable abre el registro con la vista form POR DEFECTO
+         del modelo, por lo que se define aquí una vista curada equivalente al
+         `<form>` inline del campo `declared_piece_line_ids`.
+
+         Es DOCUMENTAL e informativa: no cambia estados, stock, lotes,
+         conciliación, consolidación ni volumen oficial. Origen y Ajuste manual
+         son evidencia y quedan en solo lectura. -->
+    <record id="view_madenat_lumber_volume_detail_line_form" model="ir.ui.view">
+        <field name="name">madenat.lumber.volume.detail.line.form</field>
+        <field name="model">madenat.lumber.volume.detail.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="description" widget="text"
+                               placeholder="Descripción declarada de la línea"/>
+                        <field name="observation" widget="text"
+                               placeholder="Observación del operador (varias líneas)"/>
+                    </group>
+                    <group>
+                        <field name="material_code" string="Código"/>
+                        <field name="pieces" string="Piezas"/>
+                        <field name="width_declared" string="Ancho (RW)"/>
+                        <field name="length_declared" string="Largo (RL)"/>
+                        <field name="thickness_declared" string="Espesor nominal"/>
+                        <field name="volume_m3" string="Volumen (m³)"/>
+                        <field name="origin" string="Origen" readonly="1"/>
+                        <field name="manually_adjusted" string="Ajuste manual"
+                               readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>
