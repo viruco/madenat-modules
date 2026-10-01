@@ -33,6 +33,9 @@
         'data/billing_workflows.xml',
         'views/lumber_billing_consolidation_views.xml',
         'views/lumber_billing_actions.xml',
+        # T6 — Extensión de la vista de Embarque (Logistics) que aporta el botón
+        # de Consolidación. Debe cargarse después de data/billing_workflows.xml.
+        'views/lumber_billing_shipment_views.xml',
         'data/lumber_billing_menu_data.xml',
         'wizards/lumber_billing_invoice_wizard_views.xml',
     ],

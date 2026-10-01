@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            T6 — El botón "Crear Consolidación" es una funcionalidad de Billing.
+            Se aporta mediante una vista heredada PROPIEDAD DE BILLING sobre la
+            vista de Embarque de Logistics, de modo que:
+              * madenat_lumber_logistics pueda instalarse sin Billing (un módulo
+                base nunca referencia XML IDs declarados por su dependiente);
+              * la funcionalidad de facturación siga disponible cuando Billing
+                está instalado, sin dependencias nuevas ni ciclos.
+            La acción referenciada se define en data/billing_workflows.xml, que
+            se carga antes que esta vista.
+        -->
+        <record id="view_lumber_billing_shipment_form_billing_button" model="ir.ui.view">
+            <field name="name">lumber.export.shipment.form.billing.button</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="inherit_id" ref="madenat_lumber_logistics.view_lumber_export_shipment_form"/>
+            <field name="mode">extension</field>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button name="%(madenat_lumber_billing.action_create_consolidation_from_shipment)d"
+                            string="💰 Crear Consolidación"
+                            type="action"
+                            invisible="state != 'delivered'"
+                            class="btn-primary"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
