@@ -1,14 +1,14 @@
 # 18 — Consolidación y Rebaja de Contenedores y Naves
 
-**Versión documental:** 1.0.0
-**Fecha de actualización:** 2026-10-01
-**Estado:** 🟡 **BORRADOR / PROPUESTA** — Especificación canónica **propuesta** de la **consolidación** (vincular/reservar) y la **rebaja** (descontar) de contenedores y naves. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md` ni `17_CONSTITUCION_VOLUMENES.md`; los referencia. **No constituye regla vigente** ni autoriza cambios de código, datos ni parámetros.
+**Versión documental:** 1.1.0
+**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01: rebaja por contenedor/nave implementada (AD-82/AD-84); §14 Estado de implementación -->
+**Estado:** 🟢 **EN IMPLEMENTACIÓN** — Especificación de la **consolidación** (vincular/reservar) y la **rebaja** (descontar) de contenedores y naves. La **rebaja por contenedor** y **por nave** está **implementada** (AD-82 y AD-84 **APROBADAS**; AD-83 **APROBADA EN PRINCIPIO** sin extraer módulo). Ver §14 «Estado de implementación». **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md` ni `17_CONSTITUCION_VOLUMENES.md`; los referencia.
 **Responsable revisión:** 2026-10-01 — Alta del documento canónico `18` a solicitud del usuario (ciclo AD-81: «Consolidación: por contenedor y rebaja por motonave»). Registro de AD-85 y AD-86 en estado PROPUESTA.
 
-> **Este documento es una ESPECIFICACIÓN.** Fija el alcance, los puntos acordados, el modelo objetivo,
-> las reglas y el plan de pruebas. **No implementa nada**: no modificó código, datos ni parámetros; no
-> hubo commit ni push de código. Las decisiones que dependen del usuario quedan en §11 «Preguntas
-> abiertas» **sin decidir por él**.
+> **Este documento es una ESPECIFICACIÓN.** Originalmente no implementaba código; desde el **2026-10-01**
+> la **rebaja por contenedor y por nave** fue **implementada** en `madenat_lumber_logistics` (rama
+> `feat/rebaja-contenedor-20261001`, BD `madenat_test`). Ver §14. Las decisiones que dependen del usuario
+> quedan en §11 «Preguntas abiertas» **sin decidir por él**.
 
 ---
 
@@ -534,4 +534,51 @@ fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
 - `madenat_lumber_shipping_core/models/shipping_voyage.py`, `shipping_booking.py`, `shipping_vessel.py`.
 - Documentos: `17_CONSTITUCION_VOLUMENES.md`, `16_AUDITORIA_20261001.md`,
   `13_CONSOLIDACION_OPERATIVA.md`, `04_DECISION_LOG.md` (AD-79..AD-84), `00_ARQUITECTURA.md`.
+
+
+---
+
+## 14. Estado de implementación (2026-10-01)
+
+**Rama:** `feat/rebaja-contenedor-20261001` (desde `wip/ux-intake-acl-20261001`), BD `madenat_test`.
+**Módulos tocados:** `madenat_lumber_logistics` (núcleo), `madenat_lumber_core` (tipos de auditoría + etiquetas).
+
+### 14.1 Resuelto y verificado
+- **AC-1 / AC-3** (consolidar no descuenta; el zarpe no descuenta; la salida ocurre al rebajar):
+  `lumber.container.action_rebajar` → `_rebajar_container`; `lumber.export.shipment.action_set_in_transit`
+  **ya no** llama a `_action_reduce_stock` (método **eliminado**) y **exige** contenedores `rebajado`.
+- **AC-4** (SV parcial sale exactamente el volumen asignado): cantidad = `rebaja_volume_m3` de la operación
+  SV `applied` ligada al contenedor.
+- **AC-5** (capacidad en DISPONIBLE base nominal): `lumber.container.lot.wizard` usa `volumen_restante_m3`
+  y excluye lotes sin disponible.
+- **Estado propio `rebajado`** del contenedor y **persistencia por (contenedor, lote)** en
+  `lumber.shipment.line` con **restricción única** (idempotencia).
+- **Reversa**: retorno nativo + contrapartida SV (`sv_reverse_allocation`); **bloqueada** si el embarque
+  está entregado o el viaje cancelado.
+- **Auditoría**: `madenat.audit.log` con `action_type` `rebaja` / `rebaja_reverse` (aditivo).
+- **Permisos**: grupos **existentes** (Operaciones / Jefatura / Gerencia) con **rechazo en servidor**
+  (`_rebaja_require_group`); **no** se creó grupo nuevo (AD-86 sigue PROPUESTA).
+- **Rebaja por nave** (asistente): selección nave/viaje, lista de contenedores pendientes por embarque,
+  rebaja masiva **con savepoint por contenedor** e informe de éxitos/fallos.
+
+### 14.2 Diferido / fuera de alcance (por decisión del usuario)
+Facturación; regla +1/8" (anchos 170/180 mm); **P.O. del comprador**; consignatarios; `booking_id`;
+armador/naviera; rolleo como evento; tarja por paquete; extracción del módulo SV.
+
+### 14.3 Punto que requiere decisión
+- **Q-07 (permiso/alcance de la rebaja por nave)**: sin decisión formal; se implementó como acción de
+  **Jefatura de Operaciones / Gerencia** (provisional).
+
+### 14.4 Hallazgo de implementación (requiere revisión)
+- La restricción **`_check_lot_duplication`** de `lumber.container` impide que **un mismo lote** esté en
+  **dos contenedores activos a la vez**. Por ello la prueba «mismo lote SV parcial en dos contenedores
+  simultáneos» **no es representable**; se cubre con **dos etiquetas SV parciales** en dos contenedores
+  (venta exacta por rebaja). Si el negocio requiere un lote en varios contenedores, debe resolverse antes
+  de ampliar el flujo.
+
+### 14.5 Evidencia
+- Suite `madenat_lumber_logistics`: **32 pruebas, 0 fallas, 0 errores** (`TestRebajaContenedor`,
+  `TestContainerLotWizardDisponible`, `TestConsolidationActionDomain`, `TestSvAllocation`).
+- Regresión `madenat_lumber_core` (308), `madenat_lumber_intake` (395), `madenat_lumber_costing`,
+  `madenat_lumber_billing`, `madenat_ingestion_engine`: **sin regresiones nuevas** (ver informe de sesión).
 

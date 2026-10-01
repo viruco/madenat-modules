@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.0.0
-**Fecha de actualización:** 2026-10-01
+**Versión documental:** 1.1.0
+**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01: §6 marca F-01 y F-02 RESUELTOS (AD-82/AD-84, A-3) -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -148,14 +148,14 @@ Esta es la **base** de la Constitución (§1).
 
 ---
 
-## 6. Hallazgos — PENDIENTES (no aplicados)
+## 6. Hallazgos — estado (F-01/F-02 RESUELTOS; resto pendiente)
 
 > Registrados por el informe de auditoría de volúmenes del 2026-10-01. **No se aplicó ningún cambio de código, dato ni parámetro.** Se documentan aquí para que su corrección se planifique y registre por su AD correspondiente.
 
 | ID | Hallazgo | Evidencia (archivo:línea) | Impacto | Corrección objetivo (a decidir) |
 |---|---|---|---|---|
-| **F-01** | La **salida al zarpe** crea el picking con `quantity = 1` por lote (no usa el volumen). | `madenat_lumber_logistics/models/lumber_export_shipment.py:571,582` | Descuento parcial: un lote de 4,5 m³ queda en 3,5; stock sobreestimado y salida subestimada. | Mover el volumen correcto (DISPONIBLE/NOMINAL) o, según A-1, **no descontar en zarpe** y hacerlo en la rebaja. |
-| **F-02** | El **asistente de asignación** calcula y valida capacidad con `volumen_m3` (nominal bruto), **no** con el DISPONIBLE (`volumen_restante_m3`/quant). | `wizards/lumber_container_lot_wizard.py:170-190,212,340-356` | Sobrestima disponibilidad (lote 2585: 4.939 vs 4.358 disponibles → +0.581 m³). | Validar con DISPONIBLE base nominal (A-3). |
+| **F-01** | ~~La **salida al zarpe** crea el picking con `quantity = 1` por lote (no usa el volumen).~~ **✅ RESUELTO (2026-10-01, AD-82/AD-84)** — el zarpe **ya no descuenta** (`action_set_in_transit` exige contenedores `rebajado`); la salida nativa ocurre al rebajar (volumen por tipo de lote). `_action_reduce_stock` eliminado. | `madenat_lumber_logistics/models/lumber_export_shipment.py` (antes `:571,582`) | Descuento parcial: corregido. | — |
+| **F-02** | ~~El **asistente de asignación** calcula y valida capacidad con `volumen_m3` (nominal bruto), **no** con el DISPONIBLE (`volumen_restante_m3`/quant).~~ **✅ RESUELTO (2026-10-01, A-3/AC-5)** — el asistente usa `volumen_restante_m3` (DISPONIBLE base nominal) y excluye lotes sin disponible; caso lote 2585 cubierto por test. | `wizards/lumber_container_lot_wizard.py` (`_compute_new_totals`, dominio) | Sobrestimación corregida. | — |
 | **F-03** | `_compute_vol_shipment_m3` en `stock.lot` es **huérfano**: el método existe pero el campo `vol_shipment_m3` **no declara `compute=`**. | `madenat_lumber_core/models/stock_lot.py:452` (campo) vs `:469` (método) | El export del lote es una **copia congelada**; no se recalcula si cambian dimensiones. | Decidir: cablear el compute o eliminar el método muerto. |
 | **F-04** | Variable **`v_stock_real` engañosa**: contiene `item.vol_shipment_m3` (**export**), pero se lee como “stock real” y al “stock real” se le asigna `vol_purchase_m3`. | `madenat_guia_processing.py:1164,1167,1230-1240` | Riesgo de mantenimiento (no hay inversión de datos hoy). | Renombrar (`v_export_m3`) sin cambiar el mapping. |
 | **F-05** | Comentario de `vol_physical_m3` (“LA VERDAD DE BODEGA… este es el nominal”) **contradice** su cálculo (mm×mm×m métrico) y el move usa `vol_purchase_m3`. | `madenat_lumber_core/models/lumber_reception.py:316-332` (comment) vs `_compute_vol_physical_strict` (`:421-440`) | Documentación interna inconsistente. | Corregir comentario o el campo, según AD. |

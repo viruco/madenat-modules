@@ -1,7 +1,7 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 11.8.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — se indexa 18_CONSOLIDACION_Y_REBAJA.md (nuevo canónico, PROPUESTA); se sincroniza 04_DECISION_LOG (12.11.0, AD-85..86 PROPUESTA) -->
+**Versión documental:** 11.9.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-82/AD-84 APROBADAS e implementadas y AD-83 APROBADA EN PRINCIPIO; 18 pasa a EN IMPLEMENTACIÓN; 17 marca F-01/F-02 resueltos; 05_BACKLOG añade sección de rebaja implementada -->
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
 **Responsable revisión:** 2026-10-01 — Alta del documento canónico `18_CONSOLIDACION_Y_REBAJA.md` (especificación de consolidación y rebaja de contenedores y naves, BORRADOR/PROPUESTA) y de AD-85 y AD-86 en estado PROPUESTA; actualización de versiones/índice.
 
@@ -22,8 +22,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
 | `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV) | 12.7.0 | 2026-09-28 | ✅ Vigente |
 | `03_TESTS.md` | Matriz de validación funcional y técnica (incluye §9 cobertura de la suite `sv`) | 6.9.0 | 2026-09-28 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (incluye AD-80, AD-81 PROPUESTA — orden de trabajo —, AD-82..84 PROPUESTA — constitución de volúmenes — y AD-85..86 PROPUESTA — consolidación/rebaja y grupo Logística) | 12.11.0 | 2026-10-01 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda verificada T1–T7 y la sección «Auditoría 2026-10-01 — pendientes por área») | 7.8.0 | 2026-10-01 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80; AD-81 PROPUESTA; **AD-82 y AD-84 APROBADAS e implementadas**; **AD-83 APROBADA EN PRINCIPIO, sin extraer módulo**; AD-85..86 PROPUESTA — consolidación/rebaja y grupo Logística) | 12.12.0 | 2026-10-01 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda T1–T7, la sección «Rebaja de contenedor/nave (AD-82/84/83) — IMPLEMENTADO» y «Auditoría 2026-10-01 — pendientes por área») | 7.9.0 | 2026-10-01 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
@@ -38,9 +38,9 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual | 1.1.0 | 2026-06-06 | ✅ Derivado vigente |
 | `13_CONSOLIDACION_OPERATIVA.md` | Consolidación operativa: ingesta (Producto/Procesados), reglas, trazabilidad, matriz de hallazgos, contradicciones y matriz operativa de Etiquetas SV (§13) | 1.9.0 | 2026-09-28 | ✅ Vigente |
 | `16_AUDITORIA_20261001.md` | **NUEVO** — Auditoría 2026-10-01: hallazgos H-01..H-16 y N-01..N-10, clasificados por área (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6); resueltos, pendientes, parámetro `dev_cleanup_enabled` y mapeo de grupos huérfanos | 1.0.0 | 2026-10-01 | ✅ Vigente |
-| `17_CONSTITUCION_VOLUMENES.md` | **NUEVO** — Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL (acordadas 2026-10-01), reglas de uso por proceso, reglas acordadas para diseño futuro (ACORDADO), glosario de etiquetas, conciliación documental (modelo_despachos:449 / AD-67) y hallazgos pendientes; referencia a AD-82..84 PROPUESTA | 1.0.0 | 2026-10-01 | ✅ Vigente |
-| `18_CONSOLIDACION_Y_REBAJA.md` | **NUEVO (PROPUESTA)** — Consolidación y rebaja de contenedores y naves: alcance y glosario (tres usos de «consolidación»), puntos acordados (2026-10-01), modelo/estados/eventos de rolleo/campos nuevos, reglas de rebaja, vía SV e invariantes (CANON/17 §3, AD-84), pantallas, permisos (grupo Logística), plan de pruebas, migración, preguntas abiertas y riesgos; referencia a AD-85 y AD-86 PROPUESTA | 1.0.0 | 2026-10-01 | 🟡 BORRADOR / PROPUESTA |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 11.8.0 | 2026-10-01 | ✅ Vigente |
+| `17_CONSTITUCION_VOLUMENES.md` | **NUEVO** — Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL (acordadas 2026-10-01), reglas de uso por proceso, reglas acordadas para diseño futuro (ACORDADO), glosario de etiquetas, conciliación documental (modelo_despachos:449 / AD-67); §6 marca **F-01 y F-02 RESUELTOS** | 1.1.0 | 2026-10-01 | ✅ Vigente |
+| `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves: alcance y glosario (tres usos de «consolidación»), puntos acordados (2026-10-01), modelo/estados, reglas de rebaja, vía SV e invariantes, pantallas, permisos, plan de pruebas, migración, preguntas abiertas, riesgos y **§14 Estado de implementación (2026-10-01)** | 1.1.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 11.9.0 | 2026-10-01 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 

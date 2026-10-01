@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.11.0
-**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-85..86 (PROPUESTA): especificación de consolidación y rebaja de contenedores y naves (documento 18) y grupo funcional «Logística» + matriz de autorización; referencian 18_CONSOLIDACION_Y_REBAJA.md -->
+**Versión documental:** 12.12.0
+**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-82 y AD-84 APROBADAS e implementadas; AD-83 APROBADA EN PRINCIPIO (sin extraer módulo). Implementación de consolidación/rebaja en madenat_lumber_logistics. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2100,6 +2100,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 ### AD-82 (2026-10-01) — PROPUESTA: salida única de stock al rebajar contenedor/nave
 
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-1) y §7. **No autoriza cambios de código, datos ni parámetros.**
+>
+> **Actualización 2026-10-01 — ✅ APROBADA e IMPLEMENTADA.** El **zarpe ya no descuenta** stock (`action_set_in_transit` exige contenedores en estado `rebajado`); la salida nativa ocurre en la acción **Rebajar contenedor** (`_rebajar_container`) y en el asistente **Rebajar por nave**. `_action_reduce_stock` fue **eliminado**.
 
 **Propuesta.** La **salida nativa de stock** (picking de descuento de existencias) se ejecuta en la acción explícita de **rebajar** el contenedor o la nave. El **zarpe deja de descontar** stock y pasa a ser un evento de estado documental/logístico.
 
@@ -2118,6 +2120,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 ### AD-83 (2026-10-01) — PROPUESTA: módulo propio para la rebaja SV con descuento por procesados
 
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-2) y §7. **No autoriza cambios de código, datos ni parámetros.**
+>
+> **Actualización 2026-10-01 — ✅ APROBADA EN PRINCIPIO (sin extraer módulo ahora).** La rebaja de un lote SV descuenta **exactamente el volumen asignado** (no `1`); el módulo propio de rebaja SV **no se extrae** en este ciclo (implementación dentro de `madenat_lumber_logistics`, reutilizando el ledger `madenat.sv.operation`). El momento del ledger SV **no cambia** (sigue registrándose al asignar).
 
 **Propuesta.** Extraer la **rebaja SV** a un **módulo propio** (ledger `madenat.sv.operation` desacoplado) que contemple el **descuento por procesados**, de modo que:
 - la **asignación parcial** a contenedores descuente **exactamente el volumen asignado** (no `1`);
@@ -2139,6 +2143,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 ### AD-84 (2026-10-01) — PROPUESTA: regla de invariantes del ledger SV y del stock
 
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §1 y §7. **No autoriza cambios de código, datos ni parámetros.**
+>
+> **Actualización 2026-10-01 — ✅ APROBADA e IMPLEMENTADA (parcial).** Se aplicaron la **idempotencia por (contenedor, lote)** (restricción única en `lumber.shipment.line`) y la **causa única de descuento** (salida nativa solo en la rebaja). Los invariantes del ledger SV y del stock se verifican por tests de `stock.quant`. La concurrencia fail-closed del ledger se mantiene (no modificada).
 
 **Propuesta.** Fijar como **invariantes** verificables del sistema de volúmenes:
 
@@ -2189,6 +2195,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 ### AD-86 (2026-10-01) — PROPUESTA: grupo funcional «Logística» y matriz de autorización de consolidación/rebaja
 
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `18_CONSOLIDACION_Y_REBAJA.md` §8. **No autoriza cambios de código, datos ni parámetros.**
+>
+> **Actualización 2026-10-01 (implementación): sigue PROPUESTA.** No se creó el grupo «Logística»; la rebaja usa los **grupos existentes** (`Operaciones`/`Jefatura de Operaciones`/`Gerencia`) con **ACL explícitas** y **rechazo en servidor** (`_rebaja_require_group`).
 
 **Propuesta.** Crear el grupo funcional **«Logística»** `group_madenat_logistica` (categoría `module_category_madenat`), con su jefatura `group_madenat_logistica_jefatura` siguiendo el patrón de `group_madenat_jefatura_operaciones`, y:
 

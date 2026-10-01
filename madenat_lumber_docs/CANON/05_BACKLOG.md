@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 7.8.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — se añade la sección «Auditoría 2026-10-01 — pendientes por área» (H-01..H-16 y N-01..N-10). Ver 16_AUDITORIA_20261001.md -->
+**Versión documental:** 7.9.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — se añade la sección «Rebaja de contenedor / nave (AD-82/AD-84/AD-83) — IMPLEMENTADO» y «Auditoría 2026-10-01 — pendientes por área» (H-01..H-16 y N-01..N-10). Ver 16_AUDITORIA_20261001.md y 18_CONSOLIDACION_Y_REBAJA.md -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -350,3 +350,24 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 
 - [ ] **H-05** Implementar BI real: filtros por `voyage_id`, rentabilidad por trayecto/nave/línea naviera.
 - [ ] **H-11** `madenat_lumber_reports` sin `category` y con `post_init_hook`.
+
+---
+
+## Rebaja de contenedor / nave (AD-82 · AD-84 · AD-83, 2026-10-01) — IMPLEMENTADO
+
+> Rama `feat/rebaja-contenedor-20261001` (BD `madenat_test`). Ver `18_CONSOLIDACION_Y_REBAJA.md` §14.
+
+- [x] Salida única de stock al **rebajar**; el **zarpe no descuenta** (AD-82): `lumber.container.action_rebajar`
+      / `_rebajar_container`; `lumber.export.shipment.action_set_in_transit` sin `_action_reduce_stock` (eliminado).
+- [x] **Idempotencia por (contenedor, lote)** y causa única de descuento (AD-84): restricción única en `lumber.shipment.line`.
+- [x] **Reversa** (retorno nativo + contrapartida SV) con bloqueo por embarque entregado / viaje cancelado.
+- [x] Asistente **«Rebajar por nave»** con savepoint por contenedor e informe de éxitos/fallos.
+- [x] Wizard de asignación con **DISPONIBLE base nominal** (F-02 / A-3); etiquetas de volumen alineadas a CANON/17 §4 (A3);
+      cabecera de tarja XLSX con nave/viaje + reserva (A4); dominio del wizard sin token `product` (A5).
+- [ ] **Q-07** Rebaja por nave: **permiso/alcance** (implementado **provisional** en Jefatura de Operaciones / Gerencia).
+- [ ] **H-N1** `_check_lot_duplication` impide el **mismo lote en dos contenedores activos**; evaluar si el negocio lo requiere
+      (bloquea la prueba literal de «un lote SV en dos contenedores»).
+- [ ] Extracción del **módulo propio de rebaja SV** (AD-83): **diferida** hasta después de probar la regla de descuento actual.
+- [ ] Fuera de alcance en esta fase: facturación, +1/8" (170/180 mm), **P.O. del comprador**, consignatarios, `booking_id`,
+      armador/naviera, rolleo como evento, tarja por paquete.
+
