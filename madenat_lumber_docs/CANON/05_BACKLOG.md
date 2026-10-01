@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.0.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (2) — se añade la sección «Imputación SV y Procesadores (AD-87/AD-88) — PLAN (fases I1..I6)». Ver 19_IMPUTACION_SV_Y_PROCESADORES.md -->
+**Versión documental:** 8.1.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (3) — se añade la sección «Rebaja — Endurecimiento (I0) y principio AD-88 (I1) — IMPLEMENTADO». Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §14/§17 -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -360,7 +360,8 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [x] Salida única de stock al **rebajar**; el **zarpe no descuenta** (AD-82): `lumber.container.action_rebajar`
       / `_rebajar_container`; `lumber.export.shipment.action_set_in_transit` sin `_action_reduce_stock` (eliminado).
 - [x] **Idempotencia por (contenedor, lote)** y causa única de descuento (AD-84): restricción única en `lumber.shipment.line`.
-- [x] **Reversa** (retorno nativo + contrapartida SV) con bloqueo por embarque entregado / viaje cancelado.
+- [x] **Reversa** (retorno nativo + contrapartida SV). **Actualizado 2026-10-01 (I1.7):** con embarque entregado o viaje
+      cancelado ya **no** es bloqueo duro sin salida: exige **override de Gerencia con motivo** (auditado).
 - [x] Asistente **«Rebajar por nave»** con savepoint por contenedor e informe de éxitos/fallos.
 - [x] Wizard de asignación con **DISPONIBLE base nominal** (F-02 / A-3); etiquetas de volumen alineadas a CANON/17 §4 (A3);
       cabecera de tarja XLSX con nave/viaje + reserva (A4); dominio del wizard sin token `product` (A5).
@@ -370,6 +371,34 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [ ] Extracción del **módulo propio de rebaja SV**: **⛔ REEMPLAZADA por AD-87** (no se extrae módulo; el descuento por procesados es la **imputación**). Ver `19_IMPUTACION_SV_Y_PROCESADORES.md`.
 - [ ] Fuera de alcance en esta fase: facturación, +1/8" (170/180 mm), **P.O. del comprador**, consignatarios, `booking_id`,
       armador/naviera, rolleo como evento, tarja por paquete.
+
+---
+
+## Rebaja — Endurecimiento (I0) y principio AD-88 (I1) — IMPLEMENTADO (2026-10-01)
+
+> Rama `feat/imputacion-sv-i1-20261001` (desde `docs/imputacion-sv-20261001`; BD `madenat_test`). AD-88 (`04_DECISION_LOG.md`).
+> **Nota de numeración:** este track **I0/I1** es el **endurecimiento + ablandamiento** sobre la rama de rebaja. Es **distinto**
+> del plan de **imputación** de `19_IMPUTACION_SV_Y_PROCESADORES.md` §16, que conserva su propia numeración **I1..I6** (modelo,
+> salida nativa, UX de imputación, costo, `parent_lot_id`).
+
+### I0 — Endurecimiento de la rama de rebaja
+- [x] **I0.1 Rolleo:** el asistente no actúa sobre contenedores `rebajado`; mensaje que indica usar «Revertir rebaja».
+- [x] **I0.2 Correo:** prueba RPC de «Rebajar contenedor» con el correo de confirmación **activo** → **pasa sin cambios de código**
+      (no se requirió solución mínima; ver informe de sesión).
+- [x] **I0.3 Auditoría:** snapshot + SHA-256 en los eventos `rebaja` y `rebaja_reverse` (`_rebaja_audit`, patrón `madenat.audit.log`).
+- [x] **I0.4 Costing:** `skip` con razón en tests de funcionalidad no implementada (N-02/N-03/N-04) y `flush()` → `flush_recordset()`.
+      Sin tocar la lógica de costeo. Suite `madenat_lumber_costing` en verde (8 skip documentados).
+
+### I1 — Helper AD-88 y ablandamiento
+- [x] **I1.5 Helper:** `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)` con snapshot + SHA-256 y `deviation`
+      en `madenat.audit.log`. Hard = bloquea; blando = exige motivo + audita + avisa (no bloquea).
+- [x] **I1.6 B-01 Zarpe:** pasa a **advertencia con motivo**; asistente `lumber.shipment.zarpe.wizard` ofrece «Rebajar y zarpar»
+      y «Zarpar con excepción» (motivo obligatorio + auditoría).
+- [x] **I1.7 B-03/B-06 Reversa:** con embarque entregado o viaje cancelado exige **override de Gerencia con motivo**
+      (`lumber.container.rebaja.reverse.wizard`; auditoría `deviation`).
+- [x] **I1.8 SV oculto por defecto** en el asistente de contenedores (D9), con filtro «Mostrar etiquetas SV»; sin impedir nada.
+- [ ] **I1.9 Fuera de alcance:** **NO** se implementa **B-04 (saldo SV)** ni la **imputación** (van en las fases I3/I4 del plan de `19`).
+- [ ] **Q-19-3, Q-19-4, Q-19-6, Q-19-7** siguen **abiertas** (ver `19` §17).
 
 ---
 

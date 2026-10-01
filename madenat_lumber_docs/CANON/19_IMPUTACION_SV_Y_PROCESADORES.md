@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.0.0
+**Versión documental:** 1.1.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01).
@@ -407,7 +407,14 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 | B-07 | **Costos distribuidos** impiden rolleo | `lumber_container_rollover_wizard.py:149-162` | **Duro** (con ruta: revertir costos primero) | Integridad financiera. |
 | B-08 | **Duplicado de lote** en dos contenedores activos (`_check_lot_duplication`) | `lumber.container` (`18` §14.4, H-N1) | **Duro** (técnico) | Evita doble imputación de un mismo lote. **Pregunta abierta** H-N1 (¿el negocio requiere un lote en varios contenedores?). |
 
-**Síntesis:** pasan a **advertencia con motivo**: **B-01 (zarpe)**, **B-04 (saldo SV)**. Permanecen **duros**: **B-02, B-05, B-06, B-07, B-08**. **B-03** queda duro con **override de Gerencia** sujeto a decisión (Q-19-5). Todos los casos con motivo se registran en `madenat.audit.log` (snapshot + firma) y en `deviation_flags`.
+**Síntesis:** pasan a **advertencia con motivo**: **B-01 (zarpe)**, **B-04 (saldo SV)**. Permanecen **duros**: **B-02, B-05, B-06, B-07, B-08**. **B-03** queda duro con **override de Gerencia**. Todos los casos con motivo se registran en `madenat.audit.log` (snapshot + firma) y en `deviation_flags`.
+
+**Estado de implementación (2026-10-01, rama `feat/imputacion-sv-i1-20261001`):**
+- **B-01 — ✅ IMPLEMENTADO:** el zarpe ya no bloquea; `lumber.export.shipment.action_set_in_transit` abre `lumber.shipment.zarpe.wizard` («Rebajar y zarpar» / «Zarpar con excepción» con motivo + auditoría).
+- **B-03 / B-06 — ✅ IMPLEMENTADO:** la reversa con embarque entregado o viaje cancelado exige **override de Gerencia con motivo** (`lumber.container.action_reverse_rebaja` + `lumber.container.rebaja.reverse.wizard`).
+- **B-02 (integridad), B-05 (permisos), B-07 (costos), B-08 (duplicado) — permanecen DUROS.**
+- **B-04 (saldo SV) — ⏳ NO implementado** (va en I3; fuera del alcance de I0/I1 por instrucción).
+- **Helper común AD-88:** `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)` con snapshot + SHA-256.
 
 ---
 
@@ -482,14 +489,16 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 | ID | Pregunta | Opciones (no decididas) |
 |---|---|---|
-| Q-19-1 | **Valor de `action_type` del ledger** | ¿Valor propio `imputacion` (recomendado) o reutilizar `rebaja` con `destination_reference`? |
-| Q-19-2 | **Fuente del costo del SV** | ¿`total_amount_usd / official_volume_m3` de la guía de Volumen, precio unitario de la OC, o carga manual? |
-| Q-19-3 | **Retorno a granel sin etiquetas** | ¿Cómo se imputa un retorno sin detalle de etiquetas (por volumen agregado)? |
-| Q-19-4 | **Tolerancias** de desviación | ¿Umbral de volumen (m³/%) y de costo para disparar advertencia? |
-| Q-19-5 | **Reversa y rol** (B-03) | ¿Gerencia con motivo puede reversar tras entrega? ¿Ventana? |
-| Q-19-6 | **Umbrales de alerta** | ¿Días para AL-01 (pendiente) y AL-03 (SV sin retorno)? |
-| Q-19-7 | **`parent_lot_id` opcional (I6)** | ¿Se mantiene `required` hasta I6? ¿Aplica a C2? |
-| Q-19-8 | **H-N1** (lote en dos contenedores) | ¿El negocio requiere un lote en varios contenedores activos? |
+| Q-19-1 | **Valor de `action_type` del ledger** | ✅ **RESUELTA (2026-10-01):** se usa un **valor nuevo** `'imputacion'` (aditivo al Selection). |
+| Q-19-2 | **Fuente del costo del SV** | ✅ **RESUELTA (2026-10-01):** el costo del SV se toma del **precio de la OC por m³**, **editable**; se **alerta** si falta. |
+| Q-19-3 | **Retorno a granel sin etiquetas** | ⏳ Abierta: ¿cómo se imputa un retorno sin detalle de etiquetas (por volumen agregado)? |
+| Q-19-4 | **Tolerancias** de desviación | ⏳ Abierta: ¿umbral de volumen (m³/%) y de costo para disparar advertencia? |
+| Q-19-5 | **Reversa y rol** (B-03/B-06) | ✅ **RESUELTA (2026-10-01):** **override de Gerencia con motivo y auditoría** (implementado en I1). |
+| Q-19-6 | **Umbrales de alerta** | ⏳ Abierta: ¿días para AL-01 (pendiente) y AL-03 (SV sin retorno)? |
+| Q-19-7 | **`parent_lot_id` opcional (I6)** | ⏳ Abierta: ¿se mantiene `required` hasta I6? ¿Aplica a C2? |
+| Q-19-8 | **H-N1** (lote en dos contenedores) | ✅ **RESUELTA (2026-10-01):** se **mantiene** `_check_lot_duplication` (un lote no puede estar en dos contenedores activos). |
+
+> **Resueltas en la rama `feat/imputacion-sv-i1-20261001`:** Q-19-1 (valor `imputacion`), Q-19-2 (costo = precio de la OC por m³, editable, alerta si falta), Q-19-5 (override de Gerencia con motivo), Q-19-8 (se mantiene `_check_lot_duplication`). Las restantes (Q-19-3, Q-19-4, Q-19-6, Q-19-7) **siguen abiertas**.
 
 ---
 
