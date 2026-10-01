@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.12.0
-**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-82 y AD-84 APROBADAS e implementadas; AD-83 APROBADA EN PRINCIPIO (sin extraer módulo). Implementación de consolidación/rebaja en madenat_lumber_logistics. -->
+**Versión documental:** 12.13.0
+**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (2) — alta AD-87 (imputación etiqueta->SV y saldo por procesador) y AD-88 (principio advertir/motivar/auditar); AD-83 REEMPLAZADA por AD-87; AD-82/AD-84 alineadas. Ver CANON/19_IMPUTACION_SV_Y_PROCESADORES.md -->
 **Estado:** Canonical / activo
 
 ---
@@ -2102,6 +2102,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-1) y §7. **No autoriza cambios de código, datos ni parámetros.**
 >
 > **Actualización 2026-10-01 — ✅ APROBADA e IMPLEMENTADA.** El **zarpe ya no descuenta** stock (`action_set_in_transit` exige contenedores en estado `rebajado`); la salida nativa ocurre en la acción **Rebajar contenedor** (`_rebajar_container`) y en el asistente **Rebajar por nave**. `_action_reduce_stock` fue **eliminado**.
+>
+> **Alineación 2026-10-01 (AD-87).** Esta regla rige la **exportación de lotes de tarja**. El **SV (Lote Volumen) no se exporta**: su salida nativa única ocurre en la **imputación** (AD-87, `CANON/19` §4.4).
 
 **Propuesta.** La **salida nativa de stock** (picking de descuento de existencias) se ejecuta en la acción explícita de **rebajar** el contenedor o la nave. El **zarpe deja de descontar** stock y pasa a ser un evento de estado documental/logístico.
 
@@ -2122,6 +2124,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-2) y §7. **No autoriza cambios de código, datos ni parámetros.**
 >
 > **Actualización 2026-10-01 — ✅ APROBADA EN PRINCIPIO (sin extraer módulo ahora).** La rebaja de un lote SV descuenta **exactamente el volumen asignado** (no `1`); el módulo propio de rebaja SV **no se extrae** en este ciclo (implementación dentro de `madenat_lumber_logistics`, reutilizando el ledger `madenat.sv.operation`). El momento del ledger SV **no cambia** (sigue registrándose al asignar).
+>
+> **Actualización 2026-10-01 (2) — ⛔ REEMPLAZADA por AD-87.** Con la decisión D1 (el SV **nunca se exporta**) y D3 (la imputación etiqueta→SV es la que descuenta el quant del SV), esta AD **deja de regir**: (a) no se extrae módulo propio de rebaja SV; (b) el «descuento por procesados» se materializa como **imputación** (AD-87); (c) la asignación SV a contenedor de exportación **no aplica** (solo tarja). El principio «descontar exactamente el volumen asignado (no `1`)» se conserva y queda cubierto por AD-82 (tarja) y AD-87 (SV). Ver `CANON/19` §4.4 y §13.2 (CR-19-05).
 
 **Propuesta.** Extraer la **rebaja SV** a un **módulo propio** (ledger `madenat.sv.operation` desacoplado) que contemple el **descuento por procesados**, de modo que:
 - la **asignación parcial** a contenedores descuente **exactamente el volumen asignado** (no `1`);
@@ -2145,6 +2149,8 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 > **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §1 y §7. **No autoriza cambios de código, datos ni parámetros.**
 >
 > **Actualización 2026-10-01 — ✅ APROBADA e IMPLEMENTADA (parcial).** Se aplicaron la **idempotencia por (contenedor, lote)** (restricción única en `lumber.shipment.line`) y la **causa única de descuento** (salida nativa solo en la rebaja). Los invariantes del ledger SV y del stock se verifican por tests de `stock.quant`. La concurrencia fail-closed del ledger se mantiene (no modificada).
+>
+> **Ampliación 2026-10-01 (AD-87).** El saldo SV resta **también** las **imputaciones activas** (procesados): `sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas`. La **causa única de descuento del SV** pasa a ser la **imputación**; la rebaja rige solo para lotes de **tarja** en export. Ver AD-87 y `CANON/19` §7.3.
 
 **Propuesta.** Fijar como **invariantes** verificables del sistema de volúmenes:
 
@@ -2213,4 +2219,62 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 **Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rigen los grupos y ACL vigentes.
 
 **Evidencia:** `18_CONSOLIDACION_Y_REBAJA.md` §8; `madenat_lumber_core/security/madenat_security.xml`; `madenat_lumber_logistics/security/ir.model.access.csv`; `madenat_vendor_payment/security/ir.model.access.csv`.
+
+---
+
+### AD-87 (2026-10-01) — Imputación declarada etiqueta→SV (procesados) y saldo por procesador
+
+> **Estado: ✅ APROBADA (decisión del usuario del 2026-10-01).** Registra las decisiones **D1–D7** y **D9–D10**. Norma completa y modelo de datos: `19_IMPUTACION_SV_Y_PROCESADORES.md`. **No autoriza cambios de código, datos ni parámetros** en esta pasada (especificación).
+
+**Contexto (D1).** MADENAT es **trader**: compra **volumen (SV)** y **madera procesada con etiquetas y dimensionada bruta con tarjas**. El SV puede estar en **bodega** o **directo en el procesador**, y **nunca se exporta**.
+
+**Decisión.**
+1. **La imputación etiqueta→SV es el vínculo oficial** entre el retorno procesado y el volumen comprado. La unidad de captura es la **etiqueta**, con su **volumen NOMINAL editable**, contra **uno o varios SV** (D3).
+2. **Sin genealogía física** para procesadores externos (alineado con AD-65 §1.6 y DEC-002): el retorno es **stock nuevo e independiente**; el vínculo SV↔etiqueta es una **imputación declarada** (D2).
+3. **Efecto físico único:** la imputación registra el **ledger SV** (`madenat.sv.operation`, nuevo tipo `imputacion`) y **genera la salida nativa del quant del SV** (AD-82/AD-84). Es el **único** descuento del SV (D3).
+4. **Costo (D4):** costo por m3 **editable** en la imputación; **promedio ponderado** de los SV elegidos; se refleja en `stock.lot.cost.line` (`cost_type='wood'`). **Brecha declarada:** hoy el **SV no tiene costo**; se propone derivarlo de la guía de Recepción por Volumen/OC (ver `19` §5.5).
+5. **«En poder del procesador X» (D5):** `stock.location` **interna** por procesador (`usage='internal'`) bajo un padre **`Procesadores`**; **el inventario sigue siendo de MADENAT**.
+6. **Momento (D6):** al **recibir la guía de procesados**, con opción explícita de **dejarla pendiente**. Operaciones opera; Auditoría revisa desviaciones.
+7. **Merma (D7):** **evento documental**, sin `stock.scrap` automático, con **costo residual visible**.
+8. **UX (D9):** los **lotes SV se ocultan por defecto** en el asistente de contenedores (sin impedir su selección).
+9. **`parent_lot_id`** pasa a **opcional** en un **paso futuro controlado** (I6, D10).
+
+**Relación con AD-82/AD-83/AD-84/AD-64/AD-65.** Alinea AD-82 (el SV no se exporta; su salida es la imputación), **reemplaza AD-83** (ver su última actualización), **amplía AD-84** (el saldo SV resta imputaciones activas) y **extiende AD-64** (costo del SV). Detalle: `19` §4.4, §13.2.
+
+**No objetivos.** No modifica C2 (compra de procesado con etiquetas/tarjas, flujo `12`/`13`); no altera valorización/facturación (diferidas por AD-81); no toca el ledger SV vigente salvo la adición del tipo `imputacion` y del vínculo `imputation_id`; no migra datos históricos.
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` (§2–§7, §11–§16); decisiones D1–D10 de la sesión 2026-10-01; `madenat_sv_operation.py` (`action_type`); `res_partner.py` (`is_processor`).
+
+---
+
+### AD-88 (2026-10-01) — Principio rector «advertir, motivar, auditar» con helper común
+
+> **Estado: ✅ APROBADA (decisión del usuario, D8).** Principio transversal del sistema MADENAT. Norma y clasificación de bloqueos: `19_IMPUTACION_SV_Y_PROCESADORES.md` §7 y §14.
+
+**Decisión (D8).** **El sistema nunca bloquea al profesional.** Se **advierte**, se **exige motivo** cuando el usuario se desvía de la propuesta y se **audita** la decisión. Permanecen **duros**:
+1. los **permisos por rol** (rechazo en servidor);
+2. la **integridad técnica** (p. ej. `stock.quant` nunca negativo; guardas de inventario/trazabilidad);
+3. las **reglas financieras** (tipo de cambio explícito, cierre de período, UoM).
+
+**Helper común (contrato documentado, sin implementar en esta pasada).** Centralizar la decisión blando/duro y la auditoría en **un único punto** reutilizable (mixin propuesto, p. ej. `MadenatDeviationMixin._guard_deviation(...)`), con el contrato:
+
+```
+_guard_deviation(code, message, *, reason=None, hard=False, extra=None)
+  · hard=False  → registra advertencia + exige `reason` no vacío + `deviation_flags` + chatter
+                  + `madenat.audit.log` (snapshot/firma) y CONTINÚA.
+  · hard=True   → lanza UserError con mensaje profesional (permisos, integridad, finanzas).
+  · `code`      → identificador estable (AL-xx / B-xx) para reporte y auditoría.
+```
+
+**Motivo.** Hoy las guardas están **dispersas** (bloqueos `UserError` mezclados con advertencias no bloqueantes). Un helper común evita regresiones, hace homogénea la política (AD-52/AD-54 ya la anticiparon) y da trazabilidad uniforme.
+
+**Aplicación inmediata (clasificación de bloqueos).** Ver `19` §14: pasan a **advertencia con motivo** el **zarpe** (B-01) y el **saldo SV** (B-04); permanecen **duros** la **rebaja sin disponible** (B-02, integridad), los **permisos** (B-05), el **viaje cerrado** (B-06), los **costos distribuidos** (B-07) y el **duplicado de lote** (B-08); la **reversa con embarque entregado** (B-03) queda dura salvo **override de Gerencia con motivo** (a decidir, Q-19-5).
+
+**No objetivos.** No cambia permisos, presupuestos financieros ni reglas de inventario; no introduce tres o más niveles de aprobación; no modifica datos históricos.
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` §7 y §14; decisiones D8 (y la clasificación de bloqueos de la rama `feat/rebaja-contenedor-20261001`); patrón vigente AD-52/AD-54 (advertencia no bloqueante).
+
+<!-- actualizado: 2026-10-01 (2) — AD-87 y AD-88 (APROBADAS, decisiones D1–D10); AD-83 REEMPLAZADA por AD-87; AD-82/AD-84 alineadas. Ver CANON/19. -->
+
+
 
