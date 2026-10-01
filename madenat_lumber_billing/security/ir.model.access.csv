@@ -4,3 +4,5 @@ access_lumber_billing_consolidation_manager,lumber.billing.consolidation.manager
 access_lumber_billing_consolidation_line_user,lumber.billing.consolidation.line.user,model_lumber_billing_consolidation_line,base.group_user,1,1,1,0
 access_lumber_billing_invoice_wizard,lumber.billing.invoice.wizard,model_lumber_billing_invoice_wizard,base.group_user,1,1,1,1
 access_lumber_billing_invoice_wizard_line,lumber.billing.invoice.wizard.line,model_lumber_billing_invoice_wizard_line,base.group_user,1,1,1,1
+access_account_move_auditoria,account.move.auditoria,account.model_account_move,madenat_lumber_core.group_madenat_auditoria,1,0,0,0
+access_account_move_line_auditoria,account.move.line.auditoria,account.model_account_move_line,madenat_lumber_core.group_madenat_auditoria,1,0,0,0

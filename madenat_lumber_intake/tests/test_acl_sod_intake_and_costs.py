@@ -77,6 +77,58 @@ class TestAclSodIntakeAndCosts(HttpCase):
         # JsonRpcException almacena el nombre de la excepción Odoo en str().
         self.assertIn('AccessError', str(ctx.exception))
 
+    # Modelos que un auditor debe poder LEER (solo lectura) para auditar el
+    # flujo Operaciones -> Auditoría -> Contabilidad.
+    AUDIT_READ_MODELS = (
+        'account.move', 'account.move.line', 'purchase.order',
+        'stock.picking', 'stock.picking.type', 'lumber.reception',
+        'stock.lot', 'stock.lot.cost.line', 'madenat.audit.log',
+    )
+    # Modelos donde la ACL de Auditoría es EFECTIVAMENTE de solo lectura
+    # (ninguna otra concesión del perfil otorga create/write).
+    AUDIT_READONLY_ENFORCED = (
+        'account.move', 'account.move.line', 'purchase.order',
+        'stock.picking', 'stock.picking.type', 'stock.lot.cost.line',
+    )
+    # Modelos donde `base.group_user` YA concede create/write: Auditoría los
+    # hereda y las filas read-only NO los revierten (deuda conocida).
+    AUDIT_INHERITS_BASE_USER = (
+        'lumber.reception', 'stock.lot', 'madenat.audit.log',
+    )
+
+    def test_30_auditoria_reads_audit_models(self):
+        """Auditoría (canónico) LEE los 9 modelos del flujo a auditar."""
+        self._as(self.u_audit)
+        for model in self.AUDIT_READ_MODELS:
+            with self.subTest(model=model):
+                # Solo 'id' para no arrastrar lecturas de modelos relacionados.
+                res = self._call(
+                    model, 'search_read', [[], ['id']], {'limit': 1})
+                self.assertIsInstance(res, list)
+
+    def test_31_auditoria_cannot_create_nor_write(self):
+        """Auditoría NO puede crear ni escribir donde su ACL es read-only."""
+        self._as(self.u_audit)
+        for model in self.AUDIT_READONLY_ENFORCED:
+            with self.subTest(model=model):
+                # `check_access_rights` evalúa el ACL sin ejecutar la lógica
+                # de create() (algunos modelos lanzan antes del chequeo).
+                self._expect_access_error(
+                    model, 'check_access_rights', ['create'])
+                self._expect_access_error(
+                    model, 'check_access_rights', ['write'])
+
+    def test_32_auditoria_inherits_base_user_grants(self):
+        """Documenta el residual: en estos modelos `base.group_user` ya
+        concede create/write, así que Auditoría los hereda (no es read-only
+        puro). El test solo verifica que la LECTURA funciona."""
+        self._as(self.u_audit)
+        for model in self.AUDIT_INHERITS_BASE_USER:
+            with self.subTest(model=model):
+                res = self._call(
+                    model, 'search_read', [[], ['id']], {'limit': 1})
+                self.assertIsInstance(res, list)
+
     # ── H-02: stock.lot.cost.line ──────────────────────────────────────────
     def test_10_cost_line_read_all_groups(self):
         """Todos los perfiles leen líneas de costo (base.group_user)."""
