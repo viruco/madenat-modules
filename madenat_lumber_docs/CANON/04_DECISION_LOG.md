@@ -1384,6 +1384,7 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
   - **Sin prorrateo por salida parcial:** `_get_or_create_consumption_picking` consume `qty = lot.volumen_m3` completo (todo-o-nada); `wood_cost_usd`/`volumen_m3` son documentales estáticos, no ligados a `stock.move`/`stock.quant`.
 - **Brecha registrada:** el sistema **no soporta consumo parcial de un lote agregado con prorrateo de costo correcto** (severidad equivalente a BT-01/BT-02). Sin resolverla, una salida parcial dejaría el costo total intacto y `cost_per_m3_usd` inconsistente con el stock físico.
 - **Módulos afectados:** `madenat_lumber_core` (`stock_lot.py`, `madenat_guia_processing.py`), `madenat_lumber_costing`.
+- **Ampliación 2026-10-01 (AD-87, D4):** la brecha alcanza también al **SV (Lote Volumen)**: los lotes `lot_flow_type='volume'` **no tienen costo** (`wood_cost_usd`/`purchase_price_usd_per_m3` vacíos; costeo nativo desactivado), por lo que una **etiqueta de retorno** no puede heredar costo de madera. **Fuente propuesta:** derivar el costo del SV de su guía de **Recepción por Volumen**/OC (`total_amount_usd / official_volume_m3` o precio unitario de la OC) y propagarlo en la **imputación** (`19` §5.5, fase I5).
 
 ---
 
@@ -1407,6 +1408,7 @@ Las discrepancias de vigencia documental detectadas en auditoría deben corregir
 - **Menú Toll para Operaciones (1.11):** campo opcional "Enviar a proceso" con selección de procesador (patio↔procesador es N:M, no se automatiza; se sugiere el procesador más frecuente, editable); un solo botón genera lote + orden Toll (`create_toll_order_wizard` existente, sin modificar su lógica); se ajusta `ir.model.access.csv` de `madenat_toll_processing` para Operaciones.
 - **No se modifica (1.12):** Gates 0-3, `reception_parser.py` (sin ramas nuevas), lógica interna de `madenat_toll_processing`, esquema de `stock.lot` más allá de lo estrictamente necesario para consumo parcial de pool (1.6); ningún módulo nuevo.
 - **Módulos afectados (implementación futura):** `madenat_lumber_core`, `madenat_ingestion_engine`, `madenat_lumber_reports`, `madenat_lumber_intake`, `madenat_toll_processing` (solo ACL).
+- **Alineación 2026-10-01 (AD-87, D2/D10):** el mecanismo **declarado** del vínculo volumen comprado (SV) ↔ etiqueta de retorno es la **imputación** (`CANON/19`), que **no** usa genealogía. En consecuencia, `parent_lot_id` **deja de ser necesario** para el retorno procesado y pasa a **opcional** en un **paso futuro controlado** (I6); el §1.6 se mantiene (el retorno es stock nuevo e independiente) y gana la vía SV explícita.
 
 ---
 
