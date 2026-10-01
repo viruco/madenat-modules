@@ -1,9 +1,9 @@
 # CANON/08_COSTEO — FLUJO CANÓNICO DE COSTEO END-TO-END
 ## Proyecto: MADENAT Lumber — Odoo 18 CE
 ## Fecha: 2026-06-05
-## Última revisión: 2026-09-12  <!-- actualizado: 2026-09-12 — §1.4 estado real de costeo (AD-64) -->
+## Última revisión: 2026-10-01  <!-- actualizado: 2026-10-01 — §7: account_id no existe (N-03), doble conteo de total_cost_usd (N-02) y landed_cost_ids inexistente (N-04); ver 16_AUDITORIA_20261001.md -->
 ## Estado: DOCUMENTO CANÓNICO (creado cierre Fase A)
-## Versión: 1.6.0
+## Versión: 1.7.0
 ## Refs: FASE-A, AD-XX-MONETARIO, Anexo de Saneamiento Monetario 2026-06-04
 
 ---
@@ -220,11 +220,13 @@ Cada campo Monetary tiene su `currency_field` explícito. No hay ambigüedad USD
 
 # 7. QUÉ QUEDÓ PENDIENTE (FASE B+)
 
-1. **Contabilidad real**: `stock.lot.cost.line` tiene `account_id` (campo existe) pero falta mapping contable completo a `account.move`
+1. **Contabilidad real**: `stock.lot.cost.line` **NO tiene** `account_id` hoy (verificado en el registry el 2026-10-01: el campo no existe en `stock.lot.cost.line` ni en `lumber.cost.distribution.line`); el mapping contable completo a `account.move` está **pendiente de implementar**. *(Corrección 2026-10-01: la afirmación anterior «el campo existe» era incorrecta — ver `16_AUDITORIA_20261001.md` N-03.)*
 2. **Valuation layers**: `stock.landed.cost` integrado parcialmente (commits `81c3373`, `4372dec`) — pendiente validación end-to-end en staging
 3. ~~**vendor_payment**: Modelo placeholder~~ → **SUPERADO (2026-08-19)**: módulo implementado v18.0.1.2.0 (`vendor.payment.order`, `lumber.shipment.cost` con `payment_state`/`invoice_id`). Ver §5.5.
 4. **Reportes financieros**: Migrar reportes legacy a usar Monetary nativo
 5. **Pruebas automatizadas**: Existen suites C2 (cost_distribution), C3 (landed_cost_integration), C4 (module_compatibility) — ver `03_TESTS.md` sección 7. Pendiente ejecución formal en staging.
+6. **Doble conteo de `total_cost_usd` (N-02, 2026-10-01)**: el core ya suma todas las `cost_line_ids` (`stock_lot.py:839-849`) y el override de costing (`stock_lot_costing.py:127-139`) vuelve a sumar `logistic + process + other` (que **son** el mismo conjunto de líneas). Resultado observado: `6000` en vez de `4500`. Corrección mínima propuesta (no aplicada): retirar el override.
+7. **`landed_cost_ids` inexistente (N-04, 2026-10-01)**: `lumber.cost.distribution` no expone el One2many hacia `stock.landed.cost` (la inversa `madenat_distribution_id` sí existe en `stock.landed.cost`). Los tests C3 que lo asumen quedan en fallo hasta implementarlo o retirarlos.
 
 <!-- actualizado: 2026-08-19 — vendor_payment implementado; pendiente validación end-to-end -->
 

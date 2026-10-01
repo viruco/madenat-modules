@@ -1,8 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 7.7.0
-**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — Fase 2 (AD-80): bloque SV visible, acciones SV en Consola y ciclo de vida de guías; archivado diferido -->
-**Estado:** ACTIVO — AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y ahora **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
+**Versión documental:** 7.8.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — se añade la sección «Auditoría 2026-10-01 — pendientes por área» (H-01..H-16 y N-01..N-10). Ver 16_AUDITORIA_20261001.md -->
+**Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
 
@@ -265,6 +265,7 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 | 7.4.0 | 2026-09-25 | Programación 1 (AD-77) registrada como desplegada con validación técnica y pendientes explícitos: validación visual de R1/filtro `Lotes Volumen`, presentación `Lote Volumen` en exportaciones XLSX, test automatizado del token técnico, revisión de fuentes de fecha de ingreso y evaluación de rendimiento de campos almacenados. La rebaja por Volúmenes permanece no implementada. |
 | 7.5.0 | 2026-09-26 | Gestión Operativa de Etiquetas SV (AD-79): se documenta la deuda verificada T1–T7 con línea base reproducible (base limpia `madenat_sv_baseline`), se cierra la contradicción documental de la rebaja por Volúmenes (implementada para Etiquetas SV con 56 pruebas 0/0; la rebaja física por Volúmenes fuera del flujo SV sigue no implementada), se registran los pendientes de monto por etiqueta y de aprobaciones de más de dos niveles, y se cierra la discrepancia de versión de este archivo frente a `INDICE_DOCUMENTACION.md`. |
 | 7.6.0 | 2026-09-26 | Cierre de la deuda técnica T1–T6: T1 (captura no bloqueante de proveedor + bloqueo en el envío irreversible), T2 (gate dimensional acotado a compra/service; Volumen sin espesor inventado), T3 (`get_digits(env)` en lugar de `.digits`), T4 (identificadores únicos por corrida + escenario de nominal forzado tras el create), T5 (causa real: `TestLumberReception` sin etiquetas de fase → se declara `post_install`), T6 (botón de Billing aportado por vista heredada de Billing). Se añaden T8–T11 como deuda nueva detectada durante el cierre. |
+| 7.8.0 | 2026-10-01 | Se incorpora la sección «Auditoría 2026-10-01 — pendientes por área» (hallazgos H-01..H-16 y N-01..N-10) clasificada en Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6, coherente con `16_AUDITORIA_20261001.md`. Se registran 4 hallazgos RESUELTOS (H-01, H-02, N-07, N-08/N-09) y se anotan los pendientes diferidos por el usuario. |
 - [x] AD-68/AD-69: ruta granel en intake + fix disparo BT-04 (2026-09-21)
 - [x] Higiene: migrar `palabras_proceso` duplicado en reception_workflow.py a madenat.ingestion.config (2026-09-21, post-AD-68)
 
@@ -300,3 +301,52 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
       Volumen real (en `madenat_test` no hay lote SV con historia material).
 - [ ] **Evaluar** exponer el diagnóstico de ciclo de vida para `lumber.reception` (Producto),
       hoy fuera de alcance.
+
+---
+
+## AUDITORÍA 2026-10-01 — PENDIENTES POR ÁREA
+
+**Fuente:** `16_AUDITORIA_20261001.md` (hallazgos H-01..H-16 y N-01..N-10). **Estado:** ✅ 4 RESUELTOS; el resto **PENDIENTE** y clasificado por área.
+
+**Orden de trabajo vigente del usuario (AD-81 PROPUESTA, no aprobada):** ingreso a stock → consolidación (por contenedor y rebaja por motonave) → módulo de mantenimiento → logística y exportación. **Lo contable, la auditoría y la facturación quedan diferidos.**
+
+### Resuelto (2026-10-01)
+
+- [x] **H-01** ACL de solo lectura de la Consola de Ingreso de Madera y del detalle declarado para Auditoría/Contabilidad — commit `7191c92` (+`36d7bf4`).
+- [x] **H-02** `stock.lot.cost.line`: matriz por grupos funcionales (Operaciones solo `create`; Costos/Contabilidad/Gerencia/Admin full; `base.group_user` read) — commit `7191c92`.
+- [x] **N-07** Índice único parcial de consolidación por embarque + guarda `UserError` — commit `9ea7abc`.
+- [x] **N-08 / N-09** `partnerid` (campo real) en costeo y `type='consu'`+`is_storable` en tests de costing — commit `39fc77d`.
+
+### Operaciones
+
+- [ ] **N-01** Migración de grupos huérfanos (61-64) + 34 ACL: **en modo seco, sin ejecutar**. Bloqueada por decisión sobre usuarios (`leonardo`, `cristhian`). Script: `/home/viruco/dev-stack/odoo/scripts/migrate_orphan_groups.py`. Detalle en `16_AUDITORIA_20261001.md` §9.
+- [ ] **N-06** Over-privilegio: los usuarios operativos son `Administrador` (`base.group_erp_manager`) + `Características técnicas` (`base.group_system`). Revisar antes de cualquier endurecimiento de ACL.
+- [ ] **H-08** 3.844 warnings «Non-stored field … should be searchable» por `volume_detail_line_ids` en `intake_console.py:322,616-617`.
+- [ ] **H-10** Deuda técnica: `_deprecated_action_distribute_costs` (`logistics/models/lumber_shipment_costing.py:88`) y `backups_*` embebidos en `madenat_lumber_core`.
+- [ ] **H-13** `is_billed` con `@api.depends('name')` dummy (`stock_lot.py:789-819`).
+- [ ] **H-14** `madenat.dev_cleanup_enabled = True` en `madenat_test` (documentado; **no modificado**). Ver `16_AUDITORIA_20261001.md` §8.
+- [ ] **H-16** `madenat_lumber_docs` dentro de `custom_addons`.
+- [ ] **N-09** `type='product'` restante en `madenat_lumber_core/tests/test_lot_costing.py:27`.
+
+### Contabilidad / Auditoría / Facturación (**diferido por el usuario**)
+
+- [ ] **H-03** Reglas de aprobación de facturas y pagos (no implementadas).
+- [ ] **H-04** `vendor.payment.order` y `vendor.payment.wizard` son placeholders.
+- [ ] **H-06** `group_madenat_auditoria` con 0 usuarios (la migración en seco asigna `fmunoz`, sin ejecutar).
+- [ ] **H-07** Grupos decorativos en `madenat_vendor_payment`.
+- [ ] **H-09 / N-05** Cero `ir.rule`; integridad y visibilidad de `madenat.audit.log`.
+- [ ] **H-12** Versión `'1.0.0'` del manifiesto de billing.
+- [ ] **N-02** Doble conteo de `total_cost_usd` (corrección mínima propuesta: retirar el override en `stock_lot_costing.py:127-139`).
+- [ ] **N-03** `account_id` inexistente en `stock.lot.cost.line` / `lumber.cost.distribution.line`.
+- [ ] **N-04** `landed_cost_ids` inexistente en `lumber.cost.distribution`.
+- [ ] **N-10** `flush()` obsoleto en un test de costing (Odoo 18: `flush_recordset()`).
+
+### Logística y exportación
+
+- [ ] **H-07** Grupos decorativos en `madenat_lumber_shipping_core`.
+- [ ] **H-15** Nomenclatura `cancel`/`cancelled` entre `shipping.voyage` y `lumber.export.shipment`.
+
+### Fase 6 — Inteligencia de negocio
+
+- [ ] **H-05** Implementar BI real: filtros por `voyage_id`, rentabilidad por trayecto/nave/línea naviera.
+- [ ] **H-11** `madenat_lumber_reports` sin `category` y con `post_init_hook`.

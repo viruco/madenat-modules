@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.8.0
-**Última actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — AD-80: UX de volumen oficial, bloque SV visible y ciclo de vida controlado de guías -->
+**Versión documental:** 12.9.0
+**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-81 (PROPUESTA): orden de trabajo vigente (ingreso a stock → consolidación → mantenimiento → logística; contable/auditoría/facturación diferidos) -->
 **Estado:** Canonical / activo
 
 ---
@@ -2066,3 +2066,31 @@ movimientos, pickings, quants, costos, facturas, consolidaciones ni embarques hi
 Módulos afectados: `madenat_lumber_intake` (bloque SV de la Consola, ciclo de vida, vistas,
 ACL, tests), `madenat_lumber_core` (`action_type` de `madenat.audit.log`, vistas SV de la Guía
 y del ledger, test de UI de reversa) y `madenat_lumber_docs`.
+
+---
+
+### AD-81 (2026-10-01) — PROPUESTA: orden de trabajo vigente (ingreso a stock → consolidación → mantenimiento → logística; contable/auditoría/facturación diferidos)
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita.
+
+**Propuesta.** Se propone fijar el siguiente **orden de trabajo** para el ciclo actual:
+
+1. **Ingreso a stock** (Operaciones): recepción, guías, lotes, envío a stock.
+2. **Consolidación**: por contenedor y **rebaja por motonave**.
+3. **Módulo de mantenimiento**.
+4. **Logística y exportación**.
+
+Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **auditoría** y la **facturación**.
+
+**Motivo.** El usuario determina que el valor inmediato está en cerrar el flujo físico-trazable (de la recepción al embarque) antes de abordar los frentes contable/financiero. Los hallazgos de esas áreas se **registran** pero **no se abordan** en este ciclo.
+
+**Consecuencias documentales.**
+
+- La auditoría del 2026-10-01 (`16_AUDITORIA_20261001.md`) clasifica los pendientes por área conforme a este orden; los de Contabilidad/Auditoría/Facturación quedan marcados como *diferidos por el usuario*.
+- `05_BACKLOG.md` incorpora la sección «Auditoría 2026-10-01 — pendientes por área» con el mismo encuadre.
+
+**No objetivos.** Esta decisión **no** modifica AD-65, AD-77, AD-79 ni AD-80; **no** altera reglas de negocio, valorización, costeo ni estados; **no** autoriza cambios de código, datos ni parámetros. Es exclusivamente un **orden de prioridad**.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Mientras no se apruebe, el orden anterior (frente principal AD-65 / Programación 1) permanece como referencia operativa.
+
+**Evidencia:** registro de la sesión de auditoría del 2026-10-01; `16_AUDITORIA_20261001.md` §1.
