@@ -84,6 +84,16 @@ class LumberContainerLotWizard(models.TransientModel):
         help='Solo aplica a etiquetas SV (lotes de flujo Volumen). 0 = usar '
              'todo el saldo disponible de cada etiqueta.',
     )
+
+    # I1.8 (D9, AD-87): por defecto los lotes SV (Volumen) se ocultan del
+    # asistente de contenedores porque el SV NO se exporta. El filtro es de
+    # UX: no impide seleccionarlos, solo requiere activar este check.
+    show_sv_lots = fields.Boolean(
+        string='Mostrar etiquetas SV',
+        default=False,
+        help='Muestra los lotes de flujo Volumen (SV). Están ocultos por '
+             'defecto porque el SV no se exporta (CANON/19 §10.3).',
+    )
     
     # ========================================
     # VALIDACIÓN EN TIEMPO REAL (NUEVOS CAMPOS)
@@ -124,7 +134,7 @@ class LumberContainerLotWizard(models.TransientModel):
     # ========================================
     # MÉTODOS COMPUTADOS
     # ========================================
-    @api.depends('container_id')
+    @api.depends('container_id', 'show_sv_lots')
     def _compute_available_lots(self):
             """
             Obtener lotes disponibles para asignar con filtro estricto de calidad.
@@ -164,6 +174,12 @@ class LumberContainerLotWizard(models.TransientModel):
                     '|', ('reception_id', '!=', False), ('guia_processing_id', '!=', False),
                     '|', ('guia_processing_id', '=', False), ('guia_processing_id.state', 'not in', ['draft', 'cancelled']),
                 ]
+
+                # I1.8 (D9, AD-87): los lotes SV (Volumen) se ocultan por
+                # defecto (el SV no se exporta). No se impide seleccionarlos:
+                # el usuario los muestra con el check «Mostrar etiquetas SV».
+                if not wizard.show_sv_lots:
+                    domain.append(('lot_flow_type', '!=', 'volume'))
                 
                 # 3. Ejecutar y asignar
                 found_lots = self.env['stock.lot'].search(domain)

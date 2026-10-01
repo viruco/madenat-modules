@@ -15,3 +15,6 @@ access_lumber_shipping_rule_user,lumber.shipping.rule.user,model_lumber_shipping
 access_lumber_shipping_rule_manager,lumber.shipping.rule.manager,model_lumber_shipping_rule,stock.group_stock_manager,1,1,1,1
 access_lumber_shipment_line_user,lumber.shipment.line.user,model_lumber_shipment_line,base.group_user,1,1,1,0
 access_lumber_shipment_line_manager,lumber.shipment.line.manager,model_lumber_shipment_line,stock.group_stock_manager,1,1,1,1
+access_lumber_shipment_zarpe_wizard_user,lumber.shipment.zarpe.wizard.user,model_lumber_shipment_zarpe_wizard,base.group_user,1,1,1,1
+access_lumber_shipment_zarpe_wizard_jef,lumber.shipment.zarpe.wizard.jef,model_lumber_shipment_zarpe_wizard,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
+access_lumber_container_rebaja_reverse_wizard_ger,lumber.container.rebaja.reverse.wizard.ger,model_lumber_container_rebaja_reverse_wizard,madenat_lumber_core.group_madenat_gerencia,1,1,1,1

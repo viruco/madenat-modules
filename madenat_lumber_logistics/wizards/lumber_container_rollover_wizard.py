@@ -139,7 +139,18 @@ class ContainerRolloverWizard(models.TransientModel):
         # 1. Validaciones básicas
         if not self.container_id:
             raise ValidationError(_('Contenedor no encontrado'))
-        
+
+        # I0.1 (2026-10-01): endurecimiento. Un contenedor YA REBAJADO no
+        # puede rollear: su inventario ya salió de bodega. La ruta correcta es
+        # «Revertir rebaja» y luego reasignar/rollear.
+        if self.container_id.state == 'rebajado':
+            raise UserError(_(
+                "El contenedor %s ya fue REBAJADO (su inventario ya salió).\n\n"
+                "El rolleo no aplica sobre un contenedor rebajado. Use primero "
+                "«Revertir rebaja» en el contenedor y, si desea moverlo a otro "
+                "embarque, vuelva a consolidarlo y rollearlo después."
+            ) % self.container_name)
+
         if not self.current_shipment:
             raise UserError(_("El contenedor '%s' no está asignado a ningún embarque.\n"
                             "El rolleo solo aplica para contenedores ya consolidados.") % self.container_name)

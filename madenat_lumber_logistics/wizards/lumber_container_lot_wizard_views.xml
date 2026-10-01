@@ -70,10 +70,14 @@
 
                 <!-- 🏷️ PROGRAMA SV — rebaja explícita por etiqueta Volumen -->
                 <group string="🏷️ Etiquetas SV (Volumen)">
+                    <field name="show_sv_lots"/>
                     <field name="sv_rebaja_volume_m3"/>
                     <div class="text-muted" colspan="2">
-                        Solo aplica a etiquetas SV. 0 = usar todo el saldo
-                        disponible de cada etiqueta (no puede excederlo).
+                        Las etiquetas SV están OCULTAS por defecto (el SV no se
+                        exporta). Active «Mostrar etiquetas SV» para verlas. El
+                        volumen SV a rebajar aplica solo a etiquetas SV; 0 = usar
+                        todo el saldo disponible de cada etiqueta (no puede
+                        excederlo).
                     </div>
                 </group>
 

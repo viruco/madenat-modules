@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.4.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -36,6 +36,9 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'wizards/lumber_container_rollover_wizard_views.xml',
         'wizards/lumber_container_lot_wizard_views.xml',
         'wizards/lumber_shipment_rebaja_wizard_views.xml',
+        # AD-88 (2026-10-01): asistentes de decisión blanda (B-01, B-03/B-06).
+        'wizards/lumber_shipment_zarpe_wizard_views.xml',
+        'wizards/lumber_container_rebaja_reverse_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            

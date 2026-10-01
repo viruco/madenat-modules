@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lumber_shipment_zarpe_wizard_form" model="ir.ui.view">
+        <field name="name">lumber.shipment.zarpe.wizard.form</field>
+        <field name="model">lumber.shipment.zarpe.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Zarpe con pendientes de rebaja">
+                <div class="alert alert-warning" role="alert">
+                    <b>Hay contenedores SIN rebajar.</b> El zarpe no descuenta
+                    inventario: puede rebajarlos ahora o zarpar con una
+                    excepción registrada (motivo obligatorio).
+                </div>
+                <group>
+                    <field name="shipment_id" readonly="1"/>
+                    <field name="pending_count" readonly="1"/>
+                    <field name="pending_names" readonly="1"/>
+                </group>
+                <field name="pending_container_ids" invisible="1"/>
+                <group string="Excepción (solo si zarpa sin rebajar)">
+                    <field name="reason"
+                           placeholder="Explique por qué zarpa sin rebajar..."/>
+                </group>
+                <footer>
+                    <button name="action_rebajar_y_zarpar" type="object"
+                            string="Rebajar y zarpar" class="btn-primary"/>
+                    <button name="action_zarpar_con_excepcion" type="object"
+                            string="Zarpar con excepción" class="btn-secondary"
+                            confirm="Se zarpará registrando una excepción auditada. ¿Continuar?"/>
+                    <button string="Cancelar" special="cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
