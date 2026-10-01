@@ -1,6 +1,9 @@
 # Auditoría de XML IDs — R1 Stock Detail
 
+**Versión documental:** 1.1.0
 **Fecha:** 2026-06-15
+**Última actualización:** 2026-09-25  <!-- actualizado: 2026-09-25 — Programación 1: identificación operativa de lotes R1 -->
+**Estado:** ✅ Vigente — Auditoría de XML IDs de R1; referencias de código revalidadas al 2026-09-25 (AD-77).
 **Propósito:** Validar que los nuevos XML IDs existen en BD y que los viejos (`view_stock_lot_*`) han desaparecido.
 
 ## Hallazgos previos (grep en código)
@@ -140,13 +143,29 @@ La salida de terminal en esta sesión está bloqueada por un agente SSH pidiendo
 
 ## Verificación de integridad del flujo R1
 
+> **Nota (2026-09-25):** los números de línea son **referencias auditadas a esa fecha**, no un
+> contrato rígido; deben revisarse tras cualquier cambio posterior en los archivos citados.
+
 ### Menú → Acción (confirmado en código)
 ```
-menu_r1_detail_location (menu_remapping.xml:67-71)
-  → action="madenat_lumber_reports.action_r1_stock_detail_patio"
+menu_r1_detail_location (menu_remapping.xml:42)
+  → action="madenat_lumber_reports.action_r1_stock_detail_patio" (stock_report_actions.xml:7)
     → res_model=stock.quant, view_id=view_stock_quant_tree_r1_detail_patio
-      → vista tree con location_name, lot_id, product_id, quantity
+      → vista tree (inventory_report_views.xml:134-162): patio/ubicación, fecha/hora de ingreso,
+        lote/etiqueta, N° guía, documento origen, proveedor, producto, atributos técnicos,
+        volumen origen y volumen disponible
+      → search view view_stock_quant_search_inventory (inventory_report_views.xml:243-272)
 ```
+
+### Campos y filtro de Programación 1 (AD-77)
+
+- Modelo: `stock.quant` (`madenat_lumber_reports/models/lumber_stock_report.py`).
+- Campos añadidos (compute almacenado, solo lectura): `lot_operational_label`, `is_volume_lot`,
+  `lot_entry_datetime`, `lot_entry_datetime_source`, `lot_origin_document`.
+- Filtro técnico en la search view de R1: `filter_volume_lots`, con dominio
+  `[('is_volume_lot', '=', True)]` (no depende de la etiqueta visible).
+- Búsqueda histórica por nombre técnico (`GRANEL 4495589`) conservada mediante el campo `lot_id`.
+- Programación 1 **no** agregó ni renombró XML IDs: los identificadores de R1 son los mismos.
 
 ### Acción XLSX (confirmado en código)
 ```
@@ -157,14 +176,17 @@ action_server_r1_stock_detail_xlsx (stock_report_actions.xml:56-65)
 ```
 
 ### Vistas `stock.quant` activas (confirmado en código)
+
+Referencias de línea revalidadas al **2026-09-25** (ver nota anterior):
+
 | Vista | Modelo | Archivo |
 |-------|--------|---------|
-| `view_stock_quant_tree_r1_detail_patio` | stock.quant | inventory_report_views.xml:130 |
-| `view_stock_quant_tree_r2_summary_patio` | stock.quant | inventory_report_views.xml:144 |
-| `view_stock_quant_tree_r5_detail_partner` | stock.quant | inventory_report_views.xml:158 |
-| `view_stock_quant_tree_r7_detail_purchase` | stock.quant | inventory_report_views.xml:172 |
-| `view_stock_quant_tree_r9_detail_product` | stock.quant | inventory_report_views.xml:186 |
-| `view_stock_quant_search_inventory` | stock.quant | inventory_report_views.xml:200 |
+| `view_stock_quant_tree_r1_detail_patio` | stock.quant | inventory_report_views.xml:134 |
+| `view_stock_quant_tree_r2_summary_patio` | stock.quant | inventory_report_views.xml:165 |
+| `view_stock_quant_tree_r5_detail_partner` | stock.quant | inventory_report_views.xml:179 |
+| `view_stock_quant_tree_r7_detail_purchase` | stock.quant | inventory_report_views.xml:200 |
+| `view_stock_quant_tree_r9_detail_product` | stock.quant | inventory_report_views.xml:222 |
+| `view_stock_quant_search_inventory` | stock.quant | inventory_report_views.xml:243 |
 
 ### Limpieza de vistas `stock.lot` huérfanas (confirmado)
 ```xml
@@ -185,3 +207,6 @@ action_server_r1_stock_detail_xlsx (stock_report_actions.xml:56-65)
 - El menú `menu_r1_detail_location` apunta a la acción correcta con vista `stock.quant`.
 - Las vistas viejas `view_stock_lot_*` se eliminan vía `<delete>` al actualizar el módulo.
 - Los residuos `view_stock_lot_*` y `%stock_lot%` en otros módulos son legado histórico que no afecta el funcionamiento.
+- **Programación 1 (AD-77, 2026-09-25):** la vista R1 y su search view recibieron campos de
+  presentación y el filtro técnico `filter_volume_lots` **sin** agregar ni renombrar XML IDs; R1
+  sigue leyendo `stock.quant` con cantidad positiva en ubicaciones internas agrupada por patio.

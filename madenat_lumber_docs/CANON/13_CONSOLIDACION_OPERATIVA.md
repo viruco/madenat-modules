@@ -1,8 +1,8 @@
 # 13 — Consolidación Operativa: Ingesta (Producto y Procesados), Reglas y Trazabilidad
 
-**Versión documental:** 1.6.0
-**Fecha de actualización:** 2026-08-23
-**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, nota de homologación UX "Modificar origen" (AD-55) y política de visibilidad de menús operativos (§12, 2026-08-23).
+**Versión documental:** 1.9.0
+**Fecha de actualización:** 2026-09-28
+**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, nota de homologación UX "Modificar origen" (AD-55), política de visibilidad de menús operativos (§12, 2026-08-23), matriz operativa de autorización de Etiquetas SV (§13, 2026-09-26, AD-79), bloque SV visible y ciclo de vida de guías (§10, 2026-09-28, AD-80) y cierre de la deuda técnica T1–T6 (§9, 2026-09-26).
 
 > Este documento consolida decisiones, flujos y brechas que ya existen en la documentación del
 > proyecto. NO introduce funcionalidad, reglas, campos ni comportamientos nuevos. Cuando una regla
@@ -160,6 +160,7 @@ Confirmado en código y documentación (`12_FLUJOS_INGESTA` §3, `00_ARQUITECTUR
 - ~~**BT-03 — Bitácora operativa sin cobertura de Procesados.**~~ **CERRADO (2026-08-16).** `_create_or_get_lot()` emite `lot_creation`/`lot_update` y `_validar_y_enriquecer_lineas()` emite `omission`, todos enlazados a `guia_processing_id`. Un único evento por outcome confirmado. La baja formal de lotes/etiquetas sigue fuera de alcance (pendiente de módulo futuro). Ver CHANGELOG 18.0.5.10.0.
 - ~~**BT-04 — Baja de producto a proceso sin implementación.**~~ **CERRADO (2026-08-16).** Guías `service` generan exactamente una salida de stock hacia `Virtual Locations/Production` (`_get_or_create_consumption_picking`, idempotente vía `consumption_picking_id`), reversible sin borrar historia (`_reverse_consumption_picking`) y con evidencia `consumption` en `madenat.audit.log`. `compra` queda intacto. Ver CHANGELOG 18.0.5.11.0. (Las mermas reales del proceso — yield — siguen sin modelar como scrap: deuda separada).
 - **BT-05 — Parseo disperso de guía procesada.** `madenat_guia_processing.py` concentra parseo sin dispatcher equivalente a `reception_parser`. **CODE + CANON** (`00` §3.3).
+- ~~**T1–T6 (deuda técnica del backlog) — CERRADOS (2026-09-26).**~~ Captura no bloqueante de proveedor con bloqueo en el envío irreversible (T1); gate dimensional acotado a flujos dimensionales, sin espesor inventado para Volumen (T2); API Odoo 18 de metadatos de `Float` en tests (T3); aislamiento de fixtures con identificadores únicos por corrida y escenario de nominal forzado tras el create (T4); causa real de la violación NOT NULL de `conciliation_status`: clase de test sin etiquetas de fase, ejecutada en `at_install` sobre un registro parcial (T5); referencia cruzada de Logistics a un XML ID de Billing eliminada y funcionalidad aportada desde Billing (T6). Evidencia: `03_TESTS.md` §9.7; nueva deuda T8–T11 en `05_BACKLOG.md`.
 
 ---
 
@@ -198,6 +199,38 @@ Historial y sin cambios de ACL.
   parte del flujo operativo de Intake.
 
 No se modificó ninguna ACL ni record rule en esta política.
+
+---
+
+## 13. Matriz operativa — Gestión de Etiquetas SV (2026-09-26, AD-79)
+
+Matriz de autorización verificada contra `security/ir.model.access.csv`,
+`security/madenat_security.xml`, las guardas ORM de `stock.lot` y la lógica de
+escalamiento de `madenat.sv.operation` (`_sv_required_approval_groups`). Leyenda:
+**Directa** = sin aprobación adicional; **Escala** = requiere aprobación funcional;
+**Lectura** = solo consulta; **Bloqueo** = impedido por el sistema.
+
+| Acción | Operaciones | Jefatura Operaciones | Auditoría | Contabilidad | Bloqueos |
+|---|---:|---:|---:|---:|---|
+| Modificar etiqueta SV (renombre) | Directa | Directa (hereda) | — | — | Formato `SV`+11 dígitos; etiqueta distinta de la vigente; alias actual e históricos no reutilizables; motivo obligatorio |
+| Regularizar volumen a la baja o neutro sin impacto | Directa | Directa (hereda) | — | — | Volumen estrictamente positivo; evidencia documental obligatoria; no por debajo del rebajado activo |
+| Regularizar volumen al alza | Escala (Auditoría) | Escala (Auditoría) | Escala (aprueba) | — | Iguales al anterior; sin saldo disponible negativo |
+| Rebajar volumen | Directa | Directa (hereda) | — | Escala si hay costo, valoración, factura, consolidación facturada/cerrada o período cerrado | Volumen positivo y ≤ saldo disponible; saldo resultante no negativo |
+| Rebajar piezas documentales | Directa | Directa (hereda) | — | Escala en las mismas condiciones financieras | Bloqueo si la Guía no declara piezas documentales positivas; piezas no negativas |
+| Reversar rebaja propia sin impacto | Directa | Directa (hereda) | — | Escala en las mismas condiciones financieras | Requiere rebaja origen aplicada; una sola reversa por rebaja; la rebaja original no se edita ni se elimina |
+| Consultar historial de operaciones SV | Lectura | Lectura | Lectura | Lectura | Sin borrado (`unlink`) para ningún grupo funcional |
+| Operar sobre etiqueta con costo, valoración, factura, consolidación facturada/cerrada o período cerrado | Escala (Contabilidad; y Auditoría si además hay alza documental) | Escala (ídem) | Escala si hay alza documental | Escala (aprueba) | Sin aprobación registrada la operación no se aplica |
+| Modificar o eliminar una operación SV aplicada | Bloqueo | Bloqueo | Bloqueo | Bloqueo | Append-only: la corrección se realiza con una operación nueva |
+| Escribir directamente campos SV protegidos de la Etiqueta | Bloqueo | Bloqueo | Bloqueo | Bloqueo | Guarda ORM + permiso interno de un solo uso (actor, lote, operación y valores) |
+
+**Fila de control operativo — asignación a contenedor/embarque de una Etiqueta SV
+(`madenat_lumber_logistics`):**
+
+- Registra una **rebaja explícita** de Etiqueta SV, no una salida silenciosa de saldo.
+- **Valida saldo disponible** antes de asignar; una misma Etiqueta SV puede distribuirse en
+  varios embarques solo dentro del saldo acumulado disponible.
+- Su **liberación genera una reversa trazable** (operación SV enlazada a la rebaja original).
+- Los **lotes no-SV conservan su comportamiento previo** (sin cambios funcionales).
 
 ---
 
@@ -260,3 +293,24 @@ No se modificó ninguna ACL ni record rule en esta política.
 - **Contradicciones detectadas:** C-02 (DEC-002 superada). C-01 (decimales 2 vs 3) fue **resuelta documentalmente** (evidencia 30-10-2025: 3 decimales).
 - **Brechas técnicas abiertas:** ~~BT-01 (segundo write path sin Gate 3)~~ **CERRADO (2026-08-16)**, ~~BT-02 (sobrescritura de lote notarizado)~~ **CERRADO (2026-08-16)**, ~~BT-03 (bitácora operativa sin Procesados)~~ **CERRADO (2026-08-16)**, ~~BT-04 (baja sin implementación)~~ **CERRADO (2026-08-16)**, BT-05 (parseo disperso).
 - **Pendientes de UAT/evidencia:** PASO 2 end-to-end, T29–T32, validación UAT de precisión (3 decimales), `deduction_factor`. ~~cierre de BT-02~~ (cerrado por test automatizado).
+
+---
+
+## 10. Bloque SV visible y ciclo de vida de guías (2026-09-28, AD-80)
+
+- **Bloque SV** (`ETIQUETA SV Y SALDO OPERATIVO`): expuesto en la Consola de Ingreso de Madera
+  (solo lectura, proxies no almacenados) y sus acciones SV en el formulario de la Guía de la
+  fachada Intake y en el formulario estándar de `madenat.guia.processing` (grupo
+  `🏷️ Etiqueta SV`). El saldo mostrado proviene del ledger del Programa SV
+  (`02_CONTINUIDAD.md` §14, `00_ARQUITECTURA.md` §4.8); la nueva superficie no recalcula ni
+  escribe nada. La asignación logística a contenedor/embarque sigue registrando rebaja explícita
+  y su liberación sigue generando reversa trazable.
+- **Rebaja reversible y reversa:** en el ledger (`madenat.sv.operation`) el botón «Reversar
+  rebaja» es visible solo para `action_type = 'rebaja'`, `state = 'applied'` y
+  `reversed_operation_id` vacío; la guarda real (segunda reversa bloqueada) permanece en el
+  modelo. La reversa crea una operación `rebaja_reverse` ligada a la original.
+- **Ciclo de vida de guías:** Modos A–D de `04_DECISION_LOG.md` (AD-80) con diagnóstico de
+  bloqueadores y auditoría firmada. La purga controlada (Modo C) elimina guía y lote SV técnico
+  únicamente sin historia material; cualquier movimiento, retorno, picking, cuant, rebaja o
+  reversa aplicada, costo, valoración, factura, consolidación, contenedor o embarque la
+  bloquea. La consolidación administrativa y la facturación no se alteran.

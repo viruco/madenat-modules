@@ -1,9 +1,9 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.7.0`
-**Fecha de actualización:** 2026-09-12
-**Estado:** ✅ Vigente — Se documenta el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6. Sin cambios de código.
+**Versión documental:** `7.13.0`
+**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — §4.9: entorno de desarrollo del «Modo A autoservicio» (vía estricta del ledger SV vs. vía alternativa por ir.config_parameter) -->
+**Estado:** ✅ Vigente — Se documenta la Gestión Operativa de Etiquetas SV (`madenat.sv.operation`, AD-79) en §4.8, el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6, R1 — Detalle por Patio con `stock.quant` extendido en `madenat_lumber_reports` (AD-77, Programación 1) en §4.7, la interfaz operativa oficial de Intake (AD-78) y el entorno de desarrollo del «Modo A autoservicio» (`madenat.dev_cleanup_enabled`, que desacopla el autoservicio de `--test-enable`) en §4.9. Con cambios de código (`madenat_lumber_core`, `madenat_lumber_intake`).
 **Compatibilidad objetivo:** Odoo 18 CE
 
 ---
@@ -82,6 +82,21 @@ El runtime actual incluye modelos para reglas de ingesta parametrizables con UI 
 
 **Regla de diseño a preservar:** La lógica de negocio S2S vs Blank está correctamente aislada en `_compute_vol_shipment_m3` (L476-538, bifurcación en L510-516), separada del parseo. Cualquier intervención futura sobre los 9 métodos de parseo restantes NO debe tocar ni fusionar esta lógica.
 
+### 3.4 Regla de independencia de módulos base (T6, 2026-09-26)
+
+Un módulo **base** no puede referenciar XML IDs declarados únicamente por un módulo que **depende** de él.
+`madenat_lumber_logistics` (base respecto de `madenat_lumber_billing`) declaraba el botón «Crear
+Consolidación» con `%(madenat_lumber_billing.action_create_consolidation_from_shipment)d` en su vista de
+Embarque (`views/lumber_export_shipment_views.xml`), lo que abortaba la instalación limpia de Logistics sin
+Billing (`Invalid xmlid … for button of type action`). La referencia se eliminó de Logistics y la
+funcionalidad se conserva mediante una vista heredada **propiedad de Billing**
+(`madenat_lumber_billing.view_lumber_billing_shipment_form_billing_button`, `mode=extension`) sobre
+`madenat_lumber_logistics.view_lumber_export_shipment_form`.
+
+**Criterio normativo:** cuando una acción o vista pertenece a un módulo superior, su punto de extensión se
+declara en ese módulo superior (herencia de vista), nunca en el base. No se resuelve con dependencias
+invertidas (Logistics → Billing) que crearían un ciclo.
+
 ---
 
 ## 4. Modelos funcionales
@@ -143,7 +158,7 @@ Cabecera del flujo (`_name = 'lumber.reception'`).
 
 **Métodos arquitectónicos clave:**
 - `action_confirm_reception()` → GB-1 → Gate2 → Gate3 → `LumberReceptionService._create_lots_from_packing()`.
-- `action_reopen_to_draft()` → revierte estado preservando lotes en BD y desvinculando pickings.
+- `action_reopen_to_draft()` → revierte estado preservando lotes en BD y desvinculando pickings; tras el reset **re-deriva** `oc_reference_raw` del documento adjunto y re-ejecuta el match de OC (`_reopen_reextract_oc()`: intento local rápido de la etiqueta real «O/C» → respaldo `_parse_dispatch_pdf()` → respaldo Excel) y, cuando no es posible re-extraerla, **conserva el valor previo como resguardo** sin re-vincular la OC. Fail-soft: nunca interrumpe el reset — Tarea B-1 (Opciones 2+3), 2026-09-28.
 
 ### 4.3 `madenat.guia.processing`
 
@@ -151,7 +166,9 @@ Flujo complementario para guías procesadas. Modelos:
 - `madenat.guia.processing` (cabecera)
 - `madenat.guia.processing.line` (líneas)
 
-Métodos: `do_full_processing()`, `action_validate()`, `_create_or_get_lot()`.
+Métodos: `do_full_processing()`, `action_validate()`, `_create_or_get_lot()`, `action_reopen_to_draft()` / `_reopen_reextract_oc()` (reset a borrador que preserva lotes, desvincula pickings, **re-extrae la OC documental** del documento adjunto —fallback local «O/C», respaldo `_parse_dispatch_pdf()`, respaldo Excel— y **conserva el valor previo como resguardo** si no puede re-extraerla, sin re-vincular la OC — Tarea B-1, Opciones 2+3, 2026-09-28).
+
+**Interfaz operativa (AD-78):** el formulario clásico de la Guía no es la pantalla operativa de Operaciones; la operación se realiza en `madenat_lumber_intake` (ver «Interfaz operativa oficial de Intake»). Los campos declarados de Recepción por Volumen (`anchos_variables`, `largos_variables`, `espesor_nominal_texto`, `piezas_declaradas`, `volumen_declarado_m3`, `volume_lot_id`) persisten en este modelo y se gestionan en Intake.
 
 ### 4.4 `stock.lot` extendido (`StockLotExtended` en `stock_lot.py`)
 
@@ -204,6 +221,89 @@ Flujo de diseño aprobado (no implementado) para madera que llega por **volumen 
 
 ---
 
+### 4.7 R1 — Detalle por Patio: `stock.quant` extendido en `madenat_lumber_reports`
+
+**Responsabilidad documental explícita (AD-77).** Esta sección es el dueño canónico del inventario de
+campos de la capa de presentación de R1.
+
+- **Modelo de lectura:** R1 "Detalle por Patio — Stock Real" (`action_r1_stock_detail_patio`, vista
+  `view_stock_quant_tree_r1_detail_patio`) lee `stock.quant`. Alcance: cantidad positiva en
+  ubicaciones internas (`quantity > 0`, `location_id.usage = 'internal'`) agrupado por
+  patio/ubicación. Search view: `view_stock_quant_search_inventory`.
+- **Propiedad de la capa:** `madenat_lumber_reports` es dueño de la presentación y el reporting de
+  R1 (`models/lumber_stock_report.py`, `models/report_helpers.py`).
+- **Frontera con Core (sin duplicidad de dominio):** `madenat_lumber_core` sigue siendo dueño del
+  gemelo digital de lote (campos base de `stock.lot` y flujos de creación por recepción y guía). R1
+  solo añade campos derivados de lectura.
+- **Campos de Programación 1 en `stock.quant`** (compute almacenado, solo lectura):
+
+| Campo | Objetivo | Fuente real | Limitación |
+|---|---|---|---|
+| `lot_operational_label` | Etiqueta operativa que presenta `Lote Volumen` en lugar del token técnico `GRANEL` | `stock.lot.name` | Etiqueta sintética de UI; no reemplaza el nombre técnico ni participa de las búsquedas técnicas |
+| `is_volume_lot` | Criterio técnico del flujo por volumen (indexado) | `stock.lot.name` normalizado | Solo clasifica; no implica stock ni volumen disponibles |
+| `lot_entry_datetime` | Fecha/hora de ingreso del lote | Recepción documental; fallback creación del lote cuando existe guía de procesamiento sin recepción | Puede quedar vacío de forma legítima; el fallback no es fecha documental de recepción |
+| `lot_entry_datetime_source` | Distinguir la fuente de la fecha de ingreso | Idem `lot_entry_datetime` | — |
+| `lot_origin_document` | Documento de origen enlazado al lote | Recepción de compra o guía de procesamiento | Vacío si no hay documento enlazado; puede coincidir con el N° de guía en orígenes por guía |
+
+- **Regla de presentación:** el token técnico inicial `GRANEL` (nombre exacto `GRANEL` o prefijo
+  `GRANEL `) identifica lote de volumen y se presenta como `Lote Volumen`. No se modifica
+  `stock.lot.name`, `display_name`, `name_get` ni `name_search`; la búsqueda por el nombre técnico se
+  mantiene por `lot_id`.
+- **Disponibilidad:** sigue siendo responsabilidad del inventario estándar (`stock.quant.quantity` y
+  movimientos). Los cinco campos son de presentación y **no** alteran stock.
+- **Deuda arquitectónica declarada:** la normalización definitiva de las múltiples fuentes de fecha
+  de ingreso en `stock.quant` queda **pendiente**; no es funcionalidad implementada.
+
+### 4.8 Gestión Operativa de Etiquetas SV (`madenat.sv.operation`)
+
+Propietario técnico: `stock.lot`. Etiqueta vigente: `stock.lot.name`. Identidad de flujo
+Volumen: `lot_flow_type = 'volume'` + `volume_source_guia_id`.
+
+**Formato.** `SV` + 11 dígitos (`^SV[0-9]{11}$`), por ejemplo `SV00000000008`. La creación del
+lote consume la secuencia única `madenat.volume.lot`; los renombres **no** consumen ni reservan
+secuencia.
+
+**Volumen oficial.** Primer valor estrictamente positivo de `volume_pdf_m3` (Guía PDF) →
+`volume_excel_m3` (Packing Excel) → `packing_volume_declared_m3` (Packing declarado). Sin fuente
+positiva no existe volumen oficial. Regla funcional completa en `12_FLUJOS_INGESTA.md` §11.5.
+
+**Ledger (append-only).** `madenat.sv.operation` registra las operaciones de etiqueta SV. Tipos:
+`rename`, `regularize_volume`, `rebaja`, `rebaja_reverse`; estados `draft / applied / reversed /
+rejected`. Cada operación aplicada conserva snapshot y firma SHA-256 (`snapshot_json`,
+`audit_hash`) y referencia el lote, la Guía, el contenedor y el embarque cuando aplica; se refleja
+en chatter y en `madenat.audit.log` (`action_type = 'sv_operation'`). Una corrección es una
+operación nueva: la historia aplicada no se edita ni se elimina (escritura y borrado restringidos
+por el modelo).
+
+**Saldo.** Baseline original (`volume_purchase_m3 or volumen_m3`); si existe, la última
+regularización aplicada define el baseline regularizado. Rebajado activo = rebajas aplicadas menos
+las reversas válidas. Saldo disponible = baseline regularizado − rebajado activo. El saldo es un
+cálculo derivado del ledger, no un valor editado a mano.
+
+**Piezas (opcionales).** Solo son balanceables si la Guía declara piezas documentales positivas
+(`piezas_declaradas` o `packing_pieces_declared`). Nunca se infieren de paquetes, de líneas PDF, de
+la fila sintética GRANEL ni del placeholder técnico `stock.lot.piezas = 1`.
+
+**Seguridad.** Los campos SV protegidos de `stock.lot` (etiqueta, volúmenes, piezas y la marca
+técnica de serialización) no admiten escritura directa: una guarda ORM exige una operación SV
+validada, autorizada y aplicada atómicamente en servidor, mediante un permiso interno de un solo
+uso ligado a actor, lote, operación y valores esperados. Decisión y alcance en
+`04_DECISION_LOG.md` AD-79.
+
+**Concurrencia (fail-closed).** Toda operación que altere saldo bloquea la fila del lote y la de la
+operación y recalcula el saldo dentro de la misma transacción. Ante conflicto concurrente se
+rechaza la operación sin saldo negativo y sin registros parciales (ledger, alias, chatter,
+auditoría, marca de serialización), con mensaje funcional al usuario y sin reintento automático
+silencioso. Decisión en AD-79; evidencia en `03_TESTS.md` §9.
+
+**Reversa de Guía por Volumen.** La cancelación/devolución usa exclusivamente el lote SV vinculado
+a la Guía (las líneas de retorno conservan el `lot_id` SV), no sustituye lotes de terceros, evita
+retornos duplicados mediante relaciones técnicas de retorno y bloquea antes de devolver cuando el
+saldo propio es insuficiente. Los flujos Producto, Servicio y Tarja **no** fueron rediseñados en
+esta corrección.
+
+---
+
 ## 5. Gates y política de side effects
 
 El sistema opera bajo 4 gates formales (`ingestion_gate.py`) + 1 guardia inline:
@@ -238,6 +338,91 @@ Si el código cambia en: layout de largo, campos de staging, gates, modularizaci
 
 ---
 
+## Interfaz operativa oficial de Intake
+
+El formulario clásico de `madenat.guia.processing` no debe considerarse
+la pantalla operativa final para Operaciones.
+
+`madenat_lumber_intake` es la interfaz operativa oficial de Operaciones:
+wizard, consola, carga documental, revisión, captura y ajustes de datos
+de recepción por volumen, y validación del flujo.
+
+`madenat.guia.processing` es el registro persistente de la Guía y de su
+trazabilidad documental, comercial, física y logística. Su formulario
+clásico queda destinado a consulta, soporte administrativo, auditoría y
+trazabilidad técnica.
+
+Para Recepción por Volumen:
+
+Intake → 1 Guía → 1 Etiqueta SV → 1 `stock.lot` volume → 1 picking incoming.
+
+Los datos RW, RL, espesor nominal, piezas declaradas, M³ declarado y la
+etiqueta SV deben presentarse y gestionarse en Intake. El modelo
+`madenat.guia.processing` sigue siendo el propietario persistente de esos
+valores, pero no la interfaz operativa principal.
+
+---
+
+### 4.9 Bloque SV visible y ciclo de vida controlado de guías (AD-80, 2026-09-28)
+
+**Superficie de Operaciones.** La Consola de Ingreso de Madera (`madenat.lumber.intake.console`)
+expone, para la Recepción por Volumen, un bloque **read-only** `ETIQUETA SV Y SALDO OPERATIVO`
+(visible solo con lote SV real) con proxies **no almacenados** sobre las guardas de `stock.lot`
+(`sv_original_volume_m3`, `sv_regularized_baseline_m3`, `sv_rebajado_m3`, `sv_available_m3`,
+`sv_pieces_enabled`, `sv_available_pieces`, `sv_documentary_warning`) y sobre el ledger
+(`madenat.sv.operation`). Las cinco acciones autorizadas (modificar etiqueta, regularizar
+volumen, rebajar etiqueta, reversar rebaja y ver historial) se exponen también en el formulario
+de la Guía de la fachada Intake y en el grupo `🏷️ Etiqueta SV` del formulario estándar de
+`madenat.guia.processing`; todas delegan en los wizards del Programa SV (§4.8) y ninguna escribe
+`stock.lot.name`, volumen ni saldo.
+
+**Ciclo de vida.** Asistente `madenat.lumber.intake.guide.lifecycle` con diagnóstico único de
+trazas (lotes, pickings, movimientos, líneas de movimiento, quants, operaciones SV, costo,
+valoración, consolidación, factura, contenedor, embarque y período cerrado) y cuatro modos:
+A (eliminación definitiva sin trazas, `unlink()` canónico), B (cancelación conservando
+trazabilidad, `action_force_cancel()` sin cambios), C (purga controlada de guía y lote SV técnico,
+con confirmación escrita y Jefatura de Operaciones) y D (bloqueo y escalamiento). La evidencia se
+registra en `madenat.audit.log` (nuevos `action_type`: `guia_delete_blocked`,
+`guia_delete_permanent`, `guia_purged`) con snapshot y firma SHA-256.
+
+**Frontera de propiedad.** `stock.lot` sigue siendo el propietario del saldo y `madenat.sv.operation`
+el del historial; la Consola y el asistente solo leen y delegan. No se introduce SQL de escritura,
+`ON DELETE CASCADE`, ni borrado de movimientos, pickings, quants u operaciones SV
+aplicadas/reversadas. Decisión completa en `04_DECISION_LOG.md` (AD-80).
+
+**Entorno de desarrollo del Modo A (2026-09-28).** La relajación DOCUMENTAL del Modo A (chatter,
+adjuntos y referencias genéricas) exige `_lifecycle_dev_environment_ok()`, que delega en
+`madenat.sv.internal.marker._sv_test_environment_ok()`. Ese método admite **dos vías** y su
+invariante común, inviolable en ambas, es que **el nombre de la base de datos contenga `test`**:
+
+| Vía | Método | Condición | Consumidores |
+|---|---|---|---|
+| **ESTRICTA** | `_sv_test_enable_strict()` | `--test-enable` real **y** BD de test | `_sv_test_cleanup_allowed()`, `_sv_test_mark()` y `_sv_test_cleanup()` — mecanismos que tocan el ledger SV |
+| **ALTERNATIVA** (solo desarrollo) | `_sv_dev_cleanup_enabled()` | `ir.config_parameter('madenat.dev_cleanup_enabled') == 'True'` **y** BD de test | «Modo A autoservicio» vía `_lifecycle_dev_environment_ok()` |
+| **SUMA** | `_sv_test_environment_ok()` | ESTRICTA **o** ALTERNATIVA | Modo A autoservicio y pruebas automatizadas |
+
+`--test-enable` **nunca** debe activarse en el servidor persistente: en Odoo 18
+(`odoo/modules/loading.py`) hace que se ejecute la suite completa de todos los módulos instalados
+dentro del mismo proceso que atiende HTTP, con un único `Registry.test_cr` compartido, y las
+peticiones reales son rechazadas con `400 Bad Request: Trying to open a test cursor…`
+(incidente real del 2026-09-28). La vía alternativa existe precisamente para desacoplar el
+autoservicio de desarrollo de ese flag.
+
+El parámetro solo se **lee** desde MADENAT (nunca se escribe desde el código): se activa en
+**Ajustes → Técnico → Parámetros del Sistema → `madenat.dev_cleanup_enabled = True`**, escritura
+restringida por ACL nativa al grupo `Settings` (`base.group_system`). Valor admitido:
+exactamente `True` (fail-closed: cualquier otro valor desactiva la vía). Los mecanismos del ledger
+SV **no** se relajan por parámetro en ningún caso.
+
+*Propagación entre procesos:* `ir.config_parameter.create/write/unlink` limpia la caché del proceso
+que escribe y, al confirmar la transacción por el path de request/RPC, emite la señal
+(`Registry.signal_changes()`, `odoo/service/model.py`), de modo que activar o desactivar **desde la
+propia UI del servidor** surte efecto sin reinicio. Un cambio hecho desde **fuera** del servidor
+(p. ej. `odoo shell`) no emite esa señal y el servidor puede conservar el valor cacheado
+(`@ormcache` en `_get_param`): en ese caso, `docker compose restart web`.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |
@@ -248,3 +433,9 @@ Si el código cambia en: layout de largo, campos de staging, gates, modularizaci
 | 7.5.0 | 2026-08-19 | Alineación con código: estados reales de `lumber.reception` (`draft/processing/verified/done/cancel/error/pending_link`) y campos canónicos de OC documentados en §4.2 (`oc_reference_raw`, `oc_reference_norm`, `oc_match_status`, `oc_match_note`, `po_missing_alert`). Sin cambios de código. |
 | 7.6.0 | 2026-09-12 | Se documenta `madenat_ingestion_engine` (módulo consumido por `madenat_lumber_intake`) en §3.1: estado real verificado (`installed` 18.0.1.0.0) y gaps (extracción PDF de tablas no cubierta; perfil de columnas esqueleto). Sin cambios de código. |
 | 7.7.0 | 2026-09-12 | Se documenta el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6. Sin cambios de código. |
+| 7.8.0 | 2026-09-25 | Se documenta R1 — Detalle por Patio (`stock.quant` extendido en `madenat_lumber_reports`) en §4.7: campos de Programación 1, regla de token técnico `GRANEL` → presentación `Lote Volumen`, frontera de propiedad con Core y deuda de fuentes de fecha (AD-77). Sin cambios de código. |
+| 7.9.0 | 2026-09-25 | Se documenta la interfaz operativa oficial de Intake (AD-78) en la sección «Interfaz operativa oficial de Intake»: wizard, consola, carga documental y captura de datos de Recepción por Volumen como superficie de Operaciones; el formulario clásico de `madenat.guia.processing` queda para consulta, soporte administrativo, auditoría y trazabilidad técnica. Sin cambios de código. |
+| 7.10.0 | 2026-09-26 | Se documenta la Gestión Operativa de Etiquetas SV (`madenat.sv.operation`, AD-79) en §4.8: identidad y formato SV, secuencia `madenat.volume.lot`, volumen oficial, ledger append-only con snapshot/firma, fórmula de saldo, piezas opcionales, guardas ORM con permiso interno de un solo uso, concurrencia fail-closed y reversa de Guía por lote SV específico. Sin cambios de código. |
+| 7.11.0 | 2026-09-26 | Se documenta en §3.4 la regla de independencia de módulos base (T6): el botón de Consolidación de Facturación se aporta desde una vista heredada propiedad de `madenat_lumber_billing`, no desde `madenat_lumber_logistics`. |
+| 7.12.0 | 2026-09-28 | Se documenta en §4.9 el bloque SV visible de la Consola (proxies no almacenados), las acciones SV autorizadas en Consola y Guía, la jerarquía del volumen oficial y el ciclo de vida controlado de guías (Modos A–D, AD-80). Con cambios de código (`madenat_lumber_intake` 18.0.0.6.0, `madenat_lumber_core` 18.0.6.3.0). |
+| 7.13.0 | 2026-09-28 | Se documenta en §4.9 el **entorno de desarrollo del «Modo A autoservicio»**: vía ESTRICTA (`_sv_test_enable_strict()`, única admitida por el ledger SV) vs. vía ALTERNATIVA por `ir.config_parameter('madenat.dev_cleanup_enabled')`, con el candado `'test' in dbname` inviolable en ambas vías. Desacopla el autoservicio de desarrollo de `--test-enable`, que en un servidor persistente ejecuta la suite completa de todos los módulos en el mismo proceso HTTP (incidente del 2026-09-28). Con cambios de código en `madenat_lumber_core` (`models/madenat_sv_internal.py`, `tests/test_sv_dev_cleanup_param.py` + `tests/__init__.py`) y `madenat_lumber_intake` (`tests/test_guide_lifecycle.py`, tests 19–20). Sin bump de versión de manifiesto (fuera del alcance aprobado). |

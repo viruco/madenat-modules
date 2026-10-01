@@ -1,7 +1,7 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.4.0
-**Fecha de actualización:** 2026-06-16  <!-- actualizado: 2026-06-16 -->
+**Versión documental:** 6.9.0
+**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — Fase 2 (AD-80): cobertura de volumen oficial, bloque SV, reversa UI y ciclo de vida de guías (§10) -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
 ---
@@ -229,3 +229,200 @@ Suite `madenat` (Core + Intake) ejecutada sobre `madenat_test`: **49/49 tests, 0
 **Fallos ajenos:** los fallos existentes de `madenat_lumber_billing` (`TestBillingConsolidation.test_02_no_duplicar_consolidacion`) y `madenat_lumber_costing` (errores en `setUpClass`) son preexistentes y **no** autorizan modificar esos módulos dentro de este cierre.
 
 <!-- actualizado: 2026-08-31 — cobertura Fase 2 contrato producto/subproducto y validación de volumen -->
+
+---
+
+## 7. Cobertura — Ingreso por Volúmenes y asignación manual de proveedor (2026-09-22)
+
+| Archivo | Cobertura |
+|---|---|
+| `madenat_ingestion_engine/tests/test_pdf_parties.py` | Extracción de partes del PDF: emisor/receptor, asociación RUT-nombre por cercanía, confianza (`high/medium/low/none`), exclusión de transportista, membrete (8 tests). |
+| `madenat_lumber_intake/tests/test_volume_extraction.py` | Volumen PDF, detalle documental, persistencia de proveedor, resolución por RUT, ambigüedad, confianza baja, no bloqueo, consola y asignación manual de proveedor. |
+
+**Resultados de jornada (2026-09-22):**
+- `madenat_lumber_intake`: **141 tests, 0 fallos, 0 errores** (incluye `test_action_assign_supplier_abre_wizard` y `test_asignar_proveedor_persiste_estado_y_chatter`).
+- `madenat_ingestion_engine`: **55 tests, 0 fallos** (incluye `test_pdf_parties`).
+- `madenat_lumber_core`: ejecución por tags devolvió **0 tests** por descubrimiento del entorno; debe reejecutarse por ruta/clase antes de afirmar cobertura total.
+
+**Pendiente de validación:** Excel sin PDF como fuente única; rebaja/registro físico de stock por Volúmenes.
+
+<!-- actualizado: 2026-09-22 — cobertura Ingreso por Volúmenes y asignación manual de proveedor -->
+
+---
+
+## 8. Cobertura — Programación 1: identificación operativa en R1 (2026-09-25)
+
+### 8.1 Evidencia de despliegue y estructura
+
+| Verificación | Resultado | Naturaleza |
+|---|---|---|
+| Upgrade de `madenat_lumber_reports` a `18.0.2.3.0` sobre `madenat_test` (solo ese módulo) | Código de salida `0`; módulo cargado y vistas parseadas | Ejecutado |
+| Cinco columnas instaladas en `stock_quant`: `lot_operational_label`, `is_volume_lot`, `lot_entry_datetime`, `lot_entry_datetime_source`, `lot_origin_document` | Existen | Verificado por consulta de solo lectura |
+| Lote histórico `stock.lot(3753)` | Técnico `GRANEL 4495589`; operativo `Lote Volumen 4495589`; `is_volume_lot = true`; saldo `0,000` | Verificado por consulta de solo lectura |
+
+### 8.2 Matriz de la regla de token técnico (`GRANEL`)
+
+| Nombre técnico | Es Lote Volumen | Etiqueta esperada |
+|---|---:|---|
+| `GRANEL 4495589` | Sí | `Lote Volumen 4495589` |
+| `GRANEL` | Sí | `Lote Volumen` |
+| `  GRANEL  4495589  ` | Sí | `Lote Volumen 4495589` |
+| `GRANELITO 123` | No | Sin cambio |
+| `MAD-001 GRANEL` | No | Sin cambio |
+| `granel 4495589` | No | Sin cambio |
+
+### 8.3 Naturaleza y límites de la evidencia
+- Las pruebas de la regla de token fueron **estáticas/aisladas** (ejecución de la lógica del helper
+  extraída del propio archivo, con aserciones de ida y vuelta).
+- La evidencia de datos fue por **consulta de solo lectura** (estructura de `stock_quant` y caso
+  histórico 3753); no se creó ni modificó stock.
+- **No existe prueba automatizada** dentro de `madenat_lumber_reports/tests/` para el token técnico,
+  la etiqueta operativa ni `is_volume_lot`: queda pendiente.
+- **La prueba visual de R1 queda pendiente** por ausencia de lote volumétrico con saldo positivo en
+  ubicación interna. Esta matriz **no** declara validada visualmente la vista R1.
+
+<!-- actualizado: 2026-09-25 — Programación 1: cobertura de identificación operativa de lotes en R1 (§8) -->
+
+---
+
+## 9. Cobertura — Gestión Operativa de Etiquetas SV (2026-09-26)
+
+### 9.1 Base de validación
+
+- **Base objetivo:** `madenat_test`.
+- **Comando:** `odoo -d madenat_test --test-enable --test-tags 'sv' --stop-after-init`.
+- **Resultado:** **56 pruebas, 0 fallas, 0 errores.**
+- Módulos cubiertos: `madenat_lumber_core` (6 clases) y `madenat_lumber_logistics` (1 clase).
+
+### 9.2 Matriz de cobertura (clases de la suite `sv`)
+
+| Clase | Casos | Cobertura verificada |
+|---|---:|---|
+| `TestSvOperationLedger` | 5 | Ledger append-only: evento firmado, inmutabilidad de operación aplicada (sin edición ni borrado), transiciones de estado controladas, motivo obligatorio y exigencia de lote SV, historial múltiple cronológico |
+| `TestSvRename` | 6 | Renombre válido que conserva alias y no altera nada más; alias histórico no reutilizable; etiqueta vigente de otro lote no reutilizable; formatos inválidos y motivo obligatorio; escritura directa bloqueada; lote SV con historial no eliminable |
+| `TestSvVolumeRegularization` | 6 | Regularización con historial; evidencia y motivo obligatorios; regularización bajo el rebajado bloqueada; volumen no positivo bloqueado; escalamiento a Auditoría solo al alza; sin pickings ni costos creados |
+| `TestSvRebaja` | 9 | Rebaja válida (saldo y ledger); rebajas inválidas sin operación; reversa que restaura saldo sin borrar el original; segunda reversa bloqueada; sobreconsumo bloqueado con saldo final correcto; bloqueo transaccional del lote SV; saldo cero permitido sin borrar etiqueta; piezas no habilitadas por paquetes ni placeholder; piezas documentales habilitadas y limitadas |
+| `TestSvReversalLotSpecific` | 3 | Cancelación que devuelve solo el lote SV; reversa idempotente sin segunda devolución; sin saldo SV se bloquea con mensaje exacto |
+| `TestSvEscalationSecurity` | 5 | Operación rutinaria directa por Operaciones; costo exige Contabilidad; alza de baseline exige Auditoría; Auditoría y Contabilidad por dos personas; bypass ORM/ACL del historial bloqueado |
+| `TestSvRpcBypass` | 14 | Escritura directa bloqueada; contexto booleano forjado bloqueado; `operation_id` forjado bloqueado; operación correcta con etiqueta distinta bloqueada; permiso interno consumido y replay bloqueado; asistente que renombra una sola vez sin dejar permiso remanente; infraestructura interna no expuesta; fallo posterior revierte todo y no reutiliza; marca técnica de serialización (escritura directa, contexto forjado, actualización por rebaja/reversa/regularización, replay y no exposición) |
+| `TestSvConcurrency` | 2 | **Concurrencia real con dos transacciones independientes** (`db_connect` + conexión propia, no `TestCursor`): saldo 40,315 → A aplica 25,000, B intenta 20,000 → A aplicada, B no aplicada, saldo final 15,315, sin saldo negativo, sin operación/auditoría parcial de B, mensaje funcional aprobado y sin error técnico PostgreSQL expuesto; además verifica que no quedan registros de prueba persistentes |
+| `TestSvAllocation` (logística) | 6 | Asignación que crea rebaja vinculada; tope acumulado bloqueado; una etiqueta SV en varios embarques con trazabilidad; un embarque con varias etiquetas SV; liberación que revierte la rebaja; lotes no-SV sin cambios funcionales |
+
+### 9.3 Resultado funcional verificado en la prueba de concurrencia
+
+- Saldo inicial **40,315 m³**; A aplica **25,000 m³**; B (asistente de rebaja, segunda conexión)
+  intenta **20,000 m³**.
+- Resultado: A aplicada; B no aplicada; saldo final **15,315 m³**; ningún saldo negativo; ninguna
+  operación ni auditoría parcial de B; B recibe el mensaje funcional
+  «Otro usuario modificó esta etiqueta SV mientras se procesaba la operación. La operación no fue
+  aplicada. Actualice la información y vuelva a intentarlo.» y **no** recibe el error técnico de
+  serialización de PostgreSQL.
+- El intento conflictivo se revierte de forma segura (savepoint) sin reintento automático.
+
+### 9.4 Suite amplia relevante — límite explícito
+
+- Ejecución de la suite relevante (`madenat_lumber_core` + `madenat_lumber_intake` +
+  `madenat_lumber_logistics`): **442 pruebas, 6 fallas y 4 errores**.
+- Estas incidencias **no** se atribuyen a Gestión Operativa de Etiquetas SV según línea base
+  reproducible (base limpia auxiliar `madenat_sv_baseline`: los mismos casos fallan sin datos de
+  negocio, y los archivos/ líneas afectados no forman parte del cambio SV; el resto son
+  dependientes de datos compartidos de `madenat_test`).
+- Se registran como **T1–T6/T7 en `05_BACKLOG.md`**. Esta matriz **no** declara limpia la suite
+  amplia.
+
+### 9.5 Validaciones estáticas de la entrega SV
+
+- Compilación Python (`py_compile`) de modelos, wizards y pruebas: OK.
+- Validación XML (`xmllint --noout`) de las vistas/wizards/seguridad/data SV: OK.
+- `git diff --check` en el repositorio `custom_addons`: OK (sin errores de whitespace).
+- Sin `git add`/`commit`; cambios presentes solo en el árbol de trabajo.
+
+### 9.6 Protección de datos históricos
+
+Verificado por consulta de solo lectura al cierre de la corrida: Guía `4495589`
+(`madenat.guia.processing` 6566, `write_date` 2026-09-25 18:13:59) y etiqueta `SV00000000008`
+(`stock.lot` 3772, `volumen_m3` 40,300, sin marca de serialización, `write_date` 2026-09-26
+06:14:57) sin modificación; secuencia `madenat.volume.lot` con `number_next = 1`; ledger SV,
+permisos internos y marcadores de prueba en 0 filas.
+
+<!-- actualizado: 2026-09-26 — Gestión Operativa de Etiquetas SV: cobertura de la suite `sv` (§9, AD-79) -->
+
+### 9.7 Cobertura — Cierre de la deuda técnica T1–T6 (2026-09-26)
+
+Base de validación: **`madenat_test`** (base principal, con datos de negocio). Fase de ejecución: **post-install**
+(registro completo). Comando: un único proceso Odoo con `--test-enable` y selección por clase.
+
+| Ítem | Clase(s) | Resultado | Causa raíz verificada |
+|---|---|---:|---|
+| T1 | `TestReceptionSupplierRutExtraction` | 11/11 PASS | El flujo bloqueaba en captura por RUT ausente; ahora difiere la resolución del proveedor y bloquea en `action_confirm_reception` |
+| T2 | `TestGranelRouteCore` | 14/14 PASS | Doble causa: gate dimensional aplicado al flujo Volumen (runtime core) y fixture sin volumen oficial documental + aserción sobre `lot_ids` (runtime Intake) |
+| T3 | `TestVolumeGuideHeader` | 5/5 PASS | Odoo 18 no expone `Float.digits`; se usa `get_digits(env)` |
+| T4 | `TestSupplierResolution` / `TestGuiaProcessingValidationSignature` | 8/8 y 6/6 PASS | VAT/nombre fijos colisionaban con datos reales; el escenario de nominal 0 era rellenado por el hook de Intake al crear la línea |
+| T5 | `TestLumberReception` | 21/21 PASS | La clase corría en `at_install` (sin etiquetas de fase) sobre un registro parcial sin el campo `conciliation_status` de Intake ⇒ `NotNullViolation` |
+| T6 | `TestShipmentViewModuleIndependence` / `TestShipmentBillingButton` | 3/3 y 3/3 PASS | Referencia cruzada de Logistics al XML ID de Billing; se aporta por vista heredada de Billing |
+
+**Total focalizado: 72 pruebas, 0 fallos, 0 errores.**
+
+Suites amplias de los módulos afectados (`madenat_lumber_core`, `madenat_lumber_intake`,
+`madenat_lumber_logistics`, `madenat_lumber_billing`, todas las fases): **457 pruebas, 1 fallo, 0 errores**. El
+único fallo es **preexistente y ajeno a T1–T6**: `TestBillingConsolidation.test_02_no_duplicar_consolidacion`
+(clase sin etiqueta de fase; el modelo `lumber.billing.consolidation` no implementa guard anti-duplicado).
+Registrado como **T9** en `05_BACKLOG.md`; reproducido también en aislamiento
+(`--test-tags=/madenat_lumber_billing:TestBillingConsolidation` → 1 fallo de 3).
+
+**Instalación limpia (T6)** — base desechable `madenat_clean_install_test` (creada y eliminada en la misma
+sesión; `madenat_test` no se usó para esta verificación):
+
+| Paso | Resultado |
+|---|---|
+| `-i madenat_lumber_logistics` (sin Billing) | El set mínimo aborta por una referencia **preexistente y distinta** (`contacts.menu_contacts`, T8). Reejecutado con `contacts` instalado explícitamente: Logistics instala y carga sin errores |
+| Verificación Logistics-only | `madenat_lumber_billing` sin datos (0 XML IDs), 0 vistas con token de Billing; `get_view` de la vista de Embarque renderiza y valida |
+| `-i madenat_lumber_billing` después | Instala y carga sin errores |
+| Verificación Billing | Vista heredada presente (`mode=extension`), 1 botón «Crear Consolidación» `type=action`, `invisible="state != 'delivered'"`, `name` ya resuelto al **ID numérico** de la acción y resolviendo exactamente a `madenat_lumber_billing.action_create_consolidation_from_shipment`; acción vinculada al modelo y ejecutable (rechaza embarques no entregados con el mensaje documentado) |
+
+**Contraste histórico preservado:** Guía 4495589 (`madenat.guia.processing` 6566) y etiqueta `SV00000000008`
+(`stock.lot` 3772) no fueron leídas ni modificadas en esta sesión; la secuencia `madenat.volume.lot` y el ledger
+SV no se tocaron.
+
+---
+
+## 10. Cobertura — Fase 2: volumen oficial, bloque SV y ciclo de vida de guías (2026-09-28, AD-80)
+
+### 10.1 Suite nueva y modificada
+
+| Archivo | Clase | Casos | Cobertura |
+|---|---|---|---|
+| `madenat_lumber_intake/tests/test_intake_console_sv_actions.py` | `TestIntakeConsoleSvActions` | 7 | Bloque SV con y sin lote; piezas solo documentales (paquetes y líneas PDF no habilitan); delegación de las cuatro acciones en los wizards canónicos; reversa visible solo para rebaja aplicada reversible, vínculo `rebaja_reverse` y segunda reversa bloqueada; proxies read-only no almacenados; arquitectura del bloque (campos y botones) |
+| `madenat_lumber_intake/tests/test_volume_ui_hierarchy.py` | `TestVolumeUiHierarchy` | 4 | Volumen oficial único primario y primero en orden documental; etiquetas exactas de secundarios; detalle/diferencia solo en control interno; ausencia del agregado competidor `Volumen:` y ocultamiento de `total_volume_m3` para Volumen |
+| `madenat_lumber_intake/tests/test_guide_lifecycle.py` | `TestGuideLifecycle` | 17 | Modo A (draft sin trazas, motivo/confirmación/auditoría, bloqueo por lote, por estado y por evidencia); Modo B (`action_force_cancel` conserva pickings, movimientos, lotes y chatter); Modo C (lote técnico, confirmación escrita `PURGAR`, operaciones en borrador eliminadas, bloqueo por aplicadas/reversadas y rechazadas, y bloqueo por evidencia: adjunto PDF, chatter con contenido y referencia genérica `mail.activity`); Modo D (bloqueadores reales de lote, movimiento, picking, quant y operación SV; contenedor, embarque y consolidación; lista completa de categorías incl. factura, período cerrado y evidencia; cero eliminaciones; snapshot de auditoría con inventario de evidencia); diagnóstico de solo lectura; apertura desde la Consola |
+| `madenat_lumber_core/tests/test_sv_reverse_ui.py` | `TestSvReverseUi` | 3 | Botón de reversa con la condición exacta en el ledger; acciones SV en el formulario de la Guía condicionadas a `volume_lot_id`; reversa funcional ligada y segunda reversa bloqueada |
+| `madenat_lumber_intake/tests/test_volume_official_volume.py` | `TestVolumeOfficialVolume` | 9 | **Reescrito:** las aserciones que prohibían acciones SV en la Consola se reemplazan por aserciones positivas de los cinco botones autorizados, su ubicación en el bloque SV y la ausencia de botones sin lote |
+
+### 10.2 Resultados de ejecución (2026-09-28, base `madenat_test`)
+
+| Corrida | Alcance | Resultado |
+|---|---|---|
+| `-u madenat_lumber_intake` con `TestIntakeConsoleSvActions`, `TestVolumeUiHierarchy`, `TestGuideLifecycle`, `TestVolumeOfficialVolume` | Suites de la Fase 2 en Intake | **38 pruebas, 0 fallas, 0 errores** (RC=0) |
+| `-u madenat_lumber_core` con `TestSvReverseUi` | Suite nueva de Core | **3 pruebas, 0 fallas, 0 errores** (RC=0) |
+| `-u madenat_lumber_intake --test-tags /madenat_lumber_intake` | Regresión completa del módulo | **237 pruebas, 0 fallas, 0 errores** (RC=0) |
+| `-u madenat_lumber_core,madenat_lumber_logistics --test-tags sv,/madenat_lumber_core:TestVolumeGuideHeader,/madenat_lumber_core:TestGranelRouteCore,/madenat_lumber_core:TestVolumenRestante,/madenat_lumber_core:TestSvReverseUi` | Gestión SV + F3.1 + ruta granel + volumen restante | **81 pruebas, 0 fallas, 0 errores** (RC=0) |
+| Upgrade `-u madenat_lumber_core,madenat_lumber_intake` | Carga de módulos | RC=0, sin errores; sin avisos nuevos de campos o grupos por este cambio |
+
+### 10.3 Contraste histórico y estado de la base
+
+- Guía 4495589 (`madenat.guia.processing` 6566): `write_date` 2026-09-27 02:32:39, **anterior** a
+  las corridas de esta fase; no modificada.
+- Etiqueta `SV00000000008` (`stock.lot` 3772): `write_date` 2026-09-26 06:14:57, `volumen_m3`
+  40,300, sin marca de serialización y sin operaciones SV; no modificada.
+- Secuencia `madenat.volume.lot`: `number_next = 1` (sin cambios). Ledger `madenat.sv.operation`:
+  0 filas.
+- Sin datos de prueba persistidos (0 guías `LC-*`/`SV-CONS-*`, 0 lotes de prueba, 0 adjuntos
+  `LC-C-*`) y sin eventos nuevos de auditoría de los tipos `guia_delete_blocked`,
+  `guia_delete_permanent` ni `guia_purged`.
+- **Evidencia huérfana preexistente (ajena a esta fase):** la base `madenat_test` contiene
+  **55 `mail.message` y 18 `ir.attachment`** de `madenat.guia.processing` apuntando a guías ya
+  inexistentes, todos con `create_date` entre 2026-06-30 y 2026-07-08 (borrados históricos por
+  SQL de sesiones anteriores). Verificado que **no se creó ningún mensaje/adjunto huérfano**
+  durante esta fase: 0 registros con `create_date` de la sesión y 0 residuos de prueba. La regla
+  de evidencia del Modo A/C evita que se sigan produciendo huérfanos por vía ORM y obliga a
+  preservar la evidencia viva (Modo B).

@@ -1,9 +1,9 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 11.0.0
-**Fecha de actualización:** 2026-09-12
+**Versión documental:** 11.5.0
+**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — Fase 2 (AD-80): sincronización de versiones de 00, 02, 03, 04, 05_BACKLOG, 12 y 13 -->
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
-**Responsable revisión:** 2026-09-12 — Sincronización de versiones/fechas de los documentos canónicos (00=7.7.0, 02=12.2.0, 04=12.2.0, 08=1.6.0, 12=1.3.0, 13=1.6.0).
+**Responsable revisión:** 2026-09-28 — Sincronización de versiones/fechas de los documentos canónicos (00=7.12.0, 02=12.7.0, 03=6.9.0, 04=12.8.0, 05_BACKLOG=7.7.0, 12=1.6.0, 13_CONSOLIDACION=1.9.0): UX de volumen oficial, bloque SV visible y ciclo de vida controlado de guías (AD-80).
 
 ---
 
@@ -18,26 +18,26 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 
 | Archivo | Propósito | Versión | Fecha | Estado |
 |---|---|---|---|---|
-| `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones | 7.7.0 | 2026-09-12 | ✅ Vigente |
+| `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones (incluye §4.8 Gestión Operativa de Etiquetas SV) | 7.10.0 | 2026-09-26 | ✅ Vigente |
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
-| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma | 12.2.0 | 2026-09-12 | ✅ Vigente |
-| `03_TESTS.md` | Matriz de validación funcional y técnica | 6.4.0 | 2026-06-16 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación | 12.3.0 | 2026-09-21 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases | 7.2.0 | 2026-09-21 | ✅ Vigente |
-| `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | — | 2026-06-15 | ✅ Vigente |
+| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV) | 12.5.0 | 2026-09-26 | ✅ Vigente |
+| `03_TESTS.md` | Matriz de validación funcional y técnica (incluye §9 cobertura de la suite `sv`) | 6.7.0 | 2026-09-26 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (incluye AD-79 Gestión Operativa de Etiquetas SV) | 12.7.0 | 2026-09-26 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda verificada T1–T7 de Etiquetas SV) | 7.5.0 | 2026-09-26 | ✅ Vigente |
+| `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
 | `08_COSTEO.md` | Flujo canónico de costeo end-to-end | 1.6.0 | 2026-09-12 | ✅ Vigente |
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado — ARCHIVADO, checklist migrado a este índice | 1.1.0 | 2026-06-16 | 🏷️ ARCHIVADO — checklist A-F consolidado en Anexo A |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — ARCHIVADO en LEGADO/auditorias | — | 2026-06-04 | 🏷️ ARCHIVADO — Fase A completada, evidencia histórica |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Derivado vigente |
-| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa | 1.3.0 | 2026-09-12 | ✅ Vigente |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción por Volumen) | 1.4.0 | 2026-09-26 | ✅ Vigente |
 | `12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — plan no ejecutado |
 | `15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual | 1.1.0 | 2026-06-06 | ✅ Derivado vigente |
-| `13_CONSOLIDACION_OPERATIVA.md` | Consolidación operativa: ingesta (Producto/Procesados), reglas, trazabilidad, matriz de hallazgos y contradicciones | 1.6.0 | 2026-08-23 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 11.0.0 | 2026-09-12 | ✅ Vigente |
+| `13_CONSOLIDACION_OPERATIVA.md` | Consolidación operativa: ingesta (Producto/Procesados), reglas, trazabilidad, matriz de hallazgos, contradicciones y matriz operativa de Etiquetas SV (§13) | 1.7.0 | 2026-09-26 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 11.3.0 | 2026-09-26 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 
@@ -108,3 +108,10 @@ Estructura:
 - Si un cambio afecta a más de un archivo, todos se actualizan en la misma sesión.
 - No se crean documentos paralelos para temas que ya tienen dueño canónico.
 - Las auditorías históricas van a `LEGADO/auditorias/`, no a CANON/ ni a la raíz.
+- **Etiquetas de fase en tests (T5, 2026-09-26):** toda clase de test de un módulo con dependientes debe declarar
+  su fase explícitamente (`@tagged('post_install', '-at_install', …)`). Sin esa declaración, Odoo aplica
+  `standard`/`at_install` y la clase corre durante la carga del grafo, sobre un registro parcial donde los campos
+  aportados por módulos dependientes (p. ej. `conciliation_status` de Intake) todavía no existen.
+- **Independencia de módulos base (T6, 2026-09-26):** un módulo base no puede referenciar XML IDs declarados
+  únicamente por un módulo que depende de él; el punto de extensión se declara en el módulo superior mediante
+  herencia de vista (ver `00_ARQUITECTURA.md` §3.4).

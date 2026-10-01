@@ -1,9 +1,11 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.3.0  
-**Fecha:** 2026-09-12  
-**Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65)  
+**Versión documental:** 1.6.0\
+**Fecha de actualización:** 2026-09-28\
+**Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, y el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80).
+**Fecha:** 2026-09-26\
+**Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
 **Responsable de actualización:** Arquitecto / Tech Lead
 
 ---
@@ -352,3 +354,102 @@ Esta vía **no reemplaza** los discriminadores `reception_id` / `guia_processing
 ### 11.4 Nota de mantenimiento
 
 Se cumple el criterio de §9.4 ("se agrega un tercer flujo de ingesta"): esta sección aclara que la consolidación es **administrativa y complementaria**, no un tercer flujo de creación de `stock.lot`.
+
+### 11.5 Volumen oficial de una Recepción por Volumen (2026-09-26, AD-79)
+
+Regla funcional vigente, verificada en `madenat_lumber_intake/models/intake_guia_processing.py`
+(`OFFICIAL_VOLUME_SOURCES` y `_compute_official_volume_m3`):
+
+| Prioridad | Campo | Origen documental |
+|---|---|---|
+| 1 | `volume_pdf_m3` | Guía PDF |
+| 2 | `volume_excel_m3` | Packing Excel |
+| 3 | `packing_volume_declared_m3` | Packing declarado |
+
+- Se toma el **primer valor estrictamente positivo** de la lista.
+- Si ninguna fuente es positiva, **no existe volumen oficial** para el ingreso.
+
+**Distinción profesional de fuentes:**
+
+- **Volumen oficial:** dato documental que gobierna el flujo (referencia de contraste para stock, conciliación y consolidación). Expuesto como `official_volume_m3` con su origen en `official_volume_source`.
+- **Total de líneas PDF (`volume_detail_m3`, suma del detalle):** evidencia de control documental interno; su diferencia contra el volumen oficial es *warning* documental, no bloqueante, y **nunca** reemplaza el volumen oficial.
+- **Volumen operativo (`volume_operational_m3`):** referencia operativa editable por el operador (AD-76); **nunca** sustituye al volumen oficial ni lo sobrescribe.
+
+**No son fallbacks del volumen oficial:** `volume_detail_m3` y la suma de líneas PDF, `volume_operational_m3`, `volumen_declarado_m3`, `vol_comercial_pdf`, `vol_comercial`, `vol_fisico`, `vol_total_m3`, ni valores derivados de stock, conciliación o costeo.
+
+**Bloqueo operativo:** la rama de Volumen de `action_validate` (F3.1) exige volumen documental oficial disponible (`intake_guia_processing.py:415`, `intake_console.py:1112`); sin fuente positiva el sistema responde:
+
+```text
+No existe volumen documental oficial para enviar a stock.
+```
+
+**Alcance:** el volumen oficial es la fuente declarada del futuro contexto de la Etiqueta SV
+documentada en `00_ARQUITECTURA.md` §4.8. Los valores históricos de casos concretos **no** forman
+parte de esta regla general: se documentan únicamente como caso histórico preservado en
+`04_DECISION_LOG.md` (AD-79) y `02_CONTINUIDAD.md` §14.3, y no se modifican.
+
+### 11.6 Alcance del gate dimensional del core en flujos de Volumen (2026-09-26, cierre T2)
+
+El gate dimensional de espesor nominal de `madenat.guia.processing` (`action_validate`,
+`action_process_from_staging`) aplica **solo a flujos dimensionales** (`tipo_recepcion` distinto de `granel`).
+Una Recepción por Volumen se gobierna con el volumen oficial documental (§11.5) y **no inventa** espesor
+nominal: la línea de resumen (`_create_granel_summary_line`) y las líneas de detalle de Volumen
+(`_create_granel_detail_lines`) conservan `espesor_nominal_mm = 0.0` y su volumen documental.
+
+En el runtime desplegado (con `madenat_lumber_intake` instalado), la rama de Volumen de `action_validate` es la
+que valida el envío a stock y exige volumen oficial positivo; el gate dimensional del core solo es alcanzable
+en un registro core (sin Intake) o en guías `compra`/`service`. Verificado en la sesión de cierre T1–T6
+(`05_BACKLOG.md`, `03_TESTS.md` §9.7).
+
+### 11.7 Fase 2 — Volumen oficial, bloque SV visible y ciclo de vida de guías (2026-09-28, AD-80)
+
+**Jerarquía de volumen (Consola, `ingestion_type = 'volume'`).**
+
+```text
+VOLUMEN OFICIAL DE LA GUÍA            ← único volumen primario
+<official_volume_m3> m³   Fuente: <official_volume_source>
+Gobierna stock, conciliación y consolidación.
+
+M³ declarado por Operaciones (referencia)
+No gobierna stock ni reemplaza el volumen oficial.
+Volumen operativo de referencia (no gobierna stock)
+
+Control documental interno (auditoría)     ← solo si hay diferencia real
+Total de líneas del detalle PDF (control interno)
+Diferencia vs volumen oficial
+```
+
+El encabezado no muestra el agregado competidor `Volumen:` para Volumen.
+
+**Bloque `ETIQUETA SV Y SALDO OPERATIVO` (solo lectura).** Visible solo con lote SV real
+(`declared_sv_lot_id`); sin lote muestra `Se asignará al enviar a stock.` y ningún botón de
+mutación. Expone etiqueta SV, volumen documental original, volumen regularizado, volumen
+rebajado, saldo disponible, piezas disponibles (solo con `sv_pieces_enabled`) y advertencia
+documental (solo si existe), más las cinco acciones SV autorizadas (modificar etiqueta,
+regularizar volumen, rebajar etiqueta, reversar rebaja y ver historial). Todas delegan en los
+wizards y en el ledger del Programa SV; la Consola nunca escribe `stock.lot.name`, volumen ni
+saldo.
+
+**Ciclo de vida controlado (Modos A–D).** Diagnóstico único de trazas (lotes, pickings,
+movimientos, líneas de movimiento, quants, operaciones SV, costo, valoración, consolidación,
+factura, contenedor, embarque y período cerrado) y ejecución en cuatro modos documentados en
+`04_DECISION_LOG.md` (AD-80):
+
+| Modo | Efecto | Evidencia |
+|---|---|---|
+| A. Eliminar definitivamente | `unlink()` canónico solo sin ninguna traza | `guia_delete_permanent` |
+| B. Cancelar y conservar | `action_force_cancel()` sin cambios de semántica | Chatter del origen |
+| C. Purgar de forma controlada | operaciones SV en borrador → lote técnico → guía; exige `PURGAR` y Jefatura de Operaciones | `guia_purged` |
+| D. Bloquear y escalar | no elimina nada; lista de bloqueadores y rutas correctas | `guia_delete_blocked` |
+
+Los eventos se registran en `madenat.audit.log` con snapshot y firma SHA-256
+(`action_type` extendido con `guia_delete_blocked`, `guia_delete_permanent` y `guia_purged`).
+
+**Evidencia documental.** Los Modos A y C se bloquean además cuando la guía tiene evidencia:
+adjuntos (`ir.attachment`, incluidos los documentos PDF/Excel), mensajes de chatter con
+contenido o referencias genéricas persistentes por `(res_model, res_id)` (`mail.activity`,
+`product.document`, `quotation.document`, …). Odoo **destruye** el chatter y los adjuntos al
+eliminar el registro, de modo que la eliminación no puede dejar evidencia huérfana ni
+intrazable: se bloquea y la ruta correcta es el Modo B (cancelar conservando trazabilidad). El
+aviso automático de creación de `mail.thread` y el estado transitorio de UI no cuentan como
+evidencia. El snapshot de auditoría del Modo D incluye el inventario de evidencia detectada.

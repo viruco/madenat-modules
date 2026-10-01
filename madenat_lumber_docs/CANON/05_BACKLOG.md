@@ -1,8 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 7.2.0
-**Fecha de actualización:** 2026-09-21
-**Estado:** ACTIVO — AD-68/AD-69 cerrados (ruta granel en intake + fix disparo BT-04); higiene de `reception_workflow.py` cerrada (2026-09-21). Frente principal AD-65 sigue pendiente de las tareas de UI/wizard.
+**Versión documental:** 7.7.0
+**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — Fase 2 (AD-80): bloque SV visible, acciones SV en Consola y ciclo de vida de guías; archivado diferido -->
+**Estado:** ACTIVO — AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y ahora **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
 
@@ -22,7 +22,7 @@ Si un tema ya quedó evidenciado, debe vivir en `03_TESTS.md`.
 - **Corrección de mapeo de dependencias:** se había reportado "cero referencias en otros módulos" para `source_lot_ids`; existe un consumidor cross-módulo real en `madenat_toll_processing` (`guia_processing_integration.py:37-40`, `stock_lot.py:62`).
 - **Nueva pieza pendiente detectada para AD-65:** el wizard de intake fuerza `intake_direct_stock=True` en la ruta Procesado (`intake_wizard.py:413`), lo que salta BT-04 por completo. El flujo "granel → patio → Balance de Masa" de AD-65 necesita una tercera derivación que hoy no existe.
 - **Deuda de higiene reconfirmada:** los directorios `backups_20260819_2013/` y `backups_20260819_2040/` siguen presentes en `madenat_lumber_core/` con copias completas de `madenat_guia_processing.py`.
-- **Discrepancia menor de índice:** `INDICE_DOCUMENTACION.md:26` sigue listando `05_BACKLOG.md` como v6.3.0.
+- **Discrepancia de índice — CERRADA (2026-09-26):** `INDICE_DOCUMENTACION.md` lista `05_BACKLOG.md` con la versión vigente de este archivo; la entrada obsoleta (v6.3.0) quedó corregida en la sincronización documental de Gestión SV.
 - **Discrepancia interna en README:** `madenat_ingestion_engine/README.md:246-248` afirma "solo depende de base", mientras `__manifest__.py:22` declara `depends: ['base', 'madenat_lumber_core']`.
 
 ---
@@ -55,7 +55,7 @@ Si un tema ya quedó evidenciado, debe vivir en `03_TESTS.md`.
 
 - [x] Extender `madenat_ingestion_engine` con el motor de "mejor esfuerzo" en cascada: tabla PDF de columnas fijas configurables → subtotales por grupo → total de encabezado mínimo garantizado. (Implementado como AD-71, 2026-09-21: cascada de 4 niveles — tabla con bordes → clustering de palabras → suma de líneas → regex de cabecera. 49/49 tests verdes.)
 - [x] Implementar selección manual de tipo de detalle (línea por línea vs. agregado) en el wizard de intake. (Implementado como AD-72, 2026-09-21: campo `tipo_detalle_granel` + `_create_granel_detail_lines()`. 38/38 tests verdes.)
-- [ ] Implementar wizard `intake.tipo_ingreso.reclassify.wizard` con registro en `madenat.audit_log`, disponible solo antes de Gate 3.
+- [x] Implementar wizard `intake.tipo_ingreso.reclassify.wizard` con registro en `madenat.audit_log`, disponible solo antes de Gate 3. (Implementado como AD-73, 2026-09-21: wizard `madenat.lumber.intake.reclassify.wizard` + `action_type='reclassification'`. 94/94 tests verdes.)
 - [ ] Implementar registro de "Patio" como `stock.location` nativo bajo demanda (sin modelo propio).
 - [ ] Implementar consolidación administrativa: pantalla única con guías candidatas, saldo disponible, asignación con un clic.
 - [ ] Implementar menú Toll para Operaciones: campo "Enviar a proceso" + selección de procesador + botón único.
@@ -142,7 +142,46 @@ No confundir con `madenat_lumber_billing` ni `madenat_vendor_payment`, ambos ya 
 | Backups `backups_20260819_2013/` y `backups_20260819_2040/` | Confirmado 2026-09-20 | Copias completas de `madenat_guia_processing.py` (231KB c/u) siguen presentes | Confirmado presentes; falta verificar si tracked por git |
 | README de `madenat_ingestion_engine` contradice su manifest | Confirmado 2026-09-20 | README dice "solo base"; manifest declara ambas dependencias | Verificado |
 | `test_validate_blocked_creates_no_audit_event` no bloquea guía con espesor 0 | Sesión 2026-09-21, investigación de regresión post-AD-68/69 | `ValidationError` esperada no se dispara en `action_validate()`; confirmado anterior a AD-67 (reproducido en commit `a00596d`) | Verificado — causalidad descartada (no es AD-68/69/Frente 3) |
-| 5 fallos en `test_supplier_resolution.py` y `test_reception_supplier_rut_extraction.py` | Sesión 2026-09-21, misma investigación de regresión | Sospecha de contaminación de datos entre corridas de test (IDs de partner cambiantes) | No re-verificado — mismo patrón que hallazgo anterior, sin aislamiento confirmado |
+| 5 fallos en `test_supplier_resolution.py` y `test_reception_supplier_rut_extraction.py` | Sesión 2026-09-21, misma investigación de regresión | **Re-verificado 2026-09-26:** 3 fallos de `TestSupplierResolution` son contaminación de datos compartidos (pasan en base limpia); los 2 de `TestReceptionSupplierRutExtraction` son contradicción test/implementación (fallan también en base limpia) | Verificado — detalle en T1/T4 de la deuda de Gestión SV |
+
+---
+
+## DEUDA VERIFICADA — GESTIÓN OPERATIVA DE ETIQUETAS SV (2026-09-26, AD-79)
+
+Línea base: base limpia auxiliar `madenat_sv_baseline` (sin datos de negocio) versus `madenat_test`.
+**Ninguno de estos ítems fue introducido por Gestión Operativa de Etiquetas SV.**
+
+> **T1–T6 CERRADOS (2026-09-26, sesión de cierre de deuda técnica).** Cada ítem se resolvió con su causa
+> raíz verificada en runtime (fases `at_install` vs `post_install`, MRO real de `action_validate`, hook de
+> auto-nominal de Intake), pruebas focalizadas 72/72 PASS en `madenat_test` y —para T6— instalación limpia
+> verificada en base desechable `madenat_clean_install_test` (instalada y eliminada en la misma sesión).
+> Evidencia en `03_TESTS.md` §9.7. T7 (documental) permanece cerrado.
+
+| ID | Módulo | Riesgo | Línea base verificada | Introducido por SV | Siguiente acción recomendada |
+|---|---|---|---:|---|---|
+| T1 | `madenat_lumber_core` | **CERRADO (2026-09-26).** La captura documental es no bloqueante: sin RUT no se busca VAT vacío/Falsy, no se asocia ni crea proveedor, se conserva el proveedor elegido manualmente y queda registro explícito de proveedor pendiente. La exigencia de proveedor identificable se traslada al envío irreversible (`action_confirm_reception`), antes de lotes/picking/movimientos/quants, con evidencia `omission` en `madenat.audit.log` | Verificado en `madenat_test` (fase post-install): `TestReceptionSupplierRutExtraction` 11/11 PASS | **NO** | Cerrado. Ver `03_TESTS.md` §9.7 |
+| T2 | `madenat_lumber_core` | **CERRADO (2026-09-26).** La causa era doble: (a) en runtime core la validación dimensional de espesor nominal se aplicaba al flujo Volumen (`granel`), y (b) en runtime con Intake la prueba omitía el volumen oficial documental y asertaba `lot_ids` (detalle de la ruta core). El gate dimensional queda acotado a flujos dimensionales (compra/service); Volumen no inventa espesor y declara `volume_pdf_m3` positivo | Verificado en `madenat_test` (fase post-install): `TestGranelRouteCore` 14/14 PASS | **NO** | Cerrado. Ver `12_FLUJOS_INGESTA.md` §11.5 |
+| T3 | `madenat_lumber_core` | **CERRADO (2026-09-26).** Odoo 18 no expone `Float.digits`: la precisión se lee con `get_digits(env)` (interno `_digits`). Defecto exclusivamente de test; el código productivo no usaba `.digits` | Verificado en `madenat_test`: `TestVolumeGuideHeader` 5/5 PASS | **NO** | Cerrado |
+| T4 | `madenat_lumber_core` | **CERRADO (2026-09-26).** (a) `TestSupplierResolution` usaba VAT/nombre fijos que colisionaban con datos reales (partner con VAT `77066489-6`); ahora se generan identificadores únicos por corrida. (b) `test_validate_blocked_creates_no_audit_event` no era contaminación de datos: el hook de autocompletado de Intake rellenaba el nominal al crear la línea; el escenario se fuerza tras el create | Verificado en `madenat_test`: `TestSupplierResolution` 8/8 y `TestGuiaProcessingValidationSignature` 6/6 PASS | **NO** | Cerrado |
+| T5 | `madenat_lumber_core` / `madenat_lumber_intake` | **CERRADO (2026-09-26).** Causal verificada (no era «columna legada»): `TestLumberReception` no declaraba etiquetas de fase, por lo que Odoo la ejecutaba en `at_install` — durante la carga del grafo, antes de que Intake registrara `conciliation_status` — y el INSERT omitía la columna NOT NULL. Se declaró `@tagged('post_install', '-at_install', …)`. El campo mantiene `required=True` + `default='not_compared'` (sin SQL default, sin migración, sin cambio productivo) | Verificado en `madenat_test` (fase post-install): `TestLumberReception` 21/21 PASS, incluida la regresión de creación mínima | **NO** | Cerrado |
+| T6 | `madenat_lumber_logistics` / `madenat_lumber_billing` | **CERRADO (2026-09-26).** Se eliminó de Logistics el botón que referenciaba el XML ID de Billing y se aportó desde una vista heredada propiedad de Billing. Logistics instala sin Billing; la funcionalidad de facturación se conserva al instalar Billing (botón presente, resuelve a la acción y conserva `invisible="state != 'delivered'"`) | Verificado en base desechable `madenat_clean_install_test`: instalación Logistics-only OK; instalación posterior de Billing OK; prueba funcional de la acción OK | **NO** | Cerrado. Ver `00_ARQUITECTURA.md` §3.4 |
+| T7 | Documentación CANON | Contradicción documental: el backlog declaraba la rebaja por Volúmenes como no implementada mientras el ledger SV ya implementa rebaja, reversa y asignación logística SV | Media — corregido en esta sincronización (`05_BACKLOG.md`, `02_CONTINUIDAD.md` §14) | **Sí (documental, ya corregido)** | Mantener la verificación al cerrar cada hito: documentación y código no deben divergir |
+
+
+---
+
+## DEUDA NUEVA DETECTADA EN EL CIERRE T1–T6 (2026-09-26)
+
+Hallazgos verificados durante la sesión de cierre. **No fueron introducidos por el cierre**: se detectaron al
+ejecutar la instalación limpia y las suites amplias. Ninguno fue corregido en esta sesión (archivos fuera del
+alcance autorizado).
+
+| ID | Módulo | Hallazgo verificado | Evidencia | Siguiente acción recomendada |
+|---|---|---|---|---|
+| T8 | `madenat_lumber_core` | `views/madenat_views_extensions.xml:143` referencia `contacts.menu_contacts` sin que `madenat_lumber_core` dependa de `contacts`: la instalación limpia de Logistics (con `contacts` no instalado) aborta con `AssertionError: The ID "contacts.menu_contacts" refers to an uninstalled module` | Log de instalación limpia de la sesión (`/tmp/ci_logistics.log`, ParseError en `madenat_views_extensions.xml:143`) | Misma clase de defecto que T6: eliminar la referencia o declarar la dependencia/guarda de módulo instalado |
+| T9 | `madenat_lumber_billing` | `tests/test_billing_consolidation.py` no declara etiquetas de fase (corre en `at_install`) y `test_02_no_duplicar_consolidacion` espera una excepción por duplicado que el modelo no implementa (sin `_sql_constraints` ni `@api.constrains` de `shipment_id`) | Falla reproducida en aislamiento: 1 failed de 3 tests (`--test-tags=/madenat_lumber_billing:TestBillingConsolidation`) | Declarar `@tagged('post_install', '-at_install', …)` y decidir con negocio si el guard anti-duplicado debe existir (constraint o validación) |
+| T10 | `madenat_lumber_logistics` | `views/logistics_views.xml` declara un XML ID duplicado (`view_lumber_export_shipment_form`, ya definido en `views/lumber_export_shipment_views.xml`) y **no** está listado en el manifiesto (archivo muerto); si alguien lo agrega a `data`, la carga falla por duplicado | Lectura de manifiesto y de ambos XML | Retirar el archivo muerto o renombrar su XML ID antes de incorporarlo al manifiesto |
+| T11 | `madenat_lumber_intake` | `tests/test_volume_extraction.py` usa VAT fijos `96.510.970-6` / `96.510.970-3`; el primero pertenece a un partner real de `madenat_test` (`id 2045`, Maderas Arauco S.A.) — misma clase de colisión que T4 | Consulta de solo lectura sobre `res_partner` (VAT `96.510.970-6` → id 2045) | Tokenizar los identificadores del fixture en una sesión que autorice ese archivo |
 
 ---
 
@@ -175,6 +214,40 @@ No abrir un frente mayor nuevo mientras existan bloqueos de instalación o prueb
 
 ---
 
+## PRÓXIMOS HITOS — INGRESO POR VOLÚMENES (2026-09-22)
+
+- [ ] Validar **Excel sin PDF** como fuente única (escenario pendiente de prueba explícita; hoy el PDF/Guía es la fuente principal y el Excel es opcional).
+- [x] **Rebaja/reversa de Etiquetas SV y asignación logística SV** — implementadas y validadas (AD-79, 2026-09-26; 56 pruebas 0 fallas/0 errores). Ver `02_CONTINUIDAD.md` §14 y `03_TESTS.md` §9.
+- [ ] **Monto individual por etiqueta** en la asignación logística múltiple (hoy el asistente usa un monto escalar por operación).
+- [ ] **Generalización de aprobaciones** a más de dos niveles, solo si negocio lo requiere (hoy admite dos aprobadores explícitos).
+- [ ] Definir la **rebaja/registro físico de stock por Volúmenes fuera del flujo SV** (sigue NO implementada; no forma parte de AD-79).
+- [ ] Reejecutar `madenat_lumber_core` por ruta/clase (la ejecución por tags devolvió 0 tests por descubrimiento del entorno).
+- [ ] Validar en producción la resolución de partner por nombre sin RUT y las etiquetas "Transporte" en membrete.
+- [ ] Resolver la deuda T1–T6 de la sección «Deuda verificada — Gestión Operativa de Etiquetas SV».
+
+**Implementado (2026-09-26, AD-79):** rebaja SV · reversa SV · saldo disponible SV · seguridad
+(guarda de escritura directa + escalamiento Auditoría/Contabilidad) · concurrencia fail-closed.
+
+**Pendiente:** monto individual por etiqueta en asignación logística múltiple · generalización de
+aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolución de T1–T6.
+
+---
+
+## PRÓXIMOS HITOS — PROGRAMACIÓN 1: IDENTIFICACIÓN OPERATIVA EN R1 (2026-09-25)
+
+> Estado: Programación 1 (AD-77) **implementada y desplegada** en `madenat_test` con validación
+> técnica. Ninguno de los hitos siguientes está implementado. La rebaja/reversa de Etiquetas SV
+> (AD-79) **sí** está implementada y validada; la rebaja/registro físico de stock por Volúmenes
+> **fuera** del flujo SV sigue **no** implementada.
+
+- [ ] Validar visualmente R1 y el filtro `Lotes Volumen` (`[('is_volume_lot', '=', True)]`) con un Lote Volumen real con saldo positivo en ubicación interna, sin crear stock artificial.
+- [ ] Decidir e implementar, si se aprueba, la presentación `Lote Volumen` en las exportaciones XLSX R1/R2/R5/R7/R9 (hoy muestran el nombre técnico del lote).
+- [ ] Agregar test automatizado en `madenat_lumber_reports/tests/` para el token técnico `GRANEL`, la etiqueta operativa y `is_volume_lot`.
+- [ ] Revisión arquitectónica de las fuentes de fecha de ingreso en `stock.quant` (`lot_reception_date`, `lot_entry_datetime`, `reception_date` de Core y `lot_id.reception_id.reception_date`).
+- [ ] Evaluar rendimiento de los campos compute almacenados y del índice `is_volume_lot` a escala de quants.
+
+---
+
 ## INVESTIGACIÓN FUTURA (no aprobada)
 
 - [ ] Evaluar unificación de Bruta y Procesado en un único flujo de ingesta con staging común. Fuera de alcance actual (AD-ING-001/AD-ING-002 no la habilitan).
@@ -189,5 +262,41 @@ No abrir un frente mayor nuevo mientras existan bloqueos de instalación o prueb
 | 7.0.0 | 2026-09-15 | Reconstrucción completa contra los 5 documentos canónicos. Cierre de BT-01 a BT-04 y C1-C4 reflejado. |
 | 7.1.0 | 2026-09-20 | Incorpora resultados de auditoría de código independiente: diseño AD-64 aprobado con 3 ajustes obligatorios, corrección de AD-63, corrección de mapeo de dependencias, nueva pieza detectada (tercera derivación de intake), deuda de higiene reconfirmada, discrepancias documentales registradas. |
 | 7.2.0 | 2026-09-21 | Cierre de AD-68/AD-69 (ruta granel en intake, fix disparo BT-04) e higiene de reception_workflow.py. Catalogación de 2 hallazgos de deuda técnica (test BT-01 bloqueado no dispara, contaminación de datos en tests de proveedor). |
+| 7.4.0 | 2026-09-25 | Programación 1 (AD-77) registrada como desplegada con validación técnica y pendientes explícitos: validación visual de R1/filtro `Lotes Volumen`, presentación `Lote Volumen` en exportaciones XLSX, test automatizado del token técnico, revisión de fuentes de fecha de ingreso y evaluación de rendimiento de campos almacenados. La rebaja por Volúmenes permanece no implementada. |
+| 7.5.0 | 2026-09-26 | Gestión Operativa de Etiquetas SV (AD-79): se documenta la deuda verificada T1–T7 con línea base reproducible (base limpia `madenat_sv_baseline`), se cierra la contradicción documental de la rebaja por Volúmenes (implementada para Etiquetas SV con 56 pruebas 0/0; la rebaja física por Volúmenes fuera del flujo SV sigue no implementada), se registran los pendientes de monto por etiqueta y de aprobaciones de más de dos niveles, y se cierra la discrepancia de versión de este archivo frente a `INDICE_DOCUMENTACION.md`. |
+| 7.6.0 | 2026-09-26 | Cierre de la deuda técnica T1–T6: T1 (captura no bloqueante de proveedor + bloqueo en el envío irreversible), T2 (gate dimensional acotado a compra/service; Volumen sin espesor inventado), T3 (`get_digits(env)` en lugar de `.digits`), T4 (identificadores únicos por corrida + escenario de nominal forzado tras el create), T5 (causa real: `TestLumberReception` sin etiquetas de fase → se declara `post_install`), T6 (botón de Billing aportado por vista heredada de Billing). Se añaden T8–T11 como deuda nueva detectada durante el cierre. |
 - [x] AD-68/AD-69: ruta granel en intake + fix disparo BT-04 (2026-09-21)
 - [x] Higiene: migrar `palabras_proceso` duplicado en reception_workflow.py a madenat.ingestion.config (2026-09-21, post-AD-68)
+
+
+---
+
+## FASE 2 — UX DE VOLUMEN OFICIAL, BLOQUE SV Y CICLO DE VIDA (2026-09-28, AD-80)
+
+### Cerrado
+
+- [x] **Bloque SV visible en la Consola** (`ETIQUETA SV Y SALDO OPERATIVO`): etiqueta, volumen
+      documental original, regularizado, rebajado, saldo, piezas (solo documentales) y
+      advertencia documental, con placeholder `Se asignará al enviar a stock.` sin lote.
+- [x] **Acciones SV autorizadas en Consola y Guía** (modificar etiqueta, regularizar volumen,
+      rebajar, reversar rebaja y ver historial), por delegación a wizards y ledger. Deroga la
+      regla anterior «sin acciones SV en la Consola» (aserciones positivas en
+      `test_volume_official_volume.py`).
+- [x] **Reversa SV visible**: botón solo para rebaja `applied` y reversible, en el ledger y en el
+      bloque SV; la segunda reversa sigue bloqueada por el modelo.
+- [x] **Jerarquía de volumen**: único volumen primario oficial, etiquetas exactas de los
+      secundarios, detalle solo en control documental interno y sin agregado competidor
+      `Volumen:` en el encabezado.
+- [x] **Ciclo de vida controlado de guías (Modos A–D)** con diagnóstico de bloqueadores,
+      auditoría firmada (`guia_delete_blocked`, `guia_delete_permanent`, `guia_purged`) y cero
+      eliminación en el Modo D.
+
+### Pendiente (nuevo)
+
+- [ ] **Archivado de guías (`active`)**: campo, filtro y efecto en la vista SQL de la Consola.
+      Diferido a una fase separada porque la Console SQL view no filtra `active` y agregarlo sin
+      el diseño completo produciría inconsistencias.
+- [ ] **Validación visual** del bloque SV y del asistente de ciclo de vida con una recepción por
+      Volumen real (en `madenat_test` no hay lote SV con historia material).
+- [ ] **Evaluar** exponer el diagnóstico de ciclo de vida para `lumber.reception` (Producto),
+      hoy fuera de alcance.
