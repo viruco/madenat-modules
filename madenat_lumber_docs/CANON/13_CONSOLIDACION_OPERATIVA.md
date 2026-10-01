@@ -1,8 +1,8 @@
 # 13 — Consolidación Operativa: Ingesta (Producto y Procesados), Reglas y Trazabilidad
 
-**Versión documental:** 1.9.0
-**Fecha de actualización:** 2026-09-28
-**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, nota de homologación UX "Modificar origen" (AD-55), política de visibilidad de menús operativos (§12, 2026-08-23), matriz operativa de autorización de Etiquetas SV (§13, 2026-09-26, AD-79), bloque SV visible y ciclo de vida de guías (§10, 2026-09-28, AD-80) y cierre de la deuda técnica T1–T6 (§9, 2026-09-26).
+**Versión documental:** 2.0.0
+**Fecha de actualización:** 2026-10-01
+**Estado:** ✅ Vigente — Documento canónico de consolidación operativa (no sustituye a `00`, `12` ni `04`; los referencia). Incluye blindaje de OC en Producto (Intake, AD-52), resolución completa de la diferencia de Procesados por AD-54, nota de homologación UX "Modificar origen" (AD-55), política de visibilidad de menús operativos (§12, 2026-08-23), matriz operativa de autorización de Etiquetas SV (§13, 2026-09-26, AD-79), bloque SV visible y ciclo de vida de guías (§10, 2026-09-28, AD-80), cierre de la deuda técnica T1–T6 (§9, 2026-09-26) e **imputación SV (etiqueta→SV) y merma documental** (§11, 2026-10-01, AD-87).
 
 > Este documento consolida decisiones, flujos y brechas que ya existen en la documentación del
 > proyecto. NO introduce funcionalidad, reglas, campos ni comportamientos nuevos. Cuando una regla
@@ -314,3 +314,18 @@ escalamiento de `madenat.sv.operation` (`_sv_required_approval_groups`). Leyenda
   únicamente sin historia material; cualquier movimiento, retorno, picking, cuant, rebaja o
   reversa aplicada, costo, valoración, factura, consolidación, contenedor o embarque la
   bloquea. La consolidación administrativa y la facturación no se alteran.
+
+---
+
+## 11. Imputación SV (etiqueta→SV) y merma documental (2026-10-01, AD-87)
+
+Esta sección **complementa** el flujo de Procesados (§4) para la vía **SV (compra de volumen)**. Norma completa: `19_IMPUTACION_SV_Y_PROCESADORES.md`.
+
+- **Vínculo declarado, no genealogía:** el volumen comprado (SV) se vincula a la **etiqueta de retorno** por una **imputación declarada** (por etiqueta, con **volumen NOMINAL editable**, contra uno o varios SV). **No** se crea `parent_lot_id`/`child_lot_ids` por la imputación (D2); el retorno es **stock nuevo e independiente** (§4, DEC-002).
+- **Efecto físico único:** la imputación registra el ledger SV (`madenat.sv.operation`, tipo `imputacion`) y **genera la salida nativa del quant del SV**. Es el **único** descuento del SV; el SV **no** se exporta (AD-82 se alinea; AD-83 reemplazada).
+- **Momento y estados:** al recibir la **guía de procesados**, con opción de **dejarla pendiente** (`draft`/`pending`/`applied`/`reversed`/`cancelled`). Operaciones opera; Auditoría revisa desviaciones.
+- **Costo:** costo por m3 **editable**; promedio ponderado de los SV; escribe `stock.lot.cost.line` (`cost_type='wood'`). **Brecha declarada:** hoy el SV **no tiene costo** (ver AD-64, ampliado).
+- **Merma:** **evento documental** (sin `stock.scrap` automático), con **costo residual visible** (D7; deuda ya anticipada en §H-05/H-08 de este documento).
+- **`parent_lot_id` opcional:** paso futuro controlado (I6, D10).
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md`; `04_DECISION_LOG.md` AD-87/AD-88; `12_FLUJOS_INGESTA.md` §11.8; `05_BACKLOG.md` (fases I1–I6).

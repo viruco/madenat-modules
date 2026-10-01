@@ -1,9 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.6.0\
-**Fecha de actualización:** 2026-09-28\
-**Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, y el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80).
+**Versión documental:** 1.7.0\
+**Fecha de actualización:** 2026-10-01\
+**Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80) y la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
 **Responsable de actualización:** Arquitecto / Tech Lead
@@ -453,3 +453,15 @@ eliminar el registro, de modo que la eliminación no puede dejar evidencia huér
 intrazable: se bloquea y la ruta correcta es el Modo B (cancelar conservando trazabilidad). El
 aviso automático de creación de `mail.thread` y el estado transitorio de UI no cuentan como
 evidencia. El snapshot de auditoría del Modo D incluye el inventario de evidencia detectada.
+
+### 11.8 Imputación SV (etiqueta→SV) — vía oficial del retorno procesado (2026-10-01, AD-87)
+
+**Naturaleza.** Para la **compra de volumen (SV)**, el vínculo entre el volumen comprado y la **madera procesada que retorna** del procesador no es una relación de detalle ni de genealogía física: es una **imputación declarada** por **etiqueta** con su **volumen NOMINAL editable**, contra **uno o varios SV** (decisiones D2/D3). Norma completa: `19_IMPUTACION_SV_Y_PROCESADORES.md`.
+
+**Reglas que afectan este documento.**
+- **El SV nunca se exporta.** Los lotes `lot_flow_type='volume'` **no** participan de la consolidación/rebaja de **exportación** (documento `18`), que opera sobre lotes de **tarja**. La **salida nativa del quant del SV** ocurre en la **imputación** (ledger `madenat.sv.operation` tipo `imputacion`), no en la rebaja de contenedor (AD-82 se alinea; AD-83 queda **reemplazada** por AD-87).
+- **El retorno es stock nuevo e independiente** (§11.2/§11.3; AD-65 §1.6; DEC-002). La imputación **no** crea genealogía; `parent_lot_id` pasa a **opcional** en un paso futuro controlado (D10).
+- **Volumen oficial (§11.5) sigue siendo la fuente del SV**; la imputación **no** reemplaza el volumen oficial y el volumen nominal de la etiqueta es editable.
+- **Saldo por procesador:** el SV enviado al procesador vive en una ubicación **interna** `Procesadores/<X>` (inventario de MADENAT, D5); su saldo restante se controla por reporte.
+
+**Referencias cruzadas.** `17` §2.8 (nota SV, reescrita); `18` §7 (pantallas, SV fuera de exportación); `04` AD-87/AD-88; `05_BACKLOG` (fases I1–I6).
