@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.9.0
-**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-81 (PROPUESTA): orden de trabajo vigente (ingreso a stock → consolidación → mantenimiento → logística; contable/auditoría/facturación diferidos) -->
+**Versión documental:** 12.11.0
+**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 — AD-85..86 (PROPUESTA): especificación de consolidación y rebaja de contenedores y naves (documento 18) y grupo funcional «Logística» + matriz de autorización; referencian 18_CONSOLIDACION_Y_REBAJA.md -->
 **Estado:** Canonical / activo
 
 ---
@@ -2094,3 +2094,115 @@ Quedan **diferidos** (fuera del ciclo actual, sin fecha): lo **contable**, la **
 **Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Mientras no se apruebe, el orden anterior (frente principal AD-65 / Programación 1) permanece como referencia operativa.
 
 **Evidencia:** registro de la sesión de auditoría del 2026-10-01; `16_AUDITORIA_20261001.md` §1.
+
+---
+
+### AD-82 (2026-10-01) — PROPUESTA: salida única de stock al rebajar contenedor/nave
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-1) y §7. **No autoriza cambios de código, datos ni parámetros.**
+
+**Propuesta.** La **salida nativa de stock** (picking de descuento de existencias) se ejecuta en la acción explícita de **rebajar** el contenedor o la nave. El **zarpe deja de descontar** stock y pasa a ser un evento de estado documental/logístico.
+
+**Motivo.** Hoy el descuento ocurre en el zarpe (`action_set_in_transit` → `_action_reduce_stock`, `madenat_lumber_logistics/models/lumber_export_shipment.py:461,479`) y mueve `quantity = 1` por lote (`:571,582`), lo que deja stock residual y desacopla el hecho físico del movimiento. Concentrar la salida en la rebaja da un **único punto de descuento trazable**.
+
+**Alcance propuesto.** Un solo origen de descuento de stock (la rebaja); el zarpe cambia estados y documentos sin mover quants. Los documentos (tarja, packing, BL) siguen usando el volumen de EXPORTACIÓN (documental) según `17` §2.
+
+**No objetivos.** No modifica AD-04 (Gate 3), ni las reglas de ingesta, valorización ni costeo; no altera el ledger SV (ver AD-83/AD-84). Es exclusivamente el **punto de salida de stock**.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rige el comportamiento vigente (`17` §2, F-01 en §6).
+
+**Evidencia:** informe de auditoría de volúmenes del 2026-10-01; `17_CONSTITUCION_VOLUMENES.md` §3, §6, §7.
+
+---
+
+### AD-83 (2026-10-01) — PROPUESTA: módulo propio para la rebaja SV con descuento por procesados
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §3 (A-2) y §7. **No autoriza cambios de código, datos ni parámetros.**
+
+**Propuesta.** Extraer la **rebaja SV** a un **módulo propio** (ledger `madenat.sv.operation` desacoplado) que contemple el **descuento por procesados**, de modo que:
+- la **asignación parcial** a contenedores descuente **exactamente el volumen asignado** (no `1`);
+- el **stock acompañe al ledger** (cada rebaja con efecto físico y trazable), en coordinación con AD-82.
+
+**Motivo.** Hoy la rebaja SV sólo mueve el ledger y **no toca `stock.quant`** (`madenat_lumber_core/models/madenat_sv_operation.py:14,923-950`), mientras la salida nativa mueve `1` por lote (`lumber_export_shipment.py:571,582`). Un lote SV asignado parcialmente a varios contenedores queda con saldo y stock desalineados.
+
+**Alcance propuesto.** Módulo/ledger con descuento por volumen asignado y por procesados; reglas de captura de procesados dentro del alcance del ciclo actual (AD-81).
+
+**No objetivos.** No modifica AD-79/AD-80 (ledger SV vigente) salvo lo estrictamente necesario para el descuento por procesados; no altera la ingesta ni el volumen oficial (`12_FLUJOS_INGESTA.md` §11.5). Es una **extracción de módulo y regla de descuento**.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rige el comportamiento vigente (`17` §2.8, F-02/F-03 en §6).
+
+**Evidencia:** informe de auditoría de volúmenes del 2026-10-01; `17_CONSTITUCION_VOLUMENES.md` §2.8, §3, §7.
+
+
+---
+
+### AD-84 (2026-10-01) — PROPUESTA: regla de invariantes del ledger SV y del stock
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `17_CONSTITUCION_VOLUMENES.md` §1 y §7. **No autoriza cambios de código, datos ni parámetros.**
+
+**Propuesta.** Fijar como **invariantes** verificables del sistema de volúmenes:
+
+1. **DISPONIBLE = stock nominal:** `stock.lot.volumen_restante_m3 = Σ stock.quant.quantity` en ubicaciones internas (base nominal, m³).
+2. **Saldo SV:** `stock.lot.sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas` (rebajas `applied` menos reversas válidas).
+3. **Cota por destino:** la suma de rebajas SV por contenedor/embarque ≤ volumen oficial (nominal) del lote.
+4. **Causa única de descuento:** todo decremento de stock tiene **una sola causa trazable** — rebaja (AD-82), consumo de procesados (AD-83) o ajuste autorizado — sin dobles descuentos.
+5. **Concurrencia fail-closed:** las escrituras del ledger mantienen guarda de concurrencia; ante carrera, se bloquea (nunca se aplica a medias).
+
+**Motivo.** Hoy el invariante (1) se cumple mayormente (77/78 lotes en `madenat_test` al 2026-10-01), pero (2)/(3)/(4) no están garantizados por una regla explícita y la salida nativa mueve `1` (`lumber_export_shipment.py:571,582`), rompiendo (4).
+
+**Alcance propuesto.** Regla de invariantes + guardas; su verificación debería exponerse en el reporte de inventario y en el ledger SV.
+
+**No objetivos.** No modifica AD-79/AD-80 salvo lo necesario para verificar los invariantes; no altera valorización, costeo ni facturación (diferidos por AD-81). Es una **regla de consistencia**, no una migración de datos.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rigen los invariantes observados en `17` §2.9.
+
+**Evidencia:** informe de auditoría de volúmenes del 2026-10-01; `17_CONSTITUCION_VOLUMENES.md` §1, §2.9, §7.
+
+
+---
+
+### AD-85 (2026-10-01) — PROPUESTA: especificación de consolidación y rebaja de contenedores y naves (documento `18`)
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `18_CONSOLIDACION_Y_REBAJA.md`; `17_CONSTITUCION_VOLUMENES.md` §3 (A-1..A-3); AD-81, AD-82, AD-83, AD-84. **No autoriza cambios de código, datos ni parámetros.**
+
+**Propuesta.** Adoptar `CANON/18_CONSOLIDACION_Y_REBAJA.md` (BORRADOR/PROPUESTA) como **especificación canónica** de la consolidación y la rebaja de contenedores y naves, fijando:
+
+- la **separación** consolidar (vincular/reservar, sin descontar) vs rebajar (descontar) (AC-1);
+- la **rebaja por contenedor** y **por nave/viaje** (masiva sobre contenedores consolidados pendientes) (AC-2);
+- los **estados de negocio** (consolidado/rebajado/zarpado/entregado/rolleado) **mapeados** a los estados vigentes, reutilizando `lumber.container.state` y `lumber.export.shipment.state` (con «rebajado» como decisión abierta Q-06);
+- los **eventos de rolleo** con trazabilidad estructurada de origen/destino (embarque, nave, viaje, booking, motivo, fecha, costos) (AC-7);
+- los **campos nuevos mínimos**: `voyage_id` directo en contenedor, `booking_id`, consignatario, P.O. del comprador, armador/naviera y tara editable (§3.4).
+
+**Motivo.** El flujo físico-trazable de exportación (recepción → consolidación → rebaja → zarpe → entrega) requiere un único punto de descuento (AD-82), cantidad por volumen (AD-83) e invariantes verificables (AD-84). Hoy el descuento ocurre en el zarpe moviendo `1` por lote (`lumber_export_shipment.py:461,479,571,582`) y el rolleo solo deja rastro en chatter (`lumber_container_rollover_wizard.py:201-206`).
+
+**Alcance propuesto.** Especificación documental reutilizando `lumber.export.shipment`, `lumber.container`, `lumber.shipment.line`, `stock.lot`, `madenat.sv.operation`, `shipping.vessel/voyage/booking` y los wizards existentes. Las diferencias (~15) quedan en §11 del documento **sin decidir por el usuario**.
+
+**No objetivos.** No modifica AD-79/AD-80/AD-82/AD-83/AD-84; no altera valorización, costeo, facturación ni auditoría (diferidos por AD-81). Es una **especificación**, no una implementación.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rige el comportamiento vigente (`17` §2).
+
+**Evidencia:** `18_CONSOLIDACION_Y_REBAJA.md`; `17_CONSTITUCION_VOLUMENES.md` §3; código verificado (archivo:línea en `18` §13).
+
+
+---
+
+### AD-86 (2026-10-01) — PROPUESTA: grupo funcional «Logística» y matriz de autorización de consolidación/rebaja
+
+> **Estado: PROPUESTA — NO APROBADA.** Registrada el 2026-10-01 a solicitud del usuario. **No constituye regla vigente** hasta su aprobación explícita. Base: `18_CONSOLIDACION_Y_REBAJA.md` §8. **No autoriza cambios de código, datos ni parámetros.**
+
+**Propuesta.** Crear el grupo funcional **«Logística»** `group_madenat_logistica` (categoría `module_category_madenat`), con su jefatura `group_madenat_logistica_jefatura` siguiendo el patrón de `group_madenat_jefatura_operaciones`, y:
+
+- migrar las ACL de `madenat_lumber_logistics` (hoy `base.group_user` / `stock.group_stock_manager`) a usuario/jefatura de Logística;
+- **unificar** la matriz de `lumber.shipment.cost.line` (hoy **duplicada** entre `madenat_lumber_logistics` y `madenat_vendor_payment`);
+- fijar la **matriz de autorización** de consolidar / rebajar / rebajar por nave / rollear (antes y después de rebajar) / reversar, con Gerencia y Auditoría en lectura.
+
+**Motivo.** Hoy **no existe** un grupo «Logística»; las ACL de logística usan grupos genéricos de Stock, y `lumber.shipment.cost.line` tiene **dos** ACL en módulos distintos (`madenat_lumber_logistics/security/ir.model.access.csv` y `madenat_vendor_payment/security/ir.model.access.csv`). La especificación `18` necesita una matriz explícita (p. ej. reversa y bloqueo de viaje cerrado no deben quedar al alcance del usuario raso).
+
+**Alcance propuesto.** Alta de grupos + reasignación de ACL + matriz. Aplicable también a la revisión de permisos de la Consola (H-01, `16_AUDITORIA_20261001.md`).
+
+**No objetivos.** No otorga permisos de Costos, Contabilidad ni Auditoría; no modifica las reglas de negocio ni los modelos; no cambia la gestión de grupos existentes fuera de Logística.
+
+**Estado de aprobación:** ⏳ **pendiente de aprobación del usuario**. Hasta su aprobación rigen los grupos y ACL vigentes.
+
+**Evidencia:** `18_CONSOLIDACION_Y_REBAJA.md` §8; `madenat_lumber_core/security/madenat_security.xml`; `madenat_lumber_logistics/security/ir.model.access.csv`; `madenat_vendor_payment/security/ir.model.access.csv`.
+
