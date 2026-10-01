@@ -39,6 +39,9 @@ from . import madenat_guia_processing_source_lot_line
 from . import madenat_sv_internal
 from . import madenat_sv_operation
 
+# AD-88 (2026-10-01): mixin transversal «advertir, motivar, auditar».
+from . import madenat_deviation
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🔥 VALIDACIONES AUTOMÁTICAS DE STARTUP
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

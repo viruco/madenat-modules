@@ -49,6 +49,10 @@ class MadenatAuditLog(models.Model):
         # reversa (salida nativa única y su retorno).
         ('rebaja', 'Rebaja de Contenedor'),
         ('rebaja_reverse', 'Reversa de Rebaja de Contenedor'),
+        # AD-88 (2026-10-01): desviación aceptada con motivo (advertencia no
+        # bloqueante) — zarpe con excepción, reversa con override de Gerencia,
+        # etc. El código (p. ej. 'B-01') va en la descripción/batch_id.
+        ('deviation', 'Desviación Aceptada con Motivo'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

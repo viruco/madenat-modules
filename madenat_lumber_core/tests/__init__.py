@@ -27,3 +27,5 @@ from . import test_sv_concurrency
 from . import test_sv_reverse_ui
 # 🧪 Modo A autoservicio sin `--test-enable` (vía ir.config_parameter).
 from . import test_sv_dev_cleanup_param
+# AD-88 (2026-10-01): mixin transversal «advertir, motivar, auditar».
+from . import test_deviation_guard
