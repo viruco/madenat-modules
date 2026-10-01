@@ -148,9 +148,13 @@ class LumberContainerLotWizard(models.TransientModel):
                 occupied_lot_ids = occupied_lines.mapped('lot_id.id')
                 
                 # 2. DOMINIO BLINDADO: Lotes disponibles para contenedor
+                #    A-3 / AC-5: la disponibilidad se evalúa en DISPONIBLE base
+                #    nominal (quant => volumen_restante_m3). Se excluyen lotes sin
+                #    disponible (<= 0). Ver CANON/17 §1.2 y CANON/18 §4.1.
                 domain = [
                     ('estado_trazabilidad', 'in', ['en_patio', 'procesado', 'recepcionado']),
                     ('technical_validation', '=', 'approved'),
+                    ('volumen_restante_m3', '>', 0),
                     ('id', 'not in', wizard.container_id.lot_ids.ids),
                     ('id', 'not in', occupied_lot_ids),
                     ('product_id.type', 'in', ['product', 'consu']),
@@ -167,27 +171,35 @@ class LumberContainerLotWizard(models.TransientModel):
 
 
 
-    @api.depends('selected_lot_ids', 'selected_lot_ids.volumen_m3')
+    @api.depends('selected_lot_ids', 'selected_lot_ids.volumen_restante_m3',
+                 'container_id.lot_ids',
+                 'container_id.lot_ids.volumen_restante_m3')
     def _compute_new_totals(self):
         """
         Calcular totales proyectados si se asignan los lotes seleccionados.
-        
+
         REGLA DE ORO - SUMA DEFENSIVA:
         - Validar existencia de campos antes de mapear
         - Manejar casos donde lotes no tienen peso (usar 0.0)
-        - Volumen es obligatorio (volumen_m3 siempre existe)
+        - A-3 / AC-5: el volumen se toma del DISPONIBLE base nominal
+          (volumen_restante_m3 = Σ stock.quant interno), NO de volumen_m3
+          (nominal de origen que no se ajusta tras consumos parciales).
         """
         for wizard in self:
             # Suma de peso (defensiva: algunos lotes pueden no tener peso)
             selected_weight = 0.0
             if 'weight_kg' in wizard.selected_lot_ids._fields:
                 selected_weight = sum(wizard.selected_lot_ids.mapped('weight_kg'))
-            
-            # Suma de volumen (siempre existe)
-            selected_volume = sum(wizard.selected_lot_ids.mapped('volumen_m3'))
-            
+
+            # Volumen DISPONIBLE base nominal (A-3): lo ya consolidado en el
+            # contenedor + lo seleccionado, ambos medidos en disponible nominal.
+            current_volume = sum(
+                wizard.container_id.lot_ids.mapped('volumen_restante_m3'))
+            selected_volume = sum(
+                wizard.selected_lot_ids.mapped('volumen_restante_m3'))
+
             wizard.new_total_weight_kg = wizard.current_weight_kg + selected_weight
-            wizard.new_total_volume_m3 = wizard.current_volume_m3 + selected_volume
+            wizard.new_total_volume_m3 = current_volume + selected_volume
     
     @api.depends('new_total_weight_kg', 'new_total_volume_m3', 'container_id')
     def _compute_validation_status(self):
