@@ -193,7 +193,7 @@
         <field name="arch" type="xml">
             <form string="Contenedor">
                 <header>
-                    <button name="action_assign_lots" string="⚡ Agregar Lotes Rápidamente" type="object" class="oe_highlight" invisible="state in ('sealed', 'shipped')"/>
+                    <button name="action_assign_lots" string="⚡ Agregar Lotes Rápidamente" type="object" class="oe_highlight" invisible="state in ('sealed', 'shipped', 'rebajado')"/>
 
                     <button name="action_start_loading"
                             string="Iniciar Carga"
@@ -227,6 +227,18 @@
                             type="action"
                             class="btn-secondary"
                             invisible="lot_count == 0"/>
+                    <button name="action_rebajar"
+                            string="Rebajar contenedor"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state not in ('loaded', 'sealed')"
+                            confirm="¿Rebajar el inventario de este contenedor? Se genera UNA salida nativa de stock y el contenedor pasa a 'Rebajado'."/>
+                    <button name="action_reverse_rebaja"
+                            string="Revertir rebaja"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'rebajado'"
+                            confirm="¿Revertir la rebaja? Se crea el retorno nativo de stock y la contrapartida SV si aplica."/>
                     <button name="action_manage_rollover"
                             string="🔄 Rollover"
                             type="object"
@@ -235,7 +247,7 @@
                             help="Gestionar rolleo del contenedor"/>
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="empty,loading,loaded,sealed"/>
+                           statusbar_visible="empty,loading,loaded,sealed,rebajado,shipped"/>
                 </header>
 
                 <sheet>

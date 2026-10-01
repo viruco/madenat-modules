@@ -45,6 +45,10 @@ class MadenatAuditLog(models.Model):
         ('guia_delete_blocked', 'Eliminación de Guía Bloqueada'),
         ('guia_delete_permanent', 'Eliminación Definitiva de Guía'),
         ('guia_purged', 'Purga Controlada de Guía'),
+        # AD-82 / CANON/18: rebaja de inventario de contenedor/embarque y su
+        # reversa (salida nativa única y su retorno).
+        ('rebaja', 'Rebaja de Contenedor'),
+        ('rebaja_reverse', 'Reversa de Rebaja de Contenedor'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

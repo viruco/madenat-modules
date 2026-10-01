@@ -15,6 +15,12 @@ class LumberShipmentLine(models.Model):
     _name = 'lumber.shipment.line'
     _description = 'Línea de Detalle de Embarque (Packing List Item)'
     _order = 'container_id, id'
+    _sql_constraints = [
+        # AD-82 / CANON/18 §4.2: idempotencia por (contenedor, lote).
+        # Una sola línea de detalle por lote dentro de un contenedor.
+        ('container_lot_uniq', 'unique(container_id, lot_id)',
+         'Un lote no puede repetirse dentro del mismo contenedor.'),
+    ]
 
     # --- Relaciones Principales ---
     shipment_id = fields.Many2one(
@@ -205,3 +211,29 @@ class LumberShipmentLine(models.Model):
         readonly=True,
         help="Identificador simplificado del lote para el Packing List."
     )
+
+    # ══════════════════════════════════════════════════════════════════════
+    # AD-82 / CANON/18 §3-4 — Persistencia de la REBAJA por (contenedor, lote).
+    # Reutiliza esta línea (relación contenedor↔lote) para guardar la salida
+    # nativa: cantidad, picking, fecha, usuario, operación SV y estado.
+    # ══════════════════════════════════════════════════════════════════════
+    rebaja_qty_m3 = fields.Float(
+        string='Cantidad rebajada (m³)', digits=(16, 3), default=0.0,
+        copy=False,
+        help='Volumen descontado de stock para este lote en este contenedor.')
+    rebaja_picking_id = fields.Many2one(
+        'stock.picking', string='Salida de rebaja', copy=False,
+        ondelete='set null', index=True)
+    rebaja_date = fields.Datetime(string='Fecha de rebaja', copy=False)
+    rebaja_user_id = fields.Many2one(
+        'res.users', string='Rebajado por', copy=False)
+    rebaja_sv_operation_id = fields.Many2one(
+        'madenat.sv.operation', string='Rebaja SV', copy=False,
+        ondelete='set null',
+        help='Operación del ledger SV que respalda la rebaja (solo lotes SV).')
+    rebaja_state = fields.Selection(
+        [('pending', 'Pendiente'),
+         ('rebajado', 'Rebajado'),
+         ('reversed', 'Revertido')],
+        string='Estado rebaja', default='pending', required=True,
+        copy=False, index=True)

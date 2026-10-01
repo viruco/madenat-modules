@@ -10,7 +10,7 @@ Características:
 - [NUEVO] Soporte para Volumen Físico (Facturable) vs Nominal (Costo)
 """
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError, ValidationError, AccessError
 from odoo.tools import float_compare
 import logging
 import io          # <-- Para el Excel
@@ -240,6 +240,8 @@ class LumberContainer(models.Model):
         ('loading', 'Cargando'),
         ('loaded', 'Cargado'),
         ('sealed', 'Sellado'),
+        # AD-82 / CANON/18 §3.2: estado propio tras rebajar el inventario.
+        ('rebajado', 'Rebajado'),
         ('shipped', 'Embarcado')
     ],
         string='Estado',
@@ -252,6 +254,11 @@ class LumberContainer(models.Model):
     # ==================== FECHAS ====================
     loading_date = fields.Datetime('Fecha Carga', readonly=True, copy=False)
     sealing_date = fields.Datetime('Fecha Sellado', readonly=True, copy=False)
+    state_before_rebaja = fields.Selection([
+        ('loaded', 'Cargado'),
+        ('sealed', 'Sellado'),
+    ], string='Estado previo a rebaja', copy=False, readonly=True,
+        help='Estado del contenedor antes de rebajar; se restaura al revertir.')
     
     notes = fields.Text('Notas', help="Observaciones adicionales")
     
@@ -687,6 +694,247 @@ class LumberContainer(models.Model):
         self.message_post(body=_('🔒 Contenedor sellado físicamente (Naviera: %s%s)') % (self.seal_number, sag_info))
         return True
     
+    # ══════════════════════════════════════════════════════════════════════
+    # AD-82 / CANON/18 — REBAJA de inventario (salida nativa) y REVERSA
+    # ══════════════════════════════════════════════════════════════════════
+    REBAJA_ALLOWED_STATES = ('loaded', 'sealed')
+
+    def _rebaja_require_group(self, *group_xmlids):
+        if not any(self.env.user.has_group(g) for g in group_xmlids):
+            raise AccessError(_(
+                'No tiene permisos para esta operación. Se requiere uno de: %s.'
+            ) % ', '.join(group_xmlids))
+
+    def _rebaja_source_warehouse(self, location):
+        warehouse = location.warehouse_id
+        if not warehouse:
+            warehouse = self.env['stock.warehouse'].search(
+                [('view_location_id', 'parent_of', location.id)], limit=1)
+        return warehouse
+
+    def action_rebajar(self):
+        """B2: rebaja de inventario del contenedor (salida nativa de stock)."""
+        self.ensure_one()
+        self._rebaja_require_group(
+            'madenat_lumber_core.group_madenat_operaciones',
+            'madenat_lumber_core.group_madenat_jefatura_operaciones',
+            'madenat_lumber_core.group_madenat_gerencia')
+        self._rebajar_container()
+        return True
+
+    def action_reverse_rebaja(self):
+        """B5: reversa de la rebaja (retorno nativo + contrapartida SV)."""
+        self.ensure_one()
+        self._rebaja_require_group(
+            'madenat_lumber_core.group_madenat_jefatura_operaciones',
+            'madenat_lumber_core.group_madenat_gerencia')
+        self._reverse_rebaja_container()
+        return True
+
+    def _rebaja_planned_lines(self):
+        """[(line, lot, qty, source_location, sv_op)] validado para rebajar."""
+        self.ensure_one()
+        plan = []
+        for line in self.line_ids:
+            lot = line.lot_id
+            sv_op = self.env['madenat.sv.operation']
+            if lot.lot_flow_type == 'volume':
+                sv_op = self.env['madenat.sv.operation'].search([
+                    ('lot_id', '=', lot.id),
+                    ('action_type', '=', 'rebaja'),
+                    ('state', '=', 'applied'),
+                    ('destination_container_id', '=', self.id),
+                ], order='id desc', limit=1)
+                qty = sv_op.rebaja_volume_m3 if sv_op else 0.0
+            else:
+                qty = lot.volumen_restante_m3
+            if float_compare(qty, 0.0, precision_rounding=0.001) <= 0:
+                raise UserError(_(
+                    'El lote %s no tiene disponible para rebajar (tipo %s). '
+                    'Revise inventario o la asignación SV del contenedor.'
+                ) % (lot.name or lot.id, lot.lot_flow_type or 'tarja'))
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', lot.id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal'),
+            ], limit=1)
+            if not quant:
+                raise UserError(_(
+                    'El lote %s no tiene stock físico disponible en bodega '
+                    'interna.') % (lot.name or lot.id))
+            plan.append([line, lot, qty, quant.location_id, sv_op])
+        return plan
+
+
+    def _rebajar_container(self):
+        self.ensure_one()
+        # Idempotencia (CANON/18 §4.2): ya rebajado => no repetir salida.
+        if self.state == 'rebajado':
+            return self.line_ids.filtered('rebaja_picking_id')[:1].rebaja_picking_id
+        if self.state not in self.REBAJA_ALLOWED_STATES:
+            raise UserError(_(
+                'Solo se puede rebajar un contenedor consolidado '
+                '(Cargado o Sellado). Estado actual: %s.'
+            ) % dict(self._fields['state'].selection).get(self.state, self.state))
+        if not self.line_ids:
+            raise UserError(_(
+                'El contenedor no tiene lotes consolidados para rebajar.'))
+
+        customers = self.env.ref('stock.stock_location_customers')
+        previous_state = self.state
+        plan = self._rebaja_planned_lines()
+        source = plan[0][3]
+        warehouse = self._rebaja_source_warehouse(source)
+        if not warehouse:
+            raise UserError(_(
+                'No se encontró un almacén para la ubicación %s.'
+            ) % source.display_name)
+
+        # UN picking de salida por contenedor, una línea por lote.
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': warehouse.out_type_id.id,
+            'location_id': source.id,
+            'location_dest_id': customers.id,
+            'origin': _('Rebaja %s') % self.name,
+        })
+        for line, lot, qty, src, sv_op in plan:
+            move = self.env['stock.move'].create({
+                'name': _('Rebaja %s') % self.name,
+                'product_id': lot.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': lot.product_id.uom_id.id,
+                'picking_id': picking.id,
+                'location_id': src.id,
+                'location_dest_id': customers.id,
+            })
+            self.env['stock.move.line'].create({
+                'move_id': move.id,
+                'product_id': lot.product_id.id,
+                'lot_id': lot.id,
+                'quantity': qty,
+                'product_uom_id': lot.product_id.uom_id.id,
+                'location_id': src.id,
+                'location_dest_id': customers.id,
+                'picking_id': picking.id,
+            })
+        picking.action_confirm()
+        picking.action_assign()
+        picking.button_validate()
+
+        now = fields.Datetime.now()
+        for line, lot, qty, src, sv_op in plan:
+            line.write({
+                'rebaja_qty_m3': qty,
+                'rebaja_picking_id': picking.id,
+                'rebaja_date': now,
+                'rebaja_user_id': self.env.user.id,
+                'rebaja_sv_operation_id': sv_op.id if sv_op else False,
+                'rebaja_state': 'rebajado',
+            })
+        self.write({
+            'state': 'rebajado',
+            'state_before_rebaja': previous_state,
+        })
+        self.message_post(body=_(
+            '📉 <b>Rebaja de inventario</b><br/>Salida: %s<br/>Lotes: %d'
+        ) % (picking.name, len(plan)))
+        self._rebaja_audit('rebaja', picking)
+        return picking
+
+
+    def _reverse_rebaja_container(self):
+        self.ensure_one()
+        if self.state != 'rebajado':
+            raise UserError(_('Solo se puede revertir un contenedor rebajado.'))
+        # Bloqueo: embarque entregado o viaje cancelado (decisión usuario).
+        if self.shipment_id and self.shipment_id.state == 'delivered':
+            raise UserError(_(
+                'No se puede revertir la rebaja: el embarque ya fue entregado.'))
+        if (self.shipment_id and self.shipment_id.voyage_id
+                and self.shipment_id.voyage_id.state == 'cancel'):
+            raise UserError(_(
+                'No se puede revertir la rebaja: el viaje está cancelado.'))
+
+        lines = self.line_ids.filtered(lambda l: l.rebaja_state == 'rebajado')
+        if not lines:
+            raise UserError(_('No hay líneas rebajadas para revertir.'))
+
+        for picking in lines.mapped('rebaja_picking_id'):
+            self._reverse_rebaja_picking(picking)
+        for line in lines.filtered('rebaja_sv_operation_id'):
+            self.env['madenat.sv.operation'].sv_reverse_allocation(
+                line.lot_id, container=self,
+                reason=_('Reversa de rebaja del contenedor %s.') % self.name)
+        lines.write({'rebaja_state': 'reversed'})
+        self.write({'state': self.state_before_rebaja or 'loaded'})
+        self.message_post(
+            body=_('↩️ <b>Rebaja revertida</b> (%d lotes).') % len(lines))
+        self._rebaja_audit('rebaja_reverse')
+        return True
+
+    def _reverse_rebaja_picking(self, picking):
+        """Retorno entrante inverso (sin borrar historia), idempotente."""
+        if not picking or picking.state != 'done':
+            return False
+        existing = self.env['stock.picking'].search([
+            ('origin', '=', 'Return of %s' % picking.name),
+            ('state', '=', 'done'),
+        ], limit=1)
+        if existing:
+            return existing
+        warehouse = picking.picking_type_id.warehouse_id
+        return_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'incoming'), ('warehouse_id', '=', warehouse.id),
+            ('active', '=', True)], limit=1)
+        if not return_type:
+            raise UserError(_(
+                'No existe un tipo de operación de Recepción para revertir.'))
+        return_picking = self.env['stock.picking'].create({
+            'picking_type_id': return_type.id,
+            'origin': 'Return of %s' % picking.name,
+            'location_id': picking.location_dest_id.id,
+            'location_dest_id': picking.location_id.id,
+        })
+        for move in picking.move_ids.filtered(lambda m: m.state == 'done'):
+            qty = move.quantity or move.product_uom_qty
+            return_move = self.env['stock.move'].create({
+                'name': 'Return of %s' % move.name,
+                'product_id': move.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': return_picking.id,
+                'location_id': move.location_dest_id.id,
+                'location_dest_id': move.location_id.id,
+                'origin_returned_move_id': move.id,
+                'to_refund': True,
+            })
+            for line in move.move_line_ids:
+                self.env['stock.move.line'].create({
+                    'move_id': return_move.id,
+                    'picking_id': return_picking.id,
+                    'product_id': line.product_id.id,
+                    'lot_id': line.lot_id.id,
+                    'quantity': line.quantity,
+                    'product_uom_id': line.product_uom_id.id,
+                    'location_id': move.location_dest_id.id,
+                    'location_dest_id': move.location_id.id,
+                })
+        return_picking.action_confirm()
+        return_picking.action_assign()
+        return_picking.button_validate()
+        return return_picking
+
+    def _rebaja_audit(self, action_type, picking=False):
+        self.ensure_one()
+        self.env['madenat.audit.log'].sudo().create({
+            'action_type': action_type,
+            'description': '%s · %s · %s' % (
+                action_type, self.name, picking.name if picking else ''),
+            'batch_id': ','.join(str(i) for i in self.line_ids.ids),
+            'user_id': self.env.user.id,
+        })
+
+
     def action_view_lots(self):
         self.ensure_one()
         return {
