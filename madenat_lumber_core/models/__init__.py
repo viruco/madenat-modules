@@ -6,6 +6,7 @@
 
 from . import utils_uom
 from . import width_mapping
+from . import excel_table_detection
 from . import reception_parser
 from . import validation_checklist_mixin
 from . import mixin_lumber_ingest
@@ -33,6 +34,10 @@ from . import stock_move
 from . import product_product
 from . import reception_service
 from . import madenat_guia_processing_source_lot_line
+# 🏷️ Programa SV — infraestructura técnica interna (capacidad/marcador) y
+# ledger append-only de etiquetas SV (Volumen).
+from . import madenat_sv_internal
+from . import madenat_sv_operation
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🔥 VALIDACIONES AUTOMÁTICAS DE STARTUP

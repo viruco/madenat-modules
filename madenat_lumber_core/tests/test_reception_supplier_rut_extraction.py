@@ -1,21 +1,27 @@
 # -*- coding: utf-8 -*-
 """Tests de aislamiento — extracción de RUT del proveedor (flujo Producto).
 
-Diagnóstico del bug guía 26270 (sesión de solo lectura, sin fix):
-- reception_parser.parse_dispatch_guide() (L565) usa UN solo regex de RUT que
-  solo admite formato CON PUNTOS:  \\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dkK]
-- Contraste ya funcional en madenat_guia_processing._parse_dispatch_pdf()
-  (L2372-2375): DOS patrones (con puntos Y sin puntos \\d{7,8}-[\\dkK]).
-- lumber_reception._find_or_create_po_intelligent() (L2302-2306) lanza
-  UserError bloqueante cuando supplier_rut está vacío.
+Contrato vigente tras el cierre de T1 (Fase 2):
+- reception_parser.parse_dispatch_guide() reconoce RUT con puntos y sin puntos
+  (AD del 2026-09-08) y devuelve supplier_rut=None cuando el PDF no lo trae.
+- lumber_reception._find_or_create_po_intelligent() NO bloquea por RUT ausente:
+  la captura documental es flexible (§2.1). Sin RUT no se busca por VAT vacío,
+  no se asocia proveedor arbitrario ni se crea proveedor: el proveedor queda
+  PENDIENTE DE ASIGNACIÓN MANUAL y el pipeline no termina en state='error'.
+- Con proveedor seleccionado por el usuario, se conserva y la búsqueda de OC se
+  restringe a ese partner.
+- La exigencia definitiva de proveedor identificable ocurre en el envío
+  irreversible a stock (action_confirm_reception), antes de crear lotes,
+  picking, movimientos o quants.
 
-Estos tests codifican el CONTRATO DESEADO. Contra el código actual se espera
-que fallen: rut_sin_puntos, sin_rut_visible_no_crashea,
-find_or_create_po_intelligent_sin_rut_no_bloquea y fixture_regresion_26270.
-
-NO modifican código de producción.
+Estos tests no modifican datos históricos ni crean partners innecesarios.
 """
 import io
+import uuid
+
+# T4 — token único por corrida: los nombres de recepción son UNIQUE(name) en
+# `lumber.reception`, de modo que no deben depender de datos preexistentes.
+_RUN = uuid.uuid4().hex[:8].upper()
 import logging
 import os
 
@@ -66,10 +72,10 @@ class TestReceptionSupplierRutExtraction(TransactionCase):
         """Ejecuta el parser REAL sobre un PDF construido con las líneas dadas."""
         return self.Parser.parse_dispatch_guide(_build_pdf(lines), default_name='')
 
-    def _make_reception(self, name='RUT-TEST'):
+    def _make_reception(self, name='RUT-TEST', with_supplier=True):
         return self.Reception.create({
-            'name': name,
-            'supplier_id': self.partner.id,
+            'name': '%s-%s' % (name, _RUN),
+            'supplier_id': self.partner.id if with_supplier else False,
             'ingestion_profile': 'metric',
         })
 
@@ -143,3 +149,115 @@ class TestReceptionSupplierRutExtraction(TransactionCase):
         lines = [l for l in texto.split('\n') if l.strip()]
         data = self._parse(lines)
         self.assertEqual(data['supplier_rut'], '77066489-6')
+
+    # ── 9. T1 — sin RUT, sin proveedor: no bloquea, no inventa, no crea ────
+    def test_sin_rut_no_crea_ni_asocia_proveedor(self):
+        """Sin RUT y sin proveedor seleccionado: no se busca VAT vacío, no se
+        asocia partner arbitrario, no se crea partner y el flujo no bloquea."""
+        partner_count = self.env['res.partner'].search_count([])
+        reception = self._make_reception('RUT-SIN-PARTNER', with_supplier=False)
+        dg_data = {
+            'supplier_rut': None,
+            'supplier_name_detected': (
+                'COMERCIALIZADORA Y DISTRIBUIDORA FERRAMENTA SPA'),
+            'po_ref': 'MC-1106-11',
+        }
+        self._assert_no_user_error(
+            lambda: reception._find_or_create_po_intelligent(dg_data, None),
+            'Captura sin RUT y sin proveedor seleccionado',
+        )
+        self.assertFalse(
+            reception.supplier_id,
+            'No debe asociarse un proveedor arbitrario sin RUT documental')
+        self.assertEqual(
+            self.env['res.partner'].search_count([]), partner_count,
+            'No debe crearse ningún proveedor sin RUT documental')
+        self.assertEqual(
+            reception.manual_po_name,
+            self.Parser.normalize_po_display('MC-1106-11'),
+            'La referencia documental de OC debe quedar disponible para el usuario')
+        self.assertEqual(reception.oc_match_status, 'not_found')
+        self.assertIn(
+            'PENDIENTE DE ASIGNACIÓN', reception.oc_match_note or '',
+            'Debe quedar registro explícito del proveedor pendiente')
+
+    # ── 10. T1 — sin RUT con proveedor manual: se conserva ─────────────────
+    def test_sin_rut_con_supplier_manual_se_conserva(self):
+        """Con proveedor elegido por el usuario y sin RUT: se conserva y no se
+        crea ni reemplaza ningún partner."""
+        partner_count = self.env['res.partner'].search_count([])
+        reception = self._make_reception('RUT-MANUAL-SUPPLIER')
+        dg_data = {
+            'supplier_rut': None,
+            'supplier_name_detected': (
+                'COMERCIALIZADORA Y DISTRIBUIDORA FERRAMENTA SPA'),
+            'po_ref': 'MC-1106-11',
+        }
+        self._assert_no_user_error(
+            lambda: reception._find_or_create_po_intelligent(dg_data, None),
+            'Captura sin RUT con proveedor seleccionado manualmente',
+        )
+        self.assertEqual(
+            reception.supplier_id, self.partner,
+            'El proveedor seleccionado por el usuario nunca se reemplaza')
+        self.assertEqual(
+            self.env['res.partner'].search_count([]), partner_count,
+            'No debe crearse ni duplicarse ningún proveedor')
+
+    # ── 11. T1 — punto irreversible: proveedor identificable obligatorio ───
+    def _make_verified_reception(self, name):
+        """Recepción 'verified' con staging completo (sin flujo de stock)."""
+        product = self.env['product.product'].create({
+            'name': 'T1 Guard Product',
+            'is_storable': True,
+            'tracking': 'lot',
+        })
+        subproduct = self.env['madenat.subproducto'].create({
+            'name': 'T1 Guard Subproducto',
+            'code': 'T1GUARD',
+        })
+        reception = self.Reception.create({
+            'name': '%s-%s' % (name, _RUN),
+            'ingestion_profile': 'metric',
+        })
+        self.env['lumber.reception.line'].create({
+            'reception_id': reception.id,
+            'lot_name': 'T1-GUARD-LOT',
+            'product_id': product.id,
+            'subproduct_id': subproduct.id,
+            'thickness': 37.0, 'width': 100.0, 'length': 2.0, 'pieces': 10,
+            'thickness_nominal': 37.0, 'width_nominal': 100.0,
+        })
+        reception.write({'state': 'verified'})
+        return reception
+
+    def test_confirmacion_sin_proveedor_bloquea_antes_de_stock(self):
+        """Sin proveedor identificable el envío a stock bloquea antes de crear
+        stock.lot, picking, movimientos o quants, con registro de auditoría.
+
+        Nota: la excepción se captura manualmente (try/except) en lugar de usar
+        `self.assertRaises` porque el framework de tests envuelve `assertRaises`
+        en un savepoint que revierte los cambios de BD efectuados antes de la
+        excepción; eso ocultaría el registro de auditoría (omission) que el
+        método escribe inmediatamente antes de bloquear.
+        """
+        reception = self._make_verified_reception('RUT-GUARD')
+        self.assertFalse(reception.supplier_id)
+
+        try:
+            reception.action_confirm_reception()
+            self.fail('El envío a stock debe bloquearse sin proveedor identificable')
+        except UserError as exc:
+            self.assertIn('PROVEEDOR NO IDENTIFICADO', str(exc))
+
+        self.assertEqual(
+            self.env['stock.lot'].search_count(
+                [('reception_id', '=', reception.id)]), 0,
+            'No debe crearse ningún lote antes del bloqueo')
+        self.assertFalse(reception.picking_id)
+        self.assertEqual(
+            self.env['madenat.audit.log'].search_count([
+                ('reception_id', '=', reception.id),
+                ('action_type', '=', 'omission'),
+            ]), 1,
+            'Debe quedar registro de auditoría (omission) del bloqueo')

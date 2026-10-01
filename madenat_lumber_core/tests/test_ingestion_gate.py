@@ -54,7 +54,18 @@ class TestGate0PreUpload:
 
     def setup_method(self):
         self.gate = Gate0PreUpload()
-        self.valid_excel = b"PK\x03\x04" + b"0" * 100  # xlsx magic bytes simulados
+        self.valid_excel = self._make_xlsx()
+
+    @staticmethod
+    def _make_xlsx():
+        import io as _io
+        from openpyxl import Workbook
+        wb = Workbook()
+        wb.active.append(["N", "CODIGOS", "PRODUCTO", "LOTE", "ESPESOR",
+                          "ANCHO", "LARGO", "FILAS", "COLUMNAS", "PIEZAS", "VOLUMEN"])
+        buf = _io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
 
     def test_excel_valido(self):
         result = self.gate.validate("guia_19846.xlsx", self.valid_excel, "excel")
@@ -66,15 +77,22 @@ class TestGate0PreUpload:
         result = self.gate.validate("GDE-19846.pdf", pdf_bytes, "pdf")
         assert result.is_valid
 
-    def test_extension_incorrecta_excel(self):
-        result = self.gate.validate("guia.pdf", self.valid_excel, "excel")
-        assert not result.is_valid
-        assert any(e.code == "FILE_EXTENSION_INVALID" for e in result.errors)
+    def test_pdf_con_extension_xls_permite_warning(self):
+        pdf_bytes = b"%PDF-1.4" + b"0" * 100
+        result = self.gate.validate("GDE 95806.xls", pdf_bytes, "pdf")
+        assert result.is_valid
+        assert not any(e.code == "FILE_EXTENSION_INVALID" for e in result.errors)
+        assert any(w.code == "FILE_EXTENSION_MISMATCH" for w in result.warnings)
 
-    def test_extension_incorrecta_pdf(self):
-        result = self.gate.validate("guia.xlsx", b"data", "pdf")
+    def test_excel_con_extension_pdf_warning(self):
+        result = self.gate.validate("guia.pdf", self.valid_excel, "excel")
+        assert result.is_valid
+        assert any(w.code == "FILE_EXTENSION_MISMATCH" for w in result.warnings)
+
+    def test_formato_desconocido_bloquea(self):
+        result = self.gate.validate("guia.pdf", b"basura", "pdf")
         assert not result.is_valid
-        assert any(e.code == "FILE_EXTENSION_INVALID" for e in result.errors)
+        assert any(e.code == "FILE_FORMAT_UNKNOWN" for e in result.errors)
 
     def test_archivo_vacio(self):
         result = self.gate.validate("guia.xlsx", b"", "excel")

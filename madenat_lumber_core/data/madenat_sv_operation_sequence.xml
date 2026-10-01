@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Programa SV — Secuencia propia del ledger de etiquetas SV.
+             NO reemplaza ni toca `madenat.volume.lot` (identidad SV):
+             solo numera las operaciones del historial (SVO000001...). -->
+        <record id="seq_madenat_sv_operation" model="ir.sequence">
+            <field name="name">Operación de Etiqueta SV</field>
+            <field name="code">madenat.sv.operation</field>
+            <field name="prefix">SVO</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="use_date_range" eval="False"/>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
