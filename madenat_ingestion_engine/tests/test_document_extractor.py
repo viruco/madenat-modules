@@ -176,7 +176,7 @@ class TestDocumentExtractor(TransactionCase):
             "Destino: DESTINO-EJEMPLO\n"
         )
         with _patch_pdf_text(text):
-            result = extract_document(b"x", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(result.header["guide_number"], "12345")
         self.assertEqual(result.header["guide_date"], "2026-03-27")
         self.assertEqual(result.header["supplier_rut"], "11.111.111-1")
@@ -192,7 +192,7 @@ class TestDocumentExtractor(TransactionCase):
 
     def test_pdf_no_labels_general_warning(self):
         with _patch_pdf_text("Documento sin etiquetas reconocibles."):
-            result = extract_document(b"x", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(result.header, {})
         self.assertTrue(any("guide_number" in w for w in result.warnings))
 
@@ -361,7 +361,7 @@ class TestPdfDetailCascade(TransactionCase):
                  _metric_row("1", "0000000000001", "LOTE-1"),
                  _metric_row("2", "0000000000002", "LOTE-2")]
         with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[table]):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(len(result.lines), 2)
         self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
         self.assertEqual(result.detected_profile_code, "packing_metrico_aserrada")
@@ -373,7 +373,7 @@ class TestPdfDetailCascade(TransactionCase):
                  _metric_row("2", "0000000000002", "LOTE-2")]
         words = _table_to_words(table)
         with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[], words=words):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(len(result.lines), 2)
         self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
         self.assertEqual(result.lines[0]["volume_m3"], 3.8862)
@@ -381,7 +381,7 @@ class TestPdfDetailCascade(TransactionCase):
 
     def test_nivel4_regex_sin_tabla(self):
         with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[], words=[]):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(result.lines, [])
         self.assertAlmostEqual(result.header["total_volume_m3"], 130.0, places=3)
         self.assertTrue(any("Nivel 4" in w for w in result.warnings))
@@ -391,7 +391,7 @@ class TestPdfDetailCascade(TransactionCase):
                  _metric_row("1", "0000000000001", "LOTE-1"),
                  _metric_row("2", "0000000000002", "LOTE-2")]
         with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[table]):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         # Prioriza la suma de líneas (7.7724), no el regex (130).
         self.assertAlmostEqual(result.header["total_volume_m3"], 3.8862 * 2, places=3)
         self.assertTrue(any("Discrepancia" in w for w in result.warnings))
@@ -401,7 +401,7 @@ class TestPdfDetailCascade(TransactionCase):
                  _imperial_row("1", "A1M001", "LOTE-A"),
                  _imperial_row("2", "A1M002", "LOTE-B")]
         with _patch_pdf_full("N° 123456\nCliente: PROVEEDOR", tables=[table]):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertEqual(len(result.lines), 2)
         self.assertEqual(result.detected_profile_code, "packing_imperial_blanks")
         self.assertEqual(result.lines[0]["thickness_unit"], "inch")
@@ -410,6 +410,6 @@ class TestPdfDetailCascade(TransactionCase):
     def test_regresion_solo_regex_igual_que_antes(self):
         """Un PDF sin tabla sigue resolviendo el total vía regex (Nivel 4)."""
         with _patch_pdf_full("N° 123456\nTotal: 130 M3", tables=[], words=[]):
-            result = extract_document(b"pdf", "test.pdf")
+            result = extract_document(b"%PDF-1.4", "test.pdf")
         self.assertAlmostEqual(result.header["total_volume_m3"], 130.0, places=3)
         self.assertEqual(result.lines, [])

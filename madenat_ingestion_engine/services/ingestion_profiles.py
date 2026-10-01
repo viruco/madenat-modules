@@ -12,8 +12,25 @@ Evidencia de los perfiles: `docs/fase1_contrato_extraccion.md` (secciones
 (`N° PQTE. / CODIGOS / PRODUCTO / ESPESOR / ANCHO / LARGO / FILAS /
 COLUMNAS / PIEZAS / VOLUMEN`); difieren en unidades, formato de código y
 columnas de metadatos de transportista.
+
+Alias de `pieces` (piezas declaradas por línea): corresponden a la convención
+auditada MADENAT para packing list, ya vigente en
+`madenat_lumber_core/models/excel_table_detection.py`
+(`'pieces': ['cantidad', 'piezas', 'pzas', 'pz', 'unidades', 'qty', 'pcs',
+'cant', 'unid']`) y en `reception_parser.py`
+(`'pieces': ['piezas', 'pzas', 'pcs', 'cantidad', 'cant', 'unidades',
+'unid']`). En los packing list reales la cantidad de piezas viene rotulada
+«Cantidad» (verificado: 264 pzs de 37x125x3700 mm = 4,5177 m³, el valor de la
+columna «M3» del mismo archivo). NO se agregan alias de piezas a la ruta
+genérica de PDF: allí «Cantidad»/«Cant.» es volumen.
 """
 from .column_matching import build_column_mapping
+
+PACKING_PIECES_ALIASES = [
+    "piezas", "pzas", "pza", "pz", "pcs", "cantidad", "cant.", "cant",
+    "unidades", "unid", "qty", "piezas paq", "pzas paq",
+    "piezas por paquete",
+]
 
 PACKING_METRICO_ASERRADA = {
     "code": "packing_metrico_aserrada",
@@ -28,7 +45,7 @@ PACKING_METRICO_ASERRADA = {
         "length_value_raw": ["largo mm", "largo"],
         "rows": ["filas"],
         "columns": ["columnas"],
-        "pieces": ["piezas"],
+        "pieces": PACKING_PIECES_ALIASES,
         "volume_m3": ["volumen m3", "volumen"],
         "lot_number": ["lote", "n° lote", "nº lote"],
     },
@@ -64,7 +81,7 @@ PACKING_IMPERIAL_BLANKS = {
         "length_value_raw": ["largo mm", "largo"],
         "rows": ["filas"],
         "columns": ["columnas"],
-        "pieces": ["piezas"],
+        "pieces": PACKING_PIECES_ALIASES,
         "volume_m3": ["volumen m3", "volumen"],
         "lot_number": ["lote", "n° lote", "nº lote"],
     },
