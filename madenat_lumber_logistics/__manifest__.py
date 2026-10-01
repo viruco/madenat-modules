@@ -35,6 +35,7 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         # 3. WIZARDS (Deben cargar antes que las vistas para que los botones funcionen)
         'wizards/lumber_container_rollover_wizard_views.xml',
         'wizards/lumber_container_lot_wizard_views.xml',
+        'wizards/lumber_shipment_rebaja_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            

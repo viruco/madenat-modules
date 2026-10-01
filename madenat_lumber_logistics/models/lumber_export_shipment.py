@@ -437,31 +437,31 @@ class LumberExportShipment(models.Model):
         self.message_post(body=_("✅ <b>Embarque Confirmado:</b> Listo para iniciar carga."))
 
     def action_set_in_transit(self):
-        """ 
-        🚀 ZARPE SEGURO (Blindaje Logístico)
-        1. Valida que todos los contenedores estén 'sealed'.
-        2. Genera el albarán de salida.
-        3. Pasa contenedores a estado 'shipped'.
+        """
+        🚀 ZARPE (AD-82) — evento de estado/documental.
+
+        NO mueve stock: la salida nativa ocurre al REBAJAR el contenedor.
+        1. Exige que TODOS los contenedores estén en estado 'rebajado'.
+        2. Pasa contenedores a 'shipped' y el embarque a 'in_transit'.
         """
         self.ensure_one()
         
         # 1. 🛡️ VALIDACIÓN DE SEGURIDAD CORREGIDA (Alineada al Negocio)
         # Prohíbe zarpar si el contenedor está vacío ('empty') o a medio cargar ('loading').
         # PERMITE zarpar si está terminado ('loaded' = consolidado) o si ya le pusieron sello ('sealed').
-        invalid_containers = self.container_ids.filtered(lambda c: c.state in ['empty', 'loading'])
-        if invalid_containers:
-            names = "\n- ".join(invalid_containers.mapped('name'))
+        not_rebajados = self.container_ids.filtered(
+            lambda c: c.state != 'rebajado')
+        if not_rebajados:
+            names = "\n- ".join(not_rebajados.mapped('name'))
             raise ValidationError(_(
-                "⛔ ACCIÓN DENEGADA: Carga Incompleta\n\n"
-                "No se puede rematar la nave porque hay contenedores Vacíos o en proceso de Carga.\n"
-                "Debe marcar la carga como 'Completada' (Consolidado) en los siguientes contenedores:\n\n- %s"
+                "⛔ ACCIÓN DENEGADA: Falta rebajar inventario\n\n"
+                "El zarpe ya NO descuenta stock. Antes de rematar la nave, "
+                "rebaje el inventario de TODOS los contenedores "
+                "(«Rebajar contenedor» o «Rebajar por nave»).\n\n"
+                "Contenedores pendientes de rebaja:\n\n- %s"
             ) % names)
 
-        # 2. 📉 REBAJE DE STOCK (Tu lógica original)
-        self._action_reduce_stock()
-
-        # 3. 🔄 SINCRONIZACIÓN DE ESTADOS (Padre -> Hijos)
-        # Al zarpar, los contenedores viajan con el barco -> Estado 'shipped'
+        # 🔄 SINCRONIZACIÓN DE ESTADOS (Padre -> Hijos). Sin movimiento de stock.
         self.container_ids.write({'state': 'shipped'})
 
         # 4. 📝 CAMBIO DE ESTADO EMBARQUE
@@ -471,128 +471,26 @@ class LumberExportShipment(models.Model):
         })
         
         # Log en el chatter para auditoría
-        self.message_post(body=_("🚢 <b>Zarpe Confirmado:</b> La nave ha sido rematada. Stock rebajado y contenedores en tránsito."))
+        self.message_post(body=_("🚢 <b>Zarpe Confirmado:</b> La nave ha sido rematada. Contenedores en tránsito (sin movimiento de stock: ya rebajado)."))
         self._compute_yield_analysis() # Forzamos el cálculo del rendimiento final
         self.message_post(body=f"📊 Rendimiento Final de Nave: {self.yield_efficiency_pct}%")
         return True
         
-    def _action_reduce_stock(self):
-            """ 🔌 RECONEXIÓN (Multi-Puerto): Valida el stock automáticamente buscando la ubicación física real """
-            lots = self.container_ids.mapped('lot_ids')
-            if not lots:
-                raise UserError(_("No hay lotes asignados para rebajar stock."))
+    def action_open_rebaja_wizard(self):
+        """Abre el asistente «Rebajar por nave» con el alcance del embarque."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Rebajar por nave'),
+            'res_model': 'lumber.shipment.rebaja.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_vessel_id': self.vessel_id.id,
+                'default_voyage_id': self.voyage_id.id,
+            },
+        }
 
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # 🛡️ GUARDA ANTI-FUGA (2026-06-18):
-            # Defensa primaria: technical_validation='rejected'
-            # (estado persistente en el lote, sobrevive a la
-            # desvinculación de guia_processing_id).
-            # Defensa secundaria: guía asociada en estado 'draft'.
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            rejected_lots = lots.filtered(lambda l: l.technical_validation == 'rejected')
-            if rejected_lots:
-                lot_names = "\n- ".join(rejected_lots.mapped('name')[:5])
-                raise UserError(
-                    "⛔ DENEGADO EXPORTACIÓN - LOTES REVERTIDOS\n\n"
-                    f"Los siguientes lotes fueron marcados como 'Rechazados' "
-                    f"porque su guía de origen fue devuelta a borrador:\n"
-                    f"- {lot_names}\n\n"
-                    "No puede exportar lotes de guías revertidas. "
-                    "Vuelva a procesar la guía para regenerar lotes "
-                    "válidos antes de zarpar."
-                )
-            guia_processing_model = self.env.get('madenat.guia.processing')
-            if guia_processing_model:
-                draft_processing_ids = guia_processing_model.search([
-                    ('lot_ids', 'in', lots.ids),
-                    ('state', '=', 'draft'),
-                ])
-                if draft_processing_ids:
-                    offending_lots = lots.filtered(
-                        lambda l: l.guia_processing_id in draft_processing_ids
-                    )
-                    lot_names = "\n- ".join(offending_lots.mapped('name')[:5])
-                    guia_names = ", ".join(draft_processing_ids.mapped('name'))
-                    raise UserError(
-                        "⛔ DENEGADO EXPORTACIÓN - GUÍA REVERTIDA\n\n"
-                        f"Los siguientes lotes pertenecen a guías en estado "
-                        f"'Borrador' (revertidas):\n- {lot_names}\n\n"
-                        f"Guías afectadas: {guia_names}\n\n"
-                        "No puede exportar lotes de guías revertidas. "
-                        "Vuelva a procesar la guía antes de zarpar."
-                    )
-
-            # 🟢 INSERTO QUIRÚRGICO 1: Buscamos dónde están físicamente guardados los lotes hoy
-            quants = self.env['stock.quant'].search([
-                ('lot_id', 'in', lots.ids),
-                ('quantity', '>', 0),
-                ('location_id.usage', '=', 'internal')
-            ])
-            
-            # Agrupamos los lotes según su puerto/bodega real
-            lots_by_location = {}
-            for lot in lots:
-                lot_quant = quants.filtered(lambda q: q.lot_id == lot)[:1]
-                if not lot_quant:
-                    # 🛡️ Protección mejorada: Si alguien sacó el lote a mano, avisamos antes de que Odoo explote
-                    raise UserError(_("El lote %s no tiene stock físico disponible en ninguna bodega interna.") % lot.name)
-                
-                loc = lot_quant.location_id
-                if loc not in lots_by_location:
-                    lots_by_location[loc] = self.env['stock.lot']
-                lots_by_location[loc] |= lot
-
-            pickings = self.env['stock.picking']
-
-            # 🟢 INSERTO QUIRÚRGICO 2: Iteramos sobre cada bodega real encontrada y aplicamos SU código original
-            for source_location, loc_lots in lots_by_location.items():
-                
-                # Buscamos el Almacén que es dueño de esta ubicación específica
-                warehouse = source_location.warehouse_id or self.env['stock.warehouse'].search([('view_location_id', 'parent_of', source_location.id)], limit=1)
-                
-                # 🛡️ Su validación de seguridad original:
-                if not warehouse:
-                    raise UserError(_("No se encontró un almacén configurado para la ubicación %s.") % source_location.display_name)
-
-                # ==============================================================================
-                # A PARTIR DE AQUÍ ES EXACTAMENTE SU CÓDIGO (Solo cambiamos warehouse.lot_stock_id.id por source_location.id)
-                # ==============================================================================
-                picking = self.env['stock.picking'].create({
-                    'picking_type_id': warehouse.out_type_id.id,
-                    'location_id': source_location.id, # ✅ Adaptado al puerto real
-                    'location_dest_id': self.env.ref('stock.stock_location_customers').id,
-                    'origin': self.name,
-                })
-
-                for lot in loc_lots: # Iteramos solo los lotes de este puerto
-                    move = self.env['stock.move'].create({
-                        'name': f"Salida {self.name}",
-                        'product_id': lot.product_id.id,
-                        'product_uom_qty': 1,
-                        'product_uom': lot.product_id.uom_id.id,
-                        'picking_id': picking.id,
-                        'location_id': source_location.id, # ✅ Adaptado
-                        'location_dest_id': self.env.ref('stock.stock_location_customers').id,
-                    })
-                    # Odoo 18: Movemos el lote directamente
-                    self.env['stock.move.line'].create({
-                        'move_id': move.id,
-                        'product_id': lot.product_id.id,
-                        'lot_id': lot.id,
-                        'quantity': 1, # 'quantity' reemplaza a 'qty_done' en v18
-                        'product_uom_id': lot.product_id.uom_id.id,
-                        'location_id': source_location.id, # ✅ Adaptado
-                        'location_dest_id': self.env.ref('stock.stock_location_customers').id,
-                        'picking_id': picking.id,
-                    })
-
-                picking.action_confirm()
-                picking.action_assign()
-                picking.button_validate() # 🚀 AQUÍ ESTÁ LA AUTOMATIZACIÓN REAL
-                pickings |= picking
-
-            return pickings
-            
     def action_deliver(self):
         if self.state!='in_transit':
             raise ValidationError(_("Solo un embarque en tránsito puede entregarse"))

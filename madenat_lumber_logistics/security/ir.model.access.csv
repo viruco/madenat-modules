@@ -7,6 +7,8 @@ access_lumber_shipment_cost_line_user,lumber.shipment.cost.line.user,model_lumbe
 access_lumber_container_rollover_wizard_user,lumber.container.rollover.wizard.user,model_lumber_container_rollover_wizard,base.group_user,1,1,1,0
 access_lumber_container_rollover_wizard_manager,lumber.container.rollover.wizard.manager,model_lumber_container_rollover_wizard,base.group_system,1,1,1,1
 access_lumber_container_lot_wizard_user,lumber.container.lot.wizard.user,model_lumber_container_lot_wizard,base.group_user,1,1,1,1
+access_lumber_shipment_rebaja_wizard_oper,lumber.shipment.rebaja.wizard.oper,model_lumber_shipment_rebaja_wizard,madenat_lumber_core.group_madenat_operaciones,1,1,1,1
+access_lumber_shipment_rebaja_wizard_jef,lumber.shipment.rebaja.wizard.jef,model_lumber_shipment_rebaja_wizard,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
 access_lumber_document_checklist,lumber.document.checklist,model_lumber_document_checklist,base.group_user,1,1,1,1
 access_lumber_shipment_document,lumber.shipment.document,model_lumber_shipment_document,base.group_user,1,1,1,1
 access_lumber_shipping_rule_user,lumber.shipping.rule.user,model_lumber_shipping_rule,base.group_user,1,0,0,0

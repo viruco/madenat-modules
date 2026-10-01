@@ -28,6 +28,14 @@
             action="action_lumber_container_consolidation"
             sequence="15"/>
         
+        <!-- REBAJA POR NAVE (AD-82 / CANON/18 §7.3) -->
+        <menuitem
+            id="menu_lumber_shipment_rebaja"
+            name="Rebajar por Nave"
+            parent="menu_lumber_logistics"
+            action="action_lumber_shipment_rebaja_wizard"
+            sequence="17"/>
+
         <!-- CONTENEDORES -->
         <menuitem 
             id="menu_lumber_containers" 

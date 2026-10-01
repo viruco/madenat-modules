@@ -32,7 +32,10 @@
 
                     <button name="action_set_in_transit" string="Rematar Nave (Zarpe)" type="object" 
                             invisible="state != 'confirmed'" class="btn-primary"
-                            confirm="¿Está seguro de rematar la nave? Se generará y validará automáticamente el rebaje de stock."/>
+                            confirm="¿Está seguro de rematar la nave? El zarpe NO descuenta stock (el inventario ya se rebajó por contenedor)."/>
+
+                    <button name="action_open_rebaja_wizard" string="Rebajar por nave" type="object"
+                            invisible="state not in ('draft', 'confirmed')" class="btn-secondary"/>
 
                     <button name="action_deliver" string="Entregar" type="object" 
                             invisible="state != 'in_transit'" class="btn-primary"/>
