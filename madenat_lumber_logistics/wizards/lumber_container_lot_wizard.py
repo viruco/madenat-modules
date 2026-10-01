@@ -157,7 +157,9 @@ class LumberContainerLotWizard(models.TransientModel):
                     ('volumen_restante_m3', '>', 0),
                     ('id', 'not in', wizard.container_id.lot_ids.ids),
                     ('id', 'not in', occupied_lot_ids),
-                    ('product_id.type', 'in', ['product', 'consu']),
+                    # A5: 'product' es un type obsoleto en Odoo 18; el equivalente
+                    # válido (y comportamiento previo efectivo) es solo 'consu'.
+                    ('product_id.type', 'in', ['consu']),
                     # Bloqueo de lotes huérfanos y guías draft/cancelled
                     '|', ('reception_id', '!=', False), ('guia_processing_id', '!=', False),
                     '|', ('guia_processing_id', '=', False), ('guia_processing_id.state', 'not in', ['draft', 'cancelled']),
