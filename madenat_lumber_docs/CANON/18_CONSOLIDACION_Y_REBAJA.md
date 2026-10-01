@@ -1,7 +1,7 @@
 # 18 — Consolidación y Rebaja de Contenedores y Naves
 
-**Versión documental:** 1.1.0
-**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01: rebaja por contenedor/nave implementada (AD-82/AD-84); §14 Estado de implementación -->
+**Versión documental:** 1.2.0
+**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01 (2): §7.5 (imputación SV fuera de la exportación, AD-87), visibilidad SV por defecto (D9), §14.6 clasificación de bloqueos (AD-88); AD-83 reemplazada; AD-82/AD-84 alineadas -->
 **Estado:** 🟢 **EN IMPLEMENTACIÓN** — Especificación de la **consolidación** (vincular/reservar) y la **rebaja** (descontar) de contenedores y naves. La **rebaja por contenedor** y **por nave** está **implementada** (AD-82 y AD-84 **APROBADAS**; AD-83 **APROBADA EN PRINCIPIO** sin extraer módulo). Ver §14 «Estado de implementación». **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md` ni `17_CONSTITUCION_VOLUMENES.md`; los referencia.
 **Responsable revisión:** 2026-10-01 — Alta del documento canónico `18` a solicitud del usuario (ciclo AD-81: «Consolidación: por contenedor y rebaja por motonave»). Registro de AD-85 y AD-86 en estado PROPUESTA.
 
@@ -307,6 +307,9 @@ Todas las pantallas **reutilizan** vistas/acciones existentes y añaden lo míni
   `estado_trazabilidad ∈ {en_patio, procesado, recepcionado}`, `technical_validation='approved'`, no en
   otros contenedores activos, producto `product/consu`, con `reception_id` **o** `guia_processing_id`
   (y guía no `draft`/`cancelled`).
+  - **Visibilidad SV por defecto (D9, AD-87):** los lotes **SV** (`lot_flow_type='volume'`) se **ocultan
+    por defecto** en este asistente (elección de UX; **no se impide** seleccionarlos). El SV **no se
+    exporta** (`19` §10.3).
 
 ### 7.2 Rebajar contenedor
 
@@ -335,6 +338,16 @@ Todas las pantallas **reutilizan** vistas/acciones existentes y añaden lo míni
   - **Dos volúmenes:** EXPORT a la izquierda y NOMINAL a la derecha (conforme `17` §2).
   - **Cabecera:** nave, viaje y reserva (booking) — datos hoy dispersos (viaje en `shipment.voyage_id`,
     reserva solo como `booking_reference` Char; de ahí el campo `booking_id` propuesto, §3.4).
+
+### 7.5 Imputación SV (procesados) — fuera de la exportación (AD-87)
+
+- **El SV (Lote Volumen) no se exporta.** La consolidación/rebaja de este documento (§3–§9) opera sobre
+  lotes de **tarja**; los lotes SV **no** son objeto de contenedor de exportación.
+- El vínculo del SV con la madera procesada que retorna del procesador es la **imputación declarada**
+  etiqueta→SV, cuya pantalla es el **Asistente de Imputación** al recibir la guía de procesados (no una
+  pantalla de este documento). Norma y UX: `19_IMPUTACION_SV_Y_PROCESADORES.md` §6, §10.
+- La **salida nativa del quant del SV** ocurre en la imputación (no en la rebaja de contenedor). Alinea
+  AD-82 y **reemplaza AD-83** (`19` §4.4).
 
 
 ---
@@ -379,6 +392,10 @@ Todas las pantallas **reutilizan** vistas/acciones existentes y añaden lo míni
 
 > **Nota:** la propuesta de grupo y matriz se registra como **AD-86 PROPUESTA** (no aprobada).
 
+> **Imputación SV (AD-87):** los roles de la **imputación** (Operaciones prepara/aplica/deja pendiente;
+> Jefatura/Costos editan costo; Auditoría revisa desviaciones) se especifican en `19` §9. Reutiliza los
+> grupos vigentes; no crea grupo nuevo.
+
 
 ---
 
@@ -411,6 +428,9 @@ apoya en las suites vigentes de logística y SV como referencia de aislamiento
 fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
 (`@tagged('post_install', '-at_install', …)`, `INDICE_DOCUMENTACION.md` §9 / T5).
 
+**Imputación SV (AD-87):** los escenarios de la vía SV (imputación etiqueta→SV, saldo por procesador,
+merma documental) se detallan en `19` §15 (T-01..T-12); no duplican los T-01..T-12 de este documento.
+
 
 ---
 
@@ -423,8 +443,11 @@ fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
 - **Contenedores consolidados sin zarpar** (`loading`/`loaded`/`sealed`): no tienen descuento nativo; son
   candidatos directos a la nueva **rebaja** (§4/§7).
 - **Lotes SV** con rebaja aplicada en el ledger pero **sin** efecto en `stock.quant`
-  (`17` §2.8): quedan con saldo SV descontado y stock intacto. La nueva vía (§5) no reescribe historia; la
-  alineación se resuelve en **nuevas** operaciones/ajustes autorizados (no por migración masiva de datos).
+  (`17` §2.8): quedan con saldo SV descontado y stock intacto. **Reencuadre 2026-10-01 (AD-87):** ese
+  comportamiento correspondía a la **asignación SV a contenedor de exportación**, que **deja de aplicar**
+  (el SV **no se exporta**); para **procesados**, la **imputación** sí descuenta el quant del SV
+  (`19`, `17` §2.8). La nueva vía no reescribe historia; la alineación se resuelve en **nuevas**
+  operaciones/ajustes autorizados (no por migración masiva de datos).
 
 ### 10.2 El zarpe actual
 
@@ -475,6 +498,11 @@ fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
 > **Nota Q-09:** la regla de los anchos 170/180 mm se registra como **diferida**, sin decidir su alcance;
 > queda pendiente de especificación propia.
 
+> **Imputación SV (AD-87):** las preguntas del frente de **imputación** (costo del SV, `action_type`,
+> tolerancias, retorno a granel, umbrales de alerta) se registran en `19` §17 (Q-19-1..Q-19-8). Nota:
+> Q-04 (ubicación destino) y Q-05 (ventana de reversa) aplican a la rebaja de **tarja**; su equivalente SV
+> está especificado en `19`.
+
 
 ---
 
@@ -492,6 +520,8 @@ fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
 | R-06 | **Ambigüedad de «consolidación»** | Glosario de tres usos §1.2 |
 | R-07 | **Pérdida de historia** si se «migran» datos | Solo nuevas operaciones; sin reescritura de historia §10 |
 | R-08 | **Duplicidad de ACL** de `lumber.shipment.cost.line` | Unificación propuesta §8.3 (AD-86) |
+| R-09 | **SV exportado por error** (tratar un lote SV como tarja) | El SV **no se exporta**; oculto por defecto en el asistente (§7.1/D9); su salida es la imputación (`19`) |
+| R-10 | **Doble descuento del SV** (imputación + rebaja) | Causa única de descuento del SV = imputación; invariantes AD-84 ampliados (`19` §7.3) |
 
 ### 12.2 Alternativas descartadas (y por qué)
 
@@ -517,6 +547,9 @@ fijar el estado inicial. Los tests deben declarar su **fase** explícitamente
   canónico del tema y ante `04_DECISION_LOG.md`).
 - **Nomenclatura:** español, con términos técnicos en inglés entre paréntesis, conforme a las convenciones
   del vault.
+- **Actualización 2026-10-01 (AD-87/AD-88):** se añaden §7.5 (imputación SV fuera de la exportación), la
+  nota de visibilidad SV por defecto (D9) y la **clasificación de bloqueos** (§14.6); AD-83 **reemplazada**
+  por AD-87; AD-82/AD-84 **alineadas**. Referencias al frente de imputación: `19`.
 
 **Evidencia (verificación de código realizada en esta sesión):**
 - `madenat_lumber_logistics/models/lumber_container.py` (estados `238-250`; `_inverse_lot_ids` `330-405`;
@@ -581,4 +614,24 @@ armador/naviera; rolleo como evento; tarja por paquete; extracción del módulo 
   `TestContainerLotWizardDisponible`, `TestConsolidationActionDomain`, `TestSvAllocation`).
 - Regresión `madenat_lumber_core` (308), `madenat_lumber_intake` (395), `madenat_lumber_costing`,
   `madenat_lumber_billing`, `madenat_ingestion_engine`: **sin regresiones nuevas** (ver informe de sesión).
+
+### 14.6 Clasificación de bloqueos (2026-10-01, AD-88)
+
+Bajo el principio «**advertir, motivar, auditar**» (AD-88), se clasifican los bloqueos vigentes de esta rama.
+Detalle consolidado en `19` §14.
+
+| # | Bloqueo | Clasificación propuesta |
+|---|---|---|
+| B-01 | Zarpe con contenedores no rebajados | **Advertencia con motivo** (evento logístico; el zarpe no descuenta) |
+| B-02 | Rebaja sin disponible (descontar más que el quant) | **Duro** (integridad técnica; quant nunca negativo). El exceso *nominal* sobre el saldo SV es advertencia + motivo |
+| B-03 | Reversa con embarque entregado / viaje cancelado | **Duro**, con **override de Gerencia con motivo** como opción a decidir (Q-19-5) |
+| B-04 | Saldo SV (Σ > saldo) | **Advertencia con motivo**; duro en el techo del quant |
+| B-05 | Rol insuficiente | **Duro** (permisos por rol) |
+| B-06 | Viaje cerrado | **Duro** (regla financiera) |
+| B-07 | Costos distribuidos impiden rolleo | **Duro** (revertir costos primero) |
+| B-08 | Lote duplicado en dos contenedores | **Duro** (técnico; H-N1) |
+
+**Síntesis:** pasan a **advertencia con motivo** B-01 y B-04; permanecen **duros** B-02, B-05, B-06, B-07, B-08;
+B-03 queda duro con override de Gerencia sujeto a decisión. Los casos con motivo se registran en
+`madenat.audit.log` (snapshot + firma).
 

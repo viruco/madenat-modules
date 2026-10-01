@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.1.0
-**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01: §6 marca F-01 y F-02 RESUELTOS (AD-82/AD-84, A-3) -->
+**Versión documental:** 1.2.0
+**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01 (2): §2.8 reescrita (el SV nunca se exporta; la salida del SV ocurre por la imputación, AD-87); §7 alinea AD-82/AD-84 (aprobadas) y AD-83 (reemplazada por AD-87). Resuelve CR-19-01. -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -62,9 +62,11 @@ OFICIAL (SV) = official_volume_m3                        (guía Volumen; = nomin
 | **Prorrateo de costos — `volume_physical`** | NOMINAL | factor = `lot.volumen_m3 / Σ` | `madenat_lumber_costing/wizards/lumber_cost_distribution.py:75-78,183-185` |
 | **Prorrateo de costos — `volume_export`** | EXPORT | factor = `lot.vol_shipment_m3 / Σ` | `lumber_cost_distribution.py:75-78,178-181` |
 
-### 2.8 Nota SV (Lote Volumen)
+### 2.8 Nota SV (Lote Volumen) — reescrita 2026-10-01 (AD-87)
 - El lote SV se crea con `volume_purchase_m3 = vol_shipment_m3 = volumen_m3 = official_volume_m3` y dimensiones = 0 (`intake_guia_processing.py:557-563`).
-- El **stock** del lote SV se descuenta por la **salida nativa** (picking), no por la rebaja SV. La **rebaja SV** sólo mueve el ledger (`madenat.sv.operation`), **sin efectos en `stock.quant`** (`madenat_sv_operation.py:14`).
+- **El SV nunca se exporta** (D1): los lotes `lot_flow_type='volume'` **no** participan de la consolidación/rebaja de exportación (documento `18`), que opera sobre lotes de **tarja**.
+- **Salida del stock del SV:** la produce la **imputación** etiqueta→SV (AD-87) mediante **salida nativa** (picking/`stock.move`), de forma **atómica** con el asiento del ledger (`madenat.sv.operation`, tipo `imputacion`). El efecto es **físico y trazable** sobre el quant del SV.
+- **Reconciliación (CR-19-01):** la nota previa —«la rebaja SV sólo mueve el ledger, sin efectos en `stock.quant`» (`madenat_sv_operation.py:14`)— describía la **asignación SV a contenedor de exportación**, que **deja de aplicar** al SV (no se exporta). Para el caso **procesados**, la imputación **sí** descuenta el quant del SV. El saldo SV incorpora las imputaciones activas: `sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas` (`19` §7.3; AD-84 ampliada).
 
 ### 2.9 Invariante verificado en datos (`madenat_test`, 2026-10-01)
 - 78 lotes con quant interno > 0; **77 tienen `quant.quantity == volumen_m3`** (nominal) → el stock almacenado **es** el nominal. 41 lotes sin quant interno (consumidos/revertidos).
@@ -162,15 +164,16 @@ Esta es la **base** de la Constitución (§1).
 
 ---
 
-## 7. Propuestas de decisión (AD) — PROPUESTA (NO aprobadas)
+## 7. Decisiones y su estado (AD-82/AD-83/AD-84 · AD-87)
 
-> Registradas como **AD-82, AD-83 y AD-84** en `04_DECISION_LOG.md`, todas en estado **PROPUESTA — NO APROBADA**. **No constituyen regla vigente** hasta su aprobación explícita. **No autorizan cambios de código, datos ni parámetros.**
+> Registradas en `04_DECISION_LOG.md`. Estado al 2026-10-01: **AD-82 y AD-84 APROBADAS e implementadas** (contenedores/naves); **AD-83 REEMPLAZADA por AD-87**; **AD-87 APROBADA** (imputación etiqueta→SV y saldo por procesador). Fuente normativa vigente: `19_IMPUTACION_SV_Y_PROCESADORES.md`.
 
-- **AD-82 (PROPUESTA) — Salida única de stock al rebajar.** Trasladar la salida nativa de stock a la acción de **rebajar contenedor/nave**; el **zarpe deja de descontar**. Objetivo: un único punto de descuento trazable, coherente con A-1. Sustituye el comportamiento de F-01.
-- **AD-83 (PROPUESTA) — Módulo propio para la rebaja SV con descuento por procesados.** Extraer la rebaja SV a un módulo/ledger con **descuento explícito por procesados**, de modo que la asignación parcial a contenedores salga **exactamente por el volumen asignado** (A-2), y el stock acompañe al ledger.
-- **AD-84 (PROPUESTA) — Regla de invariantes del ledger.** Fijar los **invariantes** del ledger SV y del stock: (i) `volumen_restante_m3` = Σ quant interno; (ii) `sv_available_m3` = baseline − rebajado activo; (iii) suma de rebajas por destino ≤ volumen oficial del lote; (iv) todo descuento de stock tiene una única causa trazable (rebaja, consumo o ajuste). Con guardas de concurrencia.
+- **AD-82 (APROBADA) — Salida única de stock al rebajar contenedor/nave.** La salida nativa ocurre en la acción de **rebajar**; el **zarpe no descuenta**. Rige la **exportación de lotes de tarja**; el **SV no se exporta** (su salida es la imputación, AD-87).
+- **AD-83 (⛔ REEMPLAZADA por AD-87) — Módulo propio de rebaja SV.** Con D1/D3, el «descuento por procesados» se materializa como **imputación**; no se extrae módulo propio y la asignación SV a contenedor de exportación no aplica. El principio «descontar exactamente el volumen asignado (no `1`)» se conserva (AD-82 tarja / AD-87 SV).
+- **AD-84 (APROBADA, ampliada por AD-87) — Invariantes del ledger y del stock.** (i) `volumen_restante_m3` = Σ quant interno; (ii) `sv_available_m3` = baseline − Σ rebajas activas − **Σ imputaciones activas**; (iii) Σ (rebajas + imputaciones) por destino ≤ volumen oficial del lote; (iv) todo descuento de stock tiene una única causa trazable (**imputación** para el SV; rebaja para tarja; ajuste autorizado). Con guardas de concurrencia.
+- **AD-87 (APROBADA) — Imputación declarada etiqueta→SV y saldo por procesador.** Vínculo declarado, sin genealogía; efecto físico único del SV; ubicación interna `Procesadores/<X>`; merma documental; costo por m3 editable. Detalle: `19`.
 
-Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84).
+Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, AD-87).
 
 ---
 
