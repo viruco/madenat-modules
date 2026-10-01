@@ -226,7 +226,8 @@ class LumberCostDistributionWizard(models.TransientModel):
                 'name': cost_name,
                 'cost_type': self.cost_type,
                 'amount_usd': amount,
-                'partner_id': self.partner_id.id,
+                # Odoo 18: el campo real de stock.lot.cost.line es `partnerid`.
+                'partnerid': self.partner_id.id,
                 'date': fields.Date.context_today(self),
                 'notes': f"Origen: {self.target_model} | Ref: {self.ref}"
             })

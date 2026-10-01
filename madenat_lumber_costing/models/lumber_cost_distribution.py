@@ -209,7 +209,9 @@ class LumberCostDistribution(models.Model):
                             'name': f"{cost_type_label} | Doc:{line.invoice_num or 'S/N'}",
                             'cost_type': line.cost_type,
                             'amount_usd': amt_to_inject,
-                            'partner_id': line.partner_id.id or self.partner_id.id,
+                            # Odoo 18: el campo real de stock.lot.cost.line es
+                            # `partnerid` (no `partner_id`).
+                            'partnerid': line.partner_id.id or self.partner_id.id,
                             'date': line.invoice_date,
                             'notes': f"Folio: {self.name} | Base: {line.distribution_method} | Factor: {factor:.4f}"
                         })

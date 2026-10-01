@@ -32,7 +32,11 @@ class TestCostDistribution(TransactionCase):
         # Producto
         cls.product = cls.env['product.product'].create({
             'name': 'Test Lumber Cost Dist',
-            'type': 'product',
+            # Odoo 18: 'product' ya no es un tipo válido. Se usa 'consu'
+            # (Goods) con is_storable=True para conservar el comportamiento
+            # de bien almacenable que esperan los lotes de madera.
+            'type': 'consu',
+            'is_storable': True,
         })
 
         # Cuenta contable opcional
@@ -118,6 +122,35 @@ class TestCostDistribution(TransactionCase):
         self.assertEqual(dist.state, 'draft')
         self.assertEqual(len(dist.generated_line_ids), 0,
                          "Reversión debe eliminar todas las líneas generadas")
+
+    # ── C0: regresión del bug `partnerid` (campo real en Odoo 18) ──
+    def test_apply_with_partner_does_not_raise_invalid_field(self):
+        """`action_apply_costs` de punta a punta con proveedor.
+
+        Regresión: al propagar el proveedor se usaba `partner_id`, que NO es
+        un campo de `stock.lot.cost.line` en Odoo 18 (el campo real es
+        `partnerid`), provocando `ValueError: Invalid field 'partner_id'`.
+        """
+        partner = self.env['res.partner'].create({
+            'name': 'Cost Supplier (regresión partnerid)',
+            'supplier_rank': 1,
+        })
+        dist = self._create_draft_distribution()
+        dist.partner_id = partner
+        dist.cost_line_ids.write({'partner_id': partner.id})
+        dist.lot_ids = [(6, 0, (self.lot1 | self.lot2).ids)]
+
+        # Antes: ValueError: Invalid field 'partner_id' on 'stock.lot.cost.line'
+        dist.action_apply_costs()
+
+        self.assertEqual(dist.state, 'applied')
+        self.assertTrue(
+            dist.generated_line_ids,
+            "action_apply_costs debe generar líneas de costo")
+        for line in dist.generated_line_ids:
+            self.assertEqual(
+                line.partnerid, partner,
+                "El proveedor debe propagarse al campo `partnerid`")
 
     def _create_draft_distribution(self):
         """Helper: crea una distribución en draft con una línea de costo."""

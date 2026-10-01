@@ -28,7 +28,9 @@ class TestLandedCostIntegration(TransactionCase):
 
         cls.product = cls.env['product.product'].create({
             'name': 'Test Landed Cost Prod',
-            'type': 'product',
+            # Odoo 18: 'product' ya no es un tipo válido.
+            'type': 'consu',
+            'is_storable': True,
         })
 
         cls.expense_account = cls.Account.search([
