@@ -15,13 +15,15 @@ from odoo.tools import float_compare
 import logging
 import io          # <-- Para el Excel
 import base64      # <-- Para el Excel
+import hashlib     # <-- I0.3: firma SHA-256 de auditoría de rebaja/reversa
+import json        # <-- I0.3: snapshot determinista de auditoría
 
 _logger = logging.getLogger(__name__)
 
 class LumberContainer(models.Model):
     _name = 'lumber.container'
     _description = 'Contenedor de Exportación'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.deviation.mixin']
     _order = 'name'
     _sql_constraints = [
         ('seal_uniq', 'unique(seal_number, shipment_id)', '¡El número de sello ya existe en este embarque! Verifique duplicados.'),
@@ -723,11 +725,37 @@ class LumberContainer(models.Model):
         return True
 
     def action_reverse_rebaja(self):
-        """B5: reversa de la rebaja (retorno nativo + contrapartida SV)."""
+        """B5: reversa de la rebaja (retorno nativo + contrapartida SV).
+
+        AD-88 / B-03 / B-06 (2026-10-01): si el embarque ya fue entregado o el
+        viaje está cancelado, la reversa exige **override de Gerencia con
+        motivo** (se abre el wizard). En caso contrario, revierte directo.
+        """
         self.ensure_one()
         self._rebaja_require_group(
             'madenat_lumber_core.group_madenat_jefatura_operaciones',
             'madenat_lumber_core.group_madenat_gerencia')
+        shipment = self.shipment_id
+        delivered = bool(shipment and shipment.state == 'delivered')
+        voyage_cancelled = bool(
+            shipment and shipment.voyage_id
+            and shipment.voyage_id.state == 'cancel')
+        if delivered or voyage_cancelled:
+            if not self.env.user.has_group(
+                    'madenat_lumber_core.group_madenat_gerencia'):
+                raise UserError(_(
+                    'La reversa con %s requiere override de Gerencia con '
+                    'motivo.') % (
+                    'el embarque entregado' if delivered
+                    else 'el viaje cancelado'))
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Reversa con override de Gerencia'),
+                'res_model': 'lumber.container.rebaja.reverse.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_container_id': self.id},
+            }
         self._reverse_rebaja_container()
         return True
 
@@ -842,18 +870,34 @@ class LumberContainer(models.Model):
         return picking
 
 
-    def _reverse_rebaja_container(self):
+    def _reverse_rebaja_container(self, override_reason=None):
         self.ensure_one()
         if self.state != 'rebajado':
             raise UserError(_('Solo se puede revertir un contenedor rebajado.'))
-        # Bloqueo: embarque entregado o viaje cancelado (decisión usuario).
-        if self.shipment_id and self.shipment_id.state == 'delivered':
-            raise UserError(_(
-                'No se puede revertir la rebaja: el embarque ya fue entregado.'))
-        if (self.shipment_id and self.shipment_id.voyage_id
-                and self.shipment_id.voyage_id.state == 'cancel'):
-            raise UserError(_(
-                'No se puede revertir la rebaja: el viaje está cancelado.'))
+        shipment = self.shipment_id
+        delivered = bool(shipment and shipment.state == 'delivered')
+        voyage_cancelled = bool(
+            shipment and shipment.voyage_id
+            and shipment.voyage_id.state == 'cancel')
+        if delivered or voyage_cancelled:
+            # AD-88 / B-03 / B-06: decisión DURA salvo override de Gerencia con
+            # motivo (auditado). Antes era un bloqueo duro sin salida.
+            if not override_reason or not self.env.user.has_group(
+                    'madenat_lumber_core.group_madenat_gerencia'):
+                raise UserError(_(
+                    'No se puede revertir la rebaja: %s. Requiere override de '
+                    'Gerencia con motivo.') % (
+                    'el embarque ya fue entregado' if delivered
+                    else 'el viaje está cancelado'))
+            self._guard_deviation(
+                'B-03' if delivered else 'B-06',
+                _('Reversa de rebaja con %s (override de Gerencia).') % (
+                    'embarque entregado' if delivered
+                    else 'viaje cancelado'),
+                reason=override_reason,
+                hard=False,
+                extra={'shipment': shipment.name if shipment else False},
+            )
 
         lines = self.line_ids.filtered(lambda l: l.rebaja_state == 'rebajado')
         if not lines:
@@ -924,13 +968,45 @@ class LumberContainer(models.Model):
         return_picking.button_validate()
         return return_picking
 
+    def _rebaja_snapshot(self, action_type, picking=False):
+        """Snapshot determinista de la rebaja/reversa (convención
+        `madenat.audit.log`): mismos datos → mismo hash SHA-256."""
+        self.ensure_one()
+        payload = {
+            'action_type': action_type,
+            'container': self.name,
+            'container_id': self.id,
+            'state': self.state,
+            'shipment': self.shipment_id.name or False,
+            'shipment_id': self.shipment_id.id or False,
+            'picking': picking.name if picking else False,
+            'picking_id': picking.id if picking else False,
+            'lines': [
+                {
+                    'line_id': line.id,
+                    'lot': line.lot_id.name or False,
+                    'lot_id': line.lot_id.id or False,
+                    'rebaja_qty_m3': round(line.rebaja_qty_m3 or 0.0, 3),
+                    'rebaja_state': line.rebaja_state or False,
+                }
+                for line in self.line_ids.sorted('id')
+            ],
+            'user': self.env.user.id,
+            'timestamp': fields.Datetime.now().isoformat(),
+        }
+        return json.dumps(payload, sort_keys=True)
+
     def _rebaja_audit(self, action_type, picking=False):
         self.ensure_one()
+        snapshot = self._rebaja_snapshot(action_type, picking)
         self.env['madenat.audit.log'].sudo().create({
             'action_type': action_type,
             'description': '%s · %s · %s' % (
                 action_type, self.name, picking.name if picking else ''),
             'batch_id': ','.join(str(i) for i in self.line_ids.ids),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(
+                snapshot.encode('utf-8')).hexdigest(),
             'user_id': self.env.user.id,
         })
 

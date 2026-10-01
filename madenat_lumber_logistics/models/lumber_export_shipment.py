@@ -15,7 +15,7 @@ _logger = logging.getLogger(__name__)
 class LumberExportShipment(models.Model):
     _name = 'lumber.export.shipment'
     _description = 'Embarque de Exportación de Madera' 
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.deviation.mixin']
     _order = 'create_date desc'
 # ==============================================================================
 # 🛡️ CONSTITUCIÓN TÉCNICA DE VOLÚMENES - MÓDULO LOGÍSTICA
@@ -441,25 +441,42 @@ class LumberExportShipment(models.Model):
         🚀 ZARPE (AD-82) — evento de estado/documental.
 
         NO mueve stock: la salida nativa ocurre al REBAJAR el contenedor.
-        1. Exige que TODOS los contenedores estén en estado 'rebajado'.
-        2. Pasa contenedores a 'shipped' y el embarque a 'in_transit'.
+
+        AD-88 / B-01 (2026-10-01): si hay contenedores SIN rebajar, el zarpe
+        ya NO se bloquea: se abre el asistente «Zarpe con pendientes», que
+        ofrece **Rebajar y zarpar** o **Zarpar con excepción** (motivo
+        obligatorio + auditoría). Sin pendientes, zarpa directo.
         """
         self.ensure_one()
-        
-        # 1. 🛡️ VALIDACIÓN DE SEGURIDAD CORREGIDA (Alineada al Negocio)
-        # Prohíbe zarpar si el contenedor está vacío ('empty') o a medio cargar ('loading').
-        # PERMITE zarpar si está terminado ('loaded' = consolidado) o si ya le pusieron sello ('sealed').
-        not_rebajados = self.container_ids.filtered(
-            lambda c: c.state != 'rebajado')
-        if not_rebajados:
-            names = "\n- ".join(not_rebajados.mapped('name'))
-            raise ValidationError(_(
-                "⛔ ACCIÓN DENEGADA: Falta rebajar inventario\n\n"
-                "El zarpe ya NO descuenta stock. Antes de rematar la nave, "
-                "rebaje el inventario de TODOS los contenedores "
-                "(«Rebajar contenedor» o «Rebajar por nave»).\n\n"
-                "Contenedores pendientes de rebaja:\n\n- %s"
-            ) % names)
+        pending = self.container_ids.filtered(lambda c: c.state != 'rebajado')
+        if pending:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Zarpe con contenedores pendientes de rebaja'),
+                'res_model': 'lumber.shipment.zarpe.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_shipment_id': self.id},
+            }
+        return self._set_in_transit()
+
+    def _set_in_transit(self, exception_reason=None):
+        """Ejecuta el zarpe (sin mover stock). Con `exception_reason` registra
+        la excepción AD-88 (B-01) de forma no bloqueante."""
+        self.ensure_one()
+        pending = self.container_ids.filtered(lambda c: c.state != 'rebajado')
+        if pending:
+            names = ', '.join(pending.mapped('name'))
+            # AD-88 (B-01): advertencia con motivo + auditoría (no bloquea).
+            self._guard_deviation(
+                'B-01',
+                _('Se zarpó con contenedores SIN rebajar (%s). El inventario '
+                  'de esos contenedores NO fue descontado. Use «Rebajar '
+                  'contenedor» para regularizar.') % names,
+                reason=exception_reason,
+                hard=False,
+                extra={'pending_containers': pending.mapped('name')},
+            )
 
         # 🔄 SINCRONIZACIÓN DE ESTADOS (Padre -> Hijos). Sin movimiento de stock.
         self.container_ids.write({'state': 'shipped'})
