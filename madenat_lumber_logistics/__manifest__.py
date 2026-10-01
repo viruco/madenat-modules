@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.2.0',
+    'version': '18.0.1.3.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -48,6 +48,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'views/lumber_export_shipment_views.xml', # Embarques (Padre)
         'views/lumber_container_views.xml',       # Contenedores (Hijo)
         'views/stock_lot_views_inherit.xml',      # Ajustes en Lotes
+        # 🏷️ Programa SV — vínculo de rebajas SV con contenedor/embarque.
+        'views/madenat_sv_operation_logistics_views.xml',
         'views/lumber_document_checklist_views.xml',
         
         # 7. 🚀 BI & PROFITABILITY (Fix para error de dependencia de campos)

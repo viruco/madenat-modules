@@ -1037,3 +1037,24 @@ class StockLot(models.Model):
         for lot in self:
             lot.container_id = False # Desvincula el lote del contenedor
         return True
+
+
+class MadenatSvOperationLogistics(models.Model):
+    """Vínculo del ledger SV con embarque/contenedor (asignación logística)."""
+
+    _inherit = 'madenat.sv.operation'
+
+    destination_shipment_id = fields.Many2one(
+        'lumber.export.shipment',
+        string='Embarque destino',
+        ondelete='set null',
+        index=True,
+        help='Embarque al que se asignó el volumen rebajado (si aplica).',
+    )
+    destination_container_id = fields.Many2one(
+        'lumber.container',
+        string='Contenedor destino',
+        ondelete='set null',
+        index=True,
+        help='Contenedor al que se asignó el volumen rebajado (si aplica).',
+    )

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- 🏷️ Programa SV — vínculo del ledger SV con embarque/contenedor -->
+
+    <record id="view_madenat_sv_operation_list_logistics" model="ir.ui.view">
+        <field name="name">madenat.sv.operation.list.logistics</field>
+        <field name="model">madenat.sv.operation</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_madenat_sv_operation_list"/>
+        <field name="arch" type="xml">
+            <field name="destination_reference" position="after">
+                <field name="destination_container_id" optional="hide"/>
+                <field name="destination_shipment_id" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_operation_search_logistics" model="ir.ui.view">
+        <field name="name">madenat.sv.operation.search.logistics</field>
+        <field name="model">madenat.sv.operation</field>
+        <field name="inherit_id" ref="madenat_lumber_core.view_madenat_sv_operation_search"/>
+        <field name="arch" type="xml">
+            <field name="reason" position="after">
+                <field name="destination_container_id"/>
+                <field name="destination_shipment_id"/>
+            </field>
+            <filter name="group_by_user" position="after">
+                <filter name="group_by_container" string="Contenedor destino"
+                        context="{'group_by': 'destination_container_id'}"/>
+                <filter name="group_by_shipment" string="Embarque destino"
+                        context="{'group_by': 'destination_shipment_id'}"/>
+            </filter>
+        </field>
+    </record>
+
+</odoo>

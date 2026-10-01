@@ -68,6 +68,15 @@
                 <field name="validation_message" widget="html" nolabel="1" 
                        invisible="not weight_exceeds and not volume_exceeds"/>
 
+                <!-- 🏷️ PROGRAMA SV — rebaja explícita por etiqueta Volumen -->
+                <group string="🏷️ Etiquetas SV (Volumen)">
+                    <field name="sv_rebaja_volume_m3"/>
+                    <div class="text-muted" colspan="2">
+                        Solo aplica a etiquetas SV. 0 = usar todo el saldo
+                        disponible de cada etiqueta (no puede excederlo).
+                    </div>
+                </group>
+
                 <footer>
                     <button string="Asignar Lotes" name="action_assign" type="object" class="btn-primary" 
                             invisible="weight_exceeds or volume_exceeds"/>

@@ -11,6 +11,7 @@ Características:
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare
 import logging
 import io          # <-- Para el Excel
 import base64      # <-- Para el Excel
@@ -342,6 +343,12 @@ class LumberContainer(models.Model):
                 
                 # 2. LOTES AGREGADOS: Marcar dueño, crear línea Y cambiar estado
                 lots_to_add = target_lots_from_wizard - current_lots_in_db
+                # 🏷️ PROGRAMA SV — los lotes Volumen exigen rebaja explícita
+                # trazable (saldo validado) antes de su asignación.
+                sv_lots_to_add = lots_to_add.filtered(
+                    lambda l: l.lot_flow_type == 'volume')
+                if sv_lots_to_add:
+                    container._sv_allocate_lots(sv_lots_to_add)
                 for lot in lots_to_add:
                     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     # 🛡️ GUARDA ANTI-FUGA (2026-06-18):
@@ -385,12 +392,71 @@ class LumberContainer(models.Model):
                 # 3. LOTES ELIMINADOS: Liberar el lote, borrar línea Y devolver a patio
                 lots_to_remove = current_lots_in_db - target_lots_from_wizard
                 if lots_to_remove:
+                    # 🏷️ PROGRAMA SV — liberar la rebaja de la asignación.
+                    sv_lots_to_remove = lots_to_remove.filtered(
+                        lambda l: l.lot_flow_type == 'volume')
+                    if sv_lots_to_remove:
+                        container._sv_release_lots(sv_lots_to_remove)
                     lots_to_remove.write({
                         'container_id': False,
                         'estado_trazabilidad': 'en_patio' # 👈 Liberación automática
                     })
                     lines_to_delete = container.line_ids.filtered(lambda l: l.lot_id in lots_to_remove)
                     lines_to_delete.unlink()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # 🏷️ PROGRAMA SV — Asignación con rebaja explícita (solo lotes Volumen)
+    # El comportamiento de lotes no-SV permanece intacto.
+    # ══════════════════════════════════════════════════════════════════════
+    def _sv_allocation_volume(self, lot):
+        """Volumen SV a rebajar en la asignación.
+
+        `madenat_sv_rebaja_per_lot` (contexto del asistente) permite indicar un
+        volumen explícito; 0/vacío = saldo disponible completo de la etiqueta.
+        """
+        lot.ensure_one()
+        requested = self.env.context.get('madenat_sv_rebaja_per_lot') or 0.0
+        return requested if requested > 0 else lot.sv_available_m3
+
+    def _sv_allocate_lots(self, lots):
+        """Crea la rebaja SV vinculada al contenedor/embarque (valida saldo)."""
+        Operation = self.env['madenat.sv.operation']
+        for container in self:
+            for lot in lots:
+                volume = container._sv_allocation_volume(lot)
+                if float_compare(
+                        volume, 0.0, precision_rounding=0.001) <= 0:
+                    raise ValidationError(_(
+                        'La etiqueta SV %s no tiene saldo disponible para '
+                        'asignar al contenedor %s.'
+                    ) % (lot.name or lot.id, container.name or ''))
+                Operation.sv_create_rebaja(
+                    lot,
+                    volume,
+                    reason=_(
+                        'Asignación de etiqueta SV al contenedor %s%s.'
+                    ) % (
+                        container.name or '',
+                        ' · embarque %s' % container.shipment_id.name
+                        if container.shipment_id else '',
+                    ),
+                    destination_container=container,
+                    destination_shipment=container.shipment_id or None,
+                    destination_reference=container.name or False,
+                )
+
+    def _sv_release_lots(self, lots):
+        """Reversa la rebaja de asignación al liberar el lote (si existe)."""
+        Operation = self.env['madenat.sv.operation']
+        for container in self:
+            for lot in lots:
+                Operation.sv_reverse_allocation(
+                    lot,
+                    container=container,
+                    reason=_(
+                        'Liberación de etiqueta SV del contenedor %s.'
+                    ) % (container.name or ''),
+                )
 
     def action_open_rollover_wizard(self):
             """ 🔌 PUENTE SEGURO: Abre el wizard de rollover sin errores de XMLID """

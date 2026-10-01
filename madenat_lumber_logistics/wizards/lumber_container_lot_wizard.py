@@ -11,6 +11,7 @@ para evitar discrepancias entre vista previa y realidad.
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools import float_compare
 import logging
 
 
@@ -73,6 +74,15 @@ class LumberContainerLotWizard(models.TransientModel):
         'lot_id',
         'Lotes a Asignar',
         domain="[('id', 'in', available_lot_ids)]"
+    )
+
+    # 🏷️ PROGRAMA SV — volumen SV a rebajar por etiqueta Volumen asignada.
+    # 0 / vacío = saldo disponible completo de la etiqueta.
+    sv_rebaja_volume_m3 = fields.Float(
+        string='Volumen SV a rebajar por etiqueta (m³)',
+        digits=(16, 3),
+        help='Solo aplica a etiquetas SV (lotes de flujo Volumen). 0 = usar '
+             'todo el saldo disponible de cada etiqueta.',
     )
     
     # ========================================
@@ -352,7 +362,23 @@ class LumberContainerLotWizard(models.TransientModel):
         # ============================================
         # 3. ASIGNACIÓN: Vincular lotes al contenedor
         # ============================================
-        self.container_id.write({
+        # 🏷️ PROGRAMA SV — validación previa del saldo de cada etiqueta SV
+        # y rebaja explícita trazable creada por el contenedor en la misma
+        # transacción. Los lotes no-SV no cambian de comportamiento.
+        sv_lots = self.selected_lot_ids.filtered(
+            lambda lot: lot.lot_flow_type == 'volume')
+        for lot in sv_lots:
+            amount = self.sv_rebaja_volume_m3 or lot.sv_available_m3
+            if float_compare(
+                    amount, lot.sv_available_m3,
+                    precision_rounding=0.001) > 0:
+                raise ValidationError(_(
+                    'La etiqueta SV %s solo tiene %.3f m³ disponibles '
+                    '(solicitado: %.3f m³).'
+                ) % (lot.name or lot.id, lot.sv_available_m3, amount))
+        self.container_id.with_context(
+            madenat_sv_rebaja_per_lot=self.sv_rebaja_volume_m3 or 0.0,
+        ).write({
             'lot_ids': [(4, lot.id) for lot in self.selected_lot_ids]
         })
         
