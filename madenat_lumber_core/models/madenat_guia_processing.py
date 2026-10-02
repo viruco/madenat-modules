@@ -5182,293 +5182,184 @@ class MadenatGuiaProcessing(models.Model):
 
    
     def action_reopen_to_draft(self):
+        """Abre el asistente de reapertura (reversión trazable, no bloqueante).
+
+        Ya NO ejecuta borrado directo de existencias (quants), ni aniquilación
+        de lotes/pickings/moves, ni muta `origin`. La ejecución real vive en
+        `_reopen_to_draft_confirmed` (privado, no invocable por RPC), de modo que
+        una llamada directa a esta acción siempre pasa por el wizard.
         """
-        🔄 REVERSIÓN ARQUITECTÓNICA MADENAT (Path B - Blindado UX v2):
-        Mantiene funcionalidades originales pero permite reversión si los movimientos
-        validados son ÚNICAMENTE internos (bodega a bodega).
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reabrir guía (reversión trazable)'),
+            'res_model': 'madenat.guia.processing.reopen.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'view_id': self.env.ref(
+                'madenat_lumber_core.view_madenat_guia_processing_reopen_wizard_form').id,
+            'context': {'default_guia_processing_id': self.id},
+        }
 
-        🏷️ Tarea B-1 (2026-09-28) — Diseño B: tras limpiar la trazabilidad OC,
-        la referencia documental (`oc_reference_raw`) se RE-EXTRAE del documento
-        adjunto (`_reopen_reextract_oc()`) y se re-ejecuta el match de OC, de
-        modo que la OC vigente siempre provenga del documento realmente adjunto
-        y nunca se pierda en silencio. Fail-soft: si el documento no es legible,
-        el campo queda vacío y el chatter lo informa, sin interrumpir el reset.
-        """
-        from odoo.exceptions import UserError
-        
-        for rec in self:
-            _logger.info(f"🚨 INICIANDO REVERSIÓN SEGURA - Guía {rec.name}")
+    # ── Reapertura trazable no bloqueante (helpers privados) ───────────────
+    def _reopen_physical_effect_info(self):
+        """Efecto físico previsto (solo BT-04/Servicio) y advertencias."""
+        self.ensure_one()
+        consumption = self.consumption_picking_id
+        has_consumption = bool(consumption and consumption.state == 'done')
+        warnings = []
+        if has_consumption:
+            warnings.append(
+                '⏳ Consumo a proceso DONE (%s): se revertirá con retorno '
+                'nativo.' % consumption.name)
+        if self.lot_ids:
+            if 'lumber.container' in self.env:
+                contenedores = self.env['lumber.container'].search(
+                    [('lot_ids', 'in', self.lot_ids.ids)])
+                if contenedores:
+                    warnings.append('📦 %d lote(s) en contenedor/consolidados; '
+                                    'no se modifican (solo advertencia).'
+                                    % len(contenedores))
+            quants_externos = self.env['stock.quant'].search([
+                ('lot_id', 'in', self.lot_ids.ids), ('quantity', '>', 0),
+                ('location_id.usage', 'not in',
+                 ['internal', 'inventory', 'production'])])
+            if quants_externos:
+                warnings.append('🚚 Stock en ubicación externa detectado; no se '
+                                'modifica (solo advertencia).')
+        if 'stock.lot.cost.line' in self.env:
+            costos = self.env['stock.lot.cost.line'].search([
+                ('|'), ('name', 'ilike', self.name),
+                ('lot_id', 'in', self.lot_ids.ids)], limit=1)
+            if costos:
+                warnings.append('💰 Costos asociados; no se modifican '
+                                '(solo advertencia).')
+        albaranes_externos = self.env['stock.picking'].search([
+            ('origin', '=', self.name), ('state', '=', 'done'),
+            ('location_dest_id.usage', '!=', 'internal')])
+        if albaranes_externos:
+            warnings.append('📤 Albarán(es) con salida externa validada (%s); no '
+                            'se modifican (solo advertencia).'
+                            % ', '.join(albaranes_externos.mapped('name')))
+        if not has_consumption and self.lot_ids:
+            warnings.append('⚠️ Sin consumo BT-04 atribuible: no hay reversión '
+                            'física automática. Se conserva stock, lotes, '
+                            'pickings y movimientos (atribución insuficiente).')
+        return {'has_effect': has_consumption, 'warnings': warnings}
 
-            # ═══════════════════════════════════════════════════════
-            # 🛡️ BT-04 — Reversión de salida a proceso (service)
-            # Restaura el stock crudo antes de los escudos financieros.
-            # ═══════════════════════════════════════════════════════
-            rec._reverse_consumption_picking()
-            # ═══════════════════════════════════════════════════════
-
-            # PASO 0: Snapshot de auditoría (Historial en Chatter)
-            body_snapshot = (
-                f"📋 <strong>Snapshot previo a reversión:</strong><br/>"
-                f"- Vol. Físico: {rec.vol_fisico} m3<br/>"
-                f"- Vol. Shipment: {rec.vol_shipment_m3} m3<br/>"
-                f"- Paquetes: {rec.total_paquetes}"
-            )
-            rec.message_post(body=body_snapshot)
-
-            # =======================================================
-            # 🛡️ FASE 1: ESCUDO LOGÍSTICO (Consolidación y Salida Real)
-            # =======================================================
-            if rec.lot_ids:
-                # 1.1 Bloqueo por Consolidación (Si ya está en contenedor, NO se toca)
-                if 'lumber.container' in self.env:
-                    contenedores = self.env['lumber.container'].search([('lot_ids', 'in', rec.lot_ids.ids)])
-                    if contenedores:
-                        nombres = ", ".join(contenedores.mapped('name'))
-                        raise UserError(f"⛔ DENEGADO LOGÍSTICO: Madera consolidada en {nombres}. Desconsolide antes.")
-                
-                # 1.2 Blindaje de Ubicación: ¿La madera salió de la empresa?
-                # Buscamos si los lotes tienen stock en ubicaciones externas (Clientes/Tránsito)
-                quants_externos = self.env['stock.quant'].search([
-                    ('lot_id', 'in', rec.lot_ids.ids),
-                    ('quantity', '>', 0),
-                    ('location_id.usage', 'not in', ['internal', 'inventory', 'production'])
-                ])
-                if quants_externos:
-                    raise UserError("⛔ DENEGADO POR MOVIMIENTO EXTERNO: La madera ya salió a ubicaciones de cliente o tránsito.")
-
-            # =======================================================
-            # 🛡️ FASE 2: ESCUDO FINANCIERO Y ALBARANES VALIDADOS (Inteligente)
-            # =======================================================
-            # 2.1 Verificación de Costos Contables (Flete/Seguro)
-            CostLine = self.env['stock.lot.cost.line'] if 'stock.lot.cost.line' in self.env else None
-            costos_aplicados = False
-            if CostLine:
-                costos_aplicados = CostLine.search([('|'), ('name', 'ilike', rec.name), ('lot_id', 'in', rec.lot_ids.ids)], limit=1)
-
-            if costos_aplicados:
-                raise UserError(f"⛔ BLOQUEO FINANCIERO: Existen costos asociados a la guía {rec.name}. Elimínelos primero.")
-
-            # 2.2 Verificación de Albaranes Validados
-            pickings = self.env['stock.picking'].search([('origin', '=', rec.name)])
-            albaranes_hechos = pickings.filtered(lambda p: p.state == 'done')
-            
-            # 💡 AQUÍ ESTÁ EL AJUSTE: Solo bloqueamos si el destino es EXTERNO.
-            # Si el destino es 'internal' (como Puerto Coronel), permitiremos avanzar.
-            albaranes_externos = albaranes_hechos.filtered(lambda p: p.location_dest_id.usage != 'internal')
-            
-            if albaranes_externos:
-                nombres = ", ".join(albaranes_externos.mapped('name'))
-                raise UserError(f"⛔ DENEGADO: Albaranes con salida externa validados ({nombres}).")
-
-            # =======================================================
-            # 🧹 FASE 3: REVERSIÓN FÍSICA Y LIMPIEZA (ORM Legal)
-            # =======================================================
-            # 1. Cancelamos Pickings en borrador/espera (iteración individual con try/except)
-            for picking in pickings.filtered(lambda p: p.state not in ('done', 'cancel')):
+    def _reopen_to_draft_confirmed(self, reason=None):
+        """Ejecuta la reapertura trazable (solo desde el wizard; privado)."""
+        self.ensure_one()
+        info = self._reopen_physical_effect_info()
+        reason = (reason or '').strip()
+        if info['has_effect'] and not reason:
+            raise UserError(_(
+                'Indique un motivo para continuar: esta reapertura tiene efecto '
+                'físico (reversión de consumo a proceso). Es trazabilidad, no '
+                'aprobación.'))
+        prev_state = self.state
+        consumption = self.consumption_picking_id
+        result = {
+            'warnings': list(info['warnings']),
+            'consumption_picking': consumption.name if consumption else False,
+            'consumption_reversed': False, 'return_name': False,
+        }
+        _logger.info('🔄 Reapertura trazable guía %s (efecto=%s)',
+                     self.name, info['has_effect'])
+        with self.env.cr.savepoint():
+            # 1) Reversión física SOLO de consumo BT-04 (llave fuerte).
+            if info['has_effect']:
+                return_picking = self._reverse_consumption_picking()
+                result['consumption_reversed'] = True
+                result['return_name'] = (
+                    return_picking.name if return_picking else False)
+            # 2) Cancelar pickings NO done (API nativa). No se muta origin.
+            for picking in self.env['stock.picking'].search([
+                    ('origin', '=', self.name),
+                    ('state', 'not in', ('done', 'cancel'))]):
                 try:
                     picking.action_cancel()
                 except Exception as e:
-                    _logger.warning(f"⚠️ No se pudo cancelar picking {picking.name}: {e}")
-                try:
-                    picking.write({'origin': f"ANULADO-{rec.name}"})
-                except Exception:
-                    pass
-
-            # 2. Desvinculamos Albaranes 'Done' Internos (como EMB-00032)
-            # Les cambiamos el origen para que la guía quede "libre" para procesarse de nuevo.
-            if albaranes_hechos:
-                albaranes_hechos.write({'origin': f"REVERTIDO-{rec.name}"})
-                rec.message_post(body=f"⚠️ Se detectaron albaranes internos validados ({', '.join(albaranes_hechos.mapped('name'))}). Se desvincularon para permitir el reset.")
-
-            # 3. Limpieza de Lotes y Staging
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # PATCH 2026-06-18: Capturar IDs de lotes ANTES de
-            # desvincularlos, para poder limpiar sus quants en FASE 3.5.
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            revert_lot_ids = list(rec.lot_ids.ids) if rec.lot_ids else []
-            if rec.lot_ids:
-                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                # 🛡️ CIERRE DE FUGA (2026-06-18):
-                # Desvincular guia_processing_id NO es suficiente porque
-                # logística perdería visibilidad del lote revertido.
-                # Solución: marcar technical_validation='rejected' como
-                # estado persistente en el lote, independiente del
-                # vínculo con la guía. Logística bloqueará lotes con
-                # technical_validation='rejected' aunque no tengan guía.
-                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                rec.lot_ids.write({
+                    _logger.warning('No se pudo cancelar picking %s: %s',
+                                    picking.name, e)
+            # 3) Reset DOCUMENTAL: staging regenerable + cabecera. Se preservan
+            #    lotes, pickings, moves y move lines (historial físico).
+            if self.processing_line_ids:
+                self.processing_line_ids.unlink()
+                self.invalidate_recordset(['processing_line_ids'])
+            if self.lot_ids:
+                # Vínculo operativo desvinculado; la identidad documental
+                # inmutable (volume_source_guia_id) NO se toca.
+                self.lot_ids.write({
                     'guia_processing_id': False,
                     'estado_trazabilidad': 'recepcionado',
                     'technical_validation': 'rejected',
                 })
-                rec.write({'lot_ids': [(5, 0, 0)]})
-
-            if rec.processing_line_ids:
-                rec.processing_line_ids.unlink() 
-                rec.invalidate_recordset(['processing_line_ids'])
-
-            # =======================================================
-            # 🧹 FASE 3.5: LIMPIEZA DE STOCK RESIDUAL (quants)
-            # =======================================================
-            # PATCH 2026-06-18 — Causa raíz CR1:
-            # action_reopen_to_draft NO eliminaba stock.quant, lo que
-            # provocaba que los lotes revertidos siguieran apareciendo
-            # en reportes de logística con quantity > 0.
-            #
-            # Solución: buscar todos los quants asociados a los lotes
-            # revertidos y poner su quantity en 0.0 dentro de un
-            # savepoint para que un fallo parcial no rompa la reversa.
-            # =======================================================
-            if revert_lot_ids:
-                try:
-                    with rec.env.cr.savepoint():
-                        quants_to_clear = rec.env['stock.quant'].sudo().search([
-                            ('lot_id', 'in', revert_lot_ids),
-                            ('quantity', '>', 0),
-                            ('location_id.usage', '=', 'internal'),
-                        ])
-
-                        quant_prev = {
-                            q.id: q.quantity for q in quants_to_clear
-                        }
-                        quants_cleared = len(quants_to_clear)
-
-                        if quants_to_clear:
-                            quants_to_clear.write({'quantity': 0.0})
-
-                            # ── LOG: detalle por quant ──
-                            quant_detail_lines = [
-                                f"  • Quant #{qid}: {prev_qty:.4f} → 0.0000"
-                                for qid, prev_qty in sorted(quant_prev.items())
-                            ]
-                            _logger.info(
-                                "🧹 [FASE 3.5] Reversa Guía %s — %d quants puestos en cero:\n%s",
-                                rec.name, quants_cleared,
-                                '\n'.join(quant_detail_lines),
-                            )
-                            rec.message_post(
-                                body=(
-                                    f"🧹 <strong>Cleanup de Stock Residual:</strong> "
-                                    f"{quants_cleared} existencia(s) puesta(s) en cero "
-                                    f"(quants) de lotes revertidos.<br/>"
-                                    f"Lotes: {len(revert_lot_ids)} | "
-                                    f"Quants: {', '.join(str(qid) for qid in sorted(quant_prev.keys()))}"
-                                )
-                            )
-                        else:
-                            _logger.info(
-                                "🧹 [FASE 3.5] Reversa Guía %s — sin quants residuales "
-                                "que limpiar (lotes: %s)",
-                                rec.name, revert_lot_ids,
-                            )
-                except Exception as e:
-                    _logger.error(
-                        "❌ [FASE 3.5] Error limpiando quants residuales para guía %s: %s",
-                        rec.name, e,
-                    )
-                    rec.message_post(
-                        body=(
-                            f"⚠️ <strong>Cleanup de Stock Parcial:</strong> "
-                            f"No se pudieron poner en cero todos los quants. "
-                            f"Revise manualmente los lotes revertidos.<br/>"
-                            f"Error: {e}"
-                        )
-                    )
-
-            # ── FASE 3.6: Limpieza de stock.move huérfanos ──
-            try:
-                rec._cleanup_orphan_moves_guia()
-            except Exception as e:
-                _logger.warning(
-                    "⚠️ [FASE 3.6] No se pudieron limpiar moves huérfanos "
-                    "para guía %s: %s",
-                    rec.name, e,
-                )
-
-            # 🛡️ Tarea B-1 (2026-09-28) — Opción 3: se captura la OC documental
-            # vigente ANTES del reset, como resguardo por si la re-extracción
-            # posterior no es posible (ver más abajo).
-            previous_oc = rec.oc_reference_raw
-
-            # =======================================================
-            # 🔄 FASE 4: RESET A BORRADOR (LIMPIEZA COMPLETA DE TRAZABILIDAD)
-            # =======================================================
-            # 🛡️ PATCH 2026-06-18: Cierre de fuga de estado.
-            # Campos financieros y de servicio derivados del PDF deben
-            # limpiarse explícitamente para evitar persistencia silenciosa
-            # de datos de una verificación previa al re-procesar con un
-            # PDF distinto.
-            # También se limpia vol_comercial_pdf (extraído del PDF).
-            rec.write({
-                'state': 'draft',
-                'date_processed': False,
-                'vol_fisico': 0.0,
-                'vol_comercial': 0.0,
-                'vol_total_m3': 0.0,
-                'vol_shipment_m3': 0.0,
-                'total_paquetes': 0,
-                'total_lotes_unicos': 0,
-                'lineas_procesadas': 0,
-                'lot_details_data': False,
-                'grouping_details_json': False,
-                # ═══════════════════════════════════════════════════════
-                # 🏷️ Fase 2B — Trazabilidad OC: el reset limpia la referencia
-                # documental para NO arrastrar datos de una verificación previa
-                # con un PDF distinto; INMEDIATAMENTE después se re-extrae del
-                # documento adjunto (`_reopen_reextract_oc()`, Tarea B-1
-                # 2026-09-28), de modo que la OC vigente siempre provenga del
-                # documento realmente adjunto y nunca quede vacía en silencio.
-                # ═══════════════════════════════════════════════════════
-                'order_id': False,
-                'oc_reference_raw': False,
-                'oc_match_status': 'not_found',
-                'oc_match_note': False,
-                # oc_reference_norm se recalcula automáticamente (compute store=True)
-                # ═══════════════════════════════════════════════════════
-                # 🛡️ CIERRE DE FUGA (2026-06-18):
-                # Limpieza explícita de campos financieros y de servicio
-                # derivados del PDF. Sin esta limpieza, una nueva
-                # verificación con PDF distinto arrastraría valores
-                # residuales de la verificación anterior.
-                # ═══════════════════════════════════════════════════════
-                'additional_cost': 0.0,
-                'rate_usd': 1.0,
+                self.write({'lot_ids': [(5, 0, 0)]})
+            previous_oc = self.oc_reference_raw
+            self.write({
+                'state': 'draft', 'date_processed': False,
+                'vol_fisico': 0.0, 'vol_comercial': 0.0, 'vol_total_m3': 0.0,
+                'vol_shipment_m3': 0.0, 'total_paquetes': 0,
+                'total_lotes_unicos': 0, 'lineas_procesadas': 0,
+                'lot_details_data': False, 'grouping_details_json': False,
+                'order_id': False, 'oc_reference_raw': False,
+                'oc_match_status': 'not_found', 'oc_match_note': False,
+                'additional_cost': 0.0, 'rate_usd': 1.0,
                 'rate_date': fields.Date.context_today(self),
-                'service_product_name': False,
-                'service_volume_m3': 0.0,
-                'service_unit_price_clp': 0.0,
-                'service_date': False,
-                'service_code': False,
-                'vol_comercial_pdf': 0.0,
+                'service_product_name': False, 'service_volume_m3': 0.0,
+                'service_unit_price_clp': 0.0, 'service_date': False,
+                'service_code': False, 'vol_comercial_pdf': 0.0,
             })
-
-            # 🏷️ TAREA B-1 (2026-09-28) — Diseño B: la OC documental se
-            # RE-EXTRAE del documento adjunto inmediatamente después del reset
-            # (fail-soft: nunca interrumpe la reversión).
-            reextracted_oc = rec._reopen_reextract_oc()
-
-            # 🛡️ Opción 3 (Tarea B-1, 2026-09-28) — FAILSAFE del valor previo:
-            # si no fue posible re-extraer la OC y la guía ya tenía una
-            # referencia documental, se conserva como resguardo. NO se tocan
-            # `order_id` ni `oc_match_status` (quedan como los dejó el reset)
-            # para no fingir una vinculación que no fue re-confirmada.
+            reextracted_oc = self._reopen_reextract_oc()
             if not reextracted_oc and previous_oc:
-                rec.write({'oc_reference_raw': previous_oc})
-                rec.message_post(body=(
+                self.write({'oc_reference_raw': previous_oc})
+                self.message_post(body=_(
                     "↩️ No fue posible re-extraer la OC del documento; se "
                     "conservó el valor previo ('%s') como resguardo. Verifique "
                     "que corresponda al documento actualmente adjunto."
-                    % previous_oc
-                ))
+                ) % previous_oc)
+        self._reopen_register_audit(prev_state, reason, result)
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'madenat.guia.processing',
+            'res_id': self.id, 'view_mode': 'form', 'target': 'current',
+        }
 
-            rec.message_post(
-                body="🔄 **Reversión Exitosa:** Guía reseteada a borrador. "
-                     "La trazabilidad OC quedó según el mensaje anterior "
-                     "(re-extraída del documento adjunto o conservada como "
-                     "resguardo); lotes, staging y campos financieros/PDF "
-                     "quedaron limpios. "
-                     "Albaranes internos previos desvinculados."
-            )
+    def _reopen_register_audit(self, prev_state, reason, result):
+        """Snapshot + hash + audit.log (deviation) + chatter (no bloqueante)."""
+        import hashlib
+        import json
+        snapshot = json.dumps({
+            'guia': self.name, 'guia_id': self.id,
+            'previous_state': prev_state, 'reason': reason,
+            'warnings': result['warnings'],
+            'consumption_picking': result['consumption_picking'],
+            'consumption_reversed': result['consumption_reversed'],
+            'return_picking': result['return_name'],
+            'lots': self.lot_ids.mapped('name'),
+            'user': self.env.user.id,
+        }, sort_keys=True, default=str)
+        self.env['madenat.audit.log'].sudo().create({
+            'guia_processing_id': self.id,
+            'action_type': 'deviation',
+            'description': '[REOPEN-GUIA] Reapertura trazable | Motivo: %s'
+                           % (reason or '(sin efecto físico)'),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
+        self.message_post(body=_(
+            '↩️ <strong>Reapertura trazable</strong> (%(prev)s → draft).'
+            '<br/>Motivo: %(reason)s'
+            '<br/>Consumo revertido: %(rev)s · Retorno: %(ret)s'
+            '<br/>Advertencias: %(warn)s'
+        ) % {
+            'prev': prev_state, 'reason': reason or '(sin efecto físico)',
+            'rev': result['consumption_reversed'],
+            'ret': result['return_name'] or '-',
+            'warn': ' | '.join(result['warnings']) or '-',
+        })
 
 
     # ── Re-extracción de OC tras el reset (Tarea B-1, 2026-09-28) ────────

@@ -34,6 +34,7 @@
         'wizard/madenat_guia_mass_update_views.xml',
         'wizard/madenat_sv_operation_views.xml',
         'wizard/lumber_reception_reset_wizard_views.xml',
+        'wizard/madenat_guia_processing_reopen_wizard_views.xml',
 
         # ✅ 4. VISTAS DE RECEPCIÓN Y ACCIONES QUE USA EL MENÚ
         'views/guia_processing_views.xml',
