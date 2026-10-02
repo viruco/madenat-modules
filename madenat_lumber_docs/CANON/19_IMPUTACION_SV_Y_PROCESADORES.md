@@ -344,6 +344,9 @@ Para cada etiqueta de retorno, el asistente propone la distribución de su **vol
 3. **Antigüedad** — **FIFO** (SV más antiguos primero), hasta agotar el nominal de la etiqueta.
 
 Reparto resultante: la etiqueta se **desglosa** en una o varias asignaciones etiqueta↔SV (`madenat.sv.imputation.sv.line`) que suman su nominal. El operador puede editar el reparto, el nominal y el costo.
+**Elegibilidad de candidato SV (I2 — precisión 2026-10-02, AD-91).** Se considera **candidato SV** de una imputación el lote `lot_flow_type='volume'` que cumple: (a) **visibilidad multi-company estándar** (compañía operativa **o** `company_id=False`); (b) **saldo documental I2 estrictamente positivo** — `_i2_sv_documental_available_m3 > 0` = nominal SV − Σ imputaciones en estados **activos** (`draft`/`pending`/`applied`; `reversed`/`cancelled` **no** consumen); (c) si la imputación tiene `processor_location_id`, **quant interno positivo** en esa ubicación o su árbol. Si **no** hay procesador configurado, **no** se excluye. Proveedor/producto **no** son filtros duros: solo **prioridad** (procesador → producto → antigüedad **FIFO**, desempate `create_date`/`id`). El flag blando `NO_SV_CANDIDATE` existe solo si la imputación **tiene etiquetas, no tiene `sv_line_ids` y no tiene candidato elegible**; el mismo dominio lo comparten la propuesta FIFO (`_i2_propose_fifo`, sin fallback al nominal) y el guard previo a aplicar. **No** se usa `sv_available_m3` del ledger ni el stock físico como sustituto del saldo documental (D-I2-13).
+
+
 
 ### 10.3 Asistente de contenedores — ocultar SV por defecto (D9)
 
