@@ -110,7 +110,9 @@ class TestVolumeLotIdentity(TransactionCase):
         lot = guia.lot_ids
         label, lot_id = lot.name, lot.id
 
-        guia.action_reopen_to_draft()
+        self.env['madenat.guia.processing.reopen.wizard'].create(
+            {'guia_processing_id': guia.id,
+             'reason': 'Reapertura de prueba'}).action_confirm()
         self.assertEqual(guia.state, 'draft')
         self.assertFalse(guia.lot_ids)
         lot.invalidate_recordset()
@@ -128,7 +130,9 @@ class TestVolumeLotIdentity(TransactionCase):
         lot = guia.lot_ids
         label, lot_id = lot.name, lot.id
 
-        guia.action_reopen_to_draft()
+        self.env['madenat.guia.processing.reopen.wizard'].create(
+            {'guia_processing_id': guia.id,
+             'reason': 'Reapertura de prueba'}).action_confirm()
         guia.write({'state': 'verified'})
         guia.action_validate()
 

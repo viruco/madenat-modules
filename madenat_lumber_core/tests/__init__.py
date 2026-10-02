@@ -33,3 +33,5 @@ from . import test_deviation_guard
 from . import test_ingestion_keywords_seed
 # Reset de recepción no bloqueante y trazable (reversión por movimientos).
 from . import test_reception_reset_traceable
+# Reapertura no bloqueante y trazable de guía procesada (Incremento G1).
+from . import test_guia_reopen_traceable

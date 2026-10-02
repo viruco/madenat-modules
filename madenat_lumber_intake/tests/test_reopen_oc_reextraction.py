@@ -72,7 +72,9 @@ class TestReopenOcReextraction(TransactionCase):
             'partner_id': self.partner.id,
         })
 
-        guia.action_reopen_to_draft()
+        self.env['madenat.guia.processing.reopen.wizard'].create(
+            {'guia_processing_id': guia.id,
+             'reason': 'Reapertura de prueba'}).action_confirm()
         guia.invalidate_recordset()
 
         self.assertEqual(guia.state, 'draft')
@@ -94,7 +96,9 @@ class TestReopenOcReextraction(TransactionCase):
         # valor previo» lo cubre el test del failsafe.
         guia.write({'oc_reference_raw': False})
 
-        guia.action_reopen_to_draft()  # no debe propagar ninguna excepción
+        self.env['madenat.guia.processing.reopen.wizard'].create(
+            {'guia_processing_id': guia.id,
+             'reason': 'Reapertura de prueba'}).action_confirm()  # no debe propagar ninguna excepción
         guia.invalidate_recordset()
 
         self.assertEqual(guia.state, 'draft')
@@ -110,7 +114,9 @@ class TestReopenOcReextraction(TransactionCase):
         guia = self._make_guia('B1-OC-FAILSAFE', b'%PDF-fake no legible')
         guia.write({'oc_reference_raw': 'OC-TEST-999'})
 
-        guia.action_reopen_to_draft()
+        self.env['madenat.guia.processing.reopen.wizard'].create(
+            {'guia_processing_id': guia.id,
+             'reason': 'Reapertura de prueba'}).action_confirm()
         guia.invalidate_recordset()
 
         self.assertEqual(guia.state, 'draft')
