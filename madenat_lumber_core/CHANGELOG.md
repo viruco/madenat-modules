@@ -1,3 +1,35 @@
+## [18.0.6.5.0] - 2026-10-02
+### Added
+- **H1: Reversión física ASISTIDA de producción histórica (sin llave fuerte G2).**
+  - Nuevo wizard `madenat.guia.processing.historical.reverse.wizard` (+ líneas transitorias
+    `madenat.guia.processing.historical.reverse.candidate`) que se abre desde el botón
+    secundario **«🧭 Reversión histórica asistida»** del formulario de Guía. Es aditivo: **no**
+    modifica ni sustituye G1 (`action_reopen_to_draft` / `_reopen_to_draft_confirmed`),
+    G2/G3 (`guia_processing_id` / `_attributed_production_pickings` /
+    `_reverse_production_picking`) ni BT-04 (`_reverse_consumption_picking`).
+  - Alcance EXCLUSIVO: guías de producción **no** `granel`, **sin** consumo BT-04
+    (`consumption_picking_id`) y **sin** producción atribuida por la llave fuerte G2
+    (`_h1_is_historical_production()`; campo computed `can_historical_reverse`).
+  - **Sin atribución automática**: `origin`, `lot_id`, producto, proveedor, texto y fecha son
+    **señales** de propuesta. Clasificación A (origen exacto + cobertura total de lotes +
+    incoming/done + sin retorno ⇒ preseleccionado), B (una señal media / evidencia parcial ⇒
+    visible, no preseleccionado, selección explícita) y C (excluido: prefijo histórico, retorno
+    previo, granel/SV, sin evidencia, compañía ajena, no-`done`, no-`incoming`, FK G2, recepción).
+  - **Solo retorno TOTAL por picking** seleccionado (`_h1_reverse_picking_total`): picking de salida
+    inverso nativo (picking/move/move.line) preservando producto, UoM, lote, ubicaciones, owner,
+    paquete, compañía y `origin_returned_move_id`/`return_id`. **Idempotente** (retorno previo ⇒
+    no se propone ni se permite; reintento reutiliza). Nunca escribe/borra `stock.quant`, nunca
+    borra/desvincula lotes, pickings, moves, move lines ni `lot_ids`.
+  - El operador no queda bloqueado: puede seleccionar candidatos y confirmar, o **no seleccionar
+    ninguno** (sin efecto físico). Motivo obligatorio **solo** con efecto físico. Warnings
+    (contenedor, quant externo, costos, albarán externo, granel/BT-04/FK) nunca bloquean.
+  - Auditoría `madenat.audit.log` `action_type='deviation'` (snapshot JSON + SHA-256, usuario,
+    motivo, selección, retornos, omitidos, warnings, lotes) + chatter de la guía.
+  - ACL para ambos modelos transitorios (`base.group_user`). Cobertura nueva:
+    `TestGuiaHistoricalReverse` (T-H1-01..11).
+  - Validación: suite `madenat_lumber_core`, 304 tests, 0 fallos, 0 errores (292 baseline + 12 H1);
+    regression H1 en `--test-tags h1`: 12 tests, 0 fallos, 0 errores.
+
 ## [18.0.5.5.0] - 2026-09-20
 ### Added
 - **AD-66: Consumo parcial de lote/pool para salida a proceso.**

@@ -1,7 +1,7 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.16.0`
+**Versión documental:** `7.17.0`
 **Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 — §4.3: reapertura no bloqueante y trazable de guía procesada (G1): wizard, reversión nativa del consumo BT-04, conservación de historia física e imputación de advertencias no bloqueantes. G2 (vínculo persistente guía↔picking, `stock.picking.guia_processing_id`) y G3 (retorno automático del ingreso de producción atribuido por esa llave fuerte) IMPLEMENTADOS (ver §4.3) -->
 **Estado:** ✅ Vigente — Se documenta la Gestión Operativa de Etiquetas SV (`madenat.sv.operation`, AD-79) en §4.8, el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6, R1 — Detalle por Patio con `stock.quant` extendido en `madenat_lumber_reports` (AD-77, Programación 1) en §4.7, la interfaz operativa oficial de Intake (AD-78) y el entorno de desarrollo del «Modo A autoservicio» (`madenat.dev_cleanup_enabled`, que desacopla el autoservicio de `--test-enable`) en §4.9. Con cambios de código (`madenat_lumber_core`, `madenat_lumber_intake`).
 **Compatibilidad objetivo:** Odoo 18 CE
@@ -190,6 +190,32 @@ bloqueantes**, nunca bloqueos. **No** se escribe ni borra `stock.quant`, no se a
 `_cleanup_orphan_moves_guia` ni se muta `origin`. Evidencia: `madenat.audit.log`
 (`action_type='deviation'`, snapshot + SHA-256, usuario, motivo, warnings, lotes, consumo origen y
 retorno, producción y retornos) y chatter.
+**H1 — Reversión física ASISTIDA de producción histórica (2026-10-02).** Complemento **aditivo** de
+G1 para la **producción histórica sin llave fuerte** (pickings sin `guia_processing_id`),
+**no-granel** y **sin** consumo BT-04. Se abre desde el botón secundario **«🧭 Reversión histórica
+asistida»** (`action_open_historical_reverse_wizard`), nunca desde el contrato de G1. **No hay
+atribución automática**: `origin`, `lot_id`, producto, proveedor, texto y fecha son **señales** de
+propuesta, no llaves. Un wizard separado
+(`madenat.guia.processing.historical.reverse.wizard` + líneas
+`madenat.guia.processing.historical.reverse.candidate`) clasifica candidatos **A** (origen exacto +
+**cobertura total de lotes** de la guía + `incoming`/`done` + sin retorno ⇒ preseleccionado), **B**
+(una sola señal media / evidencia parcial ⇒ visible, **no** preseleccionado, selección explícita) y
+**C** (excluido: prefijo histórico `REVERTIDO-/ANULADO-/PURGADO-`, retorno previo, granel/SV, sin
+evidencia, compañía ajena, no-`done`, no-`incoming`, FK G2, recepción normal). La **primera versión
+solo permite retorno TOTAL por picking** seleccionado (`_h1_reverse_picking_total`): salida inversa
+**nativa** (picking/move/move.line) preservando producto, UoM, lote, ubicaciones, `owner_id`,
+`package_id`/`result_package_id`, compañía y las relaciones `origin_returned_move_id`/`return_id`.
+Es **idempotente** (retorno previo ⇒ ni se propone ni se permite; el reintento **reutiliza**). El
+operador **no queda bloqueado**: puede no seleccionar ninguno (sin efecto físico); el motivo es
+obligatorio **solo** con efecto físico; los warnings nunca bloquean. **Nunca** se escribe/borra
+`stock.quant`, ni se borran/desvinculan lotes, pickings, moves, move lines o `lot_ids` (**preserva
+la historia**); **no** se invoca la reapertura de G1 (que limpia `lot_ids`), de modo que H1 no
+cambia el estado de la guía —la reapertura documental sigue siendo responsabilidad exclusiva de
+G1—. Evidencia: `madenat.audit.log` (`action_type='deviation'`, snapshot + SHA-256, usuario,
+motivo, selección, retornos, omitidos, warnings, lotes) y chatter. Cobertura:
+`TestGuiaHistoricalReverse` (T-H1-01..11).
+
+
 
 **Interfaz operativa (AD-78):** el formulario clásico de la Guía no es la pantalla operativa de Operaciones; la operación se realiza en `madenat_lumber_intake` (ver «Interfaz operativa oficial de Intake»). Los campos declarados de Recepción por Volumen (`anchos_variables`, `largos_variables`, `espesor_nominal_texto`, `piezas_declaradas`, `volumen_declarado_m3`, `volume_lot_id`) persisten en este modelo y se gestionan en Intake.
 
@@ -465,3 +491,5 @@ propia UI del servidor** surte efecto sin reinicio. Un cambio hecho desde **fuer
 | 7.14.0 | 2026-10-02 | Se documenta en §4.2 la **política de corrección/reset de recepción no bloqueante y trazable** (ver historial anterior). |
 | 7.15.0 | 2026-10-02 | Se documenta en §4.3 la **reapertura no bloqueante y trazable de guía procesada (G1)**: `action_reopen_to_draft` abre wizard (motivo solo con efecto físico), revierte el **consumo BT-04** con retorno nativo idempotente y, sin vínculo fuerte, **conserva** stock/lotes/pickings/movimientos con advertencia; sin escribir/borrar `stock.quant` ni mutar `origin`, con auditoría `deviation` + chatter. G2/G3 pendientes. Con cambios de código (`madenat_lumber_core`: `madenat_guia_processing.py`, wizard `madenat.guia.processing.reopen.wizard`). |
 | 7.16.0 | 2026-10-02 | Se documenta en §4.3 **G2 + G3**: **G2** añade la **llave fuerte** `stock.picking.guia_processing_id` → `madenat.guia.processing.id` (Many2one, `index=True`, `ondelete='set null'`, `copy=False`, `check_company=False`), asignada **solo** al crear el picking de ingreso de producción en `_get_or_create_picking_unified` (nunca propaga a consumo, retornos, recepción, rebaja, contenedor, exportación ni inventario; nunca infiere históricos). **G3** añade la **reversión física automática, nativa, trazable e idempotente** del ingreso de producción atribuido por esa FK en la reapertura G1: `_attributed_production_pickings()` + `_reverse_production_picking()`; atribución **exclusiva** por FK (nunca `origin` textual ni `lot_id`); idempotencia por `return_id`; el retorno **no** porta `guia_processing_id`; la producción/legado **sin** FK se conserva con advertencia. Con cambios de código (`madenat_lumber_core`: `models/stock_picking.py`, `models/madenat_guia_processing.py`, wizard `madenat.guia.processing.reopen.wizard`, tests `test_guia_picking_link.py` / `test_guia_production_reverse.py`). |
+| 7.17.0 | 2026-10-02 | Se documenta en §4.3 **H1 — reversión física ASISTIDA de producción histórica** (complemento aditivo de G1, `madenat_lumber_core`): wizard separado `madenat.guia.processing.historical.reverse.wizard` (+ líneas candidatas) abierto desde el botón «🧭 Reversión histórica asistida» (`action_open_historical_reverse_wizard`), sin tocar el contrato G1/G2/G3/BT-04. Alcance: guías no-granel, sin consumo BT-04 y sin producción atribuida por la llave fuerte G2 (`_h1_is_historical_production` / `can_historical_reverse`). **Sin atribución automática**: `origin`/`lot_id`/producto/proveedor/texto/fecha son señales de propuesta; categorías A (origen exacto + cobertura total de lotes + incoming/done + sin retorno ⇒ preseleccionado), B (evidencia parcial ⇒ visible, selección explícita) y C (excluido/no proponible). **Solo retorno TOTAL por picking** (`_h1_reverse_picking_total`), nativo, idempotente (`return_id`/`origin_returned_move_id`), preservando producto/UoM/lote/ubicaciones/owner/paquete/compañía; nunca escribe/borra `stock.quant` ni borra/desvincula lotes, pickings, moves, move lines o `lot_ids`; **no** invoca el reset de G1 (que limpia `lot_ids`). Auditoría `deviation` (snapshot + SHA-256) + chatter. Cobertura: `test_guia_historical_reverse.py` (T-H1-01..11). Con cambios de código (`madenat_lumber_core`: `models/madenat_guia_processing_historical.py`, wizard `madenat.guia.processing.historical.reverse.wizard`, `views/guia_processing_views.xml`, ACL). |
+
