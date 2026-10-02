@@ -41,3 +41,5 @@ from . import test_guia_picking_link
 from . import test_guia_production_reverse
 # H1: reversión física ASISTIDA de producción histórica (sin llave fuerte G2).
 from . import test_guia_historical_reverse
+# B1: guard server-side contra revalidación física duplicada.
+from . import test_guia_revalidation_guard
