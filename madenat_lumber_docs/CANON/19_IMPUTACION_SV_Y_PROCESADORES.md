@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.6.0
+**Versión documental:** 1.6.1
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -164,7 +164,7 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 | `reason` | Text | condicional | Obligatorio si hay desviación de la propuesta o alerta (§7, §8) |
 | `deviation_flags` | Char/Text (compute) | — | Marca las desviaciones registradas (auditoría) |
 | `sv_operation_ids` | O2M `madenat.sv.operation` | — | **I3**: ledger generado (una op. `imputacion` por SV afectado); en I2 no se genera |
-| `documental_key` | Char (`copy=False`, unique) | ✔ | **Idempotencia documental de I2** (clave propia; **no** `picking_id`) |
+| `documentary_key` | Char (`copy=False`, unique) | ✔ | **Idempotencia documental de I2** (clave propia; **no** `picking_id`) |
 | `picking_id` | M2O `stock.picking` (`copy=False`) | — | **I3**: la salida nativa se ejecuta una sola vez |
 | `executed_by_id` / `execution_date` | M2O `res.users` / Datetime | — | Autoría (política AD-79) |
 | `snapshot_json` / `audit_hash` | Text / Char | — | Evidencia firmada (política AD-79/AD-80) |
@@ -601,4 +601,4 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 <!-- creado: 2026-10-01 — CANON/19 Imputación SV (etiqueta→SV) y saldo por procesador. Decisiones D1–D10 del usuario. Especificación, sin cambios de código/datos/parámetros. -->
 <!-- actualizado: 2026-10-01 (2, Fase A) — numeración §16 (manda la de CANON/19): trabajo hecho = bloque I0; I1 canónico pendiente con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. §14/§17 alineados. -->
 <!-- actualizado: 2026-10-02 (4) — AD-90: semántica de inventario en procesador (custodia operativa MADENAT, pendiente de consolidación documental); recepción directa y transferencia interna equivalentes; dos órdenes temporales válidos; cuatro categorías de saldo; I2 refinado a consolidación/imputación documental y sigue PENDIENTE. Complementa AD-87/88/89. Solo documentación. -->
-<!-- actualizado: 2026-10-02 (5) — AD-91: I2 acotado a documental sin efecto en stock; modelo aditivo madenat.sv.imputation/.line/.sv.line; salida nativa + ledger imputacion a I3; saldo físico / sv_available_m3 / documental separados; cabecera por guía, inmutabilidad/reversa e idempotencia por clave documental propia; severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
+<!-- actualizado: 2026-10-02 (6) — precisa el nombre del campo de clave documental de I2: `documentary_key` (implementado en madenat_lumber_logistics, AD-91). Solo documentación. -->
