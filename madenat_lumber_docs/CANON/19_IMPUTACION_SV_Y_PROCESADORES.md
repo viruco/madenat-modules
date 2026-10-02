@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.6.1
+**Versión documental:** 1.6.2
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -247,6 +247,12 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 
 **Cabecera por guía e inmutabilidad (AD-91, D-I2-15).** La imputación se organiza **por guía de procesados**: una guía admite **una sola** imputación de **trabajo** (`draft`/`pending`). Al pasar a **`applied`** queda **inmutable** y pasa a **historia** junto con `reversed`/`cancelled`; toda corrección se hace por **reversa + nueva imputación**, nunca editando ni borrando historia. En **I2** los estados describen **solo** el ciclo documental: **ninguno** produce efecto en stock (el ledger y la salida nativa son **I3**).
 
+**Reserva documental temporal de etiqueta vs. saldo documental aplicado de SV (precisión AD-91, 2026-10-02).** Se distinguen **dos conceptos** que no deben confundirse:
+- **(a) Reserva documental temporal de capacidad nominal de etiqueta** — `I2_ACTIVE_STATES = ('draft', 'pending', 'applied')`. Materializa el **techo DURO** por etiqueta (§7.1): `draft` y `pending` **reservan temporalmente** la capacidad nominal de la etiqueta (impiden que **dos trabajos paralelos** sobre-imputen la misma etiqueta) **sin efecto alguno**; `applied` la consume de forma definitiva mientras no se revierta. `reversed`/`cancelled` **no** cuentan.
+- **(b) Saldo documental aplicado de SV** — `I2_DOCUMENTAL_STATES = ('applied',)`. Solo las imputaciones **`applied`** consolidan el saldo documental del SV; `draft`/`pending` **no** lo consolidan (solo reservan la capacidad nominal de la etiqueta). La comprobación **blanda** de exceso SV-side (§7.2) evalúa el compromiso en estados **activos** como advertencia temprana.
+
+**Efecto por estado (I2 documental).** `draft`/`pending` **no** mueven stock, **no** alteran `sv_available_m3`, **no** modifican el ledger `madenat.sv.operation` y **no** crean reserva física ni descuento documental del SV (el descuento del SV, si corresponde, es **I3**). `pending` deja el trabajo **preparado** y **mantiene la reserva documental temporal de la etiqueta** hasta **aplicar**, **cancelar** o **reversar** según corresponda. **Sin cambio funcional.**
+
 ---
 
 ## 7. Reglas
@@ -283,7 +289,7 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
    - (c) **productos procesados pendientes de imputar** (etiquetas de retorno sin imputación activa);
    - (d) **productos procesados ya imputados/consolidados** (vínculo declarado a un SV explícito).
    (b) y (c) **alimentan las alertas** (§8) y **no bloquean** la operación (AD-88); un SV en `Procesadores/<X>` puede **coexistir** con etiquetas procesadas sin consolidar.
-7. **Saldo documental de consolidación (I2).** Se computa **exclusivamente** desde imputaciones **activas/aplicadas no revertidas** del modelo nuevo `madenat.sv.imputation`; es **distinto** de: (a) saldo **físico** (`stock.quant`); (b) **`sv_available_m3`** del ledger; (c) **merma documental** (no automática). **Duro** etiqueta-side (techo nominal, §7.1) y **blando** SV-side (advertir + motivo + auditar, permitir aplicar; §7.2) (D-I2-13, D-I2-16). **Sin merma automática** (D-I2-19).
+7. **Saldo documental (I2) — dos magnitudes distintas (§6).** (a) **reserva documental temporal de capacidad nominal de etiqueta** = Σ imputaciones **activas/aplicadas no revertidas** (`I2_ACTIVE_STATES`), techo **duro**; (b) **saldo documental aplicado de SV** = Σ imputaciones **`applied`** (`I2_DOCUMENTAL_STATES`). Ambas son **distintas** de: (i) saldo **físico** (`stock.quant`); (ii) **`sv_available_m3`** del ledger; (iii) **merma documental** (no automática). **Duro** etiqueta-side (techo nominal, §7.1) y **blando** SV-side (advertir + motivo + auditar, permitir aplicar; §7.2) (D-I2-13, D-I2-16). **Sin merma automática** (D-I2-19).
 
 ---
 
@@ -602,3 +608,4 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 <!-- actualizado: 2026-10-01 (2, Fase A) — numeración §16 (manda la de CANON/19): trabajo hecho = bloque I0; I1 canónico pendiente con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. §14/§17 alineados. -->
 <!-- actualizado: 2026-10-02 (4) — AD-90: semántica de inventario en procesador (custodia operativa MADENAT, pendiente de consolidación documental); recepción directa y transferencia interna equivalentes; dos órdenes temporales válidos; cuatro categorías de saldo; I2 refinado a consolidación/imputación documental y sigue PENDIENTE. Complementa AD-87/88/89. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — precisa el nombre del campo de clave documental de I2: `documentary_key` (implementado en madenat_lumber_logistics, AD-91). Solo documentación. -->
+<!-- actualizado: 2026-10-02 (7) — precisa la semántica de estados de I2: reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) y saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger/sv_available_m3. Ver §6/§7.3. Sin cambio funcional. Solo documentación. -->
