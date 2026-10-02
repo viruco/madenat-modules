@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.1.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (3) — se añade la sección «Rebaja — Endurecimiento (I0) y principio AD-88 (I1) — IMPLEMENTADO». Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §14/§17 -->
+**Versión documental:** 8.2.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (4) — Fase A: renumeración de fases. Todo lo ya hecho (endurecimiento + AD-88 + zarpe/reversa + SV oculto) se registra como bloque I0; el I1 canónico queda PENDIENTE con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -360,7 +360,7 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [x] Salida única de stock al **rebajar**; el **zarpe no descuenta** (AD-82): `lumber.container.action_rebajar`
       / `_rebajar_container`; `lumber.export.shipment.action_set_in_transit` sin `_action_reduce_stock` (eliminado).
 - [x] **Idempotencia por (contenedor, lote)** y causa única de descuento (AD-84): restricción única en `lumber.shipment.line`.
-- [x] **Reversa** (retorno nativo + contrapartida SV). **Actualizado 2026-10-01 (I1.7):** con embarque entregado o viaje
+- [x] **Reversa** (retorno nativo + contrapartida SV). **Actualizado 2026-10-01 (I0.7):** con embarque entregado o viaje
       cancelado ya **no** es bloqueo duro sin salida: exige **override de Gerencia con motivo** (auditado).
 - [x] Asistente **«Rebajar por nave»** con savepoint por contenedor e informe de éxitos/fallos.
 - [x] Wizard de asignación con **DISPONIBLE base nominal** (F-02 / A-3); etiquetas de volumen alineadas a CANON/17 §4 (A3);
@@ -374,12 +374,13 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 
 ---
 
-## Rebaja — Endurecimiento (I0) y principio AD-88 (I1) — IMPLEMENTADO (2026-10-01)
+## Rebaja — Endurecimiento y principio AD-88 (I0) — IMPLEMENTADO (2026-10-01)
 
 > Rama `feat/imputacion-sv-i1-20261001` (desde `docs/imputacion-sv-20261001`; BD `madenat_test`). AD-88 (`04_DECISION_LOG.md`).
-> **Nota de numeración:** este track **I0/I1** es el **endurecimiento + ablandamiento** sobre la rama de rebaja. Es **distinto**
-> del plan de **imputación** de `19_IMPUTACION_SV_Y_PROCESADORES.md` §16, que conserva su propia numeración **I1..I6** (modelo,
-> salida nativa, UX de imputación, costo, `parent_lot_id`).
+> **Numeración (decisión del usuario, 2026-10-01):** manda la de `19_IMPUTACION_SV_Y_PROCESADORES.md` §16. **Todo** lo hecho
+> en esta rama (endurecimiento + helper AD-88 + ablandamiento + SV oculto) se registra como **bloque I0**. El **I1 canónico**
+> (ubicaciones de procesadores, saldo por procesador y marcado) queda **PENDIENTE** con **alcance ampliado** (envío a procesador,
+> recepción directa, contenedores con lotes en procesador) — ver la sección «PLAN (fases I1..I6)». **I2** (modelo de imputación) **sin cambios**.
 
 ### I0 — Endurecimiento de la rama de rebaja
 - [x] **I0.1 Rolleo:** el asistente no actúa sobre contenedores `rebajado`; mensaje que indica usar «Revertir rebaja».
@@ -389,15 +390,15 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [x] **I0.4 Costing:** `skip` con razón en tests de funcionalidad no implementada (N-02/N-03/N-04) y `flush()` → `flush_recordset()`.
       Sin tocar la lógica de costeo. Suite `madenat_lumber_costing` en verde (8 skip documentados).
 
-### I1 — Helper AD-88 y ablandamiento
-- [x] **I1.5 Helper:** `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)` con snapshot + SHA-256 y `deviation`
+### I0 (continuación) — Helper AD-88 y ablandamiento
+- [x] **I0.5 Helper:** `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)` con snapshot + SHA-256 y `deviation`
       en `madenat.audit.log`. Hard = bloquea; blando = exige motivo + audita + avisa (no bloquea).
-- [x] **I1.6 B-01 Zarpe:** pasa a **advertencia con motivo**; asistente `lumber.shipment.zarpe.wizard` ofrece «Rebajar y zarpar»
+- [x] **I0.6 B-01 Zarpe:** pasa a **advertencia con motivo**; asistente `lumber.shipment.zarpe.wizard` ofrece «Rebajar y zarpar»
       y «Zarpar con excepción» (motivo obligatorio + auditoría).
-- [x] **I1.7 B-03/B-06 Reversa:** con embarque entregado o viaje cancelado exige **override de Gerencia con motivo**
+- [x] **I0.7 B-03/B-06 Reversa:** con embarque entregado o viaje cancelado exige **override de Gerencia con motivo**
       (`lumber.container.rebaja.reverse.wizard`; auditoría `deviation`).
-- [x] **I1.8 SV oculto por defecto** en el asistente de contenedores (D9), con filtro «Mostrar etiquetas SV»; sin impedir nada.
-- [ ] **I1.9 Fuera de alcance:** **NO** se implementa **B-04 (saldo SV)** ni la **imputación** (van en las fases I3/I4 del plan de `19`).
+- [x] **I0.8 SV oculto por defecto** en el asistente de contenedores (D9), con filtro «Mostrar etiquetas SV»; sin impedir nada.
+- [ ] **I0.9 Fuera de alcance:** **NO** se implementa **B-04 (saldo SV)** ni la **imputación** (van en las fases I2/I3 del plan de `19`).
 - [ ] **Q-19-3, Q-19-4, Q-19-6, Q-19-7** siguen **abiertas** (ver `19` §17).
 
 ---
@@ -405,13 +406,21 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 ## Imputación SV y Procesadores (AD-87 · AD-88, 2026-10-01) — PLAN (fases I1..I6)
 
 > Especificación y detalle por fase (dependencias, riesgos, criterios de aceptación): `19_IMPUTACION_SV_Y_PROCESADORES.md` §16.
-> Decisiones D1–D10. **Sin código en esta fase** (documental).
+> Decisiones D1–D10. El **bloque I0** (endurecimiento + AD-88) ya está **implementado**; esta tabla lista **I1..I6** pendientes.
+> **Sin código en esta fase** (documental).
 
-### I1 — Cimientos: ubicaciones y saldo por procesador
-- [ ] `stock.location` **`Procesadores`** + hijas `Procesadores/<X>` bajo demanda (`usage='internal'`; inventario MADENAT).
-- [ ] Reporte de **saldo por procesador** (`madenat.processor.balance`).
+### I1 — Cimientos: ubicaciones y saldo por procesador (PENDIENTE)
+- [ ] `stock.location` **`Procesadores`** (interna) + hijas `Procesadores/<X>` bajo demanda e **idempotentes**
+      (`usage='internal'`; inventario MADENAT); referencia `processor_location_id` y marcado según §16.
+- [ ] Reporte de **saldo por procesador** (`madenat.processor.balance`): vista de solo lectura (**lista y pivot** sobre `stock.quant`),
+      por procesador y producto, con volumen por tipo de lote.
 - [ ] Marcar procesadores (`res.partner.is_processor`).
-- **Depende de:** AD-65 §1.5. **Aceptación:** T-09.
+- [ ] **Evento «Envío a procesador»:** asistente desde lotes → **transferencia interna nativa** con `lot_id` por línea;
+      cantidad editable hacia abajo (sin exceder el disponible real); **motivo** si desvía (AD-88) + evento en `madenat.audit.log` (tipo aditivo).
+- [ ] **Recepción directa en la ubicación del procesador:** verificar SV / procesados / compras; corregir solo lo imprescindible y documentar.
+- [ ] **Contenedores con lotes en ubicaciones de procesador:** verificar y probar que el asistente los toma.
+- **Depende de:** AD-65 §1.5; helper AD-88 (bloque I0).
+- **Aceptación:** T-09 + idempotencia de ubicaciones, envío parcial/exceso, recepción directa, saldo vs Σ quants, contenedor y ACL (Operaciones/Jefatura/Gerencia, sin grupos nuevos).
 
 ### I2 — Modelo de imputación
 - [ ] `madenat.sv.imputation` (+`.line`, +`.sv.line`); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`.
