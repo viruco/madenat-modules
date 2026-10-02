@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.16.3
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2/G3 pendientes. Ver 00 §4.3. -->
+**Versión documental:** 12.17.0
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2019,8 +2019,20 @@ evidencia en `madenat.audit.log` (`action_type='deviation'`, snapshot + SHA-256)
 (motivo solo con efecto físico), revierte el **consumo BT-04** con retorno nativo idempotente
 (`_reverse_consumption_picking`, sin modificar) y, **sin vínculo fuerte**, **conserva**
 stock/lotes/pickings/movimientos con advertencia de atribución insuficiente; no escribe/borra
-`stock.quant` ni muta `origin` (ver `00_ARQUITECTURA.md` §4.3). **Pendiente:** **G2** (vínculo
-persistente guía↔picking) y **G3** (retorno automático de producción).
+`stock.quant` ni muta `origin` (ver `00_ARQUITECTURA.md` §4.3).
+
+**Actualización G2 + G3 (2026-10-02) — vínculo fuerte y retorno de producción.** **G2** añade la
+**llave fuerte** `stock.picking.guia_processing_id` → `madenat.guia.processing.id` (Many2one,
+`index=True`, `ondelete='set null'`, `copy=False`, `check_company=False`), asignada **solo** al crear
+el picking de ingreso de producción en `_get_or_create_picking_unified`; nunca se propaga a consumo,
+retornos, recepción, rebaja, contenedor, exportación ni inventario, y **nunca** infiere históricos.
+**G3** añade la **reversión física automática, nativa, trazable e idempotente** de ese ingreso de
+producción al reabrir la guía (flujo G1): `_attributed_production_pickings()` +
+`_reverse_production_picking()`. La atribución es **exclusiva por FK** (nunca `origin` textual ni
+`lot_id`); la idempotencia usa la relación nativa `return_id`; el retorno **no** porta
+`guia_processing_id` (exclusión G2); la producción/legado **sin** FK se conserva con **advertencia**
+de atribución insuficiente. No se escribe/borra `stock.quant` ni se muta `origin`. Ver
+`00_ARQUITECTURA.md` §4.3.
 
 **Regla de evidencia documental (Modo C y Modo A).** Odoo destruye la evidencia al eliminar un
 registro: `mail.thread.unlink` borra los `mail.message` y `BaseModel.unlink` borra los
