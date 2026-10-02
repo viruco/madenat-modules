@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.16.1
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3. -->
+**Versión documental:** 12.16.2
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2004,6 +2004,20 @@ embarque o período cerrado, la purga queda **bloqueada**. La purga del Modo C e
 **no exista ningún registro de `stock.quant`** (lectura estricta de la regla no negociable: la
 purga no elimina registros de inventario) y que no haya operaciones SV rechazadas, porque el
 ledger append-only no permite eliminarlas.
+
+**Precisión (2026-10-02) — alcance del principio de no-borrado.** El mismo principio rige la
+corrección de recepción: `lumber.reception.action_reset_to_draft` **no** borra ni escribe
+directamente `stock.quant`, lotes, pickings, movimientos ni líneas de movimiento con historia
+física. Abre el asistente `lumber.reception.reset.wizard` (motivo obligatorio solo ante **efecto
+físico**), revierte los pickings `done` atribuidos por `stock.picking.reception_id` con *return
+picking* nativo y cancela/desreserva los no `done`, con idempotencia por movimiento origen y
+evidencia en `madenat.audit.log` (`action_type='deviation'`, snapshot + SHA-256) y chatter
+(ver `00_ARQUITECTURA.md` §4.2).
+
+**Límite explícito.** El reset de **guía** `madenat.guia.processing.action_reopen_to_draft` **no**
+fue remediado en este incremento y permanece **pendiente**: una guía de proceso aún no se
+revierte con el mismo mecanismo compensatorio. Este principio documentado **no** debe leerse como
+que el flujo de guía ya está cubierto.
 
 **Regla de evidencia documental (Modo C y Modo A).** Odoo destruye la evidencia al eliminar un
 registro: `mail.thread.unlink` borra los `mail.message` y `BaseModel.unlink` borra los
