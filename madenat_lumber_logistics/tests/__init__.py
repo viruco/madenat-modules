@@ -8,3 +8,5 @@ from . import test_rebaja_contenedor
 from . import test_processor_locations
 # AD-89/AD-90 (2026-10-02): envío parcial, reservas y backorder.
 from . import test_processor_shipment_ad89
+# I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV.
+from . import test_sv_imputation_i2
