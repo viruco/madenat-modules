@@ -28,7 +28,7 @@
       <xpath expr="//div[@name='button_box']" position="inside">
         <button name="action_create_lumber_reception" type="object"
                 class="oe_stat_button" icon="fa-truck"
-                help="Crear nueva recepción de guía">
+                help="Abrir Ingreso de Madera (Intake) con datos de la OC">
           <field name="reception_count" string="Recepciones" widget="statinfo"/>
         </button>
         <button name="action_update_reception_data" type="object"

@@ -824,21 +824,48 @@ class PurchaseOrderLumber(models.Model):
         }
 
     def action_create_lumber_reception(self):
-        """Crear nueva recepción de guía"""
+        """Abrir el wizard universal de Ingreso de Madera (Intake).
+
+        Puerta única de ingreso (AD-50 / CANON 04): una Orden de Compra NO
+        crea ni abre una ``lumber.reception``. Esta acción deriva SIEMPRE al
+        wizard ``madenat.lumber.intake.wizard`` (acción canónica
+        ``madenat_lumber_intake.action_madenat_lumber_intake_new``, resuelta
+        por XML-ID con ``env.ref``, sin IDs numéricos), aportando la identidad
+        de la OC como contexto de contraste.
+
+        La recepción, los lotes y los movimientos se crean (si corresponde)
+        DENTRO de Intake, a partir de la lectura documental autoritativa
+        (``extract_document``); NUNCA desde esta acción. No se transforman las
+        líneas de la OC en una recepción automática.
+        """
         self.ensure_one()
-        reception = self.env['lumber.reception'].create({
-            'name': f"REC-{self.name}",
-            'supplier_id': self.partner_id.id,
-            'purchase_id': self.id,
-            'state': 'draft',
-        })
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'lumber.reception',
-            'res_id': reception.id,
-            'view_mode': 'form',
-            'target': 'current',
+
+        xmlid = 'madenat_lumber_intake.action_madenat_lumber_intake_new'
+        try:
+            # ``_for_xml_id`` resuelve el XML-ID con ``env.ref`` (contrato de
+            # acción web listo para el cliente; sin IDs numéricos hardcodeados).
+            action = self.env['ir.actions.act_window']._for_xml_id(xmlid)
+        except ValueError:
+            raise UserError(_(
+                'El ingreso de madera requiere el módulo de Ingreso de Madera '
+                '(Intake). No es posible iniciar la recepción desde la Orden '
+                'de Compra sin él.'
+            ))
+
+        # Contexto de contraste proveniente de la Orden de Compra. El wizard
+        # de Intake no expone `company_id`/`partner_id`/`purchase_id` y no se
+        # inventan campos: la identidad de la OC viaja como claves `intake_po_*`
+        # para contraste/auditoría. La lectura documental de Intake sigue siendo
+        # la fuente única de los datos de la recepción.
+        action['context'] = {
+            'intake_po_id': self.id,
+            'intake_po_name': self.name,
+            'intake_po_partner_id': self.partner_id.id or False,
+            'intake_po_partner_name': self.partner_id.display_name or False,
+            'intake_po_company_id': self.company_id.id or False,
+            'intake_po_company_name': self.company_id.display_name or False,
         }
+        return action
 
     def action_update_reception_data(self):
         """Refrescar datos de seguimiento de recepciones"""
