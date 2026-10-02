@@ -78,27 +78,34 @@ class MadenatSvImputationWizard(models.TransientModel):
         return guia.lot_ids.filtered(lambda l: l.lot_flow_type != 'volume')
 
     @api.model
-    def _i2_sv_candidates(self, processor=None):
-        """SV candidatos en orden **FIFO** (antigüedad), sin filtrar historia."""
-        return self.env['stock.lot'].search(
-            [('lot_flow_type', '=', 'volume')],
-            order='create_date asc, id asc')
+    def _i2_sv_candidates(self, processor=None, processed_lots=None):
+        """SV candidatos elegibles (dominio canónico delegado al modelo I2)."""
+        Imputation = self.env['madenat.sv.imputation']
+        data = Imputation._i2_sv_candidate_data(
+            processor=processor, processed_lots=processed_lots)
+        return self.env['stock.lot'].browse([item['lot'].id for item in data])
 
-    @api.model
-    def _i2_propose_fifo(self, nominal_m3):
-        """Reparto FIFO simple del nominal entre SV candidatos (borrador)."""
+    def _i2_propose_fifo(self, nominal_m3, processed_lots=None):
+        """Reparto FIFO del nominal entre SV candidatos elegibles.
+
+        Usa el **mismo** dominio y saldo documental que el flag y el guard.
+        No aplica fallback al nominal cuando el saldo documental es
+        cero/negativo (decisión C): solo candidatos con ``available > 0``.
+        """
+        self.ensure_one()
         remaining = float_round(nominal_m3 or 0.0, precision_digits=3)
         proposal = []
         Imputation = self.env['madenat.sv.imputation']
-        for sv in self._i2_sv_candidates():
+        data = Imputation._i2_sv_candidate_data(
+            processor=self.processor_id, processed_lots=processed_lots)
+        for item in data:
             if remaining <= 0:
                 break
-            available = Imputation._i2_sv_documental_available_m3(sv)
-            take = available if available > 0 else Imputation._i2_sv_nominal_m3(sv)
+            take = min(remaining, item['available'])
             if take <= 0:
                 continue
-            take = min(remaining, take)
-            proposal.append((sv, float_round(take, precision_digits=3)))
+            proposal.append(
+                (item['lot'], float_round(take, precision_digits=3)))
             remaining -= take
         return proposal
 
@@ -112,7 +119,8 @@ class MadenatSvImputationWizard(models.TransientModel):
         for wiz in self:
             commands = [(5, 0, 0)]
             for wline in wiz.line_ids:
-                for sv, vol in wiz._i2_propose_fifo(wline.nominal_volume_m3):
+                for sv, vol in wiz._i2_propose_fifo(
+                        wline.nominal_volume_m3, wline.processed_lot_id):
                     commands.append((0, 0, {
                         'wizard_line_id': wline.id,
                         'sv_lot_id': sv.id,

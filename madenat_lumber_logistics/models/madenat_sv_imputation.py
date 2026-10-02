@@ -151,13 +151,15 @@ class MadenatSvImputation(models.Model):
                 rec.sv_line_ids.mapped('imputed_volume_m3'))
             rec.has_sv_excess = bool(rec._i2_sv_excess_lines())
 
-    @api.depends('state', 'reason')
+    @api.depends('state', 'reason', 'line_ids', 'line_ids.processed_lot_id',
+                 'sv_line_ids', 'sv_line_ids.sv_lot_id',
+                 'processor_id', 'processor_location_id')
     def _compute_deviation_flags(self):
         for rec in self:
             flags = []
             if rec._i2_sv_excess_lines():
                 flags.append('SV_EXCESS')
-            if not rec._i2_has_sv_candidate():
+            if rec._i2_is_missing_sv_candidate():
                 flags.append('NO_SV_CANDIDATE')
             rec.deviation_flags = ','.join(flags) or False
 
@@ -233,11 +235,108 @@ class MadenatSvImputation(models.Model):
                     lambda l: l.sv_lot_id == sv_lot)
         return excess
 
-    def _i2_has_sv_candidate(self):
-        """True si existe al menos una etiqueta SV candidata (`volume`)."""
+    # ── Candidatos SV — dominio canónico I2, CONTEXTUAL (AD-91 / CANON §10.2)
+    #    Fuente única compartida por el flag `NO_SV_CANDIDATE`, la propuesta
+    #    FIFO del asistente y el guard blando previo a aplicar. NO replicar el
+    #    dominio en cada ruta (causa raíz del fallo T-I2-06).
+    def _i2_sv_candidate_data(self, company=None, processor=None,
+                              processor_location=None, processed_lots=None):
+        """Candidatos SV elegibles, ordenados, con su saldo documental I2.
+
+        Elegibilidad (decisión funcional I2):
+        * ``lot_flow_type = 'volume'``;
+        * visibilidad multi-company **estándar** (compañía operativa o
+          ``company_id = False``), sin filtro estricto;
+        * ``_i2_sv_documental_available_m3 > 0`` (magnitud documental propia;
+          **nunca** ``sv_available_m3`` del ledger ni stock físico);
+        * si hay ``processor_location``, exige quant interno positivo en su
+          árbol; si **no** hay procesador configurado, **no** excluye.
+
+        Prioridad (determinista): ``processor_match`` DESC,
+        ``product_match`` DESC, ``create_date`` ASC, ``id`` ASC.
+        Proveedor/producto **no** son filtros duros.
+
+        Devuelve una lista de ``dict`` (uno por candidato elegible).
+        """
+        company = company or self.env.company
+        if not processor_location and processor:
+            processor_location = processor.processor_location_id
+        # Visibilidad multi-company ESTÁNDAR (compañía operativa o
+        # ``company_id=False``), explícita para ser determinista también bajo
+        # superusuario (que bypassa record rules). Nunca filtro estricto.
+        lots = self.env['stock.lot'].with_context(
+            allowed_company_ids=[company.id]).search([
+                ('lot_flow_type', '=', 'volume'),
+                '|', ('company_id', '=', company.id),
+                ('company_id', '=', False),
+            ])
+        processed_lots = processed_lots or self.env['stock.lot']
+        processed_products = processed_lots.mapped('product_id')
+        processed_subproducts = processed_lots.mapped('subproducto_id')
+        Quant = self.env['stock.quant']
+        data = []
+        for sv in lots:
+            available = self._i2_sv_documental_available_m3(sv)
+            if float_compare(available, 0.0,
+                             precision_rounding=I2_VOLUME_PRECISION) <= 0:
+                continue
+            physical = 0.0
+            if processor_location:
+                quants = Quant.search([
+                    ('lot_id', '=', sv.id),
+                    ('location_id', 'child_of', processor_location.id),
+                    ('location_id.usage', '=', 'internal'),
+                ])
+                physical = sum(quants.mapped('quantity'))
+                if float_compare(physical, 0.0,
+                                 precision_rounding=I2_VOLUME_PRECISION) <= 0:
+                    continue
+            data.append({
+                'lot': sv,
+                'nominal': self._i2_sv_nominal_m3(sv),
+                'assigned': self._i2_sv_documental_assigned_m3(sv),
+                'available': available,
+                'physical': physical,
+                'processor_match': bool(processor_location),
+                'product_match': bool(
+                    (sv.product_id and sv.product_id in processed_products)
+                    or (sv.subproducto_id
+                        and sv.subproducto_id in processed_subproducts)),
+            })
+        data.sort(key=lambda item: (
+            not item['processor_match'],
+            not item['product_match'],
+            item['lot'].create_date or fields.Datetime.now(),
+            item['lot'].id,
+        ))
+        return data
+
+    def _i2_get_sv_candidate_data(self):
+        """Candidatos elegibles para **esta** imputación (mismo contexto)."""
         self.ensure_one()
-        return bool(self.env['stock.lot'].search_count([
-            ('lot_flow_type', '=', 'volume')]))
+        return self._i2_sv_candidate_data(
+            company=self.company_id,
+            processor=self.processor_id,
+            processor_location=self.processor_location_id,
+            processed_lots=self.line_ids.processed_lot_id)
+
+    def _i2_has_sv_candidate(self):
+        """True si existe al menos un candidato SV elegible en el contexto."""
+        self.ensure_one()
+        return bool(self._i2_get_sv_candidate_data())
+
+    def _i2_is_missing_sv_candidate(self):
+        """Desviación BLANDA ``NO_SV_CANDIDATE`` (D-I2-16, decisión D).
+
+        Existe si la imputación tiene etiquetas (``line_ids``), **no** tiene
+        asignaciones (``sv_line_ids``) y **no** hay candidato elegible bajo su
+        contexto. Si hay candidato elegible (aunque aún no asignado) NO se
+        marca. Es advertencia no bloqueante (motivo + auditoría).
+        """
+        self.ensure_one()
+        return bool(
+            self.line_ids and not self.sv_line_ids
+            and not self._i2_has_sv_candidate())
 
     # ══════════════════════════════════════════════════════════════════════
     # CLAVE DOCUMENTAL E IDEMPOTENCIA (D-I2-17) — sin `picking_id`.
@@ -448,11 +547,12 @@ class MadenatSvImputation(models.Model):
                   'del SV: %s.') % ', '.join(excess.mapped('sv_lot_id.name')),
                 reason=self.reason,
                 extra={'svs': excess.mapped('sv_lot_id.name')})
-        if self.line_ids and not self.sv_line_ids:
+        if self._i2_is_missing_sv_candidate():
             self._guard_deviation(
                 'I2-NO-SV-CANDIDATE',
                 _('La imputación registra etiquetas sin etiquetas SV '
-                  'candidatas asignadas (se permite dejar constancia).'),
+                  'candidatas asignadas ni disponibles en su contexto '
+                  '(se permite dejar constancia con motivo).'),
                 reason=self.reason)
 
     def _i2_build_snapshot(self):
