@@ -1134,6 +1134,11 @@ class MadenatGuiaProcessing(models.Model):
             if not rec.processing_line_ids:
                 raise UserError("⚠️ Es OBLIGATORIO usar la tabla de verificación visual (Staging).")
 
+            # 🛡️ B1 — Guard de revalidación física duplicada (solo lectura).
+            # Impide materializar stock por segunda vez cuando ya existe un
+            # ingreso `done` no compensado. No afecta la corrección documental.
+            rec._b1_assert_no_duplicate_revalidation()
+
             # FASE 2: VARIABLES FINANCIERAS
             purchase_order = rec.order_id
             precio_usd = rec._obtener_precio_desde_oc(purchase_order)
@@ -1508,6 +1513,191 @@ class MadenatGuiaProcessing(models.Model):
             lambda l: l.vol_documental_m3 > 0 and l.pieces > 0
             and (l.espesor_mm <= 0 or l.ancho_mm <= 0 or l.largo_m <= 0)
         )
+
+    # ══════════════════════════════════════════════════════════════════════
+    # B1 (2026-10-02) — GUARD DE INTEGRIDAD: REVALIDACIÓN FÍSICA DUPLICADA
+    # ══════════════════════════════════════════════════════════════════════
+    # Impide una SEGUNDA materialización física de stock cuando ya existe
+    # evidencia no compensada del ingreso previo. NO bloquea la corrección
+    # documental (`action_verify_data`), la verificación, H1, G1/G2/G3 ni los
+    # flujos granel/SV y BT-04. Es solo lectura: no escribe stock.
+    # Llaves admitidas: FK G2 (`stock.picking.guia_processing_id`) y relaciones
+    # nativas de compensación (`stock.move.returned_move_ids` /
+    # `origin_returned_move_id`). NUNCA `origin` textual ni `lot_id` aislado.
+    B1_REVALIDATION_MESSAGE = (
+        'La guía conserva un ingreso físico no compensado. Use la reversión '
+        'trazable o la Reversión histórica asistida antes de validar '
+        'nuevamente.')
+    _B1_EXCLUDED_TIPOS = ('granel',)
+    _B1_INGRESS_SOURCE_USAGES = ('supplier', 'production')
+
+    def _b1_move_is_compensated(self, move):
+        """True si el move `done` está compensado por un retorno nativo `done`.
+
+        Usa la relación nativa `returned_move_ids` (inversa de
+        `origin_returned_move_id`); no depende de `origin` ni de
+        `picking.return_id`.
+        """
+        if not move:
+            return False
+        return bool(
+            move.returned_move_ids.filtered(lambda r: r.state == 'done'))
+
+    def _b1_picking_has_done_return(self, picking):
+        """True si existe un retorno nativo `done` del picking (`return_id`)."""
+        if not picking:
+            return False
+        return bool(self.env['stock.picking'].search_count([
+            ('return_id', '=', picking.id), ('state', '=', 'done')]))
+
+    def _b1_picking_has_uncompensated_ingress(self, picking):
+        """True si el picking tiene ≥1 move `done` sin compensación nativa."""
+        moves_done = picking.move_ids.filtered(lambda m: m.state == 'done')
+        if not moves_done:
+            return False
+        if self._b1_picking_has_done_return(picking):
+            return False
+        return bool(moves_done.filtered(
+            lambda m: not self._b1_move_is_compensated(m)))
+
+    def _b1_classify_historical_moves(self, ingress_moves, guia_lots):
+        """Separa evidencia histórica inequívoca de ambigua (sin bloquear).
+
+        Ambiguo (NO bloquea): compensación presente/parcial, compañía ajena,
+        ingreso atribuido a otra guía por G2, lote compartido con otra guía o
+        lote ligado directamente a otra guía.
+        """
+        uncompensated = self.env['stock.move']
+        ambiguous = self.env['stock.move']
+        another_guides = self.env['madenat.guia.processing'].search([
+            ('lot_ids', 'in', guia_lots.ids), ('id', '!=', self.id)])
+        shared_lots = another_guides.lot_ids
+        foreign_direct_lots = self.env['stock.lot'].search([
+            ('guia_processing_id', '!=', False),
+            ('guia_processing_id', '!=', self.id),
+            ('id', 'in', guia_lots.ids),
+        ])
+        for move in ingress_moves:
+            picking = move.picking_id
+            if self._b1_move_is_compensated(move):
+                ambiguous |= move
+                continue
+            sibling_compensated = any(
+                self._b1_move_is_compensated(sib)
+                for sib in picking.move_ids.filtered(
+                    lambda x: x.state == 'done'))
+            if self._b1_picking_has_done_return(picking) or sibling_compensated:
+                ambiguous |= move
+                continue
+            move_lots = move.move_line_ids.mapped('lot_id')
+            if (picking.guia_processing_id
+                    and picking.guia_processing_id != self):
+                ambiguous |= move
+            elif move_lots & shared_lots:
+                ambiguous |= move
+            elif move_lots & foreign_direct_lots:
+                ambiguous |= move
+            else:
+                uncompensated |= move
+        return uncompensated, ambiguous
+
+    def _b1_revalidation_physical_effect_info(self):
+        """Diagnóstico (solo lectura) de evidencia física de ingreso previa.
+
+        Devuelve un dict SIN efectos:
+            block_revalidation (bool)
+            evidence_type ('fk' | 'historical' | 'ambiguous' | 'none')
+            pickings (stock.picking)  evidencia por llave fuerte G2
+            moves (stock.move)        evidencia por lote/move nativo
+            warnings (list[str])
+            message (str)
+
+        Excluye granel/SV. No usa `origin` textual como llave.
+        """
+        self.ensure_one()
+        result = {
+            'block_revalidation': False,
+            'evidence_type': 'none',
+            'pickings': self.env['stock.picking'],
+            'moves': self.env['stock.move'],
+            'warnings': [],
+            'message': '',
+        }
+        # Alcance excluido: Granel/SV (ruta y reversa propias).
+        if self.tipo_recepcion in self._B1_EXCLUDED_TIPOS:
+            return result
+
+        # ── Capa 1: llave fuerte G2 (producción nueva) ──────────────────
+        fk_pickings = self.env['stock.picking'].search([
+            ('guia_processing_id', '=', self.id),
+            ('state', '=', 'done'),
+            ('picking_type_code', '=', 'incoming'),
+        ]).filtered(
+            lambda p: not p.company_id or p.company_id == self.env.company)
+        fk_uncompensated = fk_pickings.filtered(
+            self._b1_picking_has_uncompensated_ingress)
+        if fk_uncompensated:
+            result.update({
+                'block_revalidation': True,
+                'evidence_type': 'fk',
+                'pickings': fk_uncompensated,
+                'message': self.B1_REVALIDATION_MESSAGE,
+            })
+            return result
+
+        # ── Capa 2: evidencia histórica por lote/move nativo ────────────
+        guia_lots = self.lot_ids | self.env['stock.lot'].search(
+            [('guia_processing_id', '=', self.id)])
+        if not guia_lots:
+            return result
+        ingress_moves = self.env['stock.move'].search([
+            ('state', '=', 'done'),
+            ('origin_returned_move_id', '=', False),
+            ('quantity', '>', 0),
+            ('location_id.usage', 'in', list(self._B1_INGRESS_SOURCE_USAGES)),
+            ('location_dest_id.usage', '=', 'internal'),
+            ('move_line_ids.lot_id', 'in', guia_lots.ids),
+        ]).filtered(
+            lambda m: not m.company_id or m.company_id == self.env.company)
+        if not ingress_moves:
+            return result
+
+        uncompensated, ambiguous = self._b1_classify_historical_moves(
+            ingress_moves, guia_lots)
+        if uncompensated:
+            result.update({
+                'block_revalidation': True,
+                'evidence_type': 'historical',
+                'moves': uncompensated,
+                'message': self.B1_REVALIDATION_MESSAGE,
+            })
+            return result
+        if ambiguous:
+            result.update({
+                'evidence_type': 'ambiguous',
+                'moves': ambiguous,
+                'warnings': [
+                    _('Evidencia física histórica ambigua para la guía %s: '
+                      'no se bloquea la materialización.') % self.name],
+            })
+        return result
+
+    def _b1_assert_no_duplicate_revalidation(self):
+        """Lanza UserError si hay evidencia física no compensada (B1).
+
+        Punto único de enforcement (solo lectura) sobre la frontera de
+        materialización física. No escribe stock ni auditoría.
+        """
+        self.ensure_one()
+        info = self._b1_revalidation_physical_effect_info()
+        if info['block_revalidation']:
+            names = (info['pickings'].mapped('name')
+                     or info['moves'].mapped('name'))
+            _logger.warning(
+                '🛡️ B1 bloqueo de revalidación física — guía %s (%s): %s',
+                self.name, info['evidence_type'], ', '.join(names) or '-')
+            raise UserError(_(self.B1_REVALIDATION_MESSAGE))
+        return info
 
     def action_verify_data(self):
         """
@@ -2314,6 +2504,11 @@ class MadenatGuiaProcessing(models.Model):
             else:
                 _logger.info(f"♻️ Albarán existente válido detectado ({picking.name}). Reutilizando...")
                 return picking
+
+        # 🛡️ B1 — Guard: no crear un segundo ingreso físico si ya existe uno
+        # no compensado. Cubre action_validate, RPC directo, do_full_processing,
+        # action_process_from_staging y overrides Intake/Toll (no granel).
+        self._b1_assert_no_duplicate_revalidation()
 
         # 2. 🏗️ CONFIGURACIÓN DE DATOS MAESTROS
         if not self.partner_id:
