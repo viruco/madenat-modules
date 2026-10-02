@@ -7,3 +7,5 @@ from . import lumber_shipment_zarpe_wizard
 from . import lumber_container_rebaja_reverse_wizard
 # I1 canónico (CANON/19 §16, 2026-10-02): envío a procesador.
 from . import madenat_processor_shipment_wizard
+# I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV.
+from . import madenat_sv_imputation_wizard

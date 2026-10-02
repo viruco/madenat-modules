@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.5.0',
+    'version': '18.0.1.6.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -43,6 +43,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'wizards/lumber_container_rebaja_reverse_wizard_views.xml',
         # I1 canónico (CANON/19 §16, 2026-10-02): envío a procesador.
         'wizards/madenat_processor_shipment_wizard_views.xml',
+        # I2 (CANON/19 v1.6.0 / AD-91): asistente de imputación documental SV.
+        'wizards/madenat_sv_imputation_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            
@@ -61,6 +63,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'views/stock_lot_views_inherit.xml',      # Ajustes en Lotes
         # 🏷️ Programa SV — vínculo de rebajas SV con contenedor/embarque.
         'views/madenat_sv_operation_logistics_views.xml',
+        # I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV por guía.
+        'views/madenat_sv_imputation_views.xml',
         'views/lumber_document_checklist_views.xml',
         
         # 7. 🚀 BI & PROFITABILITY (Fix para error de dependencia de campos)

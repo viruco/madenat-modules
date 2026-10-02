@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV por guía. -->
+
+    <record id="view_madenat_sv_imputation_tree" model="ir.ui.view">
+        <field name="name">madenat.sv.imputation.tree</field>
+        <field name="model">madenat.sv.imputation</field>
+        <field name="arch" type="xml">
+            <list string="Imputaciones documentales SV">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="guia_processing_id"/>
+                <field name="processor_id"/>
+                <field name="state"/>
+                <field name="nominal_total_m3"/>
+                <field name="imputed_total_m3"/>
+                <field name="deviation_flags"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_imputation_form" model="ir.ui.view">
+        <field name="name">madenat.sv.imputation.form</field>
+        <field name="model">madenat.sv.imputation</field>
+        <field name="arch" type="xml">
+            <form string="Imputación documental SV">
+                <header>
+                    <button name="action_pending" type="object"
+                            string="Dejar pendiente"
+                            invisible="state != 'draft'"/>
+                    <button name="action_back_to_draft" type="object"
+                            string="Volver a borrador"
+                            invisible="state != 'pending'"/>
+                    <button name="action_apply" type="object" string="Aplicar"
+                            class="btn-primary"
+                            invisible="state not in ('draft', 'pending')"/>
+                    <button name="action_reverse" type="object" string="Reversar"
+                            invisible="state != 'applied'"/>
+                    <button name="action_cancel" type="object" string="Anular"
+                            invisible="state not in ('draft', 'pending')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,pending,applied,reversed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="guia_processing_id"/>
+                            <field name="processor_id"/>
+                            <field name="processor_location_id"/>
+                            <field name="documentary_key" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="executed_by_id"/>
+                            <field name="execution_date"/>
+                            <field name="deviation_flags"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Etiquetas">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="processed_lot_id"/>
+                                    <field name="nominal_volume_m3"/>
+                                    <field name="etiqueta_imputado_activo_m3"/>
+                                    <field name="etiqueta_saldo_documental_m3"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Reparto SV">
+                            <field name="sv_line_ids">
+                                <list editable="bottom">
+                                    <field name="imputation_line_id"/>
+                                    <field name="sv_lot_id"/>
+                                    <field name="imputed_volume_m3"/>
+                                    <field name="sv_nominal_m3"/>
+                                    <field name="sv_saldo_documental_m3"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Motivo / Reversa">
+                            <group>
+                                <field name="reason"/>
+                                <field name="reversal_reason"/>
+                                <field name="reversed_by_id"/>
+                                <field name="reversal_date"/>
+                                <field name="origin_imputation_id"/>
+                                <field name="reversed_imputation_id"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_imputation_search" model="ir.ui.view">
+        <field name="name">madenat.sv.imputation.search</field>
+        <field name="model">madenat.sv.imputation</field>
+        <field name="arch" type="xml">
+            <search string="Imputaciones documentales SV">
+                <field name="name"/>
+                <field name="guia_processing_id"/>
+                <field name="processor_id"/>
+                <field name="documentary_key"/>
+                <filter name="filter_draft" string="Borrador"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_pending" string="Pendiente"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_applied" string="Aplicada"
+                        domain="[('state', '=', 'applied')]"/>
+                <separator/>
+                <filter name="group_guia" string="Guía"
+                        context="{'group_by': 'guia_processing_id'}"/>
+                <filter name="group_state" string="Estado"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_madenat_sv_imputation" model="ir.actions.act_window">
+        <field name="name">Imputaciones documentales SV</field>
+        <field name="res_model">madenat.sv.imputation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_madenat_sv_imputation_search"/>
+    </record>
+
+    <menuitem id="menu_madenat_sv_imputation"
+              name="Imputaciones documentales SV"
+              parent="menu_lumber_logistics"
+              action="action_madenat_sv_imputation"
+              sequence="19"/>
+
+    <!-- Adición mínima: botón en la guía de procesados para abrir el asistente.
+         No rediseña pantallas existentes (CANON/19 §10; AD-91). -->
+    <record id="view_madenat_guia_processing_form_i2" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.form.i2</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id"
+               ref="madenat_lumber_core.view_madenat_guia_processing_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_madenat_sv_imputation_wizard)d"
+                        type="action"
+                        string="Imputación documental SV"
+                        class="btn-primary"
+                        context="{'active_model': 'madenat.guia.processing', 'active_id': id}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

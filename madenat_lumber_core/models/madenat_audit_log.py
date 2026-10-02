@@ -57,6 +57,11 @@ class MadenatAuditLog(models.Model):
         # ubicación de un procesador mediante transferencia interna nativa.
         # Valor ADITIVO al Selection (no reemplaza a 'rebaja'/'deviation').
         ('processor_shipment', 'Envío a Procesador'),
+        # I2 (CANON/19 v1.6.0 / AD-91, 2026-10-02): imputación DOCUMENTAL de
+        # etiquetas procesadas contra SV por guía (sin efecto en stock) y su
+        # reversa. Valores ADITIVOS al Selection.
+        ('imputation', 'Imputación Documental SV'),
+        ('imputation_reverse', 'Reversa de Imputación Documental SV'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

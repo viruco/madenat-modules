@@ -15,3 +15,6 @@ from . import stock_lot_cost_line
 
 # 4. I1 canónico (CANON/19 §16): ubicaciones y saldo por procesador.
 from . import madenat_processor_location
+
+# 5. I2 (CANON/19 v1.6.0 / AD-91): imputación DOCUMENTAL SV por guía.
+from . import madenat_sv_imputation
