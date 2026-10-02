@@ -2,12 +2,12 @@
 """I1 canónico (CANON/19 §5.4/§16) — Ubicaciones, saldo y envío a procesador.
 
 Cubre: idempotencia de ubicaciones (sin duplicados), envío de SV (quants
-antes/después), envío parcial con motivo (AD-88) y rechazo por exceso,
+antes/después), envío parcial manual sin motivo (AD-89) y rechazo por exceso,
 recepción directa en la ubicación del procesador, saldo coherente con los
 quants, lote en procesador asignado en contenedor, permisos y auditoría.
 Datos 100% aislados.
 """
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -136,14 +136,12 @@ class TestProcessorLocations(TransactionCase):
         self.assertAlmostEqual(self._qty_in(lot, self.stock_loc), 0.0, 3)
         self.assertAlmostEqual(self._qty_in(lot, processor_loc), 10.0, 3)
 
-    def test_03_envio_parcial_requiere_motivo(self):
-        """El envío parcial es desviación blanda: exige motivo (AD-88)."""
+    def test_03_envio_parcial_sin_motivo(self):
+        """El envío parcial manual NO es desviación: válido sin motivo (AD-89)."""
         guia = self._make_guia('PROC-03')
         lot = self._make_sv_lot(guia, 'PROC-SV-03', 10.0, 10.0)
         processor_loc = self.processor._get_or_create_processor_location()
-        with self.assertRaises(UserError):
-            self._send(lot, 4.0)  # sin motivo
-        self._send(lot, 4.0, reason='Ajuste por defecto de calidad')
+        self._send(lot, 4.0)  # parcial sin motivo: operación normal
         self.assertAlmostEqual(self._qty_in(lot, self.stock_loc), 6.0, 3)
         self.assertAlmostEqual(self._qty_in(lot, processor_loc), 4.0, 3)
 
@@ -240,12 +238,11 @@ class TestProcessorLocations(TransactionCase):
         for user in (self.user_oper, self.user_jef, self.user_ger):
             self.Wizard.with_user(user).check_access_rights('create')
 
-    def test_09_auditoria_con_motivo(self):
-        """Se registra el evento aditivo y la desviación con motivo (AD-88)."""
+    def test_09_auditoria_envio_normal(self):
+        """El envío (aun parcial) se audita como operación normal, sin deviation."""
         guia = self._make_guia('PROC-09')
         lot = self._make_sv_lot(guia, 'PROC-SV-09', 10.0, 10.0)
-        _loc, res = self._send(
-            lot, 6.0, reason='Envío parcial controlado')
+        _loc, res = self._send(lot, 6.0)  # parcial sin motivo
         picking = self.env['stock.picking'].browse(res['res_id'])
         events = self.env['madenat.audit.log'].search([
             ('action_type', '=', 'processor_shipment'),
@@ -253,7 +250,6 @@ class TestProcessorLocations(TransactionCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(len(events.audit_hash), 64)
         deviations = self.env['madenat.audit.log'].search([
-            ('action_type', '=', 'deviation'),
-            ('description', 'like', 'PROC-01')])
-        self.assertTrue(deviations)
+            ('action_type', '=', 'deviation')])
+        self.assertFalse(deviations)
 

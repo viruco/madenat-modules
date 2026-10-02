@@ -6,3 +6,5 @@ from . import test_consolidation_action_domain
 from . import test_rebaja_contenedor
 # I1 canónico (CANON/19 §16, 2026-10-02): ubicaciones y saldo por procesador.
 from . import test_processor_locations
+# AD-89/AD-90 (2026-10-02): envío parcial, reservas y backorder.
+from . import test_processor_shipment_ad89
