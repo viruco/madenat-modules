@@ -10,3 +10,5 @@ from . import test_processor_locations
 from . import test_processor_shipment_ad89
 # I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV.
 from . import test_sv_imputation_i2
+# I2 candidatos SV contextuales (contrato canónico único, AD-91).
+from . import test_sv_imputation_candidates

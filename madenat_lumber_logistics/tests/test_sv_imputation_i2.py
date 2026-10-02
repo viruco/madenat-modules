@@ -191,12 +191,33 @@ class TestSvImputationI2(TransactionCase):
             ('description', 'like', 'I2-SV-EXCESS')])
         self.assertEqual(len(deviations), 1)
 
-    # ── T-I2-06 ──────────────────────────────────────────────────────────
+    # ── T-I2-06 (rediseñado: determinista, no asume BD vacía) ────────────
     def test_t_i2_06_etiqueta_sin_sv_candidato(self):
-        """Sin SV candidato: permite aplicar con motivo; no mueve stock."""
+        """Sin candidato ELEGIBLE en el contexto: flag + guard + motivo.
+
+        Determinista y aislado: NO asume BD vacía ni borra el lote
+        persistente. Existe un lote ``volume`` ajeno en el entorno, pero la
+        imputación se ancla a la ubicación de un procesador con árbol vacío,
+        de modo que ningún SV es candidato elegible para ella.
+        """
         guia = self._make_guia('I2-T06')
         etiqueta = self._make_etiqueta(guia, 'I2-E06', 8.0)
+        # Lote volume ajeno/global disponible: NO debe ser candidato aquí.
+        ajeno = self._make_sv(guia, 'SV00000000601', 100.0)
+        # Procesador con árbol de ubicación vacío (sin quants internos).
+        processor = self.env['res.partner'].sudo().create({
+            'name': 'I2 T06 Planta', 'is_company': True, 'is_processor': True})
+        proc_loc = processor._get_or_create_processor_location()
         imp = self._make_imputation(guia, [(etiqueta, [])])
+        imp.sudo().write({
+            'processor_id': processor.id,
+            'processor_location_id': proc_loc.id})
+        # El lote ajeno existe en el entorno pero no es elegible en contexto.
+        self.assertIn(ajeno, self.StockLot.search(
+            [('lot_flow_type', '=', 'volume')]))
+        self.assertNotIn(
+            ajeno, [d['lot'] for d in imp._i2_get_sv_candidate_data()])
+        self.assertTrue(imp._i2_is_missing_sv_candidate())
         before = self._stock_snapshot()
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_apply()  # sin motivo
