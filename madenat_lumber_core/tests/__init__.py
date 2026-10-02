@@ -37,3 +37,5 @@ from . import test_reception_reset_traceable
 from . import test_guia_reopen_traceable
 # G2: vínculo persistente guía de procesado ↔ picking de ingreso de producción.
 from . import test_guia_picking_link
+# G3: reversión física automática del ingreso de producción (llave fuerte G2).
+from . import test_guia_production_reverse
