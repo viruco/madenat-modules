@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.15.0
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16 -->
+**Versión documental:** 12.15.1
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2289,6 +2289,8 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 2. **D-I1-02 — Saldo por procesador en dos niveles.** (a) **Resumen físico agregado** desde `stock.quant` *(implementado)*; (b) **detalle por lote** con **nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor y OC** — **planificado para la fase posterior a la imputación SV→etiqueta** (no implementar aún).
 3. **D-I1-03 — Envío parcial no es automáticamente desviación.** El **motivo obligatorio** aplica **solo** si la cantidad ejecutada difiere de una **propuesta, planificación, reserva o cantidad previamente indicada**. Un **envío manual parcial sin propuesta previa es válido** y se audita como **operación normal**. **Nunca** se permite exceder la **disponibilidad física** (integridad dura). **Nota:** el código de I1 **aún** exige motivo ante todo envío parcial ⇒ **corrección pendiente**.
 4. **D-I1-04 — Riesgo pre-producción.** Validar la **disponibilidad física frente a reservas de otros pickings/backorders** antes de producción (hoy la validación mide el quant de la ubicación de origen y no descuenta reservas de terceros).
+
+**Estado de implementación (2026-10-02, rama `feat/procesadores-guardas-20261002`).** **D-I1-03 corregido:** el asistente **no** exige motivo ni registra `deviation` sin una **referencia previa persistida y verificable** (inexistente en I1 ⇒ no se inventa propuesta; `_get_deviation_reference` ⇒ `None`). **D-I1-04 resuelto:** se distingue y muestra **físico / reservado por otro / libre** (APIs nativas `stock.quant`), se **rechaza** si solicitado > libre (mensaje con los cuatro valores) sin alterar reservas ajenas, y se preserva el **backorder nativo** de Odoo (documentado por T7). Auditoría `processor_shipment` **idempotente** (`picking_id`). Sin cambios de ACL; el fallback previo de I1 (commit `1b25a4c`) queda superado.
 
 **Relación con AD-87/AD-88.** Refina **AD-87** (§5.4: la **vista sobre `stock.quant`** es la forma aprobada del saldo; **sin** modelo persistente) y precisa **AD-88** (el envío parcial **deja de ser** desviación por defecto; el motivo se reserva a la diferencia frente a una propuesta).
 

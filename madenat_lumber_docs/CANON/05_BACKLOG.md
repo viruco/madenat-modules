@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.5.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16 -->
+**Versión documental:** 8.5.1
+**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -416,8 +416,9 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
       con volumen por tipo de lote (`madenat_processor_id`, `madenat_lot_flow_type`). Menú en Logística.
 - [x] Marcar procesadores (`res.partner.is_processor`).
 - [x] **Evento «Envío a procesador»:** asistente desde lotes → **transferencia interna nativa** con `lot_id` por línea;
-      cantidad editable hacia abajo (sin exceder el disponible real); **motivo** si desvía (AD-88, `_guard_deviation`)
-      + evento en `madenat.audit.log` (tipo aditivo `processor_shipment`).
+      cantidad editable hacia abajo con techo en el **libre real** (físico − reservado ajeno; rechazo si excede);
+      **motivo** solo ante desviación real respecto de una **referencia previa persistida** (I1 no la persiste)
+      + evento en `madenat.audit.log` (tipo aditivo `processor_shipment`, idempotente).
 - [x] **Recepción directa en la ubicación del procesador:** verificada (SV/volumen vía albarán `incoming`); sin cambios de código.
 - [x] **Contenedores con lotes en ubicaciones de procesador:** verificado que el asistente los toma.
 - **Depende de:** AD-65 §1.5; helper AD-88 (bloque I0).
@@ -425,8 +426,8 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - **Decisiones post-I1 (D-I1-01..D-I1-04, 2026-10-02; AD-89):**
   - **D-I1-01:** **sin** modelo persistente `madenat.processor.balance`; `stock.quant` + ubicaciones internas son la **fuente física de verdad** (modelo persistente **diferido a BI/cierre**).
   - **D-I1-02:** saldo en **dos niveles** — (a) resumen agregado *implementado*; (b) **detalle por lote** (nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor, OC) **planificado para la fase posterior a la imputación SV→etiqueta**.
-  - **D-I1-03:** **envío parcial ≠ desviación**; el motivo obligatorio aplica **solo** si la cantidad difiere de una **propuesta/planificación/reserva/cantidad previa**. ⚠️ **Corrección del código PENDIENTE** (hoy el asistente exige motivo ante todo envío parcial).
-  - **D-I1-04:** **riesgo pre-producción** — validar disponibilidad frente a **reservas de otros pickings/backorders**. **Pendiente.**
+  - **D-I1-03:** **envío parcial ≠ desviación**; el motivo obligatorio aplica **solo** si la cantidad difiere de una **propuesta/planificación/reserva/cantidad previa**. ✅ **Corregido (2026-10-02, `feat/procesadores-guardas-20261002`):** sin referencia previa persistida ⇒ sin motivo ni `deviation`.
+  - **D-I1-04:** **riesgo pre-producción** — validar disponibilidad frente a **reservas de otros pickings/backorders**. ✅ **Resuelto (2026-10-02):** físico/reservado/libre nativo; rechazo si solicitado > libre; reserva ajena intacta; backorder nativo documentado (T7).
   - **D-I1-05 (AD-90):** **semántica de inventario en procesador** — `Procesadores/<X>` es **custodia operativa** (inventario MADENAT, no consignación); un **SV** allí está **pendiente de consolidación documental**; la **recepción directa** y la **transferencia interna** son **rutas físicas equivalentes**; el envío **no** es venta/exportación/rebaja/consumo/merma/genealogía; se distinguen **cuatro categorías de saldo** y **dos órdenes temporales**; **I1 sin cambio de alcance**; **I2 sigue pendiente**. Solo documentación.
 - **Desviaciones/dudas previas:** resueltas/reencuadradas por D-I1-01..03 (ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16).
 
