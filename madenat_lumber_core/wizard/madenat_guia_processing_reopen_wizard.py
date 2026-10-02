@@ -33,7 +33,8 @@ class MadenatGuiaProcessingReopenWizard(models.TransientModel):
     reason = fields.Text(
         string='Motivo de la corrección',
         help='Obligatorio cuando existe efecto físico (reversión de consumo a '
-             'proceso BT-04). Trazabilidad, no aprobación.')
+             'proceso BT-04 o del ingreso de producción). Trazabilidad, no '
+             'aprobación.')
 
     @api.depends('guia_processing_id')
     def _compute_effect_info(self):
@@ -50,9 +51,8 @@ class MadenatGuiaProcessingReopenWizard(models.TransientModel):
                 guia.state, guia.state)
             wiz.has_physical_effect = info['has_effect']
             if info['has_effect']:
-                wiz.effect_summary = (
-                    '• Consumo a proceso DONE: se revertirá con retorno '
-                    'nativo (idempotente).')
+                wiz.effect_summary = '\n'.join(
+                    '• %s' % effect for effect in info['effects'])
             else:
                 wiz.effect_summary = (
                     '• Sin efecto físico atribuible: reapertura documental '
@@ -66,6 +66,6 @@ class MadenatGuiaProcessingReopenWizard(models.TransientModel):
                 self.reason or '').strip():
             raise UserError(_(
                 'Indique un motivo para continuar: esta reapertura tiene efecto '
-                'físico (reversión de consumo a proceso). Es trazabilidad, no '
-                'aprobación.'))
+                'físico (reversión de consumo a proceso o de producción). Es '
+                'trazabilidad, no aprobación.'))
         return guia._reopen_to_draft_confirmed(reason=self.reason)

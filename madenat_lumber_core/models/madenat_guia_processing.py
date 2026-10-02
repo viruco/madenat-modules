@@ -5206,17 +5206,133 @@ class MadenatGuiaProcessing(models.Model):
             'context': {'default_guia_processing_id': self.id},
         }
 
+    # ── G3 — Reversión física de producción (llave fuerte G2) ─────────────
+    def _attributed_production_pickings(self):
+        """Pickings de INGRESO DE PRODUCCIÓN atribuidos a esta guía por la
+        llave fuerte G2 (`stock.picking.guia_processing_id`).
+
+        Atribución EXCLUSIVA por FK: nunca por `origin` textual ni por
+        `lot_id`. Solo aplica a la rama de Producción NUEVA con vínculo
+        fuerte; no infiere ni toca históricos (pickings sin FK).
+        """
+        self.ensure_one()
+        return self.env['stock.picking'].search([
+            ('guia_processing_id', '=', self.id),
+        ])
+
+    def _reverse_production_picking(self, picking):
+        """Retorno nativo (salida inversa) del ingreso de producción.
+
+        - Nativo: crea `stock.picking`/`stock.move`/`stock.move.line` con
+          ubicaciones invertidas y valida con API nativa (sin escribir quants).
+        - Idempotente: reutiliza el retorno DONE ya existente vía la relación
+          nativa `return_id` (no usa `origin` textual).
+        - Trazable: preserva la historia (el picking original nunca se borra)
+          y enlaza el retorno con `return_id` + `origin_returned_move_id`.
+        - El retorno NO porta `guia_processing_id` (exclusión G2).
+        """
+        self.ensure_one()
+        if not picking or picking.state != 'done':
+            return self.env['stock.picking']
+
+        # Idempotencia nativa: retorno ya generado para este picking.
+        existing = self.env['stock.picking'].search([
+            ('return_id', '=', picking.id), ('state', '=', 'done')], limit=1)
+        if existing:
+            _logger.info(
+                "♻️ Retorno de producción ya generado (%s) para guía %s.",
+                existing.name, self.name)
+            return existing
+
+        moves_done = picking.move_ids.filtered(
+            lambda m: m.state == 'done' and not m.returned_move_ids.filtered(
+                lambda r: r.state == 'done'))
+        if not moves_done:
+            return self.env['stock.picking']
+
+        warehouse = picking.picking_type_id.warehouse_id
+        return_type = warehouse.out_type_id if warehouse else self.env.ref(
+            'stock.picking_type_out', raise_if_not_found=False)
+        if not return_type:
+            raise UserError(_(
+                '⛔ No existe un tipo de operación de salida para revertir el '
+                'ingreso de producción %s.') % picking.name)
+
+        return_picking = self.env['stock.picking'].create({
+            'picking_type_id': return_type.id,
+            'partner_id': picking.partner_id.id,
+            'origin': 'Return of %s' % picking.name,
+            'location_id': picking.location_dest_id.id,
+            'location_dest_id': picking.location_id.id,
+            'company_id': picking.company_id.id,
+        })
+        for move in moves_done:
+            qty = move.quantity or move.product_uom_qty
+            return_move = self.env['stock.move'].create({
+                'name': 'Return of %s' % move.name,
+                'product_id': move.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': return_picking.id,
+                'location_id': move.location_dest_id.id,
+                'location_dest_id': move.location_id.id,
+                'company_id': move.company_id.id,
+                'origin_returned_move_id': move.id,
+                'to_refund': True,
+            })
+            # Restaurar trazabilidad de lote copiando las líneas originales.
+            for line in move.move_line_ids:
+                self.env['stock.move.line'].create({
+                    'move_id': return_move.id,
+                    'picking_id': return_picking.id,
+                    'product_id': line.product_id.id,
+                    'lot_id': line.lot_id.id,
+                    'quantity': line.quantity,
+                    'product_uom_id': line.product_uom_id.id,
+                    'location_id': return_move.location_id.id,
+                    'location_dest_id': return_move.location_dest_id.id,
+                    'owner_id': line.owner_id.id,
+                })
+
+        return_picking.action_confirm()
+        return_picking.action_assign()
+        return_picking.with_context(
+            skip_backorder=True, skip_immediate=True,
+            force_validate=True, immediate_transfer=True,
+        ).button_validate()
+        # Relación técnica nativa del retorno (equivalente al wizard nativo).
+        return_picking.return_id = picking.id
+        _logger.info(
+            "✅ Producción revertida: %s → %s (guía %s).",
+            picking.name, return_picking.name, self.name)
+        return return_picking
+
     # ── Reapertura trazable no bloqueante (helpers privados) ───────────────
     def _reopen_physical_effect_info(self):
-        """Efecto físico previsto (solo BT-04/Servicio) y advertencias."""
+        """Efecto físico previsto (BT-04/Servicio y Producción G3) y avisos."""
         self.ensure_one()
         consumption = self.consumption_picking_id
         has_consumption = bool(consumption and consumption.state == 'done')
+        production_done = self._attributed_production_pickings().filtered(
+            lambda p: p.state == 'done')
+        has_production = bool(production_done)
+        effects = []
         warnings = []
         if has_consumption:
+            effects.append(
+                'Consumo a proceso DONE (%s): se revertirá con retorno nativo '
+                '(idempotente).' % consumption.name)
             warnings.append(
                 '⏳ Consumo a proceso DONE (%s): se revertirá con retorno '
                 'nativo.' % consumption.name)
+        if has_production:
+            production_names = ', '.join(production_done.mapped('name'))
+            effects.append(
+                'Ingreso de producción DONE (%s): se revertirá con retorno '
+                'nativo (idempotente).' % production_names)
+            warnings.append(
+                '🏭 Ingreso de producción DONE (%s): se revertirá con retorno '
+                'nativo.' % production_names)
         if self.lot_ids:
             if 'lumber.container' in self.env:
                 contenedores = self.env['lumber.container'].search(
@@ -5246,11 +5362,17 @@ class MadenatGuiaProcessing(models.Model):
             warnings.append('📤 Albarán(es) con salida externa validada (%s); no '
                             'se modifican (solo advertencia).'
                             % ', '.join(albaranes_externos.mapped('name')))
-        if not has_consumption and self.lot_ids:
-            warnings.append('⚠️ Sin consumo BT-04 atribuible: no hay reversión '
-                            'física automática. Se conserva stock, lotes, '
-                            'pickings y movimientos (atribución insuficiente).')
-        return {'has_effect': has_consumption, 'warnings': warnings}
+        if not has_consumption and not has_production and self.lot_ids:
+            warnings.append('⚠️ Sin consumo BT-04 ni producción atribuible: '
+                            'no hay reversión física automática. Se conserva '
+                            'stock, lotes, pickings y movimientos '
+                            '(atribución insuficiente).')
+        return {
+            'has_effect': has_consumption or has_production,
+            'warnings': warnings,
+            'effects': effects,
+            'production_pickings': production_done,
+        }
 
     def _reopen_to_draft_confirmed(self, reason=None):
         """Ejecuta la reapertura trazable (solo desde el wizard; privado)."""
@@ -5260,24 +5382,38 @@ class MadenatGuiaProcessing(models.Model):
         if info['has_effect'] and not reason:
             raise UserError(_(
                 'Indique un motivo para continuar: esta reapertura tiene efecto '
-                'físico (reversión de consumo a proceso). Es trazabilidad, no '
-                'aprobación.'))
+                'físico (reversión de consumo a proceso o de producción). Es '
+                'trazabilidad, no aprobación.'))
         prev_state = self.state
         consumption = self.consumption_picking_id
+        production_done = info['production_pickings']
         result = {
             'warnings': list(info['warnings']),
             'consumption_picking': consumption.name if consumption else False,
             'consumption_reversed': False, 'return_name': False,
+            'production_reversed': False, 'production_returns': [],
         }
         _logger.info('🔄 Reapertura trazable guía %s (efecto=%s)',
                      self.name, info['has_effect'])
         with self.env.cr.savepoint():
-            # 1) Reversión física SOLO de consumo BT-04 (llave fuerte).
-            if info['has_effect']:
+            # 1) Reversión física de consumo BT-04 (llave fuerte).
+            if consumption and consumption.state == 'done':
                 return_picking = self._reverse_consumption_picking()
                 result['consumption_reversed'] = True
                 result['return_name'] = (
                     return_picking.name if return_picking else False)
+            # 1.bis) G3 — Reversión física del ingreso de producción NUEVO,
+            # atribuido EXCLUSIVAMENTE por `guia_processing_id` (llave fuerte
+            # G2). Nativo, idempotente y trazable; no usa `origin` ni `lot_id`.
+            if production_done:
+                production_returns = []
+                for production in production_done:
+                    return_production = self._reverse_production_picking(
+                        production)
+                    if return_production:
+                        production_returns.append(return_production.name)
+                result['production_reversed'] = True
+                result['production_returns'] = production_returns
             # 2) Cancelar pickings NO done (API nativa). No se muta origin.
             for picking in self.env['stock.picking'].search([
                     ('origin', '=', self.name),
@@ -5342,6 +5478,8 @@ class MadenatGuiaProcessing(models.Model):
             'consumption_picking': result['consumption_picking'],
             'consumption_reversed': result['consumption_reversed'],
             'return_picking': result['return_name'],
+            'production_reversed': result.get('production_reversed', False),
+            'production_returns': result.get('production_returns', []),
             'lots': self.lot_ids.mapped('name'),
             'user': self.env.user.id,
         }, sort_keys=True, default=str)
@@ -5358,11 +5496,14 @@ class MadenatGuiaProcessing(models.Model):
             '↩️ <strong>Reapertura trazable</strong> (%(prev)s → draft).'
             '<br/>Motivo: %(reason)s'
             '<br/>Consumo revertido: %(rev)s · Retorno: %(ret)s'
+            '<br/>Producción revertida: %(prod_rev)s · Retornos: %(prod_ret)s'
             '<br/>Advertencias: %(warn)s'
         ) % {
             'prev': prev_state, 'reason': reason or '(sin efecto físico)',
             'rev': result['consumption_reversed'],
             'ret': result['return_name'] or '-',
+            'prod_rev': result.get('production_reversed', False),
+            'prod_ret': ', '.join(result.get('production_returns') or []) or '-',
             'warn': ' | '.join(result['warnings']) or '-',
         })
 
