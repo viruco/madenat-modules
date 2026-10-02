@@ -35,3 +35,5 @@ from . import test_ingestion_keywords_seed
 from . import test_reception_reset_traceable
 # Reapertura no bloqueante y trazable de guía procesada (Incremento G1).
 from . import test_guia_reopen_traceable
+# G2: vínculo persistente guía de procesado ↔ picking de ingreso de producción.
+from . import test_guia_picking_link
