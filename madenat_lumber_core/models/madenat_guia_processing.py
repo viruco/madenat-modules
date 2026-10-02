@@ -2400,6 +2400,11 @@ class MadenatGuiaProcessing(models.Model):
             'purchase_id': self.order_id.id if self.order_id else False,
             'move_ids_without_package': [],
             'company_id': self.env.company.id,
+            # 🛡️ G2 — Vínculo persistente guía↔picking de ingreso de producción.
+            # Único punto de asignación: SOLO al CREAR el albarán maestro. El
+            # picking recuperado por `origin` (rama de reutilización) NO se
+            # reescribe: no se infieren vínculos en históricos (T-G2-10).
+            'guia_processing_id': self.id,
         }
 
         # 4. 🪵 LÓGICA DE MOVIMIENTOS (HÍBRIDA - INTACTA) - Sin cambios

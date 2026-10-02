@@ -25,6 +25,34 @@ class StockPicking(models.Model):
         string='Lotes MADENAT en esta Recepción'
     )
 
+    # ==========================================================================
+    # --- RELACIÓN CON GUÍA DE PROCESADO MADENAT (Incremento G2) ---
+    # ==========================================================================
+    # Vínculo persistente y fuerte entre el picking de INGRESO DE PRODUCCIÓN y
+    # la guía `madenat.guia.processing` que lo origina. Sustituye la atribución
+    # frágil por texto (`origin == guia.name`), que es mutable (variantes
+    # REVERTIDO-*, [PURGADO-*]), no garantiza unicidad y sobrevive a la guía.
+    #
+    # Se asigna EXCLUSIVAMENTE al crear el picking de ingreso de producción en
+    # `madenat.guia.processing._get_or_create_picking_unified`. NO se propaga a
+    # consumos (BT-04), retornos, recepciones, rebaja, contenedor, exportación
+    # ni inventario, y NUNCA se infiere en pickings históricos.
+    #
+    # Sin `check_company`: el comodelo `madenat.guia.processing` no tiene
+    # `company_id` y `stock.picking` declara `_check_company_auto=True`; forzar
+    # `check_company=True` generaría un dominio inválido y rompería la carga.
+    # Se sigue el patrón del proyecto (p. ej. `reception_id` tampoco lo usa).
+    guia_processing_id = fields.Many2one(
+        'madenat.guia.processing',
+        string='Guía de Procesado',
+        index=True,
+        ondelete='set null',
+        copy=False,
+        help="Guía de procesamiento que origina este albarán de ingreso de "
+             "producción (atribución persistente, G2). No aplica a consumos, "
+             "retornos, recepciones ni logística; no se infiere en históricos.",
+    )
+
     # --- SISTEMA DE VALIDACIÓN (CORREGIDO) ---
     # Se recalcula cuando cambian las validaciones de los lotes relacionados
     reception_technical_validation = fields.Selection(
