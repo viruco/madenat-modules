@@ -39,3 +39,5 @@ from . import test_guia_reopen_traceable
 from . import test_guia_picking_link
 # G3: reversión física automática del ingreso de producción (llave fuerte G2).
 from . import test_guia_production_reverse
+# H1: reversión física ASISTIDA de producción histórica (sin llave fuerte G2).
+from . import test_guia_historical_reverse
