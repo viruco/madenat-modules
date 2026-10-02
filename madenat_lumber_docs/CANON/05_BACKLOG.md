@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.3.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (5) — I1 canónico IMPLEMENTADO (ubicaciones y saldo por procesador, envío a procesador, ACL). Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
+**Versión documental:** 8.4.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (6) — decisiones post-I1 D-I1-01..D-I1-04 (AD-89): sin modelo de balance; saldo en 2 niveles; envío parcial ≠ desviación (corrección pendiente); riesgo reservas/backorders. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -422,7 +422,12 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - [x] **Contenedores con lotes en ubicaciones de procesador:** verificado que el asistente los toma.
 - **Depende de:** AD-65 §1.5; helper AD-88 (bloque I0).
 - **Aceptación:** T-09 + idempotencia de ubicaciones, envío parcial/exceso, recepción directa, saldo vs Σ quants, contenedor y ACL (Operaciones/Jefatura/Gerencia, sin grupos nuevos). **Suite Logistics: 51 (40 baseline + 11 nuevos), 0 fallas.**
-- **Desviaciones/dudas:** ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16 (saldo como vista sobre `stock.quant`, no modelo SQL; sin nominal/antigüedad aún).
+- **Decisiones post-I1 (D-I1-01..D-I1-04, 2026-10-02; AD-89):**
+  - **D-I1-01:** **sin** modelo persistente `madenat.processor.balance`; `stock.quant` + ubicaciones internas son la **fuente física de verdad** (modelo persistente **diferido a BI/cierre**).
+  - **D-I1-02:** saldo en **dos niveles** — (a) resumen agregado *implementado*; (b) **detalle por lote** (nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor, OC) **planificado para la fase posterior a la imputación SV→etiqueta**.
+  - **D-I1-03:** **envío parcial ≠ desviación**; el motivo obligatorio aplica **solo** si la cantidad difiere de una **propuesta/planificación/reserva/cantidad previa**. ⚠️ **Corrección del código PENDIENTE** (hoy el asistente exige motivo ante todo envío parcial).
+  - **D-I1-04:** **riesgo pre-producción** — validar disponibilidad frente a **reservas de otros pickings/backorders**. **Pendiente.**
+- **Desviaciones/dudas previas:** resueltas/reencuadradas por D-I1-01..03 (ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16).
 
 ### I2 — Modelo de imputación
 - [ ] `madenat.sv.imputation` (+`.line`, +`.sv.line`); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`.

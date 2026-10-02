@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.13.0
-**Última actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (2) — alta AD-87 (imputación etiqueta->SV y saldo por procesador) y AD-88 (principio advertir/motivar/auditar); AD-83 REEMPLAZADA por AD-87; AD-82/AD-84 alineadas. Ver CANON/19_IMPUTACION_SV_Y_PROCESADORES.md -->
+**Versión documental:** 12.14.0
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (3) — alta AD-89 (saldo por procesador: fuente física y 2 niveles; envío parcial ≠ desviación; riesgo reservas/backorders). Refina AD-87/AD-88. Ver CANON/19 §16 -->
 **Estado:** Canonical / activo
 
 ---
@@ -2276,7 +2276,29 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 
 **Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` §7 y §14; decisiones D8 (y la clasificación de bloqueos de la rama `feat/rebaja-contenedor-20261001`); patrón vigente AD-52/AD-54 (advertencia no bloqueante).
 
-<!-- actualizado: 2026-10-01 (2) — AD-87 y AD-88 (APROBADAS, decisiones D1–D10); AD-83 REEMPLAZADA por AD-87; AD-82/AD-84 alineadas. Ver CANON/19. -->
+---
+
+### AD-89 (2026-10-02) — Saldo por procesador: fuente física y dos niveles; envío parcial y disponibilidad (bloque I1)
+
+> **Estado: ✅ APROBADA (decisión del usuario del 2026-10-02).** Refina **AD-87** (saldo por procesador) y **AD-88** (advertir/motivar/auditar) para el bloque **I1**. Norma: `19_IMPUTACION_SV_Y_PROCESADORES.md` §16. **No autoriza cambios de código, datos ni parámetros** en esta pasada (documental).
+
+**Contexto.** El **I1 canónico** (ubicaciones `Procesadores/<X>`, saldo por procesador, evento «Envío a procesador») quedó **implementado** en la rama `feat/procesadores-ubicaciones-20261001` (commit `1b25a4c`). El usuario **aprueba I1** y fija cuatro decisiones (**D-I1-01..D-I1-04**).
+
+**Decisión.**
+1. **D-I1-01 — Fuente física de verdad, sin modelo de balance.** **No** se crea ahora `madenat.processor.balance`. **`stock.quant` + las ubicaciones internas** `Procesadores/<X>` son la **fuente física de verdad**. Un modelo de saldo **persistente** queda **diferido a BI/cierre** (si se requieren snapshots, conciliación físico-documental, rendimiento o KPI históricos).
+2. **D-I1-02 — Saldo por procesador en dos niveles.** (a) **Resumen físico agregado** desde `stock.quant` *(implementado)*; (b) **detalle por lote** con **nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor y OC** — **planificado para la fase posterior a la imputación SV→etiqueta** (no implementar aún).
+3. **D-I1-03 — Envío parcial no es automáticamente desviación.** El **motivo obligatorio** aplica **solo** si la cantidad ejecutada difiere de una **propuesta, planificación, reserva o cantidad previamente indicada**. Un **envío manual parcial sin propuesta previa es válido** y se audita como **operación normal**. **Nunca** se permite exceder la **disponibilidad física** (integridad dura). **Nota:** el código de I1 **aún** exige motivo ante todo envío parcial ⇒ **corrección pendiente**.
+4. **D-I1-04 — Riesgo pre-producción.** Validar la **disponibilidad física frente a reservas de otros pickings/backorders** antes de producción (hoy la validación mide el quant de la ubicación de origen y no descuenta reservas de terceros).
+
+**Relación con AD-87/AD-88.** Refina **AD-87** (§5.4: la **vista sobre `stock.quant`** es la forma aprobada del saldo; **sin** modelo persistente) y precisa **AD-88** (el envío parcial **deja de ser** desviación por defecto; el motivo se reserva a la diferencia frente a una propuesta).
+
+**No objetivos.** No modifica código, datos ni parámetros en esta pasada; no crea modelos, vistas, ACL ni migraciones; no toca `madenat_guia_processing.py`, costeo, valorización ni `madenat.dev_cleanup_enabled`.
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` §16 (bloque I1 y decisiones D-I1-01..04); `05_BACKLOG.md` (I1); rama `feat/procesadores-ubicaciones-20261001` (commit `1b25a4c`).
+
+---
+
+<!-- actualizado: 2026-10-02 (3) — alta AD-89 (saldo por procesador: fuente física y 2 niveles; envío parcial y disponibilidad; bloque I1). Refina AD-87/AD-88. Ver CANON/19 §16. Solo documentación. -->
 
 
 

@@ -1,10 +1,10 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.3.0
+**Versión documental:** 1.4.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
-**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`.
+**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación.
 **Fuente de verdad ante contradicción:** `CANON/INDICE_DOCUMENTACION.md` §8. Ante contradicción entre documentos, **no se elige versión en silencio**: se registra y se declara (ver §13).
 
 > **Alcance de esta versión.** Este documento es **especificación y diseño**. **No** autoriza ni contiene cambios de código, datos ni parámetros. Las reglas marcadas **[DISEÑO]** son objetivos; las marcadas **[VIGENTE]** describen comportamiento ya implementado y verificado en código (rama `feat/rebaja-contenedor-20261001`, BD `madenat_test`).
@@ -453,7 +453,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **Dependencias:** rama de rebaja `feat/rebaja-contenedor-20261001`.
 - **Aceptación:** suites en verde; bloqueos reclasificados sin regresión.
 
-### I1 — Cimientos: ubicaciones y saldo por procesador — ✅ IMPLEMENTADO (2026-10-02)
+### I1 — Cimientos: ubicaciones y saldo por procesador — ✅ IMPLEMENTADO (2026-10-02; **corrección D-I1-03 pendiente**)
 - **Alcance base:** `stock.location` `Procesadores` (**interna**) + hijas internas bajo demanda; reporte `madenat.processor.balance`; marcar procesadores (`res.partner.is_processor`).
 - **Ampliaciones aprobadas (2026-10-01):**
   1. **Evento «Envío a procesador»:** asistente desde lotes que crea una **transferencia interna nativa** de la bodega a la ubicación del procesador, con `lot_id` por línea; cantidad **editable hacia abajo**, sin exceder el disponible real; **motivo** si se desvía (AD-88 `_guard_deviation`) y evento en `madenat.audit.log` (**tipo aditivo**).
@@ -472,10 +472,13 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **ACL:** `madenat.processor.shipment.wizard` y `.line` para Operaciones / Jefatura / Gerencia; **sin grupos nuevos**.
 - **Pruebas:** `madenat_lumber_logistics/tests/test_processor_locations.py` (9 casos: idempotencia, quants antes/después, parcial con motivo, exceso rechazado, recepción directa, saldo vs Σ quants, contenedor, permisos, auditoría). Suite `madenat_lumber_logistics`: **51** (40 baseline + 11 nuevos), 0 fallas.
 
-**Desviaciones respecto del diseño (§5.4) — a revisar:**
-1. El saldo se expone como **vista (`act_window` lista+pivot) sobre `stock.quant`**, **no** como modelo `madenat.processor.balance`. Es lo pedido en la Fase B («vista de solo lectura … sobre stock.quant»); el nombre canónico del modelo queda **pendiente** si se quiere reporte/BI formal.
-2. El editor muestra **cantidad (volumen)** por procesador/producto/tipo de lote; **no** (aún) «nominal/disponible ni antigüedad» (§5.4). **Duda.**
-3. El envío parcial se interpreta como la **desviación** que exige motivo (AD-88). El envío completo no exige motivo. **Duda** si el negocio espera motivo también en otros casos.
+**Decisiones del usuario sobre I1 (D-I1-01..D-I1-04, 2026-10-02) — registradas en AD-89 (`04_DECISION_LOG.md`):**
+- **D-I1-01 (sin `madenat.processor.balance`):** **no** se crea ahora un modelo de saldo persistente. `stock.quant` + las ubicaciones internas `Procesadores/<X>` son la **fuente física de verdad**. Un modelo persistente queda **diferido a BI/cierre** (si se requieren snapshots, conciliación físico-documental, rendimiento o KPI históricos).
+- **D-I1-02 (saldo en dos niveles):** (a) **resumen físico agregado** desde `stock.quant` — *es lo implementado*; (b) **detalle por lote** que exponga **nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor y OC** — **planificado para la fase posterior a la imputación SV→etiqueta** (no implementar aún).
+- **D-I1-03 (envío parcial ≠ desviación):** el **motivo obligatorio** aplica **solo** si la cantidad ejecutada difiere de una **propuesta, planificación, reserva o cantidad previamente indicada**. Un **envío manual parcial sin propuesta previa es válido** y se audita como **operación normal**. **Nunca** se permite exceder la disponibilidad física. ⚠️ **El código de I1 (commit `1b25a4c`) aún exige motivo ante todo envío parcial: la corrección queda PENDIENTE** (no ejecutada en esta pasada documental).
+- **D-I1-04 (riesgo pre-producción):** validar la **disponibilidad física frente a reservas de otros pickings/backorders** antes de producción. **Pendiente.**
+
+**Efecto sobre las desviaciones previas (2026-10-02):** D-I1-01 **resuelve** la desviación n.º 1 (se aprueba la vista sobre `stock.quant`, sin modelo SQL). D-I1-02 **reencuadra** la desviación n.º 2 (nominal/antigüedad) como **trabajo planificado**, no deuda. D-I1-03 **contradice** la desviación n.º 3 y deja una **corrección pendiente** en el código. D-I1-04 añade un **riesgo pendiente**.
 
 ### I2 — Modelo de imputación
 - **Alcance:** `madenat.sv.imputation` (+`.line`, +`.sv.line`), estados §6, motivo/`deviation_flags`, secuencia.
@@ -533,6 +536,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **Alcance de esta versión:** documental. **No** se modificó código, datos ni parámetros; **no** hubo push.
 - **Renumeración de fases (2026-10-01, Fase A):** manda la numeración de §16. El trabajo **ya hecho** en `feat/imputacion-sv-i1-20261001` (endurecimiento de rebaja + AD-88 + zarpe/reversa + SV oculto) se registra como **bloque I0**; **I1** queda **PENDIENTE** como bloque canónico de cimientos, con **alcance ampliado** (envío a procesador, recepción directa, contenedores con lotes en procesador); **I2** sin cambios. Ver §14 y §17 (Q-19-5).
 - **I1 canónico implementado (2026-10-02, Fase B):** rama `feat/procesadores-ubicaciones-20261001` (commit `1b25a4c`). Ubicaciones `Procesadores/<X>` idempotentes desde `res.partner`; saldo por procesador (vista de solo lectura sobre `stock.quant`, menú Logística); evento «Envío a procesador» (transferencia interna nativa + AD-88 + tipo aditivo `processor_shipment`); ACL Operaciones/Jefatura/Gerencia sin grupos nuevos. Suite `madenat_lumber_logistics`: **51** (40 baseline + 11 nuevos), 0 fallas. Desviaciones/dudas en §16.
+- **Decisiones D-I1-01..D-I1-04 (2026-10-02, AD-89) — solo documentación, sin cambios de código:** (01) **sin** modelo persistente `madenat.processor.balance` (diferido a BI/cierre; fuente física = `stock.quant` + ubicaciones internas); (02) saldo en **dos niveles** — resumen agregado *implementado* y **detalle por lote planificado** para después de la imputación SV→etiqueta; (03) **envío parcial ≠ desviación** (motivo solo ante diferencia con propuesta/planificación/reserva; **corrección del código pendiente**); (04) **riesgo pre-producción**: validar disponibilidad frente a reservas/backorders. Ver §16 y AD-89.
 - **Efecto en otros documentos (ejecutado en la misma sesión documental):** alta de `19` en `INDICE_DOCUMENTACION.md`; alta de **AD-87** y **AD-88** y ajuste de **AD-83** (reemplazada) + **AD-82/AD-84** (alineadas) en `04_DECISION_LOG.md`; reescritura de secciones afectadas de `12`, `13`, `17` §2.8 y `18` (§7–§14); actualización de `05_BACKLOG.md`.
 - **Registro de contradicciones:** §13.2 (resueltas) y §13.3 (abiertas). No se elige versión en silencio.
 - **Nomenclatura:** español, con términos técnicos en inglés entre paréntesis.
