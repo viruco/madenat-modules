@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.14.0
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (3) — alta AD-89 (saldo por procesador: fuente física y 2 niveles; envío parcial ≠ desviación; riesgo reservas/backorders). Refina AD-87/AD-88. Ver CANON/19 §16 -->
+**Versión documental:** 12.15.0
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16 -->
 **Estado:** Canonical / activo
 
 ---
@@ -2298,7 +2298,43 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 
 ---
 
-<!-- actualizado: 2026-10-02 (3) — alta AD-89 (saldo por procesador: fuente física y 2 niveles; envío parcial y disponibilidad; bloque I1). Refina AD-87/AD-88. Ver CANON/19 §16. Solo documentación. -->
+### AD-90 (2026-10-02) — Semántica de inventario en procesador y pendiente de consolidación documental
+
+> **Estado: ✅ APROBADA (decisión del usuario del 2026-10-02).** Fija la **semántica** de la ubicación interna `Procesadores/<Procesador>` y del **SV pendiente de consolidación documental** con productos procesados. **Complementa AD-87, AD-88 y AD-89.** Norma: `19_IMPUTACION_SV_Y_PROCESADORES.md` (§2, §3, §5.4, §7.3, §16). **No autoriza cambios de código, datos ni parámetros** en esta pasada (documental); **no crea modelos, vistas, ACL ni migraciones**.
+
+**Contexto.** MADENAT es **trader**: compra **madera por volumen (SV)**, **madera procesada con etiquetas** y **madera dimensionada bruta con tarjas**. La **ingesta por volumen/SV** y el **envío a un procesador externo** (Ferramenta u otros) se **homologan** como **inventario de MADENAT bajo custodia operativa del procesador**, **pendiente de consolidación documental** con los productos procesados. Un SV **sigue siendo stock de MADENAT**; puede recibirse **directamente** en `Procesadores/<Procesador>` o llegar primero a **bodega** y transferirse internamente a esa ubicación. **Nunca** es venta, exportación, rebaja, salida a cliente, consumo físico automático ni genealogía padre-hijo.
+
+**Decisión.**
+1. La ubicación interna **`Procesadores/<Procesador>`** representa **inventario propiedad de MADENAT bajo custodia operativa de un procesador**.
+2. Un **SV** en esa ubicación se clasifica operativamente como **pendiente de consolidación documental** con productos procesados.
+3. La **recepción directa en procesador** y la **transferencia interna desde bodega** son **rutas físicas equivalentes** para el **saldo físico**.
+4. El **envío al procesador** **no** es venta, exportación, rebaja, consumo, merma ni genealogía física.
+5. La futura **consolidación/imputación etiqueta→SV** es **declarada, editable, por volumen nominal**, puede usar **uno o varios SV** y **no exige** una relación **física lote-a-lote**.
+6. El **registro de etiquetas procesadas** y la **consolidación** pueden ocurrir en **distinto orden temporal**; el sistema **controla pendientes y alerta**, **sin bloquear** la operación normal.
+7. Mantener la distinción entre: (a) **saldo físico** en `stock.quant`; (b) **saldo documental pendiente de consolidación**; (c) **productos procesados pendientes de imputar**; (d) **productos procesados ya imputados/consolidados**.
+8. Esta decisión **complementa AD-87, AD-88 y AD-89**; **no cambia el alcance actual de I1** ni **implementa todavía I2**.
+
+**Relación con AD-87/AD-88/AD-89.** **Complementa AD-87** (la **imputación declarada** etiqueta→SV es el mecanismo de consolidación; sin genealogía física), **precisa AD-88** (la **coexistencia** de SV y etiquetas procesadas —y su distinto orden temporal— es **operación normal**: advierte y audita, **no bloquea**) y **se apoya en AD-89** (el **saldo físico** sigue siendo `stock.quant` + ubicaciones internas `Procesadores/<X>`, en **dos niveles**). Detalle: `19` §2, §3, §5.4, §7.3, §16.
+
+**Impacto.** Aclara que `Procesadores/<X>` es **custodia operativa** (no consignación ni propiedad de terceros); fija el término **«pendiente de consolidación documental»**; **separa** explícitamente las **cuatro categorías de saldo** y habilita la **coexistencia temporal** de SV y etiquetas procesadas. Es **base semántica** de **I2** (consolidación/imputación documental), que **sigue pendiente**.
+
+**No objetivos.** No crea modelos, vistas, ACL ni migraciones; **no implementa I2** ni modifica el alcance de **I1**; no altera costeo, valorización, facturación ni el ledger SV vigente; no migra datos históricos.
+
+**Criterios de aceptación documentales.**
+- `19_IMPUTACION_SV_Y_PROCESADORES.md` integra la semántica en glosario, ciclo operativo, reglas de ubicación/procesador y de saldo.
+- Se distinguen explícitamente las **cuatro categorías de saldo** y los **dos órdenes temporales** válidos (etiquetas→consolidación y consolidación→etiquetas).
+- **I2** permanece **pendiente** (no declarado como implementado).
+- Sin contradicciones abiertas con AD-82/AD-83/AD-84/AD-87/AD-88/AD-89.
+
+**Riesgos.** (R-19-05) confundir la **custodia operativa** con **consignación/propiedad ajena**; confundir **saldo físico** (`stock.quant`) con **saldo documental pendiente**; que la **coexistencia** de SV y etiquetas sin consolidar se interprete como error y se **bloquee** (mitigado por AD-88).
+
+**Preguntas abiertas.** Se mantienen Q-19-3, Q-19-4, Q-19-6 y Q-19-7 (`19` §17); esta decisión **no** decide tolerancias, umbrales de alerta, retorno a granel sin etiquetas ni el paso `parent_lot_id` opcional (I6).
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` (§2, §3, §5.4, §7.3, §16); **AD-87**, **AD-88**, **AD-89**; `05_BACKLOG.md` (decisiones post-I1 y refinamiento de I2); `18_CONSOLIDACION_Y_REBAJA.md` §7.5.
+
+---
+
+<!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 
 
 

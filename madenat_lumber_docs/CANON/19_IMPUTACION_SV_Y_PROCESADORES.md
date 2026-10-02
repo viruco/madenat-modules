@@ -1,10 +1,10 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.4.0
+**Versión documental:** 1.5.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
-**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación.
+**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**).
 **Fuente de verdad ante contradicción:** `CANON/INDICE_DOCUMENTACION.md` §8. Ante contradicción entre documentos, **no se elige versión en silencio**: se registra y se declara (ver §13).
 
 > **Alcance de esta versión.** Este documento es **especificación y diseño**. **No** autoriza ni contiene cambios de código, datos ni parámetros. Las reglas marcadas **[DISEÑO]** son objetivos; las marcadas **[VIGENTE]** describen comportamiento ya implementado y verificado en código (rama `feat/rebaja-contenedor-20261001`, BD `madenat_test`).
@@ -31,8 +31,10 @@ Incluye: glosario, ciclo completo por tipo de compra, modelo de datos mínimo, e
 | **Tarja** | Documento/unidad de **madera dimensionada bruta** recibida o despachada (piezas con dimensiones). Vive en lotes de **tarja**. | `stock.lot`, documentos de tarja |
 | **Imputación (declarada)** | Acto administrativo que **declara** qué etiqueta(s) de retorno corresponden a qué SV. **No es genealogía física**: es la relación **volumen nominal declarado** etiqueta→SV. Registra el ledger SV y **genera la salida nativa del quant del SV** (§4, §5). | propuesto: `madenat.sv.imputation` |
 | **Procesador** | Planta externa (cepillado, secado, tratamiento, …) que transforma el SV. Se marca en el maestro de partners. | `res.partner.is_processor` |
-| **En poder del procesador X** | **Ubicación interna** de stock por procesador (`stock.location`, `usage='internal'`) bajo un padre **`Procesadores`**. El inventario **sigue siendo de MADENAT** (no es consignación ni propiedad ajena). | `stock.location` |
-| **Saldo por procesador** | Volumen SV (nominal/disponible) que **permanece** en la ubicación del procesador sin retorno imputado. | propuesto: `madenat.processor.balance` (vista/reporte) |
+| **En poder del procesador X** | **Ubicación interna** de stock por procesador (`stock.location`, `usage='internal'`) bajo un padre **`Procesadores`**. Representa **inventario propiedad de MADENAT bajo custodia operativa** del procesador (no es consignación ni propiedad ajena). **AD-90.** | `stock.location` |
+| **SV en procesador / pendiente de consolidación documental** | Un **SV** (o saldo) que reside en `Procesadores/<X>` se clasifica operativamente como **pendiente de consolidación documental** con los **productos procesados** que retornan de ese procesador. **No** implica venta, exportación, rebaja, consumo, merma ni genealogía física. **AD-90.** | `stock.quant`, `stock.lot` |
+| **Saldo por procesador (físico)** | **Saldo físico** (nominal/disponible) que **permanece** en la ubicación del procesador; es una **vista sobre `stock.quant`** (sin modelo persistente), agrupable por procesador/producto/tipo de lote. **AD-89/AD-90.** | `stock.quant` (vista `madenat.processor.balance`) |
+| **Saldo documental pendiente de consolidación** | Volumen **declarado** aún **no consolidado** (etiqueta→SV). Es **distinto** del saldo físico: convive con él y alimenta las **alertas de pendientes** (AD-90; §7.3, §8). | propuesto: consolidación (fase I2) |
 | **Merma** | Diferencia entre el volumen SV enviado y el volumen de retorno **imputado**. Es un **evento documental**: no dispara `stock.scrap` automático (§7, §11). | propuesto: evento de merma con costo residual |
 | **Ledger SV** | Registro **append-only** de operaciones sobre etiquetas SV. | `madenat.sv.operation` |
 
@@ -82,6 +84,8 @@ ETIQUETA PROCESADA (stock nuevo e independiente, lot_flow_type='tarja'/vacío)
 **Claves [DISEÑO]:**
 - La imputación es **la vía única** por la que el volumen SV "sale" del stock (su quant se descuenta en el momento de imputar). No hay descuento del SV vía contenedor de exportación (el SV no se exporta).
 - El **retorno es stock nuevo e independiente** (AD-65 §1.6; alineado con DEC-002). El vínculo con el SV es **declarado**, no físico (D2).
+- **Semántica de inventario en procesador (AD-90):** mientras el SV está en `Procesadores/<X>` se clasifica como **pendiente de consolidación documental**; es **inventario de MADENAT bajo custodia operativa** del procesador. La **recepción directa** (v2) y la **transferencia interna desde bodega** (v1) son **rutas físicas equivalentes** para el saldo físico. El envío al procesador **no** es venta, exportación, rebaja, consumo, merma ni genealogía.
+- **Órdenes temporales válidos (AD-90):** (a) **etiquetas primero → consolidación después** (caso de §3.1); (b) **consolidación declarada primero → etiquetas registradas después**. Ambos son válidos y pueden **coexistir** etiquetas sin consolidar con el SV en procesador; el sistema **controla pendientes y alerta**, **sin bloquear** (AD-88).
 
 ### 3.2 Compra de madera procesada (C2) — flujo normal
 
@@ -95,6 +99,8 @@ No hay SV ni imputación: la madera llega procesada con etiquetas/tarjas y se in
 | **v2 — Directo a procesador** | `Procesadores/<X>` (nunca toca bodega) | Desde `Procesadores/<X>` a `Virtual Locations/Production`. |
 
 Ambas variantes usan la **misma** imputación y el **mismo** ledger; solo cambia la ubicación de origen del `stock.move`.
+
+**Equivalencia física (AD-90).** Para el **saldo físico** las dos variantes son **equivalentes**: el quant del SV queda en `Procesadores/<X>` tanto si llegó por **recepción directa** como si llegó por **transferencia interna** desde bodega. La ruta es una **decisión operativa** y **no** cambia la semántica, el saldo documental pendiente ni los estados de productos procesados.
 
 ---
 
@@ -197,6 +203,8 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 - **Hijas:** una ubicación por procesador — **`Procesadores/<PROCESADOR>`** — creada bajo demanda al enviar/registrar SV en poder de ese procesador.
 - **Propiedad:** `usage='internal'` ⇒ **el inventario es de MADENAT** (no consignación). El saldo por procesador es el Σ de quants de esa ubicación.
 - **Saldo por procesador:** vista/reporte de solo lectura propuesto `madenat.processor.balance` (o reporte de `madenat_lumber_reports`) agrupando `stock.quant` por ubicación bajo `Procesadores`, con nominal/disponible y antigüedad.
+- **Semántica [APROBADA] (AD-90):** `Procesadores/<X>` es **inventario de MADENAT bajo custodia operativa** del procesador (**no** consignación ni propiedad ajena); un **SV** allí está **pendiente de consolidación documental** con productos procesados. El **envío al procesador** **no** es venta, exportación, rebaja, consumo, merma ni genealogía física. La **recepción directa** en `Procesadores/<X>` y la **transferencia interna** desde bodega son **rutas físicas equivalentes** para el saldo físico.
+- **Saldo físico vs. documental (AD-90):** el **saldo físico** = Σ `stock.quant` en `Procesadores/<X>` (fuente de verdad, AD-89); el **saldo documental pendiente** = volumen declarado aún **no consolidado**. **Coexisten** sin bloquear la operación normal; un SV puede convivir temporalmente con etiquetas procesadas recibidas del mismo procesador aunque la consolidación documental todavía no se aplique.
 
 ### 5.5 Costo (D4)
 
@@ -251,6 +259,12 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 3. **Cota por destino:** Σ (rebajas + imputaciones) por SV ≤ volumen oficial (NOMINAL) del lote.
 4. **Causa única de descuento del SV:** **imputación** (procesados) o ajuste autorizado; la rebaja aplica solo a lotes de **tarja** en export (AD-82). Sin dobles descuentos.
 5. **Concurrencia fail-closed** del ledger (guarda `_sv_concurrency_guard`).
+6. **Cuatro categorías de saldo (AD-90), sin mezclarlas:**
+   - (a) **saldo físico** en `stock.quant` (ubicaciones internas, incluida `Procesadores/<X>`) — única **fuente física de verdad** (AD-89);
+   - (b) **saldo documental pendiente de consolidación** (volumen declarado aún **no** consolidado etiqueta→SV);
+   - (c) **productos procesados pendientes de imputar** (etiquetas de retorno sin imputación activa);
+   - (d) **productos procesados ya imputados/consolidados** (vínculo declarado a un SV explícito).
+   (b) y (c) **alimentan las alertas** (§8) y **no bloquean** la operación (AD-88); un SV en `Procesadores/<X>` puede **coexistir** con etiquetas procesadas sin consolidar.
 
 ---
 
@@ -445,7 +459,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 > Fases **incrementales** del frente de imputación. Cada fase declara **dependencias**, **riesgos** y **criterios de aceptación**. El detalle se refleja en `05_BACKLOG.md`.
 >
-> **Numeración (decisión del usuario, 2026-10-01).** Manda la numeración de este §16. El **bloque I0** agrupa lo **ya hecho** en la rama `feat/imputacion-sv-i1-20261001` (endurecimiento de la rebaja + helper AD-88 + zarpe blando + reversa con override + SV oculto). **I1** es el bloque **canónico de cimientos** (ubicaciones de procesadores, saldo por procesador y marcado de procesadores) — ✅ **IMPLEMENTADO (2026-10-02)**, con el alcance ampliado de abajo. **I2** (modelo de imputación `madenat.sv.imputation`) **no cambia**.
+> **Numeración (decisión del usuario, 2026-10-01).** Manda la numeración de este §16. El **bloque I0** agrupa lo **ya hecho** en la rama `feat/imputacion-sv-i1-20261001` (endurecimiento de la rebaja + helper AD-88 + zarpe blando + reversa con override + SV oculto). **I1** es el bloque **canónico de cimientos** (ubicaciones de procesadores, saldo por procesador y marcado de procesadores) — ✅ **IMPLEMENTADO (2026-10-02)**, con el alcance ampliado de abajo. **I2** (consolidación/imputación documental, `madenat.sv.imputation`) **sigue pendiente** y **no se implementa todavía**; su definición queda **refinada por AD-90** (2026-10-02).
 
 ### I0 — Endurecimiento de rebaja y principio AD-88 — ✅ IMPLEMENTADO (2026-10-01)
 - **Alcance:** endurecimiento de la rebaja (rolleo, correo, auditoría con snapshot + SHA-256, costing `skip` con razón); helper común AD-88 `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)`; **B-01 zarpe** como advertencia con motivo; **B-03/B-06 reversa** con override de Gerencia y motivo; **D9 SV oculto** por defecto en el asistente de contenedores.
@@ -480,11 +494,12 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 **Efecto sobre las desviaciones previas (2026-10-02):** D-I1-01 **resuelve** la desviación n.º 1 (se aprueba la vista sobre `stock.quant`, sin modelo SQL). D-I1-02 **reencuadra** la desviación n.º 2 (nominal/antigüedad) como **trabajo planificado**, no deuda. D-I1-03 **contradice** la desviación n.º 3 y deja una **corrección pendiente** en el código. D-I1-04 añade un **riesgo pendiente**.
 
-### I2 — Modelo de imputación
-- **Alcance:** `madenat.sv.imputation` (+`.line`, +`.sv.line`), estados §6, motivo/`deviation_flags`, secuencia.
-- **Dependencias:** I1; `madenat.sv.operation` (AD-79/AD-80).
+### I2 — Consolidación / imputación documental (etiquetas procesadas → SV) — ⏳ PENDIENTE
+- **Alcance (AD-87/AD-90):** modelo **`madenat.sv.imputation`** (+`.line`, +`.sv.line`) que materializa la **consolidación documental** de **etiquetas procesadas contra uno o varios SV**; estados §6, motivo/`deviation_flags`, secuencia. **No** es producción, retorno físico ni genealogía lote-a-lote.
+- **Dependencias:** I1; `madenat.sv.operation` (AD-79/AD-80); semántica **AD-90** (§2, §3, §5.4, §7.3).
 - **Riesgos:** R-19-04; complejidad de la relación N:M.
-- **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; sin efectos en stock en `draft`/`pending`.
+- **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; **sin efectos en stock** en `draft`/`pending`; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados); válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo.
+- **Estado:** **PENDIENTE** (no implementado). **AD-90 no cambia su alcance ni lo declara implementado.**
 
 ### I3 — Salida nativa del SV + ledger `imputacion` + invariantes
 - **Alcance:** valor `action_type='imputacion'`; vínculo `imputation_id`; `stock.move` hacia `Virtual Locations/Production`; idempotencia `picking_id`; invariantes §7.3.
@@ -537,6 +552,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **Renumeración de fases (2026-10-01, Fase A):** manda la numeración de §16. El trabajo **ya hecho** en `feat/imputacion-sv-i1-20261001` (endurecimiento de rebaja + AD-88 + zarpe/reversa + SV oculto) se registra como **bloque I0**; **I1** queda **PENDIENTE** como bloque canónico de cimientos, con **alcance ampliado** (envío a procesador, recepción directa, contenedores con lotes en procesador); **I2** sin cambios. Ver §14 y §17 (Q-19-5).
 - **I1 canónico implementado (2026-10-02, Fase B):** rama `feat/procesadores-ubicaciones-20261001` (commit `1b25a4c`). Ubicaciones `Procesadores/<X>` idempotentes desde `res.partner`; saldo por procesador (vista de solo lectura sobre `stock.quant`, menú Logística); evento «Envío a procesador» (transferencia interna nativa + AD-88 + tipo aditivo `processor_shipment`); ACL Operaciones/Jefatura/Gerencia sin grupos nuevos. Suite `madenat_lumber_logistics`: **51** (40 baseline + 11 nuevos), 0 fallas. Desviaciones/dudas en §16.
 - **Decisiones D-I1-01..D-I1-04 (2026-10-02, AD-89) — solo documentación, sin cambios de código:** (01) **sin** modelo persistente `madenat.processor.balance` (diferido a BI/cierre; fuente física = `stock.quant` + ubicaciones internas); (02) saldo en **dos niveles** — resumen agregado *implementado* y **detalle por lote planificado** para después de la imputación SV→etiqueta; (03) **envío parcial ≠ desviación** (motivo solo ante diferencia con propuesta/planificación/reserva; **corrección del código pendiente**); (04) **riesgo pre-producción**: validar disponibilidad frente a reservas/backorders. Ver §16 y AD-89.
+- **Decisión AD-90 / D-I1-05 (2026-10-02) — solo documentación, sin cambios de código:** semántica de inventario en procesador — `Procesadores/<X>` es **inventario MADENAT bajo custodia operativa** (no consignación); un **SV** allí está **pendiente de consolidación documental**; **recepción directa** y **transferencia interna** son **rutas físicas equivalentes**; el **envío** no es venta/exportación/rebaja/consumo/merma/genealogía; se distinguen **cuatro categorías de saldo** (§7.3) y **dos órdenes temporales** válidos; **I1 sin cambio de alcance** y **I2 sigue PENDIENTE**. Ver §2, §3, §5.4, §7.3, §16 y AD-90.
 - **Efecto en otros documentos (ejecutado en la misma sesión documental):** alta de `19` en `INDICE_DOCUMENTACION.md`; alta de **AD-87** y **AD-88** y ajuste de **AD-83** (reemplazada) + **AD-82/AD-84** (alineadas) en `04_DECISION_LOG.md`; reescritura de secciones afectadas de `12`, `13`, `17` §2.8 y `18` (§7–§14); actualización de `05_BACKLOG.md`.
 - **Registro de contradicciones:** §13.2 (resueltas) y §13.3 (abiertas). No se elige versión en silencio.
 - **Nomenclatura:** español, con términos técnicos en inglés entre paréntesis.
@@ -551,3 +567,4 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 <!-- creado: 2026-10-01 — CANON/19 Imputación SV (etiqueta→SV) y saldo por procesador. Decisiones D1–D10 del usuario. Especificación, sin cambios de código/datos/parámetros. -->
 <!-- actualizado: 2026-10-01 (2, Fase A) — numeración §16 (manda la de CANON/19): trabajo hecho = bloque I0; I1 canónico pendiente con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. §14/§17 alineados. -->
+<!-- actualizado: 2026-10-02 (4) — AD-90: semántica de inventario en procesador (custodia operativa MADENAT, pendiente de consolidación documental); recepción directa y transferencia interna equivalentes; dos órdenes temporales válidos; cuatro categorías de saldo; I2 refinado a consolidación/imputación documental y sigue PENDIENTE. Complementa AD-87/88/89. Solo documentación. -->

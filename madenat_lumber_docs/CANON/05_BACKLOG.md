@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.4.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (6) — decisiones post-I1 D-I1-01..D-I1-04 (AD-89): sin modelo de balance; saldo en 2 niveles; envío parcial ≠ desviación (corrección pendiente); riesgo reservas/backorders. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
+**Versión documental:** 8.5.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16 -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -427,11 +427,12 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
   - **D-I1-02:** saldo en **dos niveles** — (a) resumen agregado *implementado*; (b) **detalle por lote** (nominal, disponible, ubicación/procesador, tipo de lote, fecha de ingreso, antigüedad en procesador, guía, proveedor, OC) **planificado para la fase posterior a la imputación SV→etiqueta**.
   - **D-I1-03:** **envío parcial ≠ desviación**; el motivo obligatorio aplica **solo** si la cantidad difiere de una **propuesta/planificación/reserva/cantidad previa**. ⚠️ **Corrección del código PENDIENTE** (hoy el asistente exige motivo ante todo envío parcial).
   - **D-I1-04:** **riesgo pre-producción** — validar disponibilidad frente a **reservas de otros pickings/backorders**. **Pendiente.**
+  - **D-I1-05 (AD-90):** **semántica de inventario en procesador** — `Procesadores/<X>` es **custodia operativa** (inventario MADENAT, no consignación); un **SV** allí está **pendiente de consolidación documental**; la **recepción directa** y la **transferencia interna** son **rutas físicas equivalentes**; el envío **no** es venta/exportación/rebaja/consumo/merma/genealogía; se distinguen **cuatro categorías de saldo** y **dos órdenes temporales**; **I1 sin cambio de alcance**; **I2 sigue pendiente**. Solo documentación.
 - **Desviaciones/dudas previas:** resueltas/reencuadradas por D-I1-01..03 (ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16).
 
-### I2 — Modelo de imputación
-- [ ] `madenat.sv.imputation` (+`.line`, +`.sv.line`); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`.
-- **Depende de:** I1. **Aceptación:** T-01..T-03, T-06.
+### I2 — Consolidación / imputación documental (etiquetas procesadas → SV) — ⏳ PENDIENTE
+- [ ] **`madenat.sv.imputation`** (+`.line`, +`.sv.line`): **consolidación documental** de **etiquetas procesadas contra uno o varios SV** (estado **PENDIENTE**); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`. **NO** es producción, retorno físico ni genealogía lote-a-lote.
+- **Depende de:** I1; semántica **AD-90 / D-I1-05**. **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; sin efectos en stock en `draft`/`pending`; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados); válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo. **Estado: PENDIENTE** (AD-90 no lo declara implementado).
 
 ### I3 — Salida nativa del SV + ledger `imputacion` + invariantes
 - [ ] `action_type='imputacion'`; vínculo `imputation_id`; `stock.move` a `Virtual Locations/Production`; idempotencia `picking_id`.
