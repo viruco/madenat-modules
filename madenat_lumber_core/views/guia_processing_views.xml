@@ -103,6 +103,7 @@
                     <!-- Campos computed requeridos para evaluación de invisible en header -->
                     <field name="can_process" invisible="1"/>
                     <field name="can_reopen" invisible="1"/>
+                    <field name="can_historical_reverse" invisible="1"/>
 
                     <!-- PASO 1: Carga y Verificación de Datos -->
                     <button name="action_verify_data"
@@ -135,6 +136,13 @@
                             class="btn-warning"
                             invisible="not can_reopen"
                             help="Retrocede el documento a estado draft para correcciones"/>
+
+                    <button name="action_open_historical_reverse_wizard"
+                            string="🧭 Reversión histórica asistida"
+                            type="object"
+                            class="btn-info"
+                            invisible="not can_historical_reverse"
+                            help="H1: reversión física asistida de producción histórica (sin llave fuerte G2). Selección explícita; retorno total nativo que preserva lotes, movimientos, quants e historial. No aplica a granel/SV, BT-04 ni producción G3."/>
 
                     <button name="action_force_cancel"
                             string="🛡️ Cancelar Guía"

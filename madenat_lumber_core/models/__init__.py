@@ -11,6 +11,7 @@ from . import reception_parser
 from . import validation_checklist_mixin
 from . import mixin_lumber_ingest
 from . import madenat_guia_processing
+from . import madenat_guia_processing_historical
 from . import ingestion_gate
 from . import lumber_reception
 from . import madenat_subproducto

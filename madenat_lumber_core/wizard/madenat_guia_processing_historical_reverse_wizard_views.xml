@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_madenat_guia_processing_historical_reverse_wizard_form" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.historical.reverse.wizard.form</field>
+        <field name="model">madenat.guia.processing.historical.reverse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reversión histórica asistida (H1)">
+                <group>
+                    <field name="guia_processing_id" options="{'no_open': True}"/>
+                    <field name="state_name"/>
+                    <field name="selected_count"/>
+                    <field name="has_selection" invisible="1"/>
+                </group>
+
+                <div class="alert alert-info" role="alert">
+                    <field name="guidance_text" nolabel="1"/>
+                </div>
+
+                <div class="alert alert-warning" role="alert"
+                     invisible="not warning_text">
+                    <field name="warning_text" nolabel="1"/>
+                </div>
+
+                <label for="candidate_ids"
+                       string="Candidatos (señales de evidencia, no atribución)"/>
+                <field name="candidate_ids">
+                    <list editable="bottom" create="0" delete="0">
+                        <field name="selected" readonly="not eligible"/>
+                        <field name="category" widget="badge"
+                               decoration-info="category == 'A'"
+                               decoration-warning="category == 'B'"
+                               decoration-muted="category == 'C'"/>
+                        <field name="picking_name"/>
+                        <field name="picking_origin"/>
+                        <field name="picking_state"/>
+                        <field name="picking_type_code"/>
+                        <field name="product_names" optional="show"/>
+                        <field name="lot_names" optional="hide"/>
+                        <field name="move_count" optional="show"/>
+                        <field name="total_qty" optional="show"/>
+                        <field name="date_done" optional="hide"/>
+                        <field name="signal_summary" optional="show"/>
+                        <field name="exclusion_reason" optional="show"/>
+                        <field name="eligible" column_invisible="1"/>
+                        <field name="picking_id" column_invisible="1"/>
+                    </list>
+                </field>
+
+                <div class="alert alert-info" role="alert">
+                    Reversión asistida solo para producción histórica no-granel.
+                    No hay atribución automática: la selección es explícita. El
+                    retorno es total por albarán, nativo, idempotente y conserva
+                    lotes, movimientos, quants e historial. No modifica G1/G3,
+                    SV, BT-04 ni granel.
+                </div>
+
+                <field name="reason"
+                       placeholder="Motivo (obligatorio si selecciona algún albarán)"/>
+
+                <footer>
+                    <button name="action_confirm"
+                            string="Confirmar reversión asistida"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_madenat_guia_processing_historical_reverse_wizard" model="ir.actions.act_window">
+        <field name="name">Reversión histórica asistida</field>
+        <field name="res_model">madenat.guia.processing.historical.reverse.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_madenat_guia_processing_historical_reverse_wizard_form"/>
+    </record>
+</odoo>

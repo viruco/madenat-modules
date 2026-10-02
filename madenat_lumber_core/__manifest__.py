@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Core',
-    'version': '18.0.6.4.0',
+    'version': '18.0.6.5.0',
     'summary': 'Cimiento Técnico - MADENAT',
     'category': 'Inventory',
     'license': 'LGPL-3',
@@ -35,6 +35,7 @@
         'wizard/madenat_sv_operation_views.xml',
         'wizard/lumber_reception_reset_wizard_views.xml',
         'wizard/madenat_guia_processing_reopen_wizard_views.xml',
+        'wizard/madenat_guia_processing_historical_reverse_wizard_views.xml',
 
         # ✅ 4. VISTAS DE RECEPCIÓN Y ACCIONES QUE USA EL MENÚ
         'views/guia_processing_views.xml',
