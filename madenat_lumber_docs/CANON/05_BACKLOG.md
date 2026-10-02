@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.2.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (4) — Fase A: renumeración de fases. Todo lo ya hecho (endurecimiento + AD-88 + zarpe/reversa + SV oculto) se registra como bloque I0; el I1 canónico queda PENDIENTE con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
+**Versión documental:** 8.3.0
+**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-02 (5) — I1 canónico IMPLEMENTADO (ubicaciones y saldo por procesador, envío a procesador, ACL). Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §16 -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -409,18 +409,20 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 > Decisiones D1–D10. El **bloque I0** (endurecimiento + AD-88) ya está **implementado**; esta tabla lista **I1..I6** pendientes.
 > **Sin código en esta fase** (documental).
 
-### I1 — Cimientos: ubicaciones y saldo por procesador (PENDIENTE)
-- [ ] `stock.location` **`Procesadores`** (interna) + hijas `Procesadores/<X>` bajo demanda e **idempotentes**
+### I1 — Cimientos: ubicaciones y saldo por procesador — ✅ IMPLEMENTADO (2026-10-02)
+- [x] `stock.location` **`Procesadores`** (interna) + hijas `Procesadores/<X>` bajo demanda e **idempotentes**
       (`usage='internal'`; inventario MADENAT); referencia `processor_location_id` y marcado según §16.
-- [ ] Reporte de **saldo por procesador** (`madenat.processor.balance`): vista de solo lectura (**lista y pivot** sobre `stock.quant`),
-      por procesador y producto, con volumen por tipo de lote.
-- [ ] Marcar procesadores (`res.partner.is_processor`).
-- [ ] **Evento «Envío a procesador»:** asistente desde lotes → **transferencia interna nativa** con `lot_id` por línea;
-      cantidad editable hacia abajo (sin exceder el disponible real); **motivo** si desvía (AD-88) + evento en `madenat.audit.log` (tipo aditivo).
-- [ ] **Recepción directa en la ubicación del procesador:** verificar SV / procesados / compras; corregir solo lo imprescindible y documentar.
-- [ ] **Contenedores con lotes en ubicaciones de procesador:** verificar y probar que el asistente los toma.
+- [x] **Saldo por procesador:** vista de solo lectura (**lista y pivot** sobre `stock.quant`), por procesador y producto,
+      con volumen por tipo de lote (`madenat_processor_id`, `madenat_lot_flow_type`). Menú en Logística.
+- [x] Marcar procesadores (`res.partner.is_processor`).
+- [x] **Evento «Envío a procesador»:** asistente desde lotes → **transferencia interna nativa** con `lot_id` por línea;
+      cantidad editable hacia abajo (sin exceder el disponible real); **motivo** si desvía (AD-88, `_guard_deviation`)
+      + evento en `madenat.audit.log` (tipo aditivo `processor_shipment`).
+- [x] **Recepción directa en la ubicación del procesador:** verificada (SV/volumen vía albarán `incoming`); sin cambios de código.
+- [x] **Contenedores con lotes en ubicaciones de procesador:** verificado que el asistente los toma.
 - **Depende de:** AD-65 §1.5; helper AD-88 (bloque I0).
-- **Aceptación:** T-09 + idempotencia de ubicaciones, envío parcial/exceso, recepción directa, saldo vs Σ quants, contenedor y ACL (Operaciones/Jefatura/Gerencia, sin grupos nuevos).
+- **Aceptación:** T-09 + idempotencia de ubicaciones, envío parcial/exceso, recepción directa, saldo vs Σ quants, contenedor y ACL (Operaciones/Jefatura/Gerencia, sin grupos nuevos). **Suite Logistics: 51 (40 baseline + 11 nuevos), 0 fallas.**
+- **Desviaciones/dudas:** ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16 (saldo como vista sobre `stock.quant`, no modelo SQL; sin nominal/antigüedad aún).
 
 ### I2 — Modelo de imputación
 - [ ] `madenat.sv.imputation` (+`.line`, +`.sv.line`); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`.

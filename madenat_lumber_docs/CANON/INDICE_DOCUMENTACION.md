@@ -1,7 +1,7 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 12.1.0
-**Fecha de actualización:** 2026-10-01  <!-- actualizado: 2026-10-01 (3) — Fase A: renumeración de fases en 19 §16 (bloque I0 hecho; I1 canónico pendiente con alcance ampliado; I2 sin cambios); 05_BACKLOG.md 8.2.0 y 19 1.2.0 -->
+**Versión documental:** 12.2.0
+**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — I1 canónico IMPLEMENTADO (ubicaciones/saldo por procesador, envío a procesador): 19 §16 1.3.0; 05_BACKLOG.md 8.3.0 -->
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
 **Responsable revisión:** 2026-10-01 — Alta del documento canónico `18_CONSOLIDACION_Y_REBAJA.md` (especificación de consolidación y rebaja de contenedores y naves, BORRADOR/PROPUESTA) y de AD-85 y AD-86 en estado PROPUESTA; actualización de versiones/índice.
 
@@ -23,7 +23,7 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV) | 12.7.0 | 2026-09-28 | ✅ Vigente |
 | `03_TESTS.md` | Matriz de validación funcional y técnica (incluye §9 cobertura de la suite `sv`) | 6.9.0 | 2026-09-28 | ✅ Vigente |
 | `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80; AD-81 PROPUESTA; **AD-82 y AD-84 APROBADAS e implementadas**; **AD-83 REEMPLAZADA por AD-87**; AD-85..86 PROPUESTA; **AD-87 (imputación etiqueta→SV) y AD-88 (advertir/motivar/auditar) APROBADAS**) | 12.13.0 | 2026-10-01 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda T1–T7, «Rebaja de contenedor/nave (AD-82/84/83) — IMPLEMENTADO», «Rebaja — Endurecimiento y AD-88 (I0) — IMPLEMENTADO», «Auditoría 2026-10-01 — pendientes por área» e «Imputación SV y Procesadores (AD-87/88) — PLAN (fases I1..I6, I1 pendiente ampliado)») | 8.2.0 | 2026-10-01 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda T1–T7, «Rebaja de contenedor/nave (AD-82/84/83) — IMPLEMENTADO», «Rebaja — Endurecimiento y AD-88 (I0) — IMPLEMENTADO», «Auditoría 2026-10-01 — pendientes por área» e «Imputación SV y Procesadores (AD-87/88) — PLAN (fases I1..I6; I1 ✅ IMPLEMENTADO 2026-10-02)») | 8.3.0 | 2026-10-01 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
@@ -40,8 +40,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `16_AUDITORIA_20261001.md` | **NUEVO** — Auditoría 2026-10-01: hallazgos H-01..H-16 y N-01..N-10, clasificados por área (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6); resueltos, pendientes, parámetro `dev_cleanup_enabled` y mapeo de grupos huérfanos | 1.0.0 | 2026-10-01 | ✅ Vigente |
 | `17_CONSTITUCION_VOLUMENES.md` | Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL (acordadas 2026-10-01), reglas de uso por proceso, reglas acordadas para diseño futuro (ACORDADO), glosario de etiquetas, conciliación documental (modelo_despachos:449 / AD-67); §6 F-01/F-02 RESUELTOS; §2.8 reescrita (SV nunca se exporta; salida por imputación, AD-87) | 1.2.0 | 2026-10-01 | ✅ Vigente |
 | `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves: alcance y glosario (tres usos de «consolidación»), puntos acordados (2026-10-01), modelo/estados, reglas de rebaja, vía SV e invariantes, pantallas (incl. §7.5 imputación SV fuera de la exportación), permisos, plan de pruebas, migración, preguntas abiertas, riesgos y §14 Estado de implementación + §14.6 clasificación de bloqueos (AD-88) | 1.2.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
-| `19_IMPUTACION_SV_Y_PROCESADORES.md` | **NUEVO** — Imputación declarada etiqueta→SV y saldo por procesador: glosario, ciclo por tipo de compra (C1 SV / C2 procesado), modelo de datos mínimo (`madenat.sv.imputation`, ledger `imputacion`, ubicaciones `Procesadores/<X>`, costo), estados, reglas, alertas, roles, UX (propuesta por proveedor/producto/antigüedad), casos límite, migración, riesgos, clasificación de bloqueos (§14, con estado del bloque I0) y plan de pruebas T-01..T-12; backlog por fases I0..I6 (§16, con I0 hecho e I1 pendiente ampliado) y preguntas Q-19 (§17, resueltas 2026-10-01: 1/2/5/8) | 1.2.0 | 2026-10-01 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 12.1.0 | 2026-10-01 | ✅ Vigente |
+| `19_IMPUTACION_SV_Y_PROCESADORES.md` | **NUEVO** — Imputación declarada etiqueta→SV y saldo por procesador: glosario, ciclo por tipo de compra (C1 SV / C2 procesado), modelo de datos mínimo (`madenat.sv.imputation`, ledger `imputacion`, ubicaciones `Procesadores/<X>`, costo), estados, reglas, alertas, roles, UX (propuesta por proveedor/producto/antigüedad), casos límite, migración, riesgos, clasificación de bloqueos (§14, con estado del bloque I0) y plan de pruebas T-01..T-12; backlog por fases I0..I6 (§16, con **I0 e I1 implementados** — I1 el 2026-10-02) y preguntas Q-19 (§17, resueltas 2026-10-01: 1/2/5/8) | 1.3.0 | 2026-10-01 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 12.2.0 | 2026-10-02 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 

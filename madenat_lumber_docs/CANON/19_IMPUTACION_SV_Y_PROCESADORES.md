@@ -1,10 +1,10 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.2.0
+**Versión documental:** 1.3.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
-**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado).
+**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`.
 **Fuente de verdad ante contradicción:** `CANON/INDICE_DOCUMENTACION.md` §8. Ante contradicción entre documentos, **no se elige versión en silencio**: se registra y se declara (ver §13).
 
 > **Alcance de esta versión.** Este documento es **especificación y diseño**. **No** autoriza ni contiene cambios de código, datos ni parámetros. Las reglas marcadas **[DISEÑO]** son objetivos; las marcadas **[VIGENTE]** describen comportamiento ya implementado y verificado en código (rama `feat/rebaja-contenedor-20261001`, BD `madenat_test`).
@@ -445,7 +445,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 > Fases **incrementales** del frente de imputación. Cada fase declara **dependencias**, **riesgos** y **criterios de aceptación**. El detalle se refleja en `05_BACKLOG.md`.
 >
-> **Numeración (decisión del usuario, 2026-10-01).** Manda la numeración de este §16. El **bloque I0** agrupa lo **ya hecho** en la rama `feat/imputacion-sv-i1-20261001` (endurecimiento de la rebaja + helper AD-88 + zarpe blando + reversa con override + SV oculto). **I1** es el bloque **canónico de cimientos** (ubicaciones de procesadores, saldo por procesador y marcado de procesadores) — **PENDIENTE**, con el alcance ampliado de abajo. **I2** (modelo de imputación `madenat.sv.imputation`) **no cambia**.
+> **Numeración (decisión del usuario, 2026-10-01).** Manda la numeración de este §16. El **bloque I0** agrupa lo **ya hecho** en la rama `feat/imputacion-sv-i1-20261001` (endurecimiento de la rebaja + helper AD-88 + zarpe blando + reversa con override + SV oculto). **I1** es el bloque **canónico de cimientos** (ubicaciones de procesadores, saldo por procesador y marcado de procesadores) — ✅ **IMPLEMENTADO (2026-10-02)**, con el alcance ampliado de abajo. **I2** (modelo de imputación `madenat.sv.imputation`) **no cambia**.
 
 ### I0 — Endurecimiento de rebaja y principio AD-88 — ✅ IMPLEMENTADO (2026-10-01)
 - **Alcance:** endurecimiento de la rebaja (rolleo, correo, auditoría con snapshot + SHA-256, costing `skip` con razón); helper común AD-88 `madenat.deviation.mixin._guard_deviation(code, message, reason, hard)`; **B-01 zarpe** como advertencia con motivo; **B-03/B-06 reversa** con override de Gerencia y motivo; **D9 SV oculto** por defecto en el asistente de contenedores.
@@ -453,7 +453,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **Dependencias:** rama de rebaja `feat/rebaja-contenedor-20261001`.
 - **Aceptación:** suites en verde; bloqueos reclasificados sin regresión.
 
-### I1 — Cimientos: ubicaciones y saldo por procesador (PENDIENTE)
+### I1 — Cimientos: ubicaciones y saldo por procesador — ✅ IMPLEMENTADO (2026-10-02)
 - **Alcance base:** `stock.location` `Procesadores` (**interna**) + hijas internas bajo demanda; reporte `madenat.processor.balance`; marcar procesadores (`res.partner.is_processor`).
 - **Ampliaciones aprobadas (2026-10-01):**
   1. **Evento «Envío a procesador»:** asistente desde lotes que crea una **transferencia interna nativa** de la bodega a la ubicación del procesador, con `lot_id` por línea; cantidad **editable hacia abajo**, sin exceder el disponible real; **motivo** si se desvía (AD-88 `_guard_deviation`) y evento en `madenat.audit.log` (**tipo aditivo**).
@@ -462,6 +462,20 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 - **Dependencias:** AD-65 §1.5 (patrón patio); `is_processor` (ya existe en `madenat_lumber_reception_improvements`); helper AD-88 (I0).
 - **Riesgos:** R-19-05 (mal uso de ubicación interna).
 - **Aceptación:** T-09; ubicaciones creadas bajo demanda e **idempotentes** (sin duplicados); saldo cuadra con Σ quant; envío parcial y rechazo por exceso de disponible; recepción directa aceptada; lote en procesador asignado en contenedor; ACL para Operaciones/Jefatura/Gerencia **sin grupos nuevos**.
+
+**Estado de implementación (2026-10-02, rama `feat/procesadores-ubicaciones-20261001`; commit `1b25a4c`):**
+- **Ubicaciones:** `res.partner.processor_location_id` + `res.partner._get_or_create_processor_location()` (idempotente) crean `WH/Stock/Procesadores/<PROCESADOR>` (`usage='internal'`, inventario MADENAT) bajo demanda; `stock.location.processor_partner_id` como vínculo inverso; botón «Crear / actualizar ubicación en planta» en `res.partner`.
+- **Saldo por procesador:** vista de **solo lectura** (`list` + `pivot`) **sobre `stock.quant`**, agrupable por procesador / producto / tipo de lote (`stock.quant.madenat_processor_id`, `stock.quant.madenat_lot_flow_type`); acción y **menú en Logística** («Saldo por Procesador»).
+- **Evento «Envío a procesador»:** asistente `madenat.processor.shipment.wizard` que crea una **transferencia interna nativa** (`stock.picking` tipo interno) con `lot_id` por línea; cantidad **editable hacia abajo**, **rechazo duro** si excede el disponible real; envío parcial ⇒ **desviación blanda** con motivo obligatorio (`madenat.deviation.mixin._guard_deviation`, code `PROC-01`) y evento **aditivo** `processor_shipment` en `madenat.audit.log` (snapshot + SHA-256).
+- **Recepción directa:** verificada con albarán nativo `incoming` hacia `Procesadores/<X>` (SV/volumen). **Sin cambios de código**: el destino interno es aceptado; procesados y compras comparten el mismo mecanismo.
+- **Contenedores:** verificado que `lumber.container.lot.wizard` toma lotes ubicados en `Procesadores/<X>` (el dominio de disponibilidad no filtra por ubicación).
+- **ACL:** `madenat.processor.shipment.wizard` y `.line` para Operaciones / Jefatura / Gerencia; **sin grupos nuevos**.
+- **Pruebas:** `madenat_lumber_logistics/tests/test_processor_locations.py` (9 casos: idempotencia, quants antes/después, parcial con motivo, exceso rechazado, recepción directa, saldo vs Σ quants, contenedor, permisos, auditoría). Suite `madenat_lumber_logistics`: **51** (40 baseline + 11 nuevos), 0 fallas.
+
+**Desviaciones respecto del diseño (§5.4) — a revisar:**
+1. El saldo se expone como **vista (`act_window` lista+pivot) sobre `stock.quant`**, **no** como modelo `madenat.processor.balance`. Es lo pedido en la Fase B («vista de solo lectura … sobre stock.quant»); el nombre canónico del modelo queda **pendiente** si se quiere reporte/BI formal.
+2. El editor muestra **cantidad (volumen)** por procesador/producto/tipo de lote; **no** (aún) «nominal/disponible ni antigüedad» (§5.4). **Duda.**
+3. El envío parcial se interpreta como la **desviación** que exige motivo (AD-88). El envío completo no exige motivo. **Duda** si el negocio espera motivo también en otros casos.
 
 ### I2 — Modelo de imputación
 - **Alcance:** `madenat.sv.imputation` (+`.line`, +`.sv.line`), estados §6, motivo/`deviation_flags`, secuencia.
@@ -518,6 +532,7 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 
 - **Alcance de esta versión:** documental. **No** se modificó código, datos ni parámetros; **no** hubo push.
 - **Renumeración de fases (2026-10-01, Fase A):** manda la numeración de §16. El trabajo **ya hecho** en `feat/imputacion-sv-i1-20261001` (endurecimiento de rebaja + AD-88 + zarpe/reversa + SV oculto) se registra como **bloque I0**; **I1** queda **PENDIENTE** como bloque canónico de cimientos, con **alcance ampliado** (envío a procesador, recepción directa, contenedores con lotes en procesador); **I2** sin cambios. Ver §14 y §17 (Q-19-5).
+- **I1 canónico implementado (2026-10-02, Fase B):** rama `feat/procesadores-ubicaciones-20261001` (commit `1b25a4c`). Ubicaciones `Procesadores/<X>` idempotentes desde `res.partner`; saldo por procesador (vista de solo lectura sobre `stock.quant`, menú Logística); evento «Envío a procesador» (transferencia interna nativa + AD-88 + tipo aditivo `processor_shipment`); ACL Operaciones/Jefatura/Gerencia sin grupos nuevos. Suite `madenat_lumber_logistics`: **51** (40 baseline + 11 nuevos), 0 fallas. Desviaciones/dudas en §16.
 - **Efecto en otros documentos (ejecutado en la misma sesión documental):** alta de `19` en `INDICE_DOCUMENTACION.md`; alta de **AD-87** y **AD-88** y ajuste de **AD-83** (reemplazada) + **AD-82/AD-84** (alineadas) en `04_DECISION_LOG.md`; reescritura de secciones afectadas de `12`, `13`, `17` §2.8 y `18` (§7–§14); actualización de `05_BACKLOG.md`.
 - **Registro de contradicciones:** §13.2 (resueltas) y §13.3 (abiertas). No se elige versión en silencio.
 - **Nomenclatura:** español, con términos técnicos en inglés entre paréntesis.
