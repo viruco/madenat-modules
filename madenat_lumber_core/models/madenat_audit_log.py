@@ -53,6 +53,10 @@ class MadenatAuditLog(models.Model):
         # bloqueante) — zarpe con excepción, reversa con override de Gerencia,
         # etc. El código (p. ej. 'B-01') va en la descripción/batch_id.
         ('deviation', 'Desviación Aceptada con Motivo'),
+        # I1 canónico (CANON/19 §16, 2026-10-02): envío de lotes a la
+        # ubicación de un procesador mediante transferencia interna nativa.
+        # Valor ADITIVO al Selection (no reemplaza a 'rebaja'/'deviation').
+        ('processor_shipment', 'Envío a Procesador'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

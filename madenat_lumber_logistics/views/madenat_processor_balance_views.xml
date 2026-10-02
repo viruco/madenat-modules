@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- I1 canónico (CANON/19 §5.4/§16) — Saldo por procesador         -->
+        <!-- Vista de SOLO LECTURA (lista + pivot) sobre stock.quant.       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_madenat_processor_balance_list" model="ir.ui.view">
+            <field name="name">madenat.processor.balance.list</field>
+            <field name="model">stock.quant</field>
+            <field name="arch" type="xml">
+                <list string="Saldo por procesador" create="0" edit="0" delete="0">
+                    <field name="madenat_processor_id"/>
+                    <field name="location_id"/>
+                    <field name="product_id"/>
+                    <field name="lot_id"/>
+                    <field name="madenat_lot_flow_type"/>
+                    <field name="quantity" sum="Total"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_madenat_processor_balance_pivot" model="ir.ui.view">
+            <field name="name">madenat.processor.balance.pivot</field>
+            <field name="model">stock.quant</field>
+            <field name="arch" type="xml">
+                <pivot string="Saldo por procesador" sample="1">
+                    <field name="madenat_processor_id" type="row"/>
+                    <field name="product_id" type="col"/>
+                    <field name="madenat_lot_flow_type" type="col"/>
+                    <field name="quantity" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="view_madenat_processor_balance_search" model="ir.ui.view">
+            <field name="name">madenat.processor.balance.search</field>
+            <field name="model">stock.quant</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="madenat_processor_id"/>
+                    <field name="product_id"/>
+                    <field name="lot_id"/>
+                    <filter name="filter_processor_locations"
+                            string="Solo procesadores"
+                            domain="[('madenat_processor_id', '!=', False)]"/>
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_processor" string="Procesador"
+                                context="{'group_by': 'madenat_processor_id'}"/>
+                        <filter name="group_product" string="Producto"
+                                context="{'group_by': 'product_id'}"/>
+                        <filter name="group_lot_flow" string="Tipo de lote"
+                                context="{'group_by': 'madenat_lot_flow_type'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_madenat_processor_balance" model="ir.actions.act_window">
+            <field name="name">Saldo por Procesador</field>
+            <field name="res_model">stock.quant</field>
+            <field name="view_mode">list,pivot</field>
+            <field name="domain">[('madenat_processor_id', '!=', False)]</field>
+            <field name="context">{'search_default_group_processor': 1, 'search_default_group_product': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Sin inventario en poder de procesadores
+                </p>
+                <p>
+                    El inventario enviado a un procesador (transferencia interna
+                    «Envío a procesador») aparece aquí, agrupado por procesador y
+                    producto. La madera sigue siendo de MADENAT.
+                </p>
+            </field>
+        </record>
+
+        <!-- Menú en Logística: Operaciones (implica Jefatura y Gerencia). -->
+        <menuitem id="menu_madenat_processor_balance"
+                  name="Saldo por Procesador"
+                  parent="menu_lumber_logistics"
+                  action="action_madenat_processor_balance"
+                  sequence="25"
+                  groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+
+        <menuitem id="menu_madenat_processor_shipment"
+                  name="Envío a Procesador"
+                  parent="menu_lumber_logistics"
+                  action="action_madenat_processor_shipment_wizard"
+                  sequence="26"
+                  groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+
+        <!-- Ubicación del procesador visible en res.partner (creación bajo demanda). -->
+        <record id="view_partner_form_inherit_processor_location" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit.processor.location</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='processor_info']" position="inside">
+                    <field name="processor_location_id" readonly="1"/>
+                    <button name="action_get_or_create_processor_location"
+                            type="object"
+                            string="Crear / actualizar ubicación en planta"
+                            class="btn-link"
+                            invisible="not is_processor"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

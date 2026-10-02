@@ -12,3 +12,6 @@ from . import lumber_container
 from . import lumber_document_checklist
 from . import lumber_shipment_costing
 from . import stock_lot_cost_line
+
+# 4. I1 canónico (CANON/19 §16): ubicaciones y saldo por procesador.
+from . import madenat_processor_location

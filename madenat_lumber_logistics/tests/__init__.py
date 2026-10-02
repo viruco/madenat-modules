@@ -4,3 +4,5 @@ from . import test_shipment_view_module_independence
 from . import test_container_lot_wizard_disponible
 from . import test_consolidation_action_domain
 from . import test_rebaja_contenedor
+# I1 canónico (CANON/19 §16, 2026-10-02): ubicaciones y saldo por procesador.
+from . import test_processor_locations

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.4.0',
+    'version': '18.0.1.5.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -21,7 +21,9 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'stock', 
         'mail', 
         'madenat_lumber_core',          # Requerido: Define los lotes
-        'madenat_lumber_shipping_core'  # Requerido: Define barcos y viajes
+        'madenat_lumber_shipping_core',  # Requerido: Define barcos y viajes
+        # I1 canónico (CANON/19 §16): is_processor (res.partner) vive aquí.
+        'madenat_lumber_reception_improvements'
     ],
 
     'data': [
@@ -39,6 +41,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         # AD-88 (2026-10-01): asistentes de decisión blanda (B-01, B-03/B-06).
         'wizards/lumber_shipment_zarpe_wizard_views.xml',
         'wizards/lumber_container_rebaja_reverse_wizard_views.xml',
+        # I1 canónico (CANON/19 §16, 2026-10-02): envío a procesador.
+        'wizards/madenat_processor_shipment_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            
@@ -47,6 +51,9 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         # 5. ACCIONES Y ESTRUCTURA DE MENÚS
         'views/lumber_actions.xml',
         'views/logistics_menus.xml', 
+        # I1 canónico (CANON/19 §16): saldo por procesador (stock.quant, solo lectura).
+        # Debe cargarse DESPUÉS de logistics_menus.xml (referencia menu_lumber_logistics).
+        'views/madenat_processor_balance_views.xml',
         
         # 6. VISTAS PRINCIPALES (Ordenadas por jerarquía operativa)
         'views/lumber_export_shipment_views.xml', # Embarques (Padre)
