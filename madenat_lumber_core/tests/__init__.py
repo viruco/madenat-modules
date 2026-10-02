@@ -29,3 +29,5 @@ from . import test_sv_reverse_ui
 from . import test_sv_dev_cleanup_param
 # AD-88 (2026-10-01): mixin transversal «advertir, motivar, auditar».
 from . import test_deviation_guard
+# Fase 1: semilla configurable de keywords de tipo de ingreso (paridad fallback).
+from . import test_ingestion_keywords_seed

@@ -38,4 +38,21 @@
         <field name="key">madenat.profile_subproduct_filters</field>
         <field name="value">{"profiles": {"f5085": {"allowed_keywords": [], "forbidden_keywords": ["S2S", "RIP"], "forbidden_in_lock": ["S2S", "RIP"]}, "f1550": {"allowed_keywords": ["S2S"], "forbidden_keywords": [], "forbidden_in_lock": ["ROUGH", "BLANK"]}, "metric": {"allowed_keywords": [], "forbidden_keywords": [], "forbidden_in_lock": []}}}</field>
     </record>
+
+    <!-- ================================================================== -->
+    <!-- FASE 1 — SEMILLA EDITABLE DE KEYWORDS DE TIPO DE INGRESO (noupdate=1)-->
+    <!-- Equivalente EXACTO al fallback Python histórico de                 -->
+    <!-- madenat.ingestion.config.get_tipo_ingreso_keywords() (transición).  -->
+    <!-- noupdate="1" ⇒ una actualización de madenat_lumber_core NO          -->
+    <!-- sobrescribe una edición administrativa del parámetro. El fallback   -->
+    <!-- Python se mantiene vigente en esta fase (no se retira).             -->
+    <!-- Se envuelve en <data noupdate="1"> porque los parámetros previos de -->
+    <!-- este mismo archivo son noupdate=0 (se restituyen en cada update).   -->
+    <!-- ================================================================== -->
+    <data noupdate="1">
+        <record id="param_tipo_ingreso_keywords" model="ir.config_parameter">
+            <field name="key">madenat.tipo_ingreso_keywords</field>
+            <field name="value">{"procesado": ["cepillado", "servicio", "proceso", "maquila"], "granel": ["granel", "volumen total", "a granel", "sin desglose"]}</field>
+        </record>
+    </data>
 </odoo>
