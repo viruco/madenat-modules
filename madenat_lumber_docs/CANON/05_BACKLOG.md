@@ -460,4 +460,3 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - **Depende de:** I1..I5. **Aceptación:** T-10, T-12.
 
 **Preguntas abiertas (sin decidir por el usuario):** Q-19-1..Q-19-8 (`19` §17).
-

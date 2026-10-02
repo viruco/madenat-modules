@@ -630,4 +630,3 @@ class TestVolumeOfficialVolume(TransactionCase):
         self.assertEqual(console.oc_reference_documental, 'OC-TEST-0001')
         guia.invalidate_recordset()
         self.assertEqual(guia.oc_reference_raw, 'OC-TEST-0001')
-

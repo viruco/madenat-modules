@@ -313,4 +313,3 @@ class TestIntakeConsoleSvActions(TransactionCase):
         self.assertIsNotNone(
             container,
             'El bloque SV debe vivir dentro del contenedor de Volumen')
-

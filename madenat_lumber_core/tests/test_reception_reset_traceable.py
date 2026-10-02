@@ -238,4 +238,3 @@ class TestReceptionResetTraceable(TransactionCase):
         self.assertIn('returns_created', log.audit_snapshot or '')
         chatter = '\n'.join(rec.message_ids.mapped('body') or [])
         self.assertIn('Reapertura trazable', chatter)
-

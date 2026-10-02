@@ -370,4 +370,3 @@ class TestSvImputationCandidatesI2(TransactionCase):
         second = [d['lot'].id for d in imp._i2_get_sv_candidate_data()]
         self.assertEqual(first, second)          # orden estable
         self.assertIn(sv, self._cand_lots(imp))  # no exclusión accidental
-

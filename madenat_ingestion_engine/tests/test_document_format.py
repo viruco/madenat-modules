@@ -180,4 +180,3 @@ class TestDocumentFormatDetection(TransactionCase):
             zf.writestr("hola.txt", "no es excel")
         with self.assertRaises(DocumentExtractionError):
             extract_document(buf.getvalue(), "packing.pdf")
-

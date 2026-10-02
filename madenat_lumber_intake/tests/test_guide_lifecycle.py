@@ -762,5 +762,3 @@ class TestGuideLifecycle(TransactionCase):
                     wizard.action_run()
 
         self.assertTrue(guia.exists(), 'Nada se borró: bloqueo efectivo')
-
-

@@ -2420,6 +2420,3 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->
-
-
-

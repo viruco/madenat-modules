@@ -347,4 +347,3 @@ class MadenatGuiaprocessingIntakeSvUx(models.Model):
                 'La Guía %s no tiene una rebaja SV aplicada y reversible '
                 'pendiente de reversa.') % (self.name or self.id))
         return operation.action_open_reverse_wizard()
-

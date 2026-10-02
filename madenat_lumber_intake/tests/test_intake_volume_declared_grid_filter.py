@@ -490,4 +490,3 @@ class TestIntakeVolumeDeclaredGridFilter(TransactionCase):
         # Regla canónica del filtro expuesta por el modelo (fuente única).
         self.assertEqual(
             tuple(self.Console.DECLARED_PIECE_GRID_ORIGINS), VISIBLE_ORIGINS)
-

@@ -159,4 +159,3 @@ class TestPOIntakeRouting(TransactionCase):
             self.env['lumber.reception'].search_count(
                 [('purchase_id', '=', po.id)]),
             0)
-

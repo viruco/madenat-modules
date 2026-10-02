@@ -503,4 +503,3 @@ class TestIntakeVolumeDeclaredGridUx(TransactionCase):
         # La evidencia documental y la cabecera quedan intactas.
         self.assertEqual(pdf.description, 'PDF')
         self.assertEqual(header.description, 'Cabecera')
-

@@ -634,4 +634,3 @@ Detalle consolidado en `19` §14.
 **Síntesis:** pasan a **advertencia con motivo** B-01 y B-04; permanecen **duros** B-02, B-05, B-06, B-07, B-08;
 B-03 queda duro con override de Gerencia sujeto a decisión. Los casos con motivo se registran en
 `madenat.audit.log` (snapshot + firma).
-

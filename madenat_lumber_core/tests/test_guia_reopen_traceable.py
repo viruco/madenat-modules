@@ -290,4 +290,3 @@ class TestGuiaReopenTraceable(TransactionCase):
         self.assertEqual(
             self.Quant.search_count([('lot_id', '=', lot.id)]), qbefore,
             'Sin zeroing de stock.quant')
-

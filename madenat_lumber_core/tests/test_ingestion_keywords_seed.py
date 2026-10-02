@@ -168,4 +168,3 @@ class TestIngestionKeywordsSeed(TransactionCase):
             })
             with self.assertRaises(UserError):
                 wf._check_file_integrity(blocked)
-

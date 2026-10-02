@@ -46,7 +46,7 @@ class LumberShipmentLine(models.Model):
     # --- Datos Físicos (Espejo de stock.lot - INMUTABLES) ---
     physical_volume_m3 = fields.Float(
         related='lot_id.volumen_m3', 
-        string='Vol. Nominal (stock)', 
+        string='Vol. Nominal (stock)',
         store=True, 
         readonly=True,
         help="Volumen real calculado con dimensiones milimétricas exactas."

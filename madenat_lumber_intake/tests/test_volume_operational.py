@@ -426,6 +426,3 @@ class TestVolumeOperational(TransactionCase):
         self.assertNotEqual(guia.state, 'validated')
         self.assertFalse(guia.validated_date)
         self.assertFalse(guia.validated_by_id)
-
-
-

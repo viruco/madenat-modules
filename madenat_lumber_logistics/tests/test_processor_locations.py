@@ -252,4 +252,3 @@ class TestProcessorLocations(TransactionCase):
         deviations = self.env['madenat.audit.log'].search([
             ('action_type', '=', 'deviation')])
         self.assertFalse(deviations)
-

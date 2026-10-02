@@ -476,4 +476,3 @@ class TestRebajaContenedor(TransactionCase):
         self.assertEqual(
             log.audit_hash,
             hashlib.sha256(log.audit_snapshot.encode('utf-8')).hexdigest())
-

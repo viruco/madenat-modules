@@ -118,7 +118,7 @@ class LumberContainer(models.Model):
     
     # 1. Base de Facturación y Carga (El Real)
     total_vol_shipment_m3 = fields.Float(
-        'Vol. Exportación (facturable)', 
+        'Vol. Exportación (facturable)',
         compute='_compute_volume_totals', 
         store=True,
         digits=(16, 3),

@@ -813,5 +813,3 @@ class MadenatSvImputationSvLine(models.Model):
                     'No se pueden eliminar repartos SV de una imputación '
                     'aplicada (inmutable, AD-91).'))
         return super().unlink()
-
-

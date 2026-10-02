@@ -188,4 +188,3 @@ Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, 
 - Informe de auditoría de volúmenes del 2026-10-01 (verificaciones de código con archivo:línea y consultas de solo lectura sobre `madenat_test`).
 - Auditoría asociada: `16_AUDITORIA_20261001.md`.
 - Nomenclatura en español con términos técnicos en inglés entre paréntesis, conforme a las convenciones del vault.
-

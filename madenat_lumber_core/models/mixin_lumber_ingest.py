@@ -305,7 +305,7 @@ class LumberIngestLineMixin(models.AbstractModel):
     product_id = fields.Many2one('product.product', 'Producto', required=True)
     
     # IMPORTANTE: 3 Decimales por regla de negocio
-    vol_shipment_m3 = fields.Float('Vol. Exportación (m³)', digits=(16, 3), 
+    vol_shipment_m3 = fields.Float('Vol. Exportación (m³)', digits=(16, 3),
                                    help="Volumen de exportación (Facturación/Logística)")
     
     vol_purchase_m3 = fields.Float('Vol. Nominal (Compra)', digits=(16, 3), 
