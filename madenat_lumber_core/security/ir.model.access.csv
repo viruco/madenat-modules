@@ -2,6 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_stock_lot_user,stock.lot.user,model_stock_lot,base.group_user,1,1,1,0
 access_lumber_reception_user,lumber.reception.user,model_lumber_reception,base.group_user,1,1,1,0
 access_lumber_reception_manager,lumber.reception.manager,model_lumber_reception,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
+access_lumber_reception_reset_wizard,lumber.reception.reset.wizard,model_lumber_reception_reset_wizard,stock.group_stock_manager,1,1,1,0
 access_stock_lot_cost_line_user,stock.lot.cost.line.user,model_stock_lot_cost_line,base.group_user,1,0,0,0
 access_stock_lot_cost_line_manager,stock.lot.cost_line.manager,model_stock_lot_cost_line,stock.group_stock_manager,1,1,1,1
 access_stock_lot_cost_line_operaciones,stock.lot.cost.line.operaciones,model_stock_lot_cost_line,madenat_lumber_core.group_madenat_operaciones,1,0,1,0

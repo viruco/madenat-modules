@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lumber_reception_reset_wizard_form" model="ir.ui.view">
+        <field name="name">lumber.reception.reset.wizard.form</field>
+        <field name="model">lumber.reception.reset.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reabrir recepción (reversión trazable)">
+                <group>
+                    <field name="reception_id" options="{'no_open': True}"/>
+                    <field name="state_name"/>
+                    <field name="has_physical_effect"/>
+                </group>
+                <group string="Efecto previsto">
+                    <field name="effect_summary" nolabel="1"/>
+                </group>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not warning_text">
+                    <field name="warning_text" nolabel="1"/>
+                </div>
+                <div class="alert alert-info" role="alert">
+                    Las advertencias no bloquean el reset. Si hay efecto físico,
+                    el motivo es obligatorio como trazabilidad (no es una
+                    aprobación). No se elimina ni ajusta stock.quant directamente.
+                </div>
+                <field name="reason" placeholder="Motivo de la corrección (obligatorio si hay efecto físico)"/>
+                <footer>
+                    <button name="action_confirm" string="Confirmar reapertura"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lumber_reception_reset_wizard" model="ir.actions.act_window">
+        <field name="name">Reabrir recepción (reversión trazable)</field>
+        <field name="res_model">lumber.reception.reset.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_lumber_reception_reset_wizard_form"/>
+    </record>
+</odoo>

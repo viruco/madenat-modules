@@ -1391,161 +1391,188 @@ class LumberReception(models.Model):
                 rec.files_ready = bool(rec.oc_pdf_file and rec.pdf_file and rec.excel_file)
 
     def action_reset_to_draft(self):
-        """
-        🔄 RESETEO NIVEL DIOS (Arquitectura Madenat V3 - Odoo 18)
-        -------------------------------------------------------
-        - INTEGRIDAD: Bloquea si la madera ya avanzó (Contenedores/Consolidación).
-        - ATOMICIDAD: Limpia Quants -> Lotes -> Pickings en una sola transacción.
-        - SEGURIDAD: Usa sudo() y context 'force_delete' para bypass de bloqueos.
-        - CERO RESIDUOS: Borrado físico (unlink) en lugar de desvincular (5,0,0).
+        """Abre el asistente de reapertura (reversión trazable, no bloqueante).
+
+        Ya NO ejecuta borrado directo de existencias (quants) ni aniquilación
+        de pickings/moves/lotes. La ejecución real vive en
+        `_reset_to_draft_confirmed` (privado, no invocable por RPC), de modo que
+        una llamada directa a esta acción siempre pasa por el wizard.
         """
         self.ensure_one()
-        # 🔒 TD-001: Guardia de grupo antes de operaciones destructivas de stock
-        if not self.env.user.has_group('stock.group_stock_manager'):
-            raise UserError(
-                "No tienes permisos para reabrir una recepción confirmada.\n"
-                "Se requiere el grupo 'Inventario / Administrador'."
-            )
-        _logger.info(f"🔄 INICIANDO RESETEO TOTAL - Guía: {self.name}")
-        self._add_log("=" * 60)
-        self._add_log("🔄 Iniciando saneamiento profundo de base de datos...")
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reabrir recepción (reversión trazable)'),
+            'res_model': 'lumber.reception.reset.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'view_id': self.env.ref(
+                'madenat_lumber_core.view_lumber_reception_reset_wizard_form').id,
+            'context': {'default_reception_id': self.id},
+        }
 
-        # ======================================================================
-        # 1. VALIDACIÓN DE INTEGRIDAD GLOBAL (BLOQUEO DE SEGURIDAD)
-        # ======================================================================
-        if self.lot_ids:
-            # A. Bloqueo por Contenedor
-            lotes_en_contenedor = self.lot_ids.filtered(lambda l: getattr(l, 'container_id', False))
-            if lotes_en_contenedor:
-                # Construir mensaje detallado con lotes y contenedores
-                msg_lines = [
-                    "⛔ INTEGRIDAD: No se puede resetear la recepción porque todavía hay lotes asociados a contenedor.",
-                    "",
-                    "Quite primero esos lotes del contenedor y vuelva a intentar.",
-                    "",
-                ]
-                
-                # Agrupar lotes por contenedor para mejor visualización
-                lotes_por_contenedor = {}
-                for lot in lotes_en_contenedor[:10]:
-                    container_name = lot.container_id.display_name or lot.container_id.name
-                    if container_name not in lotes_por_contenedor:
-                        lotes_por_contenedor[container_name] = []
-                    lotes_por_contenedor[container_name].append(lot.ref or lot.name)
-                
-                # Agregar lotes bloqueantes al mensaje (máx 10)
-                for container, lotes in lotes_por_contenedor.items():
-                    for lote_ref in lotes:
-                        msg_lines.append(f"- Lote {lote_ref} → Contenedor {container}")
-                
-                # Si hay más de 10 lotes, indicarlo
-                if len(lotes_en_contenedor) > 10:
-                    cantidad_omitidos = len(lotes_en_contenedor) - 10
-                    msg_lines.append(f"... y {cantidad_omitidos} lotes más")
-                
-                raise UserError("\n".join(msg_lines))
+    # ── Reset trazable no bloqueante (helpers privados) ────────────────────
+    def _reset_attributed_pickings(self):
+        """Pickings atribuidos por la llave fuerte reception_id (nunca lot_id)."""
+        self.ensure_one()
+        return self.env['stock.picking'].search([('reception_id', '=', self.id)])
 
-            # B. Bloqueo por Consolidación
-            if any(getattr(l, 'is_consolidated', False) for l in self.lot_ids):
-                raise UserError("⛔ INTEGRIDAD: La mercadería ya está CONSOLIDADA. Desconsolide antes de resetear.")
+    def _reset_physical_effect_info(self):
+        """Efecto físico previsto y advertencias (no bloqueantes)."""
+        self.ensure_one()
+        pickings = self._reset_attributed_pickings()
+        done = pickings.filtered(lambda p: p.state == 'done')
+        pending = pickings.filtered(lambda p: p.state not in ('done', 'cancel'))
+        reserved = pending.filtered(
+            lambda p: p.state in ('assigned', 'partially_available')
+            or any((ml.quantity or 0) > 0 for ml in p.move_line_ids))
+        warnings = []
+        if done:
+            warnings.append('⏳ %d picking(s) DONE atribuido(s): se creará un '
+                            'retorno nativo (sin borrar historial).' % len(done))
+        if reserved:
+            warnings.append('⏳ %d picking(s) con stock reservado: se '
+                            'cancelará/desreservará con API nativa.' % len(reserved))
+        if self.invoice_id:
+            warnings.append('🧾 Existe factura vinculada; no se modifica '
+                            '(solo advertencia).')
+        if 'stock.lot.cost.line' in self.env:
+            costos = self.env['stock.lot.cost.line'].search([
+                ('|'), ('name', 'ilike', self.name),
+                ('lot_id', 'in', self.lot_ids.ids)], limit=1)
+            if costos:
+                warnings.append('💰 Existen costos asociados; no se modifican '
+                                '(solo advertencia).')
+        bloqueados = self.lot_ids.filtered(
+            lambda l: getattr(l, 'is_consolidated', False)
+            or getattr(l, 'container_id', False))
+        if bloqueados:
+            warnings.append('📦 Hay lotes en contenedor/consolidados; no se '
+                            'modifican (solo advertencia).')
+        return {
+            'pickings': pickings,
+            'done_pickings': done,
+            'pending_pickings': pending,
+            'reserved_pickings': reserved,
+            'has_effect': bool(done) or bool(reserved),
+            'warnings': warnings,
+        }
 
-        try:
-            with self.env.cr.savepoint():
-                # ==============================================================
-                # 2. SANEAMIENTO DE EXISTENCIAS (QUANTS) - ¡CRÍTICO!
-                # ==============================================================
-                # Borramos los registros de stock real para evitar el error de Foreign Key
-                if self.lot_ids:
-                    quants = self.env['stock.quant'].sudo().search([('lot_id', 'in', self.lot_ids.ids)])
-                    if quants:
-                        _logger.info(f"🧹 Eliminando {len(quants)} registros de stock físico (Quants)...")
-                        quants.sudo().unlink()
-
-                # ==============================================================
-                # 3. ELIMINACIÓN DE ALBARANES (PICKINGS) - VERSIÓN ANIQUILADORA
-                # ==============================================================
-                # Buscamos IDs para evitar problemas de caché del objeto
-                p_ids = self.env['stock.picking'].sudo().search([('origin', '=', self.name)]).ids
-                if self.picking_id:
-                    p_ids.append(self.picking_id.id)
-                
-                # Procesamos cada ID de forma individual y aislada
-                for p_id in list(set(p_ids)):
-                    # Buscamos el registro fresco de la DB en cada iteración
-                    picking = self.env['stock.picking'].sudo().browse(p_id)
-                    
-                    if not picking.exists():
-                        continue
-                        
-                    _logger.info(f"🔥 Aniquilando Albarán {picking.name} (ID: {p_id})")
-                    
-                    try:
-                        with self.env.cr.savepoint():
-                            # A. Forzar estado para saltar bloqueos de Odoo 18
-                            picking.write({'state': 'draft'})
-                            
-                            # B. Limpiar movimientos (Moves) de forma atómica
-                            if picking.move_ids:
-                                moves = picking.move_ids
-                                # Cambiamos estado de moves a draft para poder borrarlos
-                                moves.write({'state': 'draft'})
-                                picking.write({'move_ids': [(5, 0, 0)]}) # Desvincular
-                                moves.with_context(force_delete=True).unlink()
-                            
-                            # C. Borrado físico final
-                            picking.with_context(force_delete=True).unlink()
-                            _logger.info(f"✅ Registro {p_id} eliminado exitosamente.")
-                            
-                    except Exception as e:
-                        _logger.error(f"❌ Falló borrado ORM del albarán {p_id}: {e}")
-                        # Rompemos la transacción intencionalmente. El raw SQL dejaba basura relacional.
-                        raise UserError(
-                            f"🛑 No se pudo eliminar el albarán {picking.name} por restricciones de base de datos.\n"
-                            f"Desvincule o elimine sus movimientos manualmente antes de resetear.\n"
-                            f"Detalle técnico: {e}"
-                        )
-                # ==============================================================
-                # 4. ELIMINACIÓN DE LOTES Y STAGING (BORRADO FÍSICO)
-                # ==============================================================
-                # Primero el Staging (Tabla de pre-visualización)
-                if self.reception_line_ids:
-                    _logger.info("🧹 Eliminando líneas de Staging...")
-                    self.reception_line_ids.with_context(force_delete=True).unlink()
-
-                # Finalmente los Lotes (Ya sin bloqueos de Quants ni Pickings)
-                if self.lot_ids:
-                    lots_to_delete = self.lot_ids
-                    # IMPORTANTE: Desvincular de la cabecera antes de borrar el objeto
-                    self.write({'lot_ids': [(5, 0, 0)]})
-                    lots_to_delete.sudo().with_context(force_delete=True).unlink()
-                    _logger.info("🗑️ Lotes eliminados físicamente.")
-
-                # ==============================================================
-                # 5. RESETEO DE CABECERA
-                # ==============================================================
-                self.write({
-                    'state': 'draft',
-                    'picking_id': False,
-                    'invoice_id': False,
-                    'log_notes': False,
-                    'omitted_count': 0,
-                    'volume_variance_percent': 0.0,
-                    'physical_volume_m3': 0.0,
-                    'commercial_volume_m3': 0.0,
-                })
-
-        except Exception as e:
-            _logger.error(f"❌ FALLO CRÍTICO EN RESETEO: {str(e)}")
-            raise UserError(f"🛑 Error de Integridad: No se pudo limpiar la base de datos.\nDetalle: {e}")
-
-        self._add_log("✅ <strong>SANEAMIENTO COMPLETADO:</strong> BD limpia, lista para nueva carga.")
-        self.env['madenat.audit.log'].sudo().create({
+    def _reset_get_or_create_return(self, picking, result):
+        """Retorno nativo idempotente de un picking DONE (reutiliza si existe)."""
+        existing = self.env['stock.picking'].search([
+            ('return_id', '=', picking.id), ('state', '=', 'done')], limit=1)
+        if existing:
+            result['returns_reused'].append(existing.name)
+            return existing
+        moves_done = picking.move_ids.filtered(
+            lambda m: m.state == 'done' and not m.returned_move_ids.filtered(
+                lambda r: r.state == 'done'))
+        if not moves_done:
+            return self.env['stock.picking']
+        warehouse = picking.picking_type_id.warehouse_id
+        return_type = warehouse.out_type_id if warehouse else self.env.ref(
+            'stock.picking_type_out', raise_if_not_found=False)
+        if not return_type:
+            raise UserError(_(
+                'No existe un tipo de operación de salida para revertir la '
+                'recepción %s.') % picking.name)
+        return_picking = self.env['stock.picking'].create({
+            'picking_type_id': return_type.id,
+            'partner_id': picking.partner_id.id,
+            'origin': 'Return of %s' % picking.name,
+            'location_id': picking.location_dest_id.id,
+            'location_dest_id': picking.location_id.id,
+            'company_id': picking.company_id.id,
             'reception_id': self.id,
-            'action_type': 'lot_update',
-            'description': f'Reapertura forzada: {self.name}. Recepción reabierta desde estado done a draft',
-            'user_id': self.env.user.id,
         })
-        
+        for move in moves_done:
+            qty = move.quantity or move.product_uom_qty
+            return_move = self.env['stock.move'].create({
+                'name': 'Return of %s' % move.name,
+                'product_id': move.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': return_picking.id,
+                'location_id': move.location_dest_id.id,
+                'location_dest_id': move.location_id.id,
+                'company_id': move.company_id.id,
+                'origin_returned_move_id': move.id,
+                'to_refund': True,
+            })
+            result['returned_moves'] += 1
+            for line in move.move_line_ids:
+                self.env['stock.move.line'].create({
+                    'move_id': return_move.id,
+                    'picking_id': return_picking.id,
+                    'product_id': line.product_id.id,
+                    'lot_id': line.lot_id.id,
+                    'quantity': line.quantity,
+                    'product_uom_id': line.product_uom_id.id,
+                    'location_id': return_move.location_id.id,
+                    'location_dest_id': return_move.location_dest_id.id,
+                    'owner_id': line.owner_id.id,
+                })
+        return_picking.action_confirm()
+        return_picking.action_assign()
+        return_picking.with_context(
+            skip_backorder=True, skip_immediate=True,
+            force_validate=True, immediate_transfer=True,
+        ).button_validate()
+        return_picking.return_id = picking.id
+        result['returns_created'].append(return_picking.name)
+        return return_picking
+
+    def _reset_to_draft_confirmed(self, reason=None):
+        """Ejecuta el reset trazable (solo desde el wizard; método privado)."""
+        self.ensure_one()
+        if not self.env.user.has_group('stock.group_stock_manager'):
+            raise UserError(_(
+                'No tienes permisos para reabrir una recepción confirmada.\n'
+                "Se requiere el grupo 'Inventario / Administrador'."))
+        info = self._reset_physical_effect_info()
+        reason = (reason or '').strip()
+        if info['has_effect'] and not reason:
+            raise UserError(_(
+                'Indique un motivo para continuar: la corrección tiene efecto '
+                'físico (reversión/cancelación de stock atribuible).'))
+        prev_state = self.state
+        result = {
+            'returns_created': [], 'returns_reused': [], 'returned_moves': 0,
+            'cancelled_pickings': [],
+            'done_pickings': [p.name for p in info['done_pickings']],
+            'pending_pickings': [p.name for p in info['pending_pickings']],
+            'warnings': list(info['warnings']),
+        }
+        _logger.info('🔄 Reset trazable recepción %s (efecto=%s)',
+                     self.name, info['has_effect'])
+        with self.env.cr.savepoint():
+            for picking in info['pending_pickings']:
+                try:
+                    picking.do_unreserve()
+                except Exception as e:  # nunca bloquear el reset
+                    _logger.warning('No se pudo desreservar %s: %s',
+                                    picking.name, e)
+                try:
+                    picking.action_cancel()
+                    result['cancelled_pickings'].append(picking.name)
+                except Exception as e:
+                    _logger.warning('No se pudo cancelar %s: %s',
+                                    picking.name, e)
+            for picking in info['done_pickings']:
+                self._reset_get_or_create_return(picking, result)
+            # Reset DOCUMENTAL: staging regenerable + cabecera. Se preservan
+            # lotes, pickings, moves y move lines (historial físico intacto).
+            if self.reception_line_ids:
+                self.reception_line_ids.unlink()
+            self.write({
+                'state': 'draft',
+                'invoice_id': False,
+                'omitted_count': 0,
+                'volume_variance_percent': 0.0,
+                'physical_volume_m3': 0.0,
+                'commercial_volume_m3': 0.0,
+            })
+        self._reset_register_audit(prev_state, reason, result)
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'lumber.reception',
@@ -1553,6 +1580,43 @@ class LumberReception(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def _reset_register_audit(self, prev_state, reason, result):
+        """Snapshot + hash + audit.log (deviation) + chatter (no bloqueante)."""
+        import hashlib
+        import json
+        snapshot = json.dumps({
+            'reception': self.name, 'reception_id': self.id,
+            'previous_state': prev_state, 'reason': reason,
+            'warnings': result['warnings'],
+            'done_pickings': result['done_pickings'],
+            'pending_pickings': result['pending_pickings'],
+            'returns_created': result['returns_created'],
+            'returns_reused': result['returns_reused'],
+            'returned_moves': result['returned_moves'],
+            'cancelled_pickings': result['cancelled_pickings'],
+            'user': self.env.user.id,
+        }, sort_keys=True, default=str)
+        self.env['madenat.audit.log'].sudo().create({
+            'reception_id': self.id,
+            'action_type': 'deviation',
+            'description': '[RESET-REC] Reapertura trazable | Motivo: %s'
+                           % (reason or '(sin efecto físico)'),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
+        self.message_post(body=_(
+            '↩️ <strong>Reapertura trazable</strong> (%(prev)s → draft).'
+            '<br/>Motivo: %(reason)s'
+            '<br/>Retornos creados: %(rc)s · reutilizados: %(rr)s'
+            '<br/>Advertencias: %(warn)s'
+        ) % {
+            'prev': prev_state, 'reason': reason or '(sin efecto físico)',
+            'rc': ', '.join(result['returns_created']) or '-',
+            'rr': ', '.join(result['returns_reused']) or '-',
+            'warn': ' | '.join(result['warnings']) or '-',
+        })
 
     def action_cancel(self):
         """Cancela la recepción sin borrar datos, solo cambia estado."""
