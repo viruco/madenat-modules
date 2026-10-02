@@ -31,3 +31,5 @@ from . import test_sv_dev_cleanup_param
 from . import test_deviation_guard
 # Fase 1: semilla configurable de keywords de tipo de ingreso (paridad fallback).
 from . import test_ingestion_keywords_seed
+# Reset de recepción no bloqueante y trazable (reversión por movimientos).
+from . import test_reception_reset_traceable
