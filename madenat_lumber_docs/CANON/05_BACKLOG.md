@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.5.1
-**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado. -->
+**Versión documental:** 8.6.0
+**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado; (9) — AD-91: I2 con alcance cerrado documental (modelo aditivo madenat.sv.imputation/.line/.sv.line; cabecera por guía, inmutabilidad/reversa, idempotencia por clave documental propia; duro etiqueta-side / blando SV-side; sin efecto en stock, sin ledger, sin costo); salida nativa + ledger a I3; costo a I5; merma/cierre posterior; I2 sigue PENDIENTE. Ver CANON/19 §4/§5/§6/§7/§13.2/§16. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -403,10 +403,11 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 
 ---
 
-## Imputación SV y Procesadores (AD-87 · AD-88, 2026-10-01) — PLAN (fases I1..I6)
+## Imputación SV y Procesadores (AD-87 · AD-88 · AD-89 · AD-90 · AD-91) — PLAN (fases I1..I6)
 
 > Especificación y detalle por fase (dependencias, riesgos, criterios de aceptación): `19_IMPUTACION_SV_Y_PROCESADORES.md` §16.
 > Decisiones D1–D10. El **bloque I0** (endurecimiento + AD-88) ya está **implementado**; esta tabla lista **I1..I6** pendientes.
+> **AD-91 (2026-10-02):** **I2 queda acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`); la **salida nativa + ledger** se materializan en **I3**, el **costo** en **I5** y la **merma/cierre** en fases posteriores.
 > **Sin código en esta fase** (documental).
 
 ### I1 — Cimientos: ubicaciones y saldo por procesador — ✅ IMPLEMENTADO (2026-10-02)
@@ -432,10 +433,15 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - **Desviaciones/dudas previas:** resueltas/reencuadradas por D-I1-01..03 (ver `19_IMPUTACION_SV_Y_PROCESADORES.md` §16).
 
 ### I2 — Consolidación / imputación documental (etiquetas procesadas → SV) — ⏳ PENDIENTE
-- [ ] **`madenat.sv.imputation`** (+`.line`, +`.sv.line`): **consolidación documental** de **etiquetas procesadas contra uno o varios SV** (estado **PENDIENTE**); estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`. **NO** es producción, retorno físico ni genealogía lote-a-lote.
-- **Depende de:** I1; semántica **AD-90 / D-I1-05**. **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; sin efectos en stock en `draft`/`pending`; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados); válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo. **Estado: PENDIENTE** (AD-90 no lo declara implementado).
+- [ ] **`madenat.sv.imputation`** (+`.line`, +`.sv.line`) en **`madenat_lumber_logistics`** (modelo **documental aditivo**; AD-91, D-I2-11): **cabecera por guía** (`guia_processing_id`, **una** de trabajo `draft`/`pending` por guía); reparto **N:M** etiqueta↔SV con **volumen nominal editable**; estados `draft/pending/applied/reversed/cancelled`; motivo + `deviation_flags`; **idempotencia por clave documental propia** (no `picking_id`); **inmutabilidad** de `applied` (reversa + nueva imputación). **NO** es producción, retorno físico ni genealogía lote-a-lote.
+- [ ] **Sin efecto en stock (D-I2-12):** no toca `stock.quant`/`stock.picking`/`stock.move`, **no** genera salida nativa, **no** añade `action_type='imputacion'` ni altera `sv_available_m3`/`_sv_balance_values`. La **salida nativa + ledger** van a **I3**; el **costo**, a **I5**; la **merma/cierre**, a fases posteriores.
+- [ ] **Integridad (D-I2-16):** **duro** etiqueta-side (Σ imputaciones activas/aplicadas no revertidas ≤ volumen nominal editable; rechazo); **blando** SV-side (saldo documental superado ⇒ advertencia + motivo + `deviation`, permite aplicar). Sin tolerancias ni `AL-01..AL-07` en I2.
+- [ ] **Saldo documental (D-I2-13):** computado **solo** desde imputaciones activas/aplicadas no revertidas del modelo nuevo; **distinto** de `stock.quant` (físico) y de `sv_available_m3` (ledger).
+- **Depende de:** I1 (procesador, `processor_location_id`, ubicación interna, saldo físico); `madenat.guia.processing` y `stock.lot` (**sin moverlos de core**); semántica **AD-90 / D-I1-05**. **No** depende del ledger.
+- **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; **sin efectos en stock**; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados) **más** el **saldo documental** computado; válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo; **dura** etiqueta-side verificada; **blanda** SV-side con motivo + `deviation`; **idempotencia** documental propia; **inmutabilidad/reversa** de `applied`. **Estado: PENDIENTE** (AD-90/AD-91 no lo declaran implementado).
 
 ### I3 — Salida nativa del SV + ledger `imputacion` + invariantes
+> **Único punto de salida nativa del SV (AD-91):** el efecto físico (quant + ledger) se materializa aquí, **no** en I2.
 - [ ] `action_type='imputacion'`; vínculo `imputation_id`; `stock.move` a `Virtual Locations/Production`; idempotencia `picking_id`.
 - [ ] Invariantes AD-84 ampliados (`19` §7.3).
 - **Depende de:** I2; AD-82/AD-84. **Aceptación:** T-01..T-05, T-07, T-11; sin regresiones.

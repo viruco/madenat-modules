@@ -1,10 +1,10 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.5.1
+**Versión documental:** 1.6.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
-**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**).
+**Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
 **Fuente de verdad ante contradicción:** `CANON/INDICE_DOCUMENTACION.md` §8. Ante contradicción entre documentos, **no se elige versión en silencio**: se registra y se declara (ver §13).
 
 > **Alcance de esta versión.** Este documento es **especificación y diseño**. **No** autoriza ni contiene cambios de código, datos ni parámetros. Las reglas marcadas **[DISEÑO]** son objetivos; las marcadas **[VIGENTE]** describen comportamiento ya implementado y verificado en código (rama `feat/rebaja-contenedor-20261001`, BD `madenat_test`).
@@ -29,7 +29,7 @@ Incluye: glosario, ciclo completo por tipo de compra, modelo de datos mínimo, e
 | **SV (Lote Volumen / etiqueta SV)** | Lote de **volumen comprado** sin desglose de piezas. Identidad `SV` + 11 dígitos (`stock.lot.name`, secuencia `madenat.volume.lot`), `lot_flow_type='volume'`. Es la **base de stock y valorización** (NOMINAL). **Nunca se exporta.** | `stock.lot`, `madenat.sv.operation` |
 | **Etiqueta (de retorno)** | Identificador de un bulto de **madera procesada** que retorna del procesador: etiqueta física del proveedor (`stock.lot.ref` / `supplier_label` / `external_labels`) o etiqueta del procesado. Es un **lote nuevo e independiente** (`lot_flow_type='tarja'` o vacío). | `stock.lot` |
 | **Tarja** | Documento/unidad de **madera dimensionada bruta** recibida o despachada (piezas con dimensiones). Vive en lotes de **tarja**. | `stock.lot`, documentos de tarja |
-| **Imputación (declarada)** | Acto administrativo que **declara** qué etiqueta(s) de retorno corresponden a qué SV. **No es genealogía física**: es la relación **volumen nominal declarado** etiqueta→SV. Registra el ledger SV y **genera la salida nativa del quant del SV** (§4, §5). | propuesto: `madenat.sv.imputation` |
+| **Imputación (declarada)** | Acto administrativo que **declara** qué etiqueta(s) de retorno corresponden a qué SV. **No es genealogía física**: es la relación **volumen nominal declarado** etiqueta→SV. **En I2 es un acto exclusivamente documental** (sin efecto en stock); el **ledger `imputacion`** y la **salida nativa** se ejecutan en **I3** (§4.3, §16; **AD-91**). | propuesto: `madenat.sv.imputation` |
 | **Procesador** | Planta externa (cepillado, secado, tratamiento, …) que transforma el SV. Se marca en el maestro de partners. | `res.partner.is_processor` |
 | **En poder del procesador X** | **Ubicación interna** de stock por procesador (`stock.location`, `usage='internal'`) bajo un padre **`Procesadores`**. Representa **inventario propiedad de MADENAT bajo custodia operativa** del procesador (no es consignación ni propiedad ajena). **AD-90.** | `stock.location` |
 | **SV en procesador / pendiente de consolidación documental** | Un **SV** (o saldo) que reside en `Procesadores/<X>` se clasifica operativamente como **pendiente de consolidación documental** con los **productos procesados** que retornan de ese procesador. **No** implica venta, exportación, rebaja, consumo, merma ni genealogía física. **AD-90.** | `stock.quant`, `stock.lot` |
@@ -72,10 +72,11 @@ RETORNO DE MADERA PROCESADA  (guía de procesados: etiquetas + tarjas, dimension
    │
    ▼
 IMPUTACIÓN DECLARADA (etiqueta → uno o varios SV)
-   │  · registra el ledger SV  (madenat.sv.operation, tipo `imputación`)
-   │  · genera la SALIDA NATIVA del quant del SV (AD-82/AD-84)  ◄── único punto de salida del SV
-   │  · escribe/actualiza el costo de la etiqueta (stock.lot.cost.line, cost_type='wood')
-   │  · si hay merma, registra el evento documental de merma (§7, §11)
+   │  I2 · registro DOCUMENTAL (madenat.sv.imputation/.line/.sv.line) — SIN efecto en stock
+   │  I3 · registra el ledger SV  (madenat.sv.operation, tipo `imputación`)
+   │     · genera la SALIDA NATIVA del quant del SV (AD-82/AD-84)  ◄── único punto de salida del SV
+   │  I5 · escribe/actualiza el costo de la etiqueta (stock.lot.cost.line, cost_type='wood')
+   │  post · si hay merma, registra el evento documental de merma (§7, §11)
    ▼
 ETIQUETA PROCESADA (stock nuevo e independiente, lot_flow_type='tarja'/vacío)
    └── sigue el flujo normal (ingesta / consolidación / exportación de `18`)
@@ -83,6 +84,7 @@ ETIQUETA PROCESADA (stock nuevo e independiente, lot_flow_type='tarja'/vacío)
 
 **Claves [DISEÑO]:**
 - La imputación es **la vía única** por la que el volumen SV "sale" del stock (su quant se descuenta en el momento de imputar). No hay descuento del SV vía contenedor de exportación (el SV no se exporta).
+- **Reparto de fases (AD-91):** en **I2** la imputación es **documental y sin efecto en stock**; la **salida nativa** y el **ledger `imputacion`** se ejecutan en **I3**; el **costo**, en **I5**; la **merma**, en fase **posterior**. La imputación sigue siendo la **vía única** de salida del SV, materializada en **I3**.
 - El **retorno es stock nuevo e independiente** (AD-65 §1.6; alineado con DEC-002). El vínculo con el SV es **declarado**, no físico (D2).
 - **Semántica de inventario en procesador (AD-90):** mientras el SV está en `Procesadores/<X>` se clasifica como **pendiente de consolidación documental**; es **inventario de MADENAT bajo custodia operativa** del procesador. La **recepción directa** (v2) y la **transferencia interna desde bodega** (v1) son **rutas físicas equivalentes** para el saldo físico. El envío al procesador **no** es venta, exportación, rebaja, consumo, merma ni genealogía.
 - **Órdenes temporales válidos (AD-90):** (a) **etiquetas primero → consolidación después** (caso de §3.1); (b) **consolidación declarada primero → etiquetas registradas después**. Ambos son válidos y pueden **coexistir** etiquetas sin consolidar con el SV en procesador; el sistema **controla pendientes y alerta**, **sin bloquear** (AD-88).
@@ -114,17 +116,21 @@ La **imputación** es un registro administrativo que declara la correspondencia 
 
 **Unidad de captura:** la **etiqueta** (D3), con su **volumen NOMINAL editable**. La etiqueta se imputa contra **uno o varios SV**; un SV puede recibir imputaciones de **varias** etiquetas mientras tenga saldo.
 
+> **Prevalencia AD-91 (alcance de I2).** En la fase **I2** la imputación es un **acto exclusivamente documental** (sin efecto en `stock.quant`). El **ledger `imputacion`** y la **salida nativa** descritos en §4.3 pertenecen a **I3**; el **costo**, a **I5** (§16). Esta prevalencia **acota el alcance de I2** y **no** deroga el **modelo objetivo** de §4.3, que rige **desde I3**.
+
 ### 4.2 La imputación NO es genealogía física (D2)
 
 - No se crea vínculo lote-a-lote padre/hijo (`parent_lot_id`/`child_lot_ids`) por la imputación.
 - El procesador externo **mezcla** físicamente el material: la correspondencia real es desconocida. La imputación es una **declaración profesional** con motivo y auditoría, consistente con `AD-65 §1.6`.
 - El retorno es **stock nuevo e independiente** (alineado con DEC-002).
 
-### 4.3 Efectos (D3)
+### 4.3 Efectos (D3) — materializados en I3/I5, **no** en I2
 
-1. **Ledger:** una o más operaciones en `madenat.sv.operation` con `action_type = 'imputacion'` (§5.3), motivo obligatorio y firma (política AD-79/AD-80).
-2. **Salida nativa:** un `stock.move`/picking **outgoing** que descuenta la **cantidad imputada** del quant del SV, desde su ubicación vigente hacia `Virtual Locations/Production`. Es el **único** descuento del SV (AD-82/AD-84).
-3. **Costo:** escribe la línea de costo de madera de la etiqueta (`stock.lot.cost.line`, `cost_type='wood'`) con el **costo promedio ponderado** de los SV elegidos (§5.5).
+> **Alcance de fase (AD-91).** Los efectos que siguen describen el **modelo objetivo** y se ejecutan **fuera de I2**: (1) ledger y (2) salida nativa, en **I3**; (3) costo, en **I5**. En **I2** la imputación **no** produce efecto alguno en stock ni en el ledger.
+
+1. **Ledger (I3):** una o más operaciones en `madenat.sv.operation` con `action_type = 'imputacion'` (§5.3), motivo obligatorio y firma (política AD-79/AD-80).
+2. **Salida nativa (I3):** un `stock.move`/picking **outgoing** que descuenta la **cantidad imputada** del quant del SV, desde su ubicación vigente hacia `Virtual Locations/Production`. Es el **único** descuento del SV (AD-82/AD-84).
+3. **Costo (I5):** escribe la línea de costo de madera de la etiqueta (`stock.lot.cost.line`, `cost_type='wood'`) con el **costo promedio ponderado** de los SV elegidos (§5.5).
 
 ### 4.4 Relación con AD-82 / AD-83 / AD-84
 
@@ -132,7 +138,7 @@ La **imputación** es un registro administrativo que declara la correspondencia 
 |---|---|---|
 | **AD-82** (salida única de stock al rebajar) | Aprobada e implementada (contenedores/naves) | **Se alinea:** AD-82 rige la **exportación de tarja**; el SV **no** se exporta; su salida única es la **imputación** (§3.1). |
 | **AD-83** (módulo propio rebaja SV + descuento por procesados) | Aprobada **en principio** | **REEMPLAZADA por AD-87** (ver §13 y `04_DECISION_LOG.md`): el "descuento por procesados" se materializa como **imputación**; no se extrae módulo propio de rebaja SV; la asignación SV a contenedor de **exportación** deja de ser el caso de uso (el SV no se exporta). |
-| **AD-84** (invariantes) | Aprobada e implementada (parcial) | **Se amplía:** el saldo SV resta **también** las imputaciones activas (§5.3, §7); la causa única de descuento del SV es la imputación. |
+| **AD-84** (invariantes) | Aprobada e implementada (parcial) | **Se amplía:** el saldo SV resta **también** las imputaciones activas (§5.3, §7); la causa única de descuento del SV es la imputación. La ampliación de `sv_available_m3` se materializa en **I3**; **en I2 el ledger no se altera** (AD-91). |
 
 ---
 
@@ -157,10 +163,13 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 | `total_cost_usd` | Float (compute, store=False) | — | Σ líneas |
 | `reason` | Text | condicional | Obligatorio si hay desviación de la propuesta o alerta (§7, §8) |
 | `deviation_flags` | Char/Text (compute) | — | Marca las desviaciones registradas (auditoría) |
-| `sv_operation_ids` | O2M `madenat.sv.operation` | — | Ledger generado (una op. `imputacion` por SV afectado) |
-| `picking_id` | M2O `stock.picking` (`copy=False`) | — | **Idempotencia**: la salida nativa se ejecuta una sola vez |
+| `sv_operation_ids` | O2M `madenat.sv.operation` | — | **I3**: ledger generado (una op. `imputacion` por SV afectado); en I2 no se genera |
+| `documental_key` | Char (`copy=False`, unique) | ✔ | **Idempotencia documental de I2** (clave propia; **no** `picking_id`) |
+| `picking_id` | M2O `stock.picking` (`copy=False`) | — | **I3**: la salida nativa se ejecuta una sola vez |
 | `executed_by_id` / `execution_date` | M2O `res.users` / Datetime | — | Autoría (política AD-79) |
 | `snapshot_json` / `audit_hash` | Text / Char | — | Evidencia firmada (política AD-79/AD-80) |
+
+> **Organización por guía (AD-91, D-I2-15).** La cabecera se organiza **por guía de procesados** (`guia_processing_id`): una guía puede tener **muchas etiquetas** y una etiqueta puede **repartir** su **volumen nominal editable** entre **varios SV** (`.line`/`.sv.line`). Una guía admite **una sola** imputación de trabajo (`draft`/`pending`); `applied`/`reversed` son **historia inmutable** (inmutabilidad/reversa, §6). El **ledger no es cabecera** (D-I2-11). El campo `cost_per_m3_usd` pertenece a **I5** (en I2 no se usan campos de costo, D-I2-18).
 
 ### 5.2 Líneas
 
@@ -181,7 +190,7 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 |---|---|---|
 | `imputation_id` / `imputation_line_id` | M2O | — |
 | `sv_lot_id` | M2O `stock.lot` (`lot_flow_type='volume'`) | SV origen |
-| `sv_available_m3` | Float (related) | Saldo del ledger SV |
+| `sv_available_m3` | Float (related) | Saldo del ledger SV (**no alterado en I2**, AD-91) |
 | `imputed_volume_m3` | Float, digits (16, 3) | Porción imputada desde ese SV |
 | `cost_per_m3_usd` | Float, digits (16, 4) | Costo unitario del SV origen (§5.5) |
 | `amount_usd` | Float (compute) | `imputed_volume_m3 × cost_per_m3_usd` |
@@ -189,11 +198,13 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 
 ### 5.3 Tipo de acción del ledger (D3)
 
+> **Alcance (AD-91).** El valor `'imputacion'` y el vínculo `imputation_id` corresponden a **I3**. En **I2** el ledger `madenat.sv.operation` **no** se modifica (no se añade `action_type='imputacion'` ni se altera `sv_available_m3`).
+
 - Se **añade** el valor `'imputacion'` al Selection `madenat.sv.operation.action_type` (hoy: `rename`, `regularize_volume`, `rebaja`, `rebaja_reverse`). Etiqueta propuesta: **«Imputación a procesados»**.
 - Campos de la operación reutilizados: `lot_id` (SV), `rebaja_volume_m3` (volumen imputado), `destination_reference='Imputación <procesador>'`, `reason` (obligatorio), `state='applied'` al ejecutar, `snapshot_json`/`audit_hash`.
 - **Nuevo** vínculo propuesto: `imputation_id` (M2O → `madenat.sv.imputation`) en `madenat.sv.operation`, análogo a `destination_shipment_id`/`destination_container_id` ya existentes en Logistics.
 - **Alternativa (si se prefiere cero cambio de Selection):** reutilizar `action_type='rebaja'` con `destination_reference='Imputación <procesador>'`. Se registra como **pregunta abierta** (§17, Q-19-1); la recomendación de este documento es el valor propio `imputacion` (trazabilidad y reporte inequívocos).
-- **Saldo SV ampliado (D3):** `sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas` (§7, alinea AD-84).
+- **Saldo SV ampliado (D3, I3):** `sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas` (§7, alinea AD-84). **En I2 `sv_available_m3` permanece intacto** (AD-91).
 
 ---
 
@@ -206,7 +217,9 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 - **Semántica [APROBADA] (AD-90):** `Procesadores/<X>` es **inventario de MADENAT bajo custodia operativa** del procesador (**no** consignación ni propiedad ajena); un **SV** allí está **pendiente de consolidación documental** con productos procesados. El **envío al procesador** **no** es venta, exportación, rebaja, consumo, merma ni genealogía física. La **recepción directa** en `Procesadores/<X>` y la **transferencia interna** desde bodega son **rutas físicas equivalentes** para el saldo físico.
 - **Saldo físico vs. documental (AD-90):** el **saldo físico** = Σ `stock.quant` en `Procesadores/<X>` (fuente de verdad, AD-89); el **saldo documental pendiente** = volumen declarado aún **no consolidado**. **Coexisten** sin bloquear la operación normal; un SV puede convivir temporalmente con etiquetas procesadas recibidas del mismo procesador aunque la consolidación documental todavía no se aplique.
 
-### 5.5 Costo (D4)
+### 5.5 Costo (D4) — **I5** (fuera de I2)
+
+> **Alcance (AD-91, D-I2-18).** Todo lo de esta sección corresponde a **I5**. **En I2 no se crean** campos de costo, reglas de prorrateo ni líneas `stock.lot.cost.line`. El campo `cost_per_m3_usd` de §5.1 solo se usa a partir de **I5**.
 
 - **Brecha documentada:** hoy el **SV no tiene costo** — `wood_cost_usd`/`purchase_price_usd_per_m3` vacíos para lotes `lot_flow_type='volume'` y el costeo nativo de Odoo desactivado de facto (`08_COSTEO.md` §1.4, AD-64). Sin costo del SV, la etiqueta de retorno **no puede** heredar costo de madera.
 - **Costo por m3 editable** en la imputación (`cost_per_m3_usd`, D4). Por defecto se propone el **promedio ponderado** de los SV elegidos:
@@ -226,11 +239,13 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 |---|---|---|---|
 | `draft` | En preparación por el asistente | Sin efectos; se guarda la propuesta | Operaciones |
 | `pending` | **Dejada pendiente** al recibir la guía (opción explícita, D6) | Sin descuento de SV; **alerta** de pendiente (§8) | Operaciones |
-| `applied` | Ejecutada | Ledger `imputación` + **salida nativa** + costo | Operaciones |
-| `reversed` | Reversada | Contrapartida (retorno nativo + op. SV opuesta ligada) | Jefatura / Gerencia |
+| `applied` | Ejecutada — **inmutable** | **I2:** solo documento; **I3:** ledger `imputación` + **salida nativa**; **I5:** costo | Operaciones |
+| `reversed` | Reversada | **I3:** contrapartida (retorno nativo + op. SV opuesta ligada) | Jefatura / Gerencia |
 | `cancelled` | Anulada sin efecto | No hubo salida | Operaciones / Jefatura |
 
 **Regla [DISEÑO]:** una guía de procesados puede validarse con su imputación en `pending`; el sistema **no bloquea** (D8). La pendiente se **audita** y alimenta las alertas de saldo por procesador.
+
+**Cabecera por guía e inmutabilidad (AD-91, D-I2-15).** La imputación se organiza **por guía de procesados**: una guía admite **una sola** imputación de **trabajo** (`draft`/`pending`). Al pasar a **`applied`** queda **inmutable** y pasa a **historia** junto con `reversed`/`cancelled`; toda corrección se hace por **reversa + nueva imputación**, nunca editando ni borrando historia. En **I2** los estados describen **solo** el ciclo documental: **ninguno** produce efecto en stock (el ledger y la salida nativa son **I3**).
 
 ---
 
@@ -238,15 +253,18 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 
 ### 7.1 Reglas duras (integridad técnica / financiera)
 
-- **[VIGENTE]** Ningún `stock.move` puede dejar `stock.quant` **negativo**. La salida nativa del SV nunca excede el disponible del quant (techo técnico).
+- **[DISEÑO — duro, I2]** El **volumen nominal editable** de una **etiqueta** es un **techo duro**: Σ imputaciones **activas/aplicadas no revertidas** de esa etiqueta **no** puede excederlo (D-I2-16a).
+- **[VIGENTE — I3]** Ningún `stock.move` puede dejar `stock.quant` **negativo**. La salida nativa del SV nunca excede el disponible del quant (techo técnico).
 - **[VIGENTE]** Los **permisos por rol** se validan en servidor (patrón `_rebaja_require_group`, AD-86/16).
 - **[VIGENTE]** **Reglas financieras**: tipo de cambio, cierre de período y UoM (m³, `digits=(16,3)`) permanecen **duras**.
-- **[DISEÑO]** La salida nativa del SV ocurre **una sola vez** por imputación (idempotencia por `picking_id`, causa única AD-84).
+- **[DISEÑO — I3]** La salida nativa del SV ocurre **una sola vez** por imputación (idempotencia por `picking_id`, causa única AD-84); **en I2 no aplica** (el ledger no se altera).
 - **[DISEÑO]** Los **invariantes** de AD-84 se mantienen verificables (§7.3).
 
 ### 7.2 Reglas blandas (D8: advertir, motivar, auditar)
 
-- Si el volumen imputado **supera el saldo SV** disponible para ese origen → **advertencia**, se exige **motivo**, se **audita** (no se impide, salvo el techo técnico del quant).
+- **SV-side (blando, I2):** si el volumen imputado **supera el saldo documental disponible** de un SV → **advertencia**, se exige **motivo**, se **audita `deviation`** y **se permite aplicar** (D-I2-16b). El techo **técnico** del quant rige solo en **I3** (en I2 no hay salida nativa).
+- **Etiqueta-side es DURO, no blando:** exceder el **volumen nominal editable** de una etiqueta **no** es advertencia; se **rechaza** (§7.1, D-I2-16a).
+- **Sin tolerancias ni `AL-01..AL-07` en I2** (D-I2-16c): no se inventan umbrales; los de diseño quedan para fases posteriores.
 - Si el volumen nominal de la etiqueta **difiere** de la propuesta automática más allá de una tolerancia (por decidir, §17 Q-19-4) → **advertencia + motivo**.
 - Si el **costo por m3** está fuera de rango (respecto del histórico del producto/SV) → **advertencia + motivo**.
 - Si el procesador no está marcado `is_processor` o no existe ubicación `Procesadores/<X>` → **advertencia**; se ofrece crearla (nativo).
@@ -255,8 +273,8 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
 ### 7.3 Invariantes (alineados con AD-84, ampliados)
 
 1. `stock.lot.volumen_restante_m3 = Σ stock.quant.quantity` (ubicaciones internas, base NOMINAL).
-2. **Saldo SV ampliado:** `stock.lot.sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas`.
-3. **Cota por destino:** Σ (rebajas + imputaciones) por SV ≤ volumen oficial (NOMINAL) del lote.
+2. **Saldo SV ampliado (I3):** `stock.lot.sv_available_m3 = sv_regularized_baseline_m3 − Σ rebajas activas − Σ imputaciones activas`. **En I2 `sv_available_m3` (`_sv_balance_values`) permanece intacto** (D-I2-12); la ampliación se materializa en **I3**.
+3. **Cota por destino (I3):** Σ (rebajas + imputaciones) por SV ≤ volumen oficial (NOMINAL) del lote.
 4. **Causa única de descuento del SV:** **imputación** (procesados) o ajuste autorizado; la rebaja aplica solo a lotes de **tarja** en export (AD-82). Sin dobles descuentos.
 5. **Concurrencia fail-closed** del ledger (guarda `_sv_concurrency_guard`).
 6. **Cuatro categorías de saldo (AD-90), sin mezclarlas:**
@@ -265,10 +283,13 @@ Reutiliza el máximo de lo existente (`stock.lot`, `madenat.sv.operation`, `res.
    - (c) **productos procesados pendientes de imputar** (etiquetas de retorno sin imputación activa);
    - (d) **productos procesados ya imputados/consolidados** (vínculo declarado a un SV explícito).
    (b) y (c) **alimentan las alertas** (§8) y **no bloquean** la operación (AD-88); un SV en `Procesadores/<X>` puede **coexistir** con etiquetas procesadas sin consolidar.
+7. **Saldo documental de consolidación (I2).** Se computa **exclusivamente** desde imputaciones **activas/aplicadas no revertidas** del modelo nuevo `madenat.sv.imputation`; es **distinto** de: (a) saldo **físico** (`stock.quant`); (b) **`sv_available_m3`** del ledger; (c) **merma documental** (no automática). **Duro** etiqueta-side (techo nominal, §7.1) y **blando** SV-side (advertir + motivo + auditar, permitir aplicar; §7.2) (D-I2-13, D-I2-16). **Sin merma automática** (D-I2-19).
 
 ---
 
 ## 8. Alertas
+
+> **Alcance (AD-91).** Las alertas `AL-01..AL-07` son **diseño** para **fases posteriores**; **no se implementan en I2**, que **no** define tolerancias ni umbrales (§7.2, D-I2-16c). En I2 solo aplican la **regla dura** etiqueta-side y la **blanda** SV-side (§7.1/§7.2).
 
 | ID | Alerta | Disparador | Destino |
 |---|---|---|---|
@@ -332,6 +353,8 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 
 ## 11. Casos límite
 
+> **Alcance (AD-91).** Las referencias a **salida nativa**, **reversa con retorno nativo** y **quant** describen el **modelo objetivo (I3)**. En **I2** el caso se resuelve **documentalmente**, sin efecto en stock.
+
 | # | Caso | Tratamiento propuesto |
 |---|---|---|
 | L-01 | **Etiqueta imputada a varios SV** | Permitido: la etiqueta se desglosa en N asignaciones que suman su nominal (§10.2). |
@@ -363,7 +386,7 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 
 ### 12.3 Modelo y estados
 
-- Solo **añadidos**: modelo `madenat.sv.imputation(.line,.sv.line)`, valor de `action_type='imputacion'`, campos opcionales en `madenat.sv.operation` (`imputation_id`) y `res.partner`/`stock.lot` según §5. **Sin renombres.**
+- Solo **añadidos**: modelo `madenat.sv.imputation(.line,.sv.line)`, valor de `action_type='imputacion'`, campos opcionales en `madenat.sv.operation` (`imputation_id`) y `res.partner`/`stock.lot` según §5. **Sin renombres.** En **I2** solo se añaden los **modelos documentales** y los apoyos `res.partner`/`stock.lot`; el valor `action_type='imputacion'` y `imputation_id` en `madenat.sv.operation` son **I3** (AD-91).
 - Campos nuevos **no `required`** sobre registros históricos.
 
 ### 12.4 `parent_lot_id` opcional (I6)
@@ -378,23 +401,26 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 
 | ID | Riesgo | Mitigación |
 |---|---|---|
-| R-19-01 | **Doble descuento del SV** (imputación + rebaja de export) | SV nunca se exporta (§2.1); causa única = imputación (§7.3.4); idempotencia por `picking_id`. |
+| R-19-01 | **Doble descuento del SV** (imputación + rebaja de export) | SV nunca se exporta (§2.1); causa única = imputación (§7.3.4); idempotencia por clave documental propia (**I2**) y por `picking_id` en la salida nativa (**I3**). |
 | R-19-02 | **Saldo SV ⟷ quant desalineado** | Invariante §7.3.2; salida nativa atómica con el ledger. |
 | R-19-03 | **Costo del SV inexistente** | Brecha declarada (§5.5); costo por m3 editable + fuente propuesta; fase I5. |
 | R-19-04 | **Imputación declarada sin evidencia física** | Por diseño (D2); motivo obligatorio + auditoría + snapshot firmado. |
 | R-19-05 | **Uso indebido de ubicación interna** (confundir con consignación) | `usage='internal'` documentado (§5.4); el inventario es MADENAT. |
-| R-19-06 | **Exceso de volumen** sobre el saldo | Advertencia + motivo (§7.2); techo técnico del quant. |
+| R-19-06 | **Exceso de volumen** sobre el saldo | **Duro** etiqueta-side (techo nominal, rechazo, §7.1); **blando** SV-side (advertencia + motivo + `deviation`, permite aplicar, §7.2). |
 | R-19-07 | **Pendientes que cruzan el cierre** | AL-01/AL-02 + regla financiera dura (§7.1, L-08). |
 
 ### 13.2 Contradicciones resueltas por este documento
 
 | # | Contradicción | Resolución |
 |---|---|---|
-| CR-19-01 | `17` §2.8 / AD-83: la rebaja SV **solo** mueve el ledger **sin** efecto en `stock.quant` vs. D3 (el SV sale del quant al imputar). | **Reencuadre:** para el caso **procesados**, la imputación **sí** tiene efecto nativo (salida del quant SV). La rebaja de contenedores del `18` (sin efecto en quant del SV) deja de aplicar al SV (el SV no se exporta). Se actualiza `17` §2.8 y `18`. |
+| CR-19-01 | `17` §2.8 / AD-83: la rebaja SV **solo** mueve el ledger **sin** efecto en `stock.quant` vs. D3 (el SV sale del quant al imputar). | **Reencuadre:** para el caso **procesados**, la imputación **sí** tiene efecto nativo (salida del quant SV) — materializado en **I3**; **en I2 la imputación es documental** (AD-91). La rebaja de contenedores del `18` (sin efecto en quant del SV) deja de aplicar al SV (el SV no se exporta). Se actualiza `17` §2.8 y `18`. |
 | CR-19-02 | `18` §1.3/§5: «rebajar» el SV a contenedor (export) vs. D1 (SV nunca se exporta). | **Resuelto:** la consolidación/rebaja de export aplica solo a lotes de **tarja**; se actualiza `18` §1.3/§5/§7. |
 | CR-19-03 | AD-65 §1.6 usa `parent_lot_id`/genealogía de forma condicional vs. D2 (imputación declarada, sin genealogía). | **Alineado:** la imputación **no** usa genealogía; `parent_lot_id` pasa a opcional en I6 (D10). |
 | CR-19-04 | AD-64 registra la brecha de costo pero no el caso SV (SV sin costo) vs. D4. | **Ampliado:** AD-64 se extiende con el costo del SV y su fuente propuesta (§5.5). |
 | CR-19-05 | AD-83 (módulo propio rebaja SV) vs. D3 (imputación sin módulo nuevo). | **AD-83 REEMPLAZADA por AD-87** (§4.4, §16). |
+| **C-1** (CR-19-06) | §4.3/§5.3 asignaban a la **imputación (I2)** el **ledger** (`action_type='imputacion'`) y la **salida nativa** del quant del SV. | **Prevalencia AD-91 (D-I2-12):** I2 es **documental y sin efecto en stock**; el **ledger `imputacion`** y la **salida nativa** se ejecutan en **I3**. No se añade `action_type='imputacion'` ni se toca `stock.quant`/`picking`/`move` en I2. |
+| **C-2** (CR-19-07) | §5.3/§7.3.2 ampliaban `sv_available_m3`/`_sv_balance_values` con las **imputaciones activas**, mezclándolo con el **saldo documental**. | **Prevalencia AD-91 (D-I2-12/13):** `sv_available_m3` **no se altera en I2**; el **saldo documental de consolidación** es una magnitud **propia**, computada solo desde imputaciones activas/aplicadas no revertidas del **modelo nuevo**, distinta de `stock.quant`, de `sv_available_m3` y de la merma documental (no automática). La ampliación del ledger rige **desde I3**. |
+| **C-3** (CR-19-08) | §5.1/§7 usaban `picking_id` como **idempotencia** y no distinguían **severidad** etiqueta-side de SV-side; `AL-01..AL-07` quedaban ambiguos. | **Prevalencia AD-91 (D-I2-16/17):** **idempotencia por clave documental propia** (no `picking_id`; el reintento no duplica cabecera/líneas/auditorías/consumo); **duro** etiqueta-side (Σ imputaciones ≤ volumen nominal editable, rechazo) y **blando** SV-side (advertir + motivo + `deviation`, permitir aplicar); **sin tolerancias ni `AL-01..AL-07` en I2**. |
 
 ### 13.3 Contradicciones/deudas abiertas (sin decidir)
 
@@ -433,6 +459,8 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 ---
 
 ## 15. Plan de pruebas T-01..T-12 [DISEÑO]
+
+> **Alcance por fase (AD-91).** La aceptación de **I2** usa **T-01..T-03 y T-06**; los casos con **salida nativa/quant/ledger** (**T-04, T-05, T-07, T-11**) y la **merma** (**T-10**) pertenecen a **I3**/fases posteriores.
 
 Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` y del ledger SV antes/después**. Cada clase declara su fase explícitamente (`@tagged('post_install', '-at_install', …)`, `INDICE_DOCUMENTACION.md` §9).
 
@@ -497,13 +525,16 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 **Corrección AD-89 (2026-10-02, rama `feat/procesadores-guardas-20261002`):** `madenat.processor.shipment.wizard` calcula **físico / reservado por otros / libre** con APIs nativas de `stock.quant` y comparación consciente del redondeo UoM; el **libre** es el techo del envío; la **desviación** (motivo + **un único** evento `deviation`) se reserva a una diferencia frente a una **referencia previa persistida** (inexistente en I1). Auditoría `processor_shipment` **idempotente** (campo `picking_id`; reintentar no duplica picking/movimientos/auditoría). Comportamiento de **backorder** reproducido y documentado (T7).
 
 ### I2 — Consolidación / imputación documental (etiquetas procesadas → SV) — ⏳ PENDIENTE
-- **Alcance (AD-87/AD-90):** modelo **`madenat.sv.imputation`** (+`.line`, +`.sv.line`) que materializa la **consolidación documental** de **etiquetas procesadas contra uno o varios SV**; estados §6, motivo/`deviation_flags`, secuencia. **No** es producción, retorno físico ni genealogía lote-a-lote.
-- **Dependencias:** I1; `madenat.sv.operation` (AD-79/AD-80); semántica **AD-90** (§2, §3, §5.4, §7.3).
-- **Riesgos:** R-19-04; complejidad de la relación N:M.
-- **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; **sin efectos en stock** en `draft`/`pending`; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados); válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo.
-- **Estado:** **PENDIENTE** (no implementado). **AD-90 no cambia su alcance ni lo declara implementado.**
+- **Alcance cerrado (AD-91, D-I2-11..D-I2-19):** modelo **documental aditivo** `madenat.sv.imputation` (+`.line`, +`.sv.line`) en **`madenat_lumber_logistics`**; **cabecera por guía de procesados** (`guia_processing_id`), **una** imputación de trabajo `draft`/`pending` por guía; reparto **N:M** etiqueta↔SV con **volumen nominal editable**; estados `draft/pending/applied/reversed/cancelled`; motivo/`deviation_flags`; **idempotencia por clave documental propia** (no `picking_id`); **inmutabilidad** de `applied` (reversa + nueva). **Sin** efecto en `stock.quant`/`stock.picking`/`stock.move`; **sin** ledger `imputacion` ni cambio a `sv_available_m3`; **sin** costo; **sin** merma automática; **sin** genealogía.
+- **Integridad (D-I2-16):** **duro** etiqueta-side (Σ imputaciones activas/aplicadas no revertidas ≤ volumen nominal editable, rechazo); **blando** SV-side (saldo documental superado ⇒ advertencia + motivo + `deviation`, permite aplicar). **Sin tolerancias ni `AL-01..AL-07` en I2.**
+- **Saldos (D-I2-13):** el **saldo documental de consolidación** se computa solo desde imputaciones activas/aplicadas no revertidas del modelo nuevo, **distinto** de `stock.quant` (físico) y de `sv_available_m3` (ledger).
+- **Dependencias:** I1 (procesador, `processor_location_id`, ubicación interna, saldo físico); `madenat.guia.processing` y `stock.lot` (**sin moverlos de core**); semántica **AD-90** (§2, §3, §5.4, §7.3). **No** depende del ledger.
+- **Riesgos:** R-19-04; complejidad de la relación N:M; confundir las tres fuentes de saldo (físico / `sv_available_m3` / documental).
+- **Aceptación:** T-01..T-03, T-06; CRUD con seguridad por rol; **sin efectos en stock**; **cuatro categorías de saldo** distinguibles (físico / documental pendiente / procesados pendientes de imputar / procesados ya imputados) más el **saldo documental** computado; válidos los **dos órdenes temporales** (etiquetas→consolidación y consolidación→etiquetas) sin bloqueo; **dura** etiqueta-side verificada; **blanda** SV-side con motivo + `deviation`; **idempotencia** por clave documental propia; **inmutabilidad/reversa** de `applied`.
+- **Estado:** **PENDIENTE** (no implementado). **AD-90/AD-91 no lo declaran implementado.**
 
 ### I3 — Salida nativa del SV + ledger `imputacion` + invariantes
+> **Único punto de salida nativa del SV (AD-91):** el efecto físico (ledger `action_type='imputacion'` + `stock.quant`) se materializa **aquí**, no en I2.
 - **Alcance:** valor `action_type='imputacion'`; vínculo `imputation_id`; `stock.move` hacia `Virtual Locations/Production`; idempotencia `picking_id`; invariantes §7.3.
 - **Dependencias:** I2; AD-82/AD-84; patrón `_get_or_create_consumption_picking`.
 - **Riesgos:** R-19-01/R-19-02 (doble descuento / desalineación).
@@ -570,3 +601,4 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 <!-- creado: 2026-10-01 — CANON/19 Imputación SV (etiqueta→SV) y saldo por procesador. Decisiones D1–D10 del usuario. Especificación, sin cambios de código/datos/parámetros. -->
 <!-- actualizado: 2026-10-01 (2, Fase A) — numeración §16 (manda la de CANON/19): trabajo hecho = bloque I0; I1 canónico pendiente con alcance ampliado (envío a procesador, recepción directa, contenedores con lotes en procesador); I2 sin cambios. §14/§17 alineados. -->
 <!-- actualizado: 2026-10-02 (4) — AD-90: semántica de inventario en procesador (custodia operativa MADENAT, pendiente de consolidación documental); recepción directa y transferencia interna equivalentes; dos órdenes temporales válidos; cuatro categorías de saldo; I2 refinado a consolidación/imputación documental y sigue PENDIENTE. Complementa AD-87/88/89. Solo documentación. -->
+<!-- actualizado: 2026-10-02 (5) — AD-91: I2 acotado a documental sin efecto en stock; modelo aditivo madenat.sv.imputation/.line/.sv.line; salida nativa + ledger imputacion a I3; saldo físico / sv_available_m3 / documental separados; cabecera por guía, inmutabilidad/reversa e idempotencia por clave documental propia; severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->

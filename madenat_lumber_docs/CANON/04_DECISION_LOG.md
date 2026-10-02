@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.15.1
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo. -->
+**Versión documental:** 12.16.0
+**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2336,7 +2336,54 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 
 ---
 
+### AD-91 (2026-10-02) — Modelo documental de imputación SV por guía procesada (I2)
+
+> **Estado: ✅ APROBADA (decisiones del usuario D-I2-11..D-I2-19 del 2026-10-02).** Fija el **alcance documental** de la fase **I2**: la **consolidación/imputación declarada** etiqueta→SV se materializa en un **modelo documental aditivo** y **sin efecto en stock**. **Prevalencia:** esta AD **prevalece** sobre `19` §4.3/§5.3/§7.3 en todo lo relativo al **alcance de I2** (efecto físico, saldo `sv_available_m3` e idempotencia), y **complementa** AD-87/AD-88/AD-89/AD-90. Norma: `19_IMPUTACION_SV_Y_PROCESADORES.md` §2, §4, §5, §6, §7, §13.2, §16. **No autoriza cambios de código, datos, parámetros, vistas, ACL ni migraciones** en esta pasada (documental).
+
+**Contexto.** AD-87 especificó la imputación como **vínculo oficial** etiqueta→SV y su **efecto físico** (ledger `imputacion` + salida nativa del quant del SV). La **investigación I2** documentó tres contradicciones (**C-1**, **C-2**, **C-3**) entre ese diseño y el reparto de fases de §16: (C-1) el **efecto físico** se atribuía a **I2**; (C-2) `sv_available_m3` absorbía las **imputaciones** mezclándose con el **saldo documental**; (C-3) la **idempotencia** dependía de `picking_id` y la **severidad** no distinguía **etiqueta-side** de **SV-side**. El usuario **acota I2 a lo documental** y **reasigna** el efecto físico a **I3**, el costo a **I5** y la merma/cierre a fases **posteriores**.
+
+**Decisión.**
+1. **D-I2-11 — Modelo documental aditivo.** Se adopta la **Alternativa A**: modelos nuevos `madenat.sv.imputation`, `madenat.sv.imputation.line` y `madenat.sv.imputation.sv.line`. **No** se extiende el **ledger actual** (`madenat.sv.operation`) como **cabecera**.
+2. **D-I2-12 — I2 no toca stock.** I2 **no** modifica `stock.quant`, `stock.picking` ni `stock.move`, y **no** genera **salida nativa**. **No** se añade `action_type='imputacion'` al ledger SV y **no** se altera `_sv_balance_values`/`sv_available_m3` en I2.
+3. **D-I2-13 — Saldo documental propio.** El **saldo documental de consolidación** se calcula **exclusivamente** desde **imputaciones activas/aplicadas no revertidas** del **modelo nuevo**. Es **distinto** de: (a) **saldo físico** (`stock.quant`); (b) **`sv_available_m3`** del ledger vigente; (c) **merma documental**, que **no** se registra automáticamente.
+4. **D-I2-14 — Ubicación del módulo.** I2 vive en **`madenat_lumber_logistics`**. **Depende de I1**: procesador, `processor_location_id`, saldo físico y ubicación interna. Consume `stock.lot` y `madenat.guia.processing` existentes **sin moverlos de core**.
+5. **D-I2-15 — Organización por guía de procesados.** (a) una guía puede contener **muchas etiquetas**; (b) una etiqueta puede **distribuir** su **volumen nominal editable** entre **varios SV**; (c) un SV puede intervenir en imputaciones de **varias guías**; (d) una guía solo puede tener **una** imputación de trabajo **`draft`/`pending`**; (e) las imputaciones **`applied`/`reversed`** quedan como **historia**; (f) una imputación **`applied` es inmutable**: se corrige con **reversa + nueva imputación**, nunca editando ni borrando historia.
+6. **D-I2-16 — Integridad.** (a) **duro (etiqueta-side):** una **etiqueta** no puede exceder su **volumen nominal editable** al sumar imputaciones activas/aplicadas no revertidas; (b) **blando (SV-side):** un **SV** puede superar su **saldo documental disponible**; se **advierte**, se **exige motivo** y se **audita `deviation`**, pero **se permite aplicar**; (c) **no** se inventan tolerancias ni reglas `AL-01..AL-07` en I2.
+7. **D-I2-17 — Idempotencia.** Clave **documental propia**; **no** se usa `picking_id`. El reintento **no duplica** cabecera, líneas, auditorías ni consumo documental.
+8. **D-I2-18 — Costos fuera de I2.** Los costos corresponden a **I5**: **no** se crean campos de costo, reglas de prorrateo ni `stock.lot.cost.line` ahora.
+9. **D-I2-19 — Saldo SV abierto.** **No** se registra **merma automática**. **Cierre, regularización o merma explícita** son **fases posteriores**.
+
+**Alcance (I2 documental).** Modelos `madenat.sv.imputation` + `.line` + `.sv.line`; cabecera **por guía** (`guia_processing_id`) con **una** imputación de trabajo `draft`/`pending` por guía; estados `draft`/`pending`/`applied`/`reversed`/`cancelled`; reparto **N:M** etiqueta↔SV con **volumen nominal editable**; regla **dura** etiqueta-side y **blanda** SV-side (motivo + `deviation`); **idempotencia** por clave documental propia; **inmutabilidad** de `applied` con **reversa + nueva**; **saldo documental** derivado de imputaciones activas/aplicadas no revertidas.
+
+**No alcance.** Sin efecto en `stock.quant`/`stock.move`/`stock.picking`; sin salida nativa; sin `action_type='imputacion'` ni cambios en `_sv_balance_values`/`sv_available_m3`; sin costo (`cost_per_m3_usd`/`stock.lot.cost.line`/prorrateo) — **I5**; sin merma automática, cierre ni regularización — fases **posteriores**; sin genealogía (`parent_lot_id` opcional sigue en **I6**); sin migración de datos históricos; sin modelos, vistas, ACL ni migraciones en esta pasada documental.
+
+**Invariantes (documentales, I2).**
+1. Una **etiqueta** no excede su **volumen nominal editable** (Σ imputaciones activas/aplicadas no revertidas) — **duro**.
+2. Un **SV** puede exceder su **saldo documental disponible** con **advertencia + motivo + `deviation`** — **blando**, permite aplicar.
+3. **Una** imputación de trabajo (`draft`/`pending`) por **guía**.
+4. La imputación **`applied` es inmutable**; toda corrección es **reversa + nueva imputación**.
+5. La **idempotencia** usa **clave documental propia** (no `picking_id`); el reintento **no duplica**.
+6. El **saldo documental de consolidación** se computa **solo** desde imputaciones activas/aplicadas **no revertidas** del modelo nuevo, y es **distinto** de `stock.quant` y de `sv_available_m3`.
+7. **Sin** efecto en stock y **sin** merma automática en I2.
+
+**Relación con AD-87/AD-88/AD-89/AD-90.** **AD-87** define el **modelo objetivo** (imputación declarada etiqueta→SV, sin genealogía); **AD-91 acota la fase I2 a lo documental** y **reasigna el efecto físico** (ledger + salida nativa) a **I3**. **AD-88** rige la **severidad blanda** (advertir, motivar, auditar); **AD-91 precisa** que en I2 la severidad es **dura solo etiqueta-side** y **blanda SV-side**. **AD-89** aporta el **saldo físico** (`stock.quant` + `Procesadores/<X>`, sin modelo persistente) y **AD-90** la **semántica** de custodia operativa y las **cuatro categorías de saldo**; **AD-91 añade** el **saldo documental** como categoría **propia y computada**. Prevalencia: **AD-91 prevalece sobre `19` §4.3/§5.3/§7.3** en el **alcance de I2**; AD-87/AD-89/AD-90 permanecen vigentes para el modelo objetivo y las fundaciones.
+
+**Impacto.** Fija **I2 como documental sin efecto en stock**; **separa** `stock.quant` (físico), `sv_available_m3` (ledger, **intacto en I2**) y **saldo documental** (modelo nuevo); habilita **cabecera por guía**, **inmutabilidad/reversa** e **idempotencia documental**; confirma **costo en I5** y **merma/cierre posterior**.
+
+**Riesgos.** (R-19-04) imputación declarada sin evidencia física (por diseño; mitigado por motivo + auditoría). (R-19-06) exceso de volumen: **duro** etiqueta-side, **blando** SV-side. Confundir las **tres fuentes de saldo** (físico / `sv_available_m3` / documental). Reabrir historia **aplicada** en lugar de **reversar**. Duplicación por reintento si la **clave documental** no es estable.
+
+**Criterios de aceptación documentales.**
+- `19` §4/§5/§6/§7/§13.2/§16 declaran **I2 documental sin efecto en stock** y la **salida nativa/ledger en I3**.
+- Se distinguen **saldo físico**, **`sv_available_m3`** y **saldo documental** (computado del modelo nuevo).
+- **C-1/C-2/C-3** resueltas y registradas en `19` §13.2 (prevalencia explícita, sin borrar historia).
+- **I2 permanece PENDIENTE**; sin contradicciones abiertas con AD-87..AD-90.
+
+**Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` (§2, §4, §5, §6, §7, §13.2, §16); **AD-87**, **AD-88**, **AD-89**, **AD-90**; `05_BACKLOG.md` (I2 con alcance cerrado); evidencia de código de `19` §18 (`madenat_sv_operation.py`, `stock_lot.py`, `madenat_guia_processing.py`, `res_partner.py`).
+
+---
+
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
+<!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 
 
 
