@@ -4801,39 +4801,60 @@ class MadenatGuiaProcessing(models.Model):
         return created_pickings
 
     def _sv_create_volume_return(self, picking, moves, lines, lot, required_qty):
-        """Crea y valida el albarán de retorno del lote SV (una sola vez)."""
+        """Crea y valida el albarán de retorno del lote SV (una sola vez).
+
+        P0-R / F-02 — Alternativa B (retorno manual CONTROLADO) con semántica
+        nativa Odoo 18. El wizard estándar `stock.return.picking` NO se usa
+        porque resuelve el lote por reserva (``action_assign``) a nivel de
+        movimiento y puede consumir quants de un lote distinto del SV; la
+        reversa SV exige lote explícito único, idempotencia por movimiento
+        origen y pre-validación de saldo sin estado parcial. Justificación
+        completa en madenat_lumber_core/CHANGELOG.md (sección P0-R / F-02).
+
+        Semántica nativa preservada:
+        * Tipo de operación y ubicaciones DERIVADOS del picking origen y de la
+          configuración nativa (`picking_type_id.return_picking_type_id`),
+          replicando
+          `stock.return.picking._prepare_picking_default_values_based_on`;
+          nunca se codifican valores fijos.
+        * Relaciones NATIVAS de retorno: `origin_returned_move_id` (y su
+          inversa `returned_move_ids`), `move_orig_ids`, `return_id` y
+          `to_refund` (reembolso de valorización).
+        * El `lot_id` es EXPLÍCITO en cada `stock.move.line`.
+        * Contexto de validación: SOLO `skip_backorder` (única clave del flujo
+          consumida por Odoo 18 en `stock.picking._pre_action_done_hook`). Se
+          ELIMINAN `force_validate`, `skip_immediate` e `immediate_transfer`,
+          inertes en la API auditada.
+        """
         self.ensure_one()
-        warehouse = picking.picking_type_id.warehouse_id
-        return_type = self.env['stock.picking.type'].search([
-            ('code', '=', 'incoming'),
-            ('warehouse_id', '=', warehouse.id if warehouse else False),
-            ('active', '=', True),
-            ('sequence_code', 'not ilike', 'EMB'),
-        ], limit=1)
-        if not return_type:
-            return_type = self.env['stock.picking.type'].search([
-                ('code', '=', 'incoming'),
-                ('active', '=', True),
-                ('sequence_code', 'not ilike', 'EMB'),
-            ], limit=1)
-        if not return_type:
+        # ── 1. TIPO DE OPERACIÓN Y UBICACIONES (derivación nativa) ─────────
+        return_type = picking.picking_type_id.return_picking_type_id
+        if return_type and return_type.code == 'incoming':
+            location_dest = return_type.default_location_dest_id
+        else:
+            location_dest = picking.location_id
+        picking_type = return_type or picking.picking_type_id
+        if not picking_type or not location_dest:
             raise UserError(_(
-                'No existe un tipo de operación "Recepción" (incoming) activo '
-                'para reversar %s.') % picking.name)
+                'No fue posible determinar el tipo de operación o la ubicación '
+                'de destino para reversar %s.') % picking.name)
 
         with self.env.cr.savepoint():
             return_picking = self.env['stock.picking'].create({
-                'picking_type_id': return_type.id,
-                'partner_id': picking.partner_id.id,
-                'origin': 'Return of %s' % picking.name,
+                'picking_type_id': picking_type.id,
+                'partner_id': picking.partner_id.id or False,
+                'company_id': picking.company_id.id or self.env.company.id,
+                'origin': _('Return of %(picking_name)s',
+                            picking_name=picking.name),
                 'location_id': picking.location_dest_id.id,
-                'location_dest_id': picking.location_id.id,
+                'location_dest_id': location_dest.id,
+                'return_id': picking.id,
             })
             for move in moves:
                 move_lines = lines.filtered(lambda l: l.move_id == move)
                 qty = sum(move_lines.mapped('quantity'))
                 return_move = self.env['stock.move'].create({
-                    'name': 'Return of %s' % move.name,
+                    'name': _('Return of %(move_name)s', move_name=move.name),
                     'product_id': move.product_id.id,
                     'product_uom_qty': qty,
                     'product_uom': move.product_uom.id,
@@ -4841,8 +4862,12 @@ class MadenatGuiaProcessing(models.Model):
                     'location_id': move.location_dest_id.id,
                     'location_dest_id': move.location_id.id,
                     'origin_returned_move_id': move.id,
+                    'procure_method': 'make_to_stock',
                     'to_refund': True,
                 })
+                # Relación inversa nativa (equivalente al wizard estándar):
+                # el movimiento de retorno queda ligado a su origen.
+                return_move.move_orig_ids = [(4, move.id)]
                 # Trazabilidad de lote EXPLÍCITA (nunca quants de otro lote).
                 for line in move_lines:
                     self.env['stock.move.line'].create({
@@ -4857,14 +4882,7 @@ class MadenatGuiaProcessing(models.Model):
                     })
             return_picking.action_confirm()
             return_picking.action_assign()
-            return_picking.with_context(
-                force_validate=True,
-                skip_immediate=True,
-                skip_backorder=True,
-                immediate_transfer=True,
-            ).button_validate()
-            # Relación técnica de retorno (equivalente al wizard nativo).
-            return_picking.return_id = picking.id
+            return_picking.with_context(skip_backorder=True).button_validate()
         self.message_post(
             body=_(
                 '🏷️ <strong>Reversa por lote SV:</strong> albarán <b>%s</b> '
