@@ -267,5 +267,3 @@ class TestExcelTableDetection(TransactionCase):
         self.assertIsNone(res['declared_totals']['package_count'])
         self.assertTrue(
             any('ambiguo' in w for w in res['warnings']))
-
-

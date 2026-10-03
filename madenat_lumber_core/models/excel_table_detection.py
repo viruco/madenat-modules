@@ -602,4 +602,3 @@ def detect_excel_table_across_sheets(sheets, flow=None):
             warnings=['Ninguna hoja contiene una tabla estructurable.'],
             diagnosis=['sin_hoja_con_tabla'])
     return best[1]
-

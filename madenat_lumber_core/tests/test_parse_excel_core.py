@@ -514,6 +514,3 @@ class TestGuiaProcessingExcelParser(TransactionCase):
         self.assertEqual(len(result['lineas']), 3)
         lotes = [l['N° LOTE'] for l in result['lineas']]
         self.assertEqual(lotes, ['L-BLOCK', 'L-BLOCK', 'L-BLOCK'])
-
-
-
