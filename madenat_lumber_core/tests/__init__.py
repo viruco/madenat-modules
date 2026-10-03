@@ -31,3 +31,5 @@ from . import test_sv_dev_cleanup_param
 from . import test_p0r_acl
 from . import test_p0r_sv_return
 from . import test_p0r_upgrade
+# 🔩 P0-R (F-P0R-A) — contrato estático manifest↔XML (dependencias externas).
+from . import test_p0r_manifest_external_xml_dependencies
