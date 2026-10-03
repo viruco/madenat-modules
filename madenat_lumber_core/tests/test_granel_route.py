@@ -237,6 +237,18 @@ class TestGranelRouteCore(TransactionCase):
         self.assertTrue(service.consumption_picking_id,
                         "La guía service debe invocar _get_or_create_consumption_picking()")
 
+        # Contrato PRE-02: la recepción incoming del service queda validada
+        # (sin omitir el sanity check nativo) y sin duplicar el picking.
+        incoming = self.env['stock.picking'].search([
+            ('origin', '=', service.name),
+            ('picking_type_id.code', '=', 'incoming'),
+        ])
+        self.assertTrue(incoming, "El service debe tener su recepción incoming")
+        self.assertEqual(len(incoming), 1,
+                         "No debe duplicarse la recepción incoming del service")
+        self.assertEqual(incoming.state, 'done',
+                         "La recepción incoming del service debe quedar validada")
+
         # El volumen descontado coincide con lo declarado en source_lot_line_ids.
         self.assertAlmostEqual(self._lot_qty_at_stock(granel_lot), 7.0, places=3)
 

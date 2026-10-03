@@ -1208,6 +1208,14 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
             'name': 'Madera Bruta Maqueada',
             'code': 'FIX1-OPEN',
         })
+        # Producto válido Odoo 18 para las líneas de staging del candado.
+        # El filtro legado `type='product'` no existe en Odoo 18 (el tipo se
+        # redujo a consu/service/combo) y dejaba `product_id` en NULL sobre un
+        # campo requerido. Se crea explícitamente un producto almacenable.
+        cls.product = cls.env['product.product'].create({
+            'name': 'FIX1 Lock Product',
+            'is_storable': True,
+        })
 
     def _make_guia(self, name, profile='f5085'):
         return self.GuiaModel.create({
@@ -1250,9 +1258,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-S2S',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,
@@ -1272,9 +1278,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-ALLOW',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,
@@ -1298,9 +1302,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-METRIC',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,

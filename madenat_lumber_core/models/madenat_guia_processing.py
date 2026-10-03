@@ -2371,6 +2371,51 @@ class MadenatGuiaProcessing(models.Model):
                             line.picked = True
 
             # =======================================================
+            # 🛡️ FASE C.1: GARANTÍA DE CANTIDAD PROCESABLE (recepción)
+            # El picking incoming debe llegar a button_validate() con cantidad
+            # procesable derivada de la guía. Se usa la cantidad ya declarada
+            # por el propio movimiento (product_uom_qty, construida desde el
+            # volumen del lote de la guía) y, si faltase, el volumen del lote
+            # enlazado. Se reutiliza la move line existente o se crea sólo la
+            # necesaria; nunca se crean pickings ni moves nuevos, y el sanity
+            # check nativo de Odoo se conserva sin omitirse.
+            # =======================================================
+            for move in picking.move_ids.filtered(
+                    lambda m: m.state not in ('done', 'cancel')):
+                rounding = move.product_uom.rounding
+                if float_compare(
+                        move.quantity, 0.0, precision_rounding=rounding) > 0:
+                    continue
+                qty = move.product_uom_qty
+                if (float_compare(qty, 0.0, precision_rounding=rounding) <= 0
+                        and move.lot_ids):
+                    qty = move.lot_ids[0].volumen_m3
+                if float_compare(qty, 0.0, precision_rounding=rounding) <= 0:
+                    continue
+                move.quantity = qty
+                if 'picked' in move._fields:
+                    move.picked = True
+                if move.move_line_ids:
+                    for line in move.move_line_ids:
+                        if 'picked' in line._fields:
+                            line.picked = True
+                else:
+                    line_vals = {
+                        'move_id': move.id,
+                        'picking_id': picking.id,
+                        'product_id': move.product_id.id,
+                        'lot_id': move.lot_ids[:1].id if move.lot_ids else False,
+                        'quantity': qty,
+                        'product_uom_id': move.product_uom.id,
+                        'location_id': move.location_id.id,
+                        'location_dest_id': move.location_dest_id.id,
+                        'company_id': picking.company_id.id,
+                    }
+                    if 'picked' in self.env['stock.move.line']._fields:
+                        line_vals['picked'] = True
+                    self.env['stock.move.line'].create(line_vals)
+
+            # =======================================================
             # 🏁 FASE D: VALIDACIÓN
             # =======================================================
             ctx = picking.env.context.copy()
