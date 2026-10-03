@@ -245,4 +245,3 @@ class MadenatGuiaProcessingDocumental(models.Model):
             'res_model': 'madenat.guia.processing',
             'res_id': self.id, 'view_mode': 'form', 'target': 'current',
         }
-

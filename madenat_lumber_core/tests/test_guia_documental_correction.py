@@ -339,4 +339,3 @@ class TestGuiaDocumentalCorrection(TransactionCase):
         # No acepta vals arbitrarios: el ejecutor solo lee la lista blanca.
         self.assertNotIn('vals', inspect.signature(
             type(guia)._cdp_apply_documental_correction).parameters)
-
