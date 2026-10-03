@@ -3,8 +3,53 @@
 
 Todos los registros son aislados (TransactionCase): no se usan ni modifican la
 Guía 4495589, el lote SV00000000008 (id 3772) ni ningún dato histórico.
+
+Contrato Core de fixtures (P0-R)
+--------------------------------
+La fuente de verdad de las fixtures es el Core limpio (``madenat_lumber_core``
+sobre ``origin/main`` + P0-R), no los addons externos ni la base histórica
+``madenat_test``. ``_sv_make_guia()`` valida sus ``vals`` contra
+``madenat.guia.processing._fields`` mediante ``_sv_core_guia_vals()``:
+
+* admite solo las claves de la lista blanca ``SV_CORE_GUIA_FIELDS``;
+* rechaza explícitamente las claves de addon externo conocidas
+  (``SV_GUIA_FORBIDDEN_EXTERNAL_FIELDS``: ``conciliation_status`` y
+  ``volume_pdf_m3``) en vez de producir un ``ValueError: Invalid field`` opaco;
+* falla con diagnóstico completo ante cualquier clave desconocida, para que las
+  regresiones por contaminación de fixtures se detecten de inmediato y no en
+  ciclos sucesivos de validación.
 """
 import base64
+
+
+# ── Contrato Core de `madenat.guia.processing` ──────────────────────────────
+# Lista blanca corta y explícita de los campos que la fábrica SV puede enviar a
+# `create()`. TODOS deben existir en el Core limpio. `vol_comercial_pdf` es el
+# campo real del Core ("Vol. Guía PDF (m³)") que reemplaza al externo
+# `volume_pdf_m3`.
+SV_CORE_GUIA_FIELDS = (
+    'name',
+    'date_emission',
+    'partner_id',
+    'assignment_location_id',
+    'state',
+    'tipo_recepcion',
+    'vol_comercial_pdf',
+    'piezas_declaradas',
+    'packing_pieces_declared',
+    'packing_package_count_declared',
+    'guide_pdf_file',
+    'guide_pdf_filename',
+)
+# Campos Core obligatorios que la fábrica debe proporcionar siempre.
+SV_CORE_GUIA_REQUIRED_FIELDS = ('name', 'date_emission')
+# Claves aportadas por addons EXTERNOS (p. ej. ingesta) que NO forman parte del
+# contrato Core. Se declaran para emitir un diagnóstico explícito si alguien
+# intenta reintroducirlas en una fixture.
+SV_GUIA_FORBIDDEN_EXTERNAL_FIELDS = frozenset({
+    'conciliation_status',   # addon externo de ingesta (regresión F-P0R-B).
+    'volume_pdf_m3',         # addon externo de ingesta (regresión F-P0R-D).
+})
 
 
 class SvTestCommon:
@@ -46,8 +91,47 @@ class SvTestCommon:
         })
 
     # ── Fábricas ──────────────────────────────────────────────────────────
-    def _sv_make_guia(self, name='SV-GUIA-TEST', pdf_volume=40.315,
+    def _sv_core_guia_vals(self, candidate_vals):
+        """Valida ``candidate_vals`` contra el contrato Core de guía.
+
+        Devuelve una copia de los ``vals`` si cumplen el contrato; si no, falla
+        con un diagnóstico explícito (qué clave, desde qué fixture, por qué).
+        """
+        Guia = self.env['madenat.guia.processing']
+        forbidden = sorted(
+            key for key in candidate_vals
+            if key in SV_GUIA_FORBIDDEN_EXTERNAL_FIELDS)
+        if forbidden:
+            raise AssertionError(
+                'Fixture SV envía campos de addon EXTERNO prohibidos en una '
+                'instalación limpia de Core: %s. Use los campos Core '
+                'equivalentes de SV_CORE_GUIA_FIELDS.' % forbidden)
+        unknown = sorted(
+            key for key in candidate_vals
+            if key not in SV_CORE_GUIA_FIELDS)
+        if unknown:
+            raise AssertionError(
+                'Fixture SV envía claves ajenas al contrato Core de '
+                'madenat.guia.processing: %s. Lista blanca permitida: %s'
+                % (unknown, list(SV_CORE_GUIA_FIELDS)))
+        broken = sorted(
+            field for field in SV_CORE_GUIA_FIELDS
+            if field not in Guia._fields)
+        if broken:
+            raise AssertionError(
+                'Contrato Core roto: madenat.guia.processing debe definir %s'
+                % broken)
+        missing = sorted(
+            field for field in SV_CORE_GUIA_REQUIRED_FIELDS
+            if field not in candidate_vals)
+        if missing:
+            raise AssertionError(
+                'Fixture SV omite campos Core obligatorios: %s' % missing)
+        return dict(candidate_vals)
+
+    def _sv_guia_vals(self, name='SV-GUIA-TEST', pdf_volume=40.315,
                       declared_pieces=0, packing_pieces=0, **extra):
+        """``vals`` de guía conformes al contrato Core (sin ejecutar create)."""
         vals = {
             'name': name,
             'partner_id': self.partner.id,
@@ -55,17 +139,24 @@ class SvTestCommon:
             'state': 'verified',
             'tipo_recepcion': 'granel',
             'date_emission': '2026-09-24',
-            # F-P0R-B: no se envía `conciliation_status` (campo del addon
-            # externo de ingesta, inexistente en Core limpio). El Core calcula
-            # su propio `documental_conciliation_state` (computado, store=True).
+            # F-P0R-D: el volumen de la Guía PDF es `vol_comercial_pdf` (campo
+            # real del Core). Antes se enviaba `volume_pdf_m3`, aportado por el
+            # addon externo de ingesta e inexistente en el Core limpio.
+            'vol_comercial_pdf': pdf_volume,
             'guide_pdf_file': base64.b64encode(b'%PDF-fake'),
             'guide_pdf_filename': 'guia.pdf',
-            'volume_pdf_m3': pdf_volume,
             'piezas_declaradas': declared_pieces,
             'packing_pieces_declared': packing_pieces,
         }
         vals.update(extra)
-        return self.Guia.create(vals)
+        return self._sv_core_guia_vals(vals)
+
+    def _sv_make_guia(self, name='SV-GUIA-TEST', pdf_volume=40.315,
+                      declared_pieces=0, packing_pieces=0, **extra):
+        """Guía aislada conforme al contrato Core (``_sv_core_guia_vals``)."""
+        return self.Guia.create(self._sv_guia_vals(
+            name=name, pdf_volume=pdf_volume, declared_pieces=declared_pieces,
+            packing_pieces=packing_pieces, **extra))
 
     def _sv_make_lot(self, guia, label='SV00000000091', volume=40.300,
                      add_to_guide=True):

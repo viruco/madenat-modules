@@ -76,7 +76,9 @@ class TestSvConcurrency(SingleTransactionCase):
             'state': 'verified',
             'tipo_recepcion': 'granel',
             'date_emission': '2026-09-24',
-            'volume_pdf_m3': 40.315,
+            # F-P0R-D: el volumen de la Guía PDF es `vol_comercial_pdf` (campo
+            # real del Core); `volume_pdf_m3` pertenece a un addon externo.
+            'vol_comercial_pdf': 40.315,
         })
         cls.lot = cls.StockLot.create({
             'name': SV_TEST_LABEL,

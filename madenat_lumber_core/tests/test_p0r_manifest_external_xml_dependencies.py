@@ -23,6 +23,15 @@ atributos que portan XML IDs reales — ``id``/``ref``/``parent``/``action``/
 el texto libre (comentarios, dominios de campo ni expresiones de vista), por lo
 que nombres de modelo (``stock.lot``), dominios (``parent.x``) o placeholders no
 generan falsos positivos.
+
+Integración con el runner de Odoo (P0-R, T-P0R-FIX-04)
+------------------------------------------------------
+El runner de Odoo solo recoge clases que heredan de ``BaseCase`` y exponen
+``test_tags``; una ``unittest.TestCase`` plana queda descartada por
+``TagsSelector`` (no tiene ``test_tags``). Por eso la clase de contrato hereda
+de ``TransactionCase`` y se etiqueta con ``p0r`` cuando Odoo está disponible,
+de modo que ``--test-tags p0r`` la ejecute. El módulo sigue siendo ejecutable de
+forma autónoma (gate estático sin Odoo) con ``python3 <este archivo>``.
 """
 
 import ast
@@ -30,6 +39,13 @@ import re
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+try:  # Integración opcional con el runner de Odoo (T-P0R-FIX-04).
+    from odoo.tests import tagged
+    from odoo.tests.common import TransactionCase as _OdooBaseCase
+except ImportError:  # pragma: no cover - entorno sin Odoo (gate estático).
+    tagged = None
+    _OdooBaseCase = None
 
 
 MODULE_ROOT = Path(__file__).resolve().parent.parent
@@ -122,11 +138,12 @@ def collect_missing_dependencies(manifest):
 
 
 
-class TestP0rManifestExternalXmlDependencies(unittest.TestCase):
-    """Contrato estático manifest <-> XML de vistas (F-P0R-A)."""
+class _ManifestContractChecks:
+    """Comprobaciones estáticas manifest <-> XML (sin dependencia de Odoo)."""
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls.manifest = load_manifest()
         cls.depends = set(cls.manifest.get('depends', []))
         cls.data_xml = [rel for rel, _path in iter_data_xml_paths(cls.manifest)]
@@ -183,5 +200,23 @@ class TestP0rManifestExternalXmlDependencies(unittest.TestCase):
                 rel, ", ".join(offenders)))
 
 
+# Clase integrada con el runner de Odoo (T-P0R-FIX-04): hereda de
+# ``TransactionCase`` y se etiqueta con ``p0r`` para ser recogida por
+# ``--test-tags p0r``. Solo se define cuando Odoo está instalado.
+if _OdooBaseCase is not None:
+    @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_core',
+            'p0r')
+    class TestP0rManifestExternalXmlDependencies(_ManifestContractChecks,
+                                                 _OdooBaseCase):
+        """Contrato estático manifest <-> XML de vistas (F-P0R-A)."""
+
+
 if __name__ == '__main__':
-    unittest.main()
+    # Ejecución autónoma sin Odoo (gate estático Fase 6): runner unittest plano,
+    # con independencia de que Odoo esté o no instalado en el entorno.
+    _Standalone = type(
+        'TestP0rManifestContractStandalone',
+        (_ManifestContractChecks, unittest.TestCase), {})
+    _suite = unittest.defaultTestLoader.loadTestsFromTestCase(_Standalone)
+    _result = unittest.TextTestRunner(verbosity=2).run(_suite)
+    raise SystemExit(0 if _result.wasSuccessful() else 1)
