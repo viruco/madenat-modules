@@ -144,6 +144,14 @@
                             invisible="not can_historical_reverse"
                             help="H1: reversión física asistida de producción histórica (sin llave fuerte G2). Selección explícita; retorno total nativo que preserva lotes, movimientos, quants e historial. No aplica a granel/SV, BT-04 ni producción G3."/>
 
+                    <!-- ✏️ CDP-V1: corrección documental preservada (solo documental).
+                         No cambia estado/stock/lotes/pickings/movimientos/retornos/costos. -->
+                    <button name="action_open_documental_correction_wizard"
+                            string="✏️ Corrección documental"
+                            type="object"
+                            class="btn-secondary"
+                            help="CDP-V1: corrige datos documentales (notas, fecha, OC documental, transportista, patio, totales declarados y nueva versión de adjuntos) sin modificar estado, stock, lotes, pickings, movimientos, retornos ni costos."/>
+
                     <button name="action_force_cancel"
                             string="🛡️ Cancelar Guía"
                             type="object"

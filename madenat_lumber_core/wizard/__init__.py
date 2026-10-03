@@ -8,3 +8,5 @@ from . import lumber_reception_reset_wizard
 from . import madenat_guia_processing_reopen_wizard
 # 🧭 H1: reversión física ASISTIDA de producción histórica (sin llave fuerte G2).
 from . import madenat_guia_processing_historical_reverse_wizard
+# ✏️ CDP-V1: corrección documental preservada (solo documental).
+from . import madenat_guia_processing_documental_correction_wizard
