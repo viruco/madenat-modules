@@ -43,3 +43,5 @@ from . import test_guia_production_reverse
 from . import test_guia_historical_reverse
 # B1: guard server-side contra revalidación física duplicada.
 from . import test_guia_revalidation_guard
+# CDP-V1: corrección documental preservada (solo documental).
+from . import test_guia_documental_correction
