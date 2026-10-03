@@ -129,17 +129,20 @@
         <!--   - account.menu_finance        MADENAT tiene rama propia       -->
         <!--     (Pagos a Proveedores ya fue reparentado a menu_finance_payments) -->
         <!--   - mail.channel_menu_root      Ruido, no es canal de negocio   -->
-        <!--   - contacts.menu_contacts      Gestionado vía proveedores      -->
-        <!--     dentro del flujo MADENAT                                    -->
+        <!--                                                                 -->
+        <!-- F-P0R-A (instalabilidad en base limpia): este módulo NO declara -->
+        <!-- el addon Contacts como dependencia — no lo usa funcionalmente   -->
+        <!-- (los contactos se gestionan vía proveedores con `res.partner`,  -->
+        <!-- provisto por `base`). Por eso ya no se referencia el menú raíz  -->
+        <!-- de la app Contacts: hacerlo rompía la carga XML en una base sin -->
+        <!-- ese addon instalado. En una base limpia dicha app no existe,    -->
+        <!-- por lo que el app switcher permanece igualmente depurado.       -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
 
         <menuitem id="account.menu_finance"
                   groups="base.group_system"/>
 
         <menuitem id="mail.channel_menu_root"
-                  groups="base.group_system"/>
-
-        <menuitem id="contacts.menu_contacts"
                   groups="base.group_system"/>
 
     </data>

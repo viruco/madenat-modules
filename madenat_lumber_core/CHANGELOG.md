@@ -6,6 +6,21 @@
 > `madenat_lumber_core/`.
 
 ### Fixed
+- **F-P0R-A (BLOQUEANTE) — Instalabilidad en base limpia: referencia externa al
+  addon Contacts sin declarar.** `views/madenat_views_extensions.xml`
+  (saneamiento C15 del *app switcher*) referenciaba `contacts.menu_contacts` sin
+  declarar `contacts` en `depends`; en una base limpia la carga XML fallaba con
+  `odoo.tools.convert.ParseError` (`The ID "contacts.menu_contacts" refers to an
+  uninstalled module`). **Alternativa B (desacople):** se retira la referencia,
+  que era accesoria (ocultar el menú raíz de esa app a no-administradores). El
+  Core no usa funcionalmente el addon Contacts — los contactos se gestionan vía
+  `res.partner`, provisto por `base` y ya cubierto por `sale`/`purchase`/
+  `account` — por lo que no se agrega una dependencia de módulo por un único
+  menú. Preserva la navegación funcional (se conservan `account.menu_finance` y
+  `mail.channel_menu_root`) y corrige la instalación limpia de
+  `madenat_lumber_core`. Cobertura estática nueva:
+  `tests/test_p0r_manifest_external_xml_dependencies.py` (contrato manifest↔XML,
+  sin ORM ni base de datos).
 - **F-01 (BLOQUEANTE) — ACL mínimas del Programa SV.** Se incorporan las ACL
   operativas de `madenat.sv.operation` y de los asistentes `madenat.sv.rename.
   wizard`, `madenat.sv.volume.regularize.wizard`, `madenat.sv.rebaja.wizard` y
