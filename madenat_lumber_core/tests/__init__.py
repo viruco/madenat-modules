@@ -27,3 +27,7 @@ from . import test_sv_concurrency
 from . import test_sv_reverse_ui
 # 🧪 Modo A autoservicio sin `--test-enable` (vía ir.config_parameter).
 from . import test_sv_dev_cleanup_param
+# 🔧 P0-R — remediación local de la fundación Core/SV (F-01/F-02/F-04).
+from . import test_p0r_acl
+from . import test_p0r_sv_return
+from . import test_p0r_upgrade
