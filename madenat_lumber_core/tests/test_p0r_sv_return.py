@@ -50,12 +50,19 @@ class TestP0rSvReturn(SvTestCommon, TransactionCase):
             lot.product_id, self.internal_loc, lot_id=lot)
 
     def _unrelated_lot(self, label, quantity):
+        """Lote ajeno (no-SV) con quant propio; devuelve el recordset creado.
+
+        F-P0R-G: antes no retornaba el registro, por lo que los tests que lo
+        usaban (`test_04`, `test_09`) recibían ``None`` y fallaban con
+        ``'NoneType' object has no attribute 'invalidate_recordset'``.
+        """
         other = self.StockLot.create({
             'name': label,
             'product_id': self.product.id,
             'company_id': self.company.id,
         })
         self._sv_add_quant(other, quantity)
+        return other
 
     # ── T-P0R-RET-01 ──────────────────────────────────────────────────────
     def test_01_retorno_trazable_relacion_nativa(self):
@@ -248,3 +255,23 @@ class TestP0rSvReturn(SvTestCommon, TransactionCase):
         # ingreso: la recepción original).
         self.assertEqual(self.env['stock.picking'].search_count([
             ('origin', '=', guia.name)]), 1)
+
+    # ── T-P0R-FINAL-01 ────────────────────────────────────────────────────
+    def test_11_helper_lote_ajeno_devuelve_recordset(self):
+        """`_unrelated_lot()` devuelve un `stock.lot` válido y no toca el SV."""
+        guia = self._sv_make_guia('P0R-RET-11')
+        lot = self._sv_make_lot(guia, label='SV00000000610')
+        other = self._unrelated_lot('OTHER-P0R-RET-11', 12.5)
+
+        self.assertTrue(other, 'El helper debe devolver un recordset truthy')
+        self.assertIsInstance(other, type(self.StockLot))
+        self.assertEqual(other._name, 'stock.lot')
+        self.assertNotEqual(other, lot)
+        # Permite invalidar caché (era el fallo original F-P0R-G).
+        other.invalidate_recordset()
+        self.assertEqual(other.product_id, self.product)
+        self.assertEqual(other.company_id, self.company)
+        self.assertAlmostEqual(self._internal_available(other), 12.5, places=3)
+        # El lote SV no se altera.
+        lot.invalidate_recordset()
+        self.assertAlmostEqual(lot.volumen_m3, 40.300, places=3)

@@ -76,6 +76,26 @@ class TestP0rAcl(SvTestCommon, TransactionCase):
             ('group_id', '=', group.id),
         ])
 
+    def _physical_snapshot(self):
+        """Conteo de entidades físicas/valoración/auditoría.
+
+        Permite verificar ausencia de efectos tras un rechazo server-side.
+        ``stock.valuation.layer`` es ``None`` si ``stock_account`` no está
+        instalado (el Core limpio no lo incluye).
+        """
+        models = (
+            'stock.picking', 'stock.move', 'stock.move.line', 'stock.quant',
+            'stock.lot', 'madenat.sv.operation', 'madenat.audit.log',
+        )
+        snapshot = {
+            model: self.env[model].sudo().search_count([])
+            for model in models
+        }
+        layer = self.env.get('stock.valuation.layer')
+        snapshot['stock.valuation.layer'] = (
+            layer.sudo().search_count([]) if layer is not None else None)
+        return snapshot
+
 
     # ── T-P0R-ACL-01 ──────────────────────────────────────────────────────
     def test_01_operaciones_usa_ledger_y_wizards(self):
@@ -170,23 +190,64 @@ class TestP0rAcl(SvTestCommon, TransactionCase):
         with self.assertRaises(AccessError):
             draft.with_user(user_audit).unlink()
 
-    # ── T-P0R-ACL-03 ──────────────────────────────────────────────────────
+    # ── T-P0R-ACL-03 / T-P0R-FINAL-02 ─────────────────────────────────────
     def test_03_contabilidad_conserva_restricciones(self):
-        """Contabilidad no obtiene permisos no autorizados sobre stock."""
+        """Contabilidad lee el ledger SV pero NO ejecuta lo reservado a Auditoría.
+
+        F-P0R-H: la expectativa anterior (``stock.picking.create()`` denegado)
+        era inválida en Core: el grupo nativo "Invoicing" de ``account`` (que
+        ``account.group_account_manager`` implica) SÍ puede crear
+        ``stock.picking``. Se prueba el contrato REAL de escalamiento SV
+        (``_sv_required_approval_groups``): una regularización de volumen AL
+        ALZA exige el grupo Auditoría, con denegación server-side
+        (``action_register_approval`` / ``action_apply``), no por visibilidad.
+        """
         guia = self._sv_make_guia('P0R-ACL-03')
-        self._sv_make_lot(guia, label='SV00000000504')
+        lot = self._sv_make_lot(guia, label='SV00000000504')
         user_cont = self._make_user('p0r_cont_03', [self.group_cont])
 
+        # 1. Contabilidad SÍ puede leer el ledger SV (ACL P0-R lo permite).
         acl = self._acl(SV_LEDGER, self.group_cont)
         self.assertTrue(acl)
+        self.assertTrue(acl.perm_read)
         self.assertFalse(acl.perm_unlink)
-        # Contabilidad no tiene permiso de creación de stock nativo.
+        readable = self.Operation.with_user(user_cont).search(
+            [('lot_id', '=', lot.id)])
+        self.assertEqual(readable._name, SV_LEDGER)
+
+        # 2. Operación SV sensible: regularización AL ALZA (reservada a Auditoría).
+        baseline = lot.sv_regularized_baseline_m3 or 0.0
+        op = self.Operation.create({
+            'lot_id': lot.id,
+            'action_type': 'regularize_volume',
+            'new_volume_m3': baseline + 5.0,
+            'reason': 'Alza de baseline reservada a Auditoría (P0-R)',
+            'evidence_reference': 'P0R-ACL-03-EVID',
+        })
+        op.invalidate_recordset()
+        self.assertIn('auditoria', op._sv_required_approval_groups())
+
+        before = self._physical_snapshot()
+
+        # 3. Denegación server-side para el usuario de Contabilidad.
         with self.assertRaises(AccessError):
-            self.env['stock.picking'].with_user(user_cont).create({
-                'picking_type_id': self.warehouse.out_type_id.id,
-                'location_id': self.internal_loc.id,
-                'location_dest_id': self.customer_loc.id,
-            })
+            op.with_user(user_cont).action_register_approval()
+        with self.assertRaises(AccessError):
+            op.with_user(user_cont).action_apply()
+
+        # 4. Sin efectos físicos/trazabilidad tras el rechazo.
+        op.invalidate_recordset()
+        self.assertEqual(op.state, 'draft')
+        self.assertFalse(op.approved_by_id)
+        self.assertEqual(
+            before, self._physical_snapshot(),
+            'El rechazo no debe crear picking/move/move line/quant ni '
+            'auditoría parcial')
+
+        # 5. El grupo correcto (Auditoría) SÍ registra la aprobación autorizada.
+        op.action_register_approval()
+        op.invalidate_recordset()
+        self.assertEqual(op.approved_by_id, self.env.user)
 
     # ── T-P0R-ACL-04 ──────────────────────────────────────────────────────
     def test_04_usuario_sin_grupo_no_ejecuta_ni_forja(self):

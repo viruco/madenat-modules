@@ -40,12 +40,15 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-try:  # Integración opcional con el runner de Odoo (T-P0R-FIX-04).
+try:  # Integración con el runner de Odoo (T-P0R-FIX-04).
     from odoo.tests import tagged
-    from odoo.tests.common import TransactionCase as _OdooBaseCase
+    from odoo.tests.common import TransactionCase
 except ImportError:  # pragma: no cover - entorno sin Odoo (gate estático).
-    tagged = None
-    _OdooBaseCase = None
+    def tagged(*_args, **_kwargs):
+        """Decorador no-op cuando Odoo no está disponible (ejecución autónoma)."""
+        return lambda cls: cls
+
+    TransactionCase = unittest.TestCase
 
 
 MODULE_ROOT = Path(__file__).resolve().parent.parent
@@ -138,8 +141,15 @@ def collect_missing_dependencies(manifest):
 
 
 
-class _ManifestContractChecks:
-    """Comprobaciones estáticas manifest <-> XML (sin dependencia de Odoo)."""
+@tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_core', 'p0r')
+class TestP0rManifestExternalXmlDependencies(TransactionCase):
+    """Contrato estático manifest <-> XML de vistas (F-P0R-A).
+
+    F-P0R-I: los métodos ``test_*`` viven DIRECTAMENTE en ``__dict__`` de esta
+    clase (no en un mixin), de modo que el loader de Odoo los descubre bajo
+    ``--test-tags p0r``. Sin Odoo, ``TransactionCase`` degrada a
+    ``unittest.TestCase`` y el módulo sigue siendo ejecutable de forma autónoma.
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -200,23 +210,6 @@ class _ManifestContractChecks:
                 rel, ", ".join(offenders)))
 
 
-# Clase integrada con el runner de Odoo (T-P0R-FIX-04): hereda de
-# ``TransactionCase`` y se etiqueta con ``p0r`` para ser recogida por
-# ``--test-tags p0r``. Solo se define cuando Odoo está instalado.
-if _OdooBaseCase is not None:
-    @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_core',
-            'p0r')
-    class TestP0rManifestExternalXmlDependencies(_ManifestContractChecks,
-                                                 _OdooBaseCase):
-        """Contrato estático manifest <-> XML de vistas (F-P0R-A)."""
-
-
 if __name__ == '__main__':
-    # Ejecución autónoma sin Odoo (gate estático Fase 6): runner unittest plano,
-    # con independencia de que Odoo esté o no instalado en el entorno.
-    _Standalone = type(
-        'TestP0rManifestContractStandalone',
-        (_ManifestContractChecks, unittest.TestCase), {})
-    _suite = unittest.defaultTestLoader.loadTestsFromTestCase(_Standalone)
-    _result = unittest.TextTestRunner(verbosity=2).run(_suite)
-    raise SystemExit(0 if _result.wasSuccessful() else 1)
+    # Ejecución autónoma sin Odoo (gate estático Fase 6): unittest plano.
+    unittest.main(verbosity=2)
