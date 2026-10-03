@@ -1611,7 +1611,12 @@ class MadenatGuiaProcessing(models.Model):
             ('product_id', '=', product.id),
         ], order='id', limit=1)
         if orphan:
-            orphan.write({'volume_source_line_id': item.id})
+            # El enlace línea→SV es MUTABLE por diseño (ondelete='set null';
+            # la reapertura recrea las líneas). Se re-engancha únicamente ese
+            # enlace; la identidad inmutable (guía origen, lot_flow_type) no se
+            # toca. La asignación de campo ejecuta el mismo write() interno del
+            # ORM, por lo que conserva las guardas de stock.lot.
+            orphan.volume_source_line_id = item.id
             return orphan
 
         # 3. Alta: una etiqueta SV nueva para la línea elegible. La operación se
@@ -1635,22 +1640,26 @@ class MadenatGuiaProcessing(models.Model):
                     width_visual=item.width_visual,
                     subproducto_id=(
                         item.subproducto_id.id if item.subproducto_id else False),
+                    # 🏷️ F3.1-BUG-01 — La identidad inmutable de la etiqueta SV
+                    # y el puente de datos se incluyen en el CREATE inicial del
+                    # lote. Asignarlos después por write() es rechazado por la
+                    # guarda de inmutabilidad de stock.lot (y, dado que
+                    # volumen_m3/vol_shipment_m3 son campos protegidos SV,
+                    # también por la guarda de escritura directa de etiquetas).
+                    extra_create_vals={
+                        # Puente de datos extra (idéntico al flujo dimensional).
+                        'ref': item.lot_name or '',
+                        'length_ft': item.length_ft,
+                        'vol_shipment_m3': vol_shipment,
+                        'volumen_m3': vol_purchase,
+                        'width_visual': item.width_visual,
+                        'thickness_visual': item.thickness_visual,
+                        # Identidad inmutable de la etiqueta SV.
+                        'lot_flow_type': 'volume',
+                        'volume_source_guia_id': self.id,
+                        'volume_source_line_id': item.id,
+                    },
                 )
-                # Puente de datos extra (idéntico al flujo dimensional).
-                lot.write({
-                    'ref': item.lot_name or '',
-                    'length_ft': item.length_ft,
-                    'vol_shipment_m3': vol_shipment,
-                    'volumen_m3': vol_purchase,
-                    'width_visual': item.width_visual,
-                    'thickness_visual': item.thickness_visual,
-                })
-                # Identidad SV. No toca campos protegidos ⇒ supera las guardas.
-                lot.write({
-                    'lot_flow_type': 'volume',
-                    'volume_source_guia_id': self.id,
-                    'volume_source_line_id': item.id,
-                })
         except (IntegrityError, ValidationError):
             # Otra validación concurrente ya creó la etiqueta de esta línea:
             # se recupera la existente. Si no aparece, el error es real.
@@ -4280,7 +4289,8 @@ class MadenatGuiaProcessing(models.Model):
 
     def _create_or_get_lot(self, guia_ref, product, qty, vol_purchase, vol_shipment, vol_real, lot_name, lot_dims, precio_usd,
                        purchase_order=None, thickness_visual='', width_visual='', vol_mbf=0.0,
-                       technical_validation='pending', estado_trazabilidad='procesado', subproducto_id=False):
+                       technical_validation='pending', estado_trazabilidad='procesado', subproducto_id=False,
+                       extra_create_vals=None):
 
         """
         ✅ VERSIÓN MEJORADA v8.0: Busca/Crea lotes con ESTADOS AUTO-APROBADOS y DATOS VISUALES
@@ -4459,6 +4469,12 @@ class MadenatGuiaProcessing(models.Model):
                 # Lógica simple: Tomar el precio del primer item o buscar coincidencia
                 if po.order_line:
                     vals['purchase_price_usd_per_m3'] = po.order_line[0].price_unit
+
+            # 🏷️ F3.1-BUG-01 — Identidad inmutable de la etiqueta SV (Ingreso
+            # por Volumen) + puente de datos: se materializan en el CREATE
+            # inicial, nunca mediante un write() posterior sobre el lote nuevo.
+            if extra_create_vals:
+                vals.update(extra_create_vals)
 
             try:
                 with self.env.cr.savepoint():
