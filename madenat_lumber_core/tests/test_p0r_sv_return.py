@@ -128,9 +128,22 @@ class TestP0rSvReturn(SvTestCommon, TransactionCase):
         other.invalidate_recordset()
         self.assertAlmostEqual(
             self._internal_available(other), 40.3, places=3)
+        # F-P0R-J: el origen del retorno pertenece a `stock.picking.origin`
+        # (semántica nativa Odoo 18). El campo `origin` de los movimientos NO es
+        # una proyección de `stock.picking.origin`, por eso el origen se afirma
+        # sobre el PICKING y los movimientos se validan por su relación nativa.
+        return_pickings = self.env['stock.picking'].search([
+            ('origin', '=', 'Return of %s' % receipt.name)])
+        self.assertEqual(len(return_pickings), 1)
+        self.assertEqual(return_pickings, return_picking)
+        self.assertEqual(
+            return_pickings.origin, 'Return of %s' % receipt.name)
+        self.assertEqual(return_pickings.return_id, receipt)
         # Solo los movimientos del retorno (ningún movimiento ajeno).
-        self.assertEqual(self.env['stock.move'].search_count([
-            ('origin', '=', 'Return of %s' % receipt.name)]), 1)
+        self.assertEqual(len(return_picking.move_ids), 1)
+        return_move = return_picking.move_ids
+        self.assertEqual(return_move.origin_returned_move_id, receipt.move_ids)
+        self.assertEqual(return_move.move_line_ids.lot_id, lot)
 
         return other
 
