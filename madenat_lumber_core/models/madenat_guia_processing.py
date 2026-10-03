@@ -1647,6 +1647,12 @@ class MadenatGuiaProcessing(models.Model):
                     # volumen_m3/vol_shipment_m3 son campos protegidos SV,
                     # también por la guarda de escritura directa de etiquetas).
                     extra_create_vals={
+                        # 🏷️ F3.1-BUG-02 — El lote SV se ancla a la compañía
+                        # activa del entorno: la guía no declara `company_id` y
+                        # el producto MADENAT es global (`company_id=False`), por
+                        # lo que el compute nativo de stock.lot lo dejaría sin
+                        # compañía. Se materializa en el CREATE inicial.
+                        "company_id": self.env.company.id,
                         # Puente de datos extra (idéntico al flujo dimensional).
                         'ref': item.lot_name or '',
                         'length_ft': item.length_ft,
