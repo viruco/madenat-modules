@@ -360,18 +360,25 @@ class TestSvImputationI2(TransactionCase):
         etiqueta = self._make_etiqueta(guia, 'I2-E13', 10.0)
         sv = self._make_sv(guia, 'SV00000001301', 100.0)
         Wizard = self.env['madenat.sv.imputation.wizard']
-        wiz = Wizard.sudo().with_context(
+        # ACL I2: Operaciones crea la cabecera y el reparto SIN sudo().
+        wiz = Wizard.with_user(self.user_oper).with_context(
             active_model='madenat.guia.processing', active_id=guia.id).create(
             {'guia_processing_id': guia.id})
         wiz._onchange_guia_processing_id()
         self.assertEqual(len(wiz.line_ids), 1)
         wline = wiz.line_ids
-        self.env['madenat.sv.imputation.wizard.sv.line'].sudo().create({
-            'wizard_id': wiz.id,
-            'wizard_line_id': wline.id,
-            'sv_lot_id': sv.id,
-            'imputed_volume_m3': 10.0,
-        })
+        sv_line = self.env[
+            'madenat.sv.imputation.wizard.sv.line'].with_user(
+                self.user_oper).create({
+                    'wizard_id': wiz.id,
+                    'wizard_line_id': wline.id,
+                    'sv_lot_id': sv.id,
+                    'imputed_volume_m3': 10.0,
+                })
+        # La línea transitoria se creó como Operaciones, sin AccessError.
+        self.assertTrue(sv_line.exists())
+        self.assertEqual(sv_line.wizard_id, wiz)
+        self.assertEqual(sv_line.wizard_line_id, wline)
         res = wiz.with_user(self.user_oper).action_apply()
         imp = self.Imputation.browse(res['res_id'])
         self.assertEqual(imp.state, 'applied')
