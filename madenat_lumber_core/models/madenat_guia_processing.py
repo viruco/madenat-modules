@@ -2305,13 +2305,13 @@ class MadenatGuiaProcessing(models.Model):
                 # =======================================================
                 # 👻 FASE A: LIMPIEZA DE FANTASMAS
                 # =======================================================
-                tiene_lote = bool(move.lot_ids)
-                if not tiene_lote:
-                    for line in move.move_line_ids:
-                        if line.lot_id:
-                            tiene_lote = True
-                            break
-                
+                # 🛡️ PRE-02 — La trazabilidad se determina por las move lines
+                # (fuente real de lote), no por `move.lot_ids`: ese campo es
+                # calculado y puede conservar un valor de caché heredado del
+                # create del movimiento, lo que dejaba sobrevivir movimientos
+                # huérfanos duplicados (sin move line) hasta la validación.
+                tiene_lote = any(line.lot_id for line in move.move_line_ids)
+
                 if not tiene_lote and move.product_id.tracking != 'none':
                     _logger.warning(f"🗑️ Eliminando Fantasma: {move.product_uom_qty} sin lote.")
                     move.move_line_ids.unlink()
@@ -2371,49 +2371,15 @@ class MadenatGuiaProcessing(models.Model):
                             line.picked = True
 
             # =======================================================
-            # 🛡️ FASE C.1: GARANTÍA DE CANTIDAD PROCESABLE (recepción)
-            # El picking incoming debe llegar a button_validate() con cantidad
-            # procesable derivada de la guía. Se usa la cantidad ya declarada
-            # por el propio movimiento (product_uom_qty, construida desde el
-            # volumen del lote de la guía) y, si faltase, el volumen del lote
-            # enlazado. Se reutiliza la move line existente o se crea sólo la
-            # necesaria; nunca se crean pickings ni moves nuevos, y el sanity
-            # check nativo de Odoo se conserva sin omitirse.
+            # 🛡️ FASE C.1 — GARANTÍA DE CANTIDAD PROCESABLE (PRE-02)
+            # La recepción debe llegar a button_validate() con la cantidad
+            # real procesada de la guía sobre la move line de su lote/tarja.
+            # Se reutiliza la move line estándar del lote (nunca se duplica) y
+            # sólo se crea si faltase. El sanity check nativo de Odoo no se
+            # omite: se le entrega una cantidad procesable real derivada de la
+            # línea de guía (no de `product_uom_qty`, que puede venir en 0).
             # =======================================================
-            for move in picking.move_ids.filtered(
-                    lambda m: m.state not in ('done', 'cancel')):
-                rounding = move.product_uom.rounding
-                if float_compare(
-                        move.quantity, 0.0, precision_rounding=rounding) > 0:
-                    continue
-                qty = move.product_uom_qty
-                if (float_compare(qty, 0.0, precision_rounding=rounding) <= 0
-                        and move.lot_ids):
-                    qty = move.lot_ids[0].volumen_m3
-                if float_compare(qty, 0.0, precision_rounding=rounding) <= 0:
-                    continue
-                move.quantity = qty
-                if 'picked' in move._fields:
-                    move.picked = True
-                if move.move_line_ids:
-                    for line in move.move_line_ids:
-                        if 'picked' in line._fields:
-                            line.picked = True
-                else:
-                    line_vals = {
-                        'move_id': move.id,
-                        'picking_id': picking.id,
-                        'product_id': move.product_id.id,
-                        'lot_id': move.lot_ids[:1].id if move.lot_ids else False,
-                        'quantity': qty,
-                        'product_uom_id': move.product_uom.id,
-                        'location_id': move.location_id.id,
-                        'location_dest_id': move.location_dest_id.id,
-                        'company_id': picking.company_id.id,
-                    }
-                    if 'picked' in self.env['stock.move.line']._fields:
-                        line_vals['picked'] = True
-                    self.env['stock.move.line'].create(line_vals)
+            self._ensure_reception_move_lines(picking)
 
             # =======================================================
             # 🏁 FASE D: VALIDACIÓN
@@ -2468,6 +2434,116 @@ class MadenatGuiaProcessing(models.Model):
             'tag': 'reload',
         }
     
+    # ══════════════════════════════════════════════════════════════════
+    # 🛡️ PRE-02 — GARANTÍA DE CANTIDAD PROCESABLE EN LA RECEPCIÓN
+    # ══════════════════════════════════════════════════════════════════
+    def _reception_source_line(self, lot):
+        """Línea de guía procesada asociada al lote/tarja de la recepción.
+
+        Resolución determinista y sin valores fijos:
+          1. Vínculo directo de la etiqueta de Ingreso por Volumen
+             (`stock.lot.volume_source_line_id`).
+          2. La única línea de guía que produce el producto del lote.
+          3. La línea cuyo volumen real coincide con el del lote.
+        """
+        self.ensure_one()
+        Line = self.env['madenat.guia.processing.line']
+        if not lot:
+            return Line
+        source = lot.volume_source_line_id
+        if source:
+            return source
+        lines = self.processing_line_ids.filtered(
+            lambda l: not lot.product_id or l.product_id == lot.product_id)
+        lines = lines or self.processing_line_ids
+        if len(lines) == 1:
+            return lines[:1]
+        for line in lines:
+            nominal = line.vol_purchase_m3 or line.vol_physical_m3 or 0.0
+            if abs(nominal - (lot.volumen_m3 or 0.0)) < 0.01:
+                return line
+        return lines[:1]
+
+    def _reception_line_quantity(self, lot, uom):
+        """Cantidad real procesada (en `uom`) del lote de recepción.
+
+        Se toma de la línea de guía asociada al lote: volumen nominal de compra
+        y, cuando éste no fue capturado, el volumen físico/real de la línea.
+        La conversión a la UoM del movimiento usa las conversiones estándar de
+        Odoo (la fuente se expresa en m³, UoM base del producto).
+        """
+        self.ensure_one()
+        if not uom:
+            return 0.0
+        line = self._reception_source_line(lot)
+        qty_m3 = 0.0
+        if line:
+            qty_m3 = (line.vol_purchase_m3 or 0.0) \
+                or (line.vol_physical_m3 or 0.0) \
+                or (line.vol_shipment_m3 or 0.0)
+        if float_compare(qty_m3, 0.0, precision_rounding=0.001) <= 0 and lot:
+            qty_m3 = (lot.volume_purchase_m3 or 0.0) or (lot.volumen_m3 or 0.0)
+        if float_compare(qty_m3, 0.0, precision_rounding=0.001) <= 0:
+            return 0.0
+        m3 = self.env.ref('uom.product_uom_cubic_meter')
+        return m3._compute_quantity(qty_m3, uom, round=False)
+
+    def _ensure_reception_move_lines(self, picking):
+        """Garantiza cantidad procesable en la recepción de la guía (PRE-02).
+
+        Para cada movimiento con producto trazable fija en su move line la
+        cantidad real procesada de la guía, derivada de la línea asociada al
+        lote. Producto, lote, ubicaciones y compañía se toman del propio
+        movimiento/picking; nunca de valores fijos. Reutiliza la move line
+        existente del lote y sólo crea una si faltase. Idempotente: reprocesar
+        fija el mismo valor sin duplicar líneas, movimientos ni lotes.
+        """
+        self.ensure_one()
+        MoveLine = self.env['stock.move.line']
+        for move in picking.move_ids.filtered(
+                lambda m: m.state not in ('done', 'cancel')
+                and m.product_id.tracking != 'none'):
+            move_lines = move.move_line_ids
+            if move_lines:
+                for ml in move_lines:
+                    if not ml.lot_id:
+                        continue
+                    qty = self._reception_line_quantity(
+                        ml.lot_id, ml.product_uom_id)
+                    if float_compare(
+                            qty, 0.0,
+                            precision_rounding=ml.product_uom_id.rounding) <= 0:
+                        continue
+                    ml.write({'quantity': qty})
+                    if 'picked' in ml._fields:
+                        ml.picked = True
+                    move.picked = True
+                continue
+            lot = move.lot_ids[:1]
+            if not lot:
+                continue
+            qty = self._reception_line_quantity(lot, move.product_uom)
+            if float_compare(
+                    qty, 0.0,
+                    precision_rounding=move.product_uom.rounding) <= 0:
+                continue
+            vals = {
+                'move_id': move.id,
+                'picking_id': picking.id,
+                'product_id': move.product_id.id,
+                'lot_id': lot.id,
+                'quantity': qty,
+                'product_uom_id': move.product_uom.id,
+                'location_id': move.location_id.id,
+                'location_dest_id': move.location_dest_id.id,
+                'company_id': picking.company_id.id or self.env.company.id,
+            }
+            if 'picked' in MoveLine._fields:
+                vals['picked'] = True
+            MoveLine.create(vals)
+            move.picked = True
+
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # ✅ NUEVO: Método helper para crear picking desde guía
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

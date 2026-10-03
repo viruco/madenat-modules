@@ -237,17 +237,78 @@ class TestGranelRouteCore(TransactionCase):
         self.assertTrue(service.consumption_picking_id,
                         "La guía service debe invocar _get_or_create_consumption_picking()")
 
-        # Contrato PRE-02: la recepción incoming del service queda validada
-        # (sin omitir el sanity check nativo) y sin duplicar el picking.
+        # ── PRE-02 — Recepción incoming del service ──────────────────────────
+        # La recepción debe quedar validada por el flujo estándar
+        # (`button_validate`, sin omitir el sanity check nativo) y sin duplicar
+        # el picking, el movimiento ni la move line trazable.
         incoming = self.env['stock.picking'].search([
             ('origin', '=', service.name),
             ('picking_type_id.code', '=', 'incoming'),
         ])
-        self.assertTrue(incoming, "El service debe tener su recepción incoming")
-        self.assertEqual(len(incoming), 1,
-                         "No debe duplicarse la recepción incoming del service")
-        self.assertEqual(incoming.state, 'done',
-                         "La recepción incoming del service debe quedar validada")
+        self.assertEqual(
+            len(incoming), 1,
+            "Debe existir exactamente una recepción incoming del service")
+        self.assertEqual(
+            incoming.state, 'done',
+            "La recepción incoming del service debe quedar validada")
+        self.assertEqual(
+            incoming.company_id, self.env.company,
+            "La recepción debe pertenecer a la compañía activa de la guía")
+
+        # Un único movimiento y una única move line asociada al lote/tarja.
+        self.assertEqual(
+            len(incoming.move_ids), 1,
+            "La recepción no debe duplicar movimientos")
+        traced = incoming.move_ids.move_line_ids.filtered(lambda ml: ml.lot_id)
+        self.assertEqual(
+            len(traced), 1,
+            "Debe existir una única move line trazable (lote/tarja)")
+        self.assertIn(
+            traced.lot_id, service.lot_ids,
+            "La move line debe apuntar al lote/tarja de trazabilidad de la guía")
+
+        # Cantidad procesada positiva derivada de la línea de guía, expresada
+        # en la UoM del movimiento (conversión estándar de Odoo).
+        line = service.processing_line_ids[:1]
+        expected_qty = line.vol_purchase_m3 or line.vol_physical_m3
+        self.assertGreater(
+            traced.quantity, 0.0,
+            "La move line debe llevar una cantidad procesada positiva")
+        self.assertAlmostEqual(
+            traced.quantity, expected_qty, places=3,
+            msg="La cantidad procesada debe derivarse de la línea de guía")
+        self.assertEqual(
+            traced.product_id, line.product_id,
+            "El producto debe provenir de la línea de guía")
+        self.assertEqual(
+            traced.product_uom_id, incoming.move_ids.product_uom,
+            "La UoM de la move line debe coincidir con la del movimiento")
+        self.assertEqual(
+            (traced.location_id, traced.location_dest_id),
+            (incoming.location_id, incoming.location_dest_id),
+            "Las ubicaciones deben derivarse del picking y sus move lines")
+
+        # Idempotencia (PRE-02): re-ejecutar la garantía de cantidad no duplica
+        # move lines, movimientos, lotes ni la recepción, y conserva el valor.
+        before_lines = incoming.move_ids.move_line_ids.ids
+        before_qty = traced.quantity
+        service._ensure_reception_move_lines(incoming)
+        self.assertEqual(
+            incoming.move_ids.move_line_ids.ids, before_lines,
+            "Re-ejecutar la garantía no debe duplicar move lines")
+        self.assertAlmostEqual(
+            traced.quantity, before_qty, places=3,
+            msg="Re-ejecutar la garantía no debe alterar la cantidad")
+        self.assertEqual(
+            self.env['stock.picking'].search_count([
+                ('origin', '=', service.name),
+                ('picking_type_id.code', '=', 'incoming')]),
+            1, "Reprocesar no debe duplicar la recepción incoming")
+        self.assertEqual(
+            incoming.move_ids.move_line_ids.filtered(
+                lambda ml: ml.lot_id and ml.product_id.tracking != 'none'
+            ).mapped('lot_id'), service.lot_ids[:1],
+            "Reprocesar no debe duplicar el lote/tarja de la recepción")
 
         # El volumen descontado coincide con lo declarado en source_lot_line_ids.
         self.assertAlmostEqual(self._lot_qty_at_stock(granel_lot), 7.0, places=3)
