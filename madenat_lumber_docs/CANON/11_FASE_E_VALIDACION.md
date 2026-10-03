@@ -550,3 +550,20 @@ El proyecto MADENAT Lumber ha alcanzado un nivel de madurez operativa verificabl
 *Versión: 1.1.0 — Revisado 2026-06-16*
 
 <!-- actualizado: 2026-06-16 — estado de tests actualizado -->
+
+## Separación de entorno operativo y validación temporal
+
+El directorio montado por Odoo para la base operativa `madenat_test`
+(`custom_addons` → `/mnt/extra-addons`) es exclusivamente operativo. No se
+cambia de rama, no se edita para desarrollo y no se usa para ejecutar pruebas
+de cambios candidatos.
+
+Cada validación de desarrollo debe utilizar una copia o worktree aislado de
+addons, una base temporal nueva y su filestore independiente. Las
+actualizaciones de módulos y pruebas se ejecutan únicamente en ese entorno
+temporal.
+
+Antes de promover código al entorno operativo se debe verificar compatibilidad
+entre las versiones instaladas en la base y las versiones presentes en los
+addons. El cambio operativo se realiza sólo en una ventana controlada, con
+respaldo verificable de base y filestore y un rollback definido.
