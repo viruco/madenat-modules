@@ -83,6 +83,21 @@
                                 <field name="volume_lot_id" readonly="1"/>
                             </group>
                         </group>
+                        <group string="🏷️ Etiquetas SV generadas">
+                            <field name="volume_lot_ids" readonly="1" nolabel="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="name" string="Etiqueta SV"/>
+                                    <field name="product_id" string="Producto"/>
+                                    <field name="volume_purchase_m3" string="Volumen inicial (m³)"/>
+                                    <field name="sv_available_m3" string="Saldo disponible (m³)"/>
+                                    <field name="volume_source_guia_id" string="Guía de origen"/>
+                                    <field name="location_id" string="Patio/Ubicación"/>
+                                    <field name="technical_validation" string="Estado" widget="badge"
+                                           decoration-success="technical_validation == 'approved'"
+                                           decoration-warning="technical_validation == 'pending'"/>
+                                </list>
+                            </field>
+                        </group>
                         <div class="alert alert-info" role="alert">
                             <p class="mb-1">
                                 Los valores corresponden a la información declarada en la Guía.
@@ -94,7 +109,7 @@
                                 Pueden ajustarse posteriormente según la documentación disponible.
                             </p>
                             <p class="mb-0">
-                                Una Guía por Volumen genera una única etiqueta SV.
+                                Una Guía por Volumen genera una etiqueta SV por cada línea.
                             </p>
                         </div>
                     </page>

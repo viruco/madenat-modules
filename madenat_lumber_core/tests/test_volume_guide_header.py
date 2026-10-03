@@ -182,7 +182,7 @@ class TestVolumeGuideHeader(TransactionCase):
             etree.tostring(page, encoding='unicode'),
             'La página de volumen debe ser condicional a granel')
 
-        for field_name in self.document_fields + ['volume_lot_id']:
+        for field_name in self.document_fields + ['volume_lot_id', 'volume_lot_ids']:
             nodes = page.xpath(".//field[@name='%s']" % field_name)
             self.assertEqual(
                 len(nodes), 1,
@@ -203,7 +203,7 @@ class TestVolumeGuideHeader(TransactionCase):
             'Pueden ajustarse posteriormente según la documentación disponible.',
             arch_text)
         self.assertIn(
-            'Una Guía por Volumen genera una única etiqueta SV.', arch_text)
+            'Una Guía por Volumen genera una etiqueta SV por cada línea.', arch_text)
 
         # Los tres grids de detalle operativo son condicionales a volumen.
         for page_name in ('physical_reception', 'commercial_analysis',

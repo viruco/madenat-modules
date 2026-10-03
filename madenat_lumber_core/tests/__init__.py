@@ -12,6 +12,8 @@ from . import test_granel_route
 from . import test_parse_excel_core
 from . import test_excel_table_detection
 from . import test_volume_guide_header
+# 🏷️ F3.1 — Alta automática de etiquetas SV desde guías de volumen validadas.
+from . import test_f31_volume_sv_autocreate
 
 # 🏷️ Programa SV — gestión operativa de etiquetas SV.
 from . import test_sv_operation_ledger

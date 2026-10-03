@@ -102,6 +102,53 @@
               sequence="10"/>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- F3.1 — LISTADO DE ETIQUETAS SV (Lotes Volumen)                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Vista simple y directa de las etiquetas SV generadas por las   -->
+    <!-- Guías por Volumen: etiqueta, producto, volumen inicial, saldo,  -->
+    <!-- guía de origen, patio/ubicación y estado. Al abrir una fila se  -->
+    <!-- accede al formulario del lote con las acciones SV existentes.   -->
+    <record id="view_madenat_stock_lot_sv_list" model="ir.ui.view">
+        <field name="name">stock.lot.sv.list</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <list string="Etiquetas SV (Ingreso por Volumen)" create="false">
+                <field name="name" string="Etiqueta SV" decoration-bf="1"/>
+                <field name="product_id" string="Producto"/>
+                <field name="volume_purchase_m3" string="Volumen inicial (m³)" sum="Volumen inicial"/>
+                <field name="sv_available_m3" string="Saldo disponible (m³)" sum="Saldo disponible"/>
+                <field name="volume_source_guia_id" string="Guía de origen"/>
+                <field name="location_id" string="Patio/Ubicación"/>
+                <field name="technical_validation" string="Estado" widget="badge"
+                       decoration-success="technical_validation == 'approved'"
+                       decoration-warning="technical_validation == 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_madenat_sv_lots" model="ir.actions.act_window">
+        <field name="name">Etiquetas SV (Ingreso por Volumen)</field>
+        <field name="res_model">stock.lot</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_madenat_stock_lot_sv_list"/>
+        <field name="domain">[('lot_flow_type', '=', 'volume')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aún no hay etiquetas SV generadas
+            </p>
+            <p>Se generan automáticamente al validar una Guía por Volumen
+               (una etiqueta por cada línea elegible).</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_madenat_sv_lots"
+              name="Etiquetas SV"
+              parent="menu_madenat_sv_root"
+              action="action_madenat_sv_lots"
+              sequence="5"
+              groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_auditoria,madenat_lumber_core.group_madenat_contabilidad"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ACCIONES SV EN LA ETIQUETA (stock.lot) Y EN LA GUÍA             -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
 

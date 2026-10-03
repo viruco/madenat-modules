@@ -92,6 +92,16 @@ class MadenatGuiaProcessingLine(models.Model):
         required=True,
         index=True
     )
+
+    # 🏷️ F3.1 — Etiquetas SV generadas por esta línea de volumen. Es la cara
+    # inversa del vínculo `stock.lot.volume_source_line_id`: garantiza que una
+    # línea elegible tenga EXACTAMENTE una etiqueta SV.
+    volume_lot_ids = fields.One2many(
+        'stock.lot',
+        'volume_source_line_id',
+        string='Etiquetas SV',
+        readonly=True,
+    )
     
     # ==========================================================================
     # DATOS ORIGINALES (TRAZABILIDAD)
@@ -868,6 +878,15 @@ class MadenatGuiaProcessing(models.Model):
         readonly=True,
     )
 
+    # 🏷️ F3.1 — TODAS las etiquetas SV de la guía (una por línea elegible).
+    # Solo lectura: el alta real la ejecuta la validación de la guía.
+    volume_lot_ids = fields.One2many(
+        'stock.lot',
+        'volume_source_guia_id',
+        string='Etiquetas SV',
+        readonly=True,
+    )
+
     # --- CONCILIACIÓN DE EVIDENCIA DOCUMENTAL (solo lectura, no operativo) ---
     sum_vol_documental_m3 = fields.Float(
         string='Suma Vol. Documental líneas (m³)',
@@ -1145,6 +1164,7 @@ class MadenatGuiaProcessing(models.Model):
                 existing_pickings.action_cancel()
             # FASE 3: BUCLE DE CREACIÓN DE LOTES
             lot_data = []
+            lineas_granel_invalidas = []
             guia_suffix = re.sub(r'[^0-9]', '', rec.name) or 'G' + str(rec.id)
             
             for item in rec.processing_line_ids:
@@ -1162,6 +1182,18 @@ class MadenatGuiaProcessing(models.Model):
                  # --- A. DEFINICIÓN DE LA VERDAD (REGLA DE ORO) ---
                 # v_purchase: Es el metraje comercial (Nominal). Es lo que Odoo mueve en Stock.
                 v_purchase = item.vol_purchase_m3 
+
+                # 🏷️ F3.1 — Línea Granel no elegible: sin producto o sin
+                # volumen positivo no genera etiqueta SV. Se omite con aviso,
+                # sin crear basura ni bloquear las demás líneas válidas.
+                if (rec.tipo_recepcion == 'granel'
+                        and (not item.product_id or v_purchase <= 0)):
+                    _logger.warning(
+                        "⚠️ Línea %s (guía %s) no elegible para SV: "
+                        "producto=%s, volumen=%s. Se omite.",
+                        item.id, rec.name, bool(item.product_id), v_purchase)
+                    lineas_granel_invalidas.append(item)
+                    continue
 
                 # v_stock_real: Es el metraje físico (Real). Es lo que se declara en Exportación.
                 # 🚀 CORRECCIÓN: Antes apuntaba a vol_purchase_m3, ahora apunta al shipment real.
@@ -1203,40 +1235,55 @@ class MadenatGuiaProcessing(models.Model):
                     product = rec.find_or_create_product(group_code, raw_product_name)
 
                 # --- D. CREACIÓN DEL LOTE ---
-                lot = rec._create_or_get_lot(
-                    guia_ref=rec.name,
-                    product=product,
-                    qty=item.pieces,
-                    
-                    vol_purchase=v_purchase,
-                    vol_shipment=v_stock_real,
-                    vol_real=v_stock_real,
-                    
-                    lot_name=lote_name_internal,
-                    
-                    # ✅ AQUÍ PASAMOS EL DICCIONARIO QUE FALTABA
-                    lot_dims=ldims,
-                    
-                    # Contexto
-                    precio_usd=precio_usd,
-                    purchase_order=purchase_order,
-                    thickness_visual=item.thickness_visual, # Pasamos visuales también por si acaso
-                    width_visual=item.width_visual,
-                    subproducto_id=item.subproducto_id.id if item.subproducto_id else False
-                )
+                # 🏷️ F3.1 — Recepción por Volumen: el lote físico de cada línea
+                # elegible ES la etiqueta SV del ingreso (una por línea). El
+                # alta es idempotente por línea y no añade movimientos de stock.
+                if rec.tipo_recepcion == 'granel':
+                    lot = rec._get_or_create_volume_sv_lot(
+                        item=item,
+                        product=product,
+                        vol_purchase=v_purchase,
+                        vol_shipment=v_stock_real,
+                        lot_dims=ldims,
+                        precio_usd=precio_usd,
+                        purchase_order=purchase_order,
+                    )
+                else:
+                    lot = rec._create_or_get_lot(
+                        guia_ref=rec.name,
+                        product=product,
+                        qty=item.pieces,
 
-                # --- E. INYECCIÓN DE DATOS EXTRA (EL PUENTE) ---
-                lot.write({
-                    'ref': etiqueta_visual,
-                    'length_ft': item.length_ft,      
-                    'vol_shipment_m3': v_stock_real, # 🌎 Exportación (Se queda solo aquí)
-                    
-                    # 📦 EL CAMBIO CRÍTICO: Stock Real debe ser el Nominal de Compra
-                    'volumen_m3': item.vol_purchase_m3,      
-                    
-                    'width_visual': item.width_visual,
-                    'thickness_visual': item.thickness_visual,
-                })
+                        vol_purchase=v_purchase,
+                        vol_shipment=v_stock_real,
+                        vol_real=v_stock_real,
+
+                        lot_name=lote_name_internal,
+
+                        # ✅ AQUÍ PASAMOS EL DICCIONARIO QUE FALTABA
+                        lot_dims=ldims,
+
+                        # Contexto
+                        precio_usd=precio_usd,
+                        purchase_order=purchase_order,
+                        thickness_visual=item.thickness_visual, # Pasamos visuales también por si acaso
+                        width_visual=item.width_visual,
+                        subproducto_id=item.subproducto_id.id if item.subproducto_id else False
+                    )
+
+                    # --- E. INYECCIÓN DE DATOS EXTRA (EL PUENTE) ---
+                    lot.write({
+                        'ref': etiqueta_visual,
+                        'length_ft': item.length_ft,
+
+                        'vol_shipment_m3': v_stock_real, # 🌎 Exportación (Se queda solo aquí)
+
+                        # 📦 EL CAMBIO CRÍTICO: Stock Real debe ser el Nominal de Compra
+                        'volumen_m3': item.vol_purchase_m3,
+
+                        'width_visual': item.width_visual,
+                        'thickness_visual': item.thickness_visual,
+                    })
 
                 # --- F. ACUMULADOR ---
                 lot_data.append({
@@ -1248,6 +1295,15 @@ class MadenatGuiaProcessing(models.Model):
                     'product_name': product.name,
                     'sku_original': sku_base
                 })
+
+            # 🏷️ F3.1 — Aviso trazable de líneas de volumen omitidas (sin
+            # producto o sin volumen positivo). No bloquea la guía.
+            if lineas_granel_invalidas:
+                rec.message_post(body=_(
+                    "⚠️ %s línea(s) de volumen sin producto o sin volumen "
+                    "positivo no generaron etiqueta SV: %s"
+                ) % (len(lineas_granel_invalidas),
+                     ', '.join(str(line.id) for line in lineas_granel_invalidas)))
 
             # FASE 4: FINALIZACIÓN
             if lot_data:
@@ -1508,6 +1564,108 @@ class MadenatGuiaProcessing(models.Model):
             lambda l: l.vol_documental_m3 > 0 and l.pieces > 0
             and (l.espesor_mm <= 0 or l.ancho_mm <= 0 or l.largo_m <= 0)
         )
+
+    # ==========================================================================
+    # 🏷️ F3.1 — ALTA AUTOMÁTICA DE ETIQUETAS SV (INGRESO POR VOLUMEN)
+    # ==========================================================================
+    def _volume_eligible_lines(self):
+        """Líneas elegibles del Ingreso por Volumen.
+
+        Una línea es elegible cuando tiene producto y un volumen mayor que
+        cero, y no es una línea documental pendiente. Es el criterio real que
+        gobierna el alta de una etiqueta SV por línea.
+        """
+        self.ensure_one()
+        documentales = self._documentary_pending_lines()
+        return (self.processing_line_ids - documentales).filtered(
+            lambda l: l.product_id and (l.vol_purchase_m3 or 0.0) > 0.0
+        )
+
+    def _get_or_create_volume_sv_lot(self, item, product, vol_purchase,
+                                     vol_shipment, lot_dims, precio_usd,
+                                     purchase_order=None):
+        """Crea o recupera la etiqueta SV (lote físico) de una línea Granel.
+
+        Una línea elegible genera EXACTAMENTE una etiqueta SV cuyo volumen
+        INICIAL es el volumen de la guía. Idempotente por el vínculo de línea
+        (`volume_source_line_id`): nunca crea un segundo lote para la misma
+        línea. No crea movimientos de stock: el flujo de picking de la guía
+        sigue siendo el único que mueve inventario.
+        """
+        self.ensure_one()
+        StockLot = self.env['stock.lot']
+
+        # 1. Recuperación idempotente por el vínculo directo línea → SV.
+        existing = item.volume_lot_ids.filtered(
+            lambda l: l.lot_flow_type == 'volume')
+        if existing:
+            return existing[0]
+
+        # 2. Recuperación determinista por origen documental: una etiqueta SV
+        #    de esta guía aún sin línea enlazada (la reapertura recrea líneas).
+        #    Solo por guía + producto: nunca por volumen.
+        orphan = StockLot.search([
+            ('volume_source_guia_id', '=', self.id),
+            ('lot_flow_type', '=', 'volume'),
+            ('volume_source_line_id', '=', False),
+            ('product_id', '=', product.id),
+        ], order='id', limit=1)
+        if orphan:
+            orphan.write({'volume_source_line_id': item.id})
+            return orphan
+
+        # 3. Alta: una etiqueta SV nueva para la línea elegible. La operación se
+        #    aísla en un savepoint: ante una carrera concurrente sobre la misma
+        #    línea (índice único `volume_source_line_id`) se recupera la etiqueta
+        #    que ya creó la otra transacción, en vez de duplicarla.
+        try:
+            with self.env.cr.savepoint():
+                lot = self._create_or_get_lot(
+                    guia_ref=self.name,
+                    product=product,
+                    qty=item.pieces,
+                    vol_purchase=vol_purchase,
+                    vol_shipment=vol_shipment,
+                    vol_real=vol_shipment,
+                    lot_name=StockLot._next_volume_lot_label(),
+                    lot_dims=lot_dims,
+                    precio_usd=precio_usd,
+                    purchase_order=purchase_order,
+                    thickness_visual=item.thickness_visual,
+                    width_visual=item.width_visual,
+                    subproducto_id=(
+                        item.subproducto_id.id if item.subproducto_id else False),
+                )
+                # Puente de datos extra (idéntico al flujo dimensional).
+                lot.write({
+                    'ref': item.lot_name or '',
+                    'length_ft': item.length_ft,
+                    'vol_shipment_m3': vol_shipment,
+                    'volumen_m3': vol_purchase,
+                    'width_visual': item.width_visual,
+                    'thickness_visual': item.thickness_visual,
+                })
+                # Identidad SV. No toca campos protegidos ⇒ supera las guardas.
+                lot.write({
+                    'lot_flow_type': 'volume',
+                    'volume_source_guia_id': self.id,
+                    'volume_source_line_id': item.id,
+                })
+        except (IntegrityError, ValidationError):
+            # Otra validación concurrente ya creó la etiqueta de esta línea:
+            # se recupera la existente. Si no aparece, el error es real.
+            StockLot.flush_model(['volume_source_line_id'])
+            StockLot.invalidate_model(['volume_source_line_id'])
+            existing = item.volume_lot_ids.filtered(
+                lambda l: l.lot_flow_type == 'volume')
+            if existing:
+                return existing[0]
+            raise
+        self._register_lot_audit(
+            'lot_creation', lot.name,
+            "Etiqueta SV %s creada para la línea %s de la guía %s"
+            % (lot.name, item.id, self.name))
+        return lot
 
     def action_verify_data(self):
         """
@@ -1958,6 +2116,18 @@ class MadenatGuiaProcessing(models.Model):
                 "No hay líneas con dimensiones físicas separadas para aprobar. "
                 "Las líneas documentales se conservan en staging sin crear "
                 "lotes ni stock. Complete Espesor/Ancho/Largo para continuar."
+            )
+
+        # 🏷️ F3.1 — Ingreso por Volumen: toda guía validada exige al menos una
+        # línea con producto y volumen mayor que cero para poder emitir su(s)
+        # etiqueta(s) SV. Sin líneas elegibles se detiene la validación SIN
+        # efectos parciales (no se crean lotes, movimientos ni auditoría).
+        if self.tipo_recepcion == 'granel' and not self._volume_eligible_lines():
+            raise ValidationError(
+                "⛔ SIN LÍNEAS DE VOLUMEN ELEGIBLES\n\n"
+                "La guía por Volumen no tiene ninguna línea con producto y "
+                "volumen mayor que cero. Corrija las líneas de volumen antes "
+                "de aprobar el ingreso."
             )
 
         # T2 — Recepción por Volumen ('granel'): el volumen oficial documental

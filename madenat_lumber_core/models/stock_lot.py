@@ -51,7 +51,14 @@ class StockLotExtended(models.Model):
         ('check_piezas_positive', 'CHECK(piezas >= 0)', 
          'La cantidad de piezas no puede ser negativa.'),
         ('check_cost_positive', 'CHECK(total_cost_usd >= 0)', 
-         'El costo total no puede ser negativo.')
+         'El costo total no puede ser negativo.'),
+        # 🏷️ F3.1 — Una línea elegible de Ingreso por Volumen genera
+        # EXACTAMENTE una etiqueta SV (una línea → una SV). El índice único
+        # garantiza la idempotencia 1:1 también ante concurrencia; las filas
+        # sin vínculo (NULL) no colisionan en PostgreSQL.
+        ('volume_sv_lot_unique_line',
+         'UNIQUE (volume_source_line_id)',
+         'Cada línea de Ingreso por Volumen puede tener una sola etiqueta SV.')
     ]
 
        # === TRAZABILIDAD IMPERIAL ===
@@ -225,6 +232,19 @@ class StockLotExtended(models.Model):
         copy=False,
         index=True,
         ondelete='restrict',
+    )
+
+    # 🏷️ F3.1 — Vínculo mínimo por LÍNEA de volumen para una idempotencia real
+    # (una línea elegible → una etiqueta SV). `ondelete='set null'` porque la
+    # reapertura de la guía recrea sus líneas: el enlace se limpia sin romper
+    # la operación, mientras la Guía Origen de Volumen (inmutable) se conserva.
+    volume_source_line_id = fields.Many2one(
+        'madenat.guia.processing.line',
+        string='Línea Origen de Volumen',
+        readonly=True,
+        copy=False,
+        index=True,
+        ondelete='set null',
     )
     
     purchase_order_id = fields.Many2one(
@@ -1347,12 +1367,15 @@ class StockLotExtended(models.Model):
             )
         return label
 
-    @api.constrains('lot_flow_type', 'volume_source_guia_id')
+    @api.constrains('lot_flow_type', 'volume_source_guia_id',
+                    'volume_source_line_id')
     def _check_volume_source_guia(self):
         """Coherencia entre el tipo de flujo y la guía origen documental.
 
         - Un lote de flujo 'volume' exige su guía origen de volumen.
         - Una guía origen de volumen solo puede existir en un lote 'volume'.
+        - La línea origen de volumen (F3.1) también exige flujo 'volume' y debe
+          pertenecer a la misma guía origen.
         """
         for lot in self:
             if lot.lot_flow_type == 'volume' and not lot.volume_source_guia_id:
@@ -1365,6 +1388,18 @@ class StockLotExtended(models.Model):
                     "El lote %s tiene Guía Origen de Volumen (%s) pero su tipo "
                     "de flujo no es 'Lote Volumen'."
                 ) % (lot.name or lot.id, lot.volume_source_guia_id.name))
+            if lot.volume_source_line_id and lot.lot_flow_type != 'volume':
+                raise ValidationError(_(
+                    "El lote %s tiene Línea Origen de Volumen pero su tipo de "
+                    "flujo no es 'Lote Volumen'."
+                ) % (lot.name or lot.id))
+            if (lot.volume_source_line_id and lot.volume_source_guia_id
+                    and lot.volume_source_line_id.processing_id
+                    != lot.volume_source_guia_id):
+                raise ValidationError(_(
+                    "La Línea Origen de Volumen del lote %s no pertenece a su "
+                    "Guía Origen de Volumen."
+                ) % (lot.name or lot.id))
 
     @api.model_create_multi
     def create(self, vals_list):
