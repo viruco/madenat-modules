@@ -248,10 +248,12 @@ class TestP0rAcl(SvTestCommon, TransactionCase):
             if line.strip() and 'madenat_sv' in line.split(',')[2]
         ]
         self.assertEqual(len(sv_rows), 17)
+        # CSV estándar Odoo: id,name,model_id:id,group_id:id,perm_*.
+        # F-P0R-C: el grupo es la columna 3; antes se leía `perm_read` (cols[4]).
         for cols in sv_rows:
             self.assertIn(
-                cols[4], SV_ALLOWED_GROUPS,
-                'Grupo fuera de alcance en ACL SV: %s' % cols[4])
+                cols[3], SV_ALLOWED_GROUPS,
+                'Grupo fuera de alcance en ACL SV: %s' % cols[3])
         # Las ACL mínimas requeridas están presentes.
         for model in (SV_LEDGER,) + SV_WIZARDS:
             self.assertTrue(self.env['ir.model.access'].sudo().search([

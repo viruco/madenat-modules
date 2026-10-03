@@ -55,7 +55,9 @@ class SvTestCommon:
             'state': 'verified',
             'tipo_recepcion': 'granel',
             'date_emission': '2026-09-24',
-            'conciliation_status': 'not_compared',
+            # F-P0R-B: no se envía `conciliation_status` (campo del addon
+            # externo de ingesta, inexistente en Core limpio). El Core calcula
+            # su propio `documental_conciliation_state` (computado, store=True).
             'guide_pdf_file': base64.b64encode(b'%PDF-fake'),
             'guide_pdf_filename': 'guia.pdf',
             'volume_pdf_m3': pdf_volume,
