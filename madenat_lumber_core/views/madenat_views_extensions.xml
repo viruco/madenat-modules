@@ -50,6 +50,83 @@
             </field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- C16: madenat.guia.processing form — Recepción por Volumen       -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- Guías con tipo_recepcion == 'granel' (valor almacenado intacto):  -->
+        <!--   - Nueva pestaña con los cinco campos declarados (editables,     -->
+        <!--     sin readonly) y la etiqueta SV única (solo lectura, F3.1).    -->
+        <!--   - Se ocultan ÚNICAMENTE los grids de detalle operativo           -->
+        <!--     (processing_line_ids); ninguna página completa se oculta y no  -->
+        <!--     se elimina ningún dato histórico (solo visibilidad de vista).  -->
+        <!-- Todo atributo es condicional a tipo_recepcion, por lo que los      -->
+        <!-- flujos no-granel conservan su comportamiento exacto.              -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <record id="view_madenat_guia_processing_volume_header" model="ir.ui.view">
+            <field name="name">madenat.guia.processing.form.volume.header</field>
+            <field name="model">madenat.guia.processing</field>
+            <field name="inherit_id" ref="madenat_lumber_core.view_madenat_guia_processing_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="📐 Recepción por Volumen"
+                          name="volume_reception_header"
+                          invisible="tipo_recepcion != 'granel'">
+                        <group string="Datos Declarados de la Guía">
+                            <group>
+                                <field name="anchos_variables" placeholder="Ej: 4 1/2 — 6 1/4"/>
+                                <field name="largos_variables" placeholder="Ej: 8 — 12"/>
+                                <field name="espesor_nominal_texto" placeholder="Ej: 7/4"/>
+                            </group>
+                            <group>
+                                <field name="piezas_declaradas"/>
+                                <field name="volumen_declarado_m3"/>
+                                <field name="volume_lot_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="🏷️ Etiquetas SV generadas">
+                            <field name="volume_lot_ids" readonly="1" nolabel="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="name" string="Etiqueta SV"/>
+                                    <field name="product_id" string="Producto"/>
+                                    <field name="volume_purchase_m3" string="Volumen inicial (m³)"/>
+                                    <field name="sv_available_m3" string="Saldo disponible (m³)"/>
+                                    <field name="volume_source_guia_id" string="Guía de origen"/>
+                                    <field name="location_id" string="Patio/Ubicación"/>
+                                    <field name="technical_validation" string="Estado" widget="badge"
+                                           decoration-success="technical_validation == 'approved'"
+                                           decoration-warning="technical_validation == 'pending'"/>
+                                </list>
+                            </field>
+                        </group>
+                        <div class="alert alert-info" role="alert">
+                            <p class="mb-1">
+                                Los valores corresponden a la información declarada en la Guía.
+                            </p>
+                            <p class="mb-1">
+                                Son referenciales, no se calculan ni bloquean la recepción.
+                            </p>
+                            <p class="mb-1">
+                                Pueden ajustarse posteriormente según la documentación disponible.
+                            </p>
+                            <p class="mb-0">
+                                Una Guía por Volumen genera una etiqueta SV por cada línea.
+                            </p>
+                        </div>
+                    </page>
+                </xpath>
+                <!-- Detalle operativo: solo el grid se oculta para volumen. -->
+                <xpath expr="//page[@name='physical_reception']//field[@name='processing_line_ids']" position="attributes">
+                    <attribute name="invisible">tipo_recepcion == 'granel'</attribute>
+                </xpath>
+                <xpath expr="//page[@name='commercial_analysis']//field[@name='processing_line_ids']" position="attributes">
+                    <attribute name="invisible">tipo_recepcion == 'granel'</attribute>
+                </xpath>
+                <xpath expr="//page[@name='export_view']//field[@name='processing_line_ids']" position="attributes">
+                    <attribute name="invisible">tipo_recepcion == 'granel'</attribute>
+                </xpath>
+            </field>
+        </record>
+
         <!-- C11: lumber.export.shipment form — Pestaña Costos Logísticos -->
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -67,17 +144,20 @@
         <!--   - account.menu_finance        MADENAT tiene rama propia       -->
         <!--     (Pagos a Proveedores ya fue reparentado a menu_finance_payments) -->
         <!--   - mail.channel_menu_root      Ruido, no es canal de negocio   -->
-        <!--   - contacts.menu_contacts      Gestionado vía proveedores      -->
-        <!--     dentro del flujo MADENAT                                    -->
+        <!--                                                                 -->
+        <!-- F-P0R-A (instalabilidad en base limpia): este módulo NO declara -->
+        <!-- el addon Contacts como dependencia — no lo usa funcionalmente   -->
+        <!-- (los contactos se gestionan vía proveedores con `res.partner`,  -->
+        <!-- provisto por `base`). Por eso ya no se referencia el menú raíz  -->
+        <!-- de la app Contacts: hacerlo rompía la carga XML en una base sin -->
+        <!-- ese addon instalado. En una base limpia dicha app no existe,    -->
+        <!-- por lo que el app switcher permanece igualmente depurado.       -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
 
         <menuitem id="account.menu_finance"
                   groups="base.group_system"/>
 
         <menuitem id="mail.channel_menu_root"
-                  groups="base.group_system"/>
-
-        <menuitem id="contacts.menu_contacts"
                   groups="base.group_system"/>
 
     </data>

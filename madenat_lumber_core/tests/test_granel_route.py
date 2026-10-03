@@ -6,9 +6,11 @@
 - _create_granel_summary_line() puebla processing_line_ids con el volumen agregado.
 """
 
+import base64
+
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 @tagged('post_install', '-at_install', 'madenat', 'guia_processing')
@@ -52,7 +54,8 @@ class TestGranelRouteCore(TransactionCase):
         )
         return lot
 
-    def _make_granel_guia(self, name='AD68-GRANEL', source_lot=None, qty=None):
+    def _make_granel_guia(self, name='AD68-GRANEL', source_lot=None, qty=None,
+                          official_volume_m3=10.0):
         vals = {
             'name': name,
             'partner_id': self.partner.id,
@@ -60,7 +63,18 @@ class TestGranelRouteCore(TransactionCase):
             'state': 'draft',
             'tipo_recepcion': 'granel',
             'rate_usd': 800.0,
+            # Evidencia y fecha documental mínimas para la validación de
+            # Volúmenes (la rama explícita exige evidencia y fecha).
+            'date_emission': '2026-09-24',
+            'guide_pdf_file': base64.b64encode(b'%PDF-fake'),
         }
+        # T2 — Flujo Volumen: la única fuente válida para stock es el volumen
+        # oficial documental (CANON/12 §11.5): total declarado en la Guía/PDF.
+        # Nunca se usan como fixture derivados (volume_detail_m3, operativo,
+        # declarado, comerciales). Si Intake no está instalado el campo no
+        # existe y la ruta core (sin gate dimensional) sigue siendo la activa.
+        if official_volume_m3 and 'volume_pdf_m3' in self.GuiaModel._fields:
+            vals['volume_pdf_m3'] = official_volume_m3
         guia = self.GuiaModel.create(vals)
         if source_lot and qty is not None:
             self.SourceLotLineModel.create({
@@ -69,6 +83,19 @@ class TestGranelRouteCore(TransactionCase):
                 'qty_to_consume': qty,
             })
         return guia
+
+    def _volume_lot(self, guia):
+        """Lote resultante de la guía por Volumen (sin crear ni modificar nada).
+
+        Identidad canónica F3.1 (`volume_source_guia_id` + `lot_flow_type`),
+        con reserva al vínculo interno del core (`lot_ids`) cuando la ruta core
+        es la activa.
+        """
+        lot = self.StockLot.search([
+            ('volume_source_guia_id', '=', guia.id),
+            ('lot_flow_type', '=', 'volume'),
+        ], limit=1)
+        return lot or guia.lot_ids[:1]
 
     def test_01_guard_acepta_granel(self):
         """_get_or_create_consumption_picking() acepta tipo_recepcion='granel'."""
@@ -108,8 +135,10 @@ class TestGranelRouteCore(TransactionCase):
         # Producto maestro + subproducto presentes para satisfacer los gates.
         self.assertTrue(line.product_id)
         self.assertTrue(line.subproducto_id)
-        # Espesor nominal placeholder (> 0) para el gate de validación nominal.
-        self.assertGreater(line.espesor_nominal_mm, 0.0)
+        # Sin placeholder nominal falso: la línea Granel usa espesor nominal 0.0
+        # y conserva su volumen operativo/documental según el contrato.
+        self.assertEqual(line.espesor_nominal_mm, 0.0)
+        self.assertAlmostEqual(line.vol_physical_m3, 12.345, places=3)
 
     def test_04_guard_rechaza_compra(self):
         """El guard sigue rechazando tipo_recepcion='compra' (sin regresión)."""
@@ -146,6 +175,9 @@ class TestGranelRouteCore(TransactionCase):
         guia = self.GuiaModel.create(vals)
         # Línea de processing para pasar el gate de do_full_processing().
         guia._create_granel_summary_line(5.0)
+        # La fixture service declara geometría explícita; no depende del
+        # placeholder de Granel.
+        guia.processing_line_ids.write({'espesor_nominal_mm': 1.0})
         if source_lot and qty is not None:
             self.SourceLotLineModel.create({
                 'guia_processing_id': guia.id,
@@ -173,8 +205,9 @@ class TestGranelRouteCore(TransactionCase):
         self.assertEqual(guia.state, 'validated')
         self.assertFalse(guia.consumption_picking_id,
                          "Granel puro no debe crear un picking de consumo")
-        self.assertTrue(guia.lot_ids, "Debe quedar un lote de patio creado")
-        self.assertAlmostEqual(guia.lot_ids[0].volumen_m3, 10.0, places=3)
+        lot = self._volume_lot(guia)
+        self.assertTrue(lot, "Debe quedar un lote de patio creado")
+        self.assertAlmostEqual(lot.volumen_m3, 10.0, places=3)
 
     def test_07_service_sin_origen_sigue_bloqueando(self):
         """Service sin origen sigue lanzando UserError al validar (no-regresión)."""
@@ -192,7 +225,8 @@ class TestGranelRouteCore(TransactionCase):
         granel.write({'state': 'verified'})
         granel.action_validate()
         self.assertEqual(granel.state, 'validated')
-        granel_lot = granel.lot_ids[0]
+        granel_lot = self._volume_lot(granel)
+        self.assertTrue(granel_lot, "Granel puro debe crear el lote de patio")
         self.assertAlmostEqual(self._lot_qty_at_stock(granel_lot), 10.0, places=3)
 
         # Paso 2: service declara ese lote como origen y consume 3 m³.
@@ -202,6 +236,79 @@ class TestGranelRouteCore(TransactionCase):
         self.assertEqual(service.state, 'validated')
         self.assertTrue(service.consumption_picking_id,
                         "La guía service debe invocar _get_or_create_consumption_picking()")
+
+        # ── PRE-02 — Recepción incoming del service ──────────────────────────
+        # La recepción debe quedar validada por el flujo estándar
+        # (`button_validate`, sin omitir el sanity check nativo) y sin duplicar
+        # el picking, el movimiento ni la move line trazable.
+        incoming = self.env['stock.picking'].search([
+            ('origin', '=', service.name),
+            ('picking_type_id.code', '=', 'incoming'),
+        ])
+        self.assertEqual(
+            len(incoming), 1,
+            "Debe existir exactamente una recepción incoming del service")
+        self.assertEqual(
+            incoming.state, 'done',
+            "La recepción incoming del service debe quedar validada")
+        self.assertEqual(
+            incoming.company_id, self.env.company,
+            "La recepción debe pertenecer a la compañía activa de la guía")
+
+        # Un único movimiento y una única move line asociada al lote/tarja.
+        self.assertEqual(
+            len(incoming.move_ids), 1,
+            "La recepción no debe duplicar movimientos")
+        traced = incoming.move_ids.move_line_ids.filtered(lambda ml: ml.lot_id)
+        self.assertEqual(
+            len(traced), 1,
+            "Debe existir una única move line trazable (lote/tarja)")
+        self.assertIn(
+            traced.lot_id, service.lot_ids,
+            "La move line debe apuntar al lote/tarja de trazabilidad de la guía")
+
+        # Cantidad procesada positiva derivada de la línea de guía, expresada
+        # en la UoM del movimiento (conversión estándar de Odoo).
+        line = service.processing_line_ids[:1]
+        expected_qty = line.vol_purchase_m3 or line.vol_physical_m3
+        self.assertGreater(
+            traced.quantity, 0.0,
+            "La move line debe llevar una cantidad procesada positiva")
+        self.assertAlmostEqual(
+            traced.quantity, expected_qty, places=3,
+            msg="La cantidad procesada debe derivarse de la línea de guía")
+        self.assertEqual(
+            traced.product_id, line.product_id,
+            "El producto debe provenir de la línea de guía")
+        self.assertEqual(
+            traced.product_uom_id, incoming.move_ids.product_uom,
+            "La UoM de la move line debe coincidir con la del movimiento")
+        self.assertEqual(
+            (traced.location_id, traced.location_dest_id),
+            (incoming.location_id, incoming.location_dest_id),
+            "Las ubicaciones deben derivarse del picking y sus move lines")
+
+        # Idempotencia (PRE-02): re-ejecutar la garantía de cantidad no duplica
+        # move lines, movimientos, lotes ni la recepción, y conserva el valor.
+        before_lines = incoming.move_ids.move_line_ids.ids
+        before_qty = traced.quantity
+        service._ensure_reception_move_lines(incoming)
+        self.assertEqual(
+            incoming.move_ids.move_line_ids.ids, before_lines,
+            "Re-ejecutar la garantía no debe duplicar move lines")
+        self.assertAlmostEqual(
+            traced.quantity, before_qty, places=3,
+            msg="Re-ejecutar la garantía no debe alterar la cantidad")
+        self.assertEqual(
+            self.env['stock.picking'].search_count([
+                ('origin', '=', service.name),
+                ('picking_type_id.code', '=', 'incoming')]),
+            1, "Reprocesar no debe duplicar la recepción incoming")
+        self.assertEqual(
+            incoming.move_ids.move_line_ids.filtered(
+                lambda ml: ml.lot_id and ml.product_id.tracking != 'none'
+            ).mapped('lot_id'), service.lot_ids[:1],
+            "Reprocesar no debe duplicar el lote/tarja de la recepción")
 
         # El volumen descontado coincide con lo declarado en source_lot_line_ids.
         self.assertAlmostEqual(self._lot_qty_at_stock(granel_lot), 7.0, places=3)
@@ -261,3 +368,55 @@ class TestGranelRouteCore(TransactionCase):
             {'lot_number': 'LOTE-A', 'volume_m3': 4.0},
         ])
         self.assertEqual(lines.pieces, 1)
+
+    # ── T2: distinción explícita Volumen vs. flujo dimensional ─────────────
+    def test_14_volumen_sin_espesor_nominal_y_dimensional_bloqueado(self):
+        """Volumen ('granel') no exige espesor nominal; Compra sí lo exige.
+
+        El flujo por Volumen se gobierna con el volumen oficial documental y no
+        debe inventar espesor nominal. El flujo dimensional (Compra/Servicio)
+        conserva la exigencia completa: geometría presente con espesor nominal
+        no asignado ⇒ bloqueo.
+        """
+        # 1. Volumen: línea agregada con espesor nominal 0.0 → valida.
+        guia_vol = self._make_granel_guia(name='AD68-VOL-SIN-NOMINAL')
+        line = guia_vol._create_granel_summary_line(10.0)
+        self.assertEqual(
+            line.espesor_nominal_mm, 0.0,
+            "El flujo Volumen no debe inventar espesor nominal")
+        guia_vol.write({'state': 'verified'})
+        guia_vol.action_validate()
+        self.assertEqual(guia_vol.state, 'validated')
+
+        # 2. Dimensional (compra): espesor nominal 0 con geometría → bloqueo.
+        guia_compra = self.GuiaModel.create({
+            'name': 'AD68-COMPRA-SIN-NOMINAL',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'state': 'draft',
+            'tipo_recepcion': 'compra',
+            'rate_usd': 800.0,
+        })
+        subproducto = self.env['madenat.subproducto'].create({
+            'name': 'AD68 Subproducto Dimensional',
+            'code': 'AD68DIM',
+        })
+        dim_line = self.env['madenat.guia.processing.line'].create({
+            'processing_id': guia_compra.id,
+            'lot_name': 'AD68-DIM',
+            'product_id': self.product.id,
+            'subproducto_id': subproducto.id,
+            'pieces': 10,
+            'espesor_mm': 25.0,
+            'ancho_mm': 100.0,
+            'largo_m': 2.0,
+            'espesor_nominal_mm': 25.0,
+            'ancho_nominal_mm': 100.0,
+        })
+        # El hook de autocompletado vigente (Fase 2 / Intake) alimenta el
+        # nominal desde el espesor físico cuando el valor es falsy: se fuerza
+        # después del create para reproducir "nominal aún no asignado".
+        dim_line.write({'espesor_nominal_mm': 0.0})
+        guia_compra.write({'state': 'verified'})
+        with self.assertRaises(ValidationError):
+            guia_compra.action_validate()

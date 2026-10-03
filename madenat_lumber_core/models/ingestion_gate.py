@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 from datetime import datetime
 
+from .document_format import detect_document_format
+
 _logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -97,17 +99,39 @@ class ValidationResult:
 class Gate0PreUpload:
     def validate(self, filename: str, file_bytes: bytes, expected_type: str) -> ValidationResult:
         result = ValidationResult()
-        extension = self._get_extension(filename)
-
-        if expected_type == "excel" and extension not in EXTENSIONES_EXCEL:
-            result.add_error("FILE_EXTENSION_INVALID", f"El archivo '{filename}' no es un Excel válido.", "excel_file")
-        elif expected_type == "pdf" and extension not in EXTENSIONES_PDF:
-            result.add_error("FILE_EXTENSION_INVALID", f"El archivo '{filename}' no es un PDF válido.", "pdf_file")
 
         if len(file_bytes) == 0:
             result.add_error("FILE_EMPTY", f"El archivo '{filename}' está vacío.", f"{expected_type}_file")
-        elif len(file_bytes) > MAX_FILE_SIZE_BYTES:
+            return result
+        if len(file_bytes) > MAX_FILE_SIZE_BYTES:
             result.add_error("FILE_TOO_LARGE", f"Archivo '{filename}' supera el límite de 20MB.", f"{expected_type}_file")
+            return result
+
+        # El formato REAL del binario decide la validación técnica. La extensión
+        # del nombre es solo pista visual: nunca bloquea por sí sola.
+        detected = detect_document_format(file_bytes)
+
+        if detected in ("unknown", "zip_unknown"):
+            result.add_error(
+                "FILE_FORMAT_UNKNOWN",
+                f"El archivo '{filename}' no es un formato reconocido (PDF/Excel) o está corrupto.",
+                f"{expected_type}_file",
+            )
+            return result
+
+        extension = self._get_extension(filename)
+        valid_extensions = {
+            "pdf": EXTENSIONES_PDF,
+            "xls": EXTENSIONES_EXCEL,
+            "xlsx": EXTENSIONES_EXCEL,
+        }.get(detected, set())
+
+        if extension and extension not in valid_extensions:
+            result.add_warning(
+                "FILE_EXTENSION_MISMATCH",
+                f"El archivo '{filename}' tiene extensión '{extension}' pero su contenido real es {detected}.",
+                f"{expected_type}_file",
+            )
 
         return result
 

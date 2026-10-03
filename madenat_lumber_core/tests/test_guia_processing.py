@@ -409,7 +409,7 @@ class TestGuiaProcessingValidationSignature(TransactionCase):
         })
 
     def _add_line(self, guia, lot_name, espesor_nominal_mm=25.0, subproducto=True):
-        return self.LineModel.create({
+        line = self.LineModel.create({
             'processing_id': guia.id,
             'lot_name': lot_name,
             'product_id': self.product.id,
@@ -423,6 +423,13 @@ class TestGuiaProcessingValidationSignature(TransactionCase):
             'pieces': 10,
             'subproducto_id': self.subproduct.id if subproducto else False,
         })
+        if espesor_nominal_mm <= 0 and line.espesor_nominal_mm > 0:
+            # Escenario "espesor nominal no asignado": el hook de autocompletado
+            # vigente (Fase 2 / Intake) alimenta el nominal desde el espesor
+            # físico cuando el valor es falsy. Se fuerza DESPUÉS del create para
+            # que el escenario del test no dependa de ese hook.
+            line.write({'espesor_nominal_mm': 0.0})
+        return line
 
     def test_processing_signature_generation(self):
         """Caso A (firma): generate_processing_signature produce snapshot + hash SHA-256."""
@@ -470,7 +477,13 @@ class TestGuiaProcessingValidationSignature(TransactionCase):
     def test_validate_blocked_creates_no_audit_event(self):
         """Caso C: validación bloqueada antes de firmar → sin evento ni lotes."""
         guia = self._make_guia('TEST-BT01-BLOCKED')
-        self._add_line(guia, 'BT01-LOT-BLOCKED', espesor_nominal_mm=0.0)
+        line = self._add_line(guia, 'BT01-LOT-BLOCKED', espesor_nominal_mm=0.0)
+        self.assertEqual(
+            line.espesor_nominal_mm, 0.0,
+            "El escenario exige espesor nominal NO asignado con espesor físico "
+            "presente (T4: se fuerza tras el create para no depender del hook "
+            "de autocompletado de Intake/Fase 2)."
+        )
 
         with self.assertRaises(ValidationError):
             guia.action_validate()
@@ -1195,6 +1208,14 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
             'name': 'Madera Bruta Maqueada',
             'code': 'FIX1-OPEN',
         })
+        # Producto válido Odoo 18 para las líneas de staging del candado.
+        # El filtro legado `type='product'` no existe en Odoo 18 (el tipo se
+        # redujo a consu/service/combo) y dejaba `product_id` en NULL sobre un
+        # campo requerido. Se crea explícitamente un producto almacenable.
+        cls.product = cls.env['product.product'].create({
+            'name': 'FIX1 Lock Product',
+            'is_storable': True,
+        })
 
     def _make_guia(self, name, profile='f5085'):
         return self.GuiaModel.create({
@@ -1237,9 +1258,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-S2S',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,
@@ -1259,9 +1278,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-ALLOW',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,
@@ -1285,9 +1302,7 @@ class TestGuiaProcessingIngestionProfileLock(TransactionCase):
         line = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
             'lot_name': 'FIX1-LOT-METRIC',
-            'product_id': self.env['product.product'].search(
-                [('type', '=', 'product')], limit=1
-            ).id,
+            'product_id': self.product.id,
             'espesor_mm': 25.0,
             'ancho_mm': 100.0,
             'largo_m': 2.0,

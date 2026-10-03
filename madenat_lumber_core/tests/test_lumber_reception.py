@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from unittest.mock import patch
 
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError, ValidationError
 from odoo.addons.madenat_lumber_core.models.width_mapping import WidthMappingTable
@@ -10,6 +11,16 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
+# T5 — Esta clase debe ejecutarse en la fase POST-INSTALL (registro completo).
+# Sin la declaración explícita, Odoo aplica las etiquetas por defecto
+# ('standard', 'at_install') y la clase corre durante la carga del grafo de
+# módulos, cuando los módulos que dependen de `madenat_lumber_core`
+# (p. ej. `madenat_lumber_intake`, que aporta el campo requerido
+# `conciliation_status` a `madenat.guia.processing`) todavía no están cargados:
+# la columna NOT NULL existe en la base pero el campo/default no existe en ese
+# registro parcial ⇒ NotNullViolation al crear una Guía.
+@tagged('post_install', '-at_install', 'madenat', 'lumber_reception')
 class TestLumberReception(TransactionCase):
     
     def setUp(self):
@@ -691,3 +702,27 @@ class TestLumberReception(TransactionCase):
         self.assertEqual(
             self.StockLot.search_count([('reception_id', '=', reception.id)]), 1
         )
+
+    def test_21_guide_default_conciliation_status(self):
+        """T5: una Guía creada por la vía ORM mínima nunca falla por omitir
+        `conciliation_status` (campo requerido aportado por Intake).
+
+        La captura documental flexible (§2.1) no puede quedar bloqueada por un
+        valor de conciliación que aún no se ha calculado: el modelo debe aportar
+        el valor por defecto semántico ('not_compared' = Sin contraste).
+        """
+        GuiaModel = self.env['madenat.guia.processing']
+        guia = GuiaModel.create({
+            'name': 'TEST-CONC-STATUS-001',
+            'partner_id': self.supplier.id,
+            'assignment_location_id': self.env['stock.location'].search(
+                [('usage', '=', 'internal')], limit=1
+            ).id,
+        })
+        self.assertTrue(guia.exists())
+        if 'conciliation_status' in GuiaModel._fields:
+            self.assertEqual(
+                guia.conciliation_status, 'not_compared',
+                "La creación mínima de una Guía debe recibir el valor por "
+                "defecto de conciliación (misma base con Intake instalado)."
+            )

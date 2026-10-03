@@ -28,6 +28,23 @@ class MadenatAuditLog(models.Model):
         ('consumption', 'Salida a Proceso'),
         # BT-01: firma criptográfica de un ciclo de validación de guía procesada.
         ('validation_signature', 'Firma de Validación'),
+        # AD-73: reclasificación de tipo de ingreso previa a Gate 3 (Intake).
+        ('reclassification', 'Reclasificación de Tipo de Ingreso'),
+        # Ingreso por Volúmenes: edición controlada del volumen operativo y
+        # confirmación manual de conciliación documental (Intake).
+        ('volume_operational_update', 'Actualización Volumen Operativo'),
+        ('conciliation_manual_confirm', 'Confirmación Manual de Conciliación'),
+        # Programa SV: operación del ledger de etiquetas SV (rename,
+        # regularización de volumen, rebaja y reversa de rebaja).
+        ('sv_operation', 'Operación de Etiqueta SV'),
+        # Fase 2 (AD-80): ciclo de vida controlado de guías desde la Consola
+        # de Ingreso de Madera. El bloqueo se registra SIEMPRE (incluso sin
+        # borrado); la eliminación definitiva y la purga controlada dejan su
+        # evento firmado y sobreviven al borrado de la guía
+        # (`guia_processing_id` es `ondelete='set null'`).
+        ('guia_delete_blocked', 'Eliminación de Guía Bloqueada'),
+        ('guia_delete_permanent', 'Eliminación Definitiva de Guía'),
+        ('guia_purged', 'Purga Controlada de Guía'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

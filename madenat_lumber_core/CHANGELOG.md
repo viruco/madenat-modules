@@ -1,3 +1,76 @@
+## P0-R — Remediación local de la fundación Core/SV (2026-10-02)
+
+> Incremento **LOCAL y no auditado** que remedia los hallazgos de auditoría del
+> paquete P0 (`10cfe32`). No integra CANON, B1 ni CDP-V1; no toca datos
+> productivos; no se publica (sin push ni PR). Solo rutas bajo
+> `madenat_lumber_core/`.
+
+### Fixed
+- **F-P0R-A (BLOQUEANTE) — Instalabilidad en base limpia: referencia externa al
+  addon Contacts sin declarar.** `views/madenat_views_extensions.xml`
+  (saneamiento C15 del *app switcher*) referenciaba `contacts.menu_contacts` sin
+  declarar `contacts` en `depends`; en una base limpia la carga XML fallaba con
+  `odoo.tools.convert.ParseError` (`The ID "contacts.menu_contacts" refers to an
+  uninstalled module`). **Alternativa B (desacople):** se retira la referencia,
+  que era accesoria (ocultar el menú raíz de esa app a no-administradores). El
+  Core no usa funcionalmente el addon Contacts — los contactos se gestionan vía
+  `res.partner`, provisto por `base` y ya cubierto por `sale`/`purchase`/
+  `account` — por lo que no se agrega una dependencia de módulo por un único
+  menú. Preserva la navegación funcional (se conservan `account.menu_finance` y
+  `mail.channel_menu_root`) y corrige la instalación limpia de
+  `madenat_lumber_core`. Cobertura estática nueva:
+  `tests/test_p0r_manifest_external_xml_dependencies.py` (contrato manifest↔XML,
+  sin ORM ni base de datos).
+- **F-01 (BLOQUEANTE) — ACL mínimas del Programa SV.** Se incorporan las ACL
+  operativas de `madenat.sv.operation` y de los asistentes `madenat.sv.rename.
+  wizard`, `madenat.sv.volume.regularize.wizard`, `madenat.sv.rebaja.wizard` y
+  `madenat.sv.rebaja.reverse.wizard`, separadas por grupo funcional
+  (Operaciones / Auditoría / Contabilidad) con lectura genérica interna del
+  ledger y administración para `base.group_system`. Los modelos internos
+  `madenat.sv.internal.capability` y `madenat.sv.internal.marker` permanecen SIN
+  ACL, vista, acción ni menú (solo `sudo()` server-side). Sin ACL de Costing,
+  Intake, Billing ni Purchasing.
+- **F-02 (ALTO) — Semántica del retorno físico SV.**
+  `_sv_create_volume_return()` deja de usar el tipo de operación heurístico
+  ("incoming" EMB-excluido) y las claves de contexto inertes
+  (`force_validate`, `skip_immediate`, `immediate_transfer`), y adopta
+  semántica nativa Odoo 18: tipo de operación y ubicaciones derivados de
+  `picking_type_id.return_picking_type_id` (réplica de
+  `stock.return.picking._prepare_picking_default_values_based_on`), relaciones
+  nativas de retorno (`origin_returned_move_id` + inversa `returned_move_ids`,
+  `move_orig_ids`, `return_id`), `to_refund=True` para el reembolso de
+  valorización, `lot_id` explícito por línea y contexto de validación reducido
+  a `skip_backorder` (única clave consumida por
+  `stock.picking._pre_action_done_hook`). Se preserva la idempotencia por
+  movimiento origen y la validación de saldo previa sin estado parcial.
+  Justificación de la Alternativa B (retorno manual controlado) frente al
+  wizard nativo: el wizard estándar resuelve el lote por reserva
+  (`action_assign`) y puede consumir quants de un lote distinto del SV, lo que
+  incumpliría la lot-specificity y la idempotencia exigidas por la reversa SV.
+
+### Documentation (F-04 — upgrade/recompute)
+- **Campos `store=True` agregados y recompute esperado al actualizar.** En
+  `madenat.guia.processing`: `sum_vol_documental_m3`, `diff_pdf_packing_m3`,
+  `diff_packing_lineas_m3` y `documental_conciliation_state` (computados;
+  dependen de `vol_comercial_pdf`, `packing_volume_declared_m3` y
+  `processing_line_ids.vol_documental_m3`). En el modelo nuevo
+  `madenat.sv.operation`: `guia_processing_id`, `volume_diff_m3` y
+  `pieces_diff`. El recompute lo ejecuta el ORM al actualizar el módulo.
+- **No requiere backfill manual** ni script de migración, y **no altera stock,
+  lotes, pickings, moves, quants, valoración, costos ni facturas** (evidencia:
+  `T-P0R-UPG-01`).
+- **Secuencias nuevas como data `noupdate="1"`:** `seq_madenat_sv_operation`
+  (code `madenat.sv.operation`, prefijo `SVO`) y `seq_madenat_volume_lot`
+  (code `madenat.volume.lot`, prefijo `SV`). Existen tras instalar/actualizar,
+  conservan su XML ID, no colisionan y no se reescriben en upgrades.
+- **Cambio de versión `18.0.5.5.0 → 18.0.6.3.0`** (P0): solo campos y modelos
+  nuevos; sin renombres ni borrados destructivos.
+- **No se incluye CANON ni documentos normativos** en esta fase.
+- **Incompatibilidades evitadas:** claves de contexto inertes en Odoo 18
+  (`force_validate`, `skip_immediate`, `immediate_transfer`), tipo de operación
+  "incoming" heurístico para un retorno interno→proveedor, y `to_refund` sin
+  soporte de reembolso nativo. No se modifica stock nativo de Odoo.
+
 ## [18.0.5.5.0] - 2026-09-20
 ### Added
 - **AD-66: Consumo parcial de lote/pool para salida a proceso.**

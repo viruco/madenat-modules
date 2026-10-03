@@ -22,7 +22,7 @@ Cambios v4.0:
 import re
 import math
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 import logging
 from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch
 
@@ -51,7 +51,14 @@ class StockLotExtended(models.Model):
         ('check_piezas_positive', 'CHECK(piezas >= 0)', 
          'La cantidad de piezas no puede ser negativa.'),
         ('check_cost_positive', 'CHECK(total_cost_usd >= 0)', 
-         'El costo total no puede ser negativo.')
+         'El costo total no puede ser negativo.'),
+        # 🏷️ F3.1 — Una línea elegible de Ingreso por Volumen genera
+        # EXACTAMENTE una etiqueta SV (una línea → una SV). El índice único
+        # garantiza la idempotencia 1:1 también ante concurrencia; las filas
+        # sin vínculo (NULL) no colisionan en PostgreSQL.
+        ('volume_sv_lot_unique_line',
+         'UNIQUE (volume_source_line_id)',
+         'Cada línea de Ingreso por Volumen puede tener una sola etiqueta SV.')
     ]
 
        # === TRAZABILIDAD IMPERIAL ===
@@ -211,6 +218,34 @@ class StockLotExtended(models.Model):
         domain="[('state', '=', 'done')]",
         help="EXCLUSIVAMENTE para transformación interna (cepillado/reaserrado) - No usar para recepciones"
     )
+
+    # 🏷️ F3.1 — Identidad DOCUMENTAL permanente del Lote Volumen.
+    # Identifica la guía de ingreso por volumen que originó el lote. Es
+    # inmutable (no se limpia ni se reasigna) y sobrevive a la reapertura de
+    # la guía, a diferencia de `guia_processing_id` (relación operativa que
+    # action_reopen_to_draft() limpia). `ondelete='restrict'` impide que la
+    # eliminación de la guía destruya la identidad del lote.
+    volume_source_guia_id = fields.Many2one(
+        'madenat.guia.processing',
+        string='Guía Origen de Volumen',
+        readonly=True,
+        copy=False,
+        index=True,
+        ondelete='restrict',
+    )
+
+    # 🏷️ F3.1 — Vínculo mínimo por LÍNEA de volumen para una idempotencia real
+    # (una línea elegible → una etiqueta SV). `ondelete='set null'` porque la
+    # reapertura de la guía recrea sus líneas: el enlace se limpia sin romper
+    # la operación, mientras la Guía Origen de Volumen (inmutable) se conserva.
+    volume_source_line_id = fields.Many2one(
+        'madenat.guia.processing.line',
+        string='Línea Origen de Volumen',
+        readonly=True,
+        copy=False,
+        index=True,
+        ondelete='set null',
+    )
     
     purchase_order_id = fields.Many2one(
         comodel_name='purchase.order',
@@ -333,6 +368,21 @@ class StockLotExtended(models.Model):
         ],
         string='Origen del Lote',
         help="Cómo se originó este lote"
+    )
+    # 🏷️ F3.1 — Tipo de flujo operativo persistente del lote.
+    # 'tarja'  = lotes identificados por etiqueta física del proveedor (tarja).
+    # 'volume' = Lotes Volumen del ingreso por volumen: identidad propia
+    #            `stock.lot.name` = SV + 11 dígitos (secuencia
+    #            `madenat.volume.lot`) y guía origen documental obligatoria.
+    # Los lotes históricos (incluidos los `GRANEL <sufijo>`) quedan sin tipo.
+    lot_flow_type = fields.Selection(
+        [
+            ('tarja', 'Tarja'),
+            ('volume', 'Lote Volumen'),
+        ],
+        string='Tipo de flujo de lote',
+        index=True,
+        copy=False,
     )
     # ==============================================================================
     # SECCIÓN 2: CLASIFICACIÓN Y ETIQUETADO
@@ -1226,6 +1276,8 @@ class StockLotExtended(models.Model):
     
     def unlink(self):
         """Limpiar líneas de costo antes de eliminar lotes"""
+        # 🏷️ Programa SV: la etiqueta SV con historial no se elimina.
+        self._sv_guard_unlink()
         for lot in self:
             if lot.cost_line_ids:
                 lot.cost_line_ids.unlink()
@@ -1295,6 +1347,60 @@ class StockLotExtended(models.Model):
     # ✅ MEJORAS ADICIONALES PARA ROBUSTEZ - INSERTAR AQUÍ
     # ==============================================================================
 
+    # ==============================================================================
+    # 🏷️ F3.1 — IDENTIDAD DE LOTE VOLUMEN (ETIQUETA SV)
+    # ==============================================================================
+
+    @api.model
+    def _next_volume_lot_label(self):
+        """Devuelve la siguiente etiqueta operativa SV para un Lote Volumen.
+
+        La etiqueta (SV + 11 dígitos) proviene de la secuencia global
+        `madenat.volume.lot` declarada en madenat_lumber_core/data/
+        madenat_volume_lot_sequence.xml. Es única y no reutilizable: los
+        huecos por rollback de transacción son aceptables.
+        """
+        label = self.env['ir.sequence'].next_by_code('madenat.volume.lot')
+        if not label:
+            raise UserError(
+                _('No fue posible generar la etiqueta única para el Lote Volumen.')
+            )
+        return label
+
+    @api.constrains('lot_flow_type', 'volume_source_guia_id',
+                    'volume_source_line_id')
+    def _check_volume_source_guia(self):
+        """Coherencia entre el tipo de flujo y la guía origen documental.
+
+        - Un lote de flujo 'volume' exige su guía origen de volumen.
+        - Una guía origen de volumen solo puede existir en un lote 'volume'.
+        - La línea origen de volumen (F3.1) también exige flujo 'volume' y debe
+          pertenecer a la misma guía origen.
+        """
+        for lot in self:
+            if lot.lot_flow_type == 'volume' and not lot.volume_source_guia_id:
+                raise ValidationError(_(
+                    "El lote %s es de tipo 'Lote Volumen' y requiere una "
+                    "Guía Origen de Volumen."
+                ) % (lot.name or lot.id))
+            if lot.volume_source_guia_id and lot.lot_flow_type != 'volume':
+                raise ValidationError(_(
+                    "El lote %s tiene Guía Origen de Volumen (%s) pero su tipo "
+                    "de flujo no es 'Lote Volumen'."
+                ) % (lot.name or lot.id, lot.volume_source_guia_id.name))
+            if lot.volume_source_line_id and lot.lot_flow_type != 'volume':
+                raise ValidationError(_(
+                    "El lote %s tiene Línea Origen de Volumen pero su tipo de "
+                    "flujo no es 'Lote Volumen'."
+                ) % (lot.name or lot.id))
+            if (lot.volume_source_line_id and lot.volume_source_guia_id
+                    and lot.volume_source_line_id.processing_id
+                    != lot.volume_source_guia_id):
+                raise ValidationError(_(
+                    "La Línea Origen de Volumen del lote %s no pertenece a su "
+                    "Guía Origen de Volumen."
+                ) % (lot.name or lot.id))
+
     @api.model_create_multi
     def create(self, vals_list):
         """✅ MEJORA: Sobrescribir create para garantizar estado correcto en nuevos lotes"""
@@ -1311,6 +1417,25 @@ class StockLotExtended(models.Model):
 
     def write(self, vals):
         """✅ MEJORA: Manejar cambios que puedan afectar el estado de procesado"""
+        # 🏷️ Programa SV — Guarda server-side de etiquetas SV: bloquea cambios
+        # directos de etiqueta/volumen/piezas fuera de las acciones controladas
+        # (wizards de madenat.sv.operation). No afecta a lotes no-SV.
+        self._sv_guard_write(vals)
+        # 🏷️ F3.1 — La guía origen del Lote Volumen es INMUTABLE: no puede
+        # limpiarse ni reasignarse a otra guía. Reescribir el mismo valor está
+        # permitido (idempotencia), y la reapertura de la guía no la toca
+        # porque action_reopen_to_draft() solo escribe guia_processing_id,
+        # estado_trazabilidad y technical_validation.
+        if 'volume_source_guia_id' in vals:
+            raw_source = vals.get('volume_source_guia_id')
+            new_source = (raw_source.id if hasattr(raw_source, 'id')
+                          else (raw_source or False))
+            for lot in self:
+                if (lot.volume_source_guia_id.id or False) != new_source:
+                    raise ValidationError(_(
+                        "La Guía Origen de Volumen del lote %s es inmutable: "
+                        "no puede limpiarse ni reasignarse a otra guía."
+                    ) % (lot.name or lot.id))
         result = super(StockLotExtended, self).write(vals)
         
         # ✅ SI se agregó indicador de procesado, actualizar estado
