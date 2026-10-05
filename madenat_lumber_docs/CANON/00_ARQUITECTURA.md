@@ -523,6 +523,31 @@ Norma detallada: `04_DECISION_LOG.md` **AD-93**.
 
 ---
 
+## Zarpe con excepción B-01 (AD-94, 2026-10-05)
+
+El **Zarpe** (`confirmed → in_transit`) es un hecho marítimo/logístico: **no**
+descuenta stock. Si existen Contenedores pendientes de rebaja física, el zarpe
+sólo puede ejecutarse con **excepción documental B-01 `open`** (motivo ≥ 20,
+actor, fecha y evidencia auditada).
+
+- **B-01 bloqueante:** excepción documental trazable de Zarpe; permanece `open`
+  hasta la regularización posterior; **no** altera stock; **bloquea la
+  Entrega**; **no** equivale a Rebaja.
+- **Sólo Jefatura/Gerencia** confirman el zarpe (guard de servidor).
+- **No descuenta stock:** la salida física (`stock.picking`/`move`) ocurre en la
+  el flujo **Rebaja**, separado de este bloque.
+- **Pendientes conservan su estado físico real** (nunca `shipped`/`rebajado`).
+- **Clasificador local** de rebaja física, sin dependencia de retornos (R2).
+- **Campos B-01** protegidos server-side (token de proceso, no falsificable por
+  RPC/`with_context`); snapshot **SHA-256** (`b01_departure_exception`) + chatter.
+- **Backlog documental:** no es gate de Zarpe/B-01 y se preserva.
+- **R1/R4** (regularización/cierre de B-01) son **posteriores** y no pertenecen a
+  AD-94.
+
+Norma detallada: `04_DECISION_LOG.md` **AD-94**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

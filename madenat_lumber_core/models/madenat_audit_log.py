@@ -69,6 +69,10 @@ class MadenatAuditLog(models.Model):
         # de un Embarque confirmed → draft. Evento append-only con snapshot
         # determinista y firma SHA-256. Valor ADITIVO al Selection.
         ('shipment_return_to_draft', 'Retorno Seguro a Borrador'),
+        # Sub-bloque 3 (2026-10-04): zarpe con excepción documental B-01
+        # (Contenedores sin rebaja física). Evento append-only con snapshot
+        # determinista y firma SHA-256. Valor ADITIVO al Selection.
+        ('b01_departure_exception', 'Zarpe con Excepción B-01'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

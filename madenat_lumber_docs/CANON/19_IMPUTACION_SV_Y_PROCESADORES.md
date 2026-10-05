@@ -447,7 +447,7 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 
 | # | Bloqueo (vigente) | Dónde | Clasificación propuesta | Fundamento |
 |---|---|---|---|---|
-| B-01 | **Zarpe** exige contenedores en estado `rebajado` (no zarpable si falta rebaja) | `lumber.export.shipment.action_set_in_transit` (`18` §14.1) | **Advertencia con motivo** | Es un evento logístico; bloquear al profesional viola D8. Se advierte el riesgo de **stock residual** y se exige **motivo**; se audita. La causa única de descuento (AD-84) se preserva porque el zarpe **no descuenta**. |
+| B-01 | **Zarpe** con contenedores sin rebaja física | `lumber.export.shipment.action_set_in_transit` (`18` §14.1) | **B-01 bloqueante (AD-94)** | Excepción documental **trazable**: exige **motivo**, abre **B-01 `open`**, **bloquea la Entrega** hasta regularización posterior, **no descuenta stock** ni equivale a Rebaja. R1/R4 son posteriores. |
 | B-02 | **Rebaja sin disponible** (intentar descontar más que el quant) | salida nativa (`stock.move`) | **Duro (integridad técnica)** | Odoo prohíbe quant negativo. Se acompaña de mensaje profesional que indica ajustar volumen/nominal o dejar la etiqueta sin rebajar. El **exceso nominal** sobre el saldo SV (antes del quant) es **advertencia + motivo** (§7.2). |
 | B-03 | **Reversa con embarque entregado** (o viaje cancelado) | `_rev...` / `action_reverse` (`18` §4.5, §14.1) | **Duro** por defecto; **override de Gerencia con motivo** como opción a decidir | Toca **historia** y potencial **período cerrado** (regla financiera dura). Se propone mantenerlo duro y habilitar excepción solo por Gerencia, con motivo y auditoría. **Pregunta abierta** Q-19-5. |
 | B-04 | **Saldo SV** (Σ rebajas/imputaciones > saldo) | ledger + invariantes (`18` §5.2, `17` §3) | **Advertencia con motivo** (contable), **duro** en el techo del quant | Cumple D8: se advierte la desviación, se exige motivo y se audita. El límite físico (quant) sigue duro. |
@@ -456,10 +456,10 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 | B-07 | **Costos distribuidos** impiden rolleo | `lumber_container_rollover_wizard.py:149-162` | **Duro** (con ruta: revertir costos primero) | Integridad financiera. |
 | B-08 | **Duplicado de lote** en dos contenedores activos (`_check_lot_duplication`) | `lumber.container` (`18` §14.4, H-N1) | **Duro** (técnico) | Evita doble imputación de un mismo lote. **Pregunta abierta** H-N1 (¿el negocio requiere un lote en varios contenedores?). |
 
-**Síntesis:** pasan a **advertencia con motivo**: **B-01 (zarpe)**, **B-04 (saldo SV)**. Permanecen **duros**: **B-02, B-05, B-06, B-07, B-08**. **B-03** queda duro con **override de Gerencia**. Todos los casos con motivo se registran en `madenat.audit.log` (snapshot + firma) y en `deviation_flags`.
+**Síntesis:** **B-01 (zarpe)** pasa a **B-01 bloqueante (AD-94)**; **B-04 (saldo SV)** a **advertencia con motivo**. Permanecen **duros**: **B-02, B-05, B-06, B-07, B-08**. **B-03** queda duro con **override de Gerencia**. Todos los casos con motivo se registran en `madenat.audit.log` (snapshot + firma) y en `deviation_flags`.
 
 **Estado de implementación — bloque I0 (2026-10-01, rama `feat/imputacion-sv-i1-20261001`):**
-- **B-01 — ✅ IMPLEMENTADO:** el zarpe ya no bloquea; `lumber.export.shipment.action_set_in_transit` abre `lumber.shipment.zarpe.wizard` («Rebajar y zarpar» / «Zarpar con excepción» con motivo + auditoría).
+- **B-01 — ✅ IMPLEMENTADO (AD-94):** el zarpe **no descuenta stock**; con contenedores pendientes exige excepción **B-01 bloqueante** `open` (motivo + auditoría SHA-256) que **bloquea la Entrega** hasta R1/R4 (posteriores).
 - **B-03 / B-06 — ✅ IMPLEMENTADO:** la reversa con embarque entregado o viaje cancelado exige **override de Gerencia con motivo** (`lumber.container.action_reverse_rebaja` + `lumber.container.rebaja.reverse.wizard`).
 - **B-02 (integridad), B-05 (permisos), B-07 (costos), B-08 (duplicado) — permanecen DUROS.**
 - **B-04 (saldo SV) — ⏳ NO implementado** (va en I3; fuera del alcance de I0/I1 por instrucción).

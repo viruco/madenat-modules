@@ -2504,6 +2504,49 @@ posteriores de Zarpe/B-01/regularización.
 (`shipment_return_to_draft` = «Retorno Seguro a Borrador»); pruebas
 `test_shipment_return_to_draft.py` (T-D1..T-D22 / BSD-01..BSD-13).
 
+---
+
+## 2026-10-05 — Entrega 1: Zarpe con excepción B-01
+
+### AD-94 (2026-10-05) — Zarpe con excepción B-01 bloqueante
+
+**Estado:** IMPLEMENTADO. Módulos: `madenat_lumber_logistics`,
+`madenat_lumber_core`.
+
+**Decisión.** Un Embarque puede zarpar de `confirmed` a `in_transit`. Si existen
+Contenedores pendientes de rebaja física, puede hacerlo **sólo** mediante
+excepción **B-01 `open`**, con motivo (≥ 20 caracteres), actor, fecha y
+evidencia auditada.
+
+**B-01:**
+- **no** rebaja stock;
+- **no** modifica lotes/movimientos/quants/pickings;
+- **no** crea costos/facturas/pagos;
+- mantiene los pendientes en su **estado físico real** (nunca `shipped`/
+  `rebajado`);
+- **bloquea la Entrega** mientras esté `open` (`_b01_blocks_delivery()`);
+- **R1/R4** se definen **después** y **no** pertenecen a AD-94.
+
+**Invariantes.**
+1. El Zarpe puro **no** ejecuta Rebaja (`_set_in_transit` no mueve stock; sólo
+   `state` + `actual_departure` y marca `shipped` los ya físicamente rebajados).
+2. La Rebaja es un flujo **separado**.
+3. B-01 **no** oculta el Backlog Documental (no es gate de Zarpe/B-01).
+4. Los campos B-01 están protegidos server-side por **token de proceso**
+   (`_B01_WRITE_TOKENS`, no falsificable por `with_context`/RPC).
+5. Snapshot determinista **SHA-256** (`b01_departure_exception`) y chatter
+   obligatorios.
+6. Clasificador **local** de rebaja física (sin dependencia de R2/retornos).
+
+**Evidencia.** `madenat_lumber_logistics/models/lumber_export_shipment.py`
+(`action_set_in_transit`, `_set_in_transit`, `_assert_departure_context`,
+`_classify_departure_containers`, `_container_rebaja_classification`,
+`_b01_snapshot`, `_create_b01_exception_audit`);
+`wizards/lumber_shipment_zarpe_wizard.py`;
+`madenat_lumber_core/models/madenat_audit_log.py`
+(`b01_departure_exception` = «Zarpe con excepción B-01»); pruebas
+`test_shipment_b01_exception.py` (T-B01-1..T-B01-17 / ZB-01..ZB-15).
+
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->

@@ -30,6 +30,38 @@ RETURN_TO_DRAFT_WRITE_FIELDS = frozenset({'state', 'actual_departure'})
 # `write()`.
 _RETURN_TO_DRAFT_TOKENS = set()
 
+# ============================================================================
+# Sub-bloque 3 (2026-10-04) - ZARPE CON EXCEPCION B-01 (Politica B)
+# Excepcion DOCUMENTAL bloqueante: el Embarque pasa a in_transit aunque existan
+# Contenedores sin rebaja fisica, pero los pendientes CONSERVAN su estado real,
+# no se mueve inventario y se abre una B-01 trazable que bloquea Entrega/Cierre
+# y procesos posteriores hasta su regularizacion autorizada.
+# ============================================================================
+DEPARTURE_CONFIRM_GROUPS = (
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+DEPARTURE_OPEN_GROUPS = (
+    'madenat_lumber_core.group_madenat_operaciones',
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+DEPARTURE_TERMINAL_VOYAGE_STATES = ('cancel', 'departed', 'arrived')
+B01_EXCEPTION_MIN_REASON = 20
+B01_WRITE_FIELDS = (
+    'b01_exception_state',
+    'b01_exception_reason',
+    'b01_exception_opened_at',
+    'b01_exception_opened_by_id',
+    'b01_exception_audit_id',
+    'b01_exception_resolved_at',
+    'b01_exception_resolved_by_id',
+    'b01_exception_resolution_audit_id',
+)
+# Token efimero de proceso (no falsificable por contexto RPC): los campos B-01
+# SOLO se escriben desde _set_in_transit (patron identico a Borrador Seguro).
+_B01_WRITE_TOKENS = set()
+
 CONFIRM_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
     'madenat_lumber_core.group_madenat_jefatura_operaciones',
@@ -98,6 +130,30 @@ class LumberExportShipment(models.Model):
 
     
 # =========================================================
+    # -- Sub-bloque 3 (2026-10-04) - Excepcion documental B-01 ---------------
+    b01_exception_state = fields.Selection([
+        ('none', 'Sin excepción B-01'),
+        ('open', 'B-01 Abierta'),
+        ('resolved', 'B-01 Regularizada'),
+    ], string='Estado excepción B-01', default='none', copy=False, index=True)
+    b01_exception_reason = fields.Text(
+        string='Motivo excepción B-01', copy=False, readonly=True)
+    b01_exception_opened_at = fields.Datetime(
+        string='Fecha apertura B-01', copy=False, readonly=True)
+    b01_exception_opened_by_id = fields.Many2one(
+        'res.users', string='Abierta por', copy=False, readonly=True)
+    b01_exception_audit_id = fields.Many2one(
+        'madenat.audit.log', string='Auditoría B-01', copy=False,
+        readonly=True)
+    # Sub-bloque 4A (2026-10-04): cierre controlado open → resolved (R4).
+    b01_exception_resolved_at = fields.Datetime(
+        string='Fecha cierre B-01', copy=False, readonly=True)
+    b01_exception_resolved_by_id = fields.Many2one(
+        'res.users', string='Cerrada por', copy=False, readonly=True)
+    b01_exception_resolution_audit_id = fields.Many2one(
+        'madenat.audit.log', string='Auditoría de cierre B-01', copy=False,
+        readonly=True)
+
     # 🛡️ PARTE 1: EL CANDADO DE BASE DE DATOS (SQL)
     # =========================================================
     # Garantiza que no existan dos embarques con el mismo número.
@@ -122,6 +178,12 @@ class LumberExportShipment(models.Model):
         # de un contexto aportado por RPC.
         if vals.get('state') == 'draft':
             self._assert_draft_write_authorized()
+        # -- Sub-bloque 3 (2026-10-04) - Campos B-01 ---------------------------
+        # Sólo _set_in_transit (token efímero de proceso) puede escribir los
+        # campos B-01. Se bloquea cualquier write directo (RPC/import/cliente) y
+        # se prohíbe fijar 'resolved' por esta vía.
+        if any(f in vals for f in B01_WRITE_FIELDS):
+            self._assert_b01_write_authorized(vals)
         # ¿Están intentando modificar la lista de contenedores?
         if 'container_ids' in vals:
             clean_cmds = []
@@ -467,20 +529,172 @@ class LumberExportShipment(models.Model):
         self.write({'state': 'confirmed'})
         self.message_post(body=_("✅ <b>Embarque Confirmado:</b> Listo para iniciar carga."))
 
-    def action_set_in_transit(self):
+    def _assert_departure_open_group(self):
+        if not any(self.env.user.has_group(g) for g in DEPARTURE_OPEN_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para operar el zarpe. Se requiere el rol de '
+                'Operaciones, Jefatura de Operaciones o Gerencia.'))
+
+    def _assert_departure_group(self, groups=DEPARTURE_CONFIRM_GROUPS):
+        if not any(self.env.user.has_group(g) for g in groups):
+            raise AccessError(_(
+                'No tiene permisos para confirmar el zarpe. Se requiere el rol '
+                'de Jefatura de Operaciones o Gerencia.'))
+
+    def _container_rebaja_classification(self, container):
+        """Clasificador LOCAL de rebaja física (AD-94). SÓLO lectura.
+
+        Sin dependencia de R2 (retornos) ni cambios de estado. Devuelve:
+        - 'active': existe evidencia física REAL de salida (rebaja).
+        - 'none': sin evidencia.
+
+        Evidencias (cualquiera basta):
+        * container.state in ('rebajado', 'shipped');
+        * alguna línea con rebaja_state == 'rebajado';
+        * algún rebaja_picking_id en estado 'done';
+        * stock.move `done` con destino Clientes para lotes del Contenedor;
+        * stock.quant > 0 en ubicación Clientes para lotes del Contenedor;
+        * madenat.sv.operation `rebaja`/`applied` de lotes del Contenedor.
         """
-        🚀 ZARPE (AD-82) — evento de estado/documental.
+        container.ensure_one()
+        if container.state in ('rebajado', 'shipped'):
+            return 'active'
+        lines = container.line_ids
+        if any(l.rebaja_state == 'rebajado' for l in lines):
+            return 'active'
+        if lines.mapped('rebaja_picking_id').filtered(
+                lambda p: p.state == 'done'):
+            return 'active'
+        lots = lines.mapped('lot_id')
+        customers = self.env.ref(
+            'stock.stock_location_customers', raise_if_not_found=False)
+        if lots and customers:
+            if self.env['stock.move'].search([
+                    ('state', '=', 'done'),
+                    ('location_dest_id', '=', customers.id),
+                    ('move_line_ids.lot_id', 'in', lots.ids)], limit=1):
+                return 'active'
+            if self.env['stock.quant'].search([
+                    ('lot_id', 'in', lots.ids),
+                    ('location_id', '=', customers.id),
+                    ('quantity', '>', 0)], limit=1):
+                return 'active'
+            if self.env['madenat.sv.operation'].search([
+                    ('action_type', '=', 'rebaja'),
+                    ('state', '=', 'applied'),
+                    ('lot_id', 'in', lots.ids)], limit=1):
+                return 'active'
+        return 'none'
 
-        NO mueve stock: la salida nativa ocurre al REBAJAR el contenedor.
+    def _is_container_rebajado_fisico(self, container):
+        """Evidencia REAL de rebaja física (AD-94): clasificador local."""
+        return self._container_rebaja_classification(container) == 'active'
 
-        AD-88 / B-01 (2026-10-01): si hay contenedores SIN rebajar, el zarpe
-        ya NO se bloquea: se abre el asistente «Zarpe con pendientes», que
-        ofrece **Rebajar y zarpar** o **Zarpar con excepción** (motivo
-        obligatorio + auditoría). Sin pendientes, zarpa directo.
+    def _assert_no_rebaja_inconsistency(self):
+        """P0 (AD-94): sin R2 no existe el estado 'inconsistente'.
+
+        El clasificador local es binario ('active'/'none'); se conserva el
+        método (llamado por Zarpe y por Entrega) como no-op documentado.
         """
         self.ensure_one()
-        pending = self.container_ids.filtered(lambda c: c.state != 'rebajado')
-        if pending:
+        return True
+
+    def _classify_departure_containers(self):
+        """(rebajados, pendientes) por evidencia fisica real."""
+        rebajados = self.container_ids.filtered(
+            self._is_container_rebajado_fisico)
+        return rebajados, (self.container_ids - rebajados)
+
+    def _assert_departure_context(self):
+        """Guardas de contexto del zarpe. NO escribe."""
+        self.ensure_one()
+        self._assert_no_rebaja_inconsistency()
+        if self.state != 'confirmed':
+            raise UserError(_(
+                'Sólo se puede zarpar un Embarque Confirmado (estado actual: '
+                '%s).') % dict(self._fields['state'].selection).get(
+                    self.state, self.state))
+        if not self.vessel_id:
+            raise UserError(_(
+                'No se puede zarpar el Embarque %s: falta asignar una '
+                'Motonave.') % self.name)
+        if self.b01_exception_state == 'open':
+            raise UserError(_(
+                'El Embarque %s ya tiene una B-01 abierta. Regularice la '
+                'excepción antes de un nuevo zarpe.') % self.name)
+        if self.b01_exception_state == 'resolved':
+            raise UserError(_(
+                'El Embarque %s tiene una B-01 regularizada; este flujo no '
+                'permite un nuevo zarpe hasta aprobar la política posterior.'
+            ) % self.name)
+        voyage = self.voyage_id
+        if voyage and voyage.state in DEPARTURE_TERMINAL_VOYAGE_STATES:
+            raise UserError(_(
+                'No se puede zarpar: el Viaje %s está en estado terminal (%s).'
+            ) % (voyage.name, voyage.state))
+        if self.cost_distribution_state == 'distributed':
+            raise UserError(_(
+                'No se puede zarpar/confirmar B-01: los costos del Embarque ya '
+                'fueron distribuidos.'))
+        billed = False
+        if 'lumber.billing.consolidation' in self.env:
+            consolidations = self.env[
+                'lumber.billing.consolidation'].search([
+                    ('shipment_id', '=', self.id),
+                    ('state', '!=', 'cancelled')])
+            billed = consolidations.filtered(
+                lambda c: c.invoice_id or c.state == 'billed')
+        if billed:
+            raise UserError(_(
+                'No se puede zarpar/confirmar B-01: existe una consolidación '
+                'de facturación incompatible.'))
+        self._warn_legacy_b01_evidence()
+
+    def _warn_legacy_b01_evidence(self):
+        """AD-88 compat: advierte (no bloquea) si hay B-01 historica textual."""
+        logs = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'deviation')])
+        legacy = logs.filtered(
+            lambda lg: '[B-01]' in (lg.description or '')
+            and str(self.id) in (lg.batch_id or '').split(','))
+        if legacy and self.b01_exception_state == 'none':
+            _logger.warning(
+                'B-01 historica textual para el Embarque %s sin campo '
+                'relacional migrado (se trata como advertencia).', self.name)
+
+    def _assert_can_depart(self, allow_b01=False, exception_reason=False):
+        """Guard privado de zarpe. NO escribe. Devuelve (rebajados, pendientes)."""
+        self.ensure_one()
+        self._assert_departure_group()
+        self._assert_departure_context()
+        rebajados, pendientes = self._classify_departure_containers()
+        if pendientes:
+            if not allow_b01:
+                raise UserError(_(
+                    'Zarpe BLOQUEADO: existen Contenedores SIN rebaja física '
+                    '(%s).\n\nRealice la rebaja física o use la excepción '
+                    'documental B-01 (Jefatura/Gerencia) con motivo.'
+                ) % ', '.join(pendientes.mapped('name')))
+            reason = (exception_reason or '').strip()
+            if len(reason) < B01_EXCEPTION_MIN_REASON:
+                raise UserError(_(
+                    'El motivo de la excepción B-01 es obligatorio y debe '
+                    'tener al menos %d caracteres.') % B01_EXCEPTION_MIN_REASON)
+        elif allow_b01:
+            raise UserError(_(
+                'No se puede abrir una B-01: el Embarque no tiene Contenedores '
+                'pendientes de rebaja.'))
+        return rebajados, pendientes
+
+    def action_set_in_transit(self):
+        """ZARPE (Jefatura/Gerencia). Sin pendientes zarpa directo; con
+        pendientes abre el asistente (rebajar o excepción B-01). NO mueve stock.
+        """
+        self.ensure_one()
+        self._assert_departure_open_group()
+        self._assert_departure_context()
+        _rebajados, pendientes = self._classify_departure_containers()
+        if pendientes:
             return {
                 'type': 'ir.actions.act_window',
                 'name': _('Zarpe con contenedores pendientes de rebaja'),
@@ -491,39 +705,145 @@ class LumberExportShipment(models.Model):
             }
         return self._set_in_transit()
 
-    def _set_in_transit(self, exception_reason=None):
-        """Ejecuta el zarpe (sin mover stock). Con `exception_reason` registra
-        la excepción AD-88 (B-01) de forma no bloqueante."""
+    def _set_in_transit(self, exception_reason=False, is_b01=False):
+        """Ejecuta el zarpe (sin mover stock). Con is_b01=True abre una
+        excepción documental B-01 BLOQUEANTE: los Contenedores pendientes
+        CONSERVAN su estado físico real (nunca pasan a shipped/rebajado).
+        Sólo Jefatura/Gerencia."""
         self.ensure_one()
-        pending = self.container_ids.filtered(lambda c: c.state != 'rebajado')
-        if pending:
-            names = ', '.join(pending.mapped('name'))
-            # AD-88 (B-01): advertencia con motivo + auditoría (no bloquea).
+        rebajados, pendientes = self._assert_can_depart(
+            allow_b01=is_b01, exception_reason=exception_reason)
+        state_before = self.state
+        now = fields.Datetime.now()
+
+        # 1) Sólo los contenedores con REBAJA FÍSICA pasan a shipped.
+        if rebajados:
+            rebajados.write({'state': 'shipped'})
+        # 2) Los pendientes NO se tocan: conservan su estado físico real.
+
+        audit = False
+        if is_b01:
+            # AD-88: se conserva la desviación textual (compatibilidad).
             self._guard_deviation(
                 'B-01',
-                _('Se zarpó con contenedores SIN rebajar (%s). El inventario '
-                  'de esos contenedores NO fue descontado. Use «Rebajar '
-                  'contenedor» para regularizar.') % names,
+                _('Zarpe con excepción B-01: contenedores SIN rebajar (%s) '
+                  'conservan su estado físico; no hubo salida de inventario.'
+                ) % ', '.join(pendientes.mapped('name')),
                 reason=exception_reason,
                 hard=False,
-                extra={'pending_containers': pending.mapped('name')},
+                extra={'pending_containers': pendientes.mapped('name')},
             )
+            audit = self._create_b01_exception_audit(
+                exception_reason, state_before, rebajados, pendientes)
 
-        # 🔄 SINCRONIZACIÓN DE ESTADOS (Padre -> Hijos). Sin movimiento de stock.
-        self.container_ids.write({'state': 'shipped'})
+        # 3) Cambio de estado del Embarque (sin tocar inventario).
+        self.write({'state': 'in_transit', 'actual_departure': now})
 
-        # 4. 📝 CAMBIO DE ESTADO EMBARQUE
-        self.write({
-            'state': 'in_transit', 
-            'actual_departure': fields.Datetime.now()
+        # 4) Persistir campos B-01 con token efímero (no falsificable por RPC).
+        if is_b01:
+            key = (self.env.cr.dbname, self.env.uid, self.id)
+            _B01_WRITE_TOKENS.add(key)
+            try:
+                self.write({
+                    'b01_exception_state': 'open',
+                    'b01_exception_reason': exception_reason,
+                    'b01_exception_opened_at': now,
+                    'b01_exception_opened_by_id': self.env.user.id,
+                    'b01_exception_audit_id': audit.id if audit else False,
+                })
+            finally:
+                _B01_WRITE_TOKENS.discard(key)
+
+        # 5) Chatter.
+        if is_b01:
+            self.message_post(body=_(
+                '⚠️ <b>Zarpe con excepción B-01</b><br/>'
+                'Motivo: %s<br/>'
+                'Contenedores pendientes (conservan su estado físico, sin '
+                'rebaja ni salida de inventario): %s<br/>'
+                'El Embarque queda BLOQUEADO para Borrador, Rolleo, '
+                'Entrega/Cierre, Costeo y procesos financieros hasta su '
+                'regularización autorizada.'
+            ) % (exception_reason, ', '.join(pendientes.mapped('name'))))
+        else:
+            self.message_post(body=_(
+                '🚢 <b>Zarpe Confirmado:</b> La nave ha sido rematada. '
+                'Contenedores en tránsito (sin movimiento de stock: ya '
+                'rebajado).'))
+        self._compute_yield_analysis()
+        self.message_post(body=_(
+            '📊 Rendimiento Final de Nave: %s%%') % self.yield_efficiency_pct)
+        return True
+
+    def _b01_container_snapshot(self, containers):
+        return [
+            {'id': c.id, 'name': c.name, 'state': c.state,
+             'lines': [
+                 {'lot': ln.lot_id.name or False,
+                  'rebaja_state': ln.rebaja_state,
+                  'rebaja_picking_id': ln.rebaja_picking_id.id or False,
+                  'rebaja_picking_state': ln.rebaja_picking_id.state or False}
+                 for ln in c.line_ids]}
+            for c in containers]
+
+    def _b01_snapshot(self, reason, state_before, rebajados, pendientes):
+        """Snapshot determinista de la excepcion B-01 (JSON, sort_keys)."""
+        self.ensure_one()
+        payload = {
+            'operation': {
+                'action_type': 'b01_departure_exception',
+                'timestamp': fields.Datetime.now().isoformat(),
+                'actor': {'id': self.env.user.id, 'name': self.env.user.name},
+                'reason': reason,
+            },
+            'shipment': {
+                'id': self.id, 'name': self.name,
+                'state_before': state_before, 'state_after': 'in_transit',
+                'vessel': self.vessel_id.name or False,
+                'voyage': self.voyage_id.name or False,
+            },
+            'containers_rebajados': self._b01_container_snapshot(rebajados),
+            'containers_pendientes': self._b01_container_snapshot(pendientes),
+            'physical_invariants': {
+                'no_stock_movement': True,
+                'no_quant_change': True,
+                'no_picking_created': True,
+            },
+            'exception': {
+                'state': 'open',
+                'gates': {
+                    'draft': 'blocked', 'rollover': 'blocked',
+                    'delivery': 'blocked', 'costing': 'blocked',
+                    'billing': 'blocked', 'payments': 'blocked',
+                },
+            },
+        }
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _create_b01_exception_audit(self, reason, state_before, rebajados, pendientes):
+        """Crea la auditoria append-only B-01 (sudo SOLO para audit.log)."""
+        self.ensure_one()
+        snapshot = self._b01_snapshot(reason, state_before, rebajados, pendientes)
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'b01_departure_exception',
+            'description': _(
+                'Zarpe con excepción B-01 del Embarque %s | Motivo: %s'
+            ) % (self.name, (reason or '')[:180]),
+            'batch_id': str(self.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
         })
         
-        # Log en el chatter para auditoría
-        self.message_post(body=_("🚢 <b>Zarpe Confirmado:</b> La nave ha sido rematada. Contenedores en tránsito (sin movimiento de stock: ya rebajado)."))
-        self._compute_yield_analysis() # Forzamos el cálculo del rendimiento final
-        self.message_post(body=f"📊 Rendimiento Final de Nave: {self.yield_efficiency_pct}%")
-        return True
-        
+
+    def _b01_blocks_delivery(self):
+        """Sub-bloque 4A (2026-10-04): la Entrega sólo queda bloqueada por B-01
+        mientras la excepción esté 'open'. Con 'resolved' la excepción deja de
+        bloquear; los gates normales (Contenedores pendientes, terminal,
+        financiero) siguen aplicándose por separado."""
+        self.ensure_one()
+        return self.b01_exception_state == 'open'
+
     def action_open_rebaja_wizard(self):
         """Abre el asistente «Rebajar por nave» con el alcance del embarque."""
         self.ensure_one()

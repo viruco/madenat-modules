@@ -622,7 +622,7 @@ Detalle consolidado en `19` §14.
 
 | # | Bloqueo | Clasificación propuesta |
 |---|---|---|
-| B-01 | Zarpe con contenedores no rebajados | **Advertencia con motivo** (evento logístico; el zarpe no descuenta) |
+| B-01 | Zarpe con contenedores no rebajados | **B-01 bloqueante** (AD-94): excepción documental trazable; `open` hasta regularización posterior; no altera stock; bloquea Entrega; no equivale a Rebaja. R1/R4 posteriores |
 | B-02 | Rebaja sin disponible (descontar más que el quant) | **Duro** (integridad técnica; quant nunca negativo). El exceso *nominal* sobre el saldo SV es advertencia + motivo |
 | B-03 | Reversa con embarque entregado / viaje cancelado | **Duro**, con **override de Gerencia con motivo** como opción a decidir (Q-19-5) |
 | B-04 | Saldo SV (Σ > saldo) | **Advertencia con motivo**; duro en el techo del quant |
@@ -631,6 +631,6 @@ Detalle consolidado en `19` §14.
 | B-07 | Costos distribuidos impiden rolleo | **Duro** (revertir costos primero) |
 | B-08 | Lote duplicado en dos contenedores | **Duro** (técnico; H-N1) |
 
-**Síntesis:** pasan a **advertencia con motivo** B-01 y B-04; permanecen **duros** B-02, B-05, B-06, B-07, B-08;
+**Síntesis:** B-01 pasa a **B-01 bloqueante** (AD-94) y B-04 a **advertencia con motivo**; permanecen **duros** B-02, B-05, B-06, B-07, B-08;
 B-03 queda duro con override de Gerencia sujeto a decisión. Los casos con motivo se registran en
 `madenat.audit.log` (snapshot + firma).

@@ -16,3 +16,5 @@ from . import test_sv_imputation_candidates
 from . import test_vessel_rollover
 # AD-93 (2026-10-05): Borrador Seguro autónomo.
 from . import test_shipment_return_to_draft
+# Sub-bloque 3 (2026-10-04): zarpe con excepción documental B-01 (Política B).
+from . import test_shipment_b01_exception
