@@ -9,4 +9,5 @@ from . import lumber_container_rebaja_reverse_wizard
 from . import madenat_processor_shipment_wizard
 # I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV.
 from . import madenat_sv_imputation_wizard
+# AD-92 (2026-10-05): rolleo centrado en Embarque.
 from . import lumber_vessel_rollover_wizard

@@ -40,7 +40,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-# Grupos autorizados a ejecutar el rolleo de Motonave (contrato único con
+# Grupos autorizados a ejecutar el rolleo de Embarque (contrato único con
 # `lumber.container._assert_rollover_eligible`). Auditoría queda fuera.
 ROLLEO_VESSEL_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
@@ -182,7 +182,7 @@ class LumberVesselRolloverWizard(models.TransientModel):
     def _check_group(self):
         if not any(self.env.user.has_group(g) for g in ROLLEO_VESSEL_GROUPS):
             raise AccessError(_(
-                'El rolleo de motonave requiere el rol de Operaciones, '
+                'El rolleo de Embarque requiere el rol de Operaciones, '
                 'Jefatura de Operaciones o Gerencia.'))
 
     # ══════════════════════════════════════════════════════════════════════
@@ -483,7 +483,7 @@ class LumberVesselRolloverWizard(models.TransientModel):
         }
         self._audit_create(
             'vessel_rollover',
-            _('Rolleo Motonave %s → %s') % (
+            _('Rolleo de Embarque %s → %s') % (
                 origin_vessel.name, destination_vessel.name),
             batch_id, master_payload)
 

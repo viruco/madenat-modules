@@ -12,3 +12,5 @@ from . import test_processor_shipment_ad89
 from . import test_sv_imputation_i2
 # I2 candidatos SV contextuales (contrato canónico único, AD-91).
 from . import test_sv_imputation_candidates
+# AD-92 (2026-10-05): rolleo centrado en Embarque.
+from . import test_vessel_rollover

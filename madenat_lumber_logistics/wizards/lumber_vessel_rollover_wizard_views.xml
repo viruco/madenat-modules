@@ -2,7 +2,7 @@
 <odoo>
     <data>
 
-        <!-- Fase C (2026-10-04) — Rolleo de Motonave / Cambio de Planificación.
+        <!-- AD-92 (2026-10-05) — Rolleo centrado en Embarque / Reprogramación de salida marítima.
              XML compatible con Odoo 18: esquema list, sin attrs ni states. -->
         <record id="view_lumber_vessel_rollover_wizard_form" model="ir.ui.view">
             <field name="name">lumber.vessel.rollover.wizard.form</field>
