@@ -18,3 +18,5 @@ from . import test_vessel_rollover
 from . import test_shipment_return_to_draft
 # Sub-bloque 3 (2026-10-04): zarpe con excepción documental B-01 (Política B).
 from . import test_shipment_b01_exception
+# Sub-bloque 4A (2026-10-04): regularización B-01 R1 y cierre controlado R4.
+from . import test_b01_regularization

@@ -73,6 +73,12 @@ class MadenatAuditLog(models.Model):
         # (Contenedores sin rebaja física). Evento append-only con snapshot
         # determinista y firma SHA-256. Valor ADITIVO al Selection.
         ('b01_departure_exception', 'Zarpe con Excepción B-01'),
+        # Sub-bloque 4A (2026-10-04): regularización B-01 (R1, rebaja
+        # extemporánea por evidencia física real) y su cierre controlado
+        # open → resolved (R4). Eventos append-only con snapshot determinista
+        # y firma SHA-256. Valores ADITIVOS al Selection.
+        ('b01_regularization', 'Regularización B-01'),
+        ('b01_resolution', 'Cierre de Excepción B-01'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

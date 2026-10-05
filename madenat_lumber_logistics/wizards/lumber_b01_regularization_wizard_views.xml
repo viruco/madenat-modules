@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ════════════════════════════════════════════════════════════════════
+         Sub-bloque 4A (2026-10-04) — Regularización B-01 (R1).
+         Los derechos de acceso del asistente se declaran AQUÍ (archivo
+         autorizado del propio asistente) para NO modificar security/*:
+         Gerencia ejecuta; Jefatura/Operaciones/Auditoría sólo visualizan.
+         ════════════════════════════════════════════════════════════════════ -->
+    <record id="access_lumber_b01_regularization_wizard_ger"
+            model="ir.model.access">
+        <field name="name">lumber.b01.regularization.wizard.ger</field>
+        <field name="model_id" ref="model_lumber_b01_regularization_wizard"/>
+        <field name="group_id" ref="madenat_lumber_core.group_madenat_gerencia"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="access_lumber_b01_regularization_wizard_jef"
+            model="ir.model.access">
+        <field name="name">lumber.b01.regularization.wizard.jef</field>
+        <field name="model_id" ref="model_lumber_b01_regularization_wizard"/>
+        <field name="group_id"
+               ref="madenat_lumber_core.group_madenat_jefatura_operaciones"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="access_lumber_b01_regularization_wizard_oper"
+            model="ir.model.access">
+        <field name="name">lumber.b01.regularization.wizard.oper</field>
+        <field name="model_id" ref="model_lumber_b01_regularization_wizard"/>
+        <field name="group_id" ref="madenat_lumber_core.group_madenat_operaciones"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="access_lumber_b01_regularization_wizard_aud"
+            model="ir.model.access">
+        <field name="name">lumber.b01.regularization.wizard.aud</field>
+        <field name="model_id" ref="model_lumber_b01_regularization_wizard"/>
+        <field name="group_id" ref="madenat_lumber_core.group_madenat_auditoria"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="view_lumber_b01_regularization_wizard_form"
+            model="ir.ui.view">
+        <field name="name">lumber.b01.regularization.wizard.form</field>
+        <field name="model">lumber.b01.regularization.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Regularización B-01 (rebaja extemporánea)">
+                <div class="alert alert-warning" role="alert">
+                    <b>La regularización crea una rebaja física REAL con fecha
+                    efectiva ACTUAL.</b>
+                    No retrofecha movimientos ni resuelve la excepción B-01 hasta
+                    confirmar el cierre y comprobar que no quedan Contenedores
+                    pendientes. Sólo Gerencia puede ejecutarla.
+                </div>
+                <group>
+                    <group string="Embarque y excepción">
+                        <field name="shipment_id" readonly="1"/>
+                        <field name="b01_exception_state" readonly="1"/>
+                        <field name="original_b01_audit_id" readonly="1"/>
+                        <field name="b01_exception_opened_at" readonly="1"/>
+                    </group>
+                    <group string="Ejecución">
+                        <field name="requested_by_id" readonly="1"/>
+                        <field name="effective_at" readonly="1"/>
+                        <field name="pending_count" readonly="1"/>
+                    </group>
+                </group>
+                <group string="Motivo de la B-01 original">
+                    <field name="b01_exception_reason" readonly="1"
+                           nolabel="1" colspan="2"/>
+                </group>
+                <group string="Contenedores pendientes (referencia)">
+                    <field name="pending_container_ids" readonly="1"
+                           widget="many2many_tags"/>
+                </group>
+                <group string="Contenedores a regularizar (sólo pendientes elegibles)">
+                    <field name="selected_container_ids" widget="many2many_tags"
+                           options="{'no_create': True}"/>
+                </group>
+                <group string="Motivo y aprobación (mínimo 20 caracteres cada uno)">
+                    <field name="regularization_reason"
+                           placeholder="Motivo operativo de la rebaja extemporánea (mínimo 20 caracteres)..."/>
+                    <field name="approval_reason"
+                           placeholder="Justificación de la aprobación de Gerencia (mínimo 20 caracteres)..."/>
+                </group>
+                <footer>
+                    <button name="action_regularize_rebaja" type="object"
+                            string="Ejecutar rebaja extemporánea R1"
+                            class="btn-primary"
+                            confirm="Esta acción crea una rebaja física REAL con fecha efectiva actual (no retrofecha) y descuenta stock interno → Clientes. NO cierra la excepción B-01. ¿Continuar?"/>
+                    <button string="Cancelar" special="cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

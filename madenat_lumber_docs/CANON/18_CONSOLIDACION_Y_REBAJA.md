@@ -634,3 +634,47 @@ Detalle consolidado en `19` §14.
 **Síntesis:** B-01 pasa a **B-01 bloqueante** (AD-94) y B-04 a **advertencia con motivo**; permanecen **duros** B-02, B-05, B-06, B-07, B-08;
 B-03 queda duro con override de Gerencia sujeto a decisión. Los casos con motivo se registran en
 `madenat.audit.log` (snapshot + firma).
+
+### 14.7 Regularización y cierre B-01 (R1/R4, AD-95/AD-96, 2026-10-05)
+
+Con la **B-01 `open`** abierta (zarpe con Contenedores sin rebaja), la salida del
+bloqueo es una cadena de **acciones separadas**, ambas **sólo de Gerencia**:
+
+```
+B-01 open
+  → R1  Rebaja extemporánea   (rebaja física REAL, fecha efectiva ACTUAL)
+  → R4  B-01 resolved         (cierre administrativo)
+  → Entrega, si los demás gates se cumplen
+```
+
+- **R1 — Regularización física (AD-95).** Usa el **motor nativo de Rebaja**
+  sobre Contenedores **pendientes elegibles** del propio
+  Embarque (`loaded`/`sealed`, con stock). Motivo y aprobación ≥ 20 caracteres.
+  **Savepoint por Contenedor** + **rollback total** ante cualquier fallo (sin
+  rebaja parcial). **No** cambia `state`/`actual_departure` (no retrofecha el
+  Zarpe), **no** cierra B-01, **no** crea costos/facturas/pagos. Audita
+  `b01_regularization` (SHA-256) + chatter.
+- **R4 — Cierre administrativo (AD-96).** `open → resolved` **después** de R1.
+  Exige **cero pendientes** y **≥ 1 auditoría `b01_regularization`**. **No**
+  mueve stock/lotes/moves/pickings/quants/Contenedores, **no** ejecuta Rebaja,
+  **no** toca Zarpe/fecha/`state`, **no** crea finanzas. Sólo escribe el estado y
+  los campos de resolución B-01 y crea `b01_resolution` (SHA-256). Es
+  **idempotente**; `write` directo y `with_context(...)` falsos se bloquean con
+  **token de proceso** (`_B01_RESOLVE_TOKENS`). **Libera sólo** el gate B-01 de
+  la Entrega; **Backlog** y demás gates se conservan.
+
+**Distinciones obligatorias.**
+
+| Par | Distinción |
+|---|---|
+| **R1 ≠ R2** | R1 es **rebaja extemporánea** (salida nativa, fecha actual). R2 es el **retorno físico total** de la reversa (Clientes → ubicación interna de origen, mismo lote). La evidencia de cierre de R4 se apoya en **Rebaja aplicada**, nunca en retorno. |
+| **R4 ≠ Entrega** | R4 sólo **deja de bloquear** por B-01 (`_b01_blocks_delivery()`); **no** ejecuta la Entrega, que conserva sus demás gates físicos/logísticos. |
+
+**Evidencia.** `lumber_export_shipment.py` (`action_open_b01_regularization_wizard`,
+`_create_b01_regularization_audit`, `_b01_regularization_snapshot`,
+`_assert_can_resolve_b01_exception`, `_create_b01_resolution_audit`,
+`action_resolve_b01_exception`, `_assert_b01_write_authorized`);
+`lumber_container.py` (`_assert_can_regularize_b01_rebaja`, gate de `action_rebajar`);
+`wizards/lumber_b01_regularization_wizard.py`;
+`madenat_lumber_core/models/madenat_audit_log.py` (`b01_regularization`,
+`b01_resolution`); pruebas `test_b01_regularization.py` (T-R1-1..9 / T-R4-1..12).

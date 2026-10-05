@@ -11,3 +11,5 @@ from . import madenat_processor_shipment_wizard
 from . import madenat_sv_imputation_wizard
 # AD-92 (2026-10-05): rolleo centrado en Embarque.
 from . import lumber_vessel_rollover_wizard
+# Sub-bloque 4A (2026-10-04): regularización B-01 (R1 rebaja extemporánea).
+from . import lumber_b01_regularization_wizard

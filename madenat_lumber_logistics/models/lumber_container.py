@@ -262,6 +262,12 @@ class LumberContainer(models.Model):
     ], string='Estado previo a rebaja', copy=False, readonly=True,
         help='Estado del contenedor antes de rebajar; se restaura al revertir.')
     
+    # Sub-bloque 4A (2026-10-04): estado B-01 del Embarque (sólo lectura). El
+    # formulario avisa y la rebaja estándar post-zarpe queda bloqueada.
+    b01_exception_state = fields.Selection(
+        related='shipment_id.b01_exception_state',
+        string='Excepción B-01 del Embarque', readonly=True)
+
     notes = fields.Text('Notas', help="Observaciones adicionales")
     
     # ==================== CONSTRAINTS SQL ====================
@@ -714,13 +720,158 @@ class LumberContainer(models.Model):
                 [('view_location_id', 'parent_of', location.id)], limit=1)
         return warehouse
 
+    # Sub-bloque 4A (2026-10-04) — Regularización B-01 (R1, rebaja extemporánea)
+    # Guard de servidor (NO escribe, sin sudo): autoriza la rebaja R1 sólo para
+    # Gerencia, sobre un Contenedor pendiente de un Embarque in_transit con
+    # B-01 abierta, con motivo y aprobación suficientes y sin bloqueos
+    # físicos/financieros. Reutiliza el motor estándar de Rebaja.
+    # ══════════════════════════════════════════════════════════════════════
+    B01_REGULARIZATION_MIN_REASON = 20
+
+    def _assert_can_regularize_b01_rebaja(self, shipment, reason,
+                                          approval_reason=None):
+        """Valida (sin escribir) que el Contenedor pueda rebajarse por R1."""
+        self.ensure_one()
+        if not self.env.user.has_group(
+                'madenat_lumber_core.group_madenat_gerencia'):
+            raise AccessError(_(
+                'La rebaja extemporánea B-01 (R1) sólo puede ejecutarla '
+                'Gerencia.'))
+        if not shipment:
+            raise UserError(_(
+                'La regularización B-01 requiere un Embarque.'))
+        if shipment.state != 'in_transit':
+            raise UserError(_(
+                'Sólo se puede regularizar por R1 un Embarque Embarcado '
+                '(in_transit). Estado actual: %s.') % shipment.state)
+        if shipment.b01_exception_state != 'open':
+            raise UserError(_(
+                'El Embarque %s no tiene una excepción B-01 ABIERTA (actual: '
+                '%s).') % (shipment.name, shipment.b01_exception_state))
+        if self.shipment_id != shipment:
+            raise UserError(_(
+                'El Contenedor %s no pertenece al Embarque %s con B-01 '
+                'abierta.') % (self.name, shipment.name))
+        if self.state not in self.REBAJA_ALLOWED_STATES:
+            raise UserError(_(
+                'Sólo se pueden regularizar por R1 Contenedores Cargado o '
+                'Sellado (estado actual del Contenedor %s: %s).') % (
+                    self.name, self.state))
+        if shipment._is_container_rebajado_fisico(self):
+            raise UserError(_(
+                'El Contenedor %s ya tiene evidencia de rebaja física; no '
+                'requiere regularización R1.') % self.name)
+        if not self.line_ids:
+            raise UserError(_(
+                'El Contenedor %s no tiene líneas/lotes consolidados para '
+                'rebajar.') % self.name)
+        for line in self.line_ids:
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', line.lot_id.id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal')], limit=1)
+            if not quant:
+                raise UserError(_(
+                    'El lote %s del Contenedor %s no tiene stock físico '
+                    'disponible en bodega interna.') % (
+                        line.lot_id.name or line.lot_id.id, self.name))
+        if shipment.cost_distribution_state == 'distributed':
+            raise UserError(_(
+                'No se puede regularizar por R1: los costos del Embarque ya '
+                'fueron distribuidos.'))
+        consolidations = self.env['lumber.billing.consolidation'].search([
+            ('shipment_id', '=', shipment.id), ('state', '!=', 'cancelled')])
+        if consolidations.filtered(
+                lambda c: c.invoice_id or c.state == 'billed'):
+            raise UserError(_(
+                'No se puede regularizar por R1: existe una consolidación de '
+                'facturación incompatible.'))
+        if len((reason or '').strip()) < self.B01_REGULARIZATION_MIN_REASON:
+            raise UserError(_(
+                'El motivo de la regularización B-01 es obligatorio y debe '
+                'tener al menos %d caracteres.'
+            ) % self.B01_REGULARIZATION_MIN_REASON)
+        if approval_reason is not None and len(
+                (approval_reason or '').strip()
+        ) < self.B01_REGULARIZATION_MIN_REASON:
+            raise UserError(_(
+                'La justificación de aprobación de Gerencia es obligatoria y '
+                'debe tener al menos %d caracteres.'
+            ) % self.B01_REGULARIZATION_MIN_REASON)
+        return True
+
+
+    # ══════════════════════════════════════════════════════════════════════
+    # Sub-bloque 4A (2026-10-04) — Congelación B-01 del Rolleo
+    # Guard 4A PURO: bloquea el Rolleo mientras el Embarque tenga una excepción
+    # B-01 (open o su cierre administrativo resolved). No implementa la lógica
+    # normal de Rolleo (selección, estados terminales, rebaja física): ésa
+    # permanece en HEAD.
+    # ══════════════════════════════════════════════════════════════════════
+    def _assert_b01_allows_rollover(self):
+        """4A: el Rolleo queda bloqueado mientras la excepción B-01 esté vigente."""
+        self.ensure_one()
+        shipment = self.shipment_id
+        if shipment and shipment.b01_exception_state in ('open', 'resolved'):
+            raise UserError(_(
+                'No se puede realizar el rolleo: el Embarque %s tiene una '
+                'excepción B-01 (%s). Ejecute la regularización R1 y el cierre '
+                'R4 antes de reprogramar.') % (
+                    shipment.name, shipment.b01_exception_state))
+        return True
+
+    def _assert_rollover_eligible(self):
+        """Cierre B-01 vigente bloquea el Rolleo (guard consumido por R1/R4).
+
+        Contiene EXCLUSIVAMENTE la condición 4A de B-01; no incluye la lógica
+        normal de Rolleo (que permanece en HEAD).
+        """
+        self.ensure_one()
+        return self._assert_b01_allows_rollover()
+
+    def _assert_shipment_reassign_allowed(self, new_shipment_id):
+        """4A (2026-10-04): congela la composición mientras B-01 esté ABIERTA.
+
+        Bloquea reasignar `shipment_id` (origen o destino) cuando el Embarque
+        está Embarcado (in_transit) con una excepción B-01 ABIERTA: la
+        composición queda CONGELADA hasta ejecutar la regularización R1 y el
+        cierre R4. No admite bypass por contexto RPC.
+        """
+        dest = (self.env['lumber.export.shipment'].browse(new_shipment_id)
+                if new_shipment_id else self.env['lumber.export.shipment'])
+        for container in self:
+            for shipment in (container.shipment_id | dest):
+                if shipment and shipment.state == 'in_transit' \
+                        and shipment.b01_exception_state == 'open':
+                    raise UserError(_(
+                        'No se puede reasignar el Contenedor %s: la composición '
+                        'del Embarque %s queda CONGELADA mientras la excepción '
+                        'B-01 esté abierta. Ejecute la regularización R1 y el '
+                        'cierre R4 antes de recomponer. Esta protección es de '
+                        'servidor y no admite excepción.') % (
+                            container.name, shipment.name))
+        return True
+
     def action_rebajar(self):
-        """B2: rebaja de inventario del contenedor (salida nativa de stock)."""
+        """B2: rebaja de inventario del contenedor (salida nativa de stock).
+
+        Sub-bloque 4A (2026-10-04): la rebaja estándar post-zarpe con B-01
+        ABIERTA queda bloqueada (incluso para Gerencia): la única vía es la
+        regularización R1 (`lumber.b01.regularization.wizard`), que controla
+        motivo, aprobación de Gerencia y auditoría.
+        """
         self.ensure_one()
         self._rebaja_require_group(
             'madenat_lumber_core.group_madenat_operaciones',
             'madenat_lumber_core.group_madenat_jefatura_operaciones',
             'madenat_lumber_core.group_madenat_gerencia')
+        shipment = self.shipment_id
+        if shipment and shipment.state == 'in_transit' \
+                and shipment.b01_exception_state == 'open':
+            raise UserError(_(
+                'La rebaja estándar no está disponible: el Embarque %s tiene '
+                'una excepción B-01 abierta. Use la regularización B-01 (R1) '
+                'desde el Embarque (sólo Gerencia).') % shipment.name)
         self._rebajar_container()
         return True
 
@@ -1046,6 +1197,11 @@ class LumberContainer(models.Model):
 
     # 2. 🔄 TRIGGER AL MODIFICAR UN CONTENEDOR (Lo que pide tu Wizard)
     def write(self, vals):
+        # Sub-bloque 4A (2026-10-04): no se puede reasignar `shipment_id` si el
+        # Embarque de origen o destino está Embarcado (in_transit) con una
+        # excepción B-01 ABIERTA. Sin bypass por contexto RPC.
+        if 'shipment_id' in vals:
+            self._assert_shipment_reassign_allowed(vals.get('shipment_id'))
         res = super(LumberContainer, self).write(vals)
         
         # Lista de campos "sensibles" que afectan al embarque

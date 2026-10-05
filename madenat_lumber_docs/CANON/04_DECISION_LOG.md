@@ -2547,6 +2547,80 @@ evidencia auditada.
 (`b01_departure_exception` = «Zarpe con excepción B-01»); pruebas
 `test_shipment_b01_exception.py` (T-B01-1..T-B01-17 / ZB-01..ZB-15).
 
+---
+
+## 2026-10-05 — Entrega 2: Regularización y cierre B-01 (R1/R4)
+
+### AD-95 (2026-10-05) — R1: regularización física extemporánea de B-01
+
+**Estado:** IMPLEMENTADO. Módulos: `madenat_lumber_logistics`,
+`madenat_lumber_core`.
+
+**Propósito.** Cerrar la brecha física de una excepción **B-01 `open`**: ejecutar
+la **rebaja** que faltaba al zarpe, con **fecha efectiva actual** (no
+retroactiva), dejando evidencia auditada. **R1 no cierra la excepción.**
+
+**Roles.** Sólo **Gerencia** abre y confirma R1 (guard de servidor + ACL del
+asistente). Operaciones/Jefatura/Auditoría pueden visualizar, no confirmar.
+
+**Invariantes.**
+1. Sólo Embarque `in_transit` con **B-01 `open`**; sólo Contenedores
+   **pendientes elegibles** del propio Embarque (`loaded`/`sealed`, con stock),
+   sin rebaja física previa.
+2. Motivo y aprobación ≥ 20 caracteres.
+3. Usa el **motor nativo de Rebaja** (`stock.picking` OUT ·
+   `stock.move`/`stock.move.line` · lote real · `button_validate`);
+   **savepoint por Contenedor** y **rollback total** ante cualquier fallo (sin
+   rebaja parcial).
+4. **No** cambia `shipment.state` ni `actual_departure` (no retrofecha el Zarpe).
+5. **No** cierra B-01 (`open` permanece); **no** entrega; **no** crea
+   costos/facturas/pagos.
+6. Registra `b01_regularization` (snapshot determinista **SHA-256** + chatter).
+
+**Separación.** **R1 ≠ R2**: R1 es rebaja extemporánea; R2 es el **retorno físico
+total** de la reversa. R1 no usa retorno físico.
+
+**Evidencia.** `lumber_export_shipment.py` (`_create_b01_regularization_audit`,
+`_b01_regularization_snapshot`, `_b01_regularization_container_snapshot`,
+`action_open_b01_regularization_wizard`); `lumber_container.py`
+(`_assert_can_regularize_b01_rebaja`); `wizards/lumber_b01_regularization_wizard.py`;
+`madenat_lumber_core/models/madenat_audit_log.py` (`b01_regularization`); pruebas
+`test_b01_regularization.py` (T-R1-1..9).
+
+### AD-96 (2026-10-05) — R4: cierre administrativo de B-01
+
+**Estado:** IMPLEMENTADO. Módulo: `madenat_lumber_logistics`.
+
+**Propósito.** Cerrar administrativamente la excepción **open → resolved**
+**después** de que R1 dejó evidencia suficiente. **R4 no genera Rebaja ni stock.**
+
+**Roles.** Sólo **Gerencia**.
+
+**Invariantes.**
+1. Sólo `in_transit` con B-01 `open`; exige **cero pendientes** y **al menos una
+   auditoría `b01_regularization`** (evidencia R1).
+2. Sólo escribe `b01_exception_state='resolved'`, `b01_exception_resolved_at`,
+   `b01_exception_resolved_by_id`, `b01_exception_resolution_audit_id`.
+3. **No** toca stock/lote/move/move line/picking/quant/Contenedores; **no**
+   cambia `state` ni `actual_departure`; **no** ejecuta Rebaja; **no** crea
+   costos/facturas/pagos.
+4. Registra `b01_resolution` (snapshot determinista **SHA-256** + chatter).
+5. **Idempotente** (reintento bloqueado); `write` directo y `with_context(...)`
+   falsos bloqueados por **token de proceso** (`_B01_RESOLVE_TOKENS`, no
+   falsificable por RPC).
+6. **Libera sólo** el gate B-01 de la Entrega (`_b01_blocks_delivery()`);
+   **Backlog** y demás gates se conservan. **R4 ≠ Entrega.**
+
+**Evidencia.** `lumber_export_shipment.py` (`_assert_can_resolve_b01_exception`,
+`_b01_resolution_snapshot`, `_create_b01_resolution_audit`,
+`action_resolve_b01_exception`, `_assert_b01_write_authorized`);
+`madenat_lumber_core/models/madenat_audit_log.py` (`b01_resolution`); pruebas
+`test_b01_regularization.py` (T-R4-1..12).
+
+**No alcance.** Sin R2 (retorno físico), sin Entrega, sin Costeo/Billing/Pagos y
+sin Backlog como feature. El cierre de R4 se apoya en **Rebaja aplicada**, nunca
+en retorno.
+
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->

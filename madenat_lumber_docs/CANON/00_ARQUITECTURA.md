@@ -548,6 +548,38 @@ Norma detallada: `04_DECISION_LOG.md` **AD-94**.
 
 ---
 
+## Regularización y cierre B-01 — R1/R4 (AD-95/AD-96, 2026-10-05)
+
+Con la excepción **B-01 `open`** abierta, la salida del bloqueo ocurre en **dos
+acciones explícitas y separadas**, ambas **sólo de Gerencia**:
+
+- **R1 — Regularización física B-01 (AD-95):** **rebaja extemporánea** física
+  posterior al Zarpe B-01. Sólo Gerencia; sólo un Embarque `in_transit` con
+  B-01 `open`; sólo Contenedores **pendientes elegibles** del propio Embarque.
+  Usa el **motor nativo de Rebaja** (`stock.picking` OUT ·
+  `stock.move`/`stock.move.line` · lote real · `button_validate`), con
+  **savepoint por Contenedor** y **rollback total** ante cualquier fallo. **No**
+  cambia `state`/`actual_departure`, **no** cierra B-01, **no** crea
+  costos/facturas/pagos. Registra `b01_regularization` (snapshot **SHA-256** +
+  chatter).
+- **R4 — Cierre administrativo B-01 (AD-96):** **open → resolved** posterior a
+  R1. Sólo Gerencia; sólo `in_transit` + B-01 `open`; exige **cero pendientes** y
+  **al menos una auditoría `b01_regularization`**. **No mueve stock**, **no**
+  ejecuta Rebaja, **no** toca Contenedores/Zarpe/fecha/`state`, **no** crea
+  finanzas. Sólo escribe `b01_exception_state='resolved'`,
+  `b01_exception_resolved_at/by_id`, `b01_exception_resolution_audit_id` y crea
+  `b01_resolution` (SHA-256). **Libera sólo el gate B-01 de la Entrega**
+  (`_b01_blocks_delivery()`); los demás gates logísticos siguen aplicándose y el
+  **Backlog** se preserva.
+
+**Separación:** **R1 ≠ R2** (R1 es rebaja extemporánea; R2 es el **retorno
+físico total** de la reversa). **R4 ≠ Entrega** (R4 sólo habilita; la Entrega es
+un hito aparte). Los campos B-01 se protegen con **token de proceso** (no
+falsificable por `with_context`/RPC). Norma detallada: `04_DECISION_LOG.md`
+**AD-95/AD-96**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

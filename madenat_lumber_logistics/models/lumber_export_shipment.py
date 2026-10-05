@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, ValidationError, UserError
+import hashlib
+import json
 import logging
 import io
 import base64
@@ -48,6 +50,8 @@ DEPARTURE_OPEN_GROUPS = (
 )
 DEPARTURE_TERMINAL_VOYAGE_STATES = ('cancel', 'departed', 'arrived')
 B01_EXCEPTION_MIN_REASON = 20
+# Sub-bloque 4A (2026-10-04): motivos mínimos de la regularización R1.
+B01_REGULARIZATION_MIN_REASON = 20
 B01_WRITE_FIELDS = (
     'b01_exception_state',
     'b01_exception_reason',
@@ -61,6 +65,9 @@ B01_WRITE_FIELDS = (
 # Token efimero de proceso (no falsificable por contexto RPC): los campos B-01
 # SOLO se escriben desde _set_in_transit (patron identico a Borrador Seguro).
 _B01_WRITE_TOKENS = set()
+# Sub-bloque 4A (2026-10-04): token efimero que autoriza ÚNICAMENTE el cierre
+# open → resolved desde `action_resolve_b01_exception` (no falsificable por RPC).
+_B01_RESOLVE_TOKENS = set()
 
 CONFIRM_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
@@ -184,6 +191,20 @@ class LumberExportShipment(models.Model):
         # se prohíbe fijar 'resolved' por esta vía.
         if any(f in vals for f in B01_WRITE_FIELDS):
             self._assert_b01_write_authorized(vals)
+        # -- Sub-bloque 4A (2026-10-04) - Congelación de composición ----------
+        # La lista de Contenedores queda CONGELADA cuando el Embarque está
+        # Embarcado (in_transit) o tiene B-01 open/resolved. No hay bypass por
+        # contexto RPC: se rechaza cualquier alta, baja o reasignación.
+        if 'container_ids' in vals:
+            frozen = self.filtered(
+                lambda s: s.state == 'in_transit'
+                or s.b01_exception_state in ('open', 'resolved'))
+            if frozen:
+                raise UserError(_(
+                    'No se pueden añadir, quitar ni reasignar Contenedores en '
+                    'un Embarque Embarcado (in_transit) o con excepción B-01 '
+                    '(%s). Esta protección es de servidor y no admite '
+                    'excepción.') % ', '.join(frozen.mapped('name')))
         # ¿Están intentando modificar la lista de contenedores?
         if 'container_ids' in vals:
             clean_cmds = []
@@ -836,6 +857,267 @@ class LumberExportShipment(models.Model):
         })
         
 
+    # ══════════════════════════════════════════════════════════════════════
+    # Sub-bloque 4A (2026-10-04) — REGULARIZACIÓN B-01 (R1) y CIERRE (R4)
+    # La rebaja extemporánea mueve inventario REAL con fecha efectiva actual
+    # (no retrofecha). El cierre open → resolved sólo procede cuando no queda
+    # ningún Contenedor pendiente y existe evidencia de regularización.
+    # ══════════════════════════════════════════════════════════════════════
+    def _b01_regularization_audits(self):
+        """Auditorías de regularización B-01 (R1) del Embarque."""
+        self.ensure_one()
+        return self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'b01_regularization'),
+            ('batch_id', '=', str(self.id))])
+
+    def _b01_regularization_container_snapshot(self, container):
+        """Evidencia física/lote/picking de un Contenedor regularizado."""
+        rebaja_batch = ','.join(str(i) for i in container.line_ids.ids)
+        rebaja_audits = self.env['madenat.audit.log'].sudo().search([
+            ('action_type', '=', 'rebaja'),
+            ('batch_id', '=', rebaja_batch)]).ids
+        return {
+            'id': container.id,
+            'name': container.name,
+            'state_before': container.state_before_rebaja or False,
+            'state_after': container.state,
+            'lines': [
+                {
+                    'line_id': ln.id,
+                    'lot': ln.lot_id.name or False,
+                    'lot_id': ln.lot_id.id or False,
+                    'quantity': round(ln.rebaja_qty_m3 or 0.0, 3),
+                    'rebaja_state': ln.rebaja_state or False,
+                    'rebaja_picking_id': ln.rebaja_picking_id.id or False,
+                    'rebaja_picking_name': ln.rebaja_picking_id.name or False,
+                    'rebaja_picking_state': ln.rebaja_picking_id.state or False,
+                }
+                for ln in container.line_ids.sorted('id')
+            ],
+            'rebaja_audit_ids': rebaja_audits,
+        }
+
+    def _b01_regularization_snapshot(self, containers, reason, approval_reason):
+        """Snapshot determinista JSON (sort_keys) de la R1 ejecutada."""
+        self.ensure_one()
+        now = fields.Datetime.now()
+        payload = {
+            'operation': {
+                'action_type': 'b01_regularization',
+                'subtype': 'late_rebaja',
+                'timestamp': now.isoformat(),
+                'effective_at': now.isoformat(),
+                'executor': {
+                    'id': self.env.user.id, 'name': self.env.user.name},
+                'approver': {
+                    'id': self.env.user.id, 'name': self.env.user.name,
+                    'role': 'gerencia'},
+                'reason': reason,
+                'approval_reason': approval_reason,
+            },
+            'shipment': {
+                'id': self.id,
+                'name': self.name,
+                'b01_state': self.b01_exception_state,
+                'original_b01_audit_id': self.b01_exception_audit_id.id or False,
+            },
+            'containers': [
+                self._b01_regularization_container_snapshot(c)
+                for c in containers.sorted('id')
+            ],
+            'invariants': {
+                'departure_not_backdated': True,
+                'physical_stock_moved_by_rebaja': True,
+            },
+        }
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _create_b01_regularization_audit(self, containers, reason,
+                                         approval_reason):
+        """Crea la auditoría append-only de la R1 (sudo SÓLO para audit.log)."""
+        self.ensure_one()
+        snapshot = self._b01_regularization_snapshot(
+            containers, reason, approval_reason)
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'b01_regularization',
+            'description': _(
+                'Regularización B-01 (rebaja extemporánea R1) del Embarque %s '
+                '| Contenedores: %s | Motivo: %s'
+            ) % (self.name, ', '.join(containers.mapped('name')),
+                 (reason or '')[:180]),
+            'batch_id': str(self.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
+
+    def action_open_b01_regularization_wizard(self):
+        """Abre el asistente de regularización R1 (sólo Gerencia)."""
+        self.ensure_one()
+        if not self.env.user.has_group(
+                'madenat_lumber_core.group_madenat_gerencia'):
+            raise AccessError(_(
+                'La regularización B-01 (R1) requiere el rol de Gerencia.'))
+        if self.state != 'in_transit' or self.b01_exception_state != 'open':
+            raise UserError(_(
+                'Sólo se puede regularizar un Embarque En Tránsito con una '
+                'excepción B-01 ABIERTA (actual: %s / %s).') % (
+                    self.state, self.b01_exception_state))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Regularización B-01 (rebaja extemporánea)'),
+            'res_model': 'lumber.b01.regularization.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_shipment_id': self.id},
+        }
+
+    def action_view_b01_audits(self):
+        """Muestra las auditorías B-01 (apertura, R1 y cierre) del Embarque."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Auditorías B-01 — %s') % self.name,
+            'res_model': 'madenat.audit.log',
+            'view_mode': 'list,form',
+            'domain': [
+                ('batch_id', '=', str(self.id)),
+                ('action_type', 'in', [
+                    'b01_departure_exception', 'b01_regularization',
+                    'b01_resolution']),
+            ],
+            'context': {'create': False},
+        }
+
+
+    def _assert_can_resolve_b01_exception(self):
+        """Guard del cierre B-01 (R4). NO escribe, sin sudo.
+
+        Autorizable sólo por Gerencia cuando: Embarque in_transit, B-01 open,
+        todos los Contenedores están rebajados físicamente (sin pendiente
+        residual), no hay costo/factura/pago incompatible y existe al menos una
+        auditoría de regularización B-01 (la exclusión formal no se implementa).
+        """
+        self.ensure_one()
+        if not self.env.user.has_group(
+                'madenat_lumber_core.group_madenat_gerencia'):
+            raise AccessError(_(
+                'El cierre de la excepción B-01 requiere el rol de Gerencia.'))
+        if self.state != 'in_transit':
+            raise UserError(_(
+                'Sólo se puede cerrar la B-01 de un Embarque Embarcado '
+                '(in_transit). Estado actual: %s.') % self.state)
+        if self.b01_exception_state == 'resolved':
+            raise UserError(_(
+                'El Embarque %s ya tiene la excepción B-01 regularizada '
+                '(resolved).') % self.name)
+        if self.b01_exception_state != 'open':
+            raise UserError(_(
+                'El Embarque %s no tiene una excepción B-01 abierta.') % self.name)
+        if not self.container_ids:
+            raise UserError(_(
+                'No se puede cerrar la B-01: el Embarque no tiene '
+                'Contenedores.'))
+        _rebajados, pendientes = self._classify_departure_containers()
+        if pendientes:
+            raise UserError(_(
+                'No se puede cerrar la B-01 del Embarque %s: quedan '
+                'Contenedores pendientes de rebaja física (%s). Regularícelos '
+                'mediante la rebaja extemporánea R1.') % (
+                    self.name, ', '.join(pendientes.mapped('name'))))
+        if self.cost_distribution_state == 'distributed':
+            raise UserError(_(
+                'No se puede cerrar la B-01: los costos del Embarque ya fueron '
+                'distribuidos.'))
+        consolidations = self.env['lumber.billing.consolidation'].search([
+            ('shipment_id', '=', self.id), ('state', '!=', 'cancelled')])
+        if consolidations.filtered(
+                lambda c: c.invoice_id or c.state == 'billed'):
+            raise UserError(_(
+                'No se puede cerrar la B-01: existe una consolidación de '
+                'facturación incompatible.'))
+        if not self._b01_regularization_audits():
+            raise UserError(_(
+                'No se puede cerrar la B-01 del Embarque %s: no existe '
+                'evidencia de regularización (R1) ni exclusión formal.'
+            ) % self.name)
+        return True
+
+    def _b01_resolution_snapshot(self, regularization_audit_ids):
+        """Snapshot determinista JSON del cierre open → resolved."""
+        self.ensure_one()
+        now = fields.Datetime.now()
+        payload = {
+            'operation': {
+                'action_type': 'b01_resolution',
+                'timestamp': now.isoformat(),
+                'actor': {'id': self.env.user.id, 'name': self.env.user.name},
+                'original_b01_audit_id': self.b01_exception_audit_id.id or False,
+                'regularization_audit_ids': list(regularization_audit_ids),
+            },
+            'shipment': {
+                'id': self.id, 'name': self.name, 'state': self.state,
+                'b01_before': 'open', 'b01_after': 'resolved',
+            },
+            'containers': [
+                self._b01_regularization_container_snapshot(c)
+                for c in self.container_ids.sorted('id')
+            ],
+            'gates': {
+                'entrega_habilitada_tras_cierre': True,
+                'draft_still_blocked': True,
+                'rollover_still_blocked': True,
+            },
+        }
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _create_b01_resolution_audit(self, regularization_audit_ids):
+        """Auditoría append-only del cierre B-01 (sudo SÓLO para audit.log)."""
+        self.ensure_one()
+        snapshot = self._b01_resolution_snapshot(regularization_audit_ids)
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'b01_resolution',
+            'description': _(
+                'Cierre de excepción B-01 (open → resolved) del Embarque %s.'
+            ) % self.name,
+            'batch_id': str(self.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
+
+    def action_resolve_b01_exception(self):
+        """Cierra la excepción B-01 open → resolved (sólo Gerencia).
+
+        No modifica la B-01 original (motivo/apertura). Usa token de proceso no
+        falsificable; la misma transacción escribe estado, evidencia y
+        auditoría append-only. Idempotente por bloqueo de reintento.
+        """
+        self.ensure_one()
+        self._assert_can_resolve_b01_exception()
+        reg_audits = self._b01_regularization_audits()
+        audit = self._create_b01_resolution_audit(reg_audits.ids)
+        now = fields.Datetime.now()
+        key = (self.env.cr.dbname, self.env.uid, self.id)
+        _B01_RESOLVE_TOKENS.add(key)
+        try:
+            self.write({
+                'b01_exception_state': 'resolved',
+                'b01_exception_resolved_at': now,
+                'b01_exception_resolved_by_id': self.env.user.id,
+                'b01_exception_resolution_audit_id': audit.id,
+            })
+        finally:
+            _B01_RESOLVE_TOKENS.discard(key)
+        self.message_post(body=_(
+            '✅ <b>Excepción B-01 cerrada (resolved)</b> por %s.<br/>'
+            'Todos los Contenedores quedaron rebajados físicamente (R1). '
+            'El Embarque deja de estar bloqueado por B-01 para la '
+            'Entrega/Cierre (los gates normales siguen aplicando). '
+            'Auditoría de cierre: %s.'
+        ) % (self.env.user.display_name, audit.id))
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
     def _b01_blocks_delivery(self):
         """Sub-bloque 4A (2026-10-04): la Entrega sólo queda bloqueada por B-01
         mientras la excepción esté 'open'. Con 'resolved' la excepción deja de
@@ -1377,6 +1659,32 @@ class LumberExportShipment(models.Model):
             'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
             'user_id': self.env.user.id,
         })
+
+    def _assert_b01_write_authorized(self, vals):
+        """Cierra la puerta lateral: los campos B-01 sólo se escriben desde
+        _set_in_transit (o, para el cierre, desde `action_resolve_b01_exception`)
+        mediante un token efímero de proceso, no falsificable por RPC.
+
+        Sub-bloque 4A (2026-10-04): la única transición admitida hacia
+        'resolved' es el token de cierre; 'open'/'none' y el resto de campos
+        originales quedan reservados al token de zarpe B-01.
+        """
+        for rec in self:
+            key = (rec.env.cr.dbname, rec.env.uid, rec.id)
+            if vals.get('b01_exception_state') == 'resolved':
+                if key not in _B01_RESOLVE_TOKENS:
+                    raise UserError(_(
+                        'La regularización B-01 (estado «resolved») del '
+                        'Embarque %s sólo puede ejecutarse mediante la acción '
+                        'autorizada «Cerrar B-01».') % (rec.name or rec.id))
+                _B01_RESOLVE_TOKENS.discard(key)
+            else:
+                if key not in _B01_WRITE_TOKENS:
+                    raise UserError(_(
+                        'Los campos de excepción B-01 del Embarque %s sólo '
+                        'pueden escribirse mediante el flujo autorizado de '
+                        'zarpe B-01.') % (rec.name or rec.id))
+                _B01_WRITE_TOKENS.discard(key)
 
     def _assert_draft_write_authorized(self):
         """Impide write({'state':'draft'}) fuera de action_draft autorizado.

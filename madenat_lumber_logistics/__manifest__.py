@@ -47,6 +47,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'wizards/madenat_sv_imputation_wizard_views.xml',
         # AD-92 (2026-10-05): rolleo centrado en Embarque.
         'wizards/lumber_vessel_rollover_wizard_views.xml',
+        # Sub-bloque 4A (2026-10-04): regularización B-01 (R1 rebaja extemporánea).
+        'wizards/lumber_b01_regularization_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            

@@ -49,6 +49,21 @@
                     <button name="action_deliver" string="Entregar" type="object" 
                             invisible="state != 'in_transit'" class="btn-primary"/>
 
+
+                    <!-- Sub-bloque 4A (2026-10-04): Regularización B-01 (R1) y
+                         Cierre B-01 (R4). Sólo Gerencia; el guard de servidor
+                         es la defensa obligatoria. -->
+                    <button name="action_open_b01_regularization_wizard"
+                            string="Regularizar B-01" type="object"
+                            groups="madenat_lumber_core.group_madenat_gerencia"
+                            invisible="state != 'in_transit' or b01_exception_state != 'open'"
+                            class="btn-primary"/>
+                    <button name="action_resolve_b01_exception"
+                            string="Cerrar B-01" type="object"
+                            groups="madenat_lumber_core.group_madenat_gerencia"
+                            invisible="b01_exception_state != 'open'"
+                            class="btn-danger"
+                            confirm="⚠️ ¿Confirma el CIERRE de la excepción B-01 (open → resolved)? Sólo se permite si TODOS los Contenedores están rebajados físicamente y no queda ningún pendiente. Queda auditado con hash SHA-256."/>
                     <!-- Sub-bloque 2 (2026-10-04) — Borrador Seguro (AD-93).
                          Visible sólo para Jefatura/Gerencia y sólo en Confirmado
                          (confirmed → draft). El guard de servidor es la defensa
@@ -111,6 +126,47 @@
                         <div class="col-3">
                             <small class="text-muted d-block font-weight-bold">CONTENEDORES</small>
                             <h2><field name="container_count"/></h2>
+                        </div>
+                    </div>
+
+                    <!-- Sub-bloque 3 (2026-10-04): Bloque B-01 (sólo lectura). -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="b01_exception_state == 'none'">
+                        <h5 class="mb-2">
+                            <field name="b01_exception_state" widget="badge"
+                                   decoration-warning="b01_exception_state == 'open'"
+                                   decoration-success="b01_exception_state == 'resolved'"
+                                   class="mr-2"/>
+                            Excepción documental B-01
+                        </h5>
+                        <group>
+                            <field name="b01_exception_opened_at" readonly="1"/>
+                            <field name="b01_exception_opened_by_id" readonly="1"/>
+                            <field name="b01_exception_audit_id" readonly="1"/>
+                            <field name="b01_exception_reason" readonly="1" colspan="2"/>
+                        </group>
+                        <!-- Sub-bloque 4A (2026-10-04): cierre de la excepción. -->
+                        <group invisible="b01_exception_state != 'resolved'">
+                            <field name="b01_exception_resolved_at" readonly="1"/>
+                            <field name="b01_exception_resolved_by_id" readonly="1"/>
+                            <field name="b01_exception_resolution_audit_id" readonly="1"/>
+                        </group>
+                        <div class="mb-1">
+                            <button name="action_view_b01_audits" type="object"
+                                    class="btn-link" icon="fa-history"
+                                    string="Ver auditorías B-01 (apertura / R1 / cierre)"/>
+                        </div>
+                        <div class="text-muted">
+                            Excepción DOCUMENTAL: los Contenedores pendientes
+                            conservan su estado físico real y NO hubo rebaja ni
+                            salida de inventario. El Embarque queda bloqueado para
+                            Borrador, Rolleo, Entrega/Cierre, Costeo y procesos
+                            financieros hasta su regularización autorizada.
+                            <br/>
+                            <b>Regularización B-01 (R1):</b> rebaja física con
+                            fecha efectiva ACTUAL (no retrofecha movimientos) +
+                            auditoría. <b>Cierre (R4):</b> open → resolved sólo
+                            cuando no queda ningún Contenedor pendiente.
                         </div>
                     </div>
 

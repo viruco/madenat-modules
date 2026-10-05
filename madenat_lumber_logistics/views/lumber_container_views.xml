@@ -231,7 +231,7 @@
                             string="Rebajar contenedor"
                             type="object"
                             class="btn-primary"
-                            invisible="state not in ('loaded', 'sealed')"
+                            invisible="state not in ('loaded', 'sealed') or b01_exception_state == 'open'"
                             confirm="¿Rebajar el inventario de este contenedor? Se genera UNA salida nativa de stock y el contenedor pasa a 'Rebajado'."/>
                     <button name="action_reverse_rebaja"
                             string="Revertir rebaja"
@@ -253,6 +253,20 @@
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Ej: CAIU1234567"/></h1>
+                    </div>
+
+                    <!-- Sub-bloque 4A (2026-10-04): aviso B-01 (sólo lectura).
+                         La rebaja estándar post-zarpe queda bloqueada; la
+                         regularización se ejecuta desde el Embarque. -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="b01_exception_state not in ('open', 'resolved')">
+                        El Embarque de este Contenedor tiene una excepción
+                        <b>B-01</b>
+                        (<field name="b01_exception_state" readonly="1"/>) y su
+                        composición/estado físico está congelado. La rebaja
+                        estándar post-zarpe no está disponible: la
+                        regularización se ejecuta desde el Embarque como
+                        <b>rebaja extemporánea R1</b> (sólo Gerencia).
                     </div>
 
                     <group>
