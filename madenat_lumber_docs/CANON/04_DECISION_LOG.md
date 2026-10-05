@@ -2673,3 +2673,42 @@ Operaciones, Jefatura, Auditoría y Contabilidad → `AccessError` (Δ0).
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->
+
+---
+
+## Nota técnica B2 (2026-10-05) — Fuente única de estado documental
+
+**Estado:** IMPLEMENTADO (corrección técnica; **no** es una decisión nueva).
+Módulo: `madenat_lumber_logistics`. **No crea AD nueva**; **AD-98 se reserva a
+D2** (Entrega Segura).
+
+**Motivo.** El cómputo de `document_status` estaba **duplicado** entre
+`lumber_export_shipment.py` y `lumber_document_checklist.py`, con `Selection`
+`pending/partial/complete`, y el compute efectivo escribía el valor
+**inválido** `incomplete` (fuera del `Selection`). B2 fija una **fuente única**
+y elimina el defecto.
+
+**Decisión técnica.**
+1. `document_status` pasa a `not_configured | missing | pending | partial |
+   attached | verified` (informativo; se eliminan `complete`/`incomplete`).
+2. El único compute es `lumber_document_checklist.py::_compute_document_status`
+   (documentos con `checklist_id.active`; universo = requeridos activos; si no
+   hay requeridos, todos los activos).
+3. Se añaden contadores almacenados `document_verified_count`,
+   `document_missing_count`, `document_pending_count`; se conserva
+   `document_completion`.
+4. Se elimina del Embarque el compute duplicado y el método muerto
+   (`_compute_document_completion`, `_compute_document_status`).
+5. `lumber.shipment.document.state` pasa a `readonly=False` para que el estado
+   `verified` sea alcanzable con las ACL actuales (sin ACL nuevas).
+
+**Invariantes.**
+- **Nunca** es gate de operación física (rebaja/zarpe/B-01/R1/R2/Entrega).
+- **D2** (futuro) consumirá el resumen B2 (`_document_status_summary`) **sólo**
+  para auditoría informativa.
+- El **Backlog** documental conserva su workflow separado.
+- No toca stock, costeo, B-01, R1/R2/R4, D2 ni menús P2.
+
+**Evidencia.** `lumber_document_checklist.py` (`_compute_document_status`);
+`lumber_export_shipment.py` (`document_status`, contadores,
+`_document_status_summary`); `tests/test_document_status_b2.py` (T-B2-01..11).

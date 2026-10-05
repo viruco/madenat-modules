@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Corrección B2 (2026-10-05): fuente única de estado documental.
+from . import test_document_status_b2
 from . import test_sv_allocation
 from . import test_shipment_view_module_independence
 from . import test_container_lot_wizard_disponible

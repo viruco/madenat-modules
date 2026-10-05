@@ -607,6 +607,25 @@ Norma detallada: `04_DECISION_LOG.md` **AD-97**.
 
 ---
 
+## Estado documental de Embarque — fuente única (B2, 2026-10-05)
+
+El **estado documental** de un Embarque (`document_status`) es un **indicador
+informativo** con **fuente única**: `lumber_document_checklist.py::
+_compute_document_status`. Semántica canónica:
+`not_configured · missing · pending · partial · attached · verified`
+(una sola definición; **no** existen `complete`/`incomplete`). Se apoya en
+`document_ids` filtrando `checklist_id.active` y usando como universo los
+documentos requeridos (o todos los activos si no hay requeridos).
+
+- **No bloquea** ninguna operación física (rebaja/zarpe/B-01/R1/R2/Entrega).
+- **D2** (futuro) consumirá el **resumen B2** (`_document_status_summary`)
+  **sólo** para auditoría informativa; el gate de Entrega es **físico**.
+- El **Backlog** documental conserva su **workflow separado**.
+
+Norma detallada: `04_DECISION_LOG.md` **Nota técnica B2**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

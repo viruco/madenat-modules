@@ -319,17 +319,56 @@ class LumberExportShipment(models.Model):
 
     container_seals = fields.Text('Sellos de Contenedores')
    
+    # Fuente ÚNICA documental (B2). El cómputo efectivo canónico vive en
+    # `lumber_document_checklist.py::_compute_document_status` (document_ids +
+    # checklist_id activo/requerido), NO en los 5 booleanos informativos
+    # (booking_confirmed, vgm_submitted, bl_received, customs_cleared,
+    # invoice_issued). `document_status` NUNCA es gate de operación física
+    # (documentación tardía no bloquea rebaja/zarpe/B-01/R1/R2/Entrega).
     document_status = fields.Selection([
+        ('not_configured', 'Sin configurar'),
+        ('missing', 'Sin evidencia'),
         ('pending', 'Pendiente'),
-        ('partial', 'Parcial'),
-        ('complete', 'Completo'),
-    ], string='Estado Documental', compute='_compute_document_status', store=True)
+        ('partial', 'Verificación parcial'),
+        ('attached', 'Adjuntado'),
+        ('verified', 'Verificado'),
+    ], string='Estado Documental', compute='_compute_document_status',
+        store=True)
 
     document_completion = fields.Float(
         string='Progreso Doc.', 
         compute='_compute_document_status', 
         store=True
     )
+
+    document_pending_count = fields.Integer(
+        string='Documentos Pendientes',
+        compute='_compute_document_status', store=True)
+    document_missing_count = fields.Integer(
+        string='Documentos Faltantes',
+        compute='_compute_document_status', store=True)
+    document_verified_count = fields.Integer(
+        string='Documentos Verificados',
+        compute='_compute_document_status', store=True)
+
+    def _document_status_summary(self):
+        """Contrato de lectura B2 (read-only) del estado documental.
+
+        Deriva EXCLUSIVAMENTE del compute canónico (`document_status` y los
+        contadores almacenados). No escribe, no reclasifica ni consulta
+        Costeo/B-01/R1/R2/R4/D2/Backlog. `document_status` es un indicador
+        INFORMATIVO: nunca es gate de operación física.
+        """
+        self.ensure_one()
+        return {
+            'status': self.document_status,
+            'configured': self.document_status != 'not_configured',
+            'total_required': (
+                self.document_pending_count + self.document_verified_count),
+            'verified_count': self.document_verified_count,
+            'pending_count': self.document_pending_count,
+            'missing_count': self.document_missing_count,
+        }
 
     picking_count = fields.Integer(compute='_compute_picking_count')
 
@@ -505,28 +544,9 @@ class LumberExportShipment(models.Model):
             rec.total_shipment_costs_usd = sum(rec.cost_line_ids.mapped('amount_usd'))
             rec.total_cost_per_m3 = (rec.total_shipment_costs_usd / rec.total_volume_m3) if rec.total_volume_m3 else 0.0
 
-    @api.depends('booking_confirmed','vgm_submitted','bl_received','customs_cleared','invoice_issued')
-    def _compute_document_completion(self):
-        for rec in self:
-            total = 5
-            done = sum([
-                rec.booking_confirmed,
-                rec.vgm_submitted,
-                rec.bl_received,
-                rec.customs_cleared,
-                rec.invoice_issued
-            ])
-            rec.document_completion = (done/total)*100
-
-    @api.depends('document_completion')
-    def _compute_document_status(self):
-        for rec in self:
-            if rec.document_completion >= 100:
-                rec.document_status = 'complete'
-            elif rec.document_completion >= 50:
-                rec.document_status = 'partial'
-            else:
-                rec.document_status = 'pending'
+    # B2: se elimina el cómputo documental duplicado/legacy del Embarque
+    # (`_compute_document_completion` y `_compute_document_status`). La fuente
+    # única vive en `lumber_document_checklist.py::_compute_document_status`.
 
     @api.constrains('estimated_departure','estimated_arrival')
     def _check_dates(self):

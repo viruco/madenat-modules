@@ -30,7 +30,7 @@ class LumberShipmentDocument(models.Model):
         ('missing', 'Pendiente'),
         ('attached', 'Adjunto'),
         ('verified', 'Verificado')
-    ], string='Estado', default='missing', index=True, compute='_compute_state', store=True)
+    ], string='Estado', default='missing', index=True, compute='_compute_state', store=True, readonly=False)
     
     notes = fields.Text('Notas Adicionales')
 
@@ -80,40 +80,50 @@ class LumberExportShipment(models.Model):
 
     document_ids = fields.One2many('lumber.shipment.document', 'shipment_id', string='Documentos')
 
-    @api.depends('document_ids.state', 'document_ids.checklist_id.is_required')
+    @api.depends('document_ids.state',
+                 'document_ids.checklist_id.is_required',
+                 'document_ids.checklist_id.active')
     def _compute_document_status(self):
+        """Fuente ÚNICA de la semántica documental (B2).
+
+        Sólo se consideran documentos cuyo checklist esté ACTIVO. El universo
+        (`target`) son los documentos requeridos activos; si no existe ninguno
+        requerido, todos los documentos activos.
+
+        Valores deterministas de `document_status`:
+          not_configured · missing · pending · partial · attached · verified
+        Indicador INFORMATIVO: nunca es gate de operación física. No usa los
+        valores legacy `complete`/`incomplete`.
+        """
         for shipment in self:
-            # Si no hay documentos, todo está pendiente
-            if not shipment.document_ids:
+            active_docs = shipment.document_ids.filtered(
+                lambda d: d.checklist_id.active)
+            required = active_docs.filtered(
+                lambda d: d.checklist_id.is_required)
+            target = required if required else active_docs
+            total = len(target)
+            verified = len(target.filtered(lambda d: d.state == 'verified'))
+            attached = len(target.filtered(lambda d: d.state == 'attached'))
+            missing = len(target.filtered(lambda d: d.state == 'missing'))
+
+            shipment.document_verified_count = verified
+            shipment.document_missing_count = missing
+            shipment.document_pending_count = total - verified
+            shipment.document_completion = (
+                ((verified + attached) / total) * 100.0) if total else 0.0
+
+            if total == 0:
+                shipment.document_status = 'not_configured'
+            elif verified == total:
+                shipment.document_status = 'verified'
+            elif verified > 0:
+                shipment.document_status = 'partial'
+            elif attached == total:
+                shipment.document_status = 'attached'
+            elif attached > 0:
                 shipment.document_status = 'pending'
-                shipment.document_completion = 0.0
-                continue
-
-            # 1. Identificar documentos requeridos
-            required_docs = shipment.document_ids.filtered(lambda d: d.checklist_id.is_required)
-            
-            # Si no hay obligatorios definidos, usamos todos como base
-            target_docs = required_docs if required_docs else shipment.document_ids
-            total_target = len(target_docs)
-
-            if total_target == 0:
-                shipment.document_status = 'complete'
-                shipment.document_completion = 100.0
-                continue
-
-            # 2. Contar documentos cumplidos (Adjuntos o Verificados)
-            fulfilled = target_docs.filtered(lambda d: d.state in ['attached', 'verified'])
-            count_fulfilled = len(fulfilled)
-
-            # 3. Calcular porcentaje y estado
-            shipment.document_completion = (count_fulfilled / total_target) * 100
-
-            if count_fulfilled == total_target:
-                shipment.document_status = 'complete'
-            elif count_fulfilled > 0:
-                shipment.document_status = 'incomplete'
             else:
-                shipment.document_status = 'pending'
+                shipment.document_status = 'missing'
 
     @api.model_create_multi
     def create(self, vals_list):
