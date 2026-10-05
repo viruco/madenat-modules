@@ -698,3 +698,17 @@ original mediante `origin_returned_move_id` y el picking de retorno con
 - **Auditoría** `rebaja_return_total` (SHA-256) + chatter.
 - **Distinciones:** **R1 ≠ R2** (rebaja tardía vs retorno físico); **R2 ≠ R4**
   (no cierra B-01); **R2 ≠ Entrega**.
+
+---
+
+## Entrega Segura — D2 (AD-98, 2026-10-05)
+
+La **Entrega** (`in_transit → delivered`) es un **hito logístico** posterior a
+la cadena **Zarpe → B-01 → R1/R4 → R2**. Sólo **Jefatura de Operaciones** y
+**Gerencia**. **B-01 `open` la bloquea** (`none`/`resolved` la permiten); **R2
+`inconsistent` la bloquea** (`compensated` no es material pendiente). **Viaje
+terminal** bloquea. La **documentación (B2)** es evidencia informativa (no
+gate); **sin waiver**. NO mueve stock, NO ejecuta Rebaja/Retorno, NO ejecuta
+Costeo/Billing/Pagos ni SV; persiste `delivery_at`/`delivery_by_id`/
+`delivery_audit_id` y audita `shipment_delivery` (SHA-256).
+Norma: `04_DECISION_LOG.md` **AD-98**.

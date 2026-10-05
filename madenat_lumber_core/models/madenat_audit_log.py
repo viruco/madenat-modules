@@ -84,6 +84,10 @@ class MadenatAuditLog(models.Model):
         # y firma SHA-256. Valores ADITIVOS al Selection.
         ('b01_regularization', 'Regularización B-01'),
         ('b01_resolution', 'Cierre de Excepción B-01'),
+        # Sub-bloque 5 (2026-10-04): Entrega/Cierre seguro de Embarque
+        # (Política D2, AD-98, hito logístico controlado). Evento append-only
+        # con snapshot determinista y firma SHA-256. Valor ADITIVO al Selection.
+        ('shipment_delivery', 'Entrega de Embarque'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

@@ -607,6 +607,24 @@ Norma detallada: `04_DECISION_LOG.md` **AD-97**.
 
 ---
 
+## Entrega Segura de Embarque — D2 (AD-98, 2026-10-05)
+
+La **Entrega** es un **hito LOGÍSTICO** (`in_transit → delivered`); no es un
+cierre físico ni financiero.
+
+- **Roles:** sólo Jefatura de Operaciones y Gerencia.
+- **B-01:** `open` bloquea; `none`/`resolved` permiten. D2 no escribe B-01.
+- **R2:** `inconsistent` bloquea; `compensated` permite.
+- **Viaje terminal** (`cancel`/`departed`/`arrived`) bloquea.
+- **Documentación (B2):** evidencia informativa, no gate. **Sin waiver.**
+- **Persiste** `delivery_at` / `delivery_by_id` / `delivery_audit_id`; auditoría
+  `shipment_delivery` (SHA-256) + chatter.
+- **No** mueve stock ni ejecuta Rebaja/R2/Costeo/Billing/Pagos/SV.
+
+Norma detallada: `04_DECISION_LOG.md` **AD-98**.
+
+---
+
 ## Estado documental de Embarque — fuente única (B2, 2026-10-05)
 
 El **estado documental** de un Embarque (`document_status`) es un **indicador

@@ -70,11 +70,27 @@ _B01_WRITE_TOKENS = set()
 # open → resolved desde `action_resolve_b01_exception` (no falsificable por RPC).
 _B01_RESOLVE_TOKENS = set()
 
+# ════════════════════════════════════════════════════════════════════════════
+# Sub-bloque 5 (2026-10-04) — ENTREGA SEGURA (POLÍTICA D2, AD-98)
+# Hito LOGÍSTICO controlado: in_transit → delivered. NO mueve stock, NO ejecuta
+# Rebaja/R2, NO ejecuta Costeo/Billing/Pagos, NO modifica B-01. La documentación
+# (B2) es evidencia informativa, no gate. Sin waiver.
+# ════════════════════════════════════════════════════════════════════════════
+DELIVERY_GROUPS = (
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
 CONFIRM_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
     'madenat_lumber_core.group_madenat_jefatura_operaciones',
     'madenat_lumber_core.group_madenat_gerencia',
 )
+# Estados terminales de `shipping.voyage` que bloquean la Entrega (sólo lectura).
+DELIVERY_TERMINAL_VOYAGE_STATES = ('cancel', 'departed', 'arrived')
+# Token efímero de PROCESO (set en memoria, no un context RPC — no falsificable
+# por `with_context(...)`). Autoriza únicamente la transición `delivered` y la
+# escritura de los campos de Entrega; se consume UNA vez en `write()`.
+_DELIVERY_WRITE_TOKENS = set()
 
 
 class LumberExportShipment(models.Model):
@@ -186,6 +202,14 @@ class LumberExportShipment(models.Model):
         # de un contexto aportado por RPC.
         if vals.get('state') == 'draft':
             self._assert_draft_write_authorized()
+        # ── Sub-bloque 5 (2026-10-04) — Entrega Segura D2 (AD-98) ───────────
+        # Puerta lateral cerrada: `state='delivered'` y los campos de Entrega
+        # sólo se escriben desde `action_deliver` mediante token efímero de
+        # proceso. `with_context(...)` NO elude.
+        if vals.get('state') == 'delivered' or any(
+                f in vals for f in ('delivery_at', 'delivery_by_id',
+                                    'delivery_audit_id')):
+            self._assert_delivery_write_authorized()
         # -- Sub-bloque 3 (2026-10-04) - Campos B-01 ---------------------------
         # Sólo _set_in_transit (token efímero de proceso) puede escribir los
         # campos B-01. Se bloquea cualquier write directo (RPC/import/cliente) y
@@ -336,8 +360,8 @@ class LumberExportShipment(models.Model):
         store=True)
 
     document_completion = fields.Float(
-        string='Progreso Doc.', 
-        compute='_compute_document_status', 
+        string='Progreso Doc.',
+        compute='_compute_document_status',
         store=True
     )
 
@@ -369,6 +393,21 @@ class LumberExportShipment(models.Model):
             'pending_count': self.document_pending_count,
             'missing_count': self.document_missing_count,
         }
+
+    # ══════════════════════════════════════════════════════════════════════
+    # Sub-bloque 5 (2026-10-04) — ENTREGA SEGURA D2 (AD-98): campos persistentes
+    # de la Entrega. Readonly; los escribe SÓLO `action_deliver` (token de
+    # proceso, no falsificable por RPC/import/context). El estado canónico de la
+    # Entrega es `state == 'delivered'` (no se crea `delivery_state`).
+    # ══════════════════════════════════════════════════════════════════════
+    delivery_at = fields.Datetime(
+        string='Fecha de Entrega', readonly=True, copy=False, index=True)
+    delivery_by_id = fields.Many2one(
+        'res.users', string='Entregado por', readonly=True, copy=False,
+        index=True)
+    delivery_audit_id = fields.Many2one(
+        'madenat.audit.log', string='Auditoría de Entrega', readonly=True,
+        copy=False, index=True)
 
     picking_count = fields.Integer(compute='_compute_picking_count')
 
@@ -1226,10 +1265,180 @@ class LumberExportShipment(models.Model):
         }
 
     def action_deliver(self):
-        if self.state!='in_transit':
-            raise ValidationError(_("Solo un embarque en tránsito puede entregarse"))
-        self.write({'state':'delivered'})
-        self.message_post(body=_("Embarque entregado"))
+        """Entrega Segura (POLÍTICA D2, AD-98): hito LOGÍSTICO controlado.
+
+        Jefatura/Gerencia. `in_transit → delivered`. Gates: rol, sin
+        inconsistencia física (R2), sin B-01 `open`, Viaje no terminal y sin
+        Contenedores físicamente pendientes. La documentación (B2) es evidencia
+        informativa: NO bloquea. NO mueve stock, NO ejecuta Rebaja/R2/Costeo/
+        Billing/Pagos, NO modifica B-01. Único camino admitido hacia `delivered`.
+        """
+        self.ensure_one()
+        self._assert_can_deliver()
+        audit = self._audit_delivery()
+        key = (self.env.cr.dbname, self.env.uid, self.id)
+        _DELIVERY_WRITE_TOKENS.add(key)
+        try:
+            self.write({
+                'state': 'delivered',
+                'delivery_at': fields.Datetime.now(),
+                'delivery_by_id': self.env.user.id,
+                'delivery_audit_id': audit.id,
+            })
+        finally:
+            _DELIVERY_WRITE_TOKENS.discard(key)
+        self.message_post(body=_(
+            '✅ <b>Embarque entregado</b> (hito logístico D2).<br/>'
+            'Fecha: %(at)s · Usuario: %(by)s · Auditoría: %(aud)s (SHA-256).'
+        ) % {
+            'at': fields.Datetime.now(),
+            'by': self.env.user.name,
+            'aud': audit.id,
+        })
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
+    def _assert_delivery_group(self):
+        """Autorización de Entrega (AD-98): Jefatura de Operaciones o Gerencia."""
+        if not any(self.env.user.has_group(g) for g in DELIVERY_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para entregar el Embarque. Se requiere el '
+                'rol de Jefatura de Operaciones o Gerencia.'))
+
+    def _assert_can_deliver(self):
+        """Guard de servidor (NO escribe, sin sudo): valida la Entrega D2."""
+        self.ensure_one()
+        self._assert_delivery_group()
+        self._assert_no_rebaja_inconsistency()
+        if self.state != 'in_transit':
+            raise UserError(_(
+                'Sólo se puede entregar un Embarque Embarcado (in_transit). '
+                'Estado actual: %s.') % dict(
+                    self._fields['state'].selection).get(self.state, self.state))
+        if self._b01_blocks_delivery():
+            raise UserError(_(
+                'No se puede entregar el Embarque %s: tiene una excepción B-01 '
+                'abierta. Regularice y cierre la excepción antes de la '
+                'Entrega/Cierre.') % self.name)
+        if self.voyage_id and \
+                self.voyage_id.state in DELIVERY_TERMINAL_VOYAGE_STATES:
+            raise UserError(_(
+                'No se puede entregar el Embarque %s: el Viaje %s está en un '
+                'estado terminal incompatible (%s).') % (
+                    self.name, self.voyage_id.display_name or self.voyage_id.id,
+                    self.voyage_id.state))
+        # ── Puerta física D2 (AD-98) ────────────────────────────────────────
+        # Semántica propia de la Entrega (SIN alterar el contrato de Zarpe):
+        # un Contenedor sólo es "pendiente físico" si requiere Rebaja (no está
+        # `active` en el contrato vigente) y su clasificación es `none`.
+        # D2: un retorno R2 total (`compensated`) no es pendiente físico.
+        pending = self.env['lumber.container']
+        for container in self.container_ids:
+            classification = self._container_rebaja_classification(container)
+            if classification == 'inconsistent':
+                raise UserError(_(
+                    'No se puede entregar el Embarque %s: evidencia de rebaja '
+                    'física INCONSISTENTE en el Contenedor %s.'
+                ) % (self.name, container.name))
+            if classification in ('active', 'compensated'):
+                continue
+            if not self._is_container_rebajado_fisico(container):
+                pending |= container
+        if pending:
+            raise UserError(_(
+                'No se puede entregar el Embarque %s: existen Contenedores '
+                'pendientes de rebaja física (%s).'
+            ) % (self.name, ', '.join(pending.mapped('name'))))
+        # La documentación (B2) es evidencia informativa: NO bloquea la Entrega.
+        return True
+
+    # ── Puertas laterales (write directo) ──────────────────────────────────
+    # Nota de diseño: el superusuario (env.su, código interno/tests) mantiene la
+    # vía de escape estándar de Odoo; la protección con token aplica a TODO
+    # actor RPC/real (su=False) y no es eludible por `with_context(...)` porque
+    # el token es un set en memoria del proceso, no un contexto.
+    def _assert_delivery_write_authorized(self):
+        """Bloquea write directo de `state='delivered'` / campos D2 sin token."""
+        for rec in self:
+            if rec.env.su:
+                continue
+            key = (rec.env.cr.dbname, rec.env.uid, rec.id)
+            if key not in _DELIVERY_WRITE_TOKENS:
+                raise UserError(_(
+                    'La Entrega del Embarque %s sólo puede ejecutarse mediante '
+                    'la acción autorizada «Entregar».') % (rec.name or rec.id))
+            _DELIVERY_WRITE_TOKENS.discard(key)
+
+    # ── Auditoría de Entrega (append-only, SHA-256) ────────────────────────
+    def _delivery_snapshot(self):
+        """Snapshot determinista de la Entrega (sólo lectura; sin secretos)."""
+        self.ensure_one()
+        containers = self.container_ids
+        _rebajados, pendientes = self._classify_departure_containers()
+        bad = containers.filtered(
+            lambda c: self._container_rebaja_classification(c) == 'inconsistent')
+        cost_lines = self.cost_line_ids
+        consolidations = self.env['lumber.billing.consolidation'].search([
+            ('shipment_id', '=', self.id), ('state', '!=', 'cancelled')])
+        return {
+            'operation': {
+                'action_type': 'shipment_delivery',
+                'timestamp': fields.Datetime.now().isoformat(),
+                'actor': {'id': self.env.user.id, 'name': self.env.user.name},
+            },
+            'shipment': {
+                'id': self.id, 'name': self.name,
+                'state_before': 'in_transit', 'state_after': 'delivered',
+                'customer_id': self.customer_id.id or False,
+                'vessel_id': self.vessel_id.id or False,
+                'vessel': self.vessel_id.name or False,
+                'voyage_id': self.voyage_id.id or False,
+                'voyage': self.voyage_id.name or False,
+                'voyage_state': self.voyage_id.state or False,
+                'actual_departure': (
+                    self.actual_departure.isoformat()
+                    if self.actual_departure else False),
+                'delivery_at': fields.Datetime.now().isoformat(),
+                'delivery_by_id': self.env.user.id,
+                'b01_exception_state': self.b01_exception_state,
+                'b01_resolution_audit_id': (
+                    self.b01_exception_resolution_audit_id.id or False),
+            },
+            'document': self._document_status_summary(),
+            'containers': [
+                {'id': c.id, 'name': c.name, 'state': c.state,
+                 'classification': self._container_rebaja_classification(c),
+                 'rebajado_fisico': self._is_container_rebajado_fisico(c)}
+                for c in containers.sorted('id')],
+            'physical_checks': {
+                'no_b01_open': not self._b01_blocks_delivery(),
+                'no_pending': not pendientes,
+                'no_inconsistency': not bad,
+            },
+            'financial_status': {
+                'cost_distribution_state': self.cost_distribution_state,
+                'cost_lines': len(cost_lines),
+                'invoices': len(cost_lines.filtered(
+                    lambda cl: getattr(cl, 'invoice_id', False))),
+                'payments': len(cost_lines.filtered(
+                    lambda cl: getattr(cl, 'payment_state', 'not_paid')
+                    not in (False, 'not_paid'))),
+                'consolidations': len(consolidations),
+            },
+        }
+
+    def _audit_delivery(self):
+        """Crea la auditoría append-only (SHA-256) de la Entrega."""
+        self.ensure_one()
+        snapshot = json.dumps(
+            self._delivery_snapshot(), sort_keys=True, default=str)
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'shipment_delivery',
+            'description': 'Entrega · %s' % (self.name or self.id),
+            'batch_id': str(self.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
 
     def action_distribute_costs(self):
         """
@@ -1354,6 +1563,26 @@ class LumberExportShipment(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            # ── Sub-bloque 5 (2026-10-04) — Micro-parche P0 (puerta `create()`) ──
+            # Contrato de creación EXTERNA: state='draft', sin campos de Entrega
+            # ni B-01. Las transiciones (confirmed/in_transit/delivered/
+            # cancelled) y los campos de excepción/Entrega sólo se alcanzan por
+            # acciones autorizadas y auditadas. La protección aplica a todo
+            # actor RPC/import (su=False); el superusuario interno (código/
+            # tests) conserva la vía estándar de Odoo. `with_context(...)` NO elude.
+            if not self.env.su:
+                state = vals.get('state')
+                if state and state != 'draft':
+                    raise UserError(_(
+                        'No se puede crear un Embarque directamente en estado '
+                        '%s. Cree el Embarque en borrador y utilice el flujo '
+                        'operativo autorizado para confirmar, zarpar o '
+                        'entregar.') % state)
+                if any(f in vals for f in (
+                        'delivery_at', 'delivery_by_id', 'delivery_audit_id')):
+                    raise UserError(_(
+                        'Los campos de Entrega sólo pueden ser establecidos '
+                        'por la acción operativa autorizada y auditada.'))
             if vals.get('name','/')=='/':
                 vals['name'] = self.env['ir.sequence'].next_by_code('lumber.export.shipment') or '/'
         return super().create(vals_list)

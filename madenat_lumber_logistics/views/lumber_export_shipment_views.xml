@@ -46,8 +46,16 @@
                     <button name="action_open_rebaja_wizard" string="Rebajar por nave" type="object"
                             invisible="state not in ('draft', 'confirmed')" class="btn-secondary"/>
 
-                    <button name="action_deliver" string="Entregar" type="object" 
-                            invisible="state != 'in_transit'" class="btn-primary"/>
+                    <!-- Entrega Segura (Política D2). Jefatura/Gerencia, sólo
+                         Embarcado. El gate de servidor (_assert_can_deliver)
+                         exige únicamente condiciones FÍSICAS/logísticas: sin
+                         B-01 abierta y sin Contenedores pendientes de rebaja.
+                         La documentación pendiente NO bloquea la Entrega
+                         (corrección de principio 2026-10-04). -->
+                    <button name="action_deliver" string="Entregar" type="object"
+                            groups="madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
+                            invisible="state != 'in_transit'" class="btn-primary"
+                            confirm="¿Confirma la ENTREGA del Embarque? Es un hito logístico (D2): exige sin B-01 abierta y sin Contenedores pendientes de rebaja. La documentación pendiente NO bloquea (queda como evidencia informativa). Queda auditada con hash SHA-256."/>
 
 
                     <!-- Sub-bloque 4A (2026-10-04): Regularización B-01 (R1) y
@@ -248,6 +256,22 @@
                                            decoration-warning="document_status == 'partial'"/>
                                     <field name="document_completion" widget="progressbar"/>
                                 </group>
+                            </group>
+                            <!-- Sub-bloque 5 (2026-10-04) — Entrega Segura D2 (AD-98, readonly) -->
+                            <group string="🔒 Entrega Segura (D2)">
+                                <group>
+                                    <field name="delivery_at" readonly="1"/>
+                                    <field name="delivery_by_id" readonly="1"/>
+                                    <field name="delivery_audit_id" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="b01_exception_state" readonly="1"/>
+                                </group>
+                                <div class="alert alert-info" colspan="2">
+                                    La Entrega (Política D2) es un hito logístico: no mueve
+                                    stock ni ejecuta Costeo. La documentación es evidencia
+                                    informativa (no bloquea).
+                                </div>
                             </group>
                             <separator string="Documentación de Embarque"/>
                             <group>

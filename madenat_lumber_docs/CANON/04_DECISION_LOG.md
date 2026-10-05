@@ -2676,6 +2676,47 @@ Operaciones, Jefatura, Auditoría y Contabilidad → `AccessError` (Δ0).
 
 ---
 
+## 2026-10-05 — Entrega 4: Entrega Segura de Embarque (D2)
+
+### AD-98 (2026-10-05) — Entrega Segura de Embarque (D2)
+
+**Estado:** IMPLEMENTADO. Módulos: `madenat_lumber_logistics`,
+`madenat_lumber_core`.
+
+**Propósito.** La **Entrega** es un **hito LOGÍSTICO** (`in_transit →
+delivered`). NO es un cierre financiero ni físico.
+
+**Roles.** Sólo **Jefatura de Operaciones** y **Gerencia** (guard
+`_assert_delivery_group`, `DELIVERY_GROUPS`).
+
+**Invariantes.**
+1. Única transición `in_transit → delivered`; `delivered` bloquea repetición;
+   write/create directos bloqueados por **token de proceso**
+   (`_DELIVERY_WRITE_TOKENS`, no falsificable por `with_context`/RPC).
+2. **B-01:** `open` bloquea; `none`/`resolved` permiten. D2 **no** escribe campos
+   B-01 ni crea `b01_regularization`/`b01_resolution` (sólo lectura).
+3. **R2:** `inconsistent` bloquea; `compensated` permite; un Contenedor
+   físicamente pendiente bloquea. Clasificación R2 sólo lectura.
+4. **Viaje terminal** (`cancel`/`departed`/`arrived`) bloquea.
+5. **Documentación (B2):** evidencia **informativa**, no gate; se registra vía
+   `_document_status_summary()`. **Sin waiver.**
+6. Persiste `delivery_at`, `delivery_by_id` y `delivery_audit_id`.
+7. **Auditoría** `shipment_delivery` (snapshot determinista **SHA-256**) +
+   chatter.
+8. **NO** mueve stock, **NO** ejecuta Rebaja/R2, **NO** crea Costeo/Billing/
+   Pagos ni SV; **NO** cambia `actual_departure`, Motonave ni Viaje.
+
+**Evidencia.** `lumber_export_shipment.py` (`action_deliver`,
+`_assert_can_deliver`, `_assert_delivery_group`, `_delivery_snapshot`,
+`_audit_delivery`, `_assert_delivery_write_authorized`);
+`madenat_lumber_core/models/madenat_audit_log.py` (`shipment_delivery`);
+`tests/test_shipment_delivery_safe.py` (T-D2-01..20).
+
+**No alcance.** Sin stock, Rebaja, Retorno R2, Zarpe, Costeo, Billing, Pagos ni
+SV; sin Backlog; sin waiver. **AD-99** queda reservado para C2.
+
+---
+
 ## Nota técnica B2 (2026-10-05) — Fuente única de estado documental
 
 **Estado:** IMPLEMENTADO (corrección técnica; **no** es una decisión nueva).
