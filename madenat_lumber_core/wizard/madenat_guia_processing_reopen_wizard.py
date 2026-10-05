@@ -62,6 +62,7 @@ class MadenatGuiaProcessingReopenWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         guia = self.guia_processing_id
+        guia._require_intake_operational_group()
         if guia._reopen_physical_effect_info()['has_effect'] and not (
                 self.reason or '').strip():
             raise UserError(_(

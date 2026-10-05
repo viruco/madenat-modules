@@ -95,6 +95,7 @@ class MadenatGuiaMassUpdate(models.TransientModel):
 
     def action_apply(self):
         self.ensure_one()
+        self.env['madenat.guia.processing']._require_intake_operational_group()
 
         thickness_informed = bool(self.new_thickness_mm and self.new_thickness_mm > 0)
         subproduct_informed = bool(self.subproducto_id)

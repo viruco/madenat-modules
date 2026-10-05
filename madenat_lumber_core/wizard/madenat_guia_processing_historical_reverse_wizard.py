@@ -119,6 +119,7 @@ class MadenatGuiaProcessingHistoricalReverseWizard(models.TransientModel):
         guia = self.guia_processing_id
         if not guia:
             raise UserError(_('No hay guía asociada al asistente.'))
+        guia._require_intake_operational_group()
         selected = self.candidate_ids.filtered('selected')
         ineligible = selected.filtered(lambda c: not c.eligible)
         if ineligible:

@@ -67,6 +67,7 @@ class LumberReceptionResetWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         rec = self.reception_id
+        rec._require_intake_operational_group()
         if rec._reset_physical_effect_info()['has_effect'] and not (self.reason or '').strip():
             raise UserError(_(
                 'Indique un motivo para continuar: esta corrección tiene efecto '

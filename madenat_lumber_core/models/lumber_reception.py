@@ -906,6 +906,17 @@ class LumberReception(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'madenat.lumber.ingest.mixin']
     _order = 'reception_date desc'
 
+    # ── 🔐 GUARD OPERATIVO (Fase C.1, 2026-10-04) ─────────────────────────
+    def create(self, vals):
+        """Solo Operaciones/Jefatura/Gerencia pueden crear recepciones."""
+        self._require_intake_operational_group()
+        return super().create(vals)
+
+    def write(self, vals):
+        """Bloquea cambios operativos a usuarios sin rol operativo."""
+        self._check_intake_operational_write(vals)
+        return super().write(vals)
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🛡️ CONSTRAINT SQL ANTI-DUPLICADO (2026-06-11)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1399,6 +1410,7 @@ class LumberReception(models.Model):
         una llamada directa a esta acción siempre pasa por el wizard.
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         return {
             'type': 'ir.actions.act_window',
             'name': _('Reabrir recepción (reversión trazable)'),
@@ -1620,6 +1632,7 @@ class LumberReception(models.Model):
 
     def action_cancel(self):
         """Cancela la recepción sin borrar datos, solo cambia estado."""
+        self._require_intake_operational_group()
         for rec in self:
             rec.write({'state': 'cancel'})
             rec._add_log("🚫 Recepción CANCELADA por el usuario.")
@@ -2779,6 +2792,7 @@ class LumberReception(models.Model):
         Delega el pipeline completo al motor de workflow.
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         from .reception_workflow import LumberReceptionWorkflow
         
         workflow = LumberReceptionWorkflow(self.env)
@@ -2787,6 +2801,7 @@ class LumberReception(models.Model):
     def action_verify_data(self):
         """Lee el Excel, calcula volúmenes y muestra datos para revisión"""
         self.ensure_one()
+        self._require_intake_operational_group()
         
         if not self.excel_file:
             raise UserError("Archivo Excel requerido")
@@ -2864,6 +2879,7 @@ class LumberReception(models.Model):
             Alineado con el motor de Fracciones y Protección de Factura Blanks.
             """
             self.ensure_one()
+            self._require_intake_operational_group()
             _logger.info(f"🚀 INICIANDO CONFIRMACIÓN FINAL - Guía: {self.name}")
             
             # 1. VALIDACIONES DE ESTADO

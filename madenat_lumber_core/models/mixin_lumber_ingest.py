@@ -1,11 +1,70 @@
 from .utils_uom import r3, r4
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, AccessError
 import logging
 import re
 
 _logger = logging.getLogger(__name__)
+
+# ============================================================================
+# 🔐 GUARD DE SEGURIDAD — INGRESO / RECEPCIÓN / GUÍAS (Fase C.1, 2026-10-04)
+# ============================================================================
+# Cierra la puerta lateral RPC/ORM descubierta en UAT-INT-4: la ACL de
+# `madenat.guia.processing` / `lumber.reception` concedía create/write a
+# `base.group_user`, permitiendo a un usuario interno sin Operaciones crear y
+# validar una recepción por ORM/RPC. Este guard es el control de servidor
+# (canónico y compartido por el mixin de ingesta) que NO depende sólo de ACL.
+#
+# NO altera la documentación tardía no bloqueante, CDP-V1, el backlog
+# documental ni el stock: solo restringe QUIÉN puede operar.
+INTAKE_OPERATIONAL_GROUPS = (
+    'madenat_lumber_core.group_madenat_operaciones',
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+
+INTAKE_OPERATIONAL_GROUP_ERROR = (
+    'La operación de ingreso/recepción requiere el rol de Operaciones, '
+    'Jefatura de Operaciones o Gerencia.'
+)
+
+# Campos cuya escritura constituye un cambio de realidad física/operativa.
+# Se excluyen deliberadamente los computes derivados (p. ej. vol_*_m3
+# calculados) para no interferir con recomputos disparados por una lectura.
+INTAKE_OPERATIONAL_FIELDS = frozenset({
+    'state', 'name', 'date_emission',
+    'partner_id', 'supplier_id', 'order_id', 'purchase_id',
+    'tipo_recepcion', 'ingestion_profile', 'assignment_location_id',
+    'carrier_id', 'manual_po_name', 'oc_match_status',
+    'processing_line_ids', 'reception_line_ids', 'lot_ids',
+    'source_lot_ids', 'source_lot_line_ids', 'consumption_picking_id',
+    'rate_usd', 'rate_date', 'currency_id', 'additional_cost',
+    'service_product_name', 'service_date', 'service_code',
+    'service_volume_m3', 'service_unit_price_clp',
+    'vol_fisico', 'vol_total_m3', 'total_paquetes', 'total_lotes_unicos',
+    'lot_details_data', 'date_processed', 'validated_by_id', 'validated_date',
+    'pdf_attachment_id', 'excel_attachment_id', 'oc_pdf_attachment_id',
+    'guide_pdf_filename', 'excel_filename', 'oc_pdf_filename',
+})
+
+
+def is_intake_operational_user(env):
+    """True si el usuario del entorno puede operar Ingreso/Recepción/Guías.
+
+    El superusuario (``env.su``, p. ej. ``sudo()`` interno aprobado o el shell
+    de sistema) siempre puede operar: el guard protege contra RPC/ORM de
+    usuarios *reales*, no contra el motor interno.
+    """
+    if env.su:
+        return True
+    return any(env.user.has_group(g) for g in INTAKE_OPERATIONAL_GROUPS)
+
+
+def assert_intake_operational_user(env):
+    """Lanza ``AccessError`` si el usuario actual no tiene rol operativo."""
+    if not is_intake_operational_user(env):
+        raise AccessError(_(INTAKE_OPERATIONAL_GROUP_ERROR))
 
 class LumberIngestMixin(models.AbstractModel):
     """
@@ -23,6 +82,32 @@ class LumberIngestMixin(models.AbstractModel):
     """
     _name = 'madenat.lumber.ingest.mixin'
     _description = 'Mixin para Ingesta de Madera'
+
+    # ── Guard canónico de operación (Fase C.1) ─────────────────────────────
+    def _require_intake_operational_group(self):
+        """Verifica el rol operativo (Operaciones/Jefatura/Gerencia).
+
+        Es el control server-side obligatorio que cubre UI, RPC, importación y
+        ORM, más allá de la ACL. Lanza ``AccessError`` si no se cumple.
+        """
+        assert_intake_operational_user(self.env)
+        return True
+
+    def _intake_has_operational_change(self, vals):
+        """True si ``vals`` toca campos de realidad física/operativa."""
+        return bool(INTAKE_OPERATIONAL_FIELDS.intersection(vals or {}))
+
+    def _check_intake_operational_write(self, vals):
+        """Guard para ``write()``: solo exige rol si cambia lo operativo.
+
+        Permite la edición estrictamente documental (CDP-V1 / adjuntos) de los
+        roles autorizados sin convertirla en bloqueo, pero impide que un
+        usuario no operativo altere estado, lotes, líneas, proveedor, volumen,
+        ubicación, picking o relaciones físicas.
+        """
+        if self._intake_has_operational_change(vals):
+            self._require_intake_operational_group()
+        return True
 
     # ========================================================================
     # MÉTODOS PÚBLICOS DE GESTIÓN DE PRODUCTO (LEGACY + MEJORAS)

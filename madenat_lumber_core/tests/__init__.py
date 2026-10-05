@@ -45,3 +45,8 @@ from . import test_guia_historical_reverse
 from . import test_guia_revalidation_guard
 # CDP-V1: corrección documental preservada (solo documental).
 from . import test_guia_documental_correction
+# 🔐 Fase C.1 (2026-10-04) — Seguridad de Ingreso/Recepción/Guías.
+# Cierra la puerta lateral RPC/ORM (UAT-INT-4): solo Operaciones/Jefatura/
+# Gerencia pueden crear/procesar/validar/reabrir/cancelar guías y recepciones.
+from . import test_guia_processing_security
+from . import test_reception_security

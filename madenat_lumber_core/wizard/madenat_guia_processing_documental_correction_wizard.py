@@ -97,4 +97,5 @@ class MadenatGuiaProcessingDocumentalCorrectionWizard(models.TransientModel):
     def action_confirm(self):
         """Confirma la corrección documental (delega en el ejecutor privado)."""
         self.ensure_one()
+        self.guia_processing_id._require_intake_operational_group()
         return self.guia_processing_id._cdp_apply_documental_correction(self)

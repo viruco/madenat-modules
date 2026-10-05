@@ -311,6 +311,7 @@ class LumberReceptionMassUpdate(models.TransientModel):
           5. Registrar auditoría en el chatter de la recepción
         """
         self.ensure_one()
+        self.env['lumber.reception']._require_intake_operational_group()
 
         # ── 0. GUARDIA DEFENSIVA CONTRA CORRUPCIÓN DE INVENTARIO ──────────────
         if self.ingestion_profile == 'metric' and (self.thickness_nominal > 500 or self.width_nominal > 500):

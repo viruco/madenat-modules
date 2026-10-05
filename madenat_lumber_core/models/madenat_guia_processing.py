@@ -1480,6 +1480,7 @@ class MadenatGuiaProcessing(models.Model):
         Uso: Permite llenar rápidamente la pestaña 'Análisis Comercial' 
         cuando no hay OC y queremos asumir que compramos lo mismo que medimos.
         """
+        self._require_intake_operational_group()
         for line in self.processing_line_ids:
             # Solo actuamos si no tiene valor (respetamos lo que hayas editado a mano)
             if line.espesor_nominal_mm <= 0:
@@ -1707,6 +1708,7 @@ class MadenatGuiaProcessing(models.Model):
         - DEJA LIMPIO el Nominal de Compra (si no viene en Excel) para asignación manual posterior.
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         import re
         
         if not (self.excel_attachment_id or self.excel_file):
@@ -1958,6 +1960,7 @@ class MadenatGuiaProcessing(models.Model):
         ✅ PUENTE OFICIAL BLINDADO v5.0: Staging -> Lotes Reales (Stock)
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         _logger.info(f"🛡️ Iniciando procesamiento blindado para Guía: {self.name}")
 
         # 1. CAPA DE SEGURIDAD: EVITAR DUPLICADOS
@@ -2126,6 +2129,7 @@ class MadenatGuiaProcessing(models.Model):
         4. 🏁 VALIDACIÓN: Confirma, asigna y valida el picking.
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         _logger.info(f"🔍 [START] Validando Guía {self.name} - MODO: Unificado (verified → validated)")
 
         # 1. Validaciones Previas
@@ -3300,7 +3304,18 @@ class MadenatGuiaProcessing(models.Model):
             pass
         return None
 
+    def create(self, vals):
+        # 🔐 GUARD (Fase C.1): crear una guía es operación de Ingreso/Recepción.
+        # Cubre UI, RPC, importación y ORM; no confía sólo en la ACL.
+        self._require_intake_operational_group()
+        return super().create(vals)
+
     def write(self, vals):
+        # 🔐 GUARD (Fase C.1): solo roles operativos pueden alterar realidad
+        # física/operativa (estado, lotes, líneas, proveedor, volumen, ubicación,
+        # picking, adjuntos). La edición estrictamente documental de roles
+        # autorizados no se bloquea aquí (se controla por ACL + CDP-V1).
+        self._check_intake_operational_write(vals)
         # Extracción temprana del número de guía al subir Excel en formulario individual
         if 'name' not in vals and 'excel_file' in vals:
             self.ensure_one()
@@ -3975,6 +3990,7 @@ class MadenatGuiaProcessing(models.Model):
         - NO sobrescribe oc_reference_raw
         """
         self.ensure_one()
+        self._require_intake_operational_group()
 
         # ── 0. CAPA ANTIDUPLICADO: ya existe OC vinculada ──
         if self.order_id:
@@ -5081,6 +5097,7 @@ class MadenatGuiaProcessing(models.Model):
         - Búsqueda amplia de pickings (cubre prefijos REVERTIDO-, Guía X - OC..., etc.)
         - Limpieza completa de lotes y líneas de procesamiento.
         """
+        self._require_intake_operational_group()
         for rec in self:
             _logger.warning(f"🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: {rec.name}")
 
@@ -5390,6 +5407,7 @@ class MadenatGuiaProcessing(models.Model):
         una llamada directa a esta acción siempre pasa por el wizard.
         """
         self.ensure_one()
+        self._require_intake_operational_group()
         return {
             'type': 'ir.actions.act_window',
             'name': _('Reabrir guía (reversión trazable)'),
