@@ -12,6 +12,24 @@ except ImportError:
     xlsxwriter = None
 _logger = logging.getLogger(__name__)
 
+# ════════════════════════════════════════════════════════════════════════════
+# Sub-bloque 2 (2026-10-04) — BORRADOR SEGURO (AD-93)
+# Retorno administrativo confirmed → draft sólo cuando NO existe evidencia
+# física de salida, terminalidad de viaje, cierre financiero ni traza histórica
+# de rebaja. Bloque autónomo: los gates se basan en evidencia real y en el
+# estado del Embarque/Viaje, sin acoplarse a campos de sub-bloques posteriores.
+# ════════════════════════════════════════════════════════════════════════════
+RETURN_TO_DRAFT_GROUPS = (
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+RETURN_TO_DRAFT_TERMINAL_VOYAGE_STATES = ('cancel', 'departed', 'arrived')
+RETURN_TO_DRAFT_WRITE_FIELDS = frozenset({'state', 'actual_departure'})
+# Token efímero de proceso (no un context RPC): clave (dbname, uid, shipment_id).
+# Se crea SÓLO en `action_draft` tras superar el guard y se consume UNA vez en
+# `write()`.
+_RETURN_TO_DRAFT_TOKENS = set()
+
 CONFIRM_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
     'madenat_lumber_core.group_madenat_jefatura_operaciones',
@@ -98,6 +116,12 @@ class LumberExportShipment(models.Model):
     # Odoo a veces intenta agregar un contenedor que YA está en la lista.
     # Este código revisa la lista antes de guardar y borra los duplicados.
     def write(self, vals):
+        # ── Sub-bloque 2 (2026-10-04) — Borrador Seguro ─────────────────────
+        # Cierra la puerta lateral: un write {'state': 'draft'} sólo se admite
+        # cuando proviene de `action_draft` (token efímero de proceso), nunca
+        # de un contexto aportado por RPC.
+        if vals.get('state') == 'draft':
+            self._assert_draft_write_authorized()
         # ¿Están intentando modificar la lista de contenedores?
         if 'container_ids' in vals:
             clean_cmds = []
@@ -821,60 +845,262 @@ class LumberExportShipment(models.Model):
             'url': f'/web/content/{attachment.id}?download=true',
             'target': 'self',
         }
+    def _return_to_draft_assert_group(self):
+        if not any(self.env.user.has_group(g) for g in RETURN_TO_DRAFT_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para volver un Embarque a borrador. Se '
+                'requiere el rol de Jefatura de Operaciones o Gerencia.'))
+
+    def _return_to_draft_evidence(self):
+        """Recolecta SÓLO lectura la evidencia bloqueante del Embarque."""
+        self.ensure_one()
+        containers = self.container_ids
+        lines = containers.line_ids
+        lots = lines.mapped('lot_id')
+        customers = self.env.ref(
+            'stock.stock_location_customers', raise_if_not_found=False)
+
+        # ── Evidencia física ───────────────────────────────────────────────
+        reb_containers = containers.filtered(
+            lambda c: c.state in ('rebajado', 'shipped'))
+        reb_lines = lines.filtered(lambda l: l.rebaja_state == 'rebajado')
+        reb_pickings = lines.mapped('rebaja_picking_id').filtered(
+            lambda p: p.state == 'done')
+        exit_moves = reb_pickings.move_ids.filtered(
+            lambda m: m.state == 'done'
+            and m.location_dest_id.usage == 'customer')
+        cust_quants = self.env['stock.quant'].browse()
+        if customers and lots:
+            cust_quants = self.env['stock.quant'].search([
+                ('lot_id', 'in', lots.ids),
+                ('location_id', '=', customers.id),
+                ('quantity', '>', 0)])
+        sv_ops = self.env['madenat.sv.operation'].search([
+            ('action_type', '=', 'rebaja'),
+            ('state', '=', 'applied'),
+            '|', ('destination_container_id', 'in', containers.ids),
+            ('lot_id', 'in', lots.ids)])
+
+        # ── Evidencia terminal ─────────────────────────────────────────────
+        voyage = self.voyage_id
+        voyage_terminal = bool(
+            voyage and voyage.state in RETURN_TO_DRAFT_TERMINAL_VOYAGE_STATES)
+
+        # ── Evidencia financiera ───────────────────────────────────────────
+        distributed = self.cost_distribution_state == 'distributed'
+        lot_cost_lines = self.env['stock.lot.cost.line'].browse()
+        if self.cost_line_ids:
+            lot_cost_lines = self.env['stock.lot.cost.line'].search([
+                ('source_shipment_cost_line_id', 'in', self.cost_line_ids.ids)])
+        invoiced_lines = self.cost_line_ids.filtered(
+            lambda cl: getattr(cl, 'invoice_id', False))
+        paid_lines = self.cost_line_ids.filtered(
+            lambda cl: getattr(cl, 'payment_state', 'not_paid')
+            not in (False, 'not_paid'))
+        billed_consolidations = []
+        if 'lumber.billing.consolidation' in self.env:
+            consolidations = self.env[
+                'lumber.billing.consolidation'].search([
+                    ('shipment_id', '=', self.id),
+                    ('state', '!=', 'cancelled')])
+            billed_consolidations = consolidations.filtered(
+                lambda c: c.invoice_id or c.state == 'billed')
+
+        # ── Evidencia histórica (rebaja ocurrida y eventualmente revertida) ─
+        # Traza persistente aunque el saldo externo ya se haya revertido.
+        hist_lines = lines.filtered(lambda l: l.rebaja_state == 'reversed')
+        hist_pickings = lines.mapped('rebaja_picking_id')
+
+        return {
+            'containers': reb_containers,
+            'lines': reb_lines,
+            'pickings': reb_pickings,
+            'exit_moves': exit_moves,
+            'cust_quants': cust_quants,
+            'sv_ops': sv_ops,
+            'voyage_terminal': voyage_terminal,
+            'distributed': distributed,
+            'lot_cost_lines': lot_cost_lines,
+            'invoiced_lines': invoiced_lines,
+            'paid_lines': paid_lines,
+            'billed_consolidations': billed_consolidations,
+            'hist_lines': hist_lines,
+            'hist_pickings': hist_pickings,
+        }
+    def _assert_can_return_to_draft(self):
+        """Guard de servidor: bloquea el retorno a borrador con evidencia."""
+        self.ensure_one()
+        self._return_to_draft_assert_group()
+        if self.state != 'confirmed':
+            raise UserError(_(
+                'No se puede volver el Embarque %s a borrador: la única '
+                'transición permitida es Confirmado → Borrador (estado actual: '
+                '%s).') % (
+                self.name,
+                dict(self._fields['state'].selection).get(
+                    self.state, self.state)))
+
+        ev = self._return_to_draft_evidence()
+        physical = []
+        if ev['containers']:
+            physical.append('Contenedores rebajados/embarcados: %s.' % ', '.join(
+                ev['containers'].mapped('name')))
+        if ev['lines']:
+            physical.append('Líneas con rebaja aplicada: %s.' % ', '.join(
+                'L-%s' % i for i in ev['lines'].ids))
+        if ev['pickings']:
+            physical.append('Picking de rebaja validado: %s.' % ', '.join(
+                ev['pickings'].mapped('name')))
+        if ev['exit_moves']:
+            physical.append(
+                'Movimientos de salida a Clientes confirmados: %s.' % ', '.join(
+                    ev['exit_moves'].mapped('name')))
+        if ev['cust_quants']:
+            physical.append(
+                'Saldo positivo en la ubicación Clientes para lotes del '
+                'Embarque (%d).' % len(ev['cust_quants']))
+        if ev['sv_ops']:
+            physical.append('Operación SV de rebaja aplicada: %s.' % ', '.join(
+                ev['sv_ops'].mapped('name')))
+
+        terminal = []
+        if ev['voyage_terminal']:
+            terminal.append('El Viaje %s está en estado terminal (%s).' % (
+                self.voyage_id.name, self.voyage_id.state))
+
+        financial = []
+        if ev['distributed']:
+            financial.append('Los costos del Embarque ya fueron distribuidos.')
+        if ev['lot_cost_lines']:
+            financial.append(
+                'Existen líneas de costo de lote atribuibles al Embarque (%d).'
+                % len(ev['lot_cost_lines']))
+        if ev['invoiced_lines']:
+            financial.append('Hay líneas de costo con factura vinculada.')
+        if ev['paid_lines']:
+            financial.append('Hay líneas de costo con pago registrado.')
+        if ev['billed_consolidations']:
+            financial.append(
+                'Existe una consolidación de facturación facturada para el '
+                'Embarque.')
+
+        historical = []
+        if ev['hist_lines']:
+            historical.append('Líneas de rebaja reversadas: %s.' % ', '.join(
+                'L-%s' % i for i in ev['hist_lines'].ids))
+        if ev['hist_pickings'] and not ev['pickings']:
+            historical.append(
+                'Picking(s) de rebaja originados: %s.' % ', '.join(
+                    ev['hist_pickings'].mapped('name')))
+
+        if not (physical or terminal or financial or historical):
+            return True
+
+        parts = [
+            _('No se puede volver el Embarque %s a borrador.') % self.name, '',
+            _('Existen evidencias que impiden el retorno:'), '']
+        for title, items in (
+                (_('[Rebaja física / salida]'), physical),
+                (_('[Estado terminal]'), terminal),
+                (_('[Cierre financiero]'), financial),
+                (_('[Rebaja histórica]'), historical)):
+            if items:
+                parts.append(title)
+                parts.extend('- %s' % x for x in items)
+                parts.append('')
+        parts.append(_('Acción requerida:'))
+        parts.append(_(
+            'Ejecute la reversa física autorizada («Revertir rebaja» por '
+            'contenedor) o resuelva la evidencia indicada antes de cambiar la '
+            'planificación.'))
+        raise UserError('\n'.join(parts))
+    def _return_to_draft_snapshot(self, state_before):
+        """Snapshot determinista del retorno seguro (convención audit.log)."""
+        self.ensure_one()
+        payload = {
+            'operation': {
+                'action_type': 'shipment_return_to_draft',
+                'timestamp': fields.Datetime.now().isoformat(),
+                'user': {'id': self.env.user.id, 'name': self.env.user.name},
+            },
+            'shipment': {
+                'id': self.id, 'name': self.name,
+                'state_before': state_before, 'state_after': 'draft'},
+            'voyage': {
+                'id': self.voyage_id.id or False,
+                'name': self.voyage_id.name or False,
+                'state': self.voyage_id.state or False},
+            'containers': [
+                {'id': c.id, 'name': c.name, 'state': c.state}
+                for c in self.container_ids],
+            'lines': [
+                {'id': l.id, 'lot': l.lot_id.name or False,
+                 'rebaja_state': l.rebaja_state,
+                 'rebaja_picking': l.rebaja_picking_id.name or False,
+                 'rebaja_picking_state': l.rebaja_picking_id.state or False}
+                for l in self.container_ids.line_ids],
+            'checks_passed': ['physical', 'terminal', 'financial',
+                              'historical'],
+            'write': {'fields': sorted(RETURN_TO_DRAFT_WRITE_FIELDS)},
+        }
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _audit_return_to_draft(self, snapshot):
+        """Registra el evento append-only (sudo SÓLO para madenat.audit.log)."""
+        self.ensure_one()
+        self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'shipment_return_to_draft',
+            'description': _(
+                'Retorno seguro a borrador del Embarque %s.') % self.name,
+            'batch_id': str(self.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
+
+    def _assert_draft_write_authorized(self):
+        """Impide write({'state':'draft'}) fuera de action_draft autorizado.
+
+        La autorización es un token efímero de proceso (no un context RPC que
+        el cliente pueda falsificar).
+        """
+        for rec in self:
+            key = (rec.env.cr.dbname, rec.env.uid, rec.id)
+            if key not in _RETURN_TO_DRAFT_TOKENS:
+                raise UserError(_(
+                    'No se puede cambiar el Embarque %s a borrador por esta '
+                    'vía. Use la acción autorizada «Volver a Borrador».'
+                ) % (rec.name or rec.id))
+            _RETURN_TO_DRAFT_TOKENS.discard(key)
+
     def action_draft(self):
-            """ 
-            🔄 RESET MAESTRO (Stock + Finanzas + Estados)
-            """
-            self.ensure_one()
-            
-            # ====================================================================
-            # 1. 📦 LIMPIEZA DE STOCK (Blindada contra Albaranes validados)
-            # ====================================================================
-            pickings = self.env['stock.picking'].search([
-                ('origin', '=', self.name),
-                ('state', '!=', 'cancel') # 🚀 BLINDAJE: Atrapamos también los 'done'
-            ])
-            
-            for picking in pickings:
-                # Si el albarán ya salió de la bodega, frenamos el proceso
-                if picking.state == 'done':
-                    from odoo.exceptions import UserError # Aseguramos la importación local
-                    raise UserError(_(
-                        "⛔ ERROR DE STOCK: El Albarán %s ya fue validado.\n"
-                        "Debe realizar un 'Return' manual antes de resetear el embarque."
-                    ) % picking.name)
-                
-                # Si no está validado, lo cancelamos con seguridad
-                picking.action_cancel()
+        """Volver a Borrador SEGURO — Sub-bloque 2 (2026-10-04).
 
-            # ====================================================================
-            # 2. 💰 LIMPIEZA FINANCIERA (madenat_lumber_costing)
-            # ====================================================================
-            # Al volver a borrador, el costo logístico del viaje se anula en los lotes
-            all_lots = self.container_ids.mapped('lot_ids')
-            if all_lots:
-                # Lo ponemos en 0.0 porque el prorrateo actual ya no es válido
-                all_lots.write({'logistic_cost_usd': 0.0})
+        Única transición permitida: confirmed → draft. Exige Jefatura/Gerencia
+        y ausencia total de evidencia física, terminal, financiera u operativa.
+        No cancela pickings, no reescribe contenedores, no borra costos ni mueve
+        inventario. Sólo escribe state y actual_departure.
+        """
+        self.ensure_one()
+        self._assert_can_return_to_draft()
+        state_before = self.state
+        key = (self.env.cr.dbname, self.env.uid, self.id)
+        _RETURN_TO_DRAFT_TOKENS.add(key)
+        try:
+            self.write({'state': 'draft', 'actual_departure': False})
+        finally:
+            _RETURN_TO_DRAFT_TOKENS.discard(key)
+        snapshot = self._return_to_draft_snapshot(state_before)
+        self._audit_return_to_draft(snapshot)
+        self.message_post(body=_(
+            '↩️ <b>Retorno seguro a borrador</b> autorizado por %s.<br/>'
+            'Validaciones físicas, terminales, financieras y operativas '
+            'superadas.') % self.env.user.display_name)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
-            # ====================================================================
-            # 3. 🔄 RESET DE ESTADOS (Contenedores y Embarque)
-            # ====================================================================
-            self.container_ids.write({'state': 'loading'})
-            self.write({
-                'state': 'draft',
-                'actual_departure': False,
-            })
-            
-            # ====================================================================
-            # 4. 📝 LOG Y REFRESCO DE INTERFAZ
-            # ====================================================================
-            self.message_post(body=_("🔄 <b>Reset Administrativo:</b> Se cancelaron movimientos de stock y se limpiaron costos logísticos."))
-            
-            # Retornamos el reload para que el usuario vea el cambio al instante
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'reload',
-            }
     # ======================================================================
     # AD-92 (2026-10-05) - ROLLEO CENTRADO EN EMBARQUE
     # Reprograma la salida marítima de ESTE Embarque (sólo vessel_id/voyage_id).

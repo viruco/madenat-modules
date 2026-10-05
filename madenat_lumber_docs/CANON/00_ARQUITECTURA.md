@@ -497,6 +497,32 @@ Norma detallada: `04_DECISION_LOG.md` **AD-92**.
 
 ---
 
+## Borrador Seguro (AD-93, 2026-10-05)
+
+El retorno de un Embarque (`lumber.export.shipment`) desde **Confirmado** a
+**Borrador** es una operación **administrativa de planificación**: no es una
+reversa física.
+
+- **Transición:** sólo `confirmed → draft`. Se rechaza `draft`, `in_transit`,
+  `delivered`, `cancelled` y cualquier estado no reconocido.
+- **Roles:** sólo Jefatura de Operaciones y Gerencia (guard de servidor).
+- **No es reversa física:** no modifica stock, lotes, movimientos, pickings,
+  contenedores ni costos. Única escritura: `state` y `actual_departure`.
+- **Gates:** bloquea si existe evidencia física/histórica de salida (rebaja
+  aplicada o reversada, picking de rebaja, salida a Clientes, saldo en Clientes,
+  operación SV de rebaja), viaje terminal (`cancel`/`departed`/`arrived`) o
+  cierre financiero existente (costos distribuidos, líneas de costo, factura o
+  consolidación facturada).
+- **Autonomía:** no depende de B-01, R1 ni R2.
+- **Auditoría:** evento `shipment_return_to_draft` («Retorno Seguro a Borrador»)
+  con snapshot determinista + **firma SHA-256** y **chatter**; no borra
+  auditoría previa.
+- **Backlog documental:** no bloquea, no se crea, no se modifica, no se elimina.
+
+Norma detallada: `04_DECISION_LOG.md` **AD-93**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

@@ -14,3 +14,5 @@ from . import test_sv_imputation_i2
 from . import test_sv_imputation_candidates
 # AD-92 (2026-10-05): rolleo centrado en Embarque.
 from . import test_vessel_rollover
+# AD-93 (2026-10-05): Borrador Seguro autónomo.
+from . import test_shipment_return_to_draft

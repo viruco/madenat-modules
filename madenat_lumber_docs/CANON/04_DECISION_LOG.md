@@ -2468,6 +2468,42 @@ Motonave. El Rolleo de Contenedor (`lumber.container.rollover.wizard`) es un flu
 Embarque»); `madenat_lumber_shipping_core/models/shipping_vessel.py`
 (`action_open_vessel_shipments`); pruebas `test_vessel_rollover.py` (RL-01..RL-23).
 
+---
+
+## 2026-10-05 — Borrador Seguro autónomo
+
+### AD-93 (2026-10-05) — Borrador Seguro autónomo
+
+**Estado:** ✅ IMPLEMENTADO.
+Módulos afectados: `madenat_lumber_logistics`, `madenat_lumber_core`.
+
+**Decisión.** El retorno de un Embarque desde `confirmed` a `draft` se permite
+**sólo** cuando no existe evidencia física/histórica de salida, viaje terminal ni
+cierre financiero. Sólo Jefatura de Operaciones y Gerencia pueden ejecutarlo. La
+única escritura es `{'state': 'draft', 'actual_departure': False}`.
+
+**No depende** de `b01_exception_state`, R1 ni R2.
+
+**Motivo.** Permite versionar y operar el gate sin acoplarlo a sub-bloques
+posteriores de Zarpe/B-01/regularización.
+
+**Invariantes.**
+1. No altera stock/lotes/pickings/movimientos ni `stock.quant`.
+2. No deshace rebajas ni zarpes.
+3. No toca documentos/backlog.
+4. No toca costos/facturas/pagos.
+5. Auditoría SHA-256 (`shipment_return_to_draft`) + chatter; no borra auditoría previa.
+6. Guard server-side contra RPC/context: `write({'state':'draft'})` exige un token
+   efímero de proceso acuñado sólo por `action_draft()`.
+
+**Evidencia.** `madenat_lumber_logistics/models/lumber_export_shipment.py`
+(`action_draft`, `_assert_can_return_to_draft`, `_return_to_draft_evidence`,
+`_assert_draft_write_authorized`, `_return_to_draft_snapshot`,
+`_audit_return_to_draft`); `views/lumber_export_shipment_views.xml` (botón
+«Volver a Borrador»); `madenat_lumber_core/models/madenat_audit_log.py`
+(`shipment_return_to_draft` = «Retorno Seguro a Borrador»); pruebas
+`test_shipment_return_to_draft.py` (T-D1..T-D22 / BSD-01..BSD-13).
+
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->

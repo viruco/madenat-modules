@@ -65,6 +65,10 @@ class MadenatAuditLog(models.Model):
         # AD-92 (2026-10-05): rolleo centrado en Embarque.
         ('vessel_rollover', 'Rolleo de Embarque'),
         ('vessel_rollover_item', 'Detalle de Rolleo de Embarque'),
+        # AD-93 (2026-10-05): Borrador Seguro autónomo — retorno administrativo
+        # de un Embarque confirmed → draft. Evento append-only con snapshot
+        # determinista y firma SHA-256. Valor ADITIVO al Selection.
+        ('shipment_return_to_draft', 'Retorno Seguro a Borrador'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

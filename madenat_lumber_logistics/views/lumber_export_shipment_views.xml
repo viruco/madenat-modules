@@ -49,9 +49,14 @@
                     <button name="action_deliver" string="Entregar" type="object" 
                             invisible="state != 'in_transit'" class="btn-primary"/>
 
-                    <button name="action_draft" string="Volver a Borrador" type="object" 
-                            invisible="state == 'draft'" class="btn-secondary"
-                            confirm="⚠️ ¿Está seguro de reiniciar el embarque? Esto volverá todos los contenedores a estado 'Cargando'."/>
+                    <!-- Sub-bloque 2 (2026-10-04) — Borrador Seguro (AD-93).
+                         Visible sólo para Jefatura/Gerencia y sólo en Confirmado
+                         (confirmed → draft). El guard de servidor es la defensa
+                         obligatoria. -->
+                    <button name="action_draft" string="Volver a Borrador" type="object"
+                            groups="madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
+                            invisible="state != 'confirmed'" class="btn-secondary"
+                            confirm="⚠️ ¿Confirma volver el Embarque a borrador? Esta acción será bloqueada si existe rebaja física, viaje terminal o cierre financiero."/>
 
                     <button name="action_export_shipment_xlsx" string="📊 Exportar Tarja Consolidada" 
                             type="object" class="btn-info" icon="fa-file-excel-o" 
