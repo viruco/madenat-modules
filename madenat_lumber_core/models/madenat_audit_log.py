@@ -62,6 +62,9 @@ class MadenatAuditLog(models.Model):
         # reversa. Valores ADITIVOS al Selection.
         ('imputation', 'Imputación Documental SV'),
         ('imputation_reverse', 'Reversa de Imputación Documental SV'),
+        # AD-92 (2026-10-05): rolleo centrado en Embarque.
+        ('vessel_rollover', 'Rolleo de Embarque'),
+        ('vessel_rollover_item', 'Detalle de Rolleo de Embarque'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

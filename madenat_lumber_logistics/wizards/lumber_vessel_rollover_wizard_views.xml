@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Fase C (2026-10-04) — Rolleo de Motonave / Cambio de Planificación.
+             XML compatible con Odoo 18: esquema list, sin attrs ni states. -->
+        <record id="view_lumber_vessel_rollover_wizard_form" model="ir.ui.view">
+            <field name="name">lumber.vessel.rollover.wizard.form</field>
+            <field name="model">lumber.vessel.rollover.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Rollover / Cambiar Planificación Marítima">
+
+                    <!-- Aviso crítico (fuera del sheet, Odoo 18 CE) -->
+                    <div class="alert alert-warning" role="alert"
+                         style="margin: 16px; border-left: 4px solid #ff9800;">
+                        <h4 style="margin-top: 0; color: #f57c00;">
+                            <i class="fa fa-exclamation-triangle" aria-hidden="true" title="Advertencia"/>
+                            ⚠️ Rolleo de Embarque (modo estricto)
+                        </h4>
+                        <hr style="margin: 10px 0; border-color: #ffb74d;"/>
+                        <p style="margin-bottom: 8px;">
+                            La operación reprograma la <strong>salida marítima</strong>
+                            del <strong>Embarque seleccionado</strong> a otra Motonave y,
+                            opcionalmente, a otro Viaje. Sólo se actualizan
+                            <strong>Motonave</strong> y <strong>Viaje</strong> de ese Embarque.
+                            Otros Embarques de la misma Motonave/Viaje no se modifican.
+                        </p>
+                        <div class="alert alert-danger" role="alert"
+                             style="margin-top: 8px; padding: 8px 12px; font-size: 13px;">
+                            <i class="fa fa-ban" aria-hidden="true" title="No permitido"/>
+                            <strong>Operación TOTAL:</strong> una sola exclusión (el Embarque o
+                            cualquiera de sus Contenedores bloqueado) aborta el rolleo sin
+                            modificar ningún registro. No mueve inventario ni costos.
+                        </div>
+                    </div>
+
+                    <sheet>
+                        <group>
+                            <group string="Embarque (unidad del rolleo)">
+                                <field name="shipment_id" readonly="1"/>
+                            </group>
+                            <group string="Origen (planificación actual)">
+                                <field name="origin_vessel_id" readonly="1"/>
+                                <field name="origin_voyage_id" readonly="1"/>
+                            </group>
+                            <group string="Destino">
+                                <field name="destination_vessel_id"
+                                       required="1"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                                <field name="destination_voyage_id"
+                                       options="{'no_create': True}"/>
+                            </group>
+                        </group>
+
+                        <group string="Motivo y Observación">
+                            <field name="motive" required="1"/>
+                            <field name="other_motive"
+                                   invisible="motive != 'other'"/>
+                            <field name="note" required="1"
+                                   placeholder="Describa el contexto del cambio de planificación"/>
+                        </group>
+
+                        <separator string="Previsualización (bloqueo total si hay exclusiones)"/>
+                        <group>
+                            <group string="Se reasignará">
+                                <field name="shipment_count"/>
+                                <field name="shipment_ids" widget="many2many_tags"/>
+                                <field name="container_count"/>
+                                <field name="container_ids" widget="many2many_tags"/>
+                            </group>
+                            <group string="Bloqueados">
+                                <field name="blocked_shipment_count"/>
+                                <field name="blocked_shipment_ids" widget="many2many_tags"/>
+                                <field name="blocked_container_count"/>
+                                <field name="blocked_container_ids" widget="many2many_tags"/>
+                            </group>
+                        </group>
+
+                        <field name="block_summary"
+                               invisible="not block_summary"
+                               readonly="1"/>
+                    </sheet>
+
+                    <footer>
+                        <button name="action_refresh_preview"
+                                type="object"
+                                string="🔄 Actualizar previsualización"
+                                class="btn-secondary"/>
+                        <button name="action_confirm_rollover"
+                                type="object"
+                                string="✅ Confirmar Rolleo"
+                                class="btn-primary"
+                                confirm="⚠️ CONFIRMACIÓN FINAL DE ROLLEO DE EMBARQUE&#10;&#10;La operación es TOTAL: si existe cualquier exclusión, se aborta sin cambios.&#10;Sólo se actualizarán la Motonave y el Viaje del Embarque seleccionado.&#10;&#10;¿Desea continuar?"/>
+                        <button string="❌ Cancelar"
+                                special="cancel"
+                                class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

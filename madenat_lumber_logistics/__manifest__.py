@@ -45,6 +45,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'wizards/madenat_processor_shipment_wizard_views.xml',
         # I2 (CANON/19 v1.6.0 / AD-91): asistente de imputación documental SV.
         'wizards/madenat_sv_imputation_wizard_views.xml',
+        # AD-92 (2026-10-05): rolleo centrado en Embarque.
+        'wizards/lumber_vessel_rollover_wizard_views.xml',
 
         # 4. REPORTES (Definiciones y Plantillas)
         'reports/lumber_container_reports.xml',            

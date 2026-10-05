@@ -329,3 +329,14 @@ Esta sección **complementa** el flujo de Procesados (§4) para la vía **SV (co
 - **`parent_lot_id` opcional:** paso futuro controlado (I6, D10).
 
 **Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md`; `04_DECISION_LOG.md` AD-87/AD-88; `12_FLUJOS_INGESTA.md` §11.8; `05_BACKLOG.md` (fases I1–I6).
+
+---
+
+## Nota de alcance — Rolleo marítimo centrado en Embarque (AD-92, 2026-10-05)
+
+El **Rolleo / reprogramación de salida marítima** de un Embarque (cambio de
+`vessel_id`/`voyage_id` de `lumber.export.shipment`) es una operación de **planificación
+marítima** y queda **fuera del alcance de este documento**, que gobierna la ingesta
+(Producto y Procesados), las reglas de negocio y la trazabilidad documental de ingreso.
+No altera el flujo de ingesta, sus reglas ni sus controles. Norma: `00_ARQUITECTURA.md`
+(sección «Rolleo marítimo centrado en Embarque») y `04_DECISION_LOG.md` **AD-92**.

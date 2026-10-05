@@ -34,6 +34,21 @@ class LumberShipmentDocument(models.Model):
     
     notes = fields.Text('Notas Adicionales')
 
+    # AD-92 (2026-10-05): pendiente documental NO bloqueante del Rolleo.
+    criticality = fields.Selection([
+        ('low', 'Baja'),
+        ('medium', 'Media'),
+        ('high', 'Alta'),
+        ('critical', 'Crítica'),
+    ], string='Criticidad', default='medium', index=True)
+    backlog_state = fields.Selection([
+        ('open', 'Abierto'),
+        ('in_progress', 'En Proceso'),
+        ('completed', 'Completado'),
+        ('waived', 'Exonerado'),
+    ], string='Estado Backlog', default='open', index=True)
+    backlog_note = fields.Text('Nota de Backlog')
+
     @api.depends('checklist_id')
     def _compute_name(self):
         for doc in self:

@@ -2,7 +2,7 @@
 
 **Módulo:** MADENAT Lumber Core
 **Versión documental:** 12.17.0
-**Última actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Última actualización:** 2026-10-05  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2416,6 +2416,57 @@ _guard_deviation(code, message, *, reason=None, hard=False, extra=None)
 **Evidencia:** `19_IMPUTACION_SV_Y_PROCESADORES.md` (§2, §4, §5, §6, §7, §13.2, §16); **AD-87**, **AD-88**, **AD-89**, **AD-90**; `05_BACKLOG.md` (I2 con alcance cerrado); evidencia de código de `19` §18 (`madenat_sv_operation.py`, `stock_lot.py`, `madenat_guia_processing.py`, `res_partner.py`).
 
 ---
+
+---
+
+## 2026-10-05 — Entrega 1: Rolleo centrado en Embarque
+
+### AD-92 (2026-10-05) — Rolleo centrado en Embarque
+
+**Estado:** ✅ IMPLEMENTADO (Entrega 1 — Operación Física y Logística). Módulos
+afectados: `madenat_lumber_logistics`, `madenat_lumber_shipping_core`.
+
+**Decisión.** El rolleo marítimo se inicia desde un **Embarque individual**
+(`lumber.export.shipment`) y reasigna **solamente** la planificación marítima de
+ese Embarque a una **Motonave** destino y, cuando aplique, a un **Viaje** destino.
+El asistente `lumber.vessel.rollover.wizard` recibe `shipment_id` **obligatorio**;
+`origin_vessel_id`/`origin_voyage_id` son **derivados** (sólo lectura) del Embarque.
+El punto de entrada operativo es `Logística Exportación → Embarques → (abrir Embarque)
+→ «Rollover de Embarque»` (`action_open_shipment_rollover_wizard`).
+
+**Motivo.** Una Motonave (`shipping.vessel`) es un **maestro histórico reutilizable**
+(muchos viajes y Embarques de meses distintos); no constituye por sí misma una salida
+concreta ni un **conjunto seguro de cargas afectadas**. El asistente previo (Fase C,
+2026-10-04) operaba por Motonave origen (+ Viaje opcional) y reasignaba **en masa**
+todos los Embarques planificables del alcance, con riesgo de incluir Embarques que no
+pertenecían al incidente operativo.
+
+**Invariantes.**
+1. La unidad de negocio es **exactamente un** Embarque.
+2. Sólo se escriben `shipment.vessel_id` y `shipment.voyage_id`.
+3. No modifica stock, lotes, quants, movimientos, pickings, contenedores (como
+   pertenencia), costos, Rebaja, Zarpe, B-01, R1, R2, Entrega ni finanzas.
+4. No altera **otros** Embarques ni Embarques históricos.
+5. No opera post-zarpe (sólo `draft`/`confirmed`; `in_transit`/`delivered`/`cancelled`
+   bloqueados en UI y en servidor).
+6. Conserva origen, destino, motivo, observación, actor y fecha; mantiene **auditoría
+   SHA-256** (`vessel_rollover` maestro + `vessel_rollover_item`) y **chatter**.
+7. Genera un pendiente **documental NO bloqueante** reutilizando `lumber.shipment.document`
+   (sin crear tipos maestros, modelos ni migraciones).
+8. Modo `strict`: una exclusión (Embarque o cualquiera de sus Contenedores bloqueado)
+   aborta la operación sin cambios (atomicidad).
+
+**Consecuencia.** El acceso desde Motonave se **depreca como ejecución**: el botón de la
+ficha de `shipping.vessel` pasa a ser **consulta** (`action_open_vessel_shipments` → abre
+la lista de Embarques filtrada por esa Motonave). No se ejecuta reasignación masiva desde
+Motonave. El Rolleo de Contenedor (`lumber.container.rollover.wizard`) es un flujo
+**independiente** y no fue modificado.
+
+**Evidencia.** `madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard.py`
+(`_scope_shipments` = `self.shipment_id`; `_ensure_documentary_backlog`);
+`madenat_lumber_logistics/views/lumber_export_shipment_views.xml` (botón «Rollover de
+Embarque»); `madenat_lumber_shipping_core/models/shipping_vessel.py`
+(`action_open_vessel_shipments`); pruebas `test_vessel_rollover.py` (RL-01..RL-23).
 
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->

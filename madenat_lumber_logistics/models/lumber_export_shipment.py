@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import AccessError, ValidationError, UserError
 import logging
 import io
 import base64
@@ -11,6 +11,13 @@ try:
 except ImportError:
     xlsxwriter = None
 _logger = logging.getLogger(__name__)
+
+CONFIRM_GROUPS = (
+    'madenat_lumber_core.group_madenat_operaciones',
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+
 
 class LumberExportShipment(models.Model):
     _name = 'lumber.export.shipment'
@@ -868,6 +875,34 @@ class LumberExportShipment(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'reload',
             }
+    # ======================================================================
+    # AD-92 (2026-10-05) - ROLLEO CENTRADO EN EMBARQUE
+    # Reprograma la salida marítima de ESTE Embarque (sólo vessel_id/voyage_id).
+    # Guard de servidor: rol autorizado y estados draft/confirmed.
+    # ======================================================================
+    def action_open_shipment_rollover_wizard(self):
+        """Abre el asistente de Rolleo centrado en este Embarque."""
+        self.ensure_one()
+        if not any(self.env.user.has_group(g) for g in CONFIRM_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para reprogramar la salida marítima del '
+                'Embarque %s. Se requiere el rol de Operaciones, Jefatura de '
+                'Operaciones o Gerencia.') % self.name)
+        if self.state not in ('draft', 'confirmed'):
+            raise UserError(_(
+                'El Rolleo de Embarque sólo aplica en Borrador o Confirmado. '
+                'Estado actual: %s.') % dict(
+                    self._fields['state'].selection).get(
+                        self.state, self.state))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Rollover de Embarque'),
+            'res_model': 'lumber.vessel.rollover.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_shipment_id': self.id},
+        }
+
 class LumberShipmentCostLine(models.Model):
 
     _name = 'lumber.shipment.cost.line'

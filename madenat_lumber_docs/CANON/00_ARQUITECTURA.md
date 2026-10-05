@@ -472,6 +472,31 @@ propia UI del servidor** surte efecto sin reinicio. Un cambio hecho desde **fuer
 
 ---
 
+## Rolleo marítimo centrado en Embarque (AD-92, 2026-10-05)
+
+La planificación marítima de un Embarque (`lumber.export.shipment`) se reprograma
+**desde el propio Embarque**, no desde la Motonave. Una Motonave (`shipping.vessel`)
+es un **maestro histórico reutilizable** (muchos viajes y Embarques de meses
+distintos); no es una salida concreta ni un conjunto seguro de cargas afectadas.
+
+- **Unidad de negocio:** exactamente un Embarque.
+- **Campos escritos:** sólo `vessel_id` y `voyage_id` de ese Embarque.
+- **Alcance del asistente** (`lumber.vessel.rollover.wizard`): `_scope_shipments()`
+  devuelve el `shipment_id` seleccionado; `origin_vessel_id`/`origin_voyage_id` son
+  derivados (sólo lectura) del Embarque.
+- **Sin efectos laterales:** no mueve stock, lotes, quants, movimientos, pickings,
+  contenedores (como pertenencia), costos, Rebaja, Zarpe, B-01, R1, R2, Entrega ni
+  finanzas. Auditoría SHA-256 + chatter. Pendiente documental **no bloqueante** vía
+  `lumber.shipment.document`.
+- **Estados:** sólo `draft`/`confirmed` (post-zarpe bloqueado en UI y servidor).
+- **Roles:** Operaciones / Jefatura de Operaciones / Gerencia (guard de servidor).
+- **Motonave:** el botón de la ficha pasa a **consulta** (`action_open_vessel_shipments`),
+  sin reasignación masiva desde la Motonave.
+
+Norma detallada: `04_DECISION_LOG.md` **AD-92**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

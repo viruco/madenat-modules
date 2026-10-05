@@ -27,6 +27,15 @@
         <field name="arch" type="xml">
             <form string="Embarque de Exportación">
                 <header>
+                    <!-- AD-92 (2026-10-05): Rolleo CENTRADO EN EMBARQUE.
+                         Reprograma la salida marítima de ESTE Embarque
+                         (sólo vessel_id/voyage_id). -->
+                    <button name="action_open_shipment_rollover_wizard"
+                            string="Rollover de Embarque" type="object"
+                            groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
+                            invisible="state not in ('draft', 'confirmed')"
+                            class="btn-secondary"
+                            help="Reprogramar salida marítima"/>
                     <button name="action_confirm" string="Confirmar" type="object" 
                             invisible="state != 'draft'" class="btn-primary"/>
 

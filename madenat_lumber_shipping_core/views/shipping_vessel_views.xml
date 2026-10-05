@@ -19,6 +19,15 @@
         <field name="model">shipping.vessel</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <!-- AD-92 (2026-10-05): consulta de Embarques de la Motonave. -->
+                    <button name="action_open_vessel_shipments"
+                            type="object"
+                            string="Ver Embarques de esta Motonave"
+                            class="btn-secondary"
+                            help="Consulta: listado de Embarques de esta Motonave"
+                            groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
