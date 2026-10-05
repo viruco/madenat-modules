@@ -580,6 +580,33 @@ falsificable por `with_context`/RPC). Norma detallada: `04_DECISION_LOG.md`
 
 ---
 
+## Retorno físico total de Rebaja — R2 (AD-97, 2026-10-05)
+
+El **Retorno físico total (R2)** anula FÍSICAMENTE una **Rebaja** ya ejecutada,
+restaurando el material al **inventario interno de origen** con trazabilidad
+completa. Es un flujo **distinto** de R1 (rebaja tardía) y de R4 (cierre B-01).
+
+- **Sólo Gerencia** autoriza R2 (`_assert_can_reverse_rebaja_total`); se ejecuta
+  sobre un Contenedor `rebajado` con salida OUT `done`.
+- **Motor de retorno** (no `_rebajar_container`): picking IN con
+  `return_id = OUT.id` y un `stock.move` por move OUT con
+  `origin_returned_move_id`, cantidad y **lote exactos**; se exige
+  `return_picking.state == 'done'`.
+- **Totalidad + atomicidad:** lock por Contenedor, transacción única y
+  **rollback total** ante cualquier fallo; **idempotencia relacional** (no-op si
+  el retorno total ya existe).
+- **Clasificación** `none/active/compensated/inconsistent`;
+  `_assert_no_rebaja_inconsistency()` bloquea Zarpe/Entrega/Waiver si hay
+  `inconsistent`.
+- **B-01:** `open` **bloquea** R2; `resolved` exige Gerencia + motivo ≥ 20. R2
+  **no** modifica `b01_exception_state` ni crea `b01_regularization`/`b01_resolution`.
+- **Auditoría** `rebaja_return_total` (SHA-256) + chatter. **No** Entrega, **no**
+  Costeo/Billing/Pagos.
+
+Norma detallada: `04_DECISION_LOG.md` **AD-97**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

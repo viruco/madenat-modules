@@ -20,3 +20,6 @@ from . import test_shipment_return_to_draft
 from . import test_shipment_b01_exception
 # Sub-bloque 4A (2026-10-04): regularización B-01 R1 y cierre controlado R4.
 from . import test_b01_regularization
+
+# Sub-bloque 4B (2026-10-04): R2 retorno físico total / reversa robusta de rebaja.
+from . import test_rebaja_return_total

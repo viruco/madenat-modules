@@ -12,6 +12,7 @@ Características:
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError, AccessError
 from odoo.tools import float_compare
+from psycopg2.errors import LockNotAvailable  # Sub-bloque 4B: lock transaccional
 import logging
 import io          # <-- Para el Excel
 import base64      # <-- Para el Excel
@@ -261,7 +262,14 @@ class LumberContainer(models.Model):
         ('sealed', 'Sellado'),
     ], string='Estado previo a rebaja', copy=False, readonly=True,
         help='Estado del contenedor antes de rebajar; se restaura al revertir.')
-    
+    # Sub-bloque 4B (2026-10-04) — R2: evidencia visible de la cadena de retorno
+    # físico (salida OUT → retorno IN) para la reversa total por Contenedor.
+    rebaja_origin_picking_names = fields.Char(
+        'Salida de rebaja (OUT)', compute='_compute_rebaja_return_display',
+        help='Picking(s) de salida de rebaja del contenedor (Customers).')
+    rebaja_return_picking_names = fields.Char(
+        'Retorno físico (IN)', compute='_compute_rebaja_return_display',
+        help='Picking(s) de retorno físico validado (Customers → interno).')
     # Sub-bloque 4A (2026-10-04): estado B-01 del Embarque (sólo lectura). El
     # formulario avisa y la rebaja estándar post-zarpe queda bloqueada.
     b01_exception_state = fields.Selection(
@@ -707,6 +715,18 @@ class LumberContainer(models.Model):
     # ══════════════════════════════════════════════════════════════════════
     REBAJA_ALLOWED_STATES = ('loaded', 'sealed')
 
+    @api.depends('line_ids.rebaja_picking_id', 'line_ids.rebaja_state')
+    def _compute_rebaja_return_display(self):
+        """Nombres de la salida (OUT) y del retorno físico (IN) validado."""
+        for container in self:
+            out = container.line_ids.mapped('rebaja_picking_id')
+            container.rebaja_origin_picking_names = ', '.join(
+                out.mapped('name')) or False
+            returns = out.mapped('return_ids').filtered(
+                lambda p: p.state == 'done')
+            container.rebaja_return_picking_names = ', '.join(
+                sorted(returns.mapped('name'))) or False
+
     def _rebaja_require_group(self, *group_xmlids):
         if not any(self.env.user.has_group(g) for g in group_xmlids):
             raise AccessError(_(
@@ -875,30 +895,51 @@ class LumberContainer(models.Model):
         self._rebajar_container()
         return True
 
-    def action_reverse_rebaja(self):
-        """B5: reversa de la rebaja (retorno nativo + contrapartida SV).
+    # ══════════════════════════════════════════════════════════════════════
+    # Sub-bloque 4B (2026-10-04) — R2: RETORNO FÍSICO TOTAL / REVERSA ROBUSTA
+    # Una reversa sólo actualiza estados logísticos, SV y auditoría DESPUÉS de
+    # que exista un retorno físico total validado:
+    #   Customers → ubicación interna original, mismo lote y
+    #   `stock.move.origin_returned_move_id`, con idempotencia relacional.
+    # ══════════════════════════════════════════════════════════════════════
+    REBAJA_REVERSE_GROUPS = (
+        # R2 (2026-10-05): sólo Gerencia autoriza el retorno físico total.
+        'madenat_lumber_core.group_madenat_gerencia',
+    )
+    REBAJA_REVERSE_MIN_REASON = 20
 
-        AD-88 / B-03 / B-06 (2026-10-01): si el embarque ya fue entregado o el
-        viaje está cancelado, la reversa exige **override de Gerencia con
-        motivo** (se abre el wizard). En caso contrario, revierte directo.
+    def action_reverse_rebaja(self):
+        """B5/R2: reversa de la rebaja (retorno físico total + contrapartida SV).
+
+        AD-88 / B-03 / B-06 (2026-10-01): si el embarque ya fue entregado, el
+        viaje está cancelado o la excepción B-01 quedó regularizada (`resolved`),
+        la reversa exige **override de Gerencia con motivo** (se abre el wizard).
+        En caso contrario, revierte directo. La excepción B-01 `open` bloquea la
+        reversa por completo (no se reabre en esta entrega).
         """
         self.ensure_one()
-        self._rebaja_require_group(
-            'madenat_lumber_core.group_madenat_jefatura_operaciones',
-            'madenat_lumber_core.group_madenat_gerencia')
+        self._rebaja_require_group(*self.REBAJA_REVERSE_GROUPS)
         shipment = self.shipment_id
+        if shipment and shipment.b01_exception_state == 'open':
+            raise UserError(_(
+                'No se puede revertir la rebaja del Contenedor %s: el Embarque '
+                '%s tiene una excepción B-01 ABIERTA. Cierre la excepción antes '
+                'de revertir la rebaja física.') % (self.name, shipment.name))
         delivered = bool(shipment and shipment.state == 'delivered')
         voyage_cancelled = bool(
             shipment and shipment.voyage_id
             and shipment.voyage_id.state == 'cancel')
-        if delivered or voyage_cancelled:
+        b01_resolved = bool(
+            shipment and shipment.b01_exception_state == 'resolved')
+        if delivered or voyage_cancelled or b01_resolved:
             if not self.env.user.has_group(
                     'madenat_lumber_core.group_madenat_gerencia'):
                 raise UserError(_(
                     'La reversa con %s requiere override de Gerencia con '
                     'motivo.') % (
                     'el embarque entregado' if delivered
-                    else 'el viaje cancelado'))
+                    else 'el viaje cancelado' if voyage_cancelled
+                    else 'una excepción B-01 regularizada'))
             return {
                 'type': 'ir.actions.act_window',
                 'name': _('Reversa con override de Gerencia'),
@@ -1022,24 +1063,224 @@ class LumberContainer(models.Model):
 
 
     def _reverse_rebaja_container(self, override_reason=None):
+        """R2: retorno físico TOTAL validado y sólo entonces reversa lógica.
+
+        Orquesta, en una única transacción: bloqueo de concurrencia, guard de
+        elegibilidad, retorno físico por cada salida `done` (mismo lote y
+        cantidad, `origin_returned_move_id`), verificación, reversa SV, estados,
+        auditoría (`rebaja_reverse` + `rebaja_return_total`) y chatter. Si algo
+        falla, todo se revierte: no se marca `reversed`, no se restaura el
+        estado, no se revierte SV ni se registra auditoría de éxito.
+        """
         self.ensure_one()
+        self._rebaja_require_group(*self.REBAJA_REVERSE_GROUPS)
+        # C: protección transaccional ANTES de crear cualquier retorno.
+        self._rebaja_reverse_lock()
+
+        # Idempotencia relacional: revertido y con retorno físico total → no-op.
+        reversed_lines = self.line_ids.filtered(
+            lambda l: l.rebaja_state == 'reversed')
+        if self.state != 'rebajado' and reversed_lines:
+            if all(self._rebaja_return_total_complete(l.rebaja_picking_id)
+                   for l in reversed_lines if l.rebaja_picking_id):
+                return self._rebaja_return_result(reversed_lines)
+
+        # A: guard de elegibilidad (bloquea antes de crear retornos).
+        self._assert_can_reverse_rebaja_total(override_reason=override_reason)
+
+        lines = self.line_ids.filtered(lambda l: l.rebaja_state == 'rebajado')
+        state_before = self.state
+        origin_pickings = self.env['stock.picking']
+        return_pickings = self.env['stock.picking']
+        results = []
+        for picking in lines.mapped('rebaja_picking_id'):
+            with self.env.cr.savepoint():
+                return_picking = self._reverse_rebaja_picking(picking)
+                checks = self._assert_rebaja_return_valid(
+                    picking, return_picking)
+            origin_pickings |= picking
+            return_pickings |= return_picking
+            results.append((picking, return_picking, checks))
+
+        # Retorno físico total verificado → recién ahora estados/SV/auditoría.
+        for line in lines.filtered('rebaja_sv_operation_id'):
+            self.env['madenat.sv.operation'].sv_reverse_allocation(
+                line.lot_id, container=self,
+                reason=_('Reversa de rebaja del contenedor %s.') % self.name)
+        lines.write({'rebaja_state': 'reversed'})
+        new_state = self.state_before_rebaja or 'loaded'
+        self.write({'state': new_state})
+        self.message_post(body=_(
+            '↩️ <b>Retorno físico total de rebaja</b> (%d lote(s)).<br/>'
+            'Los lotes regresaron de <b>Clientes</b> a la ubicación interna de '
+            'origen con el mismo lote; recién entonces se revirtieron estado, '
+            'SV y auditoría.') % len(lines))
+        self._rebaja_audit('rebaja_reverse')
+        self._rebaja_return_total_audit(
+            origin_pickings, return_pickings, results,
+            state_before=state_before, state_after=new_state,
+            override_reason=override_reason)
+        return True
+
+    def _rebaja_return_result(self, reversed_lines):
+        """Resultado idempotente (sin nuevas escrituras) de una reversa ya hecha."""
+        pickings = reversed_lines.mapped('rebaja_picking_id')
+        return {
+            'rebaja_state': 'reversed',
+            'origin_pickings': pickings.mapped('name'),
+            'return_pickings': pickings.mapped('return_ids').filtered(
+                lambda p: p.state == 'done').mapped('name'),
+        }
+
+    # ══════════════════════════════════════════════════════════════════════
+    # R2 — Helpers relacionales de elegibilidad, idempotencia y verificación.
+    # ══════════════════════════════════════════════════════════════════════
+    def _rebaja_reverse_lock(self):
+        """Serializa la reversa física con bloqueo de fila (FOR UPDATE NOWAIT)."""
+        self.ensure_one()
+        self.flush_recordset()
+        try:
+            self.env.cr.execute(
+                'SELECT id FROM lumber_container WHERE id = %s '
+                'FOR UPDATE NOWAIT', (self.id,))
+        except LockNotAvailable as error:
+            _logger.warning(
+                'Conflicto de concurrencia en reversa de rebaja (id %s): %s',
+                self.id, error)
+            raise UserError(_(
+                'La reversa de rebaja del Contenedor %s está siendo procesada '
+                'por otra transacción. Intente nuevamente.') % self.name)
+        if not self.env.cr.fetchone():
+            raise UserError(_(
+                'El Contenedor (id %s) ya no existe.') % self.id)
+        self.invalidate_recordset(['state', 'state_before_rebaja'])
+
+    def _rebaja_return_moves_of(self, move):
+        """Moves de retorno vinculados relacionalmente a `move` (no por texto)."""
+        return self.env['stock.move'].search([
+            ('origin_returned_move_id', '=', move.id),
+        ])
+
+    def _rebaja_move_return_complete(self, move):
+        """True si la suma de retornos `done` iguala exactamente la salida."""
+        if not move or move.state != 'done':
+            return False
+        returned = sum(
+            m.quantity for m in self._rebaja_return_moves_of(move)
+            if m.state == 'done')
+        out_qty = move.quantity or move.product_uom_qty
+        rounding = move.product_uom.rounding or 0.001
+        return float_compare(
+            returned, out_qty, precision_rounding=rounding) == 0
+
+    def _rebaja_return_total_complete(self, picking):
+        """True si TODOS los moves `done` del OUT tienen retorno total `done`."""
+        if not picking or picking.state != 'done':
+            return False
+        moves = picking.move_ids.filtered(lambda m: m.state == 'done')
+        if not moves:
+            return False
+        return all(self._rebaja_move_return_complete(m) for m in moves)
+
+    def _rebaja_return_pickings_of(self, picking):
+        """Pickings de retorno vinculados relacionalmente al OUT."""
+        if not picking:
+            return self.env['stock.picking']
+        moves = picking.move_ids.filtered('returned_move_ids')
+        return moves.mapped('returned_move_ids').mapped('picking_id')
+
+    def _assert_reverse_reason(self, reason):
+        """Override de Gerencia obligatorio y suficiente (≥ 20 caracteres)."""
+        if len((reason or '').strip()) < self.REBAJA_REVERSE_MIN_REASON:
+            raise UserError(_(
+                'Debe indicar un motivo de reversa de al menos %d caracteres '
+                'para autorizar esta operación.'
+            ) % self.REBAJA_REVERSE_MIN_REASON)
+
+    def _assert_can_reverse_rebaja_total(self, override_reason=None):
+        """Guard de servidor (NO escribe) de la reversa R2 total.
+
+        Bloquea antes de crear cualquier retorno si el contexto no es elegible:
+        estado, líneas rebajadas, salidas `done`, retorno total previo, B-01,
+        terminalidad, costos/facturación/pagos, consolidaciones y motivo de
+        override. No usa texto `origin` como guard primario.
+        """
+        self.ensure_one()
+        if not any(
+                self.env.user.has_group(g) for g in self.REBAJA_REVERSE_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para revertir la rebaja. Se requiere el rol '
+                'de Gerencia.'))
         if self.state != 'rebajado':
-            raise UserError(_('Solo se puede revertir un contenedor rebajado.'))
+            raise UserError(_(
+                'Sólo se puede revertir un contenedor rebajado (estado actual: '
+                '%s).') % dict(self._fields['state'].selection).get(
+                    self.state, self.state))
+        lines = self.line_ids.filtered(lambda l: l.rebaja_state == 'rebajado')
+        if not lines:
+            raise UserError(_('No hay líneas rebajadas para revertir.'))
+
+        # Cada OUT de rebaja debe estar `done`, con moves y lotes válidos.
+        for line in lines:
+            picking = line.rebaja_picking_id
+            if not picking or picking.state != 'done':
+                raise UserError(_(
+                    'No se puede revertir: la salida de rebaja de la línea del '
+                    'lote %s no está validada (estado: %s).') % (
+                        line.lot_id.name or line.lot_id.id,
+                        picking.state if picking else 'sin picking'))
+            moves = picking.move_ids.filtered(lambda m: m.state == 'done')
+            if not moves:
+                raise UserError(_(
+                    'No se puede revertir: la salida %s no tiene movimientos '
+                    'validados.') % picking.name)
+            if any(not ml.lot_id for ml in moves.move_line_ids):
+                raise UserError(_(
+                    'No se puede revertir: la salida %s tiene movimientos sin '
+                    'lote (trazabilidad incompleta).') % picking.name)
+            if not moves.mapped('location_dest_id').filtered(
+                    lambda loc: loc.usage == 'customer'):
+                raise UserError(_(
+                    'No se puede revertir: la salida %s no despacha a Clientes '
+                    '(Customers).') % picking.name)
+            if self._rebaja_return_total_complete(picking):
+                raise UserError(_(
+                    'Ya existe un retorno físico total validado para la salida '
+                    '%s. No se creará un segundo retorno.') % picking.name)
+
         shipment = self.shipment_id
-        delivered = bool(shipment and shipment.state == 'delivered')
+        if shipment:
+            self._assert_can_reverse_rebaja_context(shipment, override_reason)
+            self._assert_can_reverse_rebaja_financial(shipment)
+        return True
+
+    def _assert_can_reverse_rebaja_context(self, shipment, override_reason):
+        """Gates de B-01 y terminalidad (con override de Gerencia) del R2."""
+        # ── B-01 (no se reabre ni se modifica en esta entrega) ─────────────
+        if shipment.b01_exception_state == 'open':
+            raise UserError(_(
+                'No se puede revertir la rebaja: el Embarque %s tiene una '
+                'excepción B-01 ABIERTA.') % shipment.name)
+        if shipment.b01_exception_state == 'resolved':
+            if not self.env.user.has_group(
+                    'madenat_lumber_core.group_madenat_gerencia'):
+                raise UserError(_(
+                    'Revertir una rebaja sobre un Embarque con B-01 '
+                    'regularizada sólo puede autorizarlo Gerencia, con motivo.'))
+            self._assert_reverse_reason(override_reason)
+        # ── Terminalidad (override de Gerencia existente) ──────────────────
+        delivered = shipment.state == 'delivered'
         voyage_cancelled = bool(
-            shipment and shipment.voyage_id
-            and shipment.voyage_id.state == 'cancel')
+            shipment.voyage_id and shipment.voyage_id.state == 'cancel')
         if delivered or voyage_cancelled:
-            # AD-88 / B-03 / B-06: decisión DURA salvo override de Gerencia con
-            # motivo (auditado). Antes era un bloqueo duro sin salida.
-            if not override_reason or not self.env.user.has_group(
+            if not self.env.user.has_group(
                     'madenat_lumber_core.group_madenat_gerencia'):
                 raise UserError(_(
                     'No se puede revertir la rebaja: %s. Requiere override de '
                     'Gerencia con motivo.') % (
                     'el embarque ya fue entregado' if delivered
                     else 'el viaje está cancelado'))
+            self._assert_reverse_reason(override_reason)
             self._guard_deviation(
                 'B-03' if delivered else 'B-06',
                 _('Reversa de rebaja con %s (override de Gerencia).') % (
@@ -1049,51 +1290,131 @@ class LumberContainer(models.Model):
                 hard=False,
                 extra={'shipment': shipment.name if shipment else False},
             )
-
-        lines = self.line_ids.filtered(lambda l: l.rebaja_state == 'rebajado')
-        if not lines:
-            raise UserError(_('No hay líneas rebajadas para revertir.'))
-
-        for picking in lines.mapped('rebaja_picking_id'):
-            self._reverse_rebaja_picking(picking)
-        for line in lines.filtered('rebaja_sv_operation_id'):
-            self.env['madenat.sv.operation'].sv_reverse_allocation(
-                line.lot_id, container=self,
-                reason=_('Reversa de rebaja del contenedor %s.') % self.name)
-        lines.write({'rebaja_state': 'reversed'})
-        self.write({'state': self.state_before_rebaja or 'loaded'})
-        self.message_post(
-            body=_('↩️ <b>Rebaja revertida</b> (%d lotes).') % len(lines))
-        self._rebaja_audit('rebaja_reverse')
         return True
 
+    def _assert_can_reverse_rebaja_financial(self, shipment):
+        """Gates financieros (costos/facturación/pagos/consolidaciones) del R2."""
+        if shipment.cost_distribution_state == 'distributed':
+            raise UserError(_(
+                'No se puede revertir la rebaja: los costos del Embarque %s ya '
+                'fueron distribuidos.') % shipment.name)
+        lot_cost_lines = self.env['stock.lot.cost.line'].browse()
+        if shipment.cost_line_ids:
+            lot_cost_lines = self.env['stock.lot.cost.line'].search([
+                ('source_shipment_cost_line_id', 'in',
+                 shipment.cost_line_ids.ids)])
+        if lot_cost_lines:
+            raise UserError(_(
+                'No se puede revertir la rebaja: existen %d costos atribuibles '
+                'al lote/embarque.') % len(lot_cost_lines))
+        invoiced = shipment.cost_line_ids.filtered(
+            lambda cl: getattr(cl, 'invoice_id', False)
+            or getattr(cl, 'payment_state', 'not_paid')
+            not in (False, 'not_paid'))
+        if invoiced:
+            raise UserError(_(
+                'No se puede revertir la rebaja: existen costos con '
+                'facturación o pago asociados al Embarque.'))
+        consolidations = self.env['lumber.billing.consolidation'].search([
+            ('shipment_id', '=', shipment.id), ('state', '!=', 'cancelled')])
+        billed = consolidations.filtered(
+            lambda c: c.invoice_id or c.state == 'billed')
+        if billed:
+            raise UserError(_(
+                'No se puede revertir la rebaja: existe una consolidación de '
+                'facturación incompatible para el Embarque %s.') % shipment.name)
+        return True
+
+    def _assert_rebaja_return_valid(self, picking, return_picking):
+        """Verifica el retorno físico TOTAL; devuelve el dict de checks.
+
+        Si el retorno no quedó `done`, no cubre la totalidad de cada move o no
+        preserva el lote, bloquea (nunca se avanza a estados/SV/auditoría).
+        """
+        checks = {
+            'origin_done': picking.state == 'done',
+            'return_done': bool(
+                return_picking and return_picking.state == 'done'),
+            'quantities_total_match': True,
+            'lots_match': True,
+            'total_return_complete': False,
+            'return_picking': return_picking.name if return_picking else False,
+        }
+        if not checks['return_done']:
+            raise UserError(_(
+                'El retorno físico de la salida %s no terminó validado '
+                '(estado: %s).') % (
+                    picking.name,
+                    return_picking.state if return_picking else 'sin retorno'))
+        for move in picking.move_ids.filtered(lambda m: m.state == 'done'):
+            if not self._rebaja_move_return_complete(move):
+                checks['quantities_total_match'] = False
+                raise UserError(_(
+                    'El retorno físico no cubre la totalidad del movimiento '
+                    '%s (producto %s).') % (
+                        move.name, move.product_id.display_name))
+            ret_moves = self._rebaja_return_moves_of(move).filtered(
+                lambda m: m.state == 'done')
+            origin_lots = move.move_line_ids.mapped('lot_id')
+            ret_lots = ret_moves.move_line_ids.mapped('lot_id')
+            if not origin_lots or set(origin_lots.ids) != set(ret_lots.ids):
+                checks['lots_match'] = False
+                raise UserError(_(
+                    'El retorno físico de %s no preserva el lote de origen.'
+                ) % move.name)
+        checks['total_return_complete'] = self._rebaja_return_total_complete(
+            picking)
+        if not checks['total_return_complete']:
+            raise UserError(_(
+                'El retorno físico de la salida %s no quedó total.'
+            ) % picking.name)
+        return checks
+
     def _reverse_rebaja_picking(self, picking):
-        """Retorno entrante inverso (sin borrar historia), idempotente."""
-        if not picking or picking.state != 'done':
-            return False
-        existing = self.env['stock.picking'].search([
-            ('origin', '=', 'Return of %s' % picking.name),
-            ('state', '=', 'done'),
-        ], limit=1)
-        if existing:
-            return existing
-        warehouse = picking.picking_type_id.warehouse_id
-        return_type = self.env['stock.picking.type'].search([
-            ('code', '=', 'incoming'), ('warehouse_id', '=', warehouse.id),
-            ('active', '=', True)], limit=1)
+        """Retorno entrante inverso TOTAL (Customers → ubicación interna).
+
+        Idempotente por RELACIÓN (`origin_returned_move_id` / `return_id`), nunca
+        por texto. Requiere la salida `done`; si falta, bloquea (nunca `False`).
+        """
+        if not picking:
+            raise UserError(_(
+                'No se encontró la salida de rebaja a revertir.'))
+        if picking.state != 'done':
+            raise UserError(_(
+                'No se puede revertir: la salida de rebaja %s no está '
+                'validada (estado: %s).') % (picking.name, picking.state))
+
+        # Idempotencia relacional: si el retorno total ya existe, se reutiliza.
+        if self._rebaja_return_total_complete(picking):
+            existing = self._rebaja_return_pickings_of(picking).filtered(
+                lambda p: p.state == 'done')
+            return existing[:1]
+
+        return_type = picking.picking_type_id.return_picking_type_id
+        if not return_type:
+            warehouse = picking.picking_type_id.warehouse_id
+            return_type = self.env['stock.picking.type'].search([
+                ('code', '=', 'incoming'), ('warehouse_id', '=', warehouse.id),
+                ('active', '=', True)], limit=1)
         if not return_type:
             raise UserError(_(
                 'No existe un tipo de operación de Recepción para revertir.'))
+
+        # Destino = ubicación interna ORIGINAL de cada move (por move, no por
+        # cabecera). Cabecera: Customers → ubicación interna de la salida.
         return_picking = self.env['stock.picking'].create({
             'picking_type_id': return_type.id,
-            'origin': 'Return of %s' % picking.name,
+            'return_id': picking.id,
+            'origin': _('Return of %s') % picking.name,
             'location_id': picking.location_dest_id.id,
             'location_dest_id': picking.location_id.id,
         })
         for move in picking.move_ids.filtered(lambda m: m.state == 'done'):
+            if self._rebaja_move_return_complete(move):
+                continue
             qty = move.quantity or move.product_uom_qty
             return_move = self.env['stock.move'].create({
-                'name': 'Return of %s' % move.name,
+                'name': _('Return of %s') % move.name,
                 'product_id': move.product_id.id,
                 'product_uom_qty': qty,
                 'product_uom': move.product_uom.id,
@@ -1101,6 +1422,8 @@ class LumberContainer(models.Model):
                 'location_id': move.location_dest_id.id,
                 'location_dest_id': move.location_id.id,
                 'origin_returned_move_id': move.id,
+                # `to_refund=True` no genera efecto contable en este flujo: los
+                # movimientos de rebaja no están ligados a factura/SO.
                 'to_refund': True,
             })
             for line in move.move_line_ids:
@@ -1117,6 +1440,11 @@ class LumberContainer(models.Model):
         return_picking.action_confirm()
         return_picking.action_assign()
         return_picking.button_validate()
+        return_picking.invalidate_recordset()
+        if return_picking.state != 'done':
+            raise UserError(_(
+                'El retorno físico de la salida %s no terminó validado '
+                '(estado: %s).') % (picking.name, return_picking.state))
         return return_picking
 
     def _rebaja_snapshot(self, action_type, picking=False):
@@ -1130,6 +1458,12 @@ class LumberContainer(models.Model):
             'state': self.state,
             'shipment': self.shipment_id.name or False,
             'shipment_id': self.shipment_id.id or False,
+            # AD-82 / Rebaja por Motonave: nave/viaje DERIVADOS del embarque
+            # (campos JSON aditivos; no se crean campos en madenat.audit.log).
+            'vessel': self.shipment_id.vessel_id.name or False,
+            'vessel_id': self.shipment_id.vessel_id.id or False,
+            'voyage': self.shipment_id.voyage_id.name or False,
+            'voyage_id': self.shipment_id.voyage_id.id or False,
             'picking': picking.name if picking else False,
             'picking_id': picking.id if picking else False,
             'lines': [
@@ -1161,6 +1495,99 @@ class LumberContainer(models.Model):
             'user_id': self.env.user.id,
         })
 
+    def _rebaja_return_total_snapshot(self, origin_pickings, return_pickings,
+                                      results, state_before, state_after,
+                                      override_reason=None):
+        """Snapshot determinista JSON del retorno físico total (R2).
+
+        Evidencia explícita de la cadena OUT → retorno IN, con la verificación
+        y el estado físico resultante. Mismos datos → mismo hash SHA-256.
+        """
+        self.ensure_one()
+        shipment = self.shipment_id
+        moves = []
+        for picking, _return_picking, _checks in results:
+            for move in picking.move_ids.filtered(lambda m: m.state == 'done'):
+                ret_moves = self._rebaja_return_moves_of(move).filtered(
+                    lambda m: m.state == 'done')
+                moves.append({
+                    'origin_picking': picking.name,
+                    'origin_move_id': move.id,
+                    'return_move_id': ret_moves[:1].id or False,
+                    'return_move_ids': ret_moves.ids,
+                    'product': move.product_id.display_name,
+                    'product_id': move.product_id.id,
+                    'quantity': round(
+                        move.quantity or move.product_uom_qty, 3),
+                    'lot_id': move.move_line_ids[:1].lot_id.id or False,
+                    'origin_returned_move_id': (
+                        ret_moves[:1].origin_returned_move_id.id or False),
+                })
+        rebaja_active_after = bool(
+            shipment and shipment._is_container_rebajado_fisico(self))
+        payload = {
+            'operation': {
+                'action_type': 'rebaja_return_total',
+                'timestamp': fields.Datetime.now().isoformat(),
+                'actor': {'id': self.env.user.id, 'name': self.env.user.name},
+                'reason': (override_reason or '').strip() or False,
+                'override_reason': (override_reason or '').strip() or False,
+            },
+            'container': {
+                'id': self.id,
+                'name': self.name,
+                'state_before': state_before,
+                'state_after': state_after,
+                'shipment': shipment.name or False,
+                'shipment_id': shipment.id or False,
+                'b01_state': (
+                    shipment.b01_exception_state if shipment else False),
+            },
+            'origin_pickings': [
+                {'id': p.id, 'name': p.name}
+                for p in origin_pickings.sorted('id')],
+            'return_pickings': [
+                {'id': p.id, 'name': p.name,
+                 'location_id': p.location_id.display_name,
+                 'location_dest_id': p.location_dest_id.display_name}
+                for p in return_pickings.sorted('id')],
+            'moves': moves,
+            'checks': {
+                'origin_done': all(r[2]['origin_done'] for r in results),
+                'return_done': all(r[2]['return_done'] for r in results),
+                'quantities_total_match': all(
+                    r[2]['quantities_total_match'] for r in results),
+                'lots_match': all(r[2]['lots_match'] for r in results),
+                'idempotency_status': 'total_return_created',
+                'physical_rebaja_active_after': rebaja_active_after,
+            },
+        }
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _rebaja_return_total_audit(self, origin_pickings, return_pickings,
+                                   results, state_before, state_after,
+                                   override_reason=None):
+        """Registra el evento append-only `rebaja_return_total` (sudo audit.log)."""
+        self.ensure_one()
+        snapshot = self._rebaja_return_total_snapshot(
+            origin_pickings, return_pickings, results,
+            state_before, state_after, override_reason)
+        batch = ','.join(
+            [str(self.id)] + [str(i) for i in self.line_ids.ids])
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'rebaja_return_total',
+            'description': _(
+                'Retorno físico total de rebaja · %s · salida %s → retorno %s '
+                '(Customers → interno).') % (
+                    self.name,
+                    ', '.join(origin_pickings.mapped('name')) or '—',
+                    ', '.join(return_pickings.mapped('name')) or '—'),
+            'batch_id': batch,
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(
+                snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
 
     def action_view_lots(self):
         self.ensure_one()

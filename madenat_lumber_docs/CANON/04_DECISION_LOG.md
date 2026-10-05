@@ -2621,6 +2621,55 @@ total** de la reversa. R1 no usa retorno físico.
 sin Backlog como feature. El cierre de R4 se apoya en **Rebaja aplicada**, nunca
 en retorno.
 
+---
+
+## 2026-10-05 — Entrega 3: Retorno físico total de Rebaja (R2)
+
+### AD-97 (2026-10-05) — R2: retorno físico total de Rebaja
+
+**Estado:** IMPLEMENTADO. Módulos: `madenat_lumber_logistics`,
+`madenat_lumber_core`.
+
+**Propósito.** Anular FÍSICAMENTE una **Rebaja** ya ejecutada, restaurando el
+material al **inventario interno de origen** con trazabilidad completa, mediante
+un **retorno físico TOTAL** (nunca por escritura directa de stock).
+
+**Roles.** Sólo **Gerencia** (guard `_assert_can_reverse_rebaja_total`).
+Operaciones, Jefatura, Auditoría y Contabilidad → `AccessError` (Δ0).
+
+**Invariantes.**
+1. Sólo Contenedor **rebajado** con OUT (`rebaja_picking_id`) `done`, moves,
+   move lines y lotes íntegros, destino **Clientes**, y sin retorno total previo.
+2. **Motor físico de retorno** (no `_rebajar_container`): picking IN con
+   `return_id = OUT.id`, `origin = "Return of <OUT>"`, un `stock.move` por move
+   OUT con `origin_returned_move_id` y cantidad exacta, y `stock.move.line` por
+   lote real; exigir `return_picking.state == 'done'`.
+3. **Totalidad obligatoria** (lotes/cantidades exactos; sin parciales ni
+   sobre-retorno) — verificada DESPUÉS de la validación.
+4. **Lock** por Contenedor (`SELECT … FOR UPDATE NOWAIT`) + transacción lógica
+   única; cualquier fallo ⇒ **rollback total** (sin picking `done` parcial, sin
+   enlaces parciales, sin estados/auditoría/chatter).
+5. **Idempotencia relacional** (`origin_returned_move_id` / `return_id`): si el
+   retorno total ya existe → **no-op** (sin segundo retorno/auditoría/SV).
+6. **Clasificación** `none | active | compensated | inconsistent`;
+   `_assert_no_rebaja_inconsistency()` bloquea Zarpe/Entrega/Waiver si hay
+   `inconsistent`.
+7. **B-01:** `open` bloquea R2 (incluso Gerencia); `resolved` exige Gerencia +
+   motivo ≥ 20. R2 **no** escribe campos B-01 ni crea `b01_regularization`/
+   `b01_resolution` (sólo los lee en el snapshot).
+8. **Auditoría** `rebaja_return_total` (SHA-256) + chatter. **No** Entrega, **no**
+   Costeo/Billing/Pagos; interacción SV limitada a `sv_reverse_allocation` de la
+   rebaja de asignación.
+
+**Separación.** **R1 ≠ R2** (R1 = rebaja tardía; R2 = retorno físico total).
+**R2 ≠ R4** (R2 no cierra B-01). **R2 ≠ Entrega**.
+
+**Evidencia.** `lumber_container.py` (motor + guards + snapshot/audit);
+`lumber_export_shipment.py` (`_container_rebaja_classification`,
+`_assert_no_rebaja_inconsistency`); `wizards/lumber_container_rebaja_reverse_wizard.py`;
+`madenat_lumber_core/models/madenat_audit_log.py` (`rebaja_return_total`);
+`tests/test_rebaja_return_total.py` (T-R2-1..13).
+
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->

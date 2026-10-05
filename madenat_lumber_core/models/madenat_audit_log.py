@@ -49,6 +49,11 @@ class MadenatAuditLog(models.Model):
         # reversa (salida nativa única y su retorno).
         ('rebaja', 'Rebaja de Contenedor'),
         ('rebaja_reverse', 'Reversa de Rebaja de Contenedor'),
+        # Sub-bloque 4B (2026-10-04) — R2: retorno FÍSICO TOTAL de la rebaja de
+        # un Contenedor (Customers → ubicación interna de origen, mismo lote,
+        # `origin_returned_move_id`) con evidencia determinista. Valor ADITIVO
+        # al Selection (no reemplaza a 'rebaja'/'rebaja_reverse').
+        ('rebaja_return_total', 'Retorno Físico Total de Rebaja'),
         # AD-88 (2026-10-01): desviación aceptada con motivo (advertencia no
         # bloqueante) — zarpe con excepción, reversa con override de Gerencia,
         # etc. El código (p. ej. 'B-01') va en la descripción/batch_id.

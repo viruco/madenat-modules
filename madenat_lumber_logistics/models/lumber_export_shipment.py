@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, ValidationError, UserError
+from odoo.tools import float_compare  # R2: comparación de cantidades por UoM
 import hashlib
 import json
 import logging
@@ -563,28 +564,82 @@ class LumberExportShipment(models.Model):
                 'de Jefatura de Operaciones o Gerencia.'))
 
     def _container_rebaja_classification(self, container):
-        """Clasificador LOCAL de rebaja física (AD-94). SÓLO lectura.
+        """Clasificador de rebaja física (R2). SÓLO lectura. 4 estados.
 
-        Sin dependencia de R2 (retornos) ni cambios de estado. Devuelve:
-        - 'active': existe evidencia física REAL de salida (rebaja).
-        - 'none': sin evidencia.
+        - 'none': sin evidencia de rebaja.
+        - 'active': salida (OUT) `done` SIN retorno físico total válido, o
+          evidencia legacy AD-94 (línea `rebajado` sin picking de rebaja y
+          Contenedor en `rebajado`/`shipped`).
+        - 'compensated': salida `done` + retorno IN `done` TOTAL, enlazado por
+          `origin_returned_move_id`, con lotes y cantidades exactos, y línea
+          marcada `reversed` (rebaja físicamente anulada por R2).
+        - 'inconsistent': evidencia contradictoria/parcial/no enlazada (línea
+          `reversed` sin retorno total, línea `rebajado` con retorno total ya
+          existente, o OUT no `done`, o mezcla `rebajado`+`reversed`).
 
-        Evidencias (cualquiera basta):
-        * container.state in ('rebajado', 'shipped');
-        * alguna línea con rebaja_state == 'rebajado';
-        * algún rebaja_picking_id en estado 'done';
-        * stock.move `done` con destino Clientes para lotes del Contenedor;
-        * stock.quant > 0 en ubicación Clientes para lotes del Contenedor;
-        * madenat.sv.operation `rebaja`/`applied` de lotes del Contenedor.
+        No depende de Costeo/Entrega y no escribe nada.
         """
         container.ensure_one()
-        if container.state in ('rebajado', 'shipped'):
-            return 'active'
         lines = container.line_ids
-        if any(l.rebaja_state == 'rebajado' for l in lines):
+        out_pickings = lines.mapped('rebaja_picking_id')
+        done_outs = out_pickings.filtered(lambda p: p.state == 'done')
+        rebajado_lines = lines.filtered(lambda l: l.rebaja_state == 'rebajado')
+        reversed_lines = lines.filtered(lambda l: l.rebaja_state == 'reversed')
+
+        def _total_return_ok(picking):
+            """Retorno físico TOTAL y enlazado para una salida OUT `done`."""
+            if not picking or picking.state != 'done':
+                return False
+            moves = picking.move_ids.filtered(lambda m: m.state == 'done')
+            if not moves:
+                return False
+            for move in moves:
+                ret = self.env['stock.move'].search([
+                    ('origin_returned_move_id', '=', move.id),
+                    ('state', '=', 'done')])
+                if not ret:
+                    return False
+                rounding = move.product_uom.rounding or 0.001
+                if float_compare(
+                        sum(ret.mapped('quantity')),
+                        move.quantity or move.product_uom_qty,
+                        precision_rounding=rounding) != 0:
+                    return False
+                if set(move.move_line_ids.mapped('lot_id').ids) != set(
+                        ret.move_line_ids.mapped('lot_id').ids):
+                    return False
+            return True
+
+        # 1) Evidencia por líneas (fuente primaria).
+        if rebajado_lines and reversed_lines:
+            return 'inconsistent'
+        if rebajado_lines:
+            # 1a) Compatibilidad legacy AD-94: líneas `rebajado` SIN picking de
+            # rebaja (fixtures documentales, sin salida OUT real). Se aceptan
+            # como Rebaja ACTIVA sólo si el Contenedor ya está en
+            # `rebajado`/`shipped` (evidencia física consistente); si el estado
+            # del Contenedor no lo respalda, siguen siendo inconsistencia. Se
+            # evalúa ANTES de exigir `rebaja_picking_id.state == 'done'`.
+            legacy = rebajado_lines.filtered(lambda l: not l.rebaja_picking_id)
+            if legacy and len(legacy) == len(rebajado_lines):
+                if container.state in ('rebajado', 'shipped'):
+                    return 'active'
+                return 'inconsistent'
+            if any(not l.rebaja_picking_id or l.rebaja_picking_id.state != 'done'
+                   for l in rebajado_lines):
+                return 'inconsistent'
+            if any(_total_return_ok(l.rebaja_picking_id)
+                   for l in rebajado_lines):
+                return 'inconsistent'
             return 'active'
-        if lines.mapped('rebaja_picking_id').filtered(
-                lambda p: p.state == 'done'):
+        if reversed_lines:
+            if all(_total_return_ok(l.rebaja_picking_id)
+                   for l in reversed_lines):
+                return 'compensated'
+            return 'inconsistent'
+
+        # 2) Evidencia física sin líneas explícitas (compatibilidad AD-94).
+        if done_outs or container.state in ('rebajado', 'shipped'):
             return 'active'
         lots = lines.mapped('lot_id')
         customers = self.env.ref(
@@ -608,16 +663,25 @@ class LumberExportShipment(models.Model):
         return 'none'
 
     def _is_container_rebajado_fisico(self, container):
-        """Evidencia REAL de rebaja física (AD-94): clasificador local."""
+        """Evidencia de rebaja física ACTIVA (R2): clasificación == 'active'."""
         return self._container_rebaja_classification(container) == 'active'
 
     def _assert_no_rebaja_inconsistency(self):
-        """P0 (AD-94): sin R2 no existe el estado 'inconsistente'.
+        """R2: bloquea si algún Contenedor tiene rebaja INCONSISTENTE.
 
-        El clasificador local es binario ('active'/'none'); se conserva el
-        método (llamado por Zarpe y por Entrega) como no-op documentado.
+        Se invoca desde el Zarpe (`_assert_departure_context`) y la
+        Entrega/Waiver (`_assert_can_deliver` / `action_approve_delivery_waiver`).
+        SÓLO lectura: no altera B-01, stock, Costeo ni Finanzas.
         """
         self.ensure_one()
+        bad = self.container_ids.filtered(
+            lambda c: self._container_rebaja_classification(c) == 'inconsistent')
+        if bad:
+            raise UserError(_(
+                'El Embarque %s tiene evidencia de rebaja física INCONSISTENTE '
+                'en los Contenedores: %s. Ejecute el retorno físico total (R2) '
+                'o corrija la inconsistencia antes de continuar.') % (
+                    self.name, ', '.join(bad.mapped('name'))))
         return True
 
     def _classify_departure_containers(self):

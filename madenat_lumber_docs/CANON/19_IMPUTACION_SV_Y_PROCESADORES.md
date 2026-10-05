@@ -468,6 +468,7 @@ En el asistente de asignación a contenedor (`lumber.container.lot.wizard`) los 
 **Estado de implementación — bloque 4A (2026-10-05, R1/R4):**
 - **B-01 → R1 → R4 → Entrega (AD-95/AD-96):** la excepción **B-01 `open`** se resuelve en **dos acciones separadas** de Gerencia. **R1** = **rebaja extemporánea** por el motor nativo (no retrofecha Zarpe; no cierra B-01; no toca Costeo/Finanzas). **R4** = **cierre administrativo** `open → resolved` (exige cero pendientes + evidencia R1; no mueve stock; libera **sólo** el gate B-01 de la Entrega).
 - **R1 ≠ R2:** R1 es rebaja extemporánea; R2 es **retorno físico total** de la reversa. **R4 ≠ Entrega:** R4 sólo habilita; la Entrega conserva sus demás gates y el Backlog se preserva.
+- **R2 (AD-97) — Retorno físico total (Gerencia):** devuelve los lotes de Clientes al interno de origen enlazando `origin_returned_move_id`/`return_id`. Interacción SV **limitada** a `sv_reverse_allocation` de la rebaja de asignación; **no** crea imputación, Costeo ni Pagos. B-01 `open` bloquea; R2 no reabre/cierra B-01.
 
 ---
 

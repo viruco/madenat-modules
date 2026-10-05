@@ -250,14 +250,15 @@ class TestRebajaContenedor(TransactionCase):
         container, shipment = self._rebajable_container('06', [(lot, 0.0)])
         container.with_user(self.user_oper).action_rebajar()
         self.assertAlmostEqual(self._quant_of(lot), 0.0, places=3)
-        container.with_user(self.user_jef).action_reverse_rebaja()
+        container.with_user(self.user_ger).action_reverse_rebaja()
         lot.invalidate_recordset()
         container.invalidate_recordset()
         self.assertAlmostEqual(self._quant_of(lot), 3.0, places=3)
         self.assertEqual(container.state, 'loaded')
         container.with_user(self.user_oper).action_rebajar()
         shipment.state = 'delivered'
-        with self.assertRaises(UserError):
+        # R2 sólo Gerencia: Jefatura recibe AccessError.
+        with self.assertRaises(AccessError):
             container.with_user(self.user_jef).action_reverse_rebaja()
 
     def test_07_zarpe_abre_asistente_sin_rebaja_y_no_mueve_stock(self):
@@ -296,7 +297,7 @@ class TestRebajaContenedor(TransactionCase):
         self.assertEqual(container.state, 'rebajado')
         with self.assertRaises(AccessError):
             container.with_user(self.user_oper).action_reverse_rebaja()
-        container.with_user(self.user_jef).action_reverse_rebaja()
+        container.with_user(self.user_ger).action_reverse_rebaja()
         self.assertEqual(container.state, 'loaded')
 
     def test_09_rebaja_por_nave_requiere_jefatura(self):
@@ -364,7 +365,7 @@ class TestRebajaContenedor(TransactionCase):
         container, _ = self._rebajable_container('12', [(lot, 0.0)])
         container.with_user(self.user_oper).action_rebajar()
         self._assert_audit_signed(container, 'rebaja')
-        container.with_user(self.user_jef).action_reverse_rebaja()
+        container.with_user(self.user_ger).action_reverse_rebaja()
         self._assert_audit_signed(container, 'rebaja_reverse')
 
     def _assert_audit_signed(self, container, action_type):
@@ -434,8 +435,8 @@ class TestRebajaContenedor(TransactionCase):
         container, shipment = self._rebajable_container('16', [(lot, 0.0)])
         container.with_user(self.user_oper).action_rebajar()
         shipment.state = 'delivered'
-        # Jefatura (sin Gerencia) → bloqueado.
-        with self.assertRaises(UserError):
+        # Jefatura (sin Gerencia) → AccessError (R2 sólo Gerencia).
+        with self.assertRaises(AccessError):
             container.with_user(self.user_jef).action_reverse_rebaja()
         # Gerencia → abre el wizard de override.
         action = container.with_user(self.user_ger).action_reverse_rebaja()

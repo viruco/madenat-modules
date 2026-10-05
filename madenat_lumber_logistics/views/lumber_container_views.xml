@@ -237,8 +237,9 @@
                             string="Revertir rebaja"
                             type="object"
                             class="btn-secondary"
+                            groups="madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
                             invisible="state != 'rebajado'"
-                            confirm="¿Revertir la rebaja? Se crea el retorno nativo de stock y la contrapartida SV si aplica."/>
+                            confirm="¿Revertir la rebaja? Se creará el RETORNO FÍSICO TOTAL (Clientes → ubicación interna de origen, mismo lote). Sólo si el retorno queda validado se revertirán estado, SV y auditoría. No hay retorno parcial."/>
                     <button name="action_manage_rollover"
                             string="🔄 Rollover"
                             type="object"
@@ -267,6 +268,28 @@
                         estándar post-zarpe no está disponible: la
                         regularización se ejecuta desde el Embarque como
                         <b>rebaja extemporánea R1</b> (sólo Gerencia).
+                    </div>
+
+                    <!-- Sub-bloque 4B (2026-10-04): reversa R2 (retorno físico
+                         total). Advertencia de gates B-01 + cadena OUT → IN. -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'rebajado' or b01_exception_state != 'resolved'">
+                        Revertir la rebaja de este Contenedor afecta una
+                        excepción <b>B-01</b> ya regularizada: la operación sólo
+                        puede autorizarla <b>Gerencia</b> con motivo (≥ 20
+                        caracteres). La B-01 <b>no se reabre</b> ni se modifica,
+                        y el Embarque entregado o con viaje cancelado también
+                        exige override de Gerencia.
+                    </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="not (rebaja_origin_picking_names or rebaja_return_picking_names)">
+                        <b>Reversa de rebaja (R2):</b> el retorno físico total
+                        lleva los lotes de <b>Clientes</b> a la
+                        <b>ubicación interna de origen</b> (mismo lote).
+                        Salida (OUT):
+                        <field name="rebaja_origin_picking_names" readonly="1" nolabel="1"/>
+                        · Retorno (IN):
+                        <field name="rebaja_return_picking_names" readonly="1" nolabel="1"/>
                     </div>
 
                     <group>
@@ -468,6 +491,32 @@
                             context="{'group_by': 'state'}"/>
                 </group>
             </search>
+        </field>
+    </record>
+
+    <!-- Sub-bloque 4B (2026-10-04) — R2: extiende el asistente de reversa para
+         mostrar la cadena OUT → IN y explicar el retorno físico total. Se ubica
+         aquí (archivo autorizado) para no modificar el archivo de vistas del
+         propio asistente. -->
+    <record id="view_lumber_container_rebaja_reverse_wizard_r2_inherit" model="ir.ui.view">
+        <field name="name">lumber.container.rebaja.reverse.wizard.form.r2.inherit</field>
+        <field name="model">lumber.container.rebaja.reverse.wizard</field>
+        <field name="inherit_id" ref="view_lumber_container_rebaja_reverse_wizard_form"/>
+        <field name="arch" type="xml">
+            <field name="reason" position="before">
+                <div class="alert alert-info" role="alert">
+                    La reversa ejecutará un <b>retorno físico TOTAL</b>: los
+                    lotes regresan de <b>Clientes</b> a la
+                    <b>ubicación interna de origen</b> (mismo lote). No existe
+                    retorno parcial. La B-01 <b>no se reabre</b> ni se modifica.
+                </div>
+                <group string="Cadena de retorno físico (R2)">
+                    <field name="container_state" readonly="1"/>
+                    <field name="b01_exception_state" readonly="1"/>
+                    <field name="origin_picking_names" readonly="1"/>
+                    <field name="return_picking_names" readonly="1"/>
+                </group>
+            </field>
         </field>
     </record>
 

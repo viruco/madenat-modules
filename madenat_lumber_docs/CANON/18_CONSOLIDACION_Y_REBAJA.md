@@ -678,3 +678,23 @@ B-01 open
 `wizards/lumber_b01_regularization_wizard.py`;
 `madenat_lumber_core/models/madenat_audit_log.py` (`b01_regularization`,
 `b01_resolution`); pruebas `test_b01_regularization.py` (T-R1-1..9 / T-R4-1..12).
+
+### 14.8 Retorno físico total de Rebaja (R2, AD-97, 2026-10-05)
+
+El **Retorno físico total (R2)** anula FÍSICAMENTE una Rebaja ya ejecutada:
+devuelve los lotes de **Clientes** a la **ubicación interna de origen** con el
+mismo producto/UoM/lote/cantidad, enlazando cada `stock.move` de retorno al
+original mediante `origin_returned_move_id` y el picking de retorno con
+`return_id`.
+
+- **Sólo Gerencia.** Guard `_assert_can_reverse_rebaja_total`.
+- **Totalidad obligatoria + atomicidad:** lock por Contenedor, transacción única,
+  **rollback total** ante cualquier fallo; verificación post-`done` de cantidades
+  y lotes.
+- **Idempotencia relacional:** retorno total previo → **no-op**.
+- **Clasificación** `none/active/compensated/inconsistent` (en `lumber_export_shipment`).
+- **B-01:** `open` **bloquea**; `resolved` exige Gerencia + motivo ≥ 20. R2 no
+  reabre ni cierra B-01.
+- **Auditoría** `rebaja_return_total` (SHA-256) + chatter.
+- **Distinciones:** **R1 ≠ R2** (rebaja tardía vs retorno físico); **R2 ≠ R4**
+  (no cierra B-01); **R2 ≠ Entrega**.
