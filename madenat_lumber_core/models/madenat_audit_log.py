@@ -88,6 +88,16 @@ class MadenatAuditLog(models.Model):
         # (Política D2, AD-98, hito logístico controlado). Evento append-only
         # con snapshot determinista y firma SHA-256. Valor ADITIVO al Selection.
         ('shipment_delivery', 'Entrega de Embarque'),
+        # AD-100 (2026-10-05): workflow NO bloqueante del Backlog Documental.
+        # Escalamiento, cierre y exoneración de `lumber.shipment.document` con
+        # snapshot determinista y firma SHA-256 + chatter. Valores ADITIVOS al
+        # Selection (no reemplazan a D2/C2/R1/R2).
+        ('documentary_backlog_escalation',
+         'Escalamiento de Backlog Documental'),
+        ('documentary_backlog_completion',
+         'Cierre de Backlog Documental'),
+        ('documentary_backlog_waiver',
+         'Exoneración de Backlog Documental'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.

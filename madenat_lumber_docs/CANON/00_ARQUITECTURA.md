@@ -644,6 +644,30 @@ Norma detallada: `04_DECISION_LOG.md` **Nota técnica B2**.
 
 ---
 
+## Backlog Documental No Bloqueante (AD-100, 2026-10-05)
+
+El **Backlog Documental** gestiona **trabajo pendiente documental** sobre
+`lumber.shipment.document`. **NO** es gate físico ni financiero: **no bloquea
+D2**, **no cambia B2** y no toca stock/B-01/R1/R2/R4/Costeo/Billing/Pagos/SV.
+
+- **Estados:** `open → in_progress → completed` (o `waived`).
+- **Roles:** Operaciones gestiona datos (criticidad, responsable, fecha, nota);
+  Jefatura/Gerencia **escalan**; Gerencia **cierra** o **exonera**.
+- Cada acción tiene **guard server-side** (falta de permiso ⇒ `AccessError`) y
+  **token de proceso anti-RPC** (no eludible por `with_context`); el write
+  directo de `backlog_state`/`escalated_*` se bloquea.
+- **Idempotencia:** repetir una acción no vuelve a sellar ni duplica
+  auditoría/chatter.
+- **Evidencia:** auditoría `documentary_backlog_escalation|completion|waiver`
+  (snapshot determinista **SHA-256**) + chatter.
+- **Exoneración:** motivo obligatorio (>= 20 caracteres) tomado de
+  `backlog_note`; la nota previa se **conserva** y se anexa de forma trazable.
+- **B2 se lee, no se escribe.** **D2 no se bloquea ni se altera.**
+
+Norma detallada: `04_DECISION_LOG.md` **AD-100**.
+
+---
+
 ## 8. Historial de versiones
 
 | Versión | Fecha | Cambio |

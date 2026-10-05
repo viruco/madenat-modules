@@ -92,6 +92,20 @@
                                    decoration-success="state == 'verified'" 
                                    decoration-warning="state == 'attached'" 
                                    decoration-danger="state == 'missing'"/>
+
+                            <!-- Backlog documental (NO bloqueante) -->
+                            <field name="criticality" widget="badge"
+                                   decoration-danger="criticality == 'critical'"
+                                   decoration-warning="criticality == 'high'"/>
+                            <!-- AD-100: estado del backlog readonly desde UI;
+                                 se cambia sólo con las acciones autorizadas. -->
+                            <field name="backlog_state" widget="badge" readonly="1"
+                                   decoration-success="backlog_state == 'completed'"
+                                   decoration-warning="backlog_state == 'in_progress'"/>
+                            <field name="responsible_id" widget="many2one_avatar_user" optional="show"/>
+                            <field name="due_date" optional="show"/>
+                            <field name="backlog_attention" optional="hide" readonly="1"/>
+                            <field name="backlog_overdue" optional="hide" readonly="1"/>
                                    
                             <!-- Notas Adicionales -->
                             <field name="notes" optional="hide"/>
@@ -110,5 +124,111 @@
               parent="madenat_lumber_logistics.menu_logistics_config"
               action="action_lumber_document_checklist"
               sequence="50"/>
+
+    <!-- ========================================================= -->
+    <!--  5. BACKLOG DOCUMENTAL (NO BLOQUEANTE)                   -->
+    <!--  La documentación tardía NO bloquea la operación física. -->
+    <!-- ========================================================= -->
+    <record id="view_lumber_shipment_document_backlog_search" model="ir.ui.view">
+        <field name="name">lumber.shipment.document.backlog.search</field>
+        <field name="model">lumber.shipment.document</field>
+        <field name="arch" type="xml">
+            <search string="Backlog Documental">
+                <field name="shipment_id"/>
+                <field name="name"/>
+                <field name="checklist_id"/>
+                <field name="responsible_id"/>
+                <filter name="f_open" string="Abiertos"
+                        domain="[('backlog_state','in',['open','in_progress'])]"/>
+                <filter name="f_critical" string="Críticos"
+                        domain="[('criticality','in',['high','critical'])]"/>
+                <filter name="f_missing" string="Sin evidencia"
+                        domain="[('state','=','missing')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_resp" string="Responsable"
+                            context="{'group_by':'responsible_id'}"/>
+                    <filter name="g_crit" string="Criticidad"
+                            context="{'group_by':'criticality'}"/>
+                    <filter name="g_bstate" string="Estado Backlog"
+                            context="{'group_by':'backlog_state'}"/>
+                    <filter name="g_ship" string="Embarque"
+                            context="{'group_by':'shipment_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_lumber_shipment_document_backlog_list" model="ir.ui.view">
+        <field name="name">lumber.shipment.document.backlog.list</field>
+        <field name="model">lumber.shipment.document</field>
+        <field name="arch" type="xml">
+            <list string="Backlog Documental" editable="bottom"
+                  decoration-danger="backlog_overdue == True"
+                  decoration-warning="backlog_attention == True and backlog_overdue == False">
+                <!-- AD-100 · acciones de workflow (autorización server-side).
+                     Escalar: Jefatura/Gerencia, sólo en `open`.
+                     Cerrar / Exonerar: sólo Gerencia, en `open`/`in_progress`.
+                     Exonerar usa `backlog_note` como motivo (>= 20 caracteres). -->
+                <header>
+                    <button name="action_backlog_escalate" type="object"
+                            string="Escalar"
+                            groups="madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
+                            invisible="backlog_state != 'open'"
+                            confirm="¿Escalar el backlog documental de este documento? Se registrará el escalamiento en la auditoría."/>
+                    <button name="action_backlog_complete" type="object"
+                            string="Cerrar"
+                            groups="madenat_lumber_core.group_madenat_gerencia"
+                            invisible="backlog_state not in ('open','in_progress')"
+                            confirm="¿Cerrar (completar) el backlog documental de este documento?"/>
+                    <button name="action_backlog_waive" type="object"
+                            string="Exonerar"
+                            groups="madenat_lumber_core.group_madenat_gerencia"
+                            invisible="backlog_state not in ('open','in_progress')"
+                            confirm="¿Exonerar el backlog documental? El motivo se toma de «Nota de Backlog» (mínimo 20 caracteres)."/>
+                </header>
+                <field name="shipment_id"/>
+                <field name="checklist_id"/>
+                <field name="name" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'attached'"
+                       decoration-danger="state == 'missing'"/>
+                <field name="criticality" widget="badge"
+                       decoration-danger="criticality == 'critical'"
+                       decoration-warning="criticality == 'high'"/>
+                <field name="backlog_state" widget="badge" readonly="1"
+                       decoration-success="backlog_state == 'completed'"
+                       decoration-warning="backlog_state == 'in_progress'"/>
+                <field name="responsible_id" widget="many2one_avatar_user"/>
+                <field name="due_date"/>
+                <field name="backlog_overdue" optional="show"/>
+                <field name="backlog_attention" optional="hide"/>
+                <field name="escalated_at" optional="hide" readonly="1"/>
+                <field name="escalated_by_id" optional="hide" readonly="1"/>
+                <field name="backlog_note" optional="show"
+                       help="Nota de gestión del pendiente. Para EXONERAR, complete aquí el motivo con al menos 20 caracteres."/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_lumber_shipment_document_backlog" model="ir.actions.act_window">
+        <field name="name">Backlog Documental</field>
+        <field name="res_model">lumber.shipment.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state','!=','verified')]</field>
+        <field name="context">{'search_default_f_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin pendientes documentales</p>
+            <p>El backlog documental NO bloquea la operación física: asigne
+            responsable, criticidad y fecha objetivo.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_lumber_document_backlog"
+              name="Backlog Documental"
+              parent="madenat_lumber_logistics.menu_lumber_logistics"
+              action="action_lumber_shipment_document_backlog"
+              groups="madenat_lumber_core.group_madenat_operaciones"
+              sequence="25"/>
 
 </odoo>

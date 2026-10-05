@@ -26,3 +26,4 @@ from . import test_b01_regularization
 # Sub-bloque 4B (2026-10-04): R2 retorno físico total / reversa robusta de rebaja.
 from . import test_rebaja_return_total
 from . import test_shipment_delivery_safe
+from . import test_documentary_backlog

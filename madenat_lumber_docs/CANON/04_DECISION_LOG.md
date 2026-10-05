@@ -2753,3 +2753,64 @@ y elimina el defecto.
 **Evidencia.** `lumber_document_checklist.py` (`_compute_document_status`);
 `lumber_export_shipment.py` (`document_status`, contadores,
 `_document_status_summary`); `tests/test_document_status_b2.py` (T-B2-01..11).
+
+---
+
+## 2026-10-05 — Backlog Documental No Bloqueante
+
+### AD-100 (2026-10-05) — Backlog Documental No Bloqueante
+
+**Estado:** IMPLEMENTADO. Módulos: `madenat_lumber_logistics`,
+`madenat_lumber_core`.
+
+**Propósito.** El **Backlog Documental** gestiona **trabajo pendiente
+documental** sobre `lumber.shipment.document`. **NO** es gate físico ni
+financiero: no bloquea la operación ni D2, no cambia B2 y no toca
+stock/B-01/R1/R2/R4/Costeo/Billing/Pagos/SV.
+
+**Estados.** `open → in_progress → completed` (o `waived`, estado terminal
+alternativo).
+
+**Roles.**
+1. **Operaciones** gestiona datos: `criticality`, `responsible_id`,
+   `due_date`, `backlog_note`.
+2. **Jefatura de Operaciones** y **Gerencia** **escalan** (`open →
+   in_progress`; sello `escalated_at`/`escalated_by_id`).
+3. **Gerencia** **cierra** (`→ completed`) o **exonera** (`→ waived`).
+
+**Invariantes.**
+1. **Guard server-side** por rol (`_assert_backlog_operations_group`,
+   `_assert_backlog_escalate_group`, `_assert_backlog_close_group`); falta de
+   permiso ⇒ `AccessError`. `backlog_state`, `escalated_at` y `escalated_by_id`
+   son campos de **workflow**: su write directo se bloquea (`UserError`).
+2. **Token de proceso anti-RPC** (`_BACKLOG_ESCALATE_TOKENS`,
+   `_BACKLOG_CLOSE_TOKENS`, `_BACKLOG_WAIVE_TOKENS`; clave
+   `(dbname, uid, document_id)`), no eludible por `with_context`. El
+   superusuario (`env.su`, código interno/tests) conserva la vía de escape
+   estándar (patrón MADENAT).
+3. **Idempotencia:** `completed`/`waived` son no-op; `in_progress` no reescribe
+   `escalated_*`; un no-op no genera auditoría ni chatter.
+4. **Exoneración:** motivo obligatorio (>= 20 caracteres tras `strip()`),
+   tomado de `backlog_note`; `completed` no se exonera (`UserError`); la nota
+   previa se **conserva** y el motivo se anexa de forma trazable.
+5. **Auditoría** `documentary_backlog_escalation`/`_completion`/`_waiver`
+   (snapshot determinista **SHA-256**) + **chatter**. Rollback total si falla
+   la creación de auditoría o el write (savepoint).
+6. **B2 se lee, no se escribe:** el snapshot registra `document_status` como
+   evidencia; nunca se escriben `document_status`/`document_completion` ni los
+   contadores.
+7. **D2 no se bloquea ni se altera:** el backlog no invoca `action_deliver` ni
+   toca `state`, `actual_departure`, viaje/motonave, B-01 ni campos `delivery_*`.
+8. **Sin** stock, B-01, R1/R2/R4, Costeo, Billing, Pagos ni SV.
+
+**Evidencia.** `madenat_lumber_logistics/models/lumber_document_checklist.py`
+(`write`, `_assert_backlog_*`, `action_backlog_escalate`,
+`action_backlog_complete`, `action_backlog_waive`, `_backlog_snapshot`,
+`_create_backlog_audit`, `_backlog_message_post`);
+`views/lumber_document_checklist_views.xml` (botones Escalar/Cerrar/Exonerar);
+`madenat_lumber_core/models/madenat_audit_log.py` (nuevos `action_type`);
+`tests/test_documentary_backlog.py` (T-DOC-1..6 + BL-01..BL-18).
+
+**No alcance.** Sin stock, Rebaja, Retorno R2, Zarpe, B-01, R1/R2/R4, Costeo,
+Billing, Pagos ni SV; sin wizards nuevos; sin menús P2 ni vistas D2/B2.
+**AD-99 queda reservado para C2.**
