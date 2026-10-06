@@ -30,6 +30,11 @@
   - Validación: suite `madenat_lumber_core`, 304 tests, 0 fallos, 0 errores (292 baseline + 12 H1);
     regression H1 en `--test-tags h1`: 12 tests, 0 fallos, 0 errores.
 
+### Fixed
+- Desacoplada la extensión de vistas core de `contacts.menu_contacts`;
+  el menú Contacts no es una dependencia funcional de MADENAT core y
+  ya no bloquea instalaciones limpias sin la aplicación Contacts.
+
 ## [18.0.5.5.0] - 2026-09-20
 ### Added
 - **AD-66: Consumo parcial de lote/pool para salida a proceso.**

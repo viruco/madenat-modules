@@ -129,17 +129,12 @@
         <!--   - account.menu_finance        MADENAT tiene rama propia       -->
         <!--     (Pagos a Proveedores ya fue reparentado a menu_finance_payments) -->
         <!--   - mail.channel_menu_root      Ruido, no es canal de negocio   -->
-        <!--   - contacts.menu_contacts      Gestionado vía proveedores      -->
-        <!--     dentro del flujo MADENAT                                    -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
 
         <menuitem id="account.menu_finance"
                   groups="base.group_system"/>
 
         <menuitem id="mail.channel_menu_root"
-                  groups="base.group_system"/>
-
-        <menuitem id="contacts.menu_contacts"
                   groups="base.group_system"/>
 
     </data>

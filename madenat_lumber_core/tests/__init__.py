@@ -50,3 +50,4 @@ from . import test_guia_documental_correction
 # Gerencia pueden crear/procesar/validar/reabrir/cancelar guías y recepciones.
 from . import test_guia_processing_security
 from . import test_reception_security
+from . import test_manifest_external_xml_dependencies
