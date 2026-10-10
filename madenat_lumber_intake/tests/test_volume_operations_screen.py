@@ -40,7 +40,8 @@ RETIRED_TITLES = (
     'Volumen operativo de referencia (no gobierna stock)',
     'Control documental interno (auditoría)',
     'Resumen del ingreso',
-    'Evidencia documental',
+    # Consolidación UI (2026-10-08): el encabezado único es
+    # «📄 Evidencia documental» (se retiró el duplicado sin emoji).
     '📄 Evidencia documental',
     'DETALLE DEL PACKING LIST',
 )

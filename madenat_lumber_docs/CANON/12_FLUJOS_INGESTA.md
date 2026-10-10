@@ -1,7 +1,7 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.7.0\
+**Versión documental:** 1.8.0\
 **Fecha de actualización:** 2026-10-01\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80) y la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87).
 **Fecha:** 2026-09-26\
@@ -465,3 +465,42 @@ evidencia. El snapshot de auditoría del Modo D incluye el inventario de evidenc
 - **Saldo por procesador:** el SV enviado al procesador vive en una ubicación **interna** `Procesadores/<X>` (inventario de MADENAT, D5); su saldo restante se controla por reporte.
 
 **Referencias cruzadas.** `17` §2.8 (nota SV, reescrita); `18` §7 (pantallas, SV fuera de exportación); `04` AD-87/AD-88; `05_BACKLOG` (fases I1–I6).
+
+---
+
+### 11.9 Identificación de retorno de servicio (no bloqueante) — 2026-10-07
+
+**Naturaleza.** La **Guía de procesado** (`madenat.guia.processing`) registra si el ingreso
+Procesado de servicio **es un retorno de servicio** mediante `service_return_confirmation`
+(Selection de **tres estados**):
+
+| Valor | Significado |
+|---|---|
+| *vacío* | **pendiente de identificación** (NO equivale a «No») |
+| `yes` | es retorno de servicio |
+| `no` | no es retorno de servicio |
+
+**Reglas.**
+- **No bloqueante.** La identificación **no** impide la ingesta ni el envío a stock por sí sola;
+  no altera `tipo_recepcion`, stock ni costes; no dispara imputaciones. El vacío es un estado
+  válido y se completa posteriormente según permisos y reglas vigentes. **No** se debilitan las
+  demás validaciones (permisos, dimensiones, producto, tipo de cambio, trazabilidad,
+  anti-duplicado).
+- **Alcance:** ingreso Procesado de servicio (`tipo_recepcion == 'service'`). Excluye `compra`,
+  `granel` (Volúmenes) y Producto.
+- **Persistencia** en la Guía. La Consola de Ingreso de Madera (vista SQL de solo lectura) la
+  expone por **proxy no almacenado** (compute + inverse) **editable** por Operaciones, sin
+  duplicar el dato.
+- **Relación con I2.** La identificación **precede** e identifica el retorno; **no** sustituye ni
+  dispara la imputación SV (I2, §11.8; CANON/19 §19.9). «Imputación posterior» es un acto
+  **declarativo e independiente**.
+- **Regla con imputaciones aplicadas.** Si la guía tiene **imputaciones SV `applied`**, no se
+  permite cambiar la identificación a «No» ni vaciarla; la corrección exige **reversar** primero
+  las imputaciones (mecanismo existente). No se eliminan relaciones en silencio.
+- **Filtros** en la búsqueda de la guía: «Retornos de servicio» / «No retornos de servicio» /
+  «Retorno de servicio sin confirmar». El filtro **«Retornos sin imputación aplicada»** (Logística)
+  detecta **ausencia de imputación `applied`** y **NO evalúa cobertura parcial** (limitación).
+
+**Estado.** Implementado y probado en **copia de trabajo aislada**
+(`IMPL_SERVICE_RETURN_AB_20261007/`); **NO aplicado** al entorno activo. Detalle en
+`04_DECISION_LOG.md` **AD-102**.

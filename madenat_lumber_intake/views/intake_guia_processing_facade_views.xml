@@ -117,6 +117,16 @@
                                     <field name="name" string="Número de Guía"/>
                                     <field name="date_emission" string="Fecha de Emisión"/>
                                     <field name="tipo_recepcion" string="Tipo de Recepción"/>
+                                    <!-- Confirmación de retorno de servicio
+                                         (solo ingreso de servicio). Identifica
+                                         el retorno; NO bloquea la ingesta ni el
+                                         envío a stock. Vacío = pendiente. -->
+                                    <field name="service_return_confirmation"
+                                           string="¿Es retorno de servicio?"
+                                           widget="radio"
+                                           options="{'horizontal': true}"
+                                           invisible="tipo_recepcion != 'service'"
+                                           readonly="state == 'validated'"/>
                                     <field name="partner_id" string="Proveedor / Transportista"/>
                                     <field name="toll_order_id"
                                            invisible="tipo_recepcion != 'service'"

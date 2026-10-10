@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.6.1
-**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado; (9) — AD-91: I2 con alcance cerrado documental (modelo aditivo madenat.sv.imputation/.line/.sv.line; cabecera por guía, inmutabilidad/reversa, idempotencia por clave documental propia; duro etiqueta-side / blando SV-side; sin efecto en stock, sin ledger, sin costo); salida nativa + ledger a I3; costo a I5; merma/cierre posterior; I2 sigue PENDIENTE. Ver CANON/19 §4/§5/§6/§7/§13.2/§16; (10) — precisa la reserva documental temporal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger; sin cambio funcional ni de estado. Ver CANON/19 §6/§7.3. -->
+**Versión documental:** 8.16.0
+**Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — nueva sección al final de «REVALIDACIÓN 2026-10-08 (2.ª pasada)»: **cierre funcional 2026-10-10** — Q1 (presentación de volúmenes) y Q2 (Nota de Venta JCE) **IMPLEMENTADOS EN DESARROLLO**; Q3 (packing PDF Arauco) **DECISIÓN FUNCIONAL** (ruta de Volúmenes); Q4 (ingresos reales `41994`/`95083`) **EJECUTADO EN DESARROLLO sin stock**; Q5 (V3) y Q6 (OwlError) **pendientes/no reproducidos**; Q7/Q8 **pendientes**. Ver `02_CONTINUIDAD.md` §17.16 y `03_TESTS.md` §14. | 2026-10-08 (5) — nueva sección «**REVALIDACIÓN 2026-10-08 (2.ª pasada) — pruebas reconstruidas con la biblioteca de muestras**»: antecedente incorporado (**Mauricio confirma que se probaron todos los ingresos**; formatos en `muestras_documentos_ingreso`, fuera de `custom_addons`). Rectifica la 1.ª pasada: **cerrado con evidencia reconstruida** R02 (11 ingresos reales), R03 (subproducto 100 % de líneas), R06 (26270: adjuntos + **17 lotes** + picking + réplica en TEST remoto), R09 (95806 guía por Volúmenes), R11 (4495589 guía, fixture byte-idéntico + motor real); **parcial**: R05 (equivalencia con `39519`), R08 (fixture derivado «investigación 95083»), R07 (**48,009 = volumen de embarque, no un error**); **pendientes** Q1–Q8 (presentación de volúmenes, Nota de Venta JCE, packing PDF Arauco, ingresos reales de 41994/95083, V3, OwlError, réplica remota, fixtures). Límites conservados. Ver `02_CONTINUIDAD.md` §17.15 y `03_TESTS.md` §13.5–13.6. | 2026-10-08 (4) — nueva sección «Solicitudes de Cristhian (2026-09-02 / 2026-09-07) — AUDITORÍA 2026-10-08»: se clasifican R01–R16 con evidencia; **solo R02, R12, R13, R14 (parcial) y R16 (parcial) quedan acreditadas**; R03/R04/R05/R06/R07/R08/R09/R10/R11/R15 permanecen ABIERTAS. No se cierra ningún requisito de proveedor: **ninguno** tiene evidencia de ingesta real (la base `madenat_test` del TEST remoto contiene **1** registro en `madenat_guia_processing`: guía **26270** Ferramenta, `validated`, `packing_volume_declared_m3` **vacío**, `documental_conciliation_state='partial'`). Ver `02_CONTINUIDAD.md` §17.14 y `03_TESTS.md` §13. | 2026-10-08 (3) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior (AD-102)» pasa a **APLICADO EN EL DESARROLLO EXISTENTE (`madenat_test`)** + reorganización de la UI de Ingreso de Madera; dirigidas **88/88** sobre `madenat_test` (incl. Cristhian uid 8, `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — entorno aislado RECREADO (autorizado; workcopy `:ro`, sin diffs; filestore repoblado); **V3 pendiente de evidencia manual**. | 2026-10-08 (1) — RETOMA (SOLO LECTURA): revalidación conforme (rama/HEAD Git, SHA-256 de A/B/AB = checkpoint, workcopy = activo + 15 archivos de `AB_completo.diff`, `--dry-run` limpio, A/B ausente del activo y de `madenat_test`); **entorno aislado NO conservado** (reinicio del host: `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue pendiente**; recrear el aislamiento pendiente de autorización. Ver 02 §17.12. | 2026-10-07 (3) — PAUSA (reanuda 2026-10-08): sección «Retorno de servicio…» marca la pausa; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (incl. Cristhian uid 8, su=False); V3 pendiente; A/B no aplicados. Ver 02 §17.11. | 2026-10-07 (2) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior» actualizada a IMPLEMENTADO EN AISLAMIENTO (AD-102; copia `IMPL_SERVICE_RETURN_AB_20261007/`; 85/85 pruebas dirigidas; 0 regresiones). | nueva entrada «Confirmación de retorno de servicio (2026-10-07) — PENDIENTE (NO aplicado)» (antecedente `IMPL_SERVICE_RETURN_20261006/`; retoma en `02_CONTINUIDAD.md` §17). | nueva sección «Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101) — APLICADO (madenat_test)» con sus pendientes (V3, instalación en base limpia, volumen numérico, otros orígenes de procesador, Abiertos/Finalizados). Ver 00 §4.10 y 03 §11. | 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado; (9) — AD-91: I2 con alcance cerrado documental (modelo aditivo madenat.sv.imputation/.line/.sv.line; cabecera por guía, inmutabilidad/reversa, idempotencia por clave documental propia; duro etiqueta-side / blando SV-side; sin efecto en stock, sin ledger, sin costo); salida nativa + ledger a I3; costo a I5; merma/cierre posterior; I2 sigue PENDIENTE. Ver CANON/19 §4/§5/§6/§7/§13.2/§16; (10) — precisa la reserva documental temporal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger; sin cambio funcional ni de estado. Ver CANON/19 §6/§7.3. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
 ---
@@ -266,6 +266,8 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 | 7.5.0 | 2026-09-26 | Gestión Operativa de Etiquetas SV (AD-79): se documenta la deuda verificada T1–T7 con línea base reproducible (base limpia `madenat_sv_baseline`), se cierra la contradicción documental de la rebaja por Volúmenes (implementada para Etiquetas SV con 56 pruebas 0/0; la rebaja física por Volúmenes fuera del flujo SV sigue no implementada), se registran los pendientes de monto por etiqueta y de aprobaciones de más de dos niveles, y se cierra la discrepancia de versión de este archivo frente a `INDICE_DOCUMENTACION.md`. |
 | 7.6.0 | 2026-09-26 | Cierre de la deuda técnica T1–T6: T1 (captura no bloqueante de proveedor + bloqueo en el envío irreversible), T2 (gate dimensional acotado a compra/service; Volumen sin espesor inventado), T3 (`get_digits(env)` en lugar de `.digits`), T4 (identificadores únicos por corrida + escenario de nominal forzado tras el create), T5 (causa real: `TestLumberReception` sin etiquetas de fase → se declara `post_install`), T6 (botón de Billing aportado por vista heredada de Billing). Se añaden T8–T11 como deuda nueva detectada durante el cierre. |
 | 7.8.0 | 2026-10-01 | Se incorpora la sección «Auditoría 2026-10-01 — pendientes por área» (hallazgos H-01..H-16 y N-01..N-10) clasificada en Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6, coherente con `16_AUDITORIA_20261001.md`. Se registran 4 hallazgos RESUELTOS (H-01, H-02, N-07, N-08/N-09) y se anotan los pendientes diferidos por el usuario. |
+| 8.7.0 | 2026-10-07 | Se incorpora la sección «Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101) — APLICADO (madenat_test)» con lo **cerrado** (OC documental/vinculada, origen de fecha, modalidades, producto real, procesador) y sus **pendientes** (V3 navegador, instalación en base limpia, volumen numérico, otros orígenes de procesador, Abiertos/Finalizados). Ver `00_ARQUITECTURA.md` §4.10 y `03_TESTS.md` §11. |
+| 8.14.0 | 2026-10-08 | Sección «REVALIDACIÓN 2026-10-08 (2.ª pasada) — pruebas reconstruidas con la biblioteca de muestras»: antecedente incorporado (se probaron todos los ingresos; formatos en `muestras_documentos_ingreso`, fuera de `custom_addons`). Rectifica la 1.ª pasada: **cerrado con evidencia** R02/R03/R06/R09/R11; **parcial** R05/R07/R08 (el 48,009 es el volumen de embarque, no un error); **pendientes Q1–Q8**. Detalle en `02_CONTINUIDAD.md` §17.15 y `03_TESTS.md` §13.5–13.6. |
 - [x] AD-68/AD-69: ruta granel en intake + fix disparo BT-04 (2026-09-21)
 - [x] Higiene: migrar `palabras_proceso` duplicado en reception_workflow.py a madenat.ingestion.config (2026-09-21, post-AD-68)
 
@@ -460,3 +462,251 @@ aprobaciones para más de dos aprobadores (si negocio lo requiere) · resolució
 - **Depende de:** I1..I5. **Aceptación:** T-10, T-12.
 
 **Preguntas abiertas (sin decidir por el usuario):** Q-19-1..Q-19-8 (`19` §17).
+
+---
+
+## Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101) — APLICADO (madenat_test)
+
+Aplicado en `madenat_test` (módulo `madenat_lumber_intake` 18.0.0.11.0); **no** desplegado a
+producción. Comportamiento en `00_ARQUITECTURA.md` §4.10; decisión AD-101; pruebas en `03_TESTS.md` §11.
+
+### Cerrado
+
+- [x] **OC documental vs OC vinculada:** columna/búsqueda/agrupación; filtros OC vinculada,
+      pendiente y no indicada; `purchase_reference` conservado por compatibilidad.
+- [x] **Origen de fecha:** `guide_date_kind` (`emission`/`reception`) + columna «Origen fecha».
+- [x] **Modalidades** Producto/Procesado/Volúmenes; filtros de estado «Procesada (legacy)» y «Error».
+- [x] **Producto real** (`product_filter_id`, por líneas de ambos orígenes, sin duplicar) y
+      **Procesador** (`processor_id`, por Orden de Procesamiento).
+
+### Pendiente (nuevo)
+
+- [ ] **V3 (navegador):** comprobar en UI OC documental/vinculada, fechas, producto real, procesador y
+      combinaciones de filtros. Permanecerá pendiente hasta evidencia real.
+- [ ] **Instalación en base limpia:** la vista de lista referencia `action_madenat_lumber_intake_new`
+      definida más abajo en el mismo archivo (referencia hacia adelante preexistente); resolver
+      reordenando sin semántica. Trabajo **separado**.
+- [ ] **Volumen numérico:** exponer el campo oficial `official_volume_m3` (`official_volume_effective_m3`),
+      **unidad m³**, con semántica «0 vs desconocido». **Decisión pendiente** (no implementar antes).
+- [ ] **Otros orígenes de procesador:** hoy solo `toll.processing.order.processor_id`. **Decisión de
+      negocio pendiente.**
+- [ ] **Abiertos/Finalizados:** evaluar si se amplían a `processed`/`error` (hoy se añadieron filtros
+      dedicados). **Decisión de doctrina pendiente.**
+
+---
+
+## Retorno de servicio — identificación no bloqueante + imputación posterior (AD-102) — APLICADO EN EL DESARROLLO EXISTENTE (`madenat_test`) + UI de Ingreso de Madera reorganizada (2026-10-08)
+
+**Antecedente.** La confirmación **bloqueante** quedó como precedente técnico en
+`IMPL_SERVICE_RETURN_20261006/` (copia aislada; `diff`, tests, logs `iso_run*.log`). **No aplicada.**
+
+**Intervención aprobada y probada en aislamiento (2026-10-07, AD-102).** Identificación **no
+bloqueante** (`service_return_confirmation`) + imputación posterior reutilizando el mecanismo **SV
+(I2)**. Copia de trabajo `IMPL_SERVICE_RETURN_AB_20261007/`; base dedicada `srvretab_test_20261007`.
+**85/85 pruebas dirigidas OK** (nuevas A/B + regresiones I2 y core/intake) y **0 regresiones** en la
+corrida completa de las 3 suites (las 9 fallas observadas son **preexistentes**). **No aplicado** al
+entorno activo. Reglas en `04_DECISION_LOG.md` **AD-102**; detalle y retoma en
+`02_CONTINUIDAD.md` **§17.10**.
+
+**PAUSA (2026-10-07) — reanuda 2026-10-08.** Checkpoint en `02_CONTINUIDAD.md` **§17.11**. Gate
+sobre **copia del árbol activo con cambios locales**: artefacto reconstruido **45/45**; pruebas
+dirigidas **88/88** (incl. **Cristhian uid 8**, `su=False`, grupos intactos). **V3 pendiente.**
+**A/B no aplicados** (código activo, `madenat_test` y producción). Entorno aislado conservado
+(`http://127.0.0.1:8070`, base `srvretab_gate_20261007`).
+
+**APLICACIÓN EN EL DESARROLLO EXISTENTE (2026-10-08) — AD-102 + UI de Ingreso de Madera.**
+`AB_completo.diff` aplicado **una sola vez** sobre `custom_addons` (15 archivos byte a byte = workcopy
+validado) y actualizado de forma controlada **solo** en `madenat_test` (`-u
+madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics`; **0 ERROR / 0 CRITICAL**; columna
+`service_return_confirmation` presente). Se **reorganizó la UI de Ingreso de Madera**: resumen en **2
+columnas**, «Aplicar cambios» debajo de los campos, línea de identificación de retorno a todo el
+ancho, Evidencia documental en **3 columnas** con encabezado **único** y detalle del packing list a
+todo el ancho. Pruebas dirigidas **88/88** en verde **sobre `madenat_test`** (misma nómina del gate;
+incl. Cristhian uid 8, `su=False`). El **aislamiento temporal se retiró** (`srvretab_web`/8070,
+volumen `srvretab_web_data`, bases `srvretab_*_20261007`, `/tmp/{gate,ab_dryrun,iso_*}`). Respaldos,
+retiro y detalle: `02_CONTINUIDAD.md` §17.13 y `03_TESTS.md` §12.6.
+
+### Pendiente
+
+- [x] **Aprobar la aplicación** al entorno activo de desarrollo: **APROBADA Y EJECUTADA** (2026-10-08)
+      sobre `madenat_test`; AD asignado = **AD-102**.
+- [x] **Actualizar módulos** en base **no productiva**: **HECHO** en `madenat_test`
+      (`madenat_lumber_core`, `madenat_lumber_intake`, `madenat_lumber_logistics`).
+- [x] **Usuario real Cristhian** (`cristhian.elguetag@gmail.com`): **ACREDITADO** (`su=False`, grupos
+      intactos, uid 8) en el gate histórico y en la corrida sobre `madenat_test`. Ver `03_TESTS.md`
+      §12.4 / §12.6.
+- [ ] **Verificación en navegador** (V3): guion actualizado en
+      `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md` → `http://localhost:8069`
+      (base `madenat_test`, guía **19827**). **NO ejecutada** (sin navegador); incluye la comprobación
+      **visual** del nuevo layout de Ingreso de Madera.
+- [ ] **Decisión funcional pendiente:** el filtro «Retornos sin imputación aplicada» **no** evalúa
+      cobertura parcial (identificación INCOMPLETA) — definir si se completa (no en esta intervención).
+- [ ] **Concurrencia** no acreditada; **I3/I5** fuera de alcance; **9 fallas preexistentes**
+      conservadas (ver `03_TESTS.md` §12.2 y §12.6.4).
+- [ ] **Instalación en base limpia** de la funcionalidad (la corrida de esta intervención fue sobre
+      `madenat_test`, que ya tenía el esquema previo).
+
+---
+
+## Solicitudes de Cristhian (2026-09-02 / 2026-09-07) — AUDITORÍA 2026-10-08
+
+**Origen.** Conversación del 2026-09-02 y hilo «PRUEBA DE SISTEMA» con los reportes del 2026-09-07
+(cinco proveedores: **Fátima, Ferramenta, Byc, JCE y Arauco**). **Auditoría de solo lectura**: sin
+cambios de código, datos ni servicios; **sin pruebas nuevas**; sin commit ni push. Matriz consolidada:
+`02_CONTINUIDAD.md` **§17.14.2**; relación requisito→evidencia→resultado: `03_TESTS.md` **§13**.
+
+### Acreditado
+
+- [x] **R02 — Retiro de la selección inicial procesados/compra (en código).** `tipo_ingreso` oculto en
+      el wizard (`intake_wizard_views.xml:48`) y clasificación **por contenido** (AD-61, 2026-09-08),
+      cubierta por `test_intake_tipo_ingreso_content.py`. **V3 (navegador) pendiente.**
+- [x] **R12 — Retorno de servicio Sí/No/vacío (V2).** `test_service_return_confirmation.py` (**13**);
+      **88/88** sobre `madenat_test` (2026-10-08); guard bloqueante eliminado. **V3 pendiente.**
+- [x] **R13 — Controles de aplicación y reversa de la imputación SV (V2).**
+      `test_service_return_imputation_guard.py` (**8**) + `test_service_return_pending_filter.py` (**9**)
+      + regresiones I2. **V3 pendiente; concurrencia y cobertura parcial siguen abiertas.**
+
+### Acreditado parcialmente
+
+- [x] **R14 — Reorganización de la UI (estructura).** Verificada de forma **estructural** y en la vista
+      **cargada** del TEST remoto (id 1660). **Observación visual pendiente (`UI-1..UI-6`).**
+- [x] **R16 — Correspondencia de código y esquema con el TEST remoto.** **314** archivos con **0
+      discrepancias** de hash; módulos, columna `service_return_confirmation` y vistas nuevas presentes.
+      **No** acredita que el remoto pase pruebas (la corrida 88/88 fue local) ni que el remoto tenga
+      trazabilidad de versión (`custom_addons` sin repositorio git allí).
+
+### Pendiente (no acreditado)
+
+- [ ] **R01 — Simplificación del ingreso y retiro de mensajes de prueba.** Persiste el aviso «Verifique
+      el perfil de lectura antes de continuar» (`intake_wizard.py:251-262`), que en Odoo **interrumpe**
+      la acción hasta pulsar «OK». **Acción P0.1**: obtener el texto literal del mensaje que ve el usuario.
+- [ ] **R03 — Corrección del subproducto.** La resolución/autocreación es de 2026-08-31
+      (AD-ING-001/002); **no** acreditado que fuese el defecto reportado. Revisar además el rechazo por
+      líneas sin subproducto al enviar a stock (`madenat_guia_processing.py:2194-2203`).
+- [ ] **R04 — Packing en fracciones.** Conversión y wrapper (`_get_fraction_text`) existen; **no**
+      acreditada la presentación en la Consola; `_check_imperial_fractions` solo escribe en log. **V3.**
+- [ ] **R05 — Fátima (guía 41994 + `41994.xls`).** Sin fixture del par ni ingesta real.
+- [ ] **R06 — Ferramenta (guía 26270).** Sin evidencia de un ingreso nuevo completo; el registro real
+      existente está `validated` desde el 2026-10-06.
+- [ ] **R07 — Ferramenta, ambos volúmenes.** Mecanismo y pruebas unitarias existen; el registro real
+      tiene `packing_volume_declared_m3` **vacío** y `sum_vol_documental_m3=0`; el «Vol. Embarque»
+      almacenado (**48,009**) no coincide con la guía (**57,8400**) ni con el packing (**57,839556**).
+      **Causa del desvío NO determinada.**
+- [ ] **R08 — Byc / Blocks & Cutstock S.A. (guía 95083).** Cubierto con fixture **sintético** y con los
+      totales reales (42,132 m³ / 2244 pzs / 8 paq.), **no** con el archivo del proveedor.
+- [ ] **R09 / R10 — JCE (guía 95806 + Nota de Venta 881333).** El formato de **dimensiones combinadas**
+      se **rechaza por diseño** (`REQUIERE_DIMENSIONES_SEPARADAS`; «No se creó ninguna línea»).
+      **Decisión funcional pendiente (P1.3).**
+- [ ] **R11 — Arauco (guía 4495589 + packing PDF).** Ambigüedad de modalidad: el flujo Normal exige
+      packing **Excel** y el del proveedor es **PDF**. **Decisión funcional pendiente (P1.4).**
+- [ ] **R15 — OwlError / `Many2OneField.urlRelation`.** **NO REPRODUCIDO**; causa **NO confirmada**. La
+      expresión «operación no válida» **no** existe literalmente en el código ni en las traducciones
+      desplegadas (H-1) y la comprobación estática **no** halló campo huérfano en las vistas de la
+      Consola. **Bloquea** invitar a probar el flujo afectado.
+
+### Límites conservados
+
+- **9 fallas preexistentes**, **concurrencia no acreditada**, **filtro sin cobertura parcial**,
+  **I3/I5 fuera de alcance**, **V3 pendiente** e **instalación en base limpia pendiente**: sin cambios.
+  Ver `03_TESTS.md` §12.2, §12.6.4 y §13.3.
+- **No** se cierra ningún requisito de proveedor (R05–R11): **ninguno** tiene ingesta real acreditada.
+
+---
+
+## REVALIDACIÓN 2026-10-08 (2.ª pasada) — pruebas reconstruidas con la biblioteca de muestras
+
+**Antecedente incorporado.** Mauricio confirma que **se probaron todos los ingresos** y que los formatos
+probados están en la **biblioteca externa** `muestras_documentos_ingreso` (fuera de `custom_addons`).
+La 1.ª pasada (sección anterior) concluyó «NO ACREDITADO» para los cinco proveedores **a partir de una
+búsqueda incompleta**; esa conclusión **se rectifica** con la evidencia reconstruida. Detalle y matriz
+revalidada: `02_CONTINUIDAD.md` **§17.15**; relación prueba↔etapa↔resultado: `03_TESTS.md` **§13.5–13.6**.
+
+### Cerrado (con evidencia reconstruida)
+
+- [x] **R02 — Clasificación por contenido**, verificada en **11 ingresos reales**
+      (`service`: 19846/19827/19826/26270/900002 · `granel`: 4495589/95806/UAT-SV · `compra`:
+      UAT-INT-20261004) **sin selección manual**. → **VERIFICADO CON MUESTRA REAL**.
+- [x] **R03 — Subproducto**, con **subproducto asignado en el 100 % de las líneas** de los ingresos
+      reales (17/17, 19/19, 17/17, 1/1, 1/1) y **un solo producto maestro por guía**.
+      → **VERIFICADO CON MUESTRA REAL**.
+- [x] **R06 — Ferramenta 26270**: adjuntos `26270.pdf` + `26270.xlsx` en `guia.processing` 1728,
+      **17 lotes** con el N° de LOTE y los M3 del packing, 1 picking, `validated` (2026-09-08),
+      **replicado en el TEST remoto**. → **VERIFICADO CON MUESTRA REAL** (A–E).
+- [x] **R09 — JCE 95806 (guía)**: registro 33151 `granel`/`verified`, 59,964 m³ (2026-10-06) por la ruta
+      de **Volúmenes**; fixtures derivados con los datos reales del documento. → **VERIFICADO CON MUESTRA REAL**.
+- [x] **R11 — Arauco 4495589 (guía)**: **fixture byte-idéntico** + pruebas con el **motor real**,
+      registro 15326 `granel`/`validated` 40,315 m³, lote `GRANEL 4495589`, pickings con purga y reversa.
+      → **VERIFICADO CON MUESTRA REAL** (A–D).
+
+### Acreditado parcialmente
+
+- [x] **R05 — Fátima 41994**: fixture **derivado** (misma cabecera de 2 filas y 1.ª línea
+      `0000000134008`) y **formato idéntico** a `39519 (1).xls`, que **sí se ingresó** (1161, `verified`).
+      → **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** (falta el ingreso propio de 41994 o la aceptación
+      formal de la equivalencia).
+- [x] **R08 — Byc 95083**: el detector `excel_table_detection.py` se documenta como **«investigación
+      95083»** y sus fixtures reproducen la cabecera y los valores de la 1.ª fila real; los totales
+      42,132 / 2244 / 8 provienen de ese packing. → **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL**.
+- [x] **R07 — Volúmenes de Ferramenta**: Σ líneas ⇒ `vol_purchase` **57,840** = guía **57,8400** =
+      packing **57,839556**; `vol_shipment` **48,009** = fórmula de embarque (espesor nominal 5/4" y
+      ancho +1/8"). **No es un error**: es otro volumen. → **VERIFICADO (cálculo) + PENDIENTE FUNCIONAL
+      (presentación/semántica)**.
+
+### Pendiente (funcional o de incidencia)
+
+- [ ] **R07** — mostrar/rotular en la Consola el volumen de guía/packing **junto** al de embarque
+      (**Q1**). `packing_volume_declared_m3` está vacío en el registro por ser campo **posterior**.
+- [ ] **R10** — Nota de Venta (JCE): decidir normalización de `Esc. Fact` o mensaje explícito
+      «packing no ingerible» (**Q2**).
+- [ ] **R11** — packing **PDF** de Arauco en el flujo **Normal** (**Q3**).
+- [ ] **R05/R08** — ingreso real de `41994` y `95083` en base de pruebas (**Q4**; requiere autorización).
+- [ ] **V3 (navegador)** — R01, R12, R13, R14 (**Q5**); sigue sin acreditarse.
+- [ ] **R15** — `OwlError` **abierto y no reproducido**; **reportado por Mauricio** (corrección de
+      atribución) (**Q6**).
+- [ ] **R16** — replicar en el TEST remoto los casos hoy sólo locales y **dar control de versión** a su
+      `custom_addons` (**Q7**).
+- [ ] **R02-bis / regresión** — promover a fixtures las muestras ya probadas (**Q8**).
+
+### Límites conservados (sin cambios)
+
+**9 fallas preexistentes**, **concurrencia no acreditada**, **filtro sin cobertura parcial**, **I3/I5
+fuera de alcance**, **V3 pendiente** e **instalación en base limpia pendiente**. No se actualizan sin
+evidencia nueva. Ver `03_TESTS.md` §12.2, §12.6.4 y §13.6.
+
+
+
+### Cierre funcional 2026-10-10 (P0–P4)
+
+Detalle y evidencia: `02_CONTINUIDAD.md` **§17.16**; corridas: `03_TESTS.md` **§14**.
+
+- **Q1 (R07) — presentación de volúmenes: IMPLEMENTADO EN DESARROLLO.** La
+  Consola muestra «Vol. PDF/Guía (m³)», «Vol. Packing (m³)», «Vol. compra (m³)»
+  y «Vol. embarque (m³)» (Ferramenta 26270: 57,840 / 48,009). Observación en
+  navegador pendiente (V3).
+- **Q2 (R10) — Nota de Venta JCE: IMPLEMENTADO EN DESARROLLO.** Notación
+  `5/4x5.3/8x16` normalizada (evidencia: `VOL.` del documento = 4,997); los
+  patrones ambiguos siguen rechazados con diagnóstico.
+- **Q3 (R11) — packing PDF Arauco: DECISIÓN FUNCIONAL PROPUESTA.** Ruta de
+  **Volúmenes** (el flujo Normal exige Excel; el PDF aporta sólo volumen total).
+- **Q4 (R05/R08) — ingresos reales `41994`/`95083`: EJECUTADO EN DESARROLLO
+  sin stock** (`lumber.reception` 7950 `verified`; `madenat.guia.processing`
+  33250 `verified`).
+- **Q5 (V3):** pendiente (sin navegador). **Q6 (OwlError):** no reproducido;
+  paso manual de captura. **Q7 (R16):** pendiente (requiere autorización).
+  **Q8 (fixtures):** parcial.
+- **Límites conservados:** concurrencia no acreditada, filtro sin cobertura
+  parcial, I3/I5 fuera de alcance, instalación en base limpia pendiente.
+
+### Aceptación visual 2026-10-10 (guía 19827) y flujo SV confirmado
+
+- **Q1 (R07) — ACEPTACIÓN VISUAL DEL CASO OBSERVADO.** La presentación de la **guía 19827** (resumen en
+  2 columnas, evidencia en 3 columnas, identificación de retorno visible, packing a todo el ancho) fue
+  **confirmada por Mauricio** el **2026-10-10**. La aceptación cubre **solo** el caso observado; **no** se
+  extiende a la persistencia Sí/No/vacío en pantalla ni a la aplicación/reversa de imputaciones. Ver
+  `02_CONTINUIDAD.md` §17.16.8 y `03_TESTS.md` §14.4.
+- **Q5 (V3) — PARCIAL.** Cubierto el caso **19827**; el resto de flujos de la Consola (Volúmenes,
+  persistencia del radio en pantalla) sigue **sin** observación en navegador.
+- **Flujo SV — CONFIRMADO EN CÓDIGO (2026-10-10).** Secuencia operativa y controles (origen · destino ·
+  volumen · saldo · aplicación · reversa · permisos): `19_IMPUTACION_SV_Y_PROCESADORES.md` §19.10.
+  **Brechas declaradas:** sin vínculo automático envío↔imputación, sin rendimiento/merma, filtro sin
+  cobertura parcial, I3/I5 fuera de alcance, concurrencia pendiente.

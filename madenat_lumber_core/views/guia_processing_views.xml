@@ -203,6 +203,17 @@
                         <!-- ════════════════════════════════════════════════ -->
                         <group>
                             <field name="tipo_recepcion" string="Tipo de Recepción" required="1"/>
+                            <!-- Confirmación de retorno de servicio: identifica
+                                 la naturaleza del ingreso Procesado de servicio.
+                                 NO bloquea la ingesta ni el envío a stock; no
+                                 altera stock ni costes. Vacío = pendiente. -->
+                            <field name="service_return_confirmation"
+                                   string="¿Es retorno de servicio?"
+                                   widget="radio"
+                                   options="{'horizontal': true}"
+                                   invisible="tipo_recepcion != 'service'"
+                                   readonly="state == 'validated'"
+                                   help="Identifica el retorno de servicio. Vacío = pendiente de identificación. Las imputaciones se realizan posteriormente."/>
                             <field name="ingestion_profile" string="Tipo de Producto" required="1"/>
                             <field name="partner_id" string="Proveedor"/>
                             <field name="assignment_location_id" string="Patio de Asignación"
@@ -581,8 +592,8 @@
 
                                         <field name="vol_shipment_m3"
                                                column_invisible="1"
-                                               string="Vol. Físico (m³)"
-                                               sum="Total Físico"
+                                               string="Vol. embarque (m³)"
+                                               sum="Total Embarque"
                                                decoration-bf="1"
                                                readonly="1"/>
 
@@ -631,7 +642,7 @@
 
                                 <field name="pieces" string="Piezas" sum="Total Piezas" class="text-end" width="80px" readonly="1"/>
 
-                                <field name="vol_purchase_m3" string="Vol. m³" sum="Total Compra m³" class="text-end" width="100px" decoration-bf="1" readonly="1" force_save="1" digits="[16, 3]"/>
+                                <field name="vol_purchase_m3" string="Vol. compra (m³)" sum="Total Compra m³" class="text-end" width="100px" decoration-bf="1" readonly="1" force_save="1" digits="[16, 3]"/>
 
                               <field name="vol_mbf" column_invisible="1" force_save="1"/>
 
@@ -714,7 +725,7 @@
                                             digits="[16, 3]"/>
 
                                         <field name="vol_shipment_m3"
-                                            string="Vol (m³)"
+                                            string="Vol. embarque (m³)"
                                             sum="Total Embarque m³"
                                             width="100px"
                                             class="text-end"
@@ -733,7 +744,7 @@
                                 <group class="oe_subtotal_footer oe_right">
                                     <field name="vol_total_mbf" string="Total Volumen (MBF)" readonly="1" decoration-bf="1"/>
 
-                                    <field name="vol_shipment_m3" string="Total Volumen (m³)" readonly="1" class="fw-bold"/>
+                                    <field name="vol_shipment_m3" string="Vol. embarque (m³)" readonly="1" class="fw-bold"/>
 
                                     <field name="total_paquetes" string="Total Paquetes" readonly="1"/>
                                 </group>

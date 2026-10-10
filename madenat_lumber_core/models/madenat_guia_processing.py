@@ -613,7 +613,27 @@ class MadenatGuiaProcessing(models.Model):
         ('service', 'Servicio Externo (Cepillado/Procesamiento)'),
         ('granel', 'Recepción por Volumen')
     ], string='Tipo de Recepción', required=True, default='compra', tracking=True)
-    
+
+    # ── Confirmación de retorno de servicio (2026-10-07) ─────────────────────
+    # Semántica de TRES estados (NO es un Boolean con default False: eso
+    # confundiría "sin responder" con "no es retorno"):
+    #   vacío  -> pendiente de identificación (NO equivale a 'no');
+    #   'yes'  -> es retorno de servicio;
+    #   'no'   -> no es retorno de servicio.
+    # Identifica la NATURALEZA del ingreso Procesado de servicio
+    # (`tipo_recepcion == 'service'`). NO bloquea la ingesta ni el envío a stock
+    # por sí solo, no cambia `tipo_recepcion`, no altera stock/costes y no
+    # dispara imputaciones: la imputación SV es un acto POSTERIOR, declarativo e
+    # independiente (CANON/19 / AD-91). El vacío se completa cuando corresponda
+    # según los permisos y reglas vigentes.
+    service_return_confirmation = fields.Selection([
+        ('yes', 'Sí, es retorno de servicio'),
+        ('no', 'No, no es retorno de servicio'),
+    ], string='¿Es retorno de servicio?', tracking=True, copy=False,
+        help='Identifica el retorno de servicio. Vacío = pendiente de '
+             'identificación (no equivale a "No"). No bloquea la ingesta ni el '
+             'envío a stock. Las imputaciones se realizan posteriormente.')
+
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('verified', '🔍 Por Verificar'),
@@ -3547,6 +3567,80 @@ class MadenatGuiaProcessing(models.Model):
 
    
 
+    # ──────────────────────────────────────────────────────────────────
+    # P4 (R10) — Normalización de dimensiones combinadas acreditadas
+    # ──────────────────────────────────────────────────────────────────
+    @api.model
+    def _normalize_combined_dimensions(self, raw):
+        """Normaliza la notación combinada `Esc. Fact` a dimensiones métricas.
+
+        Patrón ACREDITADO (evidencia documental real, no intuición):
+
+          - Documento: `GDE 95806.xls` / `NVTA881333 (2).xls` (Nota de Venta
+            Nº 881333, JCE), columna `Esc. Fact` = `5/4x5.3/8x16`.
+          - Cross-check con la propia columna `VOL.` del documento: para
+            `Pzas = 231` el `VOL.` es `4,997 m³`; con espesor nominal
+            `5/4"` (1,25"), ancho nominal `5 3/8"` (5,375") + ajuste S2S
+            `+1/8"` (5,5") y largo `16 ft` se obtiene exactamente
+            `1,25 × 5,5 × 16 × 231 / 12³ = 4,997 m³` ⇒ `5.3/8` = `5 3/8`.
+
+        Formato admitido (3 tokens separados por `x`, `X` o `*`):
+          - token 1 (espesor, pulgadas): `5/4`, `4/4`, `6/4`, `2` …
+          - token 2 (ancho, pulgadas):   `5.3/8` (= 5 3/8), `5/4`, `4.5` …
+          - token 3 (largo, pies):       `16`, `12.5` …
+
+        Devuelve `(espesor_mm, ancho_mm, largo_m)` o `None`. Devuelve `None`
+        (para que el llamador rechace con diagnóstico específico) si el
+        patrón NO es inequívocamente acreditable. NO inventa dimensiones ni
+        asume unidades fuera del rango acreditado.
+        """
+        raw = (raw or '').strip()
+        if not raw:
+            return None
+        tokens = [t.strip() for t in re.split(r'[xX*]', raw) if t.strip()]
+        if len(tokens) != 3:
+            return None
+
+        def _inches(token):
+            """Pulgadas a partir de fracción/mixto/entero. `None` si no encaja."""
+            m = re.fullmatch(r'(\d+)\.(\d+)/(\d+)', token)  # mixto `5.3/8`
+            if m:
+                whole, num, den = (int(m.group(1)), int(m.group(2)),
+                                   int(m.group(3)))
+                return (whole + num / den) if den else None
+            m = re.fullmatch(r'(\d+)/(\d+)', token)  # fracción `5/4`
+            if m:
+                num, den = int(m.group(1)), int(m.group(2))
+                return (num / den) if den else None
+            m = re.fullmatch(r'\d+(?:\.\d+)?', token)  # entero/decimal
+            if m:
+                return float(token)
+            return None
+
+        e_in = _inches(tokens[0])
+        a_in = _inches(tokens[1])
+        try:
+            l_ft = float(tokens[2])
+        except (TypeError, ValueError):
+            return None
+        if not e_in or not a_in or not l_ft:
+            return None
+        if e_in <= 0 or a_in <= 0 or l_ft <= 0:
+            return None
+        # Saneamiento de rango: evita interpretar como madera valores fuera
+        # de los rangos comerciales MADENAT (evita falsos positivos).
+        if not (0.5 <= e_in <= 4.0):
+            return None
+        if not (1.0 <= a_in <= 24.0):
+            return None
+        if not (4.0 <= l_ft <= 40.0):
+            return None
+        return (
+            round(e_in * float(MM_PER_INCH), 3),
+            round(a_in * float(MM_PER_INCH), 3),
+            round(l_ft * 0.3048, 4),
+        )
+
     def _validar_y_enriquecer_lineas(self, lineas, rejections=None, documentales=None):
             """
             🏛️ ENRIQUECIMIENTO ARQUITECTÓNICO CONSOLIDADO:
@@ -3603,21 +3697,37 @@ class MadenatGuiaProcessing(models.Model):
                     continue
 
                 if e_mm <= 0 or a_mm <= 0 or l_m <= 0:
-                    # BT-03: línea descartada por dimensiones físicas <= 0.
-                    _faltantes = [
-                        name for name, val in (
-                            ('Espesor', e_mm), ('Ancho', a_mm), ('Largo', l_m)
-                        ) if val <= 0
-                    ]
-                    _reject(idx, l, 'REQUIERE_DIMENSIONES_SEPARADAS', _faltantes)
-                    # Evidencia documental persistible: identificador + piezas +
-                    # volumen documental positivo, sin geometría separada.
-                    if documentales is not None and (
-                            l.get('vol_documental_m3', 0) > 0
-                            and l.get('Cantidad', 0) > 0
-                            and l.get('Codigo Interno')):
-                        documentales.append(l)
-                    continue
+                    # P4 (R10): intentar normalizar la notación combinada
+                    # acreditada (Esc. Fact, p. ej. `5/4x5.3/8x16`) antes de
+                    # rechazar por dimensiones separadas.
+                    norm = self._normalize_combined_dimensions(
+                        l.get('dimensions_raw'))
+                    if norm:
+                        e_mm, a_mm, l_m = norm
+                        l.update({
+                            'Espesor': e_mm, 'Ancho': a_mm, 'Largo': l_m,
+                            'dimensions_normalized_from':
+                                l.get('dimensions_raw'),
+                        })
+                    else:
+                        # BT-03: línea descartada por dimensiones físicas <= 0.
+                        _faltantes = [
+                            name for name, val in (
+                                ('Espesor', e_mm), ('Ancho', a_mm),
+                                ('Largo', l_m)
+                            ) if val <= 0
+                        ]
+                        _reject(idx, l, 'REQUIERE_DIMENSIONES_SEPARADAS',
+                                _faltantes)
+                        # Evidencia documental persistible: identificador +
+                        # piezas + volumen documental positivo, sin geometría
+                        # separada.
+                        if documentales is not None and (
+                                l.get('vol_documental_m3', 0) > 0
+                                and l.get('Cantidad', 0) > 0
+                                and l.get('Codigo Interno')):
+                            documentales.append(l)
+                        continue
 
                 # 3. CALCULO DE VOLUMEN SEGÚN MÉTODO (Cerebro de la Guía)
                 if method == 'pure_metric':

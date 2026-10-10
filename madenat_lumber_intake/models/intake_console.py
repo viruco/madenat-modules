@@ -61,6 +61,30 @@ class MadenatLumberIntakeConsole(models.Model):
     purchase_id = fields.Many2one('purchase.order', string='Orden de Compra', readonly=True)
     purchase_reference = fields.Char(string='OC', readonly=True)
 
+    # ── Columnas REALES de la vista SQL (2026-10-07) ───────────────────────
+    # Añadidas para que columna, búsqueda y agrupación lean el MISMO dato
+    # (sin depender de compute no almacenado). El `init()` las proyecta desde
+    # los orígenes; NO alteran `id`/`source_res_id` ni la resolución de filas.
+    oc_documental = fields.Char(
+        string='OC documental', readonly=True,
+        help='Referencia de OC extraída del documento (oc_reference_raw del '
+             'origen). NO se sustituye por el nombre de la OC vinculada. La '
+             'OC interna vinculada se consulta en «OC vinculada».',
+    )
+    guide_date_kind = fields.Selection(
+        [('emission', 'Emisión de guía (documento)'),
+         ('reception', 'Recepción al sistema')],
+        string='Origen de fecha', readonly=True,
+        help='Significado real de «Fecha de guía»: emisión documental de la '
+             'guía o, en Producto sin fecha de guía, fecha de recepción.',
+    )
+    processor_id = fields.Many2one(
+        'res.partner', string='Procesador', readonly=True,
+        help='Planta procesadora tomada de la relación existente de la Orden '
+             'de Procesamiento (toll_order_id.processor_id). Nunca se usa el '
+             'proveedor como procesador.',
+    )
+
     # Estado legible de la OC (fuente de verdad: purchase_id). Se usa Selection
     # en lugar de Boolean para renderizar como badge real y evitar el HTML crudo
     # de un checkbox que producía un Boolean con widget="badge".
@@ -212,6 +236,25 @@ class MadenatLumberIntakeConsole(models.Model):
         string='Piezas Packing', compute='_compute_review_metrics', readonly=True)
     packing_package_count_declared = fields.Integer(
         string='Paquetes Packing', compute='_compute_review_metrics', readonly=True)
+
+    # ---- Volumen de compra y de embarque (proxies read-only, Q1 / R07) ----
+    # P1 (2026-10-10): presentación explícita de las dos magnitudes distintas
+    # del volumen para que el operador no infiera que una reemplaza a la otra.
+    # `vol_compra_m3` = Σ del volumen de compra/físico real de las líneas
+    # (geometría real del packing); `vol_embarque_m3` = Σ del volumen de
+    # embarque (espesor nominal y ancho +1/8"). NO alteran fórmula, unidad,
+    # precisión ni valores: sólo proyectan, sin escribir, el origen real.
+    vol_compra_m3 = fields.Float(
+        string='Vol. compra (m³)', compute='_compute_review_metrics',
+        readonly=True, digits=(16, 3),
+        help='Σ del volumen de compra/físico real de las líneas '
+             '(geometría real del packing). Magnitud distinta del '
+             'volumen de embarque.')
+    vol_embarque_m3 = fields.Float(
+        string='Vol. embarque (m³)', compute='_compute_review_metrics',
+        readonly=True, digits=(16, 3),
+        help='Σ del volumen de embarque (espesor nominal y ancho +1/8 '
+             'pulgada). Volumen comercial distinto del de compra/físico.')
     documental_pending_count = fields.Integer(
         string='Líneas documentales pendientes',
         compute='_compute_documental_pending_count', readonly=True)
@@ -487,6 +530,28 @@ class MadenatLumberIntakeConsole(models.Model):
         readonly=True,
     )
 
+    # ── Confirmación de retorno de servicio (Procesado, 2026-10-07) ──
+    # Proxy NO almacenado hacia `madenat.guia.processing` (la consola es una
+    # vista SQL: no se agregan columnas ni se altera `init()`). La Guía es la
+    # propietaria del dato; la consola sólo lo opera —y lo puede EDITAR— con el
+    # usuario operativo (compute + inverse, store=False). Alcance: ingreso
+    # Procesado de servicio (`tipo_recepcion == 'service'`). Sólo identifica la
+    # naturaleza del ingreso: no crea lotes/pickings, no valida, no toca stock,
+    # costes, OC ni SV.
+    service_return_in_scope = fields.Boolean(
+        string='En alcance de retorno de servicio',
+        compute='_compute_service_return_confirmation',
+        readonly=True,
+    )
+    service_return_confirmation = fields.Selection(
+        [('yes', 'Sí, es retorno de servicio'),
+         ('no', 'No, no es retorno de servicio')],
+        string='¿Es retorno de servicio?',
+        compute='_compute_service_return_confirmation',
+        inverse='_inverse_service_return_confirmation',
+        store=False,
+    )
+
     # ------------------------------------------------------------------
     # Cabecera editable no almacenada (2026-08-29)
     # "Ingreso Global" pasa a llamarse "Ingreso de Madera". Estos campos son
@@ -510,6 +575,19 @@ class MadenatLumberIntakeConsole(models.Model):
         store=False,
     )
 
+    # ── Búsqueda por producto REAL (no por modalidad) ──────────────────────
+    # Campo de SOLO búsqueda: filtra los ingresos cuyas LÍNEAS contienen el
+    # producto, reutilizando las relaciones existentes
+    # `lumber.reception.line.product_id` / `madenat.guia.processing.line.product_id`.
+    # NO hace JOIN en la vista SQL (no multiplica filas) y NO elige el primer
+    # producto de las líneas. El valor mostrado replica el producto común.
+    product_filter_id = fields.Many2one(
+        'product.product', string='Producto (contiene)',
+        compute='_compute_product_filter_id',
+        search='_search_product_filter_id',
+        store=False,
+    )
+
     def init(self):
         """Crea (o reemplaza) la vista SQL consolidada de solo lectura."""
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -523,11 +601,15 @@ class MadenatLumberIntakeConsole(models.Model):
                 'product'::text AS ingestion_type,
                 lr.name AS guide_name,
                 COALESCE(lr.guia_fecha, lr.reception_date::date) AS guide_date,
+                (CASE WHEN lr.guia_fecha IS NOT NULL
+                      THEN 'emission' ELSE 'reception' END)::text AS guide_date_kind,
                 lr.supplier_id AS partner_id,
                 lr.purchase_id AS purchase_id,
                 lr.purchase_order AS purchase_reference,
+                NULLIF(lr.oc_reference_raw, '') AS oc_documental,
                 lr.state AS state,
-                ('Recepción ' || COALESCE(lr.name, '')) AS display_reference
+                ('Recepción ' || COALESCE(lr.name, '')) AS display_reference,
+                NULL::integer AS processor_id
             FROM lumber_reception lr
 
             UNION ALL
@@ -540,13 +622,17 @@ class MadenatLumberIntakeConsole(models.Model):
                       THEN 'volume' ELSE 'processed' END)::text AS ingestion_type,
                 gp.name AS guide_name,
                 gp.date_emission AS guide_date,
+                'emission'::text AS guide_date_kind,
                 gp.partner_id AS partner_id,
                 gp.order_id AS purchase_id,
                 COALESCE(po.name, gp.oc_reference_raw, '') AS purchase_reference,
+                NULLIF(gp.oc_reference_raw, '') AS oc_documental,
                 (CASE WHEN gp.state = 'cancelled' THEN 'cancel' ELSE gp.state END) AS state,
-                ('Procesada ' || COALESCE(gp.name, '')) AS display_reference
+                ('Procesada ' || COALESCE(gp.name, '')) AS display_reference,
+                tpo.processor_id AS processor_id
             FROM madenat_guia_processing gp
             LEFT JOIN purchase_order po ON po.id = gp.order_id
+            LEFT JOIN toll_processing_order tpo ON tpo.id = gp.toll_order_id
             """
         )
 
@@ -646,6 +732,8 @@ class MadenatLumberIntakeConsole(models.Model):
             rec.documental_conciliation_state = 'not_available'
             rec.packing_pieces_declared = 0
             rec.packing_package_count_declared = 0
+            rec.vol_compra_m3 = 0.0
+            rec.vol_embarque_m3 = 0.0
             if src is None:
                 rec.total_volume_m3 = 0.0
                 rec.total_packages = 0
@@ -730,6 +818,12 @@ class MadenatLumberIntakeConsole(models.Model):
                     src.documental_conciliation_state or 'not_available')
                 rec.packing_pieces_declared = src.packing_pieces_declared or 0
                 rec.packing_package_count_declared = src.packing_package_count_declared or 0
+                # P1 (Q1/R07): magnitudes de compra (real) y de embarque
+                # (nominal comercial), proyectadas desde las líneas reales.
+                rec.vol_compra_m3 = sum(
+                    src.processing_line_ids.mapped('vol_purchase_m3'))
+                rec.vol_embarque_m3 = sum(
+                    src.processing_line_ids.mapped('vol_shipment_m3'))
 
     # ------------------------------------------------------------------
     # Volumen oficial vigente (Fase 2 — solo Volúmenes, sin side effects)
@@ -1456,6 +1550,100 @@ class MadenatLumberIntakeConsole(models.Model):
         """La cabecera es solo informativa; la aplicación real se hace desde
         el botón 'Aplicar cambios' → wizard → 'Aplicar Cambios'."""
         return True
+
+    # ------------------------------------------------------------------
+    # Confirmación de retorno de servicio (Procesado, 2026-10-07)
+    # Proxy de lectura/escritura hacia la Guía origen. Editable por el usuario
+    # operativo (inverse delega en `src.write`). No bloquea la ingesta ni el
+    # envío a stock; el vacío es válido (= pendiente, NO equivale a No).
+    # ------------------------------------------------------------------
+    @api.depends('source_model', 'source_res_id', 'ingestion_type')
+    def _compute_service_return_confirmation(self):
+        """Lee la confirmación desde el origen real (solo Procesado servicio).
+
+        Lectura pura: no escribe, no valida, no toca stock. En cualquier fila
+        que no sea una Guía Procesada de servicio (Producto, Volumen, guía de
+        ``compra`` o ``granel``) el proxy queda vacío y
+        ``service_return_in_scope`` en False: la UI de los otros flujos no
+        cambia.
+        """
+        for rec in self:
+            rec.service_return_in_scope = False
+            rec.service_return_confirmation = False
+            if (rec.source_model != 'madenat.guia.processing'
+                    or not rec.source_res_id
+                    or rec.ingestion_type != 'processed'):
+                continue
+            src = rec._get_source_record()
+            if not src or src.tipo_recepcion != 'service':
+                continue
+            rec.service_return_in_scope = True
+            rec.service_return_confirmation = (
+                src.service_return_confirmation or False)
+
+    def _inverse_service_return_confirmation(self):
+        """Escribe la confirmación en la Guía origen (solo Procesado servicio).
+
+        Guardas duras: solo escribe si el origen es una Guía real de servicio
+        (``madenat.guia.processing`` + ``tipo_recepcion == 'service'``). No toca
+        estado, tipo de recepción, stock, lotes, pickings, OC, costes ni SV. El
+        vacío es válido (pendiente). La regla de cambio Sí→No con imputaciones
+        aplicadas reside en `madenat_lumber_logistics` (donde el modelo SV existe)
+        y se aplica al delegar en ``src.write``.
+        """
+        for rec in self:
+            if (rec.source_model != 'madenat.guia.processing'
+                    or not rec.source_res_id
+                    or rec.ingestion_type != 'processed'):
+                continue
+            src = rec._get_source_record()
+            if not src or src.tipo_recepcion != 'service':
+                continue
+            new_value = rec.service_return_confirmation or False
+            if src.service_return_confirmation != new_value:
+                src.write({'service_return_confirmation': new_value})
+
+    @api.depends('product_id')
+    def _compute_product_filter_id(self):
+        """Valor mostrado del filtro: el producto común (mismo criterio que
+        `product_id`). La búsqueda real NO usa este valor (ver `_search_`)."""
+        for rec in self:
+            rec.product_filter_id = rec.product_id
+
+    def _search_product_filter_id(self, operator, value):
+        """Traduce el filtro de producto a un dominio sobre los ORÍGENES.
+
+        Reutiliza las relaciones existentes (líneas de recepción y de guía);
+        devuelve un dominio sobre (source_model, source_res_id). No hace JOIN
+        en la vista SQL: no multiplica filas ni pierde registros.
+        """
+        RecLine = self.env['lumber.reception.line']
+        GuiaLine = self.env['madenat.guia.processing.line']
+
+        def _contains_domain(ids):
+            rec_ids = RecLine.search(
+                [('product_id', 'in', ids)]).mapped('reception_id').ids
+            guia_ids = GuiaLine.search(
+                [('product_id', 'in', ids)]).mapped('processing_id').ids
+            return ['|',
+                    '&', ('source_model', '=', 'lumber.reception'),
+                    ('source_res_id', 'in', rec_ids),
+                    '&', ('source_model', '=', 'madenat.guia.processing'),
+                    ('source_res_id', 'in', guia_ids)]
+
+        if operator in ('=', 'in'):
+            ids = value if isinstance(value, (list, tuple)) else [value]
+            ids = [i for i in ids if i]
+            if not ids:
+                return [('id', '=', 0)]
+            return _contains_domain(ids)
+        if operator in ('!=', 'not in'):
+            ids = value if isinstance(value, (list, tuple)) else [value]
+            ids = [i for i in ids if i]
+            if not ids:
+                return []
+            return ['!'] + _contains_domain(ids)
+        return []
 
     def _common_many2one(self, lines, field_name):
         """Devuelve el valor común del campo Many2one si todas las líneas

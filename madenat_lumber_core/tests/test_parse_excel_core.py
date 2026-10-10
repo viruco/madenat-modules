@@ -215,11 +215,16 @@ class TestGuiaProcessingExcelParser(TransactionCase):
         self.assertAlmostEqual(line['Ancho'], 146.1, places=1)
         self.assertAlmostEqual(line['Largo'], 4.877, places=3)
 
-    def test_nota_venta_dimensions_raw_rejected_with_diagnostic(self):
-        """Dimensiones combinadas (dimensions_raw) + identificador + cantidad +
-        volumen documental: se sigue descartando con diagnóstico explícito y
-        no se invoca cálculo geométrico (Opción C)."""
-        guia = self._make_guia('XLS-NOTA-VENTA')
+    def test_nota_venta_dimensions_raw_normalized_and_create(self):
+        """Notación combinada acreditada (`Esc. Fact` = `5/4x5.3/8x16`) se
+        normaliza a dimensiones estructuradas y produce una línea válida.
+
+        Evidencia del patrón: `GDE 95806.xls` / `NVTA881333 (2).xls` (Nota de
+        Venta Nº 881333, JCE) — espesor nominal `5/4"`, ancho nominal
+        `5 3/8"`, largo `16 ft`; la propia columna `VOL.` del documento
+        (`4,997 m³` para 231 piezas) confirma la interpretación mixta
+        (`5.3/8` = `5 3/8`)."""
+        guia = self._make_guia('XLS-NOTA-VENTA-OK')
         attachment = self._attachment_from_bytes(
             _build_xls_nota_venta_bytes(), 'nota_venta.xls')
 
@@ -229,26 +234,52 @@ class TestGuiaProcessingExcelParser(TransactionCase):
         line = result['lineas'][0]
         self.assertEqual(line['Codigo Interno'], 'FG-0001')
         self.assertEqual(line['Cantidad'], 231)
-        self.assertGreater(line['Volumen'], 0)
         self.assertEqual(line['dimensions_raw'], '5/4x5.3/8x16')
+        # El parser documental NO inventa dimensiones separadas.
         self.assertEqual(line['Espesor'], 0)
         self.assertEqual(line['Ancho'], 0)
         self.assertEqual(line['Largo'], 0)
 
-        # La validación descarta con REQUIERE_DIMENSIONES_SEPARADAS.
+        # La validación normaliza y crea la línea (ya no la descarta).
         rechazos = []
         validas = guia._validar_y_enriquecer_lineas(result['lineas'], rechazos)
-        self.assertEqual(validas, [])
-        self.assertEqual(len(rechazos), 1)
-        self.assertEqual(rechazos[0]['rule'], 'REQUIERE_DIMENSIONES_SEPARADAS')
-        self.assertEqual(rechazos[0]['fields'], ['Espesor', 'Ancho', 'Largo'])
+        self.assertEqual(rechazos, [])
+        self.assertEqual(len(validas), 1)
+        valid = validas[0]
+        self.assertAlmostEqual(valid['espesor_mm'], 31.75, places=3)
+        self.assertAlmostEqual(valid['ancho_mm'], 136.525, places=3)
+        self.assertAlmostEqual(valid['largo_m'], 4.8768, places=4)
+        # Volumen de embarque geométrico (regla de oro MADENAT): coincide con
+        # el `VOL.` documental (4,997 m³) del propio archivo real.
+        self.assertAlmostEqual(valid['vol_shipment_m3'], 4.997, places=3)
 
-        # Diagnóstico estructurado, no opaco.
-        msg = guia._build_rejection_diagnostic(rechazos, len(result['lineas']))
-        self.assertIn('REQUIERE_DIMENSIONES_SEPARADAS', msg)
-        self.assertIn('dimensiones crudas: 5/4x5.3/8x16', msg)
-        self.assertIn('volumen documental', msg)
-        self.assertIn('No se creó ninguna línea', msg)
+    def test_dimensiones_combinadas_ambiguas_siguen_rechazadas(self):
+        """Patrones NO acreditados siguen rechazándose con diagnóstico
+        explícito `REQUIERE_DIMENSIONES_SEPARADAS` (sin inventar dimensiones).
+
+        Se cubren: nº de tokens distinto de 3, token no numérico y valores
+        fuera del rango comercial acreditado.
+        """
+        guia = self._make_guia('XLS-NOTA-VENTA-AMB')
+        casos = ('5/4x5.3/8', '5/4xABx16', '5/4x5.3/8x16x2', '0/4x5.3/8x16')
+        for raw in casos:
+            lineas = [{
+                'Codigo Interno': 'FG-X', 'N° LOTE': 'L1', 'Cantidad': 10,
+                'Volumen': 4.997, 'vol_documental_m3': 4.997,
+                'Espesor': 0, 'Ancho': 0, 'Largo': 0,
+                'dimensions_raw': raw,
+            }]
+            rechazos = []
+            validas = guia._validar_y_enriquecer_lineas(lineas, rechazos)
+            self.assertEqual(validas, [], 'raw=%s no debe validar' % raw)
+            self.assertEqual(len(rechazos), 1)
+            self.assertEqual(
+                rechazos[0]['rule'], 'REQUIERE_DIMENSIONES_SEPARADAS')
+            self.assertEqual(
+                rechazos[0]['fields'], ['Espesor', 'Ancho', 'Largo'])
+            msg = guia._build_rejection_diagnostic(rechazos, len(lineas))
+            self.assertIn('REQUIERE_DIMENSIONES_SEPARADAS', msg)
+            self.assertIn('No se creó ninguna línea', msg)
 
     def test_metric_dimensions_still_validate_and_create(self):
         """Regresión: un packing métrico con dimensiones separadas sigue
@@ -311,7 +342,13 @@ class TestGuiaProcessingExcelParser(TransactionCase):
 
     def test_documentary_lines_collected_not_dropped(self):
         """Una línea documental (identificador + piezas + volumen documental,
-        sin dimensiones) se conserva como documental en lugar de descartarse."""
+        sin dimensiones separadas ni notación combinada acreditable) se
+        conserva como documental en lugar de descartarse.
+
+        Se usa `5/4x5.3/8` (2 tokens: patrón NO acreditable) para que la
+        normalización P4 no la rescate y se ejerza realmente la recolección
+        documental.
+        """
         guia = self._make_guia('XLS-COLLECT')
         lineas = [{
             'Codigo Interno': 'DOC-001',
@@ -319,7 +356,7 @@ class TestGuiaProcessingExcelParser(TransactionCase):
             'Cantidad': 100,
             'Volumen': 5.0,
             'vol_documental_m3': 5.0,
-            'dimensions_raw': '5/4x5.3/8x16',
+            'dimensions_raw': '5/4x5.3/8',
             'Espesor': 0.0,
             'Ancho': 0.0,
             'Largo': 0.0,
@@ -329,7 +366,7 @@ class TestGuiaProcessingExcelParser(TransactionCase):
         self.assertEqual(validas, [])
         self.assertEqual(len(documentales), 1)
         self.assertEqual(documentales[0]['vol_documental_m3'], 5.0)
-        self.assertEqual(documentales[0]['dimensions_raw'], '5/4x5.3/8x16')
+        self.assertEqual(documentales[0]['dimensions_raw'], '5/4x5.3/8')
 
     def test_documentary_pending_not_promoted(self):
         """Una línea documental pendiente en staging no se promueve a lote/stock

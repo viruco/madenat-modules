@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.6.2
+**Versión documental:** 1.8.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -617,3 +617,92 @@ Ejecutable a nivel **RPC/HTTP** (Odoo 18 CE), con **aserciones de `stock.quant` 
 <!-- actualizado: 2026-10-02 (4) — AD-90: semántica de inventario en procesador (custodia operativa MADENAT, pendiente de consolidación documental); recepción directa y transferencia interna equivalentes; dos órdenes temporales válidos; cuatro categorías de saldo; I2 refinado a consolidación/imputación documental y sigue PENDIENTE. Complementa AD-87/88/89. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — precisa el nombre del campo de clave documental de I2: `documentary_key` (implementado en madenat_lumber_logistics, AD-91). Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa la semántica de estados de I2: reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) y saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger/sv_available_m3. Ver §6/§7.3. Sin cambio funcional. Solo documentación. -->
+
+---
+
+### 19.9 Estado de I2 y reglas de identificación de retorno (2026-10-07)
+
+> **Corrección de estado («I2 pendiente»).** El **modelo documental de I2 está IMPLEMENTADO en el
+> árbol de código** (commit `2888745`, 2026-10-02), con suites acreditadas. Las menciones previas
+> «I2 sigue PENDIENTE» de las versiones anteriores del documento describían la **fase de diseño**;
+> a la fecha debe leerse así:
+> - **Código presente (I2):** `madenat.sv.imputation` / `.line` / `.sv.line`, asistente, vistas,
+>   ACL, secuencia y pruebas (`tests/test_sv_imputation_i2.py` — 13; `tests/test_sv_imputation_candidates.py`
+>   — 12) en `madenat_lumber_logistics`.
+> - **I3/I5 NO implementados:** salida nativa + ledger `action_type='imputacion'` (I3) y costo (I5)
+>   continúan **fuera de alcance**. I2 es **documental**: sin efecto en `stock.quant`, ledger ni
+>   `sv_available_m3` (D-I2-12).
+> - **Aplicación al entorno activo:** decisión operativa **separada** (no implícita en el código
+>   presente).
+
+**Reglas de identificación incorporadas (2026-10-07; copia aislada, AD-102).** No alteran los
+efectos de I2.
+- **Destino marcado «Sí» al aplicar.** `action_apply` exige que la guía destino
+  (`guia_processing_id`) esté marcada como retorno de servicio (`service_return_confirmation ==
+  'yes'`). Se comprueba **al aplicar** (no al guardar borrador/pendiente) y **no** marca la guía
+  automáticamente. `action_pending` no lo exige.
+- **Relación inversa `sv_imputation_ids`** en `madenat.guia.processing` (One2many de **solo
+  lectura** → `madenat.sv.imputation.guia_processing_id`), en `madenat_lumber_logistics` (donde
+  existe el modelo I2): respeta la dependencia **core ← logistics** y **no** introduce dependencia
+  **core→logistics** ni circular.
+- **Filtro «Retornos sin imputación aplicada»** (Logística): retorno confirmado `yes` **sin**
+  ninguna imputación `applied` (borrador/pendiente/anulada/reversada no cuentan — D-I2-13). **NO**
+  evalúa **cobertura parcial** (limitación declarada).
+- **Inmutabilidad/reversa intactas** (§6): con imputaciones `applied`, cambiar la identificación de
+  la guía a «No» o vaciarla se **rechaza**; se exige reversar primero.
+
+---
+
+### 19.10 Flujo operativo de imputación SV confirmado en código (2026-10-10)
+
+> **Naturaleza.** Confirmación **de solo lectura** del flujo **implementado** (I2, AD-91; reglas de
+> identificación AD-102) en el árbol activo. **No** se aplicaron ni reversaron imputaciones reales;
+> **no** se crearon movimientos de stock. Rige lo ya establecido: I2 es **documental** (sin efecto en
+> `stock.quant`, `stock.picking`, `stock.move`, ledger `madenat.sv.operation` ni `sv_available_m3`).
+> **I3** (salida nativa + ledger `action_type='imputacion'`) e **I5** (costo) **siguen fuera de alcance**.
+
+**Secuencia operativa (ruta real del código).** El **envío a proceso** y la **imputación** son dos
+actos **separados**: el envío (I1) es una transferencia interna; la imputación (I2) es el vínculo
+documental del retorno. **No** existe vínculo automático entre ambos.
+
+| # | Paso | Menú / botón | Modelo / acción | Dato necesario | Validación | Resultado esperado |
+|---|---|---|---|---|---|---|
+| 1 | Identificar el **envío a proceso** | Logística → **Envío a Procesador** | `madenat.processor.shipment.wizard.action_send` | Procesador (`is_processor`), origen interno, lotes y cantidad | Cantidad > 0 y ≤ **libre** (físico − reservado ajeno) del lote en el origen (AD-89) | Transferencia interna nativa al `Procesadores/<X>` (la madera sigue siendo de MADENAT) + auditoría `processor_shipment` (SHA-256) |
+| 2 | Consultar **volumen y saldo** en poder del procesador | Logística → **Saldo por Procesador** | `stock.quant` (lista/pivot por `madenat_processor_id`) | Procesador / producto / lote | — | Saldo físico en poder del procesador (**solo lectura**) |
+| 3 | **Ingresar la guía de retorno** | Ingreso de Madera (Consola) o Guía Procesados | `madenat.lumber.intake.console` / `madenat.guia.processing` | Documento de guía/packing | Clasificación por contenido (servicio → Procesado) | Guía con sus **etiquetas procesadas** (`stock.lot`, `lot_flow_type != 'volume'`) |
+| 4 | **Marcar «¿Es retorno de servicio?»** | Formulario de guía / Consola (`widget="radio"`) | campo `service_return_confirmation` (`yes`/`no`/vacío) | Decisión del operador | **No bloqueante**; vacío ≠ `no` (AD-102) | Campo persistido; **no** dispara la imputación |
+| 5 | **Abrir el asistente** de imputación | Guía → botón **«Imputación documental SV»**; o Logística → **Imputaciones documentales SV** | acción `action_madenat_sv_imputation_wizard` → `madenat.sv.imputation.wizard` | Guía destino | — | Asistente con las etiquetas de la guía y la propuesta **FIFO editable** |
+| 6 | **Seleccionar origen y destino** | Asistente: pestañas «Etiquetas» (retorno) y «Reparto SV» | `wizard.line_ids` (etiquetas) y `wizard.sv_line_ids` (SV) | Etiqueta procesada (origen) y etiqueta **SV** (destino) | SV candidatos = `lot_flow_type='volume'`, saldo documental > 0 (y quant interno en la ubicación del procesador si hay procesador) | Reparto editable; **«Proponer FIFO»** lo autocompleta |
+| 7 | **Completar volumen y campos** | Asistente: `nominal_volume_m3` (etiqueta) e `imputed_volume_m3` (SV) | `madenat.sv.imputation.wizard` | Volumen nominal (m³) e imputado (m³); `reason` si hay desviación | **Techo DURO** etiqueta: Σ activos ≤ nominal editable; exceso SV-side = **blando** (motivo) | Documento en borrador |
+| 8 | **Guardar y revisar** | **«Guardar borrador»** / **«Dejar pendiente»** | `action_prepare` / `action_pending` → `madenat.sv.imputation` | — | Una sola imputación de trabajo por guía (draft/pending) | Cabecera + líneas (idempotente por `documentary_key`) |
+| 9 | **Aplicar** | **«Aplicar»** | `madenat.sv.imputation.action_apply` | Guía destino marcada **«Sí»** | Permiso Operaciones/Jefatura/Gerencia; destino = retorno; payload válido; techo duro; advisory lock por SV | Estado `applied` + `executed_by_id`/`execution_date` + snapshot/SHA-256; auditoría `imputation` |
+| 10 | **Consultar resultado y saldo** | Lista/formulario de imputación; saldos en el asistente | `nominal_total_m3`, `imputed_total_m3`, `etiqueta_saldo_documental_m3`, `sv_saldo_documental_m3` | — | — | Saldo **documental** actualizado (magnitud propia; **no** cambia stock ni `sv_available_m3`) |
+| 11 | **Reversar** para corregir | **«Reversar»** | `madenat.sv.imputation.action_reverse` | `reversal_reason` | Solo Jefatura/Gerencia; solo estado `applied` | Estado `reversed`; historia **append-only** conservada; auditoría `imputation_reverse` |
+
+**Tabla de controles.**
+
+| Dimensión | Regla vigente (código) |
+|---|---|
+| **Origen** | Etiqueta **procesada** (`stock.lot`, `lot_flow_type != 'volume'`) de la guía destino. El **volumen enviado a proceso** vive en el envío I1 (`madenat.processor.shipment.wizard` → transferencia interna); **no** hay vínculo automático envío↔imputación. |
+| **Destino** | Guía de procesados (`madenat.guia.processing`) que debe estar `service_return_confirmation == 'yes'`; se exige **al aplicar**, no al guardar. No se marca la guía automáticamente. |
+| **Volumen** | `imputed_volume_m3` (m³) por reparto, **editable**; `nominal_volume_m3` de la etiqueta (por defecto el de compra). Admite **varios SV** por etiqueta (N:M). |
+| **Saldo** | Etiqueta: techo **duro** Σ activos ≤ nominal editable (**rechaza**). SV: exceso sobre el saldo documental = **blando** (motivo + `SV_EXCESS`). Saldo documental I2 = nominal − imputado **aplicado no revertido**; **no** es `sv_available_m3` ni el físico. |
+| **Aplicación** | `action_apply`: permiso + destino «Sí» + payload + techo duro + desviaciones blandas + advisory lock + snapshot/auditoría. **Documental** (sin movimientos de stock). **Idempotente**. |
+| **Reversa** | `action_reverse`: solo `applied`; **Jefatura/Gerencia**; conserva historia (`reversed`, `origin_imputation_id`/`reversed_imputation_id`). Con `applied`, cambiar la identificación de la guía a «No»/vacío se **rechaza**. |
+| **Permisos** | Aplicar: **Operaciones/Jefatura/Gerencia**. Reversar: **Jefatura/Gerencia**. Trazabilidad: `madenat.audit.log` (tipos aditivos `imputation`, `imputation_reverse`) + chatter (`mail.thread`). |
+
+**Ejemplo numérico ilustrativo (NO es una operación real).** Retorno de una guía con una etiqueta procesada
+de nominal **5,000 m³**; dos SV candidatos con saldo documental **3,000** y **4,000**. Reparto FIFO:
+**3,000** al primer SV + **2,000** al segundo (Σ = **5,000** = nominal, sin exceso). Al aplicar, el saldo
+documental del primer SV pasa a **0,000** y el del segundo a **2,000**; la etiqueta queda con saldo
+**0,000**. Es un ejemplo: **no** se ejecutó sobre ninguna base.
+
+**Rendimiento y merma — no implementados en I2.** No hay cálculo de rendimiento (enviado vs. retornado),
+ni merma automática, ni costo (I5), ni cierre. La imputación es un **vínculo documental por volumen**;
+**no** compara magnitudes equivalentes (p. ej. volumen de compra vs. de embarque). Ver §13 y
+`05_BACKLOG.md`.
+
+**Brechas declaradas (sin implementar en esta etapa).** (a) **vínculo automático envío↔imputación**;
+(b) **cobertura parcial** del filtro «Retornos sin imputación aplicada»; (c) **rendimiento/merma**
+(comparación de magnitudes equivalentes); (d) **I3** (salida nativa + ledger) e **I5** (costo);
+(e) **concurrencia**: existe *advisory lock* por SV, pero la acreditación de concurrencia sigue pendiente.

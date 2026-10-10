@@ -35,7 +35,8 @@ VISIBLE_TITLES = [DATOS_GUIA_GROUP, DECLARED_GROUP, SV_GROUP]
 # Bloques que NO pueden quedar visibles en la pantalla operativa de Volumen.
 HIDDEN_TITLES = (
     'Resumen del ingreso',
-    'Evidencia documental',
+    # Consolidación UI (2026-10-08): el encabezado único es
+    # «📄 Evidencia documental» (se retiró el duplicado sin emoji).
     '📄 Evidencia documental',
     'VOLUMEN OFICIAL DE LA GUÍA',
     'Volumen operativo de referencia (no gobierna stock)',

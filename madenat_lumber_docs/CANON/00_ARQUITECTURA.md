@@ -1,8 +1,8 @@
 # Arquitectura — MADENAT Lumber Core
 
 **Módulo:** `madenat_lumber_core`
-**Versión documental:** `7.17.0`
-**Fecha de actualización:** 2026-10-02  <!-- actualizado: 2026-10-02 — §4.3: reapertura no bloqueante y trazable de guía procesada (G1): wizard, reversión nativa del consumo BT-04, conservación de historia física e imputación de advertencias no bloqueantes. G2 (vínculo persistente guía↔picking, `stock.picking.guia_processing_id`) y G3 (retorno automático del ingreso de producción atribuido por esa llave fuerte) IMPLEMENTADOS (ver §4.3) -->
+**Versión documental:** `7.18.0`
+**Fecha de actualización:** 2026-10-07  <!-- actualizado: 2026-10-07 — §4.10: búsqueda, filtros y agrupaciones de la Consola de Intake (OC documental vs OC vinculada; `guide_date_kind`; modalidades Producto/Procesado/Volúmenes; producto real por líneas `product_filter_id`; procesador por Orden de Procesamiento `processor_id`). Aplicado en `madenat_test` (ver `04_DECISION_LOG.md` AD-101). Histórico 2026-10-02 — §4.3: reapertura no bloqueante y trazable de guía procesada (G1): wizard, reversión nativa del consumo BT-04, conservación de historia física e imputación de advertencias no bloqueantes. G2 (vínculo persistente guía↔picking, `stock.picking.guia_processing_id`) y G3 (retorno automático del ingreso de producción atribuido por esa llave fuerte) IMPLEMENTADOS (ver §4.3) -->
 **Estado:** ✅ Vigente — Se documenta la Gestión Operativa de Etiquetas SV (`madenat.sv.operation`, AD-79) en §4.8, el flujo de recepción a granel + Balance de Masa + consolidación administrativa (AD-65, diseño aprobado, pendiente de implementación) en §4.6, R1 — Detalle por Patio con `stock.quant` extendido en `madenat_lumber_reports` (AD-77, Programación 1) en §4.7, la interfaz operativa oficial de Intake (AD-78) y el entorno de desarrollo del «Modo A autoservicio» (`madenat.dev_cleanup_enabled`, que desacopla el autoservicio de `--test-enable`) en §4.9. Con cambios de código (`madenat_lumber_core`, `madenat_lumber_intake`).
 **Compatibilidad objetivo:** Odoo 18 CE
 
@@ -472,6 +472,63 @@ propia UI del servidor** surte efecto sin reinicio. Un cambio hecho desde **fuer
 
 ---
 
+### 4.10 Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07)
+
+Consolida el comportamiento **aplicado en `madenat_test`** de la vista de búsqueda de
+`madenat.lumber.intake.console` (acción `action_madenat_lumber_intake_console`, vista de
+búsqueda `view_madenat_lumber_intake_console_search`). Decisión de diseño: `04_DECISION_LOG.md`
+**AD-101**. Evidencia de pruebas: `03_TESTS.md` §11. Pendientes: `05_BACKLOG.md`.
+
+**Columnas nuevas de la vista SQL.** La vista (`init()`) proyecta tres columnas reales
+adicionales, manteniendo **intactos** `id` y `source_res_id` (offset `900000000` para Procesado):
+`oc_documental`, `guide_date_kind` y `processor_id`. Se añade además un campo de **solo búsqueda**
+`product_filter_id` (no es columna). Los campos previos (`purchase_reference`, `oc_reference_documental`,
+`oc_documentary_status`, `oc_pending`) se **conservan** por compatibilidad.
+
+**OC documental vs OC vinculada.** `oc_documental` = `NULLIF(<origen>.oc_reference_raw, '')` de cada
+fuente (referencia extraída del documento; **nunca** se sustituye por el nombre de la OC vinculada).
+La **OC vinculada** sigue siendo `purchase_id` (relación operativa a `purchase.order`). En la lista, la
+columna "OC documental" muestra `oc_documental`; en búsqueda y agrupación se ofrecen **"OC documental"**
+(`group_by oc_documental`) y **"OC vinculada"** (`group_by purchase_id`). Filtros puros: **OC vinculada**
+(`purchase_id != False`), **OC pendiente de vinculación** (`purchase_id = False` y `oc_documental != False`)
+y **OC no indicada** (`purchase_id = False` y `oc_documental = False`). **`purchase_reference`** se conserva
+por compatibilidad, pero **no** representa siempre la referencia documental original (puede reflejar el
+nombre de la OC vinculada): por eso la búsqueda/columna "OC documental" usan `oc_documental`.
+
+**Fecha.** `guide_date` conserva su semántica mixta: Producto = `COALESCE(guia_fecha, reception_date::date)`;
+Procesado/Volumen = `date_emission`. `guide_date_kind` (Selection) hace **explícito** el origen:
+`emission` (fecha documental de emisión) o `reception` (Producto sin fecha de guía → fecha de recepción).
+La lista muestra "Fecha de guía" + la columna **"Origen fecha"** (badge); existen las agrupaciones
+"Fecha de guía" (`guide_date:day`) y "Origen de fecha" (`guide_date_kind`). No todas las filas representan
+emisión documental.
+
+**Modalidades.** `ingestion_type` distingue **Producto** (`product`), **Procesado** (`processed`) y
+**Volúmenes** (`volume`, ⇔ `tipo_recepcion='granel'`). "Producto" como filtro es una **modalidad**, no un
+producto concreto. Los tres filtros tienen dominios disjuntos, pero **no son mutuamente excluyentes** (no son
+radio buttons): el usuario puede marcar varios y Odoo los combina por **AND**, de modo que dos modalidades
+distintas dan **intersección vacía** (verificado en `03_TESTS.md` §11). Se añadieron filtros de estado
+**"Procesada (legacy)"** (`state='processed'`) y **"Error"** (`state='error'`); **Abiertos/Finalizados
+no se ampliaron**.
+
+**Producto real.** `product_filter_id` (Many2one `product.product`, `store=False`, `search=`) traduce el
+filtro a un dominio sobre `(source_model, source_res_id)` a partir de las **líneas de ambos orígenes**
+(`lumber.reception.line.product_id` / `madenat.guia.processing.line.product_id`). **No** hace JOIN en la
+vista SQL (no multiplica filas) y **no** selecciona el primer producto de las líneas; el valor mostrado es
+el producto común y queda **vacío** si las líneas difieren. **No** se agrupa por producto (no es columna
+agrupable sin inventar un criterio).
+
+**Procesador.** `processor_id` (Many2one `res.partner`, columna real) proviene **exclusivamente** de
+`toll.processing.order.processor_id` a través de `madenat.guia.processing.toll_order_id`
+(`LEFT JOIN toll_processing_order`, relación **1:1** → no multiplica filas). Aplica a guías con Orden de
+Procesamiento; en Producto y en guías sin orden toll queda **vacío**. **Nunca** se usa el proveedor/emisor
+(`partner_id`) como procesador. Otros orígenes de procesador **no** están implementados.
+
+**Volumen (límite).** El filtro "Volúmenes" es la modalidad `volume`. **No** se implementó búsqueda
+numérica por m³; el campo oficial identificado para una fase posterior es `official_volume_m3`
+(expuesto como `official_volume_effective_m3`), unidad **m³**. Decisión pendiente.
+
+---
+
 ## Rolleo marítimo centrado en Embarque (AD-92, 2026-10-05)
 
 La planificación marítima de un Embarque (`lumber.export.shipment`) se reprograma
@@ -535,7 +592,7 @@ actor, fecha y evidencia auditada).
   Entrega**; **no** equivale a Rebaja.
 - **Sólo Jefatura/Gerencia** confirman el zarpe (guard de servidor).
 - **No descuenta stock:** la salida física (`stock.picking`/`move`) ocurre en la
-  el flujo **Rebaja**, separado de este bloque.
+  **Rebaja** (`_rebajar_container`), flujo separado.
 - **Pendientes conservan su estado físico real** (nunca `shipped`/`rebajado`).
 - **Clasificador local** de rebaja física, sin dependencia de retornos (R2).
 - **Campos B-01** protegidos server-side (token de proceso, no falsificable por
@@ -556,7 +613,7 @@ acciones explícitas y separadas**, ambas **sólo de Gerencia**:
 - **R1 — Regularización física B-01 (AD-95):** **rebaja extemporánea** física
   posterior al Zarpe B-01. Sólo Gerencia; sólo un Embarque `in_transit` con
   B-01 `open`; sólo Contenedores **pendientes elegibles** del propio Embarque.
-  Usa el **motor nativo de Rebaja** (`stock.picking` OUT ·
+  Usa el **motor nativo de Rebaja** (`_rebajar_container`: `stock.picking` OUT ·
   `stock.move`/`stock.move.line` · lote real · `button_validate`), con
   **savepoint por Contenedor** y **rollback total** ante cualquier fallo. **No**
   cambia `state`/`actual_departure`, **no** cierra B-01, **no** crea
@@ -688,4 +745,5 @@ Norma detallada: `04_DECISION_LOG.md` **AD-100**.
 | 7.15.0 | 2026-10-02 | Se documenta en §4.3 la **reapertura no bloqueante y trazable de guía procesada (G1)**: `action_reopen_to_draft` abre wizard (motivo solo con efecto físico), revierte el **consumo BT-04** con retorno nativo idempotente y, sin vínculo fuerte, **conserva** stock/lotes/pickings/movimientos con advertencia; sin escribir/borrar `stock.quant` ni mutar `origin`, con auditoría `deviation` + chatter. G2/G3 pendientes. Con cambios de código (`madenat_lumber_core`: `madenat_guia_processing.py`, wizard `madenat.guia.processing.reopen.wizard`). |
 | 7.16.0 | 2026-10-02 | Se documenta en §4.3 **G2 + G3**: **G2** añade la **llave fuerte** `stock.picking.guia_processing_id` → `madenat.guia.processing.id` (Many2one, `index=True`, `ondelete='set null'`, `copy=False`, `check_company=False`), asignada **solo** al crear el picking de ingreso de producción en `_get_or_create_picking_unified` (nunca propaga a consumo, retornos, recepción, rebaja, contenedor, exportación ni inventario; nunca infiere históricos). **G3** añade la **reversión física automática, nativa, trazable e idempotente** del ingreso de producción atribuido por esa FK en la reapertura G1: `_attributed_production_pickings()` + `_reverse_production_picking()`; atribución **exclusiva** por FK (nunca `origin` textual ni `lot_id`); idempotencia por `return_id`; el retorno **no** porta `guia_processing_id`; la producción/legado **sin** FK se conserva con advertencia. Con cambios de código (`madenat_lumber_core`: `models/stock_picking.py`, `models/madenat_guia_processing.py`, wizard `madenat.guia.processing.reopen.wizard`, tests `test_guia_picking_link.py` / `test_guia_production_reverse.py`). |
 | 7.17.0 | 2026-10-02 | Se documenta en §4.3 **H1 — reversión física ASISTIDA de producción histórica** (complemento aditivo de G1, `madenat_lumber_core`): wizard separado `madenat.guia.processing.historical.reverse.wizard` (+ líneas candidatas) abierto desde el botón «🧭 Reversión histórica asistida» (`action_open_historical_reverse_wizard`), sin tocar el contrato G1/G2/G3/BT-04. Alcance: guías no-granel, sin consumo BT-04 y sin producción atribuida por la llave fuerte G2 (`_h1_is_historical_production` / `can_historical_reverse`). **Sin atribución automática**: `origin`/`lot_id`/producto/proveedor/texto/fecha son señales de propuesta; categorías A (origen exacto + cobertura total de lotes + incoming/done + sin retorno ⇒ preseleccionado), B (evidencia parcial ⇒ visible, selección explícita) y C (excluido/no proponible). **Solo retorno TOTAL por picking** (`_h1_reverse_picking_total`), nativo, idempotente (`return_id`/`origin_returned_move_id`), preservando producto/UoM/lote/ubicaciones/owner/paquete/compañía; nunca escribe/borra `stock.quant` ni borra/desvincula lotes, pickings, moves, move lines o `lot_ids`; **no** invoca el reset de G1 (que limpia `lot_ids`). Auditoría `deviation` (snapshot + SHA-256) + chatter. Cobertura: `test_guia_historical_reverse.py` (T-H1-01..11). Con cambios de código (`madenat_lumber_core`: `models/madenat_guia_processing_historical.py`, wizard `madenat.guia.processing.historical.reverse.wizard`, `views/guia_processing_views.xml`, ACL). |
+| 7.18.0 | 2026-10-07 | Se documenta en §4.10 la **búsqueda, filtros y agrupaciones de la Consola de Intake** (aplicado en `madenat_test`, ver AD-101): columnas reales `oc_documental`, `guide_date_kind`, `processor_id` y campo de solo búsqueda `product_filter_id`; separación OC documental/vinculada con filtros y agrupaciones; origen de fecha explícito; modalidades Producto/Procesado/Volúmenes y su combinación por AND; producto real por líneas sin duplicar; procesador por Orden de Procesamiento. Con cambios de código (`madenat_lumber_intake`: `models/intake_console.py`, `views/intake_console_views.xml`). |
 

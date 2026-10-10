@@ -25,13 +25,20 @@
                 </header>
 
                 <field name="guide_name" string="Guía"/>
-                <field name="guide_date" string="Fecha"/>
+                <field name="guide_date" string="Fecha de guía"/>
+                <!-- Hace EXPLÍCITO en la lista el significado de la fecha:
+                     Emisión (documento) vs Recepción (sistema). No basta el
+                     help: la distinción debe verse fila a fila. -->
+                <field name="guide_date_kind" string="Origen fecha" widget="badge"
+                       decoration-info="guide_date_kind == 'emission'"
+                       decoration-warning="guide_date_kind == 'reception'"/>
                 <field name="partner_id" string="Proveedor"/>
+                <field name="processor_id" string="Procesador"/>
 
-                <!-- OC documento: referencia de OC extraída del documento
-                     (COALESCE de la OC vinculada y de la referencia documental
-                     cruda). Nunca se muestra como un segundo título «OC». -->
-                <field name="purchase_reference" string="OC documento"/>
+                <!-- OC documental: referencia extraída del documento
+                     (oc_reference_raw). NO se sustituye por la OC vinculada;
+                     la OC interna vinculada se ve en el formulario. -->
+                <field name="oc_documental" string="OC documental"/>
 
                 <!-- Estado OC documental (3 estados, no bloquea): vinculada,
                      pendiente de vinculación o no indicada en documento. -->
@@ -172,28 +179,88 @@
                         <field name="state" widget="badge"/>
                     </div>
 
-                    <group invisible="ingestion_type == 'volume'">
-                        <group string="Resumen del ingreso">
+                    <!-- =================================================
+                         RESUMEN DEL INGRESO (reorganización 2026-10-08)
+                         Bloque a TODO el ancho dividido en DOS columnas de
+                         campos:
+                           · izquierda: Producto, Fecha de guía, Proveedor y
+                             Procesador;
+                           · derecha: OC documental, OC vinculada, Estado de
+                             OC y Referencia.
+                         «Aplicar cambios» queda DEBAJO de los campos (misma
+                         acción, mismos permisos y misma condición de
+                         visibilidad) y, a continuación, la línea completa de
+                         identificación de retorno de servicio (widget y
+                         condiciones del alcance A/B, sin cambios de
+                         comportamiento; vacío = pendiente).
+                         ================================================= -->
+                    <group string="Resumen del ingreso"
+                           invisible="ingestion_type == 'volume'">
+                        <!-- Columna izquierda -->
+                        <group>
                             <field name="product_id" string="Producto"
                                    options="{'no_create': True, 'no_quick_create': True}"
                                    context="{'display_default_code': False}"/>
-                            <button name="action_apply_product_subproduct"
-                                    type="object"
-                                    string="Aplicar cambios"
-                                    class="btn-primary"
-                                    icon="fa-check"
-                                    help="Abre la edición masiva de producto, subproducto y nominales antes de enviar a stock."
-                                    invisible="review_state in ('sent', 'cancel', 'error')"/>
                             <field name="guide_date" string="Fecha de guía"/>
                             <field name="partner_id" string="Proveedor"/>
-                            <field name="purchase_reference" string="OC documento"/>
+                            <field name="processor_id" string="Procesador" readonly="1"/>
+                        </group>
+                        <!-- Columna derecha -->
+                        <group>
+                            <field name="oc_documental" string="OC documental"/>
                             <field name="purchase_id" string="OC vinculada"/>
                             <field name="oc_pending" string="OC" widget="badge"
                                    decoration-success="oc_pending == 'linked'"
                                    decoration-warning="oc_pending == 'pending'"/>
                             <field name="display_reference" string="Referencia"/>
                         </group>
-                        <group string="Evidencia documental">
+                    </group>
+
+                    <!-- Acción de edición masiva: misma acción, mismos permisos
+                         y misma condición de visibilidad; sólo cambia su
+                         ubicación (debajo de los campos del resumen). -->
+                    <div class="mb-2" invisible="ingestion_type == 'volume'">
+                        <button name="action_apply_product_subproduct"
+                                type="object"
+                                string="Aplicar cambios"
+                                class="btn-primary"
+                                icon="fa-check"
+                                help="Abre la edición masiva de producto, subproducto y nominales antes de enviar a stock."
+                                invisible="review_state in ('sent', 'cancel', 'error')"/>
+                    </div>
+
+                    <!-- Línea de identificación de retorno de servicio a ancho
+                         completo (Procesado de servicio). Identifica la
+                         naturaleza del ingreso; NO bloquea la ingesta ni el
+                         envío a stock. Vacío = pendiente (no equivale a No). Se
+                         conservan el widget y sus condiciones (invisibilidad y
+                         solo lectura) del alcance A/B. -->
+                    <group invisible="ingestion_type == 'volume'">
+                        <field name="service_return_in_scope" invisible="1"/>
+                        <field name="service_return_confirmation"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               invisible="not service_return_in_scope"
+                               readonly="review_state == 'sent'"/>
+                    </group>
+
+                    <!-- =================================================
+                         EVIDENCIA DOCUMENTAL (reorganización 2026-10-08)
+                         Un ÚNICO bloque debajo del resumen (se elimina la
+                         duplicación del encabezado al separar adjuntos e
+                         indicadores) con TRES columnas:
+                           1) Documentos: Guía (PDF) y Packing list (Excel);
+                           2) Volúmenes y diferencias;
+                           3) Packing y conciliación.
+                         Se preservan los campos técnicos, las unidades y su
+                         precisión, los widgets/badges, los cálculos, los
+                         permisos y las condiciones de visibilidad por tipo de
+                         ingreso.
+                         ================================================= -->
+                    <group string="📄 Evidencia documental" col="3"
+                           invisible="ingestion_type == 'volume'">
+                        <!-- Columna 1 — Documentos (Producto y Procesado) -->
+                        <group string="Documentos">
                             <field name="review_guide_document"
                                    string="Guía (PDF)"
                                    widget="badge"
@@ -203,25 +270,28 @@
                                    widget="badge"
                                    decoration-info="review_excel_document and review_excel_document != 'Sin Excel'"/>
                         </group>
-                    </group>
-
-                    <!-- =================================================
-                         EVIDENCIA DOCUMENTAL (PROCESADO, solo lectura)
-                         ================================================== -->
-                    <group string="📄 Evidencia documental"
-                           invisible="ingestion_type != 'processed'" col="4">
-                        <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)" readonly="1" digits="[16, 3]"/>
-                        <field name="packing_volume_declared_m3" string="Vol. Packing (m³)" readonly="1" digits="[16, 3]"/>
-                        <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)" readonly="1" digits="[16, 3]"/>
-                        <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)" readonly="1" digits="[16, 3]"/>
-                        <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)" readonly="1" digits="[16, 3]"/>
-                        <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
-                        <field name="packing_package_count_declared" string="Paquetes Packing" readonly="1"/>
-                        <field name="documental_conciliation_state" string="Conciliación documental" widget="badge"
-                               decoration-success="documental_conciliation_state == 'consistent'"
-                               decoration-warning="documental_conciliation_state == 'partial'"
-                               decoration-danger="documental_conciliation_state == 'difference'"
-                               decoration-muted="documental_conciliation_state == 'not_available'"/>
+                        <!-- Columna 2 — Volúmenes y diferencias (Procesado) -->
+                        <group string="Volúmenes y diferencias"
+                               invisible="ingestion_type != 'processed'">
+                            <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="packing_volume_declared_m3" string="Vol. Packing (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="vol_compra_m3" string="Vol. compra (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="vol_embarque_m3" string="Vol. embarque (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)" readonly="1" digits="[16, 3]"/>
+                        </group>
+                        <!-- Columna 3 — Packing y conciliación (Procesado) -->
+                        <group string="Packing y conciliación"
+                               invisible="ingestion_type != 'processed'">
+                            <field name="packing_package_count_declared" string="Paquetes Packing" readonly="1"/>
+                            <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
+                            <field name="documental_conciliation_state" string="Conciliación documental" widget="badge"
+                                   decoration-success="documental_conciliation_state == 'consistent'"
+                                   decoration-warning="documental_conciliation_state == 'partial'"
+                                   decoration-danger="documental_conciliation_state == 'difference'"
+                                   decoration-muted="documental_conciliation_state == 'not_available'"/>
+                        </group>
                     </group>
 
                     <!-- Aviso informativo de líneas documentales pendientes -->
@@ -312,7 +382,9 @@
                                 <div class="col-12 col-md-6 col-lg-4">
                                     <div class="text-muted small fw-bold mb-1">Documento</div>
                                     <group col="1">
-                                        <field name="guide_date" string="Fecha"/>
+                                        <field name="guide_date" string="Fecha de guía"/>
+                                        <field name="guide_date_kind"
+                                               string="Origen de fecha"/>
                                         <field name="display_reference"
                                                string="Referencia"/>
                                     </group>
@@ -964,26 +1036,44 @@
             <search string="Buscar Ingresos">
                 <field name="guide_name" string="Guía"/>
                 <field name="partner_id" string="Proveedor"/>
+                <field name="processor_id" string="Procesador"/>
+                <field name="product_filter_id" string="Producto (contiene)"/>
 
-                <!-- Búsqueda textual/documental de OC (mismo rótulo que la
-                     columna de la lista: «OC documento», nunca «OC»). -->
-                <field name="purchase_reference" string="OC documento"/>
+                <!-- OC documental: referencia extraída del documento
+                     (oc_reference_raw) — el MISMO dato que la columna. -->
+                <field name="oc_documental" string="OC documental"/>
 
-                <!-- Búsqueda relacional de OC vinculada -->
+                <!-- OC vinculada: relación operativa a purchase.order. -->
                 <field name="purchase_id" string="OC vinculada"/>
 
                 <field name="display_reference" string="Referencia"/>
 
+                <!-- Modalidad: Producto / Procesado / Volúmenes.
+                     Los dominios son disjuntos (ingestion_type), pero en la UI
+                     los filtros NO son excluyentes entre sí: se pueden marcar
+                     VARIOS a la vez y se combinan por AND. Marcar dos
+                     modalidades distintas da intersección VACÍA (0 resultados).
+                     El RNG de Odoo 18 no admite `group=` en <filter>, por lo
+                     que NO se pueden forzar como radio. Ver LIMITES.md. -->
                 <filter name="type_product" string="Producto" domain="[('ingestion_type', '=', 'product')]"/>
                 <filter name="type_processed" string="Procesado" domain="[('ingestion_type', '=', 'processed')]"/>
                 <filter name="type_volume" string="Volúmenes" domain="[('ingestion_type', '=', 'volume')]"/>
+                <separator/>
+
+                <!-- OC: vinculada / pendiente / no indicada (predicados puros
+                     sobre columnas reales; coherentes con «Estado OC»). -->
+                <filter name="filter_oc_linked" string="OC vinculada" domain="[('purchase_id', '!=', False)]"/>
+                <filter name="filter_oc_pending" string="OC pendiente de vinculación" domain="[('purchase_id', '=', False), ('oc_documental', '!=', False)]"/>
+                <filter name="filter_oc_not_informed" string="OC no indicada" domain="[('purchase_id', '=', False), ('oc_documental', '=', False)]"/>
                 <separator/>
 
                 <filter name="filter_state_draft" string="Borrador" domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_state_verified" string="Verificado" domain="[('state', '=', 'verified')]"/>
                 <filter name="filter_state_done" string="Recibido" domain="[('state', '=', 'done')]"/>
                 <filter name="filter_state_validated" string="Validado" domain="[('state', '=', 'validated')]"/>
+                <filter name="filter_state_processed" string="Procesada (legacy)" domain="[('state', '=', 'processed')]"/>
                 <filter name="filter_state_cancelled" string="Cancelado" domain="[('state', '=', 'cancel')]"/>
+                <filter name="filter_state_error" string="Error" domain="[('state', '=', 'error')]"/>
                 <separator/>
 
                 <filter name="filter_open" string="Abiertos" domain="[('state', 'in', ('draft', 'processing', 'verified', 'pending_link'))]"/>
@@ -991,9 +1081,12 @@
                 <separator/>
 
                 <group expand="0" string="Agrupar por">
-                    <filter name="group_purchase" string="OC" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_oc_documental" string="OC documental" context="{'group_by': 'oc_documental'}"/>
+                    <filter name="group_oc_link" string="OC vinculada" context="{'group_by': 'purchase_id'}"/>
                     <filter name="group_partner" string="Proveedor" context="{'group_by': 'partner_id'}"/>
-                    <filter name="group_date" string="Fecha" context="{'group_by': 'guide_date:day'}"/>
+                    <filter name="group_processor" string="Procesador" context="{'group_by': 'processor_id'}"/>
+                    <filter name="group_date" string="Fecha de guía" context="{'group_by': 'guide_date:day'}"/>
+                    <filter name="group_date_kind" string="Origen de fecha" context="{'group_by': 'guide_date_kind'}"/>
                     <filter name="group_type" string="Tipo" context="{'group_by': 'ingestion_type'}"/>
                     <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
                 </group>

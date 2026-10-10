@@ -596,6 +596,20 @@ class MadenatSvImputation(models.Model):
             'user_id': self.env.user.id,
         })
 
+    def _i2_check_destination_is_service_return(self):
+        """Exige que la guía DESTINO esté marcada como retorno de servicio (Sí).
+
+        Se comprueba al APLICAR (no al guardar borrador/pendiente). No marca la
+        guía automáticamente: la identificación es un acto del operador
+        (decisión aprobada 2026-10-07). No altera stock, ledger ni costos.
+        """
+        self.ensure_one()
+        if self.guia_processing_id.service_return_confirmation != 'yes':
+            raise UserError(_(
+                'Solo se puede aplicar una imputación SV cuando la guía destino '
+                'está marcada como retorno de servicio ("Sí"). Identifique la '
+                'guía (¿Es retorno de servicio? = Sí) y vuelva a intentarlo.'))
+
     def action_apply(self):
         """Aplica la imputación de forma DOCUMENTAL (sin efecto en stock).
 
@@ -609,6 +623,9 @@ class MadenatSvImputation(models.Model):
                 raise UserError(_(
                     'Una imputación reversada o anulada no puede aplicarse.'))
             rec._i2_check_apply_permission()
+            # Destino marcado Sí (retorno de servicio): se exige al APLICAR, no
+            # al guardar un borrador/pendiente (decisión aprobada 2026-10-07).
+            rec._i2_check_destination_is_service_return()
             rec._i2_validate_payload()
             rec._i2_validate_hard_cap()
             rec._i2_handle_soft_deviations()
@@ -813,3 +830,45 @@ class MadenatSvImputationSvLine(models.Model):
                     'No se pueden eliminar repartos SV de una imputación '
                     'aplicada (inmutable, AD-91).'))
         return super().unlink()
+
+
+class MadenatGuiaProcessingServiceReturn(models.Model):
+    """Relación de lectura + regla de identificación de retorno de servicio.
+
+    Añade a ``madenat.guia.processing`` (modelo del core) la relación inversa
+    con sus imputaciones SV (``madenat.sv.imputation.guia_processing_id``), para
+    consulta y filtro sin duplicar el dato. Vive en ``madenat_lumber_logistics``
+    porque aquí es donde existe el modelo I2 (`madenat.sv.imputation`): así se
+    respeta la dependencia core ← logistics y NO se introduce dependencia
+    core→logistics ni circular.
+
+    Aplica también la regla aprobada (2026-10-07): con imputaciones SV
+    ``applied`` no se permite cambiar la identificación a "No" ni vaciarla; la
+    corrección exige primero REVERSAR las imputaciones (mecanismo existente). No
+    elimina ni altera relaciones en silencio.
+    """
+
+    _inherit = 'madenat.guia.processing'
+
+    sv_imputation_ids = fields.One2many(
+        'madenat.sv.imputation', 'guia_processing_id',
+        string='Imputaciones SV')
+
+    def write(self, vals):
+        if 'service_return_confirmation' in vals:
+            new_value = vals.get('service_return_confirmation')
+            # Cambiar a "No" o vaciar la identificación con imputaciones
+            # aplicadas leaving relaciones incoherentes: se rechaza. La
+            # corrección es reversar primero (AD-91).
+            if not new_value or new_value == 'no':
+                for rec in self:
+                    applied = rec.sv_imputation_ids.filtered(
+                        lambda imp: imp.state == 'applied')
+                    if applied:
+                        raise UserError(_(
+                            'No se puede cambiar la identificación a "No" (ni '
+                            'dejarla vacía) mientras existan imputaciones SV '
+                            'aplicadas en la guía. Revierta primero las '
+                            'imputaciones (%s) y vuelva a intentarlo.'
+                        ) % ', '.join(applied.mapped('name')))
+        return super().write(vals)

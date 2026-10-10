@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.7.0
-**Fecha de actualización:** 2026-09-28  <!-- actualizado: 2026-09-28 — Fase 2 (AD-80): UX de volumen oficial, bloque SV visible y ciclo de vida de guías (§15) -->
+**Versión documental:** 12.17.0
+**Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test`: **P0** OwlError **NO REPRODUCIDO** (diagnóstico estático: 0 campos `many2one` sin `relation`, 0 JS propio que altere `Many2OneField`, 0 incidencias en logs; paso manual de captura); **P1** volumen — proxies `vol_compra_m3`/`vol_embarque_m3` en la Consola (Ferramenta 26270: guía/compra 57,840 y embarque 48,009) + rótulos inequívocos en la Guía; **P3** ingresos reales Fátima `41994` (`lumber.reception` 7950 `verified`, 14 líneas, Σ 50,497) y Byc `95083` (`madenat.guia.processing` 33250 `verified`, 8 líneas) **sin stock**; **P4-JCE** normalización de `5/4x5.3/8x16` (documento real: 12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y **P4-Arauco** (packing PDF → ruta de Volúmenes); pruebas dirigidas **34/34** y intake **380** (2 fallas de UI consolidada corregidas); respaldo `CIERRE_PENDIENTES_20261010/db/madenat_test_pre_20261010.dump`. Sin commit/push ni despliegue remoto. | 2026-10-08 (5) — §17.15 **REVALIDACIÓN (2.ª pasada) con la biblioteca externa de muestras** `muestras_documentos_ingreso` (ruta real `…/odoo-18-ce/muestras_documentos_ingreso`, **fuera** de `custom_addons`; 63 archivos, 52 únicos por SHA-256, 4 subdirectorios): **antecedente incorporado** de que Mauricio confirma que **se probaron todos los ingresos**; **reconstrucción de las pruebas** desde los respaldos de base con `pg_restore` (solo lectura sobre el archivo): base **local** `madenat_test` (dump 2026-10-08 09:29) con **11 cabeceras de guía** — `26270` (Ferramenta, `validated`, adjuntos `26270.pdf`+`26270.xlsx`, **17 lotes** con los M3 del packing, 1 picking), **19846/19827/19826** (Ferramenta, 19/17/17 lotes), **4495589** (Arauco, `granel`/`validated`, lote `GRANEL 4495589`, pickings con purga `[PURGADO-TEST]` y reversa), **95806** (JCE, `granel`/`verified`) — y **7** `lumber.reception` (`39519`, `41471`, `41964`, `97183`, `100006`, `15183`, `900001`); **fixture real byte-idéntico** `HLZF75_4495589.pdf` + **fixtures derivados** de Byc/Fátima/JCE; **conciliación por línea** de Ferramenta (⇒ el **48,009** es el volumen de **embarque** con espesor nominal y ancho +1/8", **no** un error; guía/packing/físico = **57,840**); **matriz R01–R16 revalidada** y **correcciones C1–C10**; TEST remoto con **1** guía (26270, replicada con sus 17 lotes). **Sin cambios de código, datos ni servicios; sin commit/push; sin correos.** | 2026-10-08 (4) — §17.14 AUDITORÍA DE LAS SOLICITUDES DE CRISTHIAN (2026-09-02 / 2026-09-07) + CONSOLIDACIÓN DE ENTORNOS: se contrastan las 16 solicitudes (R01–R16) contra documentación, código vigente y evidencias; **matriz consolidada** en §17.14.2; hallazgos y contradicciones en §17.14.3. Verificado en esta intervención: **desarrollo local (código)** rama `feat/guia-correccion-documental-preservada-20261002` / HEAD `e302c48` con **62 modificados + 14 sin seguimiento** (sin commit/push); **servicio local 8069 NO operativo desde esta distro** (Docker Desktop sin integración en la distro: `docker` no disponible y `127.0.0.1:8069` sin respuesta ⇒ sin consultas ni pruebas locales); **TEST remoto `144.22.50.236`** (`/opt/odoo18-test`, servicio `odoo18-test` activo, base `madenat_test`) inspeccionado **SOLO LECTURA** por SSH con `sudo -u postgres psql`. Comparación de código local↔TEST remoto: **314 archivos** `.py/.xml/.csv` de `madenat_lumber_core/intake/logistics/ingestion_engine` con **0 discrepancias de hash** y **39 archivos presentes solo en el remoto** (legado: `.bak/`, `views.backup/`, `views/views.backup/`, `backups_20260819_*`, `lumber_reception_test.py`, `scripts/migrate_reception_relations.py`, `views/lumber_reception_views_OLD.xml`, `security/madenat_intake_security.xml`, `models/lumber_container_rollover_wizard.py`). `custom_addons` **NO** es repositorio git en el remoto (el repo git es `/opt/odoo18-test`, ilegible por `dubious ownership` en git 2.25.1). Ninguna corrección aplicada: **no se modificó código, datos ni servicios**. | 2026-10-08 (3) — §17.13 A/B **APLICADO EN EL DESARROLLO EXISTENTE** (`madenat_test` / `http://localhost:8069`, `odoo18_app`): respaldo verificado (`BACKUP_AB_APPLY_20261008/`); `AB_completo.diff` aplicado **una sola vez** (15 archivos byte a byte = workcopy); actualización controlada `-u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics` con el servicio detenido (0 ERROR/0 CRITICAL; columna `service_return_confirmation` presente); **reorganización de la UI de Ingreso de Madera** (resumen en 2 columnas, «Aplicar cambios» debajo, línea de retorno a todo el ancho, Evidencia documental en 3 columnas con encabezado único, packing list a todo el ancho); dirigidas del gate sobre `madenat_test` **88/88 en verde** (incl. Cristhian uid 8, `su=False`); **retirado el aislamiento temporal** (`srvretab_web` :8070, volumen `srvretab_web_data`, bases `srvretab_*_20261007`, `/tmp/gate`, `/tmp/ab_dryrun`, `/tmp/iso_*`); **V3 (navegador) SIGUE PENDIENTE**. | 2026-10-08 (2) — §17.12bis entorno aislado RECREADO con autorización expresa (vía «montar el workcopy `:ro`», **sin aplicar diffs**): `srvretab_web` en `127.0.0.1:8070`, selector limitado a `srvretab_gate_20261007`, filestore del aislamiento repoblado desde el volumen del stack (`:ro`; assets 500→200); ninguna base ni servicio activo modificados; **V3 sigue pendiente** de evidencia manual. | 2026-10-08 (1) — §17.12 retoma de SOLO LECTURA (2026-10-08): revalidación conforme (rama/HEAD/estado Git sin cambios; SHA-256 de A/B/AB = checkpoint; workcopy = árbol activo + los 15 archivos de `AB_completo.diff`; `patch --dry-run` limpio, sin aplicar; A/B ausente del código activo y de `madenat_test`); expediente y gate conservados; **entorno aislado NO conservado** (reinicio del host: contenedor `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue PENDIENTE**; recrear el aislamiento queda pendiente de autorización. | 2026-10-07 (2) — §17.11 checkpoint de pausa (reanuda 2026-10-08): A/B solo en aislamiento; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (Cristhian uid 8, su=False, grupos intactos); V3 pendiente; A/B no aplicados; SHA-256 vigentes; corrección del plan de reversión. | 2026-10-07 — §17: auditoría de retoma de la «confirmación de retorno de servicio» al enviar a stock (NO aplicada en el código activo; su especificación vive solo como antecedente técnico en `IMPL_SERVICE_RETURN_20261006/`). §16: búsqueda, filtros y agrupaciones de la Consola de Intake, aplicada en `madenat_test` (AD-101). Histórico 2026-09-28 — Fase 2 (AD-80): UX de volumen oficial, bloque SV visible y ciclo de vida de guías (§15) -->
+<!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
 **Estado:** ESTABLE PARA CONTINUIDAD TÉCNICA Y REFACTORIZACIÓN ESTRUCTURAL CERRADA. La consolidación documental está completada. Persisten brechas funcionales/técnicas y validaciones UAT pendientes. **Último cierre técnico: `1466f24` (2026-08-20)** — robustecimiento del Core de perfiles de ingesta; el frente sigue **abierto en continuidad** aunque el técnico esté validado. Programación 1 (R1 — identificación operativa de lotes) queda implementada, desplegada en `madenat_test` y validada técnicamente; retoma en §13. La **Gestión Operativa de Etiquetas SV** queda implementada y validada (56 pruebas, 0 fallas, 0 errores) con retoma en §14.
 
 ---
@@ -504,3 +505,1113 @@ se mantiene en `custom_addons/madenat_lumber_intake/README.md`.
    Volumen real (no hay lote SV con historia material en `madenat_test`).
 3. Evaluar si el diagnóstico de ciclo de vida debe exponerse también para `lumber.reception`
    (Producto), hoy fuera de alcance.
+
+---
+
+## 16. Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101)
+
+### 16.1 Estado
+
+- **Aplicado en `madenat_test`**: `madenat_lumber_intake` **18.0.0.11.0**. **No** desplegado a
+  producción. **Sin** cambios de ACL, ingesta ni stock en esta intervención.
+- Se ajustaron la **vista SQL** de la Consola (3 columnas nuevas: `oc_documental`, `guide_date_kind`,
+  `processor_id`), el campo de **solo búsqueda** `product_filter_id`, la **lista/form** y la
+  **vista de búsqueda** (campos, filtros y agrupaciones). Ver `00_ARQUITECTURA.md` §4.10.
+- **`HEAD` `e302c48` NO contiene esta intervención.** El código aplicado incluye **cambios locales
+  sin commit** (3 archivos modificados + 1 test nuevo en `madenat_lumber_intake`), además de otros
+  cambios locales preexistentes ajenos a este tema. **No** equiparar `HEAD` con el código ejecutado.
+
+### 16.2 Comportamiento aplicado (resumen)
+
+- **OC documental vs OC vinculada:** `oc_documental` (referencia del documento) separada de
+  `purchase_id` (OC vinculada); columna, búsqueda y agrupaciones; filtros OC vinculada/pendiente/no
+  indicada. `purchase_reference` se conserva por compatibilidad.
+- **Fecha:** `guide_date_kind` (`emission`/`reception`) + columna «Origen fecha»; `guide_date` sin cambios.
+- **Modalidades:** Producto/Procesado/Volúmenes por `ingestion_type` (dominios disjuntos, **no** radio;
+  combinación por AND ⇒ vacío); filtros «Procesada (legacy)» y «Error»; Abiertos/Finalizados sin ampliar.
+- **Producto real:** `product_filter_id` (solo búsqueda) por líneas de ambos orígenes, sin duplicar.
+- **Procesador:** `processor_id` desde la Orden de Procesamiento (JOIN 1:1), nunca el proveedor.
+
+### 16.3 Evidencia
+
+- Pruebas y verificaciones: `03_TESTS.md` §11. Decisión: `04_DECISION_LOG.md` **AD-101**.
+- **Integridad (MD5 de los archivos aplicados):** `intake_console.py` `923a6912…`;
+  `intake_console_views.xml` `cf07b72a…`; `tests/__init__.py` `baf2f8ba…`;
+  `test_search_console_oc_fecha_modality.py` `895b783b…`.
+- **Respaldos (fuera de CANON, ubicación protegida):** `APPLY_BUSQUEDA_INTAKE_20261007/backup/`
+  — código pre-cambio (`intake_module_pre.tar.gz`), volcado `pg_dump -Fc` de `madenat_test`
+  (integridad verificada por índice TOC), filestore y `git_status_pre/post.txt`. Solo se realizaron
+  **controles de integridad** (formato del volcado, índice TOC, checksums); la **restauración NO se
+  probó**. Los expedientes externos (`AUDIT_/IMPL_/APPLY_BUSQUEDA_INTAKE_20261007/`) permanecen como
+  **antecedentes**, no como fuentes documentales mantenidas.
+
+### 16.4 Límites y retoma
+
+1. **V3 (navegador) pendiente**: comprobar en UI OC documental/vinculada, fechas, producto real,
+   procesador y combinaciones de filtros.
+2. **Instalación en base limpia**: la vista de lista referencia `action_madenat_lumber_intake_new`
+   definida más abajo en el mismo archivo (referencia hacia adelante preexistente); resolver en
+   trabajo separado (reordenar sin semántica).
+3. **Volumen numérico**, **otros orígenes de procesador** y **ampliación de Abiertos/Finalizados**
+   quedan como decisiones pendientes. Ver `05_BACKLOG.md`.
+
+
+---
+
+## 17. Confirmación de retorno de servicio al enviar a stock — AUDITORÍA DE RETOMA (2026-10-07)
+
+> **Naturaleza.** Sección de **auditoría de retoma** (solo lectura + registro). **No** autoriza
+> modificar código, ACL ni datos, ni desplegar. La confirmación **NO está aplicada** en el código
+> activo ni en ninguna base. Su especificación vive, como **antecedente técnico**, en el expediente
+> externo `IMPL_SERVICE_RETURN_20261006/` (copia de trabajo aislada con su `diff` y logs); **no** es
+> fuente documental mantenida ni versión aprobada.
+
+### 17.1 Estado real (verificado en código activo)
+
+- El código activo (`custom_addons/`; HEAD `e302c48`; rama
+  `feat/guia-correccion-documental-preservada-20261002`) **no contiene** el campo
+  `service_return_confirmation`, ni `_assert_service_return_confirmed`, ni los filtros de retorno de
+  servicio, ni el proxy de consola. `grep` de `service_return` sobre `custom_addons/` = **0 coincidencias**.
+- La documentación activa tampoco menciona «retorno de servicio»: el §11.9 de `12_FLUJOS_INGESTA.md`,
+  el §19.9 de `19_IMPUTACION_SV_Y_PROCESADORES.md`, la entrada AD y el ítem de backlog existen **solo**
+  en la copia documental del expediente, **no aplicada**.
+- **Conclusión:** la confirmación existe **únicamente en la copia de trabajo aislada**
+  (`IMPL_SERVICE_RETURN_20261006/addons`), validada en la base dedicada `srvret_test_20261006`
+  (53/53 tests OK). **No implementado** en activo · **no registrado en la base** activa ·
+  **no verificado en navegador**.
+
+### 17.2 Punto de enganche real de «Enviar a stock» (código activo)
+
+- Botón `Enviar a Stock` → `madenat_lumber_intake/views/intake_console_views.xml:71` →
+  `action_send_to_stock` (`madenat_lumber_intake/models/intake_console.py:1740`) → para **Procesado**
+  delega en `madenat.guia.processing.action_validate`
+  (`madenat_lumber_core/models/madenat_guia_processing.py:2117`; la fachada
+  `madenat_lumber_intake/models/intake_guia_processing.py:389` deriva `granel` a
+  `_action_validate_volume_intake`).
+- **Hoy no existe ningún guard de confirmación** en `action_validate`. El parche propone el punto
+  servidor único `_assert_service_return_confirmed()` invocado al inicio del método (antes de crear
+  lotes/movimientos), y una confirmación **inline** (radio en el formulario), no un asistente modal.
+
+### 17.3 Aclaración de «retorno de servicio» (doctrina y diseño del parche)
+
+- La condición la registra la **Guía de procesado** (`madenat.guia.processing`) en el campo
+  `service_return_confirmation` (Selection `'yes'`/`'no'`, **sin default**; vacío = sin confirmar).
+- **No** es una devolución de picking, ni una reversión de cancelación, ni la corrección de la guía
+  15183. **No** se infiere por tipo Procesado/Cepillado ni por número de guía.
+- **Imputaciones posteriores:** la confirmación **no** dispara imputación SV (I2, AD-87/AD-91);
+  «imputación posterior» = acto declarativo independiente (etiqueta→SV) que sigue siendo un paso
+  posterior. El filtro «Retornos pendientes de imputación» **no** evalúa cobertura parcial
+  (identificación INCOMPLETA, declarado).
+
+### 17.4 Componentes y estado (parche vs. código activo)
+
+| Componente | Archivo/modelo (según parche) | Estado real |
+|---|---|---|
+| Campo `service_return_confirmation` (Selection, sin default) | `madenat.guia.processing` | No implementado en activo |
+| Guard servidor `_assert_service_return_confirmed` | `action_validate` (core) | No implementado en activo |
+| Proxy no almacenado (`service_return_in_scope` + inverse) | `madenat.lumber.intake.console` | No implementado en activo |
+| Radio en 3 vistas (consola, fachada, form core) | XML de intake + core | No presente en activo |
+| 3 filtros de búsqueda (retorno / no retorno / sin confirmar) | `guia_processing_list_search.xml` | No presentes en activo |
+| Relación inversa `sv_imputation_ids` + filtro «pendientes de imputación» | `madenat.sv.imputation` (logistics) | No implementado en activo |
+| Tests `test_service_return_confirmation` (15) / `test_service_return_pending_filter` (8) | intake / logistics | Solo en copia; base activa sin ellos |
+
+
+### 17.5 Evidencia y pruebas
+
+- **Acreditadas (copia aislada, base `srvret_test_20261006`):** `0 failed, 0 errors of 53 tests`
+  (log `IMPL_SERVICE_RETURN_20261006/logs/iso_run4.log`). Incluye el flujo de consola
+  (`action_send_to_stock` bloquea sin confirmar) y seguridad por rol **Operaciones**.
+- **Pendientes (no acreditadas):** (a) prueba con el usuario real **Cristhian**
+  (`cristhian.elguetag@gmail.com`) — en la base aislada no existía ⇒ **INCONCLUSO**; (b)
+  **verificación en navegador**; (c) ejecución en una base con datos reales (`madenat_test`) —
+  **no ejecutada**.
+- **Artefactos:** `service_return_confirmation.diff` (sha256 `31b0bc73…`, md5 `c0de2335…`),
+  copia `addons/`, logs `logs/iso_run*.log`. Permanecen como **antecedentes**; no se copian dumps,
+  filestore ni secretos al módulo documental.
+
+### 17.6 Decisión pendiente (no inventar)
+
+- **Aprobación del diff** y **asignación del número AD**: pendientes de decisión del usuario (el
+  expediente no inventa número). **No** se registra como decisión aprobada.
+
+### 17.7 Compatibilidad del diff (verificada en copia desechable)
+
+Aplicabilidad probada con `patch -p0 --dry-run` sobre una **copia temporal** de los archivos
+**activos** (el árbol activo y el expediente **no** se modificaron):
+
+- **Aplican limpio:** `madenat_guia_processing.py`, `guia_processing_views.xml`,
+  `guia_processing_list_search.xml`, `test_granel_route.py`, `intake_guia_processing_facade_views.xml`,
+  `madenat_sv_imputation.py`, `madenat_sv_imputation_views.xml`,
+  `madenat_lumber_logistics/tests/__init__.py`, `12_FLUJOS_INGESTA.md`, `19_...PROCESADORES.md`.
+- **Aplican con offset (deriva de líneas, sin conflicto):** `intake_console.py` (offsets +24/+45),
+  `intake_console_views.xml` (+8), `04_DECISION_LOG.md` (fuzz de contexto).
+- **Conflictos (2, de contexto — no de lógica):** `madenat_lumber_intake/tests/__init__.py` (la cola
+  activa ya incluye `test_guia_delete_acl` / `test_search_console_oc_fecha_modality`) y
+  `05_BACKLOG.md` (el backlog activo ya no termina en el contexto base). **Ajuste mínimo:**
+  re-anclar el `import` al final del archivo y anexar la sección de backlog al final, sin semántica
+  nueva. **No** fusionar diffs automáticamente.
+
+### 17.8 Próxima intervención mínima
+
+1. Aprobar/rechazar el diff y, si se aprueba, asignar el número **AD** según convención vigente.
+2. Reaplicar resolviendo los **2 conflictos de contexto** (§17.7), sin cambios semánticos.
+3. Actualizar módulos en una base **no productiva**; correr los tests en una base con el usuario
+   **Cristhian**; **verificación en navegador**. Solo tras aprobación explícita.
+
+### 17.9 Cierre de la auditoría
+
+**Quedamos en** la confirmación de retorno de servicio **no aplicada**: existe y fue validada solo
+en la copia de trabajo aislada del expediente `IMPL_SERVICE_RETURN_20261006/`, sin eco en el código
+activo ni en la documentación canónica.
+**El trabajo existente cubre** el diseño, el `diff` (`service_return_confirmation.diff`), la copia de
+trabajo, los 2 archivos de test y los logs de 53/53 pruebas OK en base dedicada.
+**Falta exactamente** aprobar el diff (y asignar AD), reaplicarlo resolviendo 2 conflictos de
+contexto, actualizar en base no productiva y acreditar la prueba con el usuario Cristhian + la
+verificación en navegador.
+**La próxima intervención mínima es** la decisión de aprobación del diff; luego, la aplicación
+trazable con esos 2 ajustes y las pruebas pendientes.
+### 17.10 Intervención aprobada (2026-10-07) — identificación no bloqueante + imputación posterior
+
+**Decisión del usuario (2026-10-07).** Se aprobó implementar y probar **en aislamiento** los
+alcances **A** (identificación de retorno de servicio **no bloqueante**) y **B** (imputación
+posterior **reutilizando el mecanismo SV/I2**), sin módulos nuevos:
+
+1. `service_return_confirmation` **opcional, sin default**; *vacío* = pendiente (NO equivale a «No»);
+   **no** bloquea la ingesta ni el envío a stock.
+2. Con imputaciones **`applied`**, cambiar la identificación a «No» o vaciarla se **rechaza**
+   (reversar primero).
+3. Se mantiene el **filtro mínimo** «Retornos sin imputación aplicada» (no detecta cobertura parcial).
+4. **Destino marcado «Sí» al APLICAR** (`action_apply`), no al guardar borrador; sin marcado automático.
+5. Efectos de **I2 intactos** (documental; sin stock/ledger/costes I3/I5).
+
+**Estado real (verificado en aislamiento).** Implementado en la copia de trabajo
+`IMPL_SERVICE_RETURN_AB_20261007/addons`. **Gate previo (2026-10-07):** sobre una **copia del árbol
+activo con sus cambios locales** + diffs A/B (`/tmp/gate`, byte a byte = workcopy; los diffs **no**
+tocan la documentación ya actualizada), base aislada `srvretab_gate_20261007`: **0 failed, 0 error(s)
+of 88 tests**, incluida la prueba con el **usuario real Cristhian** (`su=False`, grupos intactos).
+Corrida completa previa de las 3 suites: **1020** pruebas, con **9 fallas PREEXISTENTES** (idénticas
+con el código activo **sin** el cambio). **No aplicado** al entorno activo.
+
+**Falta exactamente:** (a) **verificación en navegador** — servidor aislado
+`http://127.0.0.1:8070` (base `srvretab_gate_20261007`); guion en
+`IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`; **NO ejecutada** (sin
+navegador). (b) Aprobar la aplicación y actualizar módulos en una base no productiva.
+Detalle en `04_DECISION_LOG.md` **AD-102**.
+
+**Corrección de estado «I2 pendiente».** El modelo I2 está **presente en el código**
+(commit `2888745`); su «pendiente» previo era de **fase de diseño**, no de implementación.
+
+### 17.11 Checkpoint de pausa (2026-10-07) — reanuda 2026-10-08
+
+> **Naturaleza.** Registro de pausa. **No** autoriza aplicar A/B. Sin operaciones de código, base,
+> servicios ni limpieza. **V3** y **aprobación de aplicación** quedan **pendientes**.
+
+**Estado registrado.**
+1. **A/B implementados únicamente en aislamiento** (workcopy `IMPL_SERVICE_RETURN_AB_20261007/addons`).
+2. **Gate sobre copia del árbol activo con cambios locales:** artefacto reconstruido **byte a byte**,
+   **45/45** archivos coincidentes (los diffs **no** incluyen `madenat_lumber_docs/`).
+3. **Pruebas dirigidas: 88/88 aprobadas** (0 failed, 0 errors) sobre base aislada `srvretab_gate_20261007`.
+4. **Cristhian (uid 8)** probado con **`su=False`, sin cambios de grupos** (39 filas de grupos = fuente).
+5. **Navegador V3: pendiente** (no ejecutado; sin navegador).
+6. **Código activo, `madenat_test` y producción:** **sin** aplicación de A/B.
+7. **Nueve fallas preexistentes** conservadas en el registro (`03_TESTS.md` §12.2).
+8. **Concurrencia específica** de las nuevas reglas: **no acreditada**.
+9. **Filtro «sin imputación aplicada»:** **no** evalúa cobertura parcial.
+10. **I3/I5** (salida nativa/ledger, costo): **fuera de alcance**.
+
+**Artefactos — SHA-256 vigentes del gate.**
+
+| DifF | SHA-256 |
+|---|---|
+| `IMPL_SERVICE_RETURN_AB_20261007/patch/A_identificacion_no_bloqueante.diff` | `3d5115e9eadf1ca72634609c88140a583d5255cad3dac2aab406bce18123799d` |
+| `IMPL_SERVICE_RETURN_AB_20261007/patch/B_imputacion_posterior.diff` | `5d23ea02a37e9f9469b821ab9e0030f3fd79319fe4f809e91c40bc367479ee94` |
+| `IMPL_SERVICE_RETURN_AB_20261007/patch/AB_completo.diff` | `a4131812b238ecb98cb393f27dc8502cc6375050cd6e46af57db1189a6aaa282` |
+
+> **Versiones anteriores del diff (SUPERADAS, no vigentes):** `7d2d32fd…` (A), `0bc5c1b8…` (B),
+> `f485a355…` (AB) — previas a incorporar las pruebas de Cristhian. **No aplicables.**
+
+**Entorno aislado para verificación manual (conservado; estado no cambiado en la pausa).**
+- URL `http://127.0.0.1:8070` · contenedor `srvretab_web` · base `srvretab_gate_20261007` · usuario
+  Cristhian (uid 8).
+- Guion: `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`.
+- Uso aislado; **no** se registra aquí ninguna credencial. **No** eliminar la base ni el contenedor.
+
+**Secuencia para 2026-10-08.**
+1. Leer este checkpoint y **AD-102**.
+2. **Revalidar** estado Git, hashes, servicios y disponibilidad del entorno aislado (no asumir).
+3. Ejecutar el guion de navegador **exclusivamente** en el puerto **8070**, confirmando la base antes
+   de operar.
+4. Registrar **V3** solo tras recibir **evidencia real**.
+5. Presentar la **solicitud final de aplicación** con destino exacto **`madenat_test`** y respaldo de
+   **código con cambios locales + base + filestore**.
+6. **Esperar autorización expresa** antes de aplicar.
+
+**Corrección del plan de reversión (obligatoria).** `patch -R` revierte **solo archivos de código**;
+**no** constituye restauración completa: **no** revierte necesariamente (a) metadatos/esquema que el
+`-u`/actualización de módulos pudo alterar ni (b) registros creados con posterioridad. Antes de
+aplicar se distinguen tres cosas: **(1) reversión de código** (`patch -R`), **(2) actualización de
+módulos** (`-u`, esquema), **(3) recuperación desde respaldo** (código + base + filestore). **No**
+borrar clasificaciones ni imputaciones registradas para facilitar una reversión.
+
+### 17.12 Retoma (2026-10-08) — revalidación de solo lectura y disponibilidad del entorno aislado
+
+> **Naturaleza.** Retoma **de solo lectura**: no se aplicaron diffs, no se actualizaron módulos, no se
+> reiniciaron servicios y **no** se limpió nada. **No** autoriza despliegue, `commit`/`push` ni
+> eliminación de artefactos. **V3** y la **aprobación de aplicación** siguen **pendientes**.
+
+**Revalidado sin diferencias respecto de §17.11.**
+
+1. **Rama/HEAD/estado Git** (el repositorio es `custom_addons/`; la raíz del proyecto no es repo):
+   `feat/guia-correccion-documental-preservada-20261002` · HEAD
+   `e302c488321c276af7e07f1abeecc8bc261a89f4` — idénticos al checkpoint. `git status`: **55
+   modificados** (44 de código/artefactos + 11 de documentación) y **11 sin seguimiento**; **sin**
+   `stash`. **Ninguna escritura posterior al checkpoint** (`find … -newermt '2026-10-07 23:35'` =
+   vacío). La diferencia 53→55 del recuento registrado en `PLAN_APLICACION_REVERSION.md` es
+   **documental** (03/05/02/índice se escribieron después de ese plan); **ningún** archivo de código
+   se tocó tras el checkpoint.
+2. **SHA-256 de los artefactos = checkpoint:** `A` `3d5115e9eadf1ca72634609c88140a583d5255cad3dac2aab406bce18123799d`,
+   `B` `5d23ea02a37e9f9469b821ab9e0030f3fd79319fe4f809e91c40bc367479ee94`,
+   `AB` `a4131812b238ecb98cb393f27dc8502cc6375050cd6e46af57db1189a6aaa282`.
+3. **Integridad del artefacto:** el workcopy `IMPL_SERVICE_RETURN_AB_20261007/addons` difiere del
+   **árbol activo** **exactamente** en los **15** archivos de `AB_completo.diff` (12 modificados + 3
+   nuevos); el resto de diferencias son `__pycache__/*.pyc`. `patch -p1 --dry-run` sobre una **copia
+   de trabajo** de esos 15 archivos ⇒ **sin rechazos (exit 0)**. **No** se aplicó ningún diff: los 2
+   conflictos de contexto de §17.7 pertenecían al **antecedente** `IMPL_SERVICE_RETURN_20261006/`.
+4. **A/B ausente del entorno activo:** `service_return_confirmation` = **0** coincidencias en
+   `custom_addons/**/*.py|*.xml`; en la base activa `madenat_test` la columna **no existe**.
+5. **Expediente y gate conservados:** `IMPL_SERVICE_RETURN_AB_20261007/{addons,patch,logs,docs}` (logs
+   `iso_run1`, `iso_full_run1`, `base_targeted`, `gate_run1`, `gate_run2` = `88/88`, 0 failed/0 errors).
+   **Límites intactos:** 9 fallas preexistentes, concurrencia no acreditada, filtro **sin** cobertura
+   parcial, I3/I5 fuera de alcance.
+6. **Servicio activo intacto:** `odoo18_app` responde **HTTP 200** en `127.0.0.1:8069`
+   (Odoo 18.0-20260817); **no** se reinició ni se modificó.
+
+**DIFERENCIA — el entorno aislado NO se conservó (reinicio del host).**
+
+- El host se **reinició** el 2026-10-08 (`uptime` ≈ 8 min; `odoo18_app` arrancado `11:52:22Z`,
+  `odoo18_db` `11:49:09Z`).
+- El contenedor **`srvretab_web` no existe** (ni en ejecución ni detenido) y **`127.0.0.1:8070` no
+  escucha** ⇒ **V3 no puede ejecutarse** en este estado.
+- **`/tmp/gate` existe pero está vacío** (0 archivos): el árbol de addons que montaba el servidor
+  aislado se perdió con la limpieza de `/tmp` (el workcopy del expediente **sí** se conserva).
+- **Se conserva la base aislada** `srvretab_gate_20261007` (76 MB; columna
+  `service_return_confirmation`, 12 guías, imputación `IMP00946`); también `srvretab_base_20261007`,
+  `srvretab_test_20261007` y `madenat_test`. **No** se eliminó ninguna base.
+
+**V3 — sigue pendiente (no ejecutada).** Guion:
+`IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`. Observaciones de solo lectura
+útiles para ejecutarla sobre la base aislada existente:
+
+- El radio «¿Es retorno de servicio?» es **editable** en la Consola cuando `review_state != 'sent'`
+  (guías `validated` → `sent` ⇒ solo lectura) y en formulario cuando `state != 'validated'`.
+- De las **6** guías `service` de la base aislada, la **única con fila editable en la Consola** es la
+  guía **19827** (`verified`, fila de consola `900001198`); 19846, 19826, 26270 y 900002 están
+  `validated` y **15183** está cancelada.
+- La imputación existente `IMP00946` (aplicada, 2026-10-03, uid 8) pertenece a la guía **`granel`**
+  `UAT-SV-20261003-IMPG` ⇒ **no** interfiere con las guías `service` (su radio no es visible).
+
+**Recreación del entorno aislado — AUTORIZADA Y EJECUTADA (2026-10-08, solo aislamiento).** El usuario
+autorizó expresamente la vía **(a)**: montar el workcopy **sin aplicar diffs**. Ejecutado:
+`docker run -d --name srvretab_web --network odoo-18-ce_internal_backend -p 127.0.0.1:8070:8069
+-v IMPL_SERVICE_RETURN_AB_20261007/addons:/mnt/extra-addons:ro -v srvretab_web_data:/var/lib/odoo
+odoo-18-ce-web:latest odoo --db_host=db --db_user=odoo --db_password=odoo --db_port=5432
+--database=srvretab_gate_20261007 --db-filter='^srvretab_gate_20261007$'
+--addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons --workers=0
+--max-cron-threads=0` (**sin** `--test-enable`, **sin** `-u`, **sin** aplicar diffs).
+
+- **Verificado:** `8070 → /web/login` **HTTP 200**; el selector de base lista **solo**
+  `srvretab_gate_20261007`; A/B presente en el árbol montado (`service_return_confirmation` y
+  `_i2_check_destination_is_service_return`); `Registry loaded` sin incidencias.
+- **Filestore (hallazgo y corrección dentro del aislamiento):** la base aislada referenciaba **879**
+  adjuntos y su filestore se perdió con `/tmp`. Se **pobló el volumen aislado**
+  (`srvretab_web_data/filestore/srvretab_gate_20261007`, 1170 archivos, 101 MB) copiando desde el
+  volumen del stack **en modo `:ro`**, aprovechando que los hashes de assets son idénticos
+  (verificado: `web.assets_frontend.min.css` y `…_minimal.min.js` pasan de **500 → 200**).
+  Cobertura: **844/879**; los **35** no resueltos son **9 ficheros distintos** y **todos** son
+  imágenes de `res.partner` (avatares) ⇒ **cosmético**. **No** se modificó ninguna base ni el servicio
+  activo; la escritura fue solo en el volumen del aislamiento.
+- **Estado de datos aislados (sin cambios):** 12 guías, todas con `service_return_confirmation`
+  vacío; 1 imputación `applied` (`IMP00946`, guía `granel`).
+- **Servicio activo:** intacto (`8069` HTTP 200, `odoo18_app` sin reinicio). A/B sigue **ausente** del
+  árbol activo y de `madenat_test`.
+- **V3 sigue PENDIENTE de evidencia manual.** La contraseña temporal **no** se divulga; está en el
+  guion (§Entorno aislado).
+
+### 17.13 Implementación en el desarrollo existente (`madenat_test`), reorganización de la UI y retiro del aislamiento (2026-10-08)
+
+**Destino.** La implementación se realizó **directamente en el entorno de desarrollo existente**
+(`http://localhost:8069/`, base `madenat_test`, contenedor `odoo18_app`). **No** se crearon bases,
+contenedores ni ramas nuevas. El aislamiento temporal A/B se **retiró** al finalizar (§17.13.4).
+
+*Nota de transición:* hasta esta intervención A/B estaba **ausente** del código activo y de
+`madenat_test` (ver §17.12); a partir de aquí queda **aplicado** en el desarrollo.
+
+#### 17.13.1 Revalidación previa del estado real y respaldo
+
+| Dato | Valor verificado |
+|---|---|
+| Repositorio | `custom_addons/` (la raíz del proyecto **no** es repositorio) |
+| Rama | `feat/guia-correccion-documental-preservada-20261002` |
+| HEAD | `e302c488321c276af7e07f1abeecc8bc261a89f4` |
+| `git status` | 53 modificados + 12 sin seguimiento (cambios locales **preservados**) |
+| Servicio Odoo 8069 | contenedor `odoo18_app` (imagen `odoo-18-ce-web:latest`) |
+| PostgreSQL | contenedor `odoo18_db` (`postgres:15`) |
+| Base destino | `madenat_test` |
+| `addons_path` / `data_dir` | `/mnt/extra-addons` ← bind de `custom_addons`; `/var/lib/odoo` (volumen `odoo-18-ce_odoo-web-data`) |
+| Expediente | `IMPL_SERVICE_RETURN_AB_20261007/` (workcopy `addons/`, `patch/AB_completo.diff`) |
+| Documentación rectora | `custom_addons/madenat_lumber_docs/` (`CANON/`, `WIKI/`, `LEGADO/`, `RAW/`) |
+| Integridad A/B/AB | SHA-256 = checkpoint (`3d5115e9…`, `5d23ea02…`, `a4131812…`) |
+| Artefacto | **15** archivos (12 modificados + 3 nuevos); `patch -p1 --dry-run` ⇒ **0 rechazos** |
+| Workcopy | **byte a byte** = árbol activo + los 15 archivos de `AB_completo.diff` (verificado) |
+| Vistas responsables | Ingreso de Madera = `madenat.lumber.intake.console` (vista primaria `view_madenat_lumber_intake_console_form`, id 1867; **sin** vistas heredadas) |
+
+**Diferencia respecto del reporte previo:** el reporte indicaba que el aislamiento ya no existía; en
+la revalidación el entorno aislado **sí** estaba operativo (`srvretab_web` en `127.0.0.1:8070`, base
+`srvretab_gate_20261007`). Se ajustó la implementación sin sobrescribir trabajo local.
+
+**Respaldo recuperable (verificado):** `BACKUP_AB_APPLY_20261008/`
+`code/custom_addons_full_20261008_092958.tar.gz` (25 MB, incluye `.git`),
+`code/custom_addons_local_changes_antes.patch` (+ `git_status_antes.txt`, `HEAD.txt`),
+`db/madenat_test_20261008_092958.dump` (11,3 MB; TOC 13.325 entradas; `pg_restore --list` OK),
+`filestore/odoo-web-data_20261008_092958.tar.gz` (109 MB; 30.405 entradas; 722 archivos de
+`filestore/madenat_test`), `config/config_20261008_092958/odoo.conf`. Ninguno vacío ni apuntando a
+otra base. **No** se usó `git reset --hard`, `git clean`, `checkout` masivo ni limpieza global de
+Docker.
+
+#### 17.13.2 A/B aplicado en el código de desarrollo
+
+- Fuente: `patch/AB_completo.diff` (autoritativo). **Aplicado una sola vez** con `patch -p1`, con copia
+  `.pre_ab_20261008` de cada archivo movida **fuera** del árbol
+  (`BACKUP_AB_APPLY_20261008/pre_patch_files/`). **No** se aplicaron A, B y AB por separado; **no** se
+  copió el workcopy; **no** se trasladaron `.pyc` ni cachés.
+- Los **15** archivos quedaron **byte a byte** idénticos al workcopy validado
+  (`IDENTICAL=15 MISMATCH=0`).
+- **Actualización controlada:** `odoo18_app` **detenido** durante el cambio de esquema; actualización en
+  contenedor *one-shot* (`--rm`) **solo** contra `madenat_test`, con
+  `-u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics --stop-after-init --no-http
+  --max-cron-threads=0`. **Sin** `-u all` y **sin** `--test-enable`
+  (`APPLY_AB_UI_20261008/logs/update_modules_20261008_093223.log`: `module upgrading`, `Modules
+  loaded.`, **0 ERROR / 0 CRITICAL**).
+- Resultado en `madenat_test`: columna `madenat_guia_processing.service_return_confirmation`
+  (`character varying`) presente; vistas cargadas sin error; nueva vista
+  `madenat.guia.processing.search.service.return` (id **2909**); campos
+  `madenat.guia.processing.sv_imputation_ids`, `madenat.lumber.intake.console.service_return_confirmation`
+  y `.service_return_in_scope` registrados.
+- Comportamiento conforme al artefacto: **vacío = pendiente** (≠ No); **sin** guard
+  `_assert_service_return_confirmed`; **sin** imputación automática al marcar «Sí»; `action_apply`
+  exige destino «Sí»; con imputación `applied` se **rechaza** cambiar a «No» o vaciar; tras reversar
+  se permite; `_i2_check_destination_is_service_return` preservado; permisos y grupos **intactos**.
+- Nombres técnicos de los módulos tomados de sus `__manifest__.py`. **No** se creó módulo nuevo ni se
+  amplió el alcance a otros modelos, estados o flujos.
+
+
+
+
+
+
+#### 17.13.3 Reorganización de la UI de Ingreso de Madera
+
+Archivo: `madenat_lumber_intake/views/intake_console_views.xml` (vista **primaria**; sin vistas
+competidoras ni campos duplicados).
+
+- **Resumen del ingreso** a todo el ancho y en **dos columnas** (un `<group>` con dos `<group>`):
+  izquierda Producto / Fecha de guía / Proveedor / Procesador; derecha OC documental / OC vinculada /
+  Estado de OC / Referencia. **«Aplicar cambios»** queda **debajo** de los campos, conservando acción,
+  permisos, icono y condición de visibilidad. Debajo de ambas columnas, a todo el ancho, la **línea de
+  identificación de retorno** (mismo campo, mismo `widget="radio"`, mismos `invisible`/`readonly`;
+  **sin** cambio de comportamiento).
+- **Evidencia documental**: un **único** bloque (se elimina la duplicación del encabezado: antes
+  «Evidencia documental» aparecía **dos** veces) en **tres columnas** (`col="3"`):
+  1) **Documentos** (Guía PDF, Packing list Excel);
+  2) **Volúmenes y diferencias** (Vol. PDF/Guía, Suma líneas Packing, Vol. Packing, Δ Packing vs
+     Líneas, Δ PDF vs Packing);
+  3) **Packing y conciliación** (Paquetes Packing, Piezas Packing, Conciliación documental).
+  Se preservan campos técnicos, unidades, precisión `digits="[16, 3]"`, badges, cálculos, permisos y
+  visibilidad (`volume` oculta el bloque; las columnas 2 y 3 solo en `processed`).
+- **Detalle del packing list**: se conserva **debajo** de Evidencia documental y a todo el ancho; **no**
+  se cambiaron sus columnas, datos, cálculos, edición ni acciones.
+- **Sin CSS global** (solo clases estándar de Odoo/Bootstrap ya usadas en el proyecto) y **sin**
+  rediseñar otras pantallas.
+
+Verificación estructural *read-only* sobre la vista efectiva compilada de `madenat_test`: resumen en 2
+columnas, **un** encabezado `Evidencia documental`, `col="3"` con las tres columnas, `Aplicar cambios`,
+`radio` e `in_scope` presentes, y **orden** de bloques `resumen → botón → radio → evidencia → packing`.
+
+#### 17.13.4 Retiro del aislamiento temporal A/B
+
+Ejecutado **después** de verificar la implementación y con los respaldos disponibles. Se dumpó la
+información de las bases temporales a `APPLY_AB_UI_20261008/retired/db/` (3 × ~11,4 MB, `rc=0`) y se
+copiaron `/tmp/iso_*.txt`, `/tmp/att_all.txt` y `/tmp/ab_dryrun` a `…/retired/tmp/`.
+
+| Retirado | Detalle |
+|---|---|
+| Contenedor | `srvretab_web` (`docker stop` + `docker rm`) — publicación del puerto **8070** liberada |
+| Volumen | `srvretab_web_data` (verificado antes: **solo** lo usaba `srvretab_web`) |
+| Bases de datos | `srvretab_gate_20261007`, `srvretab_base_20261007`, `srvretab_test_20261007` (`DROP DATABASE … WITH (FORCE)`, nombres exactos resueltos) |
+| Temporales | `/tmp/gate` (vacío), `/tmp/ab_dryrun`, `/tmp/iso_hashes.txt`, `/tmp/iso_missing.txt`, `/tmp/iso_missing_u.txt` |
+
+**Preservado:** `madenat_test`; `odoo18_app` (8069); `odoo18_db`; volumen y filestore del desarrollo;
+`custom_addons` con sus cambios locales; `madenat_lumber_docs`; expediente
+`IMPL_SERVICE_RETURN_AB_20261007/`; parches, logs y evidencias históricas; respaldos. **No** se usó
+`docker system prune`, `docker volume prune`, comodines amplios ni `docker compose down -v`.
+
+**Límite registrado:** el directorio **vacío** `/tmp/gate` (propiedad de `root`) no pudo eliminarse sin
+contraseña de `sudo`; no contiene archivos y desaparece al reiniciar el host.
+
+**Estado final verificado:** 8069 operativo; `madenat_test` accesible; **8070 sin publicación**; 0 bases
+`srvretab%`; volumen `srvretab_web_data` eliminado.
+
+#### 17.13.5 Estado de V3 y pruebas
+
+- Pruebas dirigidas del artefacto ejecutadas **sobre `madenat_test`**: **`0 failed, 0 error(s) of 88
+  tests`** (misma nómina de 8 clases que el gate histórico; incluye las pruebas con **Cristhian uid 8**,
+  `su=False`, grupos intactos). Log:
+  `APPLY_AB_UI_20261008/logs/tests_directed_madenat_test_20261008_093825.log`.
+  El **gate histórico de 88 pruebas** (2026-10-07, base aislada) se conserva como antecedente; la
+  corrida de esta intervención es evidencia **nueva** sobre `madenat_test`.
+- **V3 (navegador) SIGUE PENDIENTE.** Quien suscribe **no dispone de navegador**: no se declara
+  completada. Guion manual actualizado a `http://localhost:8069` / `madenat_test` en
+  `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`.
+- Se conservan las **9 fallas preexistentes** y los límites (concurrencia no acreditada, filtro sin
+  cobertura parcial, I3/I5 fuera de alcance). Ver `03_TESTS.md` §12.6.
+
+
+### 17.14 Auditoría de las solicitudes de Cristhian (2026-09-02 y 2026-09-07) — 2026-10-08
+
+**Alcance.** Auditoría **de solo lectura**. Se contrastan **16 requisitos (R01–R16)** derivados de la
+conversación del 2026-09-02 y del hilo «PRUEBA DE SISTEMA» (reportes del 2026-09-07) contra la
+documentación rectora, el código vigente y las evidencias disponibles. **No** se modificó código, datos
+ni servicios; **no** se ejecutaron pruebas nuevas; **no** se crearon bases, contenedores ni ramas;
+**no** hubo commit ni push. Las correcciones necesarias quedan **identificadas y propuestas**
+(§17.14.5), **no ejecutadas sin autorización**.
+
+**Preservación de los reportes del usuario.** Las expresiones de Cristhian («operación no válida al
+final», «calcula el volumen solo de embarque, no el del packing», «no lee el documento») se conservan
+**como reportes**, sin atribuirles causa técnica: la causa se registra solo cuando hay evidencia
+(§17.14.3).
+
+#### 17.14.1 Entornos verificados en esta intervención
+
+| Entorno | Ruta / servicio | Estado verificado | Qué se pudo verificar |
+|---|---|---|---|
+| Desarrollo **local** (código) | `/home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons` | Rama `feat/guia-correccion-documental-preservada-20261002`; HEAD `e302c488321c276af7e07f1abeecc8bc261a89f4`; `git status` = **62 modificados + 14 sin seguimiento** (76 entradas) | Lectura íntegra de código, vistas y tests; hashes SHA-256 |
+| Desarrollo **local** (servicio) | `localhost:8069` / contenedor `odoo18_app` | **NO operativo desde esta distro**: `docker` no disponible (Docker Desktop sin integración WSL en esta distro) y `curl http://127.0.0.1:8069/web/login` → sin respuesta | **Ninguno**: no hubo consultas a la base local ni ejecución de pruebas locales |
+| **TEST remoto** | `ubuntu@144.22.50.236` · `/opt/odoo18-test` · servicio `odoo18-test` (**active**) · base `madenat_test` | Inspección **solo lectura** por SSH (`sudo -u postgres psql`). `custom_addons` **no** es repositorio git; el repo git es `/opt/odoo18-test` y no es legible (git 2.25.1: `dubious ownership`) | Código desplegado (hashes), módulos instalados, esquema, vistas cargadas y contenido de `madenat_guia_processing` |
+| Documentación rectora | `custom_addons/madenat_lumber_docs/` | Verificada. Versiones al inicio de la auditoría: **02 12.13.0 · 03 6.13.0 · 05 8.12.0 · índice 12.7.0** | Base documental del contraste |
+
+**Correspondencia de código local ↔ TEST remoto (medida).** Manifiesto SHA-256 de **314 archivos**
+`.py/.xml/.csv` de `madenat_lumber_core`, `madenat_lumber_intake`, `madenat_lumber_logistics` y
+`madenat_ingestion_engine` (excluyendo `__pycache__`, `_archive`, `backups`): **0 discrepancias de
+hash**, **0 archivos solo locales** y **39 archivos presentes solo en el remoto** (legado: `.bak/`,
+`views.backup/`, `views/views.backup/`, `backups_20260819_*`, `lumber_reception_test.py`,
+`scripts/migrate_reception_relations.py`, `views/lumber_reception_views_OLD.xml`,
+`security/madenat_intake_security.xml`, `models/lumber_container_rollover_wizard.py`).
+
+**Estado del TEST remoto (leído, no modificado).** Módulos `installed`: `madenat_lumber_core`
+18.0.6.5.0 · `madenat_lumber_intake` 18.0.0.11.0 · `madenat_lumber_logistics` 18.0.1.6.0 ·
+`madenat_ingestion_engine` 18.0.1.1.0. Columna `madenat_guia_processing.service_return_confirmation`
+(`character varying`) **presente**; vistas `madenat.lumber.intake.console.form` (id 1660; contiene
+`Aplicar cambios`, `Evidencia documental` y `service_return_confirmation`) y
+`madenat.guia.processing.search.service.return` (id 1745) cargadas. La tabla
+`madenat_guia_processing` contiene **un único registro**: **guía 26270** (id 17, `partner_id` 22 =
+COMERCIALIZADORA Y DISTRIBUIDORA FERRAMENTA SPA, `tipo_recepcion='service'`, `state='validated'`,
+creada 2026-09-08, última escritura 2026-10-06, `vol_comercial_pdf=57.840`, `vol_shipment_m3=48.009`,
+`packing_volume_declared_m3` **vacío**, `sum_vol_documental_m3=0.000`,
+`documental_conciliation_state='partial'`). Usuarios: uid 6 Leonardo Rodriguez, uid 7 María Victoria
+Antonio, **uid 8 Cristhian Elgueta (activo)**, uid 9 Felipe Muñoz.
+
+> **Advertencia de entorno (confirmada con datos).** Ambas bases se llaman `madenat_test` pero **no**
+> son la misma base: en el TEST remoto **no existen** los partners de Arauco (RUT 96.510.970-6),
+> Blocks & Cutstock (RUT 96.862.800-3), JCE (RUT 96.547.890-6) ni el `res_partner` id 2045 que
+> `05_BACKLOG.md` (T11) cita para la base local. **No** se trasladan resultados locales al remoto.
+
+#### 17.14.2 Matriz consolidada de requisitos (R01–R16)
+
+**Estados permitidos:** CORREGIDO Y VERIFICADO · IMPLEMENTADO, PENDIENTE DE VALIDACIÓN · PARCIAL ·
+PENDIENTE · NO ACREDITADO · NO REPRODUCIDO (indicando condiciones). **Ningún** requisito se declara
+«cerrado» sin criterio de aceptación acreditado.
+
+| ID | Origen | Proveedor / alcance | Síntoma o necesidad original | Criterio de aceptación | Evidencia documental | Evidencia de código (ruta · método) | Evidencia de prueba | Entorno verificado | Estado | Limitación / siguiente acción |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **R01** | 02-sep (conversación) | Ingreso de Madera (general) | «Había eliminado elementos innecesarios del ingreso» y «retiraría los mensajes de prueba» que le impedían ingresar la guía y el packing | El ingreso se completa sin diálogos que interrumpan el flujo y sin mensajes de prueba; se conservan las validaciones legítimas | Sin entrada canónica específica | `intake_wizard_views.xml:48` (`tipo_ingreso invisible="1"`); `intake_wizard.py` `_onchange_suggest_tipo_ingreso` (186-201) y `_onchange_suggest_ingestion_profile` (203-262) — **devuelve `{'warning': …}` «Verifique el perfil de lectura antes de continuar» (251-262)** | `test_intake_wizard.py:537-543` (asertan el `warning` y su texto «no bloquea»); `test_intake_apply_changes.py` | Código (local = remoto, hash) | **PARCIAL** | En Odoo un `warning` devuelto por un método **interrumpe** la acción hasta pulsar «OK»; ese mensaje **sigue vigente** en el código activo. Falta identificar con Cristhian el aviso exacto (candidatos en §17.14.3 H-2) y reproducirlo en navegador |
+| **R02** | 02-sep | Ingreso (general) | «Había quitado la selección entre procesados y compra de madera» | El operador no elige manualmente Producto/Procesado; la ruta la decide el contenido del documento | `04_DECISION_LOG.md` **AD-61** (2026-09-08) | `intake_wizard_views.xml:48` (campo oculto); clasificación por contenido en `_onchange_suggest_tipo_ingreso` («la clasificación Producto/Procesado ocurre al ejecutar *Leer documento*»); AD-61: «nunca por proveedor» | `test_intake_tipo_ingreso_content.py` (clasificación por contenido, no por RUT/historial) | Código (local = remoto, hash) | **CORREGIDO Y VERIFICADO** (en código) | El campo técnico sigue existiendo (oculto) y existe wizard de reclasificación (AD-73); **V3 (navegador) no ejecutada** |
+| **R03** | 02-sep | Subproducto (general) | «Había corregido el subproducto» | El texto de producto del documento se resuelve a `madenat.subproducto` sin bloquear la ingesta y sin crear `product.product` | `04_DECISION_LOG.md` **AD-ING-001 / AD-ING-002** (2026-08-31) | `mixin_lumber_ingest.py:273-297` `find_or_create_lumber_subproducto` (normaliza → busca por `code` → luego por `name =ilike` → autocrea); asignación por línea en `madenat_guia_processing.py:1761,1778`; **bloqueo al enviar a stock si hay líneas sin subproducto** (`:2194-2203`) | Cobertura de subproducto en `test_guia_processing.py`; sin prueba del caso reportado | Código (local = remoto, hash) | **IMPLEMENTADO, PENDIENTE DE VALIDACIÓN** | La corrección documentada es **anterior** (2026-08-31) al reporte del 02-sep: **no se acreditó** que el defecto reportado fuese éste, ni el caso concreto. El bloqueo `:2194-2203` produce un rechazo **al final** (al enviar a stock) y es candidato a revisar |
+| **R04** | 02-sep | Packing (Procesado) | «Estaba trabajando en mostrar el packing en fracciones» | El packing se presenta en fracciones **sin** alterar los valores usados en el cálculo (sin conversiones dobles ni cambio de unidades) | Sin entrada canónica específica | `utils_uom.decimal_inch_to_fraction_simple`; wrapper `madenat_guia_processing.py:512-514` `_get_fraction_text` (`denominator=8`); constraint de octavos `_check_imperial_fractions` (`:520-577`, **solo escribe en log**, no bloquea); nominales `_get_nominal_dimension` (`:3594+`) | Cobertura de utilidades de fracción (`parse_fraction_to_decimal_inch`); **no existe** prueba de la presentación del packing en fracciones en la Consola | Código (local = remoto, hash) | **PARCIAL** | La conversión y la presentación existen para dimensiones nominales/visuales, pero **no se acreditó** en la Consola. `_check_imperial_fractions` no emite señal visible al operador (solo `_logger.warning`) |
+| **R05** | 07-sep (correo) | **Fátima** · RUT 77.245.870-3 | «Al final dice operación no válida» | El documento se lee; guía y packing se asocian; se extraen los datos exigidos; el ingreso avanza sin el rechazo reportado | Copias identificables: `muestras_documentos_ingreso/07-09-2026/Guia 41994.pdf` + `41994.xls` (packing `SUB PRODUCTO / ESPESOR / ANCHO / LARGO mm / FILAS / COLUMNAS / PIEZAS / VOLUMEN M3`; 14 partidas; total declarado **50,495625 m³**, guía **50,496 m³**) | `_parse_excel_data_core` (`:3488+`) → `_validar_y_enriquecer_lineas`; sin regla específica de proveedor (por diseño) | **Sin prueba con el archivo real**: no hay fixture de Fátima; el par guía+packing no se usa en ningún test | Documental (archivos) + código | **NO ACREDITADO** | No hay registro de esta guía en el TEST remoto (0 registros de Fátima). Falta: (a) confirmar que los archivos del 7-sep son éstos; (b) reproducción autorizada del par guía+packing y captura del mensaje literal |
+| **R06** | 07-sep (correo) | **Ferramenta** · RUT 77066489-6 | «Dice operación no válida al final» | Ídem R05 sobre el par guía 26270 + packing de cepillado | Copias identificables: `07-09-2026/26270.pdf` (servicio de cepillado, **57,8400 m³**) + `26270.xlsx` = `FACTURACION PACKING LIST 03-09-2026 MADENAT (cepillado) 47 (1).xlsx` (mismo hash md5; total **57,839556 m³**, 3201 piezas). `CANON` sin entrada específica | `_parse_packing_excel` (`:3251-3304`) → `_parse_excel_data_core`; `_check_guide_duplicate` (`reception_parser.py:32+`) lanza UserError de **guía duplicada**; `find_or_create_lumber_subproducto` | Fixture textual `madenat_lumber_core/tests/fixtures/26270.txt` + `test_supplier_resolution.py` / `test_reception_supplier_rut_extraction.py` (RUT/región, **no** el packing real). La corrida dirigida 88/88 (AD-102) **no cubre** este par | Código + documental + **TEST remoto** (único registro real: guía 26270 `validated`) | **NO ACREDITADO** | El único registro real del TEST remoto es esta guía, ya `validated` el 2026-10-06, con `vol_comercial_pdf=57.840` y `vol_shipment_m3=48.009`: **no** hay evidencia de que un ingreso nuevo del par se complete sin rechazo. La guía se reenvió el 7-sep tras haber sido reportada el 2-sep: la **guía duplicada** es un candidato (§17.14.3 H-2). Reproducción autorizada pendiente |
+| **R07** | 07-sep (correo) | **Ferramenta** · guía 26270 | «Calcula el volumen solo de embarque, no el del packing; **deben ir los dos volúmenes**» | Se identifican y muestran por separado: volumen de guía, volumen de packing y volumen de embarque, con su diferencia | Medición documental: guía **57,8400 m³** vs packing **57,839556 m³** (Δ 0,000444); el registro del TEST remoto tiene `vol_shipment_m3=48.009` (ni guía ni packing) | Campos en `madenat.guia.processing`: `vol_comercial_pdf` («Vol. Guía PDF»), `packing_volume_declared_m3`, `sum_vol_documental_m3`, `vol_shipment_m3`, `diff_pdf_packing_m3`, `diff_packing_lineas_m3`, `documental_conciliation_state` (computes `:1005-1072`); espejo en `intake_console.py:218-230, 792-797`; **mostrados** en la Consola («Volúmenes y diferencias», `intake_console_views.xml:273-281`) | `test_parse_excel_core.py::test_packing_declared_totals_persisted` (**42,132 m³ / 2244 pzs / 8 paq.** = valores del packing de la guía 95083); `::test_vol_documental_m3_written`; `::test_sum_vol_documental_m3` | Código + TEST remoto (lectura) | **IMPLEMENTADO, PENDIENTE DE VALIDACIÓN** | El mecanismo existe y está probado a nivel unitario, **pero** el único registro real del remoto tiene `packing_volume_declared_m3` **vacío**, `sum_vol_documental_m3 = 0` y `documental_conciliation_state='partial'` (creado 2026-09-08, antes de estas columnas). **No** se acreditó con un documento Ferramenta real. Falta ejecutar el par en la Consola y decidir qué volumen es «operativo» |
+| **R08** | 07-sep (correo) | **Byc** = Blocks & Cutstock S.A. (BC-LUMBER) · RUT 96.862.800-3 | «Operación no válida» | Ídem R05 | Copias identificables: `07-09-2026/95083 .pdf` (guía; `TOTAL VOLUMEN 42,132` · 2244 piezas · 8 paquetes) + `95083 Final.xls` / `95083 (1) (1).xls` (PACKING LIST con `Nº Ticket … Esp. / Anc. / Lar. / Pzas Paq. / Volumen Paq. / Cantidad Paquetes`) | `_parse_excel_data_core` (detección genérica de cabecera) + `_persist_packing_declared_totals` | `test_parse_excel_core.py::test_xls_blanks_abbreviated_headers` (**reproduce este formato**: cabecera abreviada + decimales con coma → 1 línea, `Volumen 5.226`, `Espesor 31,75`, `Ancho 146,1`, `Largo 4,877`); `::test_packing_declared_totals_persisted` usa **42,132 / 2244 / 8** (totales reales de esta guía) | Código (local = remoto, hash) | **IMPLEMENTADO, PENDIENTE DE VALIDACIÓN** | El detector y la persistencia de totales están cubiertos con la **estructura** del archivo (fixture sintético), **no con el archivo de Byc**. No hay registro de esta guía en el TEST remoto; **V3** no ejecutada |
+| **R09** | 07-sep (correo) | **JCE** · RUT 96.547.890-6 | «No lee el documento» | El documento se lee y produce líneas utilizables (o un diagnóstico explícito y accionable) | Copias identificables: `07-09-2026/GDE 95806.pdf` (= `2026-08-21T10_47_21_T52F95806 .pdf`, mismo md5; guía de despacho 95806, BLANKS 5/4X5.3/8, 59,964 m³, 12 paq., 2772 pzs) + `GDE 95806.xls` / `NVTA881333 (2).xls` («NOTA DE VENTA INTERNA/…», Nº 881333; cabecera `Etiqueta / Cat.Certific. / Esc. Fact / Pzas / VOL. / Producto / Est. / Orden / Item / Marca / Precio / Moneda`; total 12 paq. / 2772 pzs / **59,964 m³**) | `_parse_excel_data_core` **sí lee** el documento y expone `dimensions_raw`; la línea se **rechaza** después en `_validar_y_enriquecer_lineas` con la regla `REQUIERE_DIMENSIONES_SEPARADAS` y se construye diagnóstico (`_build_rejection_diagnostic`) | `test_parse_excel_core.py::test_nota_venta_dimensions_raw_rejected_with_diagnostic` — **confirmado por prueba**: 1 línea leída, `Espesor/Ancho/Largo = 0`, `validas = []`, `rechazos[0]['rule'] = 'REQUIERE_DIMENSIONES_SEPARADAS'`, mensaje con «No se creó ninguna línea». PDF genérico: `madenat_ingestion_engine::test_generic_pdf_table` (`test_tabla_una_fila_volumen` reproduce este documento: 59,964 m³, `MC-0523-140`) | Código (local = remoto, hash) | **NO ACREDITADO** (documento leído, **0 líneas creadas por diseño**) | **Evidencia fuerte**: el formato «Nota de Venta / dimensiones combinadas» está **explícitamente rechazado** (Opción C) y no se promueve a líneas ⇒ el síntoma «no lee el documento» es reproducible en la práctica. **Requisito abierto**: o se normaliza `Esc. Fact` a espesor/ancho/largo, o se informa al usuario que ese packing no es ingerible. **Decisión no tomada** |
+| **R10** | 07-sep (correo) | **JCE** · RUT 96.547.890-6 | «Operación no válida» | Ídem R05 | Ídem R09 | El rechazo se materializa como `UserError` desde `_parse_packing_excel` (`:3284-3287`) con el diagnóstico de rechazo | Ídem R09 | Código (local = remoto, hash) | **NO ACREDITADO** | Mismo bloqueo que R09. La expresión «operación no válida» **no** existe literalmente en el código ni en las traducciones desplegadas (§17.14.3 H-1) |
+| **R11** | 07-sep (correo) | **Arauco** (Maderas Arauco S.A.) · RUT 96.510.970-6 | «Operación no válida» | Ídem R05, incluyendo el packing | Copias identificables: `07-09-2026/HLZF75_4495589.pdf` (guía de despacho electrónica Nº 4495589) + `PACKING HLZF75 (1).pdf` (**packing en PDF**, no Excel). **Réplica del fixture** `madenat_lumber_intake/tests/fixtures/HLZF75_4495589.pdf` (mismo archivo dentro del repo de tests) | Extractor genérico de tablas PDF `_extract_generic_pdf_table` + `document_extractor.extract_document`. El flujo **Normal (Procesado)** exige **packing Excel** (`_parse_packing_excel` → `pd.read_excel`); el **packing PDF** se procesa por la ruta de **Volúmenes** (`HLZF75_4495589.pdf` se usa en `test_intake_volume_detail_pieces.py` y `test_reopen_oc_reextraction.py`) | `test_generic_pdf_table.py::test_tabla_12_filas_lotes_mixtos` (refs `3540383149`, `PK45738`, 12 líneas, 40,300 m³ — estructura del packing real de Arauco); `test_no_hardcodeo_documentos_known` (el código no contiene los números de documento); intake: fixtures reales de la guía 4495589 | Código (local = remoto, hash) | **NO ACREDITADO** | **Ambigüedad de modalidad**: una guía de Arauco con packing PDF no encaja en el flujo Normal (Excel obligatorio) y sí en Volúmenes; el mensaje que ve el usuario depende de la modalidad. No hay registro de esta guía en el TEST remoto. Requiere decisión funcional y reproducción |
+| **R12** | 07-oct (AD-102) | Retorno de servicio (Procesado) | Confirmación Sí/No/vacío **no bloqueante** + imputación posterior | El campo persiste Sí, No y vacío (vacío = pendiente ≠ No) y **no** bloquea el envío a stock | `04_DECISION_LOG.md` **AD-102**; `12_FLUJOS_INGESTA.md` §11.9; `19_IMPUTACION_SV_Y_PROCESADORES.md` §19.9 | `madenat_guia_processing.service_return_confirmation`; proxy `intake_console.py` (compute+inverse) y `service_return_in_scope`; radio en `intake_console_views.xml:238-245` (`invisible="not service_return_in_scope"`); **guard bloqueante eliminado** (`_assert_service_return_confirmed` ya no existe) | `madenat_lumber_intake/tests/test_service_return_confirmation.py` (**13** pruebas): Sí/No conservados, vacío≠No, vacío no bloquea, permisos reales, sin imputación automática, proxy editable. Ejecutado **88/88 sobre `madenat_test`** (2026-10-08) | Código + prueba V2 (**no** V3) | **IMPLEMENTADO, PENDIENTE DE VALIDACIÓN** (V3) | **V3 (navegador) NO ejecutada** (`GUION_VERIFICACION_NAVEGADOR.md`, guía 19827). Prueba física (radio y persistencia en pantalla) pendiente |
+| **R13** | 07-oct (AD-102) | Imputación SV (I2) | Reglas de aplicación y reversa de la imputación documental | `action_apply` exige destino «Sí»; `action_pending` no; Sí→No/vaciar rechazado con imputación `applied` y permitido tras reversar; sin efectos de stock/ledger | `04_DECISION_LOG.md` AD-102; `19_IMPUTACION_SV_Y_PROCESADORES.md` §4/§5 | `madenat_lumber_logistics/models/madenat_sv_imputation.py`: `_i2_check_destination_is_service_return` + llamada en `action_apply`; relación inversa `sv_imputation_ids`; regla Sí→No | `test_service_return_imputation_guard.py` (**8**), `test_service_return_pending_filter.py` (**9**), regresiones `test_sv_imputation_i2.py` (13) y `test_sv_imputation_candidates.py` (12); **88/88** sobre `madenat_test` | Código + prueba V2 | **IMPLEMENTADO, PENDIENTE DE VALIDACIÓN** (V3) | **Límites conservados**: concurrencia **no** acreditada; filtro **sin** cobertura parcial; **V3** no ejecutada; **I3/I5** fuera de alcance |
+| **R14** | 08-oct | Ingreso de Madera (UI) | Resumen en 2 columnas; Evidencia documental en 3 columnas; packing a todo el ancho; «Aplicar cambios» debajo | La disposición se observa en pantalla sin romper campos, unidades ni permisos | `APPLY_AB_UI_20261008/RESUMEN.md`; `02_CONTINUIDAD.md` §17.13.3; `03_TESTS.md` §12.6.3 | `intake_console_views.xml`: resumen 2 columnas; `group string="📄 Evidencia documental" col="3"` (`:260`); columnas «Documentos» / «Volúmenes y diferencias» / «Packing y conciliación»; detalle del packing a todo el ancho | Verificación **estructural read-only** (archivo + vista cargada: id **1867** en la base local, id **1660 en el TEST remoto**, con `Aplicar cambios` y `Evidencia documental`) | Código + TEST remoto (vista cargada) | **PARCIAL** (estructura verificada, **visual pendiente**) | La observación **visual** (`UI-1..UI-6`, incl. responsive) **no** se ejecutó en ninguna base: la verificación estructural **no** sustituye la observación del operador **ni** se reemplaza por SQL |
+| **R15** | posterior al despliegue | Consola (navegador) | `UncaughtPromiseError > OwlError` · `TypeError: Cannot read properties of undefined (reading 'includes')` en `get urlRelation` · `Many2OneField.template`; URL mostrada `localhost:8069` | El formulario de la Consola abre y renderiza sin excepción de cliente | Sin entrada canónica | `urlRelation` pertenece al cliente web de Odoo (**no** existe en `custom_addons`: búsqueda sin resultados). **Comprobación estática ejecutada**: en las vistas de la Consola (`intake_console*.xml`) **no** hay ningún `<field>` sin campo correspondiente en el modelo, y `intake_sv_reversible_rebaja_id` **sí** está definido en `madenat.guia.processing` (`intake_console_sv.py:309-318`) ⇒ **no se halló** un campo huérfano que explique el fallo | **Ninguna**: no hay navegador y el servicio local 8069 no es operativo desde esta distro | Código (estático) | **NO REPRODUCIDO** · causa **NO confirmada** | Condiciones para reproducir: navegador, base, usuario, acción/menú de entrada, campo y registro. **Hipótesis NO confirmadas** (a verificar, no documentar como causa): (a) assets/caché de vista desactualizados tras la actualización de módulos; (b) metadatos de relación no cargados por módulo ausente; (c) widget incompatible con el campo. **No** se borran assets ni se modifica JavaScript global como medida preventiva |
+| **R16** | 08-oct | Despliegue TEST remoto vs desarrollo local | «Actualización del TEST remoto con carga de módulos finalizada y código de salida 0» | Lo validado localmente corresponde a lo desplegado | `02_CONTINUIDAD.md` §17.13 (aplicación en el desarrollo) | Manifiesto SHA-256 de **314** archivos: **0 discrepancias**; el remoto tiene los mismos 4 módulos `installed` (core 18.0.6.5.0, intake 18.0.0.11.0, logistics 18.0.1.6.0, ingestion_engine 18.0.1.1.0); columna `service_return_confirmation` y vistas nuevas **presentes** | **No** se ejecutaron pruebas en el remoto (no autorizado); de solo lectura se confirma esquema y vistas cargadas | Código (hash) + TEST remoto (esquema/vistas) | **PARCIAL** | **Sí** corresponden los archivos de código y el esquema; **no** está acreditado que el remoto pase las pruebas (la corrida 88/88 fue **local**). Además `custom_addons` **no** es repositorio git en el remoto (sin trazabilidad de versión) y hay **39 archivos legado** solo allí. **No** se declara el remoto «validado por traslado» |
+
+#### 17.14.3 Hallazgos y contradicciones (resueltas o pendientes)
+
+**H-1 — «Operación no válida» no existe como texto del sistema (resuelto).** Búsqueda literal en
+`custom_addons` (`.py/.xml/.po`) y, en el TEST remoto, sobre `/opt/odoo18-test/odoo` y
+`/opt/odoo18-test/addons` (`-i`, patrón tolerante `no v.lida`): **0 coincidencias** en el código
+MADENAT; en el núcleo solo aparecen cadenas distintas («Acción no válida» en `board` y
+`point_of_sale`; «Acción no válida para generar una URL» en `mail_group`; «…no válida» de vistas,
+pagos, etc.). **Conclusión:** la expresión es una **paráfrasis del usuario**; **no** puede
+documentarse como mensaje del sistema ni usarse para atribuir causa técnica.
+
+**H-2 — Mensajes reales que el usuario pudo ver «al final» (candidatos, causa NO confirmada).**
+Verificados por lectura de código; ninguno se declara causa hasta tener el texto literal o la captura:
+1. **Guía duplicada** — `reception_parser._check_guide_duplicate` (`:32-151`) y la búsqueda en
+   `madenat.guia.processing` (`:153-200`): «⚠️ La guía N° X ya fue registrada en el sistema (Guías
+   Procesadas). No se permite subirla nuevamente…». **Relevante**: los archivos del 7-sep ya se
+   habían intentado el 2-sep.
+2. **Rechazo del packing** — `REQUIERE_DIMENSIONES_SEPARADAS` + «No se creó ninguna línea»
+   (`_build_rejection_diagnostic`, `madenat_guia_processing.py:3284-3287`). Aplica a Nota de Venta /
+   dimensiones combinadas (JCE).
+3. **Subproducto faltante al enviar a stock** — «Hay N línea(s) sin subproducto asignado … antes de
+   aprobar el ingreso a stock» (`:2194-2203`): rechazo **al final**, tras completar el packing.
+4. **Estado inválido** — «❌ Estado inválido. Verifique la guía antes de procesar.» (`:1152`).
+5. **Sin volumen válido en el PDF** — «⛔ Ninguna línea del PDF tiene volumen válido (> 0)» (`:1434`).
+6. **Aviso de perfil de lectura** — `intake_wizard.py:251-262` (**no** es rechazo, pero en Odoo un
+   `warning` devuelto por un método **interrumpe** la acción hasta pulsar «OK»).
+**Acción requerida:** obtener de Cristhian el **texto literal o la captura** del mensaje por proveedor.
+Sin eso, R05/R06/R08/R10/R11 **no** pueden cerrarse.
+
+**H-3 — Contradicción documental sobre los adjuntos (resuelta parcialmente).** El correo del 7-sep
+reporta **10 adjuntos**; **no** existe expediente que los contenga como tales (no hay `*.eml`). Sí
+existen **copias identificables** en `muestras_documentos_ingreso/07-09-2026/` (**15** archivos, con
+**duplicados por hash**: `GDE 95806.pdf` = `2026-08-21T10_47_21_T52F95806 .pdf`; `26270.xlsx` =
+`FACTURACION PACKING LIST 03-09-2026 MADENAT (cepillado) 47 (1).xlsx`; y `95083 (1) (1).xls` frente a
+`95083 Final.xls` / `Copia de 95083 (1) (1).xls`, con hashes **distintos**), con fechas de descarga
+2026-09-07/08/12. Se usan como **copias identificables**, **no** como sustitutos silenciosos: queda
+pendiente que Cristhian **confirme el juego exacto**. **No** se pide su reenvío por defecto.
+
+**H-4 — «Ambos volúmenes» (R07): mecanismo implementado, dato real ausente (parcial).** El modelo y la
+UI ya separan `vol_comercial_pdf` (guía), `packing_volume_declared_m3` (packing),
+`sum_vol_documental_m3` (líneas) y `vol_shipment_m3` (embarque), con `diff_pdf_packing_m3`,
+`diff_packing_lineas_m3` y `documental_conciliation_state`, y hay pruebas unitarias. **Pero** el único
+registro real del TEST remoto (guía 26270) tiene el **volumen de packing vacío** y la **suma de líneas
+en 0**, con estado `partial`: **no** se puede afirmar que «el packing ya funciona». Medición del par
+Ferramenta: guía **57,8400** vs packing **57,839556** (Δ **0,000444** m³); el valor almacenado como
+«Vol. Embarque» es **48,009 m³** y **no coincide con ninguno de los dos**. **Causa del 48,009 NO
+determinada**: `_compute_vol_shipment_m3` (`:448-506`) cae a `vol_purchase_m3` (nominal) cuando no hay
+geometría; el desvío observado exige revisar las **líneas reales** de esa guía.
+
+**H-5 — Ambigüedad de modalidad con packings PDF (pendiente).** El flujo **Normal** exige **packing
+Excel** (`_parse_packing_excel` → `pd.read_excel(attachment…)`); el **packing PDF** se procesa por la
+ruta de **Volúmenes** (extractor genérico de tablas PDF). La guía de Arauco del 7-sep trae su packing
+**en PDF**. **No** hay evidencia de que el usuario eligiera la modalidad correcta ni de que el sistema
+lo guíe. **No** se documenta como defecto del parser.
+
+**H-6 — Entornos (limitaciones confirmadas).** (a) El servicio **8069 no era operativo** desde la
+distro del entorno de trabajo ⇒ **no** se reprodujeron pruebas locales. (b) `custom_addons` en el TEST
+remoto **no** es repositorio git ⇒ **sin trazabilidad de versión**; además hay **39 archivos legado**
+que no existen en local, **dos de ellos muertos y no referenciados** (verificado:
+`madenat_lumber_logistics/models/lumber_container_rollover_wizard.py` **no** se importa —el import vive
+en `wizards/__init__.py`— y `madenat_lumber_intake/security/madenat_intake_security.xml` **no** figura
+en el `__manifest__.py`). **No** se elimina nada: su retiro requiere autorización.
+
+**H-7 — Afirmaciones previas: corrección de estatus (no se perpetúan como hechos).**
+
+| Afirmación previa | Estatus tras la auditoría |
+|---|---|
+| «Todos los formatos están corregidos» | **NO ACREDITADO.** 5 de 5 proveedores identificados, **0** con ingesta real acreditada (R05–R11) |
+| «El packing ya funciona en fracciones» | **PARCIAL.** Existe conversión/presentación y wrapper `_get_fraction_text`; **no** acreditada en la Consola (R04) |
+| «No son fallos, sólo advertencias» | **No verificable en general.** Hay `UserError` **bloqueantes** en el flujo (H-2 nº 1/2/3/4/5); el aviso del perfil **sí** interrumpe hasta pulsar «OK» |
+| «No llegaron los adjuntos» | **Refutable por evidencia documental**: hay copias identificables (H-3) |
+| «El sistema está listo para probar» | **Sólo parcialmente.** El TEST remoto tiene el código y el esquema, pero **V3 no está ejecutada** y **R15 sigue abierto**: **no** debe invitarse a probar un flujo que puede estar bloqueado |
+| «El OwlError ya está resuelto» | **Sin evidencia** (R15: NO REPRODUCIDO, causa NO confirmada) |
+
+#### 17.14.4 Límites conservados (sin cambios)
+
+Se mantienen **intactos** y **no** se actualizan sin evidencia nueva: **9 fallas preexistentes**
+(`03_TESTS.md` §12.2 y §12.6.4), **concurrencia no acreditada**, **filtro «Retornos sin imputación
+aplicada» sin cobertura parcial**, **I3/I5 fuera de alcance**, **V3 (navegador) pendiente** e
+**instalación en base limpia pendiente**. Ninguno se elimina ni se reescribe en esta intervención.
+
+#### 17.14.5 Acciones propuestas (identificadas, NO ejecutadas)
+
+Prioridad **P0** = bloquea cualquier cierre; **P1** = habilita el cierre de un requisito;
+**P2** = orden y trazabilidad. **Todas** requieren autorización explícita.
+
+| # | Acción | Alcance concreto | Requisitos que habilita |
+|---|---|---|---|
+| **P0.1** | Obtener el **texto literal** (o la captura) del mensaje que ve Cristhian, **por proveedor** | Sin cambios técnicos; se pide a Cristhian | R05, R06, R08, R10, R11 |
+| **P0.2** | Confirmar el **juego exacto** de los 10 adjuntos del 7-sep | cotejo contra `muestras_documentos_ingreso/07-09-2026/` (15 archivos, hashes md5 ya calculados) | R05–R11 |
+| **P0.3** | Reproducir **R15 (OwlError)** con condiciones mínimas registradas | navegador + base + usuario + acción/menú + campo + registro + captura de consola; **no** borrar assets ni tocar JS global | R15 (bloquea invitar a probar la Consola) |
+| **P1.1** | Reproducción **autorizada** del par **Ferramenta** (26270.pdf + 26270.xlsx) en base de pruebas | crea registros; medir los 3 volúmenes y explicar el origen de `vol_shipment_m3 = 48,009` revisando las líneas reales | R06, R07 |
+| **P1.2** | Reproducción **autorizada** de **Fátima** (41994.pdf + 41994.xls) y **Byc** (95083 .pdf + 95083 Final.xls) | ídem; verificar armado guía↔packing y totales declarados | R05, R08 |
+| **P1.3** | **Decisión funcional** sobre Nota de Venta (JCE) | normalizar `Esc. Fact` (`5/4x5.3/8x16` → espesor/ancho/largo) **o** mensaje explícito «packing no ingerible» (hoy el usuario ve un rechazo) | R09, R10 |
+| **P1.4** | **Decisión funcional** sobre **packing PDF** (Arauco) | exigir Excel / aceptar la ruta de Volúmenes / añadir lectura de packing PDF en el flujo Normal | R11 |
+| **P2.1** | Ejecutar **V3** completo del guion (`GUION_VERIFICACION_NAVEGADOR.md`) sobre `8069` / `madenat_test` | incluye UI-1..UI-6, A-1..A-6 y B-1..B-5 | R04, R12, R13, R14 |
+| **P2.2** | Retirar/archivar los **39 archivos legado** del TEST remoto | **requiere autorización**; no se elimina nada sin ella | R16 |
+| **P2.3** | Dar **control de versión** a `custom_addons` del TEST remoto | hoy sin trazabilidad (git solo del repo `/opt/odoo18-test`, ilegible) | R16 |
+| **P2.4** | Cerrar los pendientes de **concurrencia** y del **filtro sin cobertura parcial** | ya catalogados en `05_BACKLOG.md` | R13 |
+
+**No** se propone, y no debe hacerse: desactivar validaciones legítimas para hacer desaparecer un
+mensaje; borrar assets o modificar JavaScript global como medida preventiva; ni reinstalar/actualizar
+módulos del TEST remoto para esta auditoría.
+
+> **Nota de vigencia:** los estados de la matriz §17.14.2 y los hallazgos §17.14.3 quedan
+> **parcialmente sustituidos** por §17.15 (revalidación con la biblioteca de muestras). La historia se
+> conserva; las correcciones se registran en §17.15.6.
+
+### 17.15 Revalidación con la biblioteca de muestras y reconstrucción de las pruebas (2026-10-08, 2.ª pasada)
+
+**Antecedente incorporado (declaración expresa de Mauricio).** «Se hicieron pruebas con **todos** los
+ingresos y los formatos probados están en `muestras_documentos_ingreso`, **fuera** de `custom_addons`.»
+Esta declaración se registra como **antecedente explícito** y **no** como aprobación automática: lo que
+sigue reconstruye **qué se probó, con qué archivo, en qué versión y entorno, hasta qué etapa y con qué
+resultado**.
+
+**Principio metodológico aplicado.** *Evidencia no localizada ≠ prueba no realizada*; *archivo presente
+≠ prueba aprobada*; *prueba de lectura ≠ ingreso completo*; *resultado histórico local ≠ resultado
+actual remoto*. La primera pasada (§17.14) declaró «NO ACREDITADO» varios casos **por una búsqueda
+incompleta** (limitada a `custom_addons` y sin inspección de respaldos de base). Esa conclusión se
+**corrige** aquí con evidencia localizada.
+
+#### 17.15.1 Ruta real de la biblioteca y del resto de fuentes
+
+| Fuente | Ruta real | Verificación |
+|---|---|---|
+| Raíz del proyecto | `/home/viruco/dev-stack/odoo/odoo-18-ce` | **No** es repositorio git (`fatal: not a git repository`) |
+| Repositorio | `…/odoo-18-ce/custom_addons` | Rama `feat/guia-correccion-documental-preservada-20261002`, HEAD `e302c48…` |
+| Documentación rectora | `…/custom_addons/madenat_lumber_docs` | `CANON/`, `WIKI/`, `LEGADO/`, `RAW/` |
+| **Biblioteca de muestras** | **`…/odoo-18-ce/muestras_documentos_ingreso`** (fuera de `custom_addons`, hermana de `custom_addons`) | **63 archivos**, **52 únicos por SHA-256**, en 4 subdirectorios: `07-09-2026/` (15), `Ejercicio Completo Cristhian Elgueta/` (31), `excel_packing/` (9), `guias_pdf/` (8) — hay **3 pares duplicados exactos** y **4 archivos de bloqueo de Office** (`~$…`, 165 B, idénticos entre sí) |
+| Expedientes de prueba | `AUDIT_*`, `UAT_*`, `IMPL_*`, `FIX_*`, `FASE_*`, `CIERRE_*`, `INCIDENTE_*`, `APPLY_*`, `pre02_*`, `madenat_dev_*`, `oracle_f31_*`, `f31_test_*`, `backups/`, `_archive_*` | Inspeccionados: **54 directorios de primer nivel** |
+| Respaldos de base (evidencia persistente) | `BACKUP_AB_APPLY_20261008/db/madenat_test_20261008_092958.dump` (**base local**, 2026-10-08 09:29); `APPLY_AB_UI_20261008/retired/db/srvretab_{base,gate,test}_20261007.dump`; `backups/**/madenat_test*.dump` (6 más); `APPLY_BUSQUEDA_INTAKE_20261007/backup/madenat_test_pre.dump` | Inspeccionados **con `pg_restore` en solo lectura sobre el archivo** (sin restaurar, sin crear bases) |
+| Dump SQL histórico | `madenat_test_antes_limpieza.sql` (2026-08-20) | Solo **1** cabecera de guía (24356) ⇒ las pruebas de septiembre son **posteriores** |
+
+**Limitación declarada:** el **correo electrónico original y sus 10 adjuntos** no existen como
+expediente (no hay `*.eml`); lo que existe es la **biblioteca** con copias identificables y los
+**registros de base** que prueban su uso.
+
+#### 17.15.2 Inventario de la biblioteca (resumen: pares y variantes por CONTENIDO)
+
+| Proveedor | Guía | Guía (archivo · SHA-256 abreviado) | Packing (archivo · SHA-256) | Documento de servicio |
+|---|---|---|---|---|
+| **Fátima** (RUT 77.245.870-3) | 41994 | `07-09-2026/Guia 41994.pdf` · `4d8e0e8b63ea1382` | `07-09-2026/41994.xls` · `99fe59fffb896a60` (2 filas de cabecera, `SUB PRODUCTO`, `FILAS/COLUMNAS/PIEZAS/VOLUMEN M3`, total **50,495625**) | guía declara **50,496 m³** |
+| **Ferramenta** (RUT 77066489-6) | 26270 | `07-09-2026/26270.pdf` = `26270.pdf` (raíz) · `04226af88ca8ae0d` | `07-09-2026/26270.xlsx` = `FACTURACION PACKING LIST 03-09-2026 MADENAT (cepillado) 47 (1).xlsx` = `26270.xlsx` · `0f843ece8b1b0c8d` | servicio de cepillado **57,8400 m³**; packing **57,839556 m³** (3201 piezas) |
+| **Byc = Blocks & Cutstock S.A.** (BC-LUMBER, RUT 96.862.800-3) | 95083 | `07-09-2026/95083 .pdf` · `b581a283d227bead` | `95083 Final.xls` · `b5c474ae69a69ddf` y `95083 (1) (1).xls` · `191161be055d117e` (**variantes no idénticas**) | guía `TOTAL VOLUMEN 42,132` · 2244 pzs · 8 paq. |
+| **JCE** (RUT 96.547.890-6) | 95806 | `07-09-2026/GDE 95806.pdf` = `2026-08-21T10_47_21_T52F95806 .pdf` · `17a57189c8361233` | `GDE 95806.xls` · `a9049815e7ed0b1e` y `NVTA881333 (2).xls` · `ec064c4bbaecf5ea` (ambos «NOTA DE VENTA INTERNA/…» **Nº 881333**, 12 paq. / 2772 pzs / **59,964 m³**) | guía 95806: BLANKS 5/4X5.3/8, `VOL.TOT. 59,964`, OC `MC-0523-140`, T.C. 923,23 |
+| **Arauco** (Maderas Arauco S.A., RUT 96.510.970-6) | 4495589 | `07-09-2026/HLZF75_4495589.pdf` · `98382981de062b1b` | `07-09-2026/PACKING HLZF75 (1).pdf` · `1fcebe7f814873ac` (**packing en PDF**) | guía 4495589 (HLZF75), 07-sep-2026 |
+| **Ferramenta** (ejercicio) | 19820/19826/19827/19846 | `Ejercicio Completo…/GDE Guía de Despacho 19820/19826/19827/19846.pdf` | `FACTURACION PACKING LIST 06-10-2025 (1)…(02-10-2025 (2))…(02-10-2025 (1))…(01-10-2025 (2))…xlsx` | servicios de cepillado |
+| **Fátima** (ejercicio) | 39485/39491/39493/39500/39509/39510/39519/39522 | `Ejercicio Completo…/Guia 39485/39491/39493/39500/39509/39510/39519/39522.pdf` | `39491/39493/39500/39509/39510/39519/39522 (1).xls` | ingreso por Producto |
+| Otros (regresión) | 97183, 40030, 40040, 40597 | `guias_pdf/GD 97183.pdf` (= `293.49 Kb.pdf`), `Guia 40030.pdf`, `Guia 40040.pdf`, `Guia 40597.pdf` (= `120.13 Kb.pdf` = `Guia 40597 (1).pdf`) | `excel_packing/42.50 Kb.xls`, `Packing GD 97183 - W (1).xls`, `40030.xls`, `40040.xls`, `40597.xls`, `65.50 Kb.xls` | **40597 = «caso base recomendado»** del plan de pruebas embebido en `madenat_lumber_core/regen_docs_madenat.sh` (PDF 55.665 vs Excel 55.821 m³) |
+
+**Duplicados exactos (no se borran, se clasifican):** `26270.pdf`×2 · `26270.xlsx`×3 · `GDE 95806.pdf` =
+`2026-08-21T10_47_21_T52F95806 .pdf` · `293.49 Kb.pdf` = `GD 97183.pdf` · `Guia 40040 (1).pdf` =
+`Guia 40040.pdf` · `120.13 Kb.pdf` = `Guia 40597.pdf` = `Guia 40597 (1).pdf` · 4 archivos `~$…`.
+
+**Copia dentro del proyecto (búsqueda por hash de los 52 únicos):** **solo 1** archivo tiene copia
+byte-idéntica dentro de `custom_addons`: **`HLZF75_4495589.pdf`**, promovido a **fixture real** en
+`madenat_lumber_intake/tests/fixtures/HLZF75_4495589.pdf`. Los demás **no** se convirtieron en fixture:
+su evidencia es la **biblioteca + los registros de base** y, en varios casos, **fixtures derivados**.
+
+**Fixtures derivados del documento real (no byte-idénticos, pero con cabecera/valores del original):**
+
+| Fixture | Documento de origen | Correspondencia verificada |
+|---|---|---|
+| `madenat_lumber_core/tests/fixtures/26270.txt` | `26270.pdf` (Ferramenta) | Transcripción del texto: `RUT: 77066489-6`, `GUÍA DE DESPACHO ELECTRÓNICA`, `Nº: 26270`, `Fecha: 03/09/2026`, cliente MADENAT |
+| `_build_xls_blanks_bytes()` en `test_parse_excel_core.py` («tipo 95083») y `_packing_list_blanks_rows()` en `test_excel_table_detection.py` («Estructura tipo 95083») | `95083 Final.xls` (Byc) | Misma cabecera abreviada (`Nº Ticket / Esp. / Anc. / Lar. / Pzas Paq. / Volumen Paq. / Cantidad Paquetes / CERTFOR / Defecto`) y **mismos valores de la 1.ª fila real**: 31,75 · 146,1 · 4,877 · 231 · 5,226 · 1 · NO CERTIFICADO · S/D |
+| `test_excel_table_detection.py::test_two_row_header` | `41994.xls` (Fátima) | Cabecera de 2 filas idéntica (`N°/CODIGOS/…/VOLUMEN` + `PQTE./mm./mm/mm/ M3`) y **misma 1.ª línea**: `0000000134008`, 45, 125, 4.0, 25, 8, 200, 4.5 |
+| `_build_xls_nota_venta_bytes()` en `test_parse_excel_core.py` | `GDE 95806.xls` / `NVTA881333 (2).xls` (JCE) | Cabecera **idéntica** a la real (`Etiqueta / Cat.Certific. / Esc. Fact / Pzas / VOL. / Producto / Est. / Orden / Item / Marca / Precio / Moneda`) y **mismos valores reales**: `5/4x5.3/8x16`, `BLANKS 5/4X5.3/8`, 231, 4.997, ORDEN 21176, item 4, 430, `US$/M3` |
+| `test_document_format.py::test_extract_pdf_con_nombre_xls` y `test_generic_pdf_table.py::test_tabla_una_fila_volumen` | `GDE 95806.pdf` (JCE) | Mismos datos de cabecera reales: `95806`, `2026-08-21`, `MC-0523-140`, `59.964`, `TOT.PAQ.:12`, `TOT PZAS.:2772`, T.C. `923.23` |
+| `test_generic_pdf_table.py::test_tabla_12_filas_lotes_mixtos` | `PACKING HLZF75 (1).pdf` (Arauco) | 12 líneas, `40.300 m³`, refs `3540383149` / `PK45738` (lotes reales del packing); el módulo declara que reproduce «la estructura de los documentos reales de regresión» y que **no** hardcodea documento (`test_no_hardcodeo_documentos_known`) |
+
+#### 17.15.3 Pruebas REALMENTE ejecutadas (localizadas en los respaldos de base)
+
+Fuente: `BACKUP_AB_APPLY_20261008/db/madenat_test_20261008_092958.dump` = **base local `madenat_test`,
+2026-10-08 09:29** (leído con `pg_restore`, sin restaurar). Todas las filas son **ejecuciones reales
+registradas**, con archivo, fecha y resultado persistidos.
+
+| # | Caso | Muestra (archivo real) | Registro persistente | Evidencia material | Etapa alcanzada |
+|---|---|---|---|---|---|
+| 1 | **Ferramenta · guía 26270** (servicio/cepillado) | `26270.pdf` + `26270.xlsx` | `madenat.guia.processing` id **1728**, `service`, `validated`, 2026-09-08 05:14 | **Adjuntos** `26270.pdf` y `26270.xlsx` (res_id 1728) · **17 `stock.lot`** `D<ref> <SKU> 26270` con los M3 del packing (p. ej. `D8828 PCLAT03301253700 26270` → 4,518) · **1 `stock.picking`** con `origin=26270` · `vol_comercial_pdf=57.840`, `vol_shipment_m3=48.009` | **D/E** (guardado → lotes y picking) |
+| 2 | **Ferramenta · guía 19846** | `GDE Guía de Despacho 19846.pdf` + `FACTURACION PACKING LIST 06-10-2025 (1) MADENAT (cepillado) (2).xlsx` | id **1196**, `service`, `validated`, 2026-08-31 22:23 | Adjuntos con **esos nombres exactos** · **19 lotes** `… 19846` (2026-09-02) · 1 picking · **golden record** en `test_guia_processing.py::test_13_golden_record_19846_intacto` | **D/E** |
+| 3 | **Ferramenta · guía 19827** | `GDE Guía de Despacho 19827.pdf` + `FACTURACION PACKING LIST 02-10-2025 (2) MADENAT (cepillado) (1).xlsx` | id **1198**, `service`, `verified`, 2026-09-01 | Adjuntos con esos nombres · **17 lotes** · 2 pickings · es la guía del **guion V3** (§12.6.3) y de `test_guia_processing_display_name.py` | **D/E** |
+| 4 | **Ferramenta · guía 19826** | `GDE Guía de Despacho 19826.pdf` + `FACTURACION PACKING LIST 02-10-2025 (1) MADENAT (cepillado) (1).xlsx` | id **1256**, `service`, `validated`, 2026-09-02 | Adjuntos con esos nombres · **17 lotes** · 1 picking · citada en el código («guía de Felipe (19826)», bypass métrico) | **D/E** |
+| 5 | **Arauco · guía 4495589** | `HLZF75_4495589.pdf` (**y como fixture real**) | id **15326**, `granel`, `validated`, 2026-10-01 12:50 (`vol 40.315 = 40.315`) | Lote `GRANEL 4495589` (id 3753, 2026-09-25) · pickings `EMB-01768` con `origin='4495589 [PURGADO-TEST]'` **y su reversa** (2026-09-30) · fixture **byte-idéntico** usado por `test_intake_volume_detail_pieces.py` (**motor real**) y `test_reopen_oc_reextraction.py` | **A/B/C/D** (+ E con historia de purga y reingesta) |
+| 6 | **JCE · guía 95806** | `GDE 95806.pdf` | id **33151**, `granel`, `verified`, 2026-10-06 18:47 (`59.964 = 59.964`), `guide_pdf_filename='GDE 95806.pdf'` | Adjuntos del wizard de intake de 2026-10-06 (res_id 13654/13655) · fixtures derivados con los datos reales del documento | **A/B/D** (por la ruta de **Volúmenes**) |
+| 7 | **Fátima · guía 39519** (ejercicio) | `Guia 39519.pdf` + `39519 (1).xls` | `lumber.reception` id **1161**, proveedor **12 = Fátima**, `verified`, 2026-08-31 22:21 | Adjuntos con esos nombres en `lumber.reception` | **D/E** (flujo Producto) |
+| 8 | **Fátima · otras guías** | `Guia 41471.pdf`+`41471 (1).xls` (id 962), `Guia 41964.pdf`+`41964.xls` (id 1371) | `lumber.reception` `verified` (2026-08-29 y 2026-09-03) | Adjuntos | **D** |
+| 9 | **Otros (regresión)** | `GD 97183.pdf`+`42.50 Kb.xls` (id **1244**), `Packing GD 100006 - W.xls`+`GD 100006.pdf` (id 1270), `15183.xls`+`GUIA 15183 MADENAT 02-09-2026.pdf` (id **1369**) | `lumber.reception` `verified` (sep-2026) | Adjuntos; **97183** y **15183** tienen expediente propio (`INCIDENTE_GUIA_15183_20261007/`) | **D/E** |
+| 10 | Ingresos UAT (2026-10-03/05) | Archivos `UAT-INT-*` (no de la biblioteca) | `UAT-INT-PROC-20261003-01`, `UAT-INT-20261004-*`, `UAT-SV-20261003-*`, `900001`, `900002` | Adjuntos y lotes | **D/E** (evidencia de la suite UAT, no de los 5 proveedores) |
+
+**Casos SIN registro persistente localizado** (ni en la base local, ni en el remoto, ni en los 9
+respaldos inspeccionados): **`41994`** (Fátima) y **`95083`** (Byc) **como guía ingresada**. Su
+evidencia es de **otro nivel**: fixture **derivado** (§17.15.2) y, en el caso de Fátima, **formato
+equivalente ya ingresado** — `39519 (1).xls` (caso 7) tiene **exactamente la misma estructura** que
+`41994.xls` (verificado campo a campo: `CLIENTE/FECHA/ORDEN COMPRA/GUIA DESPACHO` + cabecera de 2 filas
+`N°|CODIGOS|SUB PRODUCTO|ESPESOR|ANCHO|LARGO|FILAS|COLUMNAS|PIEZAS|VOLUMEN|M.B.F.` + segunda fila
+`PQTE.|mm.|mm|mm|M3`, y `M.B.F. 1362.847` en ambos). **No se atribuye** el resultado de `39519` a
+`41994` como si fuera la misma ejecución: se declara **equivalencia de formato**, no identidad de prueba.
+
+#### 17.15.4 Ferramenta 26270 — conciliación POR LÍNEA y significado de los tres volúmenes
+
+Análisis de las **17 líneas** del registro 1728 (base local) contra el packing `26270.xlsx`:
+
+- **`vol_purchase_m3` (total 57,840)** = Σ `pieces × espesor_mm × ancho_mm × largo_m` (geometría real).
+  Coincide con: **guía PDF 57,8400 m³** y **packing 57,839556 m³** (desvío 0,000444 m³ por redondeo de
+  los M3 declarados fila a fila). **Los 17 lotes** llevan el N° de LOTE del packing (`D8828…D8840`) y su
+  M3 declarado ⇒ **el packing SÍ se interpretó y se usó**.
+- **`vol_shipment_m3` (total 48,009)** = volumen de **EMBARQUE**, calculado por `_compute_vol_shipment_m3`
+  (`madenat_guia_processing.py:448-506`) con **espesor NOMINAL** (`thickness_visual`, p. ej. `5/4"` =
+  31,75 mm en lugar de los 37 mm reales) y **ancho + 1/8"** (`get_s2s_adjustment`, rama S2S/RIP):
+  `vol = (e_in × (a_in + 0,125) × largo × piezas) / 1550,003096`.
+  **Verificación exacta**: línea 5127 (264 pzs · 5/4" · 4 5/8" · 3,70 m) → 1,25 × 4,75 × 3,70 × 264 /
+  1550,003096 = **3,742** = valor almacenado; factor implícito observado 0,82824–0,85799 según ancho,
+  coherente con la fórmula. **No hay error de lectura ni de cálculo.**
+- **Conclusión:** los tres valores son **correctos y de distinta naturaleza**: guía/packing/físico =
+  **57,840** (real) y embarque = **48,009** (nominal comercial). La observación de Cristhian («calcula el
+  volumen solo de embarque, no el del packing») se explica porque **el volumen dominante en pantalla era
+  el de embarque** y porque `packing_volume_declared_m3` **no existía** cuando se creó el registro
+  (2026-09-08): en la base figura **vacío** y `sum_vol_documental_m3 = 0`. **Estado: PENDIENTE DE
+  PRESENTACIÓN/DECISIÓN FUNCIONAL**, no de cálculo.
+- **Corrección de la 1.ª pasada:** se había declarado «causa del 48,009 NO determinada» y «no se
+  acreditó que el packing funcione». **Ambas afirmaciones se rectifican**: la causa está determinada
+  (fórmula de embarque) y el packing **sí** se interpretó (17 lotes con sus M3).
+
+#### 17.15.5 Correspondencia local ↔ TEST remoto (revisada)
+
+| Elemento | Base **local** `madenat_test` (dump 2026-10-08 09:29) | **TEST remoto** `madenat_test` (144.22.50.236, leído hoy) |
+|---|---|---|
+| `madenat.guia.processing` | **11** filas (19846, 19827, 19826, **26270**, **4495589**, **95806**, UAT y otros) | **1** fila: **26270** (id 17, `validated`, `57.840` / `48.009`, `26270.pdf` + `26270.xlsx`) |
+| `lumber.reception` | **7** filas (97183, 41471, **39519**, 100006, 15183, 41964, 900001) | **4** filas (**100006, 100107, 100176, 15183**), todas `done` con `GD *.pdf` + `Packing GD * - W.xls` |
+| `stock.lot` de la guía 26270 | **17** lotes con los M3 del packing | **17** lotes (misma composición) |
+| Adjuntos de esos casos | `26270.pdf`/`26270.xlsx` + las 3 parejas del ejercicio | **solo** `26270.pdf`/`26270.xlsx` |
+| Módulos/esquema | (código idéntico por hash) | `core 18.0.6.5.0`, `intake 18.0.0.11.0`, `logistics 18.0.1.6.0`, `ingestion_engine 18.0.1.1.0`; `service_return_confirmation` y vistas nuevas presentes |
+
+**Lecturas correctas (evitando extrapolaciones):**
+- **«Ferramenta 26270» está replicado en el remoto** (mismo registro, mismos 17 lotes, mismos volúmenes)
+  ⇒ para **ese** caso, la evidencia **sí** cruza a TEST remoto.
+- **Arauco 4495589, JCE 95806, el «Ejercicio Completo» (19846/19827/19826/39519) y Fátima/Byc** tienen
+  evidencia **únicamente LOCAL**: **no** se trasladan al remoto.
+- La comparación previa («314 archivos, 0 discrepancias») se mantiene **pero acotada**: midió
+  `.py/.xml/.csv` de 4 módulos, con exclusiones declaradas (`__pycache__`, `_archive`, `backups`), y los
+  **39 archivos solo-remoto** son legado. **No** equivale a «todo el despliegue es idéntico y validado».
+
+#### 17.15.6 Correcciones a la 1.ª pasada (§17.14) — qué se rectifica, por qué y con qué evidencia
+
+| # | Afirmación de §17.14 | Corrección | Evidencia |
+|---|---|---|---|
+| C1 | «Ninguno de los cinco formatos fue probado» / «R05–R11 NO ACREDITADO» | **Rectificado.** Hay **pruebas reconstruidas**: 6 casos con **archivo real** y registro persistente (§17.15.3) + **fixtures derivados** del documento real (§17.15.2). La 1.ª pasada buscó **sólo** en `custom_addons` y **no** inspeccionó la biblioteca externa ni los respaldos de base. «No localizado» **no** equivalía a «no realizado» | Dump local 2026-10-08 (`ir_attachment`, `madenat_guia_processing`, `stock_lot`, `stock_picking`); biblioteca con 63 archivos |
+| C2 | «La expresión “operación no válida” es una paráfrasis del usuario» (H-1) | **Retirado.** La búsqueda literal **no la localizó**, pero eso **no demuestra** cómo la formuló el usuario. Se reclasifica como **texto reportado cuyo origen no fue identificado**, hasta localizar el mensaje o reconstruir su contexto | Búsqueda literal en `custom_addons` + `/opt/odoo18-test/{odoo,addons}` (0 coincidencias) |
+| C3 | «No llegaron los adjuntos» / «no existe expediente con los adjuntos» (H-3) | **Rectificado.** Existen: **biblioteca externa** (63 archivos, 52 únicos) y **adjuntos subidos** en la base local (`26270.pdf`, `26270.xlsx`, `GDE Guía de Despacho 19826/19827/19846.pdf` + sus packings). **No** debe reutilizarse la frase «no llegaron los adjuntos» | `ir_attachment` del dump local, con `create_date` 2026-08-31/09-08 |
+| C4 | «El 48,009 de Ferramenta es incorrecto» / «causa NO determinada» (H-4) | **Rectificado.** **No es un error**: es el volumen de **embarque** con espesor nominal y ancho +1/8" (`_compute_vol_shipment_m3`). Guía/packing/físico = **57,840**; embarque = **48,009**. Y el packing **sí** se interpretó (17 lotes con sus M3) | §17.15.4 con la fórmula y su verificación numérica exacta |
+| C5 | «JCE: NO ACREDITADO (0 líneas por diseño)» (R09/R10) | **Precisado por ruta.** La **guía 95806 se ingirió** por la ruta de **Volúmenes** (`granel`, `verified`, 59,964 m³, 2026-10-06). El **packing Nota de Venta** se lee y se **rechaza por diseño**. La correspondencia fixture↔documento real **queda demostrada** (cabecera idéntica y mismos valores) ⇒ **sí** se puede atribuir al documento real | Registro 33151; `test_nota_venta_dimensions_raw_rejected_with_diagnostic`; `test_document_format.py` |
+| C6 | «Arauco: NO ACREDITADO / exige Excel» (R11) | **Rectificado.** La ruta de **Volúmenes** existe y **se usó con el PDF real** (`validated`, 40,315 m³, 2026-10-01); el PDF es **fixture byte-idéntico** y se ejercita con el **motor real**. Brecha concreta y acotada: **packing PDF en el flujo Normal** | Registro 15326; lote `GRANEL 4495589`; `test_intake_volume_detail_pieces.py` |
+| C7 | Atribución del `OwlError` (R15) | **Corregido:** fue **compartido por Mauricio**, **no** consta como reporte de Cristhian. Se conserva como incidencia **abierta y no reproducida** | Enunciado de la orden de trabajo; sin artefacto de reporte del usuario |
+| C8 | «Fixtures: sólo 2 de 5 proveedores» (§13.3) | **Rectificado:** **1 fixture real** (Arauco, byte-idéntico) + **1 transcripción** (`26270.txt`) + **4 familias de fixtures derivados** (Byc, Fátima, JCE-Nota de Venta, JCE-guía) + estructura del packing de Arauco | §17.15.2 |
+| C9 | «Servicio local no operativo ⇒ no se pudo verificar nada del entorno local» (§17.14.1) | **Matizado:** el **servicio HTTP** no responde desde esta distro, pero el **estado de la base local sí se verificó** leyendo su respaldo del 2026-10-08 con `pg_restore` (sin restaurar). La limitación queda acotada a «no hubo consultas en vivo ni ejecución de pruebas» | `BACKUP_AB_APPLY_20261008/db/madenat_test_20261008_092958.dump` |
+| C10 | «R06/R07: sin evidencia de ingreso completo» | **Rectificado:** hay ingreso **completo hasta stock** (17 lotes + picking) con los archivos reales, replicado en el TEST remoto | §17.15.3 caso 1 y §17.15.5 |
+
+**Lo que NO cambia:** R15 sigue **abierto y no reproducido**; V3 (navegador) sigue **pendiente**; las
+validaciones legítimas **no** se desactivan; y **no** se aprueba ningún caso sólo por existir el archivo.
+
+#### 17.15.7 Matriz R01–R16 — versión revalidada (sustituye los estados de §17.14.2)
+
+Estados adaptados a la nomenclatura vigente: **VERIFICADO CON MUESTRA REAL · VERIFICADO
+HISTÓRICAMENTE; REVALIDACIÓN ACTUAL PENDIENTE · IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL · PRUEBA
+REALIZADA SEGÚN MAURICIO; EVIDENCIA DETALLADA NO LOCALIZADA · INCIDENCIA REPRODUCIDA/ABIERTA ·
+EVIDENCIA CONTRADICTORIA (resuelta) · PENDIENTE FUNCIONAL**.
+
+| RQ | Muestra real · hash | Evidencia de que se realizó | Entorno | Etapa | Resultado | Vigencia vs código actual | Estado | Pendiente exacto |
+|---|---|---|---|---|---|---|---|---|
+| **R01** | n/a (aplica a los 11 ingresos reales) | 11 ingresos ejecutados ago–oct sin registros de bloqueo por mensaje de perfil; el aviso de perfil sigue en el código | Código + base local | n/a | No se localizó artefacto del mensaje concreto | `intake_wizard.py:251-262` **vigente** | **PRUEBA REALIZADA SEGÚN MAURICIO; EVIDENCIA DETALLADA NO LOCALIZADA** | Captura o texto exacto del aviso; reproducir en navegador |
+| **R02** | Las **11 guías reales** | Clasificación **por contenido** verificada en los datos: `19846/19827/19826/26270/900002 → service`; `4495589/95806/UAT-SV → granel`; `UAT-INT-20261004 → compra`, **sin selección manual** | Base local (+remoto) | **D** | Coherente en el 100 % de los casos reales | AD-61 vigente; `intake_wizard_views.xml:48` (campo oculto) | **VERIFICADO CON MUESTRA REAL** | Ninguno funcional; V3 visual pendiente |
+| **R03** | Guías **26270, 19846, 19826, 4495589, 95806** | **Subproducto asignado en todas las líneas**: 17/17, 19/19, 17/17, 1/1, 1/1; **1 solo `product_id` maestro por guía** | Base local | **D** | Resolución/autocreación de subproducto **correcta en datos reales** | AD-ING-001/002 vigentes; `find_or_create_lumber_subproducto` | **VERIFICADO CON MUESTRA REAL** | Revisar si el reporte original era otro defecto (no localizado) |
+| **R04** | Líneas de **26270/19846/19826** | `thickness_visual`/`width_visual` reales (`5/4`, `4 5/8`, `3 5/8`, `150mm`) **se usan** en `_compute_vol_shipment_m3` (verificado numéricamente) ⇒ la conversión funciona | Base local + código | **B/D** | Conversión OK; **mezcla de notaciones** presente (`150mm` junto a fracciones) | `_get_fraction_text`, `_check_imperial_fractions` (solo log) vigentes | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | Presentación del packing en fracciones **en la Consola** (V3) |
+| **R05** | `Guia 41994.pdf` (`4d8e0e8b…`) · `41994.xls` (`99fe59ff…`) | Fixture **derivado** `test_two_row_header` (misma cabecera 2 filas y 1.ª línea `0000000134008`); **formato idéntico** a `39519 (1).xls`, que **sí se ingresó** (id 1161, `verified`) | Código + base local | **A/B** (+D por equivalencia de formato) | Formato **legible e ingerible** por equivalencia | `excel_table_detection.py` vigente (alias semánticos únicos) | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | Ingreso real de **41994** (o decisión de aceptar la equivalencia con 39519) |
+| **R06** | `26270.pdf` (`04226af8…`) + `26270.xlsx` (`0f843ece…`) | **Adjuntos** en guia.processing 1728 · **17 lotes** con los M3 del packing · 1 picking · `validated` (2026-09-08) · **replicado en el TEST remoto** (id 17, 17 lotes) · transcripción `fixtures/26270.txt` | **Local y remoto** | **A,B,C,D,E** | **Ingreso completo hasta lotes/picking** | `_parse_packing_excel` vigente; detector vigente | **VERIFICADO CON MUESTRA REAL** | Presentación conjunta de volúmenes (ver R07) |
+| **R07** | idem R06 | Σ líneas: `vol_purchase` **57,840** = guía **57,8400** = packing **57,839556**; `vol_shipment` **48,009** = fórmula de embarque con espesor nominal y ancho +1/8" | Local y remoto | **D/E** | **Los tres volúmenes son correctos y de distinta naturaleza**; `packing_volume_declared_m3` **vacío** porque el campo es **posterior** al registro | `_compute_vol_shipment_m3:448-506`; campos de conciliación (`:1005-1072`) | **VERIFICADO CON MUESTRA REAL (cálculo) · PENDIENTE FUNCIONAL (presentación)** | Mostrar/rotular **ambos** volúmenes y su semántica en la Consola; decidir cuál es «operativo» |
+| **R08** | `95083 .pdf` (`b581a283…`) · `95083 Final.xls` (`b5c474ae…`) / `95083 (1) (1).xls` (`191161be…`) | `excel_table_detection.py` («**investigación 95083**»); `test_excel_table_detection.py` («Estructura tipo 95083») y `_build_xls_blanks_bytes` con **valores de la 1.ª fila real** (31,75·146,1·4,877·231·5,226·1); `test_packing_declared_totals_persisted` con **42,132/2244/8** | Código | **A/B** | Estructura e interpretación **acreditadas** | Detector vigente | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | Ingreso real de **95083** (no hay registro en ninguna base) |
+| **R09** | `GDE 95806.pdf` (`17a57189…`, = `2026-08-21T10_47_21_T52F95806 .pdf`) | Registro **33151**: `granel`, `verified`, `59.964 = 59.964`, `guide_pdf_filename='GDE 95806.pdf'` (2026-10-06) · adjuntos del wizard (res_id 13654/13655) · fixtures derivados con los datos reales (`95806`, `MC-0523-140`, `59.964`, `12 paq.`, `2772 pzs`, T.C. `923.23`) | Base local | **A,B,D** | **La guía SÍ se leyó y se ingresó** (ruta de Volúmenes) | `document_extractor.extract_document` + extractor PDF genérico vigentes | **VERIFICADO CON MUESTRA REAL** (guía) | Ninguno para la guía; ver R10 para el packing |
+| **R10** | `GDE 95806.xls` (`a9049815…`) / `NVTA881333 (2).xls` (`ec064c4b…`) | `test_nota_venta_dimensions_raw_rejected_with_diagnostic` con fixture **derivado** (cabecera real idéntica y valores reales `5/4x5.3/8x16`, `231`, `4.997`, `21176`, `4`, `430`, `US$/M3`) ⇒ correspondencia **demostrada** | Código | **A,B** (C/D **no**) | Se **lee**; se **rechaza por diseño** (`REQUIERE_DIMENSIONES_SEPARADAS`, «No se creó ninguna línea») | Regla vigente en `_validar_y_enriquecer_lineas` | **EVIDENCIA CONTRADICTORIA (resuelta) → PENDIENTE FUNCIONAL** | Decidir: normalizar `Esc. Fact` a E/A/L **o** mensaje explícito «packing no ingerible» |
+| **R11** | `HLZF75_4495589.pdf` (`98382981…`, **fixture byte-idéntico** en `madenat_lumber_intake/tests/fixtures/`) + `PACKING HLZF75 (1).pdf` (`1fcebe7f…`) | Registro **15326**: `granel`, `validated`, `40.315 = 40.315` (2026-10-01) · lote `GRANEL 4495589` (2026-09-25) · pickings `EMB-01768` `origin='4495589 [PURGADO-TEST]'` **y su reversa** (2026-09-30) · `test_intake_volume_detail_pieces.py` (**motor real**) y `test_reopen_oc_reextraction.py` · estructura del packing en `test_tabla_12_filas_lotes_mixtos` | Base local + código | **A,B,C,D** (+E con purga/reingesta) | **Guía leída, ingerida y validada**; hubo purga y reingesta | Extractor PDF genérico vigente | **VERIFICADO CON MUESTRA REAL** | **Pendiente funcional acotado**: packing **PDF** en el flujo **Normal** |
+| **R12** | n/a (función) | `test_service_return_confirmation.py` (13) → **88/88** sobre `madenat_test` (2026-10-08) | Local | **D** | Sí/No/vacío persistente y **no** bloqueante | AD-102 vigente | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | **V3** en navegador (guiar 19827) |
+| **R13** | n/a (función) | `test_service_return_imputation_guard.py` (8) + `..._pending_filter.py` (9) + regresiones I2 | Local | **D** | Aplicar exige destino «Sí»; reversa permite cambiar | AD-102 vigente | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | V3; concurrencia y cobertura parcial abiertas |
+| **R14** | n/a (UI) | Vista cargada en `madenat_test` (id 1867 local / **1660 remoto**) con `Aplicar cambios` y `Evidencia documental`; estructura verificada | Local + remoto | **F (solo estructura)** | Disposición verificada **estáticamente** | `intake_console_views.xml` vigente | **IMPLEMENTADO Y PROBADO EN ALCANCE PARCIAL** | Observación **visual** (`UI-1..UI-6`) |
+| **R15** | n/a | Búsqueda estática: **no** hay campo huérfano en las vistas de la Consola; `urlRelation` pertenece al cliente web | Código | — | **No reproducido** | Sin cambios | **INCIDENCIA ABIERTA (no reproducida)** | Reproducir con navegador/base/usuario/registro y capturar; **reportado por Mauricio** |
+| **R16** | `26270` (local y remoto) | Manifiesto SHA-256 de **314** archivos `.py/.xml/.csv` (4 módulos): **0 discrepancias**; módulos/esquema/vistas presentes; **26270 replicado con sus 17 lotes** | Local + remoto | **D** | Correspondencia de **código** y **esquema**; réplica del caso 26270 | — | **VERIFICADO CON MUESTRA REAL · ALCANCE PARCIAL** | Replicar/validar en TEST remoto los demás casos (hoy sólo locales); dar versión a `custom_addons` del remoto |
+
+#### 17.15.8 Niveles de esta revisión, fuerza de la evidencia y pendientes mínimos
+
+**Correspondencia A–F ↔ V0–V3 (no se renombran los niveles existentes):** los niveles **A–F** son
+categorías **de esta revisión** y se mapean así: **A** (lectura) → V0/V1 con ejecución real;
+**B** (interpretación) → V2 (pruebas del parser/detector) + V1; **C** (integración documental) → V2;
+**D** (flujo de ingreso) → V2 + **registro persistente**; **E** (stock) → V2 + datos de stock;
+**F** (interfaz) → **V3** (navegador). Los niveles **V0–V3** de `03_TESTS.md` **siguen vigentes** y no
+se sustituyen.
+
+**Fuerza de la evidencia localizada (lo más fuerte primero):**
+1. **Ejecución registrada con resultado** (§17.15.3 casos 1–10): adjuntos con nombre original + estados
+   `verified`/`validated` + lotes y pickings.
+2. **Fixture byte-idéntico del archivo real** (Arauco) ejercitado por el **motor real**.
+3. **Fixtures derivados del documento real** con cabecera y valores verificados (Fátima, Byc, JCE ×2).
+4. **Transcripción** del texto real (`fixtures/26270.txt`).
+5. **Prueba automatizada existente sin ejecución localizada** en esta intervención (la mayoría de las
+   suites citadas; **no** se ejecutaron aquí).
+6. **Declaración de prueba por Mauricio** (antecedente explícito de esta sección).
+7. **Referencia documental sin artefacto**: `regen_docs_madenat.sh` propone la guía **40597** como
+   «caso base» (PDF 55.665 vs Excel 55.821 m³) y la biblioteca **tiene** `Guia 40597.pdf` + `40597.xls`;
+   **no** se localizó registro de ese ingreso.
+8. **Capturas de navegador: NO existen** en ningún expediente inspeccionado.
+
+**Pendientes mínimos (con acción concreta; ninguno ejecutado):**
+
+| # | Pendiente | Acción concreta | ¿Requiere autorización? |
+|---|---|---|---|
+| **Q1** | **R07** — presentación y semántica de los volúmenes | Decidir y etiquetar en la Consola: *Vol. Guía/Packing* (57,840) vs *Vol. Embarque* (48,009) — hoy `packing_volume_declared_m3` está vacío por ser campo posterior al registro | Sí (cambio de UI) |
+| **Q2** | **R10** — Nota de Venta (JCE) | Decidir: normalizar `Esc. Fact` (`5/4x5.3/8x16`) a espesor/ancho/largo **o** mensaje explícito «packing no ingerible» | Sí (cambio de código) |
+| **Q3** | **R11** — packing PDF en flujo Normal (Arauco) | Decidir: exigir Excel / derivar a Volúmenes / leer packing PDF en Normal | Sí (decisión + eventual código) |
+| **Q4** | **R05 / R08** — ingresos reales de `41994` y `95083` | Ejecutar el par en una base de pruebas con los archivos de la biblioteca (o aceptar formalmente la equivalencia con `39519`) | **Sí** (crea registros) |
+| **Q5** | **V3 (navegador)** — R01, R12, R13, R14 | Ejecutar `GUION_VERIFICACION_NAVEGADOR.md` sobre `8069`/`madenat_test` (guía 19827) | No (observación), salvo escrituras de prueba |
+| **Q6** | **R15** — OwlError | Reproducir con navegador + base + usuario + registro y **capturar**; sin borrar assets ni tocar JS global | No (diagnóstico) |
+| **Q7** | **R16** — réplica en TEST remoto | Decidir la carga de los casos locales en el remoto y **dar control de versión** a su `custom_addons` | Sí |
+| **Q8** | Regresión | Promover a **fixtures** las muestras ya probadas (§17.15.2) para que la regresión no dependa de la biblioteca externa | Sí (añade archivos al repo) |
+
+**No se propone, y no debe hacerse:** crear una base nueva; recrear el aislamiento retirado; enviar a
+stock guías existentes sólo para completar una prueba; desactivar validaciones legítimas; ejecutar
+scripts desconocidos sin inspeccionarlos; ni borrar/limpiar recursos legado en esta intervención.
+
+
+
+
+
+
+### 17.16 Cierre funcional de pendientes (P0–P4) — 2026-10-10
+
+**Naturaleza.** IMPLEMENTACIÓN Y VERIFICACIÓN sobre el desarrollo existente
+(`madenat_test`, `localhost:8069`, contenedor `odoo18_app`, PostgreSQL
+`odoo18_db`). Sin nuevas bases, contenedores ni ramas; sin commit/push; sin
+correos; **sin despliegue remoto**. Biblioteca de muestras:
+`muestras_documentos_ingreso`.
+
+**Baseline confirmado.** Rama `feat/guia-correccion-documental-preservada-20261002`,
+HEAD `e302c488321c276af7e07f1abeecc8bc261a89f4`, `git status` = **62 modificados
++ 14 sin seguimiento** (76 entradas), **0 staged**. Respaldo previo a las
+escrituras: `CIERRE_PENDIENTES_20261010/db/madenat_test_pre_20261010.dump`
+(`pg_dump -Fc`, 11,3 MB).
+
+#### 17.16.1 P0 — OwlError `Many2OneField.urlRelation` (R15 / Q6)
+
+**Punto de fallo** (cliente web de Odoo 18; **no** existe en `custom_addons`):
+`many2one_field.js` → `get urlRelation() { if (!this.relation.includes(".")) }`
+con `get relation() { return this.props.relation ||
+this.props.record.fields[this.props.name].relation; }`. El error exige un
+`Many2OneField` cuyo campo **carece de `relation`** en los metadatos.
+
+**Diagnóstico estático ejecutado (servicio 8069 operativo):**
+
+| Comprobación | Resultado |
+|---|---|
+| `madenat.lumber.intake.console`: 9 campos `many2one`, con `relation` faltante | **0** |
+| Vistas de la Consola (`list`/`form`/`search`) con `widget="many2one*"` | **0** incidencias |
+| `ir.model.fields` `ttype='many2one'` con `relation` vacío (`madenat_test`) | **0** |
+| `ir.model.fields` `ttype in ('one2many','many2many')` con `relation` vacío | **0** |
+| Campos con `widget="many2one"`/`many2one_avatar*` en vistas propias | todos sobre `many2one` reales |
+| JS propio que altere `Many2OneField`/`urlRelation` | **ninguno** |
+| Diff A/B (15 archivos) | sólo añade `widget="radio"` (`Selection`) |
+| `docker logs odoo18_app` (48 h) con el error | **ninguno** |
+
+**Resultado: NO REPRODUCIDO BAJO ESTAS CONDICIONES** (sin navegador disponible
+en el entorno de trabajo). **No** se parchea el cliente global ni se borran
+assets. **Paso manual concreto para Mauricio:** con navegador en
+`http://localhost:8069`, base `madenat_test`, usuario afectado (no admin), abrir
+la acción/menú y el registro que falló y capturar: URL completa, pestaña
+Console (traceback Owl completo) y Network (última respuesta `/web/dataset/...`),
+indicando el **modelo y campo** resaltados. Sin esa captura, R15 permanece
+**abierto**. Hipótesis conservadas, **no confirmadas**: (a) assets/caché de
+vista desactualizados; (b) metadatos de relación no cargados; (c) widget
+incompatible.
+
+#### 17.16.2 P1 — Nomenclatura y presentación de volúmenes (R07 / Q1)
+
+Implementado en el desarrollo existente:
+
+- Modelo `madenat.lumber.intake.console`: proxies read-only `vol_compra_m3`
+  («Vol. compra (m³)», Σ `vol_purchase_m3` de las líneas) y `vol_embarque_m3`
+  («Vol. embarque (m³)», Σ `vol_shipment_m3`); calculan sin escribir y no
+  alteran fórmula, unidad, precisión ni valores históricos.
+- Vista `madenat.lumber.intake.console.form`: ambos campos añadidos al grupo
+  «Volúmenes y diferencias» (junto a «Vol. PDF/Guía (m³)» y «Vol. Packing (m³)»);
+  se conservan el resumen en 2 columnas, la evidencia en 3 columnas, el radio a
+  todo el ancho y el packing a todo el ancho.
+- `madenat_lumber_core/views/guia_processing_views.xml`: rótulos inequívocos
+  `vol_purchase_m3` → «Vol. compra (m³)» y `vol_shipment_m3` → «Vol. embarque
+  (m³)» (columna y subtotal), eliminando «Vol. m³», «Vol (m³)» y «Vol. Físico
+  (m³)» sobre el campo de embarque.
+
+**Verificación (Ferramenta 26270, consola id 900001728):** `vol_comercial_pdf`
+**57,840** · `packing_volume_declared_m3` 0,000 (campo posterior al registro) ·
+`vol_compra_m3` **57,840** · `vol_embarque_m3` **48,009**. Se conserva la
+explicación de magnitudes distintas (guía/packing/físico vs. embarque). Módulos
+actualizados (`-u madenat_lumber_core,madenat_lumber_intake`, servicio detenido
+durante la actualización) y `HTTP 200` posterior. Pendiente: **observación en
+navegador** (V3).
+
+#### 17.16.3 P3 — Ingresos reales Fátima 41994 y Byc 95083 (R05/R08 / Q4)
+
+Ejecutado con los archivos **reales** de la biblioteca, por la fachada de
+ingreso (`madenat.lumber.intake.wizard`, modalidad `normal`):
+
+| Caso | Documentos | Destino | Estado | Líneas | Volumen | Clasificación |
+|---|---|---|---|---|---|---|
+| Fátima **41994** | `Guia 41994.pdf` + `41994.xls` | `lumber.reception` **7950** (`name=41994`) | `verified` | 14 | Σ `vol_purchase_m3` = **50,497** (guía PDF 50,496) | Producto (auto, sin selección manual) |
+| Byc **95083** | `95083 .pdf` + `95083 Final.xls` | `madenat.guia.processing` **33250** (`name=95083`) | `verified` | 8 | `5,226`/línea (Σ 41,808) · guía **42,132** | Procesado (auto; keyword «servicio») |
+
+- **Alcance: SIN stock.** Ambos casos se detuvieron en `verified`; **no** se
+  envió a stock ni se crearon movimientos/pickings.
+- Byc: `31,75 × 146,1 × 4,877 m` × `231 pzas` × 8 líneas, con subproducto por
+  línea; Fátima: 14 líneas con `subproduct_id` y `lengthuom='m'`, `Σ vol_purchase
+  = 50,497` vs. guía 50,496 (Δ 0,001 = redondeo).
+- La guía de Byc se clasificó automáticamente como **Procesado** por la palabra
+  clave «servicio» presente en el PDF; se registra como **observación de
+  clasificación** (R02: clasificación por contenido), **no** como defecto.
+
+#### 17.16.4 P4 — JCE dimensiones combinadas (`Esc. Fact`) (R10 / Q2)
+
+**Notación descifrada de forma determinista** (no por intuición). El archivo
+real `GDE 95806.xls` / `NVTA881333 (2).xls` (Nota de Venta Nº 881333, JCE) trae
+`Esc. Fact = 5/4x5.3/8x16`, `Pzas = 231` y `VOL. = 4,997 m³`. Con espesor
+nominal `5/4"` (1,25"), ancho nominal `5 3/8"` (5,375") **+ ajuste S2S `1/8"`**
+(5,5") y largo `16 ft`: `1,25 × 5,5 × 16 × 231 / 12³ = 4,997 m³` **exacto** ⇒
+`5.3/8` = `5 3/8`. La propia columna `VOL.` del documento es la prueba.
+
+**Implementado** en `madenat_lumber_core/models/madenat_guia_processing.py`:
+nuevo `_normalize_combined_dimensions(raw)` + enganche en
+`_validar_y_enriquecer_lineas` (solo cuando faltan dimensiones separadas).
+Normaliza la forma acreditada `E x A x L` (3 tokens; separador `x`/`X`/`*`;
+fracción/mixto/entero; largo en pies) a `(espesor_mm, ancho_mm, largo_m)`.
+Los patrones **no** acreditados (nº de tokens ≠ 3, token no numérico o fuera de
+rango) siguen rechazándose con `REQUIERE_DIMENSIONES_SEPARADAS`; **no** se
+inventan dimensiones ni se asumen unidades.
+
+**Verificación con el documento REAL** (`GDE 95806.xls`, parser core real):
+
+| Métrica | Resultado |
+|---|---|
+| Líneas válidas / rechazadas | **12 / 0** |
+| Dimensiones normalizadas por línea | `31,75 mm × 136,525 mm × 4,8768 m` |
+| `vol_shipment_m3` por línea | **4,9967** (documento `VOL.` = 4,997) |
+| Σ `vol_shipment_m3` | **59,960** (guía PDF `GDE 95806.pdf` = 59,964) |
+
+El test que esperaba el rechazo **no se eliminó**: se adaptó
+(`test_nota_venta_dimensions_raw_normalized_and_create`) y se añadió
+`test_dimensiones_combinadas_ambiguas_siguen_rechazadas`.
+
+#### 17.16.5 P4 — Arauco packing PDF (R11 / Q3)
+
+**Decisión funcional (reutilizando capacidad existente).** El packing de Arauco
+llega en **PDF** (`PACKING HLZF75 (1).pdf`). El motor real extrae su estructura
+(17 líneas; `total_volume_m3` = **40,315**) pero **sin detalle determinista por
+línea** (piezas/volumen por línea ausentes) ⇒ no procede forzar el flujo Normal
+(que exige packing **Excel**).
+
+- **Ruta recomendada:** **Ingreso por Volúmenes** (guía PDF), ya acreditada con
+  el PDF real `HLZF75_4495589.pdf` (registro **15326** `granel`/`validated`,
+  `official_volume_m3` **40,315**, lote `GRANEL 4495589`).
+- **Alcance:** volumen total de la guía/packing; **no** se afirma haber obtenido
+  detalle inexistente.
+- **Efecto operativo:** sin lector nuevo; el packing PDF se aporta como
+  evidencia y su volumen se concilia; el flujo Normal permanece reservado a
+  packings con dimensiones separadas.
+
+#### 17.16.6 Evidencia, entornos y regresiones
+
+**Muestras usadas (SHA-256 completos, `muestras_documentos_ingreso/07-09-2026/`):**
+
+| Documento | SHA-256 |
+|---|---|
+| `Guia 41994.pdf` | `c0031051000b8eb92caeaa7d37741dbd42d91192ff75d468e324a4d2fa6fbf9f` |
+| `41994.xls` | `e4cdfd20aae34183f4f34bd072991212171e212170b9ed85523674baf832262f` |
+| `95083 .pdf` | `f53769652f5b5e52d4bb0adb1dd3334c3f9c697ee64d37dc43d579f06f95e770` |
+| `95083 Final.xls` | `93c129a041ca9da3ff8c1a61528612467ac43249100b12cad76e09a64d7017f7` |
+| `GDE 95806.xls` | `722d725a0207e0981ffe7143128539dc794c8ae31eac9a6a21153058d6592273` |
+| `NVTA881333 (2).xls` | `ba1f83414812355f6be8a8e49371fabae7e1c090547f106a654a8e8ad9f62b94` |
+| `PACKING HLZF75 (1).pdf` | `df2ddca1689804c183a4bb81047983d76343443c52201a62e95558f52a5b870e` |
+| `HLZF75_4495589.pdf` | `98382981de062b1b0d2b289f5fee0e6de0339e35c63401c080063a6d11c19155` |
+
+**Regresiones (corridas nuevas, `madenat_test`):**
+
+| Corrida | Alcance | Resultado |
+|---|---|---|
+| Dirigidas (nuevo) | `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` | **0 failed, 0 error(s) of 34 tests** |
+| Regresión de módulo | `madenat_lumber_intake` (`--test-tags /madenat_lumber_intake`) | **2 failed of 380** → **corregidas** |
+| Documento real JCE | `GDE 95806.xls` (motor core real) | 12/12 líneas · `4,9967` ≈ `VOL.` 4,997 |
+| Consola Ferramenta | id 900001728 | guía 57,840 · embarque 48,009 |
+
+> **Rectificación honesta de las 2 fallas.** Pertenecen a
+> `madenat_lumber_intake` y su causa **no** es esta intervención: la
+> reorganización de UI aplicada (2026-10-08) consolidó el encabezado
+> «Evidencia documental» en uno solo («📄 Evidencia documental»), y esas dos
+> pruebas (sin modificar) aún esperaban el texto sin emoji. Los diffs de la
+> implementación A/B **no** contienen esa consolidación; ésta vive en el árbol
+> activo. Se **adaptó la constante** de ambas pruebas al encabezado vigente
+> (sin eliminar ninguna aserción) ⇒ verde. **No** se declaró «todo cerrado»:
+> se corrigen la atribución y el conteo.
+
+**Límites conservados (sin cambios):** V3 (navegador) **pendiente**;
+R16 (réplica/control de versión del TEST remoto) **pendiente**; concurrencia
+**no acreditada**; filtro «sin imputación aplicada» **sin cobertura parcial**;
+I3/I5 **fuera de alcance**; instalación en base limpia **pendiente**.
+
+#### 17.16.7 Estado Q1–Q8 tras el cierre (2026-10-10)
+
+| # | Pendiente | Estado 2026-10-10 |
+|---|---|---|
+| **Q1** | R07 — presentación/semántica de volúmenes | **CERRADO EN DESARROLLO** (V3 navegador pendiente) |
+| **Q2** | R10 — Nota de Venta (JCE) `Esc. Fact` | **CERRADO EN DESARROLLO** (normalización + pruebas + documento real) |
+| **Q3** | R11 — packing PDF Arauco | **PENDIENTE DE DECISIÓN FUNCIONAL** → **propuesta:** ruta de Volúmenes (ejecutable ya; ver §17.16.5) |
+| **Q4** | R05/R08 — ingresos reales 41994/95083 | **CERRADO EN DESARROLLO** (sin stock; ver §17.16.3) |
+| **Q5** | V3 (navegador) | **PENDIENTE** (sin navegador en el entorno) |
+| **Q6** | R15 — OwlError | **NO REPRODUCIDO BAJO CONDICIONES REGISTRADAS** (paso manual §17.16.1) |
+| **Q7** | R16 — réplica/control de versión remoto | **PENDIENTE** (requiere autorización) |
+| **Q8** | Regresión/fixtures | **PARCIAL** (fixtures reales ya usados por pruebas; promoción pendiente) |
+
+**Diferencia local ↔ remoto.** Todo lo anterior es **LOCAL (`madenat_test`)**.
+**No** se desplegó, actualizó ni reinició el TEST remoto. Lista para despliegue
+posterior autorizado: `madenat_lumber_intake` (modelo `intake_console.py`, vista
+`intake_console_views.xml`, tests `test_volume_ui_hierarchy.py`,
+`test_volume_operations_screen.py`) y `madenat_lumber_core`
+(`models/madenat_guia_processing.py`, `views/guia_processing_views.xml`, tests
+`test_parse_excel_core.py`).
+
+#### 17.16.8 Aceptación visual (2026-10-10) — guía 19827
+
+Mauricio confirmó el **2026-10-10**, mediante captura y mensaje, que la **guía 19827** (Ferramenta,
+`service`, `verified`) se presenta correctamente. Se registra como **aceptación visual** de la
+presentación observada (nivel V3, caso único):
+
+- Formulario abierto satisfactoriamente en el caso observado.
+- **Resumen del ingreso** en **dos columnas**.
+- **Evidencia documental** en **tres columnas**.
+- **Identificación de retorno** visible.
+- **Detalle del packing** a todo el ancho.
+
+**No se extiende** esta aceptación a operaciones **no observadas**: persistencia Sí/No/vacío en
+pantalla; aplicación y reversa de imputaciones; resolución global del `OwlError`. Estado del
+`OwlError`, salvo evidencia adicional: **«No reproducido en la apertura manual observada; causa no
+confirmada»** (§17.16.1). La validación visual permite cerrar la **presentación observada**; los
+pendientes funcionales independientes permanecen identificados, **sin** volver a bloquear toda la
+etapa. Evidencia de prueba: `03_TESTS.md` §14.4; estado del pendiente: `05_BACKLOG.md`.
+
+#### 17.16.9 Flujo de imputación SV — confirmado en código (2026-10-10)
+
+Respuesta a la pregunta funcional «¿cómo se imputan los volúmenes enviados a proceso a las guías de
+procesados que retornan?». La **secuencia operativa** y la **tabla de controles** (origen · destino ·
+volumen · saldo · aplicación · reversa · permisos) tienen dueño único en
+**`19_IMPUTACION_SV_Y_PROCESADORES.md` §19.10**; **no** se duplican aquí.
+
+Síntesis: el **origen** es la **etiqueta procesada** de la guía de retorno (el **envío a proceso** I1 es
+una transferencia interna **separada**, sin vínculo automático); el **destino** es la **guía de
+procesados** marcada **«Sí»** (se exige **al aplicar**, no al guardar); la imputación es **documental**
+(I2, AD-91), **sin** efecto en stock; se **aplica** (Operaciones/Jefatura/Gerencia) y se **reversa**
+(Jefatura/Gerencia) con historia **append-only**. **No** hay cálculo de **rendimiento ni merma**
+(implementación pendiente) y **I3/I5 siguen fuera de alcance**.
+
+
+
+<!-- actualizado: 2026-10-08 (2) — §17.12bis entorno aislado RECREADO con autorización expresa (vía «montar el workcopy `:ro`», sin aplicar diffs): `srvretab_web` en `127.0.0.1:8070`, selector limitado a `srvretab_gate_20261007`, filestore del aislamiento repoblado desde el volumen del stack (`:ro`; assets 500→200, faltantes solo avatares de `res.partner`); ninguna base ni el servicio activo modificados; **V3 pendiente de evidencia manual**. | 2026-10-08 — §17.12 retoma de solo lectura (revalidación conforme: rama/HEAD Git, SHA-256 = checkpoint, workcopy = activo + 15 archivos de `AB_completo.diff`, `--dry-run` limpio, A/B ausente del código activo y de `madenat_test`; **entorno aislado no conservado** por reinicio del host: `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío, base `srvretab_gate_20261007` intacta; **V3 sigue pendiente**; recrear el aislamiento pendiente de autorización). Sin cambios de código, base ni servicios. | 2026-10-07 (2) — §17.11 checkpoint de pausa (reanuda 2026-10-08): A/B solo en aislamiento; gate 45/45; dirigidas 88/88 incl. Cristhian (uid 8, su=False); V3 pendiente; A/B no aplicados; hashes vigentes; reversión no equivale a restauración completa. | 2026-10-07 — §17: auditoría de retoma de la confirmación de retorno de servicio (no aplicada; especificación solo en el antecedente `IMPL_SERVICE_RETURN_20261006/`). Sin cambios de código ni datos. Solo documentación. -->

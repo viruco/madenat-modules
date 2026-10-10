@@ -56,10 +56,14 @@ class TestSvImputationI2(TransactionCase):
 
     # ── Fábricas (sudo: evita ACL de setup; las acciones usan with_user) ──
     def _make_guia(self, name):
+        # `service_return_confirmation='yes'`: la guía destino de la imputación
+        # debe estar marcada como retorno de servicio para poder APLICAR (regla
+        # 2026-10-07). El levantamiento del fixture es una comodidad de prueba.
         return self.Guia.sudo().create({
             'name': name, 'partner_id': self.supplier.id,
             'assignment_location_id': self.stock_loc.id,
             'state': 'verified', 'tipo_recepcion': 'granel',
+            'service_return_confirmation': 'yes',
             'date_emission': '2026-10-02'})
 
     def _make_etiqueta(self, guia, name, nominal):

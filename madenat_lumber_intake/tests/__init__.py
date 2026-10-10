@@ -32,3 +32,5 @@ from . import test_intake_volume_declared_grid_ux
 from . import test_intake_volume_declared_grid_onchange
 from . import test_intake_volume_declared_grid_rpc
 from . import test_acl_sod_intake_and_costs
+# Confirmación de retorno de servicio no bloqueante (2026-10-07).
+from . import test_service_return_confirmation

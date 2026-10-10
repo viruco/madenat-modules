@@ -155,4 +155,26 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Identificación de retorno + filtro «Retornos sin imputación aplicada»
+         (2026-10-07). "Pendiente" = retorno confirmado Sí SIN ninguna
+         imputación SV en estado Aplicada (borrador/pendiente/anulada/reversada
+         NO cuentan — D-I2-13). LIMITACIÓN: NO evalúa cobertura PARCIAL (una
+         imputación aplicada que no cubra todo el nominal no se marca pendiente). -->
+    <record id="view_madenat_guia_processing_search_service_return"
+            model="ir.ui.view">
+        <field name="name">madenat.guia.processing.search.service.return</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id"
+               ref="madenat_lumber_core.view_madenat_guia_processing_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_service_return_unconfirmed']"
+                   position="after">
+                <filter name="filter_service_return_pending_imputation"
+                        string="Retornos sin imputación aplicada"
+                        domain="[('tipo_recepcion','=','service'), ('service_return_confirmation','=','yes'), ('sv_imputation_ids','not any',[('state','=','applied')])]"
+                        help="Retornos de servicio confirmados que NO tienen ninguna imputación SV en estado Aplicada. NO evalúa cobertura parcial: una imputación aplicada que no cubra todo el nominal no se marca pendiente."/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

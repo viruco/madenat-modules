@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.17.0
-**Última actualización:** 2026-10-05  <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Versión documental:** 12.18.0
+**Última actualización:** 2026-10-07  <!-- actualizado: 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2470,11 +2470,11 @@ Embarque»); `madenat_lumber_shipping_core/models/shipping_vessel.py`
 
 ---
 
-## 2026-10-05 — Borrador Seguro autónomo
+## 2026-10-05 — Entrega 1: Borrador Seguro autónomo
 
 ### AD-93 (2026-10-05) — Borrador Seguro autónomo
 
-**Estado:** ✅ IMPLEMENTADO.
+**Estado:** ✅ IMPLEMENTADO (Entrega 1 — Operación Física y Logística).
 Módulos afectados: `madenat_lumber_logistics`, `madenat_lumber_core`.
 
 **Decisión.** El retorno de un Embarque desde `confirmed` a `draft` se permite
@@ -2530,7 +2530,7 @@ evidencia auditada.
 **Invariantes.**
 1. El Zarpe puro **no** ejecuta Rebaja (`_set_in_transit` no mueve stock; sólo
    `state` + `actual_departure` y marca `shipped` los ya físicamente rebajados).
-2. La Rebaja es un flujo **separado**.
+2. La Rebaja es un flujo **separado** (`_rebajar_container`).
 3. B-01 **no** oculta el Backlog Documental (no es gate de Zarpe/B-01).
 4. Los campos B-01 están protegidos server-side por **token de proceso**
    (`_B01_WRITE_TOKENS`, no falsificable por `with_context`/RPC).
@@ -2568,7 +2568,7 @@ asistente). Operaciones/Jefatura/Auditoría pueden visualizar, no confirmar.
    **pendientes elegibles** del propio Embarque (`loaded`/`sealed`, con stock),
    sin rebaja física previa.
 2. Motivo y aprobación ≥ 20 caracteres.
-3. Usa el **motor nativo de Rebaja** (`stock.picking` OUT ·
+3. Usa el **motor nativo de Rebaja** (`_rebajar_container`: `stock.picking` OUT ·
    `stock.move`/`stock.move.line` · lote real · `button_validate`);
    **savepoint por Contenedor** y **rollback total** ante cualquier fallo (sin
    rebaja parcial).
@@ -2578,7 +2578,7 @@ asistente). Operaciones/Jefatura/Auditoría pueden visualizar, no confirmar.
 6. Registra `b01_regularization` (snapshot determinista **SHA-256** + chatter).
 
 **Separación.** **R1 ≠ R2**: R1 es rebaja extemporánea; R2 es el **retorno físico
-total** de la reversa. R1 no usa retorno físico.
+total** de la reversa. R1 no usa retorno ni `origin_returned_move_id`.
 
 **Evidencia.** `lumber_export_shipment.py` (`_create_b01_regularization_audit`,
 `_b01_regularization_snapshot`, `_b01_regularization_container_snapshot`,
@@ -2669,10 +2669,6 @@ Operaciones, Jefatura, Auditoría y Contabilidad → `AccessError` (Δ0).
 `_assert_no_rebaja_inconsistency`); `wizards/lumber_container_rebaja_reverse_wizard.py`;
 `madenat_lumber_core/models/madenat_audit_log.py` (`rebaja_return_total`);
 `tests/test_rebaja_return_total.py` (T-R2-1..13).
-
-<!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
-<!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
-<!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->
 
 ---
 
@@ -2814,3 +2810,99 @@ alternativo).
 **No alcance.** Sin stock, Rebaja, Retorno R2, Zarpe, B-01, R1/R2/R4, Costeo,
 Billing, Pagos ni SV; sin wizards nuevos; sin menús P2 ni vistas D2/B2.
 **AD-99 queda reservado para C2.**
+
+---
+
+## 2026-10-07 — Búsqueda, filtros y agrupaciones de la Consola de Intake
+
+### AD-101 (2026-10-07) — Búsqueda, filtros y agrupaciones de la Consola de Intake
+
+**Estado:** IMPLEMENTADO y APLICADO en `madenat_test` (módulo `madenat_lumber_intake`,
+18.0.0.11.0). **No** desplegado a producción.
+
+**Contexto.** La vista de búsqueda de la Consola de Ingreso de Madera
+(`madenat.lumber.intake.console`) presentaba: (a) una columna/etiqueta «OC documento»
+que mostraba `COALESCE(po.name, oc_reference_raw)` (Procesado) / `purchase_order` (Producto)
+—mezcla con la OC vinculada— y una agrupación «OC» que agrupaba por `purchase_id`, vacío en
+las filas reales ⇒ **un único grupo vacío**; (b) una «Fecha» con semántica mixta
+(emisión/recepción) sin distinción visible; (c) ausencia de filtros/agrupaciones para
+**producto real** y **procesador**.
+
+**Decisión.**
+1. **OC documental vs OC vinculada.** Se expone la columna real `oc_documental`
+   (`NULLIF(<origen>.oc_reference_raw,'')`; referencia documental pura, nunca sustituida por
+   el nombre de la OC vinculada), separada de `purchase_id` (OC vinculada). Columna,
+   búsqueda y agrupaciones **«OC documental»** y **«OC vinculada»**; filtros **OC vinculada**,
+   **OC pendiente de vinculación** y **OC no indicada**. `purchase_reference` y los proxies
+   previos se **conservan** por compatibilidad (no se reescriben ni eliminan).
+2. **Fecha.** Se añade `guide_date_kind` (`emission` / `reception`) y la columna «Origen fecha»;
+   `guide_date` **no** cambia. Todas las filas **no** son emisión documental.
+3. **Modalidades.** Producto/Procesado/Volúmenes por `ingestion_type` (dominios disjuntos, pero
+   **NO** radio buttons: combinables por **AND**, dos modalidades ⇒ intersección vacía). Se añaden
+   filtros de estado **«Procesada (legacy)»** y **«Error»**; **Abiertos/Finalizados no se amplían**.
+4. **Producto real.** `product_filter_id` (campo de **solo búsqueda**) resuelve a las **líneas**
+   de ambos orígenes (`lumber.reception.line.product_id` / `madenat.guia.processing.line.product_id`),
+   **sin** JOIN en la vista SQL (no duplica filas), **sin** elegir el primer producto; **sin** agrupación.
+5. **Procesador.** `processor_id` (columna real) proviene **exclusivamente** de
+   `toll.processing.order.processor_id` vía `toll_order_id` (`LEFT JOIN` **1:1**); **nunca** el
+   proveedor/emisor; vacío en Producto y sin orden toll.
+
+**Invariantes.** `id` y `source_res_id` **intactos**; **sin** cambios en ACL, ingesta, stock,
+costes ni contabilidad; **sin** `sudo`; **sin** normalizar ni fusionar referencias históricas de OC.
+
+**No implementado (pendiente).** Búsqueda numérica de volumen (campo oficial identificado:
+`official_volume_m3` / `official_volume_effective_m3`, m³); otros orígenes de procesador;
+ampliación de Abiertos/Finalizados; **V3 (navegador)**; instalación en base limpia
+(referencia hacia adelante preexistente en la vista de lista). Ver `05_BACKLOG.md`.
+
+**Evidencia.** `00_ARQUITECTURA.md` §4.10; `03_TESTS.md` §11; código y pruebas en
+`madenat_lumber_intake` (`models/intake_console.py`, `views/intake_console_views.xml`,
+`tests/test_search_console_oc_fecha_modality.py`). Registros de aplicación (fuera de CANON):
+`IMPL_BUSQUEDA_INTAKE_20261007/`, `APPLY_BUSQUEDA_INTAKE_20261007/`.
+
+### AD-102 (2026-10-07) — Identificación no bloqueante de retorno de servicio + reglas de imputación (I2)
+
+**Estado:** IMPLEMENTADO Y PROBADO EN **COPIA DE TRABAJO AISLADA**
+(`IMPL_SERVICE_RETURN_AB_20261007/`, base `srvretab_test_20261007`) — **PENDIENTE DE APROBACIÓN**
+para aplicar al entorno activo. Módulos: `madenat_lumber_core`, `madenat_lumber_intake`,
+`madenat_lumber_logistics`. **No** se aplica al entorno activo ni a producción; **no** se modifican
+datos históricos.
+
+**Contexto.** El antecedente `IMPL_SERVICE_RETURN_20261006/` exigía la confirmación
+(`service_return_confirmation`) **bloqueando** el envío a stock. La decisión vigente **separa
+identificación de imputación**: la identificación es informativa y **no bloqueante**; la
+imputación posterior **reutiliza el mecanismo SV (I2, AD-91)**.
+
+**Decisión.**
+1. **Campo** `service_return_confirmation` en `madenat.guia.processing`: Selection `yes`/`no`,
+   **sin default**; *vacío* = **pendiente de identificación** (NO equivale a `no`).
+2. **No bloqueante.** Se **elimina** el guard `_assert_service_return_confirmed` (la identificación
+   **no** impide la ingesta ni el envío a stock). Se **conservan** íntegras las demás validaciones
+   (permisos, dimensiones, producto, tipo de cambio, trazabilidad, protección anti-duplicado).
+3. **Editable desde la Consola de Intake** por proxy no almacenado (compute + inverse) con el
+   **usuario operativo** (Operaciones); la Guía es la propietaria del dato (no se duplica).
+4. **Con imputaciones SV `applied`**, cambiar la identificación a «No» o vaciarla se **rechaza**
+   (regla en `madenat_lumber_logistics`, donde existe el modelo I2); la corrección exige
+   **reversar** primero las imputaciones. No se eliminan relaciones en silencio.
+5. **Destino marcado «Sí» al APLICAR** (`action_apply`), **no** al guardar borrador/pendiente; **no**
+   se marca la guía automáticamente.
+6. **Relación inversa `sv_imputation_ids`** (One2many de solo lectura) + filtro **«Retornos sin
+   imputación aplicada»** (no evalúa cobertura parcial). Residen en `madenat_lumber_logistics`
+   (sin dependencia **core→logistics** ni circular).
+7. **I2 intacto:** ninguna regla añade movimientos de stock, ledger (`action_type='imputacion'`,
+   I3) ni costes (I5). Efectos de I2 = documentales (D-I2-12).
+
+**Límites declarados.** El filtro «sin imputación aplicada» **no** detecta **cobertura parcial**.
+I3/I5 no implementados. Verificación en **navegador** no realizada. No se crea módulo nuevo:
+se reutiliza el mecanismo I2 existente.
+
+**Evidencia.** `12_FLUJOS_INGESTA.md` §11.9; `19_IMPUTACION_SV_Y_PROCESADORES.md` §19.9;
+`03_TESTS.md` §12; `05_BACKLOG.md`; `02_CONTINUIDAD.md` §17. Copia y pruebas (fuera de CANON) en
+`IMPL_SERVICE_RETURN_AB_20261007/`.
+
+<!-- actualizado: 2026-10-07 — alta AD-102 (identificación no bloqueante de retorno de servicio + reglas de imputación I2: destino «Sí» al aplicar, regla Sí→No con imputaciones aplicadas, relación inversa `sv_imputation_ids`, filtro «Retornos sin imputación aplicada»). Implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`; NO aplicado. Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17. Solo documentación. -->
+
+
+<!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
+<!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
+<!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->

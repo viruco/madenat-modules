@@ -31,6 +31,23 @@
                 <filter name="filter_verified" string="Verificada" domain="[('state','=','verified')]"/>
                 <filter name="filter_validated" string="Validada" domain="[('state','=','validated')]"/>
                 <filter name="filter_cancelled" string="Cancelada" domain="[('state','=','cancelled')]"/>
+
+                <separator/>
+
+                <!-- Identificación de retorno de servicio (2026-10-07). Sólo el
+                     ingreso Procesado de servicio (tipo_recepcion='service').
+                     "Retornos de servicio" = confirmados Sí; "No retornos" = No;
+                     "sin confirmar" = vacío (pendiente, NO equivale a No).
+                     Filtros de búsqueda estándar (sin sudo). -->
+                <filter name="filter_service_return_yes"
+                        string="Retornos de servicio"
+                        domain="[('tipo_recepcion','=','service'), ('service_return_confirmation','=','yes')]"/>
+                <filter name="filter_service_return_no"
+                        string="No retornos de servicio"
+                        domain="[('tipo_recepcion','=','service'), ('service_return_confirmation','=','no')]"/>
+                <filter name="filter_service_return_unconfirmed"
+                        string="Retorno de servicio sin confirmar"
+                        domain="[('tipo_recepcion','=','service'), ('service_return_confirmation','=',False)]"/>
                 
                 <group expand="0" string="Agrupar Por">
                     <filter string="Proveedor" name="group_partner" context="{'group_by': 'partner_id'}"/>
