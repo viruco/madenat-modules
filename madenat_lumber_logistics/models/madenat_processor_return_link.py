@@ -43,10 +43,15 @@ GROUP_JEFATURA = 'madenat_lumber_core.group_madenat_jefatura_operaciones'
 GROUP_GERENCIA = 'madenat_lumber_core.group_madenat_gerencia'
 
 # Campos escribibles sobre una relación ya `linked` (inmutabilidad append-only).
+# Incluye: (a) campos de historia/estado; (b) campos espejo (related/computed
+# almacenados) que el ORM puede recalcular —no son ediciones de usuario— y
+# cuya escritura NO debe fallar por la guarda de inmutabilidad.
 LINK_LINKED_WRITABLE = frozenset([
     'state', 'reversal_reason', 'reversal_date', 'reversed_by_id',
     'reversed_link_id', 'snapshot_json', 'audit_hash', 'message_ids',
-    'origin_link_id', 'imputation_id',
+    'origin_link_id', 'imputation_id', 'previous_imputation_id',
+    'documentary_status', 'requires_reimputation',
+    'company_id', 'processor_id', 'shipment_date', 'return_date',
 ])
 
 
@@ -113,17 +118,22 @@ class MadenatProcessorReturnLink(models.Model):
         string='Fecha de emisión (retorno)',
         related='guia_processing_id.date_emission', store=True, readonly=True)
 
-    # Magnitudes SEPARADAS (sin resta — Bloque D pendiente).
+    # Magnitudes SEPARADAS (sin resta — Bloque D pendiente). REFERENCIALES: son
+    # el total del documento relacionado; NO son una cantidad asignada a este
+    # vínculo y NO deben sumarse entre vínculos N:M (un mismo envío/retorno puede
+    # aparecer en varios vínculos).
     shipment_volume_m3 = fields.Float(
         string='Volumen enviado (m³)', digits=(16, 3),
-        compute='_compute_volumes', store=False,
-        help='Σ cantidad de las líneas del envío. Magnitud FÍSICA separada; no '
-             'se resta contra el volumen retornado.')
+        compute='_compute_volumes', store=False, aggregator=False,
+        help='Volumen total del envío relacionado (m³). NO representa una '
+             'cantidad asignada a este vínculo; no se suma entre vínculos N:M. '
+             'No se resta contra el volumen retornado.')
     return_nominal_m3 = fields.Float(
         string='Volumen nominal del retorno (m³)', digits=(16, 3),
-        compute='_compute_volumes', store=False,
-        help='Σ volumen nominal de las etiquetas procesadas del retorno. '
-             'Magnitud DOCUMENTAL separada; no se resta contra el enviado.')
+        compute='_compute_volumes', store=False, aggregator=False,
+        help='Volumen total del retorno relacionado (m³). NO representa una '
+             'cantidad asignada a este vínculo; no se suma entre vínculos N:M. '
+             'No se resta contra el volumen enviado.')
 
     # Autoría / historia (append-only).
     linked_by_id = fields.Many2one(
@@ -143,6 +153,31 @@ class MadenatProcessorReturnLink(models.Model):
         help='Relación que revirtió/reemplazó a esta (historia).')
     snapshot_json = fields.Text(string='Snapshot JSON', readonly=True, copy=False)
     audit_hash = fields.Char(string='Firma SHA-256', readonly=True, copy=False)
+
+    # ── Vigencia documental (SEPARADA de la PROCEDENCIA `state`) ─────────────
+    # `state` representa la **procedencia** (envío↔retorno). Reversar la
+    # imputación **no** invalida la procedencia: el vínculo permanece `linked`.
+    # La **vigencia documental** se DERIVA del estado real de la imputación.
+    documentary_status = fields.Selection(
+        [
+            ('none', 'Sin imputación SV'),
+            ('draft', 'Imputación en preparación'),
+            ('applied', 'Imputación vigente'),
+            ('reversed', 'Imputación revertida (requiere reimputación)'),
+            ('cancelled', 'Imputación anulada'),
+        ],
+        string='Vigencia documental', compute='_compute_documentary_status',
+        store=True, readonly=True, index=True,
+        help='Vigencia documental DERIVADA del estado de la imputación '
+             'relacionada. NO es la procedencia (estado del vínculo).')
+    requires_reimputation = fields.Boolean(
+        string='Requiere reimputación', compute='_compute_documentary_status',
+        store=True, readonly=True)
+    previous_imputation_id = fields.Many2one(
+        'madenat.sv.imputation', string='Imputación reemplazada',
+        ondelete='set null', index=True, copy=False, readonly=True,
+        help='Imputación anterior reemplazada por una reimputación. Conserva la '
+             'referencia; no se sobrescribe silenciosamente.')
 
     _sql_constraints = [
         ('processor_return_link_name_unique',
@@ -166,6 +201,35 @@ class MadenatProcessorReturnLink(models.Model):
             rec.return_nominal_m3 = float_round(
                 sum(Imputation._i2_lot_nominal_m3(lot) for lot in lots),
                 precision_digits=3)
+
+    @api.depends('imputation_id', 'imputation_id.state')
+    def _compute_documentary_status(self):
+        """Vigencia documental derivada del estado REAL de la imputación.
+
+        No modifica la procedencia (``state``). Al reversar la imputación, el
+        vínculo permanece en su estado de procedencia y esta vigencia pasa a
+        ``reversed`` (requiere reimputación).
+        """
+        for rec in self:
+            state = rec.imputation_id.state if rec.imputation_id else False
+            if not rec.imputation_id:
+                rec.documentary_status = 'none'
+                rec.requires_reimputation = False
+            elif state == 'applied':
+                rec.documentary_status = 'applied'
+                rec.requires_reimputation = False
+            elif state in ('draft', 'pending'):
+                rec.documentary_status = 'draft'
+                rec.requires_reimputation = False
+            elif state == 'reversed':
+                rec.documentary_status = 'reversed'
+                rec.requires_reimputation = True
+            elif state == 'cancelled':
+                rec.documentary_status = 'cancelled'
+                rec.requires_reimputation = False
+            else:
+                rec.documentary_status = 'none'
+                rec.requires_reimputation = False
 
     # ══════════════════════════════════════════════════════════════════════
     # HELPERS DE ELEGIBILIDAD (dominio único reutilizable)
@@ -195,6 +259,7 @@ class MadenatProcessorReturnLink(models.Model):
             processor = self._guia_processor(guia)
         domain = [
             ('state', '=', 'done'),
+            ('picking_type_id.code', '=', 'internal'),
             ('location_dest_id.processor_partner_id', '!=', False),
             '|', ('company_id', '=', self.env.company.id),
             ('company_id', '=', False),
@@ -215,7 +280,12 @@ class MadenatProcessorReturnLink(models.Model):
 
     @api.model
     def _get_or_create_link(self, picking, guia, imputation=None):
-        """Relación activa idempotente para el par envío↔retorno."""
+        """Relación activa idempotente para el par envío↔retorno.
+
+        Si cambia la imputación de una relación activa (reimputación), conserva
+        la referencia anterior (``previous_imputation_id``) y deja rastro; **no**
+        sobrescribe en silencio ni duplica el vínculo activo.
+        """
         existing = self.search([
             ('picking_id', '=', picking.id),
             ('guia_processing_id', '=', guia.id),
@@ -223,7 +293,12 @@ class MadenatProcessorReturnLink(models.Model):
         ], limit=1)
         if existing:
             if imputation and existing.imputation_id != imputation:
-                existing.imputation_id = imputation.id
+                old = existing.imputation_id
+                existing.write({
+                    'previous_imputation_id': old.id if old else False,
+                    'imputation_id': imputation.id,
+                })
+                existing._link_note_imputation_change(old, imputation)
             return existing
         return self.create({
             'picking_id': picking.id,
@@ -260,12 +335,22 @@ class MadenatProcessorReturnLink(models.Model):
         for rec in self:
             if not rec.picking_id:
                 continue
-            dest = rec.picking_id.location_dest_id
+            picking = rec.picking_id
+            dest = picking.location_dest_id
             if not dest.processor_partner_id:
                 raise ValidationError(_(
                     'El traslado %s no es un «envío a procesador»: su destino '
                     'no es la ubicación de un procesador.') % (
-                    rec.picking_id.name or rec.picking_id.id))
+                    picking.name or picking.id))
+            # Elegibilidad DURA por modelo/ORM/RPC (no sólo dominio de UI):
+            # sólo un envío VALIDADO (`done`) es elegible.
+            if picking.state != 'done':
+                raise ValidationError(_(
+                    'El traslado %(p)s no es elegible: debe estar validado '
+                    '(state = done); estado actual = %(s)s.') % {
+                    'p': picking.name or picking.id,
+                    's': picking.state,
+                })
 
     @api.constrains('picking_id', 'guia_processing_id')
     def _check_processor_consistency(self):
@@ -281,6 +366,35 @@ class MadenatProcessorReturnLink(models.Model):
                     'env': rec.processor_id.name,
                     'ret': guia_processor.name,
                 })
+
+    @api.constrains('picking_id', 'guia_processing_id', 'imputation_id')
+    def _check_company_consistency(self):
+        """Consistencia de compañía por **modelo** (no sólo dominio de UI).
+
+        ``madenat.guia.processing`` **no** tiene ``company_id`` (es un documento),
+        por lo que no se compara. Sí se compara la compañía del **envío**
+        (origen de ``company_id`` del vínculo) con la de la **imputación**.
+        """
+        for rec in self:
+            picking_company = rec.picking_id.company_id
+            imp_company = (rec.imputation_id.company_id
+                           if rec.imputation_id else False)
+            if picking_company and imp_company \
+                    and picking_company != imp_company:
+                raise ValidationError(_(
+                    'Inconsistencia de compañía: el envío es de «%(pc)s» y la '
+                    'imputación es de «%(ic)s».' % {
+                        'pc': picking_company.name,
+                        'ic': imp_company.name}))
+
+    @api.constrains('imputation_id', 'previous_imputation_id')
+    def _check_previous_imputation(self):
+        for rec in self:
+            if rec.previous_imputation_id \
+                    and rec.previous_imputation_id == rec.imputation_id:
+                raise ValidationError(_(
+                    'La imputación reemplazada no puede ser la misma que la '
+                    'imputación vigente del vínculo.'))
 
 
     # ══════════════════════════════════════════════════════════════════════
@@ -323,18 +437,48 @@ class MadenatProcessorReturnLink(models.Model):
         }
         return json.dumps(payload, sort_keys=True)
 
-    def _link_audit(self, action, snapshot):
+    def _link_audit(self, action, snapshot, description=None):
         self.ensure_one()
         self.env['madenat.audit.log'].sudo().create({
             'action_type': action,
             'guia_processing_id': self.guia_processing_id.id,
-            'description': '%s — envío %s ↔ retorno %s' % (
+            'description': description or ('%s — envío %s ↔ retorno %s' % (
                 self.name or '', self.picking_id.name or '',
-                self.guia_processing_id.name or ''),
+                self.guia_processing_id.name or '')),
             'batch_id': self.name,
             'audit_snapshot': snapshot,
             'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
             'user_id': self.env.user.id,
+        })
+
+    def _link_note_imputation_change(self, old_imp, new_imp):
+        """Registra el REEMPLAZO de imputación (reimputación) sin sobrescribir
+        en silencio: conserva la referencia anterior (`previous_imputation_id`),
+        deja rastro en el chatter y firma un evento de auditoría (append-only).
+        """
+        self.ensure_one()
+        snapshot = json.dumps({
+            'name': self.name,
+            'picking': self.picking_id.name or False,
+            'guia': self.guia_processing_id.name or False,
+            'change': 'imputation_replacement',
+            'previous': old_imp.name if old_imp else False,
+            'previous_id': old_imp.id if old_imp else False,
+            'new': new_imp.name if new_imp else False,
+            'new_id': new_imp.id if new_imp else False,
+            'user': self.env.user.id,
+        }, sort_keys=True)
+        self.message_post(body=_(
+            'Reimputación: la imputación anterior %s fue reemplazada por %s. '
+            'La referencia anterior se conserva; la historia no se sobrescribe.'
+        ) % (old_imp.name or '—', new_imp.name or '—'))
+        self._link_audit(
+            'processor_return_link', snapshot,
+            description='%s — reimputación %s → %s' % (
+                self.name or '', old_imp.name or '—', new_imp.name or '—'))
+        self.write({
+            'snapshot_json': snapshot,
+            'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
         })
 
 

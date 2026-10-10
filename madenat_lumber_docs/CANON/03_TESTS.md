@@ -1,8 +1,9 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.18.0
+**Versión documental:** 6.19.0
 **Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
 <!-- actualizado: 2026-10-10 (2) — §15 relación de conciliación envío–retorno (Bloque A/B/C): suite nueva T1–T12 = 12/12; regresión `madenat_lumber_logistics` = 3 failed, 0 error of 265 (3 fallas PRE-EXISTENTES por aserción global de `deviation`; 0 fallas nuevas). Bloque D no implementado. Versión 03 6.17.0 → 6.18.0. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
+<!-- actualizado: 2026-10-10 (3) — §15.5 controles A/B/C **acreditados** (reversa/procedencia, reimputación, compañía+regla, elegibilidad dura, N:M presentación) y §15.6 ajuste de integridad (T13–T22 = 22/22; regresión 275 pruebas, 4 fallas: 3 preexistentes + 1 ambiental por evidencia V3 7973, 0 errores). Versión 03 6.18.0 → 6.19.0. -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
 ---
@@ -902,8 +903,37 @@ guía `V3-CONCIL` (33737), envío picking `7973`, lote `V3-LOT` (18003), relaci�
 | Control | Referencia de código | Prueba | Estado |
 |---|---|---|---|
 | **Atomicidad** imputación + registro del vínculo | `wizards/madenat_sv_imputation_wizard.py::action_apply` (`_i2_build_imputation()` → `imp.action_apply()` → `imp.action_link_return_links()`), en la **misma transacción** RPC | T12 | ✅ Acreditado (una transacción; sin commit intermedio) |
-| **Vínculo al reversar la imputación** | `models/madenat_sv_imputation.py::action_reverse` (**no** toca `return_link_ids`) | — | ⚠️ **NO acreditado**: la reversa de la imputación **no** revierte ni marca el vínculo; este conserva su estado. Efecto **pendiente de decisión** |
-| **Estados elegibles del picking / exclusión de cancelados** | `models/madenat_processor_return_link.py::_eligible_shipment_pickings` (`state='done'` + `location_dest_id.processor_partner_id != False`) | T5 (no elegible), T12 (elegible) | ✅ Acreditado por dominio (`state='done'` excluye `cancel`); **sin** caso dedicado de cancelado |
-| **Consistencia de compañía** | `company_id` related de `picking_id`; elegibilidad filtra compañía | — | ⚠️ **Parcial**: no hay restricción explícita que impida enlazar guía y envío de compañías distintas |
+| **Reversa de imputación vs. procedencia** | `madenat_processor_return_link.py::_compute_documentary_status` + `madenat_sv_imputation.py::action_reverse` (no toca `return_link_ids`) | T13, T14, T16 | ✅ Acreditado (procedencia se conserva; vigencia pasa a `reversed`; reversa del vínculo independiente) |
+| **Reimputación** | `_get_or_create_link` + `_link_note_imputation_change`; `previous_imputation_id` | T15 | ✅ Acreditado (sin duplicar activos; historia preservada; rastro) |
+| **Elegibilidad del picking / exclusión de cancelados** | `_eligible_shipment_pickings` + `_check_shipment_is_processor_shipment` (`state='done'`, `picking_type_id.code='internal'`) | T5, T12, T19, T20, T21 | ✅ Acreditado (draft/cancel/assigned **rechazados** por ORM; done elegible) |
+| **Consistencia de compañía** | `_check_company_consistency` + `security/madenat_processor_return_link_rules.xml` (`ir.rule`) | T17, T18 | ✅ Acreditado (mismatch rechazado; aislamiento multi-compañía por regla) |
 | **Permisos (ORM/RPC)** | `_link_check_apply_permission` / `_link_check_reverse_permission`; ACL 4 grupos (`security/ir.model.access.csv`) | T9; §15.4 (a) | ✅ Acreditado |
-| **Doble contabilización N:M** | magnitudes por vínculo; **sin** reparto/prorrateo | T2/T3 (N:M) | ⚠️ **No aplica aún**: sin conciliación cuantitativa; `shipment_volume_m3` se repite por vínculo ⇒ **sumar vínculos duplicaría** el volumen. Reparto N:M = Bloque **D** (pendiente) |
+| **Doble contabilización N:M (presentación)** | `aggregator=False` en `shipment_volume_m3`/`return_nominal_m3` + ayuda | T22 | ✅ **Mitigado en presentación** (sin sum/avg/pivot/`read_group`); el **reparto cuantitativo** sigue siendo Bloque **D** |
+
+### 15.6 Ajuste de integridad A/B/C (2026-10-10) — T13–T22 y regresión
+
+**Nuevas pruebas dirigidas** (mismo archivo `test_processor_return_link.py`): **T13** vigencia aplicada ·
+**T14** reversa conserva la procedencia · **T15** reimputación (sin duplicar activos; historia) · **T16**
+reversa del vínculo independiente de la vigencia · **T17** compañía incompatible rechazada · **T18**
+regla de registro multi-compañía (aislamiento) · **T19/T20/T21** envío `draft`/`cancel`/`assigned`
+rechazado por ORM · **T22** volúmenes referenciales sin agregación.
+**Resultado: `0 failed, 0 error(s) of 22 tests`** (`logs/tests_integridad_link_run2.log`).
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` =
+**`4 failed, 0 error(s) of 275 tests`** (`logs/tests_integridad_regression.log`). **No** es una suite
+completamente verde. Las **4 fallas**:
+1. **3 preexistentes** (aserción global `deviation`, eventos históricos 2026-10-04/05/07):
+   `test_processor_locations.test_09_auditoria_envio_normal`,
+   `test_processor_shipment_ad89.test_t1_envio_manual_parcial_sin_motivo`,
+   `test_processor_shipment_ad89.test_t5_desviacion_real_no_aplica_en_i1`.
+2. **1 ambiental atribuible a la evidencia V3** (no al código de esta intervención):
+   `test_processor_shipment_ad89.test_t6_idempotencia` busca globalmente
+   `origin like 'Envío a procesador'` y el picking de **evidencia V3 7973**
+   (`Envío a procesador: V3 Planta (temp)`, committed) colisiona (2 en lugar de 1).
+   **No** se modificó el test ajeno ni se borró el registro de evidencia.
+
+**Suites afectadas verdes:** `TestProcessorReturnLink`, `TestSvImputationI2`,
+`TestSvImputationCandidates`, `TestServiceReturnImputationGuard`, `TestServiceReturnPendingFilter`.
+
+**No ejecutado (fuera de alcance):** navegador real (V3 *pixel*); concurrencia real; base limpia;
+Bloque **D** cuantitativo.

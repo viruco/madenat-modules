@@ -69,6 +69,18 @@ class TestProcessorReturnLink(TransactionCase):
             'madenat_lumber_core.group_madenat_auditoria'])
         cls.user_plain = _mk('rel_plain', ['base.group_user'])
 
+        # Bloque B: compañía alterna y usuario restringido para probar reglas.
+        cls.company_b = cls.env['res.company'].create({'name': 'REL Co B'})
+        cls.user_oper_b = cls.env['res.users'].create({
+            'name': 'rel_oper_b', 'login': 'rel_oper_b',
+            'email': 'rel_oper_b@madenat.cl',
+            'company_id': cls.company_b.id,
+            'company_ids': [(6, 0, [cls.company_b.id])],
+            'groups_id': [(6, 0, [
+                cls.env.ref('base.group_user').id,
+                cls.env.ref(
+                    'madenat_lumber_core.group_madenat_operaciones').id])]})
+
     # ── Fábricas (sudo: evita ACL de setup; las acciones usan with_user) ──
     def _make_guia(self, name, processor=None, service_return='yes',
                    tipo='service'):
@@ -308,3 +320,194 @@ class TestProcessorReturnLink(TransactionCase):
         self.assertEqual(imp.return_link_ids.state, 'linked')
         self.assertEqual(imp.return_link_ids.picking_id, picking)
         self.assertEqual(imp.return_link_ids.imputation_id, imp)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # AJUSTE DE INTEGRIDAD (Bloques A/B/C + presentación de volúmenes N:M)
+    # ══════════════════════════════════════════════════════════════════════
+    def _sv(self, guia, label, nominal):
+        return self.StockLot.sudo().create({
+            'name': label, 'product_id': self.product.id,
+            'company_id': self.company.id, 'lot_flow_type': 'volume',
+            'volume_source_guia_id': guia.id,
+            'volumen_m3': nominal, 'volume_purchase_m3': nominal})
+
+    def _make_applied_imputation(self, guia, etiqueta, sv, vol):
+        imp = self.Imputation.sudo().create({'guia_processing_id': guia.id})
+        line = self.env['madenat.sv.imputation.line'].sudo().create({
+            'imputation_id': imp.id, 'processed_lot_id': etiqueta.id,
+            'nominal_volume_m3': vol})
+        self.env['madenat.sv.imputation.sv.line'].sudo().create({
+            'imputation_id': imp.id, 'imputation_line_id': line.id,
+            'sv_lot_id': sv.id, 'imputed_volume_m3': vol})
+        imp.with_user(self.user_oper).action_apply()
+        return imp
+
+    def _make_raw_picking(self, dest, lot=None):
+        ptype = self.env['stock.picking.type'].search([
+            ('code', '=', 'internal'),
+            ('warehouse_id.company_id', '=', self.company.id)], limit=1)
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': ptype.id, 'location_id': self.stock_loc.id,
+            'location_dest_id': dest.id, 'company_id': self.company.id})
+        if lot is not None:
+            self.env['stock.move'].create({
+                'name': lot.name, 'product_id': lot.product_id.id,
+                'product_uom_qty': 1.0, 'product_uom': self.uom_m3.id,
+                'picking_id': picking.id, 'location_id': self.stock_loc.id,
+                'location_dest_id': dest.id, 'company_id': self.company.id})
+        return picking
+
+    def _proc_loc(self, processor=None):
+        return (processor
+                or self.processor)._get_or_create_processor_location()
+
+    # ── T13 — Bloque A: vigencia documental aplicada ─────────────────────
+    def test_t13_documentary_status_applied(self):
+        guia = self._make_guia('REL-T13')
+        etiqueta = self._make_etiqueta(guia, 'REL-T13-E', 10.0)
+        sv = self._sv(guia, 'SV00000013001', 100.0)
+        picking = self._make_envio(qty=5.0)
+        imp = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
+        link = self.Link._get_or_create_link(picking, guia, imputation=imp)
+        link.with_user(self.user_oper).action_link()
+        self.assertEqual(link.state, 'linked')                # procedencia
+        self.assertEqual(link.documentary_status, 'applied')  # vigencia
+        self.assertFalse(link.requires_reimputation)
+
+
+    # ── T14 — Bloque A: reversa de imputación conserva la procedencia ────
+    def test_t14_reverse_imputation_preserves_provenance(self):
+        guia = self._make_guia('REL-T14')
+        etiqueta = self._make_etiqueta(guia, 'REL-T14-E', 10.0)
+        sv = self._sv(guia, 'SV00000014001', 100.0)
+        picking = self._make_envio(qty=5.0)
+        imp = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
+        link = self.Link._get_or_create_link(picking, guia, imputation=imp)
+        link.with_user(self.user_oper).action_link()
+        imp.with_user(self.user_jef).action_reverse()
+        link.invalidate_recordset()
+        self.assertEqual(imp.state, 'reversed')
+        self.assertEqual(link.state, 'linked')                # NO se revierte
+        self.assertEqual(link.documentary_status, 'reversed')
+        self.assertTrue(link.requires_reimputation)
+        self.assertEqual(self.Link.search_count([
+            ('picking_id', '=', picking.id),
+            ('guia_processing_id', '=', guia.id),
+            ('state', 'in', ('draft', 'linked'))]), 1)
+
+    # ── T15 — Bloque A: reimputación tras reversa ────────────────────────
+    def test_t15_reimputation_after_reverse(self):
+        guia = self._make_guia('REL-T15')
+        etiqueta = self._make_etiqueta(guia, 'REL-T15-E', 10.0)
+        sv = self._sv(guia, 'SV00000015001', 100.0)
+        picking = self._make_envio(qty=5.0)
+        old = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
+        link = self.Link._get_or_create_link(picking, guia, imputation=old)
+        link.with_user(self.user_oper).action_link()
+        old.with_user(self.user_jef).action_reverse()
+        new = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
+        link = self.Link._get_or_create_link(picking, guia, imputation=new)
+        link.invalidate_recordset()
+        self.assertEqual(link.imputation_id, new)
+        self.assertEqual(link.previous_imputation_id, old)
+        self.assertEqual(link.state, 'linked')
+        self.assertEqual(link.documentary_status, 'applied')
+        self.assertTrue(old.exists())                      # historia intacta
+        self.assertEqual(self.Link.search_count([
+            ('picking_id', '=', picking.id),
+            ('guia_processing_id', '=', guia.id),
+            ('state', 'in', ('draft', 'linked'))]), 1)     # sin duplicar
+        self.assertTrue(self.AuditLog.search([
+            ('action_type', '=', 'processor_return_link'),
+            ('description', 'ilike', 'reimputación')]))
+
+    # ── T16 — Bloque A: reversa del vínculo vs. vigencia documental ──────
+    def test_t16_link_reverse_independent_of_documentary(self):
+        guia = self._make_guia('REL-T16')
+        etiqueta = self._make_etiqueta(guia, 'REL-T16-E', 10.0)
+        sv = self._sv(guia, 'SV00000016001', 100.0)
+        picking = self._make_envio(qty=5.0)
+        imp = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
+        link = self.Link._get_or_create_link(picking, guia, imputation=imp)
+        link.with_user(self.user_oper).action_link()
+        link.reversal_reason = 'procedencia errónea'
+        link.with_user(self.user_jef).action_reverse()
+        self.assertEqual(link.state, 'reversed')           # procedencia
+        self.assertEqual(imp.state, 'applied')             # imputación intacta
+        self.assertEqual(link.documentary_status, 'applied')
+        self.assertFalse(link.requires_reimputation)
+
+
+    # ── T17 — Bloque B: inconsistencia de compañía rechazada ─────────────
+    def test_t17_company_mismatch_rejected(self):
+        guia = self._make_guia('REL-T17')
+        picking = self._make_envio(qty=5.0)                # compañía A
+        link = self._make_link(picking, guia)
+        imp_b = self.Imputation.sudo().create({
+            'guia_processing_id': guia.id, 'company_id': self.company_b.id})
+        with self.assertRaises(ValidationError):
+            link.imputation_id = imp_b.id
+
+    # ── T18 — Bloque B: regla de registro multi-compañía ─────────────────
+    def test_t18_record_rule_company_isolation(self):
+        guia = self._make_guia('REL-T18')
+        picking = self._make_envio(qty=5.0)
+        link = self._make_link(picking, guia)              # compañía A
+        self.assertEqual(link.company_id, self.company)
+        # Usuario restringido a la compañía B: NO ve el vínculo de A.
+        self.assertNotIn(
+            link, self.Link.with_user(self.user_oper_b).search([]))
+
+    # ── T19..T21 — Bloque C: elegibilidad dura (aunque se fuerce por ORM) ─
+    def test_t19_draft_picking_rejected(self):
+        guia = self._make_guia('REL-T19')
+        picking = self._make_raw_picking(self._proc_loc())  # draft
+        self.assertEqual(picking.state, 'draft')
+        with self.assertRaises(ValidationError):
+            self._make_link(picking, guia)
+
+    def test_t20_cancelled_picking_rejected(self):
+        guia = self._make_guia('REL-T20')
+        picking = self._make_raw_picking(self._proc_loc())
+        picking.action_cancel()
+        self.assertEqual(picking.state, 'cancel')
+        self.assertNotIn(
+            picking,
+            self.Link._eligible_shipment_pickings(guia, self.processor))
+        with self.assertRaises(ValidationError):
+            self._make_link(picking, guia)
+
+    def test_t21_assigned_picking_rejected(self):
+        guia = self._make_guia('REL-T21')
+        lot = self._make_lot('REL-T21-L', 3.0, flow='tarja')
+        picking = self._make_raw_picking(self._proc_loc(), lot=lot)
+        picking.action_confirm()
+        picking.action_assign()
+        self.assertEqual(picking.state, 'assigned')
+        with self.assertRaises(ValidationError):
+            self._make_link(picking, guia)
+
+    # ── T22 — presentación: volúmenes referenciales N:M sin agregación ───
+    def test_t22_referential_volumes_no_aggregation(self):
+        self.assertFalse(
+            self.Link._fields['shipment_volume_m3'].aggregator)
+        self.assertFalse(
+            self.Link._fields['return_nominal_m3'].aggregator)
+        arch = self.env.ref(
+            'madenat_lumber_logistics'
+            '.view_madenat_processor_return_link_list').arch
+        self.assertIn('shipment_volume_m3', arch)
+        self.assertIn('return_nominal_m3', arch)
+        self.assertNotIn('sum=', arch)
+        self.assertNotIn('avg=', arch)
+        self.assertIn('NO representa una',
+                      self.Link._fields['shipment_volume_m3'].help)
+        # Un envío con dos retornos: cada vínculo conserva el total referencial
+        # (no se reparte ni se suma entre vínculos).
+        picking = self._make_envio(qty=7.0)
+        g1 = self._make_guia('REL-T22a')
+        g2 = self._make_guia('REL-T22b')
+        l1 = self._make_link(picking, g1, state='linked')
+        l2 = self._make_link(picking, g2, state='linked')
+        self.assertAlmostEqual(l1.shipment_volume_m3, 7.0, 3)
+        self.assertAlmostEqual(l2.shipment_volume_m3, 7.0, 3)

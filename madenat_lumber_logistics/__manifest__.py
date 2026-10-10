@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.7.0',
+    'version': '18.0.1.8.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -29,6 +29,8 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
     'data': [
         # 1. SEGURIDAD Y ACCESOS
         'security/ir.model.access.csv',
+        # Bloque B (CANON/19 §19.11): regla de registro multi-compañía del vínculo.
+        'security/madenat_processor_return_link_rules.xml',
         
         # 2. DATOS MAESTROS Y SECUENCIAS
         'data/sequences.xml',

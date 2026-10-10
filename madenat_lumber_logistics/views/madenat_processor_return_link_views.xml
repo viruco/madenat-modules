@@ -14,6 +14,11 @@
                 <field name="guia_processing_id"/>
                 <field name="processor_id"/>
                 <field name="imputation_id"/>
+                <field name="documentary_status" widget="badge"
+                       decoration-success="documentary_status == 'applied'"
+                       decoration-warning="documentary_status == 'reversed'"
+                       decoration-info="documentary_status == 'draft'"
+                       decoration-muted="documentary_status in ('none', 'cancelled')"/>
                 <field name="shipment_volume_m3"/>
                 <field name="return_nominal_m3"/>
                 <field name="state" widget="badge"
@@ -51,6 +56,9 @@
                             <field name="picking_id"/>
                             <field name="guia_processing_id"/>
                             <field name="imputation_id"/>
+                            <field name="documentary_status" readonly="1"/>
+                            <field name="previous_imputation_id" readonly="1"
+                                   invisible="not previous_imputation_id"/>
                             <field name="processor_id" readonly="1"/>
                         </group>
                         <group>
@@ -94,7 +102,12 @@
                         domain="[('state', '=', 'linked')]"/>
                 <filter name="filter_reversed" string="Revertida"
                         domain="[('state', '=', 'reversed')]"/>
+                <filter name="filter_requires_reimputation"
+                        string="Requiere reimputación"
+                        domain="[('requires_reimputation', '=', True)]"/>
                 <separator/>
+                <filter name="group_documentary" string="Vigencia documental"
+                        context="{'group_by': 'documentary_status'}"/>
                 <filter name="group_processor" string="Procesador"
                         context="{'group_by': 'processor_id'}"/>
                 <filter name="group_state" string="Estado"
@@ -160,6 +173,7 @@
                             <field name="shipment_volume_m3"/>
                             <field name="return_nominal_m3"/>
                             <field name="imputation_id"/>
+                            <field name="documentary_status" widget="badge"/>
                             <field name="state" widget="badge"/>
                         </list>
                     </field>
@@ -189,6 +203,7 @@
                             <field name="processor_id"/>
                             <field name="return_date"/>
                             <field name="return_nominal_m3"/>
+                            <field name="documentary_status" widget="badge"/>
                             <field name="state" widget="badge"/>
                         </list>
                     </field>

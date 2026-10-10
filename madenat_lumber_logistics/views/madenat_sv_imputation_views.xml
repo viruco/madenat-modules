@@ -90,6 +90,7 @@
                                     <field name="shipment_date"/>
                                     <field name="shipment_volume_m3"/>
                                     <field name="return_nominal_m3"/>
+                                    <field name="documentary_status" widget="badge"/>
                                     <field name="state" widget="badge"
                                            decoration-success="state == 'linked'"
                                            decoration-warning="state == 'draft'"

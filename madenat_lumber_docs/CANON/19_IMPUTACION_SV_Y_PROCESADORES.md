@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.9.0
+**Versión documental:** 1.10.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -834,6 +834,64 @@ El Bloque D es una **etapa independiente**. Su diseño deberá establecer, como 
 **Habilitantes del Bloque D (preguntas abiertas):** magnitud común de comparación y tolerancia
 (Q-19-4), retorno a granel sin etiquetas (Q-19-3). Hasta resolverlas, el sistema **no** calcula
 conciliación cuantitativa ni cierra el envío.
+
+### 19.13 Integridad del vínculo: reversa, compañía, elegibilidad y volúmenes N:M (2026-10-10)
+
+> **Alcance.** Ajuste **mínimo** de los Bloques A/B/C. **No** implementa el Bloque **D** cuantitativo
+> (sin conciliación cuantitativa, saldo de proceso, rendimiento, merma, reparto ni tolerancias).
+
+**19.13.1 Procedencia vs. vigencia documental (no confundir).**
+- `state` = **procedencia** (`draft`/`linked`/`reversed`): envío y retorno están (o no) relacionados.
+- `documentary_status` (derivado, almacenado) = **vigencia documental** real de la imputación
+  relacionada: `none` · `draft` (en preparación) · `applied` (vigente) · `reversed` (**revertida;
+  requiere reimputación**) · `cancelled`. `requires_reimputation` ⇔ `documentary_status == 'reversed'`.
+- **Reversar la imputación NO revierte la procedencia.** El vínculo permanece `linked`; su vigencia
+  pasa a `reversed`. `linked` sigue significando **«vínculo registrado»** (no «conciliado»).
+
+**19.13.2 Reimputación.**
+- Al aplicar una **nueva** imputación sobre el mismo par, el vínculo **activo se reutiliza** (no se
+  duplica), `imputation_id` pasa a la nueva y **`previous_imputation_id` conserva la anterior**.
+- Deja **rastro** (chatter + evento de auditoría `processor_return_link` con «reimputación»). **No** se
+  sobrescribe en silencio; la imputación anterior permanece (estado `reversed`) como historia.
+- Unicidad por par en estados activos e idempotencia: intactas.
+- **Dos reimputaciones sucesivas (A→B→C) — confirmado (2026-10-10):** `previous_imputation_id` apunta a
+  la **inmediatamente anterior** (C.previous = B) y la **cadena completa** A→B→C queda trazada por los
+  **eventos de auditoría append-only** (`processor_return_link` «reimputación X → Y», uno por paso);
+  A/B permanecen `reversed`, C `applied`; **1 solo vínculo activo**. Evidencia:
+  `CONCILIACION_ENVIO_RETORNO_20261010/v3/reimputation_chain_report.txt`. **No** se añade un modelo de
+  historial multinivel: la auditoría ya lo registra (evita duplicar el modelo de auditoría).
+
+**19.13.3 Consistencia de compañía.**
+- Constraint `_check_company_consistency`: la compañía del **envío** (origen de `company_id`) y la de la
+  **imputación** deben coincidir. `madenat.guia.processing` **no** tiene `company_id` (documento): no se
+  compara; `res.partner` es compartido (no es conflicto por sí solo).
+- **Regla de registro** (`ir.rule`) multi-compañía del vínculo (`company_id in company_ids` o `= False`).
+  Las ACL por grupo **no** sustituyen reglas de registro.
+- **Alcance preciso (2026-10-10):** `link.company_id` es `related` de `picking_id.company_id`, que a su
+  vez es **`related` de `picking_type_id.company_id`** (la compañía del **tipo de operación** del envío;
+  por eso el picking reporta `company_id` no requerido). `madenat.sv.imputation.company_id` es campo
+  **propio y requerido**; `madenat.guia.processing` **no** tiene `company_id`. La regla incluye la rama
+  **`company_id = False`** para registros **compartidos/neutros** (no se ocultan a todos); en esta base
+  hay **0** pickings con compañía nula. Control por **modelo** (constraint) **y** regla de registro; no
+  sólo dominio de UI.
+- Control por **modelo/ORM/RPC**, no sólo dominio de UI.
+
+**19.13.4 Elegibilidad del envío (control duro).**
+- Sólo **`state='done'`** y **`picking_type_id.code='internal'`** con destino de procesador. Se valida en
+  el **modelo** (`_check_shipment_is_processor_shipment`) además del dominio de elegibilidad ⇒ una
+  **selección forzada por ORM/RPC** de un envío `draft`/`cancel`/`assigned` es **rechazada**.
+- **No** se inventa control de saldo físico. Un envío con **devolución** conserva `state='done'` (Odoo
+  crea un picking inverso); **no** se altera la elegibilidad por ello (**pendiente declarado**).
+
+**19.13.5 Volúmenes referenciales N:M (presentación).**
+- `shipment_volume_m3` y `return_nominal_m3` son **referenciales**: total del documento relacionado. Un
+  mismo envío/retorno puede aparecer en **varios** vínculos ⇒ **sumar filas NO produce un total válido**.
+- `aggregator=False` (sin `sum`/`avg`/pivot/`read_group`) + ayuda explícita; las vistas no usan
+  sumatorios. **No** hay reparto/prorrateo, resta, rendimiento ni saldo (Bloque D).
+
+<!-- actualizado: 2026-10-10 (5) — §19.13 ajuste de integridad A/B/C (reversa vs. procedencia,
+reimputación, compañía + regla de registro, elegibilidad dura, volúmenes referenciales N:M).
+Bloque D cuantitativo sigue fuera de alcance. Versión 1.9.0 → 1.10.0. -->
 
 <!-- actualizado: 2026-10-10 (4) — §19.12 Bloque D (conciliación cuantitativa): diseño requerido y
 decisión de etapa «opción 3» (no implementado; `linked` = vínculo registrado). §19.11 vuelto a

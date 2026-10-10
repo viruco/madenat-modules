@@ -6,6 +6,26 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [18.0.1.8.0] - 2026-10-10
+
+### Added
+- **Ajuste de integridad del vínculo envío–retorno (CANON/19 §19.13).**
+  - **Reversa de imputación vs. procedencia:** `state` = **procedencia** (envío↔retorno);
+    nuevos campos **`documentary_status`** (vigencia documental derivada del estado real de la
+    imputación) y **`requires_reimputation`**. Reversar la imputación **no** revierte la procedencia.
+  - **Reimputación:** `previous_imputation_id` conserva la imputación reemplazada; se deja rastro
+    (chatter + auditoría `processor_return_link`, descripción «reimputación») sin sobrescribir en
+    silencio ni duplicar vínculos activos.
+  - **Consistencia de compañía** (`_check_company_consistency`) y **regla de registro multi-compañía**
+    (`security/madenat_processor_return_link_rules.xml`). `madenat.guia.processing` no tiene
+    `company_id` (documento): no se compara.
+  - **Elegibilidad dura por modelo/ORM/RPC:** sólo envíos validados (`state='done'`) y de tipo interno
+    (`picking_type_id.code='internal'`). Dominio y validación alineados.
+  - **Volúmenes N:M referenciales:** `aggregator=False` en `shipment_volume_m3`/`return_nominal_m3`
+    (sin agregación engañosa en pivot/graph/`read_group`) + ayuda explícita. Sin reparto ni resta.
+  - Vistas: badge de vigencia documental, filtro «Requiere reimputación» y grupo por vigencia.
+  - Pruebas: `test_processor_return_link.py` **T1–T22** (22/22).
+
 ## [18.0.1.7.0] - 2026-10-10
 
 ### Added
