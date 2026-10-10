@@ -38,6 +38,25 @@ class MadenatSvImputationWizard(models.TransientModel):
         'madenat.sv.imputation', string='Imputación', readonly=True,
         help='Imputación de trabajo de la guía. Reintentar el asistente no '
              'crea una nueva (idempotencia, AD-91).')
+    # Bloque B (CANON/19 §19.11): selección de envíos a procesador que atienden
+    # el retorno. Reutiliza el asistente de imputación (no se crea otro).
+    shipment_picking_ids = fields.Many2many(
+        'stock.picking', string='Envíos a procesador (retorno)',
+        help='Envíos elegibles que atienden este retorno. Al guardar se '
+             'registran como relaciones de conciliación (borrador) y, al '
+             'aplicar, como conciliación registrada (CANON/19 §19.11).')
+    eligible_shipment_picking_ids = fields.Many2many(
+        'stock.picking', compute='_compute_eligible_shipments',
+        string='Envíos elegibles')
+
+    @api.depends('guia_processing_id', 'processor_id')
+    def _compute_eligible_shipments(self):
+        Link = self.env['madenat.processor.return.link']
+        for wiz in self:
+            wiz.eligible_shipment_picking_ids = (
+                Link._eligible_shipment_pickings(
+                    wiz.guia_processing_id, wiz.processor_id))
+
 
     # ── Defaults ─────────────────────────────────────────────────────────
     @api.model
@@ -55,10 +74,25 @@ class MadenatSvImputationWizard(models.TransientModel):
         if guia and 'guia_processing_id' in fields_list \
                 and not res.get('guia_processing_id'):
             res['guia_processing_id'] = guia.id
+        if guia and 'processor_id' in fields_list \
+                and not res.get('processor_id'):
+            processor = self.env[
+                'madenat.processor.return.link']._guia_processor(guia)
+            if processor:
+                res['processor_id'] = processor.id
         if guia:
             work = self.env['madenat.sv.imputation']._i2_find_work_for_guia(guia)
             if work and 'imputation_id' in fields_list:
                 res['imputation_id'] = work.id
+            # Precarga los envíos ya relacionados (relaciones de trabajo).
+            if 'shipment_picking_ids' in fields_list:
+                links = self.env['madenat.processor.return.link'].search([
+                    ('guia_processing_id', '=', guia.id),
+                    ('state', 'in', ('draft', 'linked')),
+                ])
+                if links:
+                    res['shipment_picking_ids'] = [(6, 0, links.mapped(
+                        'picking_id').ids)]
         return res
 
     @api.onchange('guia_processing_id')
@@ -171,6 +205,9 @@ class MadenatSvImputationWizard(models.TransientModel):
                     'imputed_volume_m3': alloc.imputed_volume_m3,
                 })
         self.imputation_id = imp.id
+        # Bloque B (CANON/19 §19.11): sincroniza las relaciones envío↔retorno
+        # seleccionadas (en borrador; se registran al aplicar).
+        imp._sync_return_links(self.shipment_picking_ids)
         return imp
 
     # ── Acciones ─────────────────────────────────────────────────────────
@@ -186,6 +223,9 @@ class MadenatSvImputationWizard(models.TransientModel):
     def action_apply(self):
         imp = self._i2_build_imputation()
         imp.action_apply()
+        # Bloque B/C (CANON/19 §19.11): registra (draft → linked) las
+        # relaciones envío↔retorno confirmadas al aplicar la imputación.
+        imp.action_link_return_links()
         return self._i2_open(imp)
 
     def _i2_open(self, imputation):

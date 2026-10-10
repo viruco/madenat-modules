@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.6.0',
+    'version': '18.0.1.7.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',
@@ -69,6 +69,9 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         'views/madenat_sv_operation_logistics_views.xml',
         # I2 (CANON/19 v1.6.0 / AD-91): imputación documental SV por guía.
         'views/madenat_sv_imputation_views.xml',
+        # Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
+        # envío a procesador ↔ retorno.
+        'views/madenat_processor_return_link_views.xml',
         'views/lumber_document_checklist_views.xml',
         
         # 7. 🚀 BI & PROFITABILITY (Fix para error de dependencia de campos)

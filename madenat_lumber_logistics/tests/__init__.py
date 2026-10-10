@@ -31,3 +31,6 @@ from . import test_documentary_backlog
 # Identificación de retorno de servicio: filtro y reglas I2 (2026-10-07).
 from . import test_service_return_pending_filter
 from . import test_service_return_imputation_guard
+# Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
+# envío a procesador ↔ retorno.
+from . import test_processor_return_link

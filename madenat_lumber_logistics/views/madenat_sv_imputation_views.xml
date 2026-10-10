@@ -81,6 +81,26 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Envíos a procesador (retorno)">
+                            <field name="return_link_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="picking_id"/>
+                                    <field name="processor_id"/>
+                                    <field name="shipment_date"/>
+                                    <field name="shipment_volume_m3"/>
+                                    <field name="return_nominal_m3"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'linked'"
+                                           decoration-warning="state == 'draft'"
+                                           decoration-muted="state == 'reversed'"/>
+                                </list>
+                            </field>
+                            <button name="action_link_return_links" type="object"
+                                    string="Registrar conciliación de envíos"
+                                    class="btn-primary"
+                                    invisible="state in ('applied', 'reversed', 'cancelled')"/>
+                        </page>
                         <page string="Motivo / Reversa">
                             <group>
                                 <field name="reason"/>

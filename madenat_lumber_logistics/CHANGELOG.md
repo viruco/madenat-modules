@@ -6,6 +6,24 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [18.0.1.7.0] - 2026-10-10
+
+### Added
+- **Bloque A/B/C (CANON/19 §19.11) — Relación de conciliación envío–retorno (procesador).**
+  - Nuevo modelo persistente `madenat.processor.return.link` (enlaza el **envío** `stock.picking`
+    —no el wizard transitorio—, la **guía** de retorno y la **imputación** documental SV). Estados
+    `draft` → `linked` → `reversed`; N:M; unicidad por par en estados activos; inversos en
+    `stock.picking`, `madenat.guia.processing` y `madenat.sv.imputation`.
+  - Magnitudes **separadas** (sin resta): `shipment_volume_m3` y `return_nominal_m3`. **No** calcula
+    saldo de proceso, rendimiento ni merma (Bloque D pendiente).
+  - Permisos por ORM/RPC (registrar: Operaciones/Jefatura/Gerencia; reversar: Jefatura/Gerencia);
+    append-only con motivo, evidencia firmada (SHA-256) y auditoría aditiva
+    `processor_return_link` / `processor_return_link_reverse`.
+  - Asistente de imputación **reutilizado**: pestaña «Envíos a procesador (retorno)» (envíos
+    elegibles del mismo procesador); al aplicar registra las relaciones.
+  - Pestañas de trazabilidad en guía y picking; menú de Logística «Conciliación Envío–Retorno».
+  - Pruebas: `tests/test_processor_return_link.py` T1–T12 (12/12). Ver `03_TESTS.md` §15.
+
 ## [HF-001] — 2026-06-03 — Hotfix: Revertir imports inválidos entre addons
 
 ### Fixed

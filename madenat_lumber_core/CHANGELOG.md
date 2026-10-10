@@ -1,3 +1,10 @@
+## [18.0.6.6.0] - 2026-10-10
+### Added
+- **Auditoría (CANON/19 §19.11) — valores ADITIVOS del `Selection` `madenat.audit.log.action_type`:**
+  `processor_return_link` («Conciliación Envío–Retorno (procesador)») y
+  `processor_return_link_reverse` («Reversa de Conciliación Envío–Retorno»). No reemplazan valores
+  existentes; los emite `madenat_lumber_logistics` en la relación de conciliación envío–retorno.
+
 ## [18.0.6.5.0] - 2026-10-02
 ### Added
 - **H1: Reversión física ASISTIDA de producción histórica (sin llave fuerte G2).**

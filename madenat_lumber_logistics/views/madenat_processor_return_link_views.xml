@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
+         envío a procesador ↔ retorno. Vista DOCUMENTAL (no mueve stock). -->
+
+    <record id="view_madenat_processor_return_link_list" model="ir.ui.view">
+        <field name="name">madenat.processor.return.link.list</field>
+        <field name="model">madenat.processor.return.link</field>
+        <field name="arch" type="xml">
+            <list string="Relaciones envío–retorno">
+                <field name="name"/>
+                <field name="shipment_date"/>
+                <field name="picking_id"/>
+                <field name="guia_processing_id"/>
+                <field name="processor_id"/>
+                <field name="imputation_id"/>
+                <field name="shipment_volume_m3"/>
+                <field name="return_nominal_m3"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'linked'"
+                       decoration-warning="state == 'draft'"
+                       decoration-muted="state == 'reversed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_madenat_processor_return_link_form" model="ir.ui.view">
+        <field name="name">madenat.processor.return.link.form</field>
+        <field name="model">madenat.processor.return.link</field>
+        <field name="arch" type="xml">
+            <form string="Relación envío–retorno">
+                <header>
+                    <button name="action_link" type="object"
+                            string="Registrar conciliación" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_back_to_draft" type="object"
+                            string="Volver a propuesta"
+                            invisible="state != 'linked'"/>
+                    <button name="action_reverse" type="object"
+                            string="Reversar"
+                            invisible="state != 'linked'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,linked,reversed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="picking_id"/>
+                            <field name="guia_processing_id"/>
+                            <field name="imputation_id"/>
+                            <field name="processor_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="shipment_date" readonly="1"/>
+                            <field name="return_date" readonly="1"/>
+                            <field name="shipment_volume_m3" readonly="1"/>
+                            <field name="return_nominal_m3" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="reason"/>
+                        <field name="note"/>
+                    </group>
+                    <group string="Trazabilidad" invisible="state == 'draft'">
+                        <field name="linked_by_id" readonly="1"/>
+                        <field name="linked_date" readonly="1"/>
+                        <field name="reversed_by_id" readonly="1"/>
+                        <field name="reversal_date" readonly="1"/>
+                        <field name="reversal_reason"/>
+                        <field name="audit_hash" readonly="1"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    <record id="view_madenat_processor_return_link_search" model="ir.ui.view">
+        <field name="name">madenat.processor.return.link.search</field>
+        <field name="model">madenat.processor.return.link</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="picking_id"/>
+                <field name="guia_processing_id"/>
+                <field name="processor_id"/>
+                <filter name="filter_draft" string="Propuesta"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_linked" string="Conciliación registrada"
+                        domain="[('state', '=', 'linked')]"/>
+                <filter name="filter_reversed" string="Revertida"
+                        domain="[('state', '=', 'reversed')]"/>
+                <separator/>
+                <filter name="group_processor" string="Procesador"
+                        context="{'group_by': 'processor_id'}"/>
+                <filter name="group_state" string="Estado"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_madenat_processor_return_link"
+            model="ir.actions.act_window">
+        <field name="name">Conciliación Envío–Retorno</field>
+        <field name="res_model">madenat.processor.return.link</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id"
+               ref="view_madenat_processor_return_link_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sin relaciones de conciliación envío–retorno
+            </p>
+            <p>
+                Registra qué envío a procesador atiende cada guía de retorno.
+                Es un vínculo DOCUMENTAL: no mueve stock ni sustituye la
+                imputación SV.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_madenat_processor_return_link"
+              name="Conciliación Envío–Retorno"
+              parent="menu_lumber_logistics"
+              action="action_madenat_processor_return_link"
+              sequence="27"
+              groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+
+    <menuitem id="menu_madenat_processor_return_link"
+              name="Conciliación Envío–Retorno"
+              parent="menu_lumber_logistics"
+              action="action_madenat_processor_return_link"
+              sequence="27"
+              groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+
+    <!-- Trazabilidad en la GUÍA de retorno: qué envíos la atienden. -->
+    <record id="view_madenat_guia_processing_form_return_link"
+            model="ir.ui.view">
+        <field name="name">madenat.guia.processing.form.return.link</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id"
+               ref="madenat_lumber_core.view_madenat_guia_processing_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='lots']" position="after">
+                <page string="Conciliación Envío–Retorno"
+                      name="processor_return_link">
+                    <group>
+                        <field name="processor_return_link_state"
+                               readonly="1"/>
+                    </group>
+                    <field name="processor_return_link_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="picking_id"/>
+                            <field name="processor_id"/>
+                            <field name="shipment_date"/>
+                            <field name="shipment_volume_m3"/>
+                            <field name="return_nominal_m3"/>
+                            <field name="imputation_id"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Trazabilidad en el ENVÍO (picking): qué retornos atiende. -->
+    <record id="view_stock_picking_form_processor_return" model="ir.ui.view">
+        <field name="name">stock.picking.form.processor.return</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='operations']" position="after">
+                <page string="Retornos (procesador)"
+                      name="madenat_processor_returns">
+                    <group>
+                        <field name="madenat_return_link_state" readonly="1"/>
+                        <field name="madenat_shipment_volume_m3" readonly="1"/>
+                    </group>
+                    <field name="madenat_processor_return_link_ids"
+                           readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="guia_processing_id"/>
+                            <field name="processor_id"/>
+                            <field name="return_date"/>
+                            <field name="return_nominal_m3"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

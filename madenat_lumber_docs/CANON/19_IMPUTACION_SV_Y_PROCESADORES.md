@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.8.0
+**Versión documental:** 1.9.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -706,3 +706,135 @@ ni merma automática, ni costo (I5), ni cierre. La imputación es un **vínculo 
 (b) **cobertura parcial** del filtro «Retornos sin imputación aplicada»; (c) **rendimiento/merma**
 (comparación de magnitudes equivalentes); (d) **I3** (salida nativa + ledger) e **I5** (costo);
 (e) **concurrencia**: existe *advisory lock* por SV, pero la acreditación de concurrencia sigue pendiente.
+
+### 19.11 Relación de conciliación envío–retorno (Bloque A/B/C, 2026-10-10)
+
+> **Naturaleza.** Implementación **acotada y DOCUMENTAL** que cierra la brecha **(a)** declarada en
+> §19.10 («vínculo automático envío↔imputación»). **No** sustituye la imputación documental SV (C),
+> **no** crea ni modifica `stock.quant`/`stock.move`/`picking` ni el ledger `madenat.sv.operation`, y
+> **no** implementa la conciliación **cuantitativa** (Bloque D, **pendiente**).
+
+**Qué resuelve.** Operaciones puede declarar **qué envío a procesador atiende cada retorno** y
+consultar el vínculo, sus referencias y su estado, manteniendo separadas las cuatro capas:
+
+| Capa | Nombre operativo | Registro persistente | Dueño |
+|---|---|---|---|
+| A | **Envío a procesador** (material enviado) | transferencia interna `stock.picking` con destino `Procesadores/<X>` (`location_dest_id.processor_partner_id`) + `madenat.audit.log('processor_shipment')` | `madenat_lumber_logistics` (I1) |
+| B | **Guía de retorno / etiqueta procesada** | `madenat.guia.processing` + etiquetas `stock.lot` (`lot_flow_type != 'volume'`) | `madenat_lumber_core` |
+| C | **Imputación documental SV** (etiqueta SV imputada) | `madenat.sv.imputation` (+ `.line` / `.sv.line`) | `madenat_lumber_logistics` (I2) |
+| D | **Relación de conciliación** | **`madenat.processor.return.link`** (nuevo) | `madenat_lumber_logistics` (esta etapa) |
+
+> **El asistente de envío es transitorio.** `madenat.processor.shipment.wizard` **no** persiste un
+> registro propio: su resultado persistente es el **`stock.picking`**. La relación de conciliación
+> enlaza **el picking**, nunca el wizard (evita depender de un `TransientModel`).
+
+**Modelo `madenat.processor.return.link`** (cabecera por par envío↔retorno).
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `name` | Char (secuencia `madenat.processor.return.link`, prefijo `REL`) | Identificador |
+| `picking_id` | M2O `stock.picking` (`ondelete='restrict'`) | **Envío a procesador** (A) |
+| `guia_processing_id` | M2O `madenat.guia.processing` (`ondelete='restrict'`) | **Retorno** (B) |
+| `imputation_id` | M2O `madenat.sv.imputation` (`ondelete='set null'`) | Imputación SV (C), opcional |
+| `processor_id` | M2O `res.partner` (related store del destino del picking) | Procesador |
+| `state` | Selection `draft`/`linked`/`reversed` | §Estados |
+| `shipment_volume_m3` | Float, digits (16, 3) (compute) | Σ cantidades del envío (**magnitud física, separada**) |
+| `return_nominal_m3` | Float, digits (16, 3) (compute) | Σ nominal de etiquetas del retorno (**magnitud documental, separada**) |
+| `shipment_date` / `return_date` | Datetime / Date (related) | Referencias temporales |
+| `reason` / `note` | Text | Observaciones |
+| `linked_by_id` / `linked_date` | M2O `res.users` / Datetime | Autoría |
+| `reversed_by_id` / `reversal_date` / `reversal_reason` | M2O / Datetime / Text | Reversa |
+| `origin_link_id` / `reversed_link_id` | M2O self | Cadena **append-only** |
+| `snapshot_json` / `audit_hash` | Text / Char | Evidencia firmada (AD-79/AD-80) |
+
+
+**Cardinalidades (reglas propuestas, §5/§19.11).** **N:M** — un envío admite **varios retornos
+parciales**; un retorno admite **varios envíos**. Unicidad por par envío↔retorno en estados
+**activos** (`draft`/`linked`); `reversed` libera el par. La selección se limita al **mismo
+procesador** (salvo excepción definida fuera de este documento). Sólo se proponen **envíos
+elegibles** (picking `done` con destino de procesador).
+
+**Estados.** `draft` (**Propuesta**, sin registrar) → `linked` (**Conciliación registrada**) →
+`reversed` (**Revertida**). «Conciliación registrada» declara **el vínculo**, **no** una igualdad
+cuantitativa: no se declara «conciliado» sólo porque exista una imputación aplicada.
+
+**Magnitudes (§6).** Se muestran **separadas** el volumen **enviado** (físico, Σ `move_line`) y el
+nominal **retornado** (documental, Σ nominal de etiquetas). **No** se restan magnitudes no
+equivalentes, **no** hay saldo de proceso, rendimiento ni merma (Bloque D; §7 y Q-19-3/Q-19-4).
+
+**Reglas y controles.**
+- **Envío elegible:** picking `done` con `location_dest_id.processor_partner_id`; dominio único y
+  compartido por la propuesta y el asistente.
+- **Procesador correspondiente:** rechazo si el procesador del envío ≠ procesador del retorno.
+- **Retorno de servicio:** `action_link` exige la guía marcada `service_return_confirmation == 'yes'`.
+- **Permisos por ORM/RPC (no sólo botones):** registrar = Operaciones/Jefatura/Gerencia; reversar =
+  Jefatura/Gerencia; Auditoría = lectura. Grupos existentes (sin grupos nuevos).
+- **Append-only:** `linked`/`reversed` no se editan ni eliminan; la corrección se hace por **reversa**
+  con motivo + evidencia firmada. No se elimina una relación aplicada sin rastro.
+- **Auditoría:** tipos aditivos `processor_return_link` y `processor_return_link_reverse`
+  (`madenat.audit.log`, snapshot + SHA-256).
+- **Idempotencia:** registrar dos veces no duplica ni la relación ni la auditoría.
+
+**Experiencia de Operaciones (flujo corto, §7).** 1) Abrir la guía de retorno → 2) el asistente de
+imputación (reutilizado, no duplicado) → 3) pestaña **«Envíos a procesador (retorno)»**: consultar
+envíos elegibles del procesador y seleccionar → 4) completar etiquetas/SV y **Aplicar**. Al aplicar se
+registran las relaciones (`draft` → `linked`). Toda propuesta es **visible y editable**; nada se aplica
+en silencio. La selección queda en estado propuesto mientras no se aplique.
+
+**Históricos.** No se crean asociaciones automáticas ni se infieren por volumen/fecha. Los envíos y
+retornos existentes permanecen en estado **`no_return`** hasta que Operaciones declare la relación.
+No se reescribe ni se recalcula ningún registro histórico.
+
+**Límites declarados (acreditación 2026-10-10).** Se declaran **sin cierre** (detalle en `03_TESTS.md`
+**§15.5**): (a) la **reversa de la imputación** **no** revierte ni marca el vínculo (este conserva su
+estado) — efecto **pendiente de decisión**; (b) **no** hay restricción explícita de **consistencia de
+compañía** entre envío y retorno; (c) las magnitudes **no** se reparten en N:M (`shipment_volume_m3` se
+repite por vínculo ⇒ sumar vínculos **duplicaría** el volumen); el reparto es **Bloque D**. La
+**exclusión de envíos cancelados** se garantiza por el dominio `state='done'` (sin caso de prueba
+dedicado). Evidencia web: **integración web/RPC con sesión — ejecutada**; **lectura de arquitecturas de
+vistas y metadatos — verificada**; **renderizado e interacción en navegador real — pendiente** (la
+verificación web/RPC **no** sustituye al navegador real).
+
+**Bloque D — pendiente (no implementado).** Conciliación cuantitativa (enviado vs retornado vs
+imputado) sin magnitudes comunes aprobadas. No se calculan saldo de proceso, rendimiento ni merma.
+
+**Dónde se ve.** Pestaña «Conciliación Envío–Retorno» en la **guía**; pestaña «Retornos (procesador)»
+en el **picking**; pestaña «Envíos a procesador (retorno)» en la **imputación**; y menú de Logística
+**«Conciliación Envío–Retorno»**.
+
+**Pruebas.** `madenat_lumber_logistics/tests/test_processor_return_link.py` (**T1–T12**); resultados en
+`03_TESTS.md` **§15** y evidencia en `CONCILIACION_ENVIO_RETORNO_20261010/`.
+
+### 19.12 Bloque D — Conciliación cuantitativa: diseño requerido (**NO implementado**)
+
+> **Decisión de etapa (2026-10-10) — opción 3.** Para esta etapa se mantiene: **no** se implementa el
+> Bloque D. **No** hay conciliación cuantitativa, saldo de proceso, rendimiento, merma, cierre
+> automático del envío ni tolerancias. El estado `linked` significa **«vínculo registrado»**, **no**
+> «envío conciliado». La UI muestra **separados** el **volumen enviado**, el **volumen retornado** y el
+> **imputado SV** (`shipment_volume_m3`, `return_nominal_m3`, imputación), sin restarlos.
+
+El Bloque D es una **etapa independiente**. Su diseño deberá establecer, como mínimo:
+
+1. **Qué volumen representa cada campo.** Para cada magnitud: campo fuente, unidad, fórmula,
+   precisión y significado funcional — volumen enviado (`stock.move.line.quantity`), volumen retornado
+   (Σ nominal de etiquetas procesadas; ¿bruto con tarja o neto?), volumen imputado SV
+   (`madenat.sv.imputation.sv.line.imputed_volume_m3`), y volumen de compra/embarque
+   (`17_CONSTITUCION_VOLUMENES.md`). **No** restar magnitudes **no equivalentes**.
+2. **Asignación de cantidades con relaciones N:M.** Regla explícita, determinista y auditable para
+   repartir/prorratear una cantidad cuando un envío tiene varios retornos y un retorno varios envíos;
+   evitar el **doble conteo**.
+3. **Identificación de retornos parciales.** Cómo se reconoce y representa un retorno parcial (por
+   volumen, por lote/etiqueta o por declaración del operador) y cuándo un envío pasa a
+   «parcialmente retornado».
+4. **Clasificación de diferencias.** Qué diferencia corresponde a **transformación** (proceso),
+   **merma** (pérdida real) o **datos** (error documental/captura). **Sin** factores inventados.
+5. **Aceptación de diferencias y cierre.** Quién **acepta** una diferencia y **cierra** el proceso
+   (rol), con motivo, evidencia y trazabilidad; y el efecto de reversas (imputación, retorno, envío).
+
+**Habilitantes del Bloque D (preguntas abiertas):** magnitud común de comparación y tolerancia
+(Q-19-4), retorno a granel sin etiquetas (Q-19-3). Hasta resolverlas, el sistema **no** calcula
+conciliación cuantitativa ni cierra el envío.
+
+<!-- actualizado: 2026-10-10 (4) — §19.12 Bloque D (conciliación cuantitativa): diseño requerido y
+decisión de etapa «opción 3» (no implementado; `linked` = vínculo registrado). §19.11 vuelto a
+confirmar. V3 (proxy de navegador) de A/B/C ejecutada. Versión 1.9.0. -->

@@ -19,6 +19,27 @@
                     </group>
                 </group>
                 <notebook>
+                    <page string="Envíos a procesador (retorno)">
+                        <field name="eligible_shipment_picking_ids" invisible="1"/>
+                        <field name="shipment_picking_ids"
+                               domain="[('id', 'in', eligible_shipment_picking_ids)]"
+                               options="{'no_create': True}">
+                            <list>
+                                <field name="name"/>
+                                <field name="partner_id"/>
+                                <field name="date_done"/>
+                                <field name="location_id"/>
+                                <field name="location_dest_id"/>
+                            </list>
+                        </field>
+                        <p class="text-muted">
+                            Envíos elegibles (transferencias validadas al
+                            procesador). La selección queda como propuesta
+                            (borrador) y se REGISTRA al aplicar. Un envío puede
+                            atender varios retornos parciales; un retorno puede
+                            referir varios envíos (CANON/19 §19.11).
+                        </p>
+                    </page>
                     <page string="Etiquetas">
                         <field name="line_ids" readonly="1">
                             <list>

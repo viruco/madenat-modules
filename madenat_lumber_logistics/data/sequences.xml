@@ -17,5 +17,15 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
+
+        <!-- Bloque A (CANON/19 §19.11, 2026-10-10): secuencia de relación de
+             conciliación envío–retorno. -->
+        <record id="seq_madenat_processor_return_link" model="ir.sequence">
+            <field name="name">Relación envío–retorno (procesador)</field>
+            <field name="code">madenat.processor.return.link</field>
+            <field name="prefix">REL</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
     </data>
 </odoo>

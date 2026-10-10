@@ -18,3 +18,7 @@ from . import madenat_processor_location
 
 # 5. I2 (CANON/19 v1.6.0 / AD-91): imputación DOCUMENTAL SV por guía.
 from . import madenat_sv_imputation
+
+# 6. Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
+#    envío↔retorno (persistente y documental).
+from . import madenat_processor_return_link

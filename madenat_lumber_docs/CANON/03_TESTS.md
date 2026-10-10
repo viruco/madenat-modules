@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.17.0
+**Versión documental:** 6.18.0
 **Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
+<!-- actualizado: 2026-10-10 (2) — §15 relación de conciliación envío–retorno (Bloque A/B/C): suite nueva T1–T12 = 12/12; regresión `madenat_lumber_logistics` = 3 failed, 0 error of 265 (3 fallas PRE-EXISTENTES por aserción global de `deviation`; 0 fallas nuevas). Bloque D no implementado. Versión 03 6.17.0 → 6.18.0. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
 ---
@@ -815,3 +816,94 @@ de imputaciones; resolución global del `OwlError`. Estado del `OwlError` (R15):
 apertura manual observada; causa no confirmada» (`02_CONTINUIDAD.md` §17.16.1). Esta aceptación cierra la
 **presentación observada**; los pendientes funcionales independientes permanecen. Detalle:
 `02_CONTINUIDAD.md` §17.16.8; flujo de imputación confirmado: `19_IMPUTACION_SV_Y_PROCESADORES.md` §19.10.
+
+## 15. Relación de conciliación envío–retorno (Bloque A/B/C, 2026-10-10)
+
+**Alcance.** Nueva evidencia en el desarrollo existente `madenat_test` (contenedor `odoo18_app`).
+Módulos actualizados: `madenat_lumber_core` (valores **aditivos** en `madenat.audit.log.action_type`) y
+`madenat_lumber_logistics` (modelo, asistente, vistas, ACL, secuencia). Evidencia:
+`CONCILIACION_ENVIO_RETORNO_20261010/`.
+
+### 15.1 Suite nueva — `madenat_lumber_logistics/tests/test_processor_return_link.py` (T1–T12)
+
+| ID | Caso | Resultado |
+|---|---|---|
+| T1 | Envío con un retorno (registro + 1 evento) | ✅ |
+| T2 | Envío con varios retornos parciales | ✅ |
+| T3 | Retorno asociado a varios envíos | ✅ |
+| T4 | Procesador incorrecto ⇒ rechazo | ✅ |
+| T5 | Envío no elegible ⇒ rechazo y no propuesto | ✅ |
+| T6 | Relación duplicada ⇒ rechazo; `_get_or_create_link` idempotente | ✅ |
+| T7 | Doble aplicación ⇒ sin duplicar auditoría | ✅ |
+| T8 | Reversa append-only: `reversed`, no eliminable; Operaciones no reversa | ✅ |
+| T9 | Permisos por ORM/RPC (sin grupo ⇒ AccessError; auditoría read-only) | ✅ |
+| T10 | Sin movimientos de stock (quants/pickings/moves idénticos) | ✅ |
+| T11 | Históricos sin asociación (`no_return`, sin crear nada) | ✅ |
+| T12 | Asistente de imputación aplica + registra relación | ✅ |
+
+**Resultado:** `0 failed, 0 error(s) of 12 tests` (`logs/tests_processor_return_link_run2.log`).
+
+### 15.2 Regresión de módulo `madenat_lumber_logistics`
+
+- Corrida: `--test-tags madenat_lumber_logistics` → **3 failed, 0 error(s) of 265 tests**
+  (`logs/tests_logistics_regression.log`).
+- **Las 3 fallas son PRE-EXISTENTES y ajenas a esta etapa.** Corresponden a aserciones **globales**
+  frágiles `assertFalse(AuditLog.search([('action_type','=','deviation')]))` en
+  `test_processor_locations.test_09` y `test_processor_shipment_ad89.test_t1/test_t5`. La base ya
+  contiene **5** eventos `deviation` históricos (ids 19889/19941/20342/20381/21739, fechas
+  **2026-10-04/05/07**, **anteriores** a esta intervención); esos tests **no** se modificaron.
+- **0 fallas nuevas; 0 errores.** Las suites de imputación SV (`TestSvImputationI2`,
+  `TestSvImputationCandidates`, `TestServiceReturnImputationGuard`) permanecen **verdes**.
+- Los tests son **transactionales**: no se persistió ninguna fila `processor_return_link` en la base
+  (verificado por SQL: `0 rows`).
+
+### 15.3 Comprobaciones ORM / no cubierto
+
+- **ORM:** creación/registro/reversa, unicidad, permisos y ausencia de stock verificados por tests.
+- **No ejecutado (fuera de alcance):** navegador (V3); concurrencia; instalación en base limpia; la
+  conciliación **cuantitativa** (Bloque **D**).
+
+
+### 15.4 Verificación de integración web/RPC — sesión autenticada (2026-10-10)
+
+**Clasificación de la evidencia (tres niveles — NO se presentan como equivalentes):**
+
+| Nivel | Alcance | Estado |
+|---|---|---|
+| **(a) Integración web/RPC con sesión autenticada** | `POST /web/session/authenticate`, `GET /web/webclient/load_menus`, `POST /web/dataset/call_kw/<model>/<method>` (create/read/search_read/fields_get/action_link/action_reverse) | ✅ **EJECUTADA** |
+| **(b) Lectura de arquitecturas de vistas y metadatos** | `get_views` (arch compilado) y `fields_get` | ✅ **VERIFICADA** |
+| **(c) Renderizado e interacción en navegador real** | *pixel rendering*, clics de UI | ⏳ **PENDIENTE** (no hay navegador en el entorno) |
+
+> **La verificación (a)+(b) NO sustituye a (c).** No se presenta como V3 ni se declara V3 acreditada.
+
+**Método (a)+(b):** sesión real de Operaciones (`v3_concil_oper@madenat.test`). Artefactos:
+`CONCILIACION_ENVIO_RETORNO_20261010/v3/`.
+
+| Verificación | Nivel | Resultado |
+|---|---|---|
+| Menú «Conciliación Envío–Retorno» | (a) | ✅ |
+| `get_views` form/lista `madenat.processor.return.link` | (b) | ✅ sin faltantes |
+| `get_views` form guía / picking / imputación / asistente | (b) | ✅ |
+| Acceso a datos (`search_read`, `fields_get`) | (a) | ✅ |
+| **Operativo:** crear + «Registrar conciliación» (Operaciones) | (a) | ✅ `linked` |
+| **Operativo:** reversa por Operaciones | (a) | ✅ **DENEGADA** (solo Jefatura/Gerencia) |
+| **Operativo:** reversa por Jefatura | (a) | ✅ `reversed` |
+| Auditoría `processor_return_link` + `..._reverse` | (a) | ✅ |
+
+**Registros de prueba creados (identificados; sin eliminar):** procesador `V3 Planta (temp)` (14785),
+guía `V3-CONCIL` (33737), envío picking `7973`, lote `V3-LOT` (18003), relación `REL00030`
+(`reversed`). Usuarios `v3_concil_oper` (2974) y `v3_concil_jef` (2975) **desactivados** al cierre.
+
+### 15.5 Controles del vínculo envío–retorno — acreditación (2026-10-10)
+
+> Cada control se acredita con **código** y, cuando existe, **prueba**. Lo **no** acreditado se declara;
+> **no** se inventa su cierre.
+
+| Control | Referencia de código | Prueba | Estado |
+|---|---|---|---|
+| **Atomicidad** imputación + registro del vínculo | `wizards/madenat_sv_imputation_wizard.py::action_apply` (`_i2_build_imputation()` → `imp.action_apply()` → `imp.action_link_return_links()`), en la **misma transacción** RPC | T12 | ✅ Acreditado (una transacción; sin commit intermedio) |
+| **Vínculo al reversar la imputación** | `models/madenat_sv_imputation.py::action_reverse` (**no** toca `return_link_ids`) | — | ⚠️ **NO acreditado**: la reversa de la imputación **no** revierte ni marca el vínculo; este conserva su estado. Efecto **pendiente de decisión** |
+| **Estados elegibles del picking / exclusión de cancelados** | `models/madenat_processor_return_link.py::_eligible_shipment_pickings` (`state='done'` + `location_dest_id.processor_partner_id != False`) | T5 (no elegible), T12 (elegible) | ✅ Acreditado por dominio (`state='done'` excluye `cancel`); **sin** caso dedicado de cancelado |
+| **Consistencia de compañía** | `company_id` related de `picking_id`; elegibilidad filtra compañía | — | ⚠️ **Parcial**: no hay restricción explícita que impida enlazar guía y envío de compañías distintas |
+| **Permisos (ORM/RPC)** | `_link_check_apply_permission` / `_link_check_reverse_permission`; ACL 4 grupos (`security/ir.model.access.csv`) | T9; §15.4 (a) | ✅ Acreditado |
+| **Doble contabilización N:M** | magnitudes por vínculo; **sin** reparto/prorrateo | T2/T3 (N:M) | ⚠️ **No aplica aún**: sin conciliación cuantitativa; `shipment_volume_m3` se repite por vínculo ⇒ **sumar vínculos duplicaría** el volumen. Reparto N:M = Bloque **D** (pendiente) |

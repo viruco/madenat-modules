@@ -98,6 +98,14 @@ class MadenatAuditLog(models.Model):
          'Cierre de Backlog Documental'),
         ('documentary_backlog_waiver',
          'Exoneración de Backlog Documental'),
+        # Bloque A (CANON/19 §19.11, 2026-10-10): relación de conciliación
+        # envío a procesador ↔ retorno (registro y reversa). Eventos
+        # append-only con snapshot determinista y firma SHA-256. Valores
+        # ADITIVOS al Selection (no reemplazan a otros).
+        ('processor_return_link',
+         'Conciliación Envío–Retorno (procesador)'),
+        ('processor_return_link_reverse',
+         'Reversa de Conciliación Envío–Retorno'),
     ], string='Tipo de Acción', required=True)
     # ══════════════════════════════════════════════════════════════════════════
     # BT-01: evidencia firmada. La bitácora es la fuente de verdad inmutable.
