@@ -75,7 +75,10 @@ class TestSvAssignmentUserRights(TransactionCase):
         self.env['madenat.sv.imputation.sv.line'].create({
             'imputation_id': imp.id, 'imputation_line_id': line.id,
             'sv_lot_id': sv.id, 'imputed_volume_m3': 6.0})
-        imp.write({'state': 'applied'})
+        # FASE 11 (A-1): el estado `applied` se alcanza por la acción OFICIAL
+        # (la escritura directa de `state` está prohibida).
+        imp.with_user(self.user_jef).action_apply()
+        imp.invalidate_recordset()
         sv.invalidate_recordset()
         return sv
 
@@ -113,7 +116,7 @@ class TestSvAssignmentUserRights(TransactionCase):
         #    el saldo canónico (refleja la realidad documental).
         imp = self.env['madenat.sv.imputation'].search(
             [('sv_line_ids.sv_lot_id', '=', sv.id)], limit=1)
-        imp.reversal_reason = 'P3'
+        imp.reason = 'P3'
         imp.with_user(self.user_jef).action_reverse()
         sv.invalidate_recordset()
         self.assertAlmostEqual(sv.sv_assignment_applied_m3, 0.0, 3)

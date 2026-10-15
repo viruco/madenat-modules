@@ -119,7 +119,7 @@ class TestSvRebajaWorkFilter(TransactionCase):
         e = self._etq(guia, 'WF-02-E', 10.0)
         sv = self._sv(guia, 'SV0000WF0002', 100.0)
         imp = self._draft_work(guia, sv, e, 4.0)
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
         # El vínculo de trabajo SIGUE existiendo (trazabilidad)…
         self.assertEqual(imp.work_sv_lot_id, sv)
@@ -142,7 +142,7 @@ class TestSvRebajaWorkFilter(TransactionCase):
         self.assertFalse(sv.sv_assignment_work_imputation_ids)
         self.assertEqual(sv.sv_assignment_work_count, 0)
         # Reversada: tampoco es trabajo en preparación.
-        imp.reversal_reason = 'WF-03 reversa de control.'
+        imp.reason = 'WF-03 reversa de control.'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         sv.invalidate_recordset()
@@ -155,7 +155,7 @@ class TestSvRebajaWorkFilter(TransactionCase):
         e1 = self._etq(guia, 'WF-04-E1', 10.0)
         sv = self._sv(guia, 'SV0000WF0004', 100.0)
         imp1 = self._draft_work(guia, sv, e1, 4.0)
-        imp1.with_user(self.user_oper).action_cancel()
+        imp1.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         guia2 = self._guia('WF-04B')
         e2 = self._etq(guia2, 'WF-04-E2', 10.0)
         imp2 = self._draft_work(guia2, sv, e2, 5.0)
@@ -169,7 +169,7 @@ class TestSvRebajaWorkFilter(TransactionCase):
         e = self._etq(guia, 'WF-05-E', 10.0)
         sv = self._sv(guia, 'SV0000WF0005', 100.0)
         imp = self._draft_work(guia, sv, e, 4.0)
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         res = imp.action_continue_preparation()      # NO debe lanzar UserError
         self.assertIsInstance(res, dict)
         self.assertEqual(res.get('type'), 'ir.actions.client')

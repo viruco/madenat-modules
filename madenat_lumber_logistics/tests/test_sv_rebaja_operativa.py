@@ -101,7 +101,20 @@ class TestSvRebajaOperativa(TransactionCase):
                 'imputation_id': imp.id, 'imputation_line_id': line.id,
                 'sv_lot_id': sv.id, 'imputed_volume_m3': vol})
         if state:
-            imp.write({'state': state})
+            # FASE 11 (A-1): el estado del fixture se alcanza por las vías
+            # OFICIALES (la escritura directa de `state` está prohibida).
+            if state == 'applied':
+                imp.with_user(self.user_oper).action_apply()
+                imp.invalidate_recordset()
+            elif state == 'pending':
+                imp.with_user(self.user_oper).action_pending()
+                imp.invalidate_recordset()
+            elif state == 'cancelled':
+                imp.with_user(self.user_oper).action_cancel(
+                    reason='Fixture en estado %s (FASE 11)' % state)
+                imp.invalidate_recordset()
+            else:
+                raise UserError('Estado de fixture no soportado: %s' % state)
         return imp
 
     def _snapshot(self):
@@ -329,7 +342,7 @@ class TestSvRebajaOperativa(TransactionCase):
         imp = self._imputation(guia, e, sv, 10.0, line_nominal=10.0)
         imp.with_user(self.user_oper).action_apply()
         self.assertAlmostEqual(I._i2_lot_applied_m3(e), before + 10.0, 3)
-        imp.reversal_reason = 'Reversa de prueba (RET-REV01).'
+        imp.reason = 'Reversa de prueba (RET-REV01).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(I._i2_lot_applied_m3(e), before, 3)

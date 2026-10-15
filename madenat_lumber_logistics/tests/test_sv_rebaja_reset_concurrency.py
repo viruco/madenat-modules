@@ -215,8 +215,8 @@ class TestSvRebajaResetConcurrency(SingleTransactionCase):
         etq = self._mk_etq(guia, 'CONC16-E', 10.0)
         sv = self._mk_sv(guia, 'CONC16-SV', 100.0)
         imp = self._mk_draft(guia, etq, sv, 6.0)
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'RESET-16 A'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'RESET-16 A'
         self.cr.commit()
 
         result = {}
@@ -233,7 +233,7 @@ class TestSvRebajaResetConcurrency(SingleTransactionCase):
                 cr_b.transaction = api.Transaction(self.registry)
                 env_b = api.Environment(cr_b, self.env.uid, {})
                 imp_b = env_b['madenat.sv.imputation'].browse(imp.id)
-                imp_b.with_user(self.user_oper).reopen_reason = 'RESET-16 B'
+                imp_b.with_user(self.user_oper).reason = 'RESET-16 B'
                 steps.append('B listo')
                 b_ready.set()
                 if not b_start.wait(timeout=30):
@@ -314,8 +314,8 @@ class TestSvRebajaResetConcurrency(SingleTransactionCase):
         etq_b = self._mk_etq(guia2, 'CONC17B-E', 10.0)
         sv = self._mk_sv(guia, 'CONC17-SV', 100.0)
         imp_a = self._mk_draft(guia, etq_a, sv, 6.0)
-        imp_a.with_user(self.user_oper).action_cancel()
-        imp_a.reopen_reason = 'RESET-17 A'
+        imp_a.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp_a.reason = 'RESET-17 A'
         imp_b = self._mk_draft(guia2, etq_b, sv, 6.0)
         self.assertEqual(len(imp_b.sv_line_ids), 1)
         self.cr.commit()

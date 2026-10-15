@@ -80,14 +80,14 @@ class TestSvRebajaResetToken(TransactionCase):
         wline.cantidad_asignar_m3 = nominal
         wiz.action_prepare()
         imp = wiz.imputation_id
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
         return imp
 
     # ── TOK-01/04: reapertura exitosa no deja autorización residual ─────────
     def test_tok_01_04_sin_residual_tras_exito(self):
         imp = self._cancelled('TOK-01')
-        imp.reopen_reason = 'Motivo TOK-01'
+        imp.reason = 'Motivo TOK-01'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
         # (4) Una escritura directa posterior NO aprovecha autorización alguna.
@@ -102,7 +102,7 @@ class TestSvRebajaResetToken(TransactionCase):
     # ── TOK-02: excepción en la transición ⇒ documento intacto, sin residual ─
     def test_tok_02_excepcion_deja_documento_intacto(self):
         imp = self._cancelled('TOK-02')
-        imp.reopen_reason = 'Motivo TOK-02'
+        imp.reason = 'Motivo TOK-02'
         with patch.object(type(imp), '_i2_write_protected_state',
                           side_effect=UserError('fallo simulado')):
             with self.assertRaises(UserError):
@@ -115,7 +115,7 @@ class TestSvRebajaResetToken(TransactionCase):
     # ── TOK-03: fallo de validación intermedio ⇒ sin transición ni residual ─
     def test_tok_03_fallo_intermedio_sin_residual(self):
         imp = self._cancelled('TOK-03')
-        imp.reopen_reason = 'Motivo TOK-03'
+        imp.reason = 'Motivo TOK-03'
         imp.guia_processing_id.sudo().write(
             {'service_return_confirmation': 'no'})
         with self.assertRaises(UserError):
@@ -143,7 +143,7 @@ class TestSvRebajaResetToken(TransactionCase):
         a = self._cancelled('TOK-07A')
         b = self._cancelled('TOK-07B')
         imps = a | b
-        imps.reopen_reason = 'Motivo TOK-07'
+        imps.reason = 'Motivo TOK-07'
         imps.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(a.state, 'draft')
         self.assertEqual(b.state, 'draft')
@@ -164,7 +164,7 @@ class TestSvRebajaResetToken(TransactionCase):
             })
         self.assertFalse(imp.reopened_by_id)
         before = fields.Datetime.now()
-        imp.reopen_reason = 'Motivo TOK-08'
+        imp.reason = 'Motivo TOK-08'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         after = fields.Datetime.now()
         self.assertEqual(imp.reopened_by_id, self.user_oper)
@@ -178,7 +178,7 @@ class TestSvRebajaResetToken(TransactionCase):
                    if isinstance(v, (set, dict, list)) and 'TOKEN' in n.upper()]
         self.assertFalse(mutable, 'No debe existir registro global de tokens')
         imp = self._cancelled('TOK-09')
-        imp.reopen_reason = 'Motivo TOK-09'
+        imp.reason = 'Motivo TOK-09'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
         other = self._cancelled('TOK-09B')

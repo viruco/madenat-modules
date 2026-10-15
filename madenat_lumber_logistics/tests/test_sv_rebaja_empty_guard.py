@@ -145,9 +145,9 @@ class TestSvRebajaEmptyGuard(TransactionCase):
         self._wline(wiz, e).selected = True
         wiz.sudo().action_prepare()
         imp = wiz.imputation_id
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
-        imp.reopen_reason = 'SG-04 reapertura de control.'
+        imp.reason = 'SG-04 reapertura de control.'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
         # Un documento reabierto conserva sus líneas (no es un vacío).

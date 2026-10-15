@@ -23,10 +23,31 @@ class TestServiceReturnPendingFilter(TransactionCase):
         super().setUpClass()
         cls.Guia = cls.env['madenat.guia.processing']
         cls.Imputation = cls.env['madenat.sv.imputation']
+        cls.ImputationLine = cls.env['madenat.sv.imputation.line']
+        cls.SvLine = cls.env['madenat.sv.imputation.sv.line']
         cls.partner = cls.env['res.partner'].create({
             'name': 'SrvRet Pend', 'is_company': True})
         cls.location = cls.env['stock.location'].search(
             [('usage', '=', 'internal')], limit=1)
+        # FASE 11 (A-1/B-1): los estados se alcanzan con las acciones OFICIALES,
+        # que exigen payload mínimo válido y rol funcional.
+        uom = cls.env.ref('uom.product_uom_cubic_meter')
+        cls.product = cls.env['product.product'].create({
+            'name': 'PEND Lumber', 'is_storable': True, 'tracking': 'lot',
+            'uom_id': uom.id, 'uom_po_id': uom.id})
+        cls.user_oper = cls._mk('pend_oper', [
+            'madenat_lumber_core.group_madenat_operaciones'])
+        cls.user_jef = cls._mk('pend_jef', [
+            'madenat_lumber_core.group_madenat_jefatura_operaciones'])
+
+    @classmethod
+    def _mk(cls, name, groups):
+        return cls.env['res.users'].create({
+            'name': name, 'login': name, 'email': '%s@madenat.test' % name,
+            'company_id': cls.env.company.id,
+            'company_ids': [(6, 0, [cls.env.company.id])],
+            'groups_id': [(6, 0, [cls.env.ref('base.group_user').id]
+                              + [cls.env.ref(g).id for g in groups])]})
 
     def _guia(self, name, confirm='yes', tipo='service', state='validated'):
         return self.Guia.create({
@@ -37,8 +58,47 @@ class TestServiceReturnPendingFilter(TransactionCase):
         })
 
     def _imp(self, guia, state='draft'):
-        return self.Imputation.sudo().create({
-            'guia_processing_id': guia.id, 'state': state})
+        """Crea la imputación y alcanza el estado pedido por VÍAS OFICIALES.
+
+        FASE 11 (A-1/B-1): la escritura directa de `state` está prohibida; cada
+        estado se obtiene con su acción (con un payload mínimo válido —etiqueta
+        + reparto positivo a un SV— cuando la acción lo exige).
+        """
+        imp = self.Imputation.sudo().create({'guia_processing_id': guia.id})
+        if state == 'draft':
+            return imp
+        if state == 'cancelled':
+            imp.with_user(self.user_oper).action_cancel(
+                reason='PEND: anulación de prueba')
+            imp.invalidate_recordset()
+            return imp
+        etq = self.env['stock.lot'].sudo().create({
+            'name': 'PEND-E-%s' % guia.id, 'product_id': self.product.id,
+            'company_id': self.env.company.id, 'lot_flow_type': 'tarja',
+            'ref': 'PEND-E-%s' % guia.id, 'volume_purchase_m3': 10.0,
+            'vol_shipment_m3': 10.0})
+        guia.sudo().write({'lot_ids': [(4, etq.id)]})
+        sv = self.env['stock.lot'].sudo().create({
+            'name': 'SVPEND%s' % guia.id, 'product_id': self.product.id,
+            'company_id': self.env.company.id, 'lot_flow_type': 'volume',
+            'volume_source_guia_id': guia.id, 'volume_purchase_m3': 100.0,
+            'vol_shipment_m3': 100.0})
+        line = self.ImputationLine.sudo().create({
+            'imputation_id': imp.id, 'processed_lot_id': etq.id,
+            'nominal_volume_m3': 10.0})
+        self.SvLine.sudo().create({
+            'imputation_id': imp.id, 'imputation_line_id': line.id,
+            'sv_lot_id': sv.id, 'imputed_volume_m3': 10.0})
+        if state == 'pending':
+            imp.with_user(self.user_oper).action_pending()
+        elif state == 'applied':
+            imp.with_user(self.user_oper).action_apply()
+        elif state == 'reversed':
+            imp.with_user(self.user_oper).action_apply()
+            imp.with_user(self.user_jef).action_reverse(
+                reason='PEND: reversa de prueba')
+        imp.invalidate_recordset()
+        return imp
 
     def _pending(self):
         return self.Guia.search([

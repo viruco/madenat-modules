@@ -166,7 +166,7 @@ class TestSvRebajaSaveLockDirect(TransactionCase):
     def test_c8_transicion_directo_obsoleto_contenido(self):
         guia, etq, sv, wiz, imp = self._draft('C8')
         v_form = imp.edit_version
-        imp.with_user(self.user_oper).action_cancel()   # transición de estado
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')   # transición de estado
         with self.assertRaises(UserError):
             imp.write({'reason': 'Y', 'edit_version': v_form})
         imp.invalidate_recordset()

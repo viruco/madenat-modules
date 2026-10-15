@@ -99,12 +99,12 @@ class TestSvRebajaReset(TransactionCase):
         guia, e, sv, wiz, imp = self._draft('RESET-01')
         ref = imp.name
         key = imp.documentary_key
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
         self.assertEqual(imp.cancelled_by_id, self.user_oper)
         self.assertTrue(imp.cancellation_date)
         self.assertAlmostEqual(self._avail(e), 10.0, 3)   # reserva liberada
-        imp.reopen_reason = 'Corregir cantidades'
+        imp.reason = 'Corregir cantidades'
         imp.with_user(self.user_jef).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
         self.assertEqual(imp.name, ref)                   # misma referencia
@@ -123,9 +123,9 @@ class TestSvRebajaReset(TransactionCase):
         guia, e, sv, wiz, imp = self._draft('RESET-02')
         imp.with_user(self.user_oper).action_pending()
         self.assertEqual(imp.state, 'pending')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertAlmostEqual(self._avail(e), 10.0, 3)
-        imp.reopen_reason = 'Reactivar para corregir'
+        imp.reason = 'Reactivar para corregir'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
         self.assertAlmostEqual(self._avail(e), 0.0, 3)    # reserva una sola vez
@@ -133,8 +133,8 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-04: repetir reapertura no duplica efectos ─────────────────────
     def test_reset_04_repetir_no_duplica(self):
         guia, e, sv, wiz, imp = self._draft('RESET-04')
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Motivo'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Motivo'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         audits = self.AuditLog.search_count([
             ('batch_id', '=', imp.documentary_key),
@@ -149,7 +149,7 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-05: capacidad consumida por otro documento ⇒ rechazo ──────────
     def test_reset_05_capacidad_consumida(self):
         guia, e, sv, wiz, imp = self._draft('RESET-05')
-        imp.with_user(self.user_oper).action_cancel()          # libera
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')          # libera
         guia2 = self._guia('RESET-05B')
         guia2.sudo().write({'lot_ids': [(4, e.id)]})
         sv2 = self._sv(guia2, 'SV0000RESET05B', 100.0)
@@ -161,7 +161,7 @@ class TestSvRebajaReset(TransactionCase):
             'imputation_id': d2.id, 'imputation_line_id': l2.id,
             'sv_lot_id': sv2.id, 'imputed_volume_m3': 10.0})
         d2.with_user(self.user_oper).action_apply()
-        imp.reopen_reason = 'Intentar reabrir'
+        imp.reason = 'Intentar reabrir'
         with self.assertRaises(UserError) as cm:
             imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertIn('comprometida', str(cm.exception))
@@ -171,13 +171,13 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-06: otro trabajo activo de la misma guía ⇒ conflicto ──────────
     def test_reset_06_conflicto_trabajo_activo(self):
         guia, e, sv, wiz, imp = self._draft('RESET-06')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         e2 = self._etq(guia, 'RESET-06-E2', 5.0)
         wiz2 = self._wizard(guia, sv)
         self._wline(wiz2, e2).selected = True
         self._wline(wiz2, e2).cantidad_asignar_m3 = 5.0
         wiz2.action_prepare()                                  # nuevo draft
-        imp.reopen_reason = 'Motivo'
+        imp.reason = 'Motivo'
         with self.assertRaises(UserError) as cm:
             imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertIn('Ya existe trabajo en preparación', str(cm.exception))
@@ -186,13 +186,13 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-07/10: permisos, compañía y motivo obligatorio ────────────────
     def test_reset_07_10_permisos_compania_motivo(self):
         guia, e, sv, wiz, imp = self._draft('RESET-07')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         # Motivo vacío / sólo espacios.
-        imp.reopen_reason = '   '
+        imp.reason = '   '
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'cancelled')
-        imp.reopen_reason = 'Motivo'
+        imp.reason = 'Motivo'
         plain = self.env['res.users'].create({
             'name': 'res_plain', 'login': 'res_plain',
             'email': 'res_plain@madenat.cl', 'company_id': self.company.id,
@@ -212,7 +212,7 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-08: write directo no elude la transición controlada ───────────
     def test_reset_08_write_directo_no_elude(self):
         guia, e, sv, wiz, imp = self._draft('RESET-08')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         with self.assertRaises(UserError):
             imp.write({'state': 'draft'})
         with self.assertRaises(UserError):
@@ -232,7 +232,7 @@ class TestSvRebajaReset(TransactionCase):
         reapertura no se escribe.
         """
         guia, e, sv, wiz, imp = self._draft('RESET-08B')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         key = imp.documentary_key
         before = self.AuditLog.search_count([
             ('batch_id', '=', key), ('action_type', '=', 'imputation_reopen')])
@@ -257,7 +257,7 @@ class TestSvRebajaReset(TransactionCase):
             ('batch_id', '=', key), ('action_type', '=', 'imputation_reopen')]),
             before)
         # La acción controlada sí reabre (misma sesión).
-        imp.reopen_reason = 'Reapertura autorizada'
+        imp.reason = 'Reapertura autorizada'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'draft')
 
@@ -292,7 +292,7 @@ class TestSvRebajaReset(TransactionCase):
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(imp.state, 'applied')
-        imp.reversal_reason = 'RESET-09'
+        imp.reason = 'RESET-09'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         with self.assertRaises(UserError):
@@ -304,7 +304,7 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-11: asistente abierto + cancelación externa ⇒ salida clara ────
     def test_reset_11_asistente_desactualizado(self):
         guia, e, sv, wiz, imp = self._draft('RESET-11')
-        imp.with_user(self.user_oper).action_cancel()      # cancelación externa
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')      # cancelación externa
         with self.assertRaises(UserError) as cm:
             wiz.action_prepare()
         self.assertIn('fue anulado', str(cm.exception))
@@ -318,8 +318,8 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-12: reabrir → cambiar cantidad → Guardar → Continuar ──────────
     def test_reset_12_reabrir_corregir_continuar(self):
         guia, e, sv, wiz, imp = self._draft('RESET-12', vol=4.0)
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Corregir'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Corregir'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         imp.invalidate_recordset()
         self.assertAlmostEqual(imp.sv_line_ids.imputed_volume_m3, 4.0, 3)
@@ -335,8 +335,8 @@ class TestSvRebajaReset(TransactionCase):
     # ── RESET-13: reabrir → reasignar → Aplicar ─────────────────────────────
     def test_reset_13_reabrir_reasignar_aplicar(self):
         guia, e, sv, wiz, imp = self._draft('RESET-13', vol=4.0)
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Reasignar'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Reasignar'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         wiz2 = self._wizard(guia, sv)
         self._wline(wiz2, e).cantidad_asignar_m3 = 6.0
@@ -362,8 +362,8 @@ class TestSvRebajaReset(TransactionCase):
             'sv_lot_id': sv2.id, 'imputed_volume_m3': 3.0})
         wiz.action_prepare()
         imp = wiz.imputation_id
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Reabrir'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Reabrir'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         wiz2 = self._wizard(guia, sv1)
         self._wline(wiz2, e).cantidad_asignar_m3 = 0.0     # cero en SV trabajo
@@ -372,16 +372,16 @@ class TestSvRebajaReset(TransactionCase):
         self.assertEqual(len(imp.sv_line_ids), 1)          # sv2 conservado
         self.assertEqual(imp.sv_line_ids.sv_lot_id, sv2)
         # RESET-18: una apertura nueva NO reutiliza el (ex)cancelado.
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         wiz3 = self._wizard(guia, sv1)
         self.assertFalse(wiz3.imputation_id)
 
     # ── RESET-15: fallo intermedio ⇒ atomicidad (guía no elegible) ──────────
     def test_reset_15_fallo_intermedio_atomico(self):
         guia, e, sv, wiz, imp = self._draft('RESET-15')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         guia.sudo().write({'service_return_confirmation': 'no'})
-        imp.reopen_reason = 'Motivo'
+        imp.reason = 'Motivo'
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_reopen_to_draft()
         imp.invalidate_recordset()
@@ -401,8 +401,8 @@ class TestSvRebajaReset(TransactionCase):
                     [('company_id', '=', self.company.id)]))
         before = snap()
         guia, e, sv, wiz, imp = self._draft('RESET-PHY')
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Ciclo'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Ciclo'
         imp.with_user(self.user_oper).action_reopen_to_draft()
         imp.with_user(self.user_oper).action_apply()
         self.assertEqual(snap(), before)

@@ -49,6 +49,17 @@ class TestSvRebajaUiLimpia(TransactionCase):
         cls.Wizard = cls.env['madenat.sv.imputation.wizard']
         cls.WizardLine = cls.env['madenat.sv.imputation.wizard.line']
         cls.WizardSvLine = cls.env['madenat.sv.imputation.wizard.sv.line']
+        # FASE 11 (A-1): el estado `applied` sólo se alcanza con la acción
+        # OFICIAL, que exige un rol de Operaciones/Jefatura/Gerencia.
+        cls.user_oper = cls.env['res.users'].create({
+            'name': 'ui_limpia_oper', 'login': 'ui_limpia_oper',
+            'email': 'ui_limpia_oper@madenat.cl',
+            'company_id': cls.company.id,
+            'company_ids': [(6, 0, [cls.company.id])],
+            'groups_id': [(6, 0, [
+                cls.env.ref('base.group_user').id,
+                cls.env.ref(
+                    'madenat_lumber_core.group_madenat_operaciones').id])]})
 
     # ── Fábricas ──────────────────────────────────────────────────────────
     def _guia(self, name):
@@ -120,9 +131,11 @@ class TestSvRebajaUiLimpia(TransactionCase):
             self.ImputationSvLine.sudo().create({
                 'imputation_id': imp.id, 'imputation_line_id': line.id,
                 'sv_lot_id': sv.id, 'imputed_volume_m3': vol})
-        if state and state != 'draft':
-            # Aplicar requiere construir en borrador (inmutable una vez aplicada).
-            imp.write({'state': state})
+        if state == 'applied':
+            # FASE 11 (A-1): el estado se alcanza por la acción OFICIAL; la
+            # escritura directa de `state` está prohibida.
+            imp.with_user(self.user_oper).action_apply()
+            imp.invalidate_recordset()
         return imp
 
     # ══════════════════════════════════════════════════════════════════════

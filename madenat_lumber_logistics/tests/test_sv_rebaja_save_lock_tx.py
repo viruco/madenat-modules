@@ -163,10 +163,10 @@ class TestSvRebajaSaveLockTx(TransactionCase, _TxBase):
     # ── TX-05: sin auditoría/reserva de una transición fallida ────────────
     def test_tx_05_sin_auditoria_de_transicion_fallida(self):
         guia, etq, sv, wiz, imp = self._draft('TX05')
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         key = imp.documentary_key
         guia.sudo().write({'service_return_confirmation': 'no'})
-        imp.reopen_reason = 'x'
+        imp.reason = 'x'
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_reopen_to_draft()
         self.assertEqual(self.AuditLog.search_count([
@@ -204,7 +204,7 @@ class TestSvRebajaSaveLockTx(TransactionCase, _TxBase):
     def test_tx_11_cancelar_con_edicion_obsoleta(self):
         guia, etq, sv, wiz, imp = self._draft('TX11')
         v = imp.edit_version
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         with self.assertRaises(UserError):
             imp.write({'reason': 'z', 'edit_version': v})
         imp.invalidate_recordset()

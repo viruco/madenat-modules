@@ -214,8 +214,8 @@ class TestSvRebajaResetLotCapacity(SingleTransactionCase):
         line.cantidad_asignar_m3 = vol
         wiz.action_prepare()
         imp = wiz.imputation_id
-        imp.with_user(self.user_oper).action_cancel()
-        imp.reopen_reason = 'Reapertura P1'
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
+        imp.reason = 'Reapertura P1'
         self._imp_ids.append(imp.id)
         self._audit_keys.add(imp.documentary_key)
         self.assertEqual(imp.state, 'cancelled')
@@ -252,7 +252,7 @@ class TestSvRebajaResetLotCapacity(SingleTransactionCase):
                 cr.transaction = api.Transaction(self.registry)
                 env = api.Environment(cr, self.env.uid, {})
                 imp = env['madenat.sv.imputation'].browse(second.id)
-                imp.with_user(self.user_oper).reopen_reason = 'Segundo P1'
+                imp.with_user(self.user_oper).reason = 'Segundo P1'
                 ready.set()
                 if not start.wait(timeout=30):
                     return

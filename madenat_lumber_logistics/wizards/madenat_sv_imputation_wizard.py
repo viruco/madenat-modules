@@ -841,8 +841,11 @@ class MadenatSvImputationWizard(models.TransientModel):
         reason = (self.reopen_reason or '').strip()
         if not reason:
             raise UserError(_('Indique el motivo de la reapertura.'))
-        imp.reopen_reason = reason
-        imp.action_reopen_to_draft()
+        # A-1 (FASE 11): el motivo ya NO se escribe en el documento por la vía
+        # pública (es marca de transición protegida). Se pasa como PARÁMETRO a
+        # la acción oficial, que lo congela en `reopen_reason` junto con el
+        # usuario y la fecha.
+        imp.action_reopen_to_draft(reason=reason)
         self.expected_edit_version = imp.edit_version or 1
         # Reconstruye la representación desde el documento reabierto.
         self.line_ids = [(5, 0, 0)]

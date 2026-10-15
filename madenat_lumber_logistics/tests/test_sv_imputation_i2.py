@@ -267,7 +267,7 @@ class TestSvImputationI2(TransactionCase):
         imp.with_user(self.user_oper).action_apply()
         self.assertAlmostEqual(
             self.Imputation._i2_lot_documental_imputed_m3(etiqueta), 10.0, 3)
-        imp.reversal_reason = 'Reversa de prueba (I2-T08).'
+        imp.reason = 'Reversa de prueba (I2-T08).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(
@@ -313,13 +313,13 @@ class TestSvImputationI2(TransactionCase):
         self.assertEqual(imp.state, 'applied')
         with self.assertRaises(AccessError):
             imp.with_user(self.user_oper).action_reverse()
-        imp.reversal_reason = 'Reversa de prueba (I2-T10 jef).'
+        imp.reason = 'Reversa de prueba (I2-T10 jef).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         imp2 = self._make_imputation(guia, [(etiqueta, [(sv, 10.0)])])
         imp2.with_user(self.user_jef).action_apply()
         self.assertEqual(imp2.state, 'applied')
-        imp2.reversal_reason = 'Reversa de prueba (I2-T10 ger).'
+        imp2.reason = 'Reversa de prueba (I2-T10 ger).'
         imp2.with_user(self.user_ger).action_reverse()
         self.assertEqual(imp2.state, 'reversed')
 

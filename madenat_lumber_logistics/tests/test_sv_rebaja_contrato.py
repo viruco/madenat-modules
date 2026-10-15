@@ -209,7 +209,7 @@ class TestSvRebajaContratoAplicacion(TransactionCase):
         imp.with_user(self.user_oper).action_apply()
         self.assertEqual(imp.state, 'applied')
         self.assertAlmostEqual(self._avail(e), 0.0, 3)
-        imp.reversal_reason = 'POL08 (contrato).'
+        imp.reason = 'POL08 (contrato).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(self._avail(e), 10.0, 3)

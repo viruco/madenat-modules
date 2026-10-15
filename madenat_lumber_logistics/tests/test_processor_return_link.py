@@ -384,7 +384,7 @@ class TestProcessorReturnLink(TransactionCase):
         imp = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=imp)
         link.with_user(self.user_oper).action_link()
-        imp.reversal_reason = 'Reversa de prueba (REL-T14).'
+        imp.reason = 'Reversa de prueba (REL-T14).'
         imp.with_user(self.user_jef).action_reverse()
         link.invalidate_recordset()
         self.assertEqual(imp.state, 'reversed')
@@ -405,7 +405,7 @@ class TestProcessorReturnLink(TransactionCase):
         old = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=old)
         link.with_user(self.user_oper).action_link()
-        old.reversal_reason = 'Reversa de prueba (REL-T15).'
+        old.reason = 'Reversa de prueba (REL-T15).'
         old.with_user(self.user_jef).action_reverse()
         new = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=new)

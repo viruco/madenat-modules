@@ -126,16 +126,23 @@
                         </page>
                         <page string="Motivo / Reversa">
                             <group>
-                                <field name="reason"/>
-                                <field name="reversal_reason"/>
+                                <!-- FASE 11 (A-1): el MOTIVO se captura en
+                                     `reason` (campo libre, no firmado). Las
+                                     marcas de transición (motivo congelado,
+                                     quién/cuándo, firma, snapshot y cadena de
+                                     corrección) son de SÓLO LECTURA: las
+                                     escriben las acciones oficiales. -->
+                                <field name="reason"
+                                       string="Motivo (anular / reversar / volver a borrador)"/>
+                                <field name="reversal_reason" readonly="1"/>
                                 <field name="reversed_by_id"/>
                                 <field name="reversal_date"/>
-                                <field name="origin_imputation_id"/>
+                                <field name="origin_imputation_id" readonly="1"/>
                                 <field name="reversed_imputation_id"/>
-                                <field name="cancellation_reason"/>
+                                <field name="cancellation_reason" readonly="1"/>
                                 <field name="cancelled_by_id"/>
                                 <field name="cancellation_date"/>
-                                <field name="reopen_reason"/>
+                                <field name="reopen_reason" readonly="1"/>
                                 <field name="reopened_by_id"/>
                                 <field name="reopen_date"/>
                             </group>

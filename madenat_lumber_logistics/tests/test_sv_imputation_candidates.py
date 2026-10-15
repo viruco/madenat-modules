@@ -253,13 +253,13 @@ class TestSvImputationCandidatesI2(TransactionCase):
         imp_r = self._imp(g, [(e, [(sv, 5.0)])])
         imp_r.with_user(self.user_oper).action_apply()
         self.assertAlmostEqual(self._avail(sv), 35.0, 3)
-        imp_r.reversal_reason = 'Reversa de prueba (I2C-06d).'
+        imp_r.reason = 'Reversa de prueba (I2C-06d).'
         imp_r.with_user(self.user_jef).action_reverse()         # reversed
         self.assertAlmostEqual(self._avail(sv), 40.0, 3)
         g = self._guia('I2C-06e')
         e = self._etiqueta(g, 'I2C-E06e', 40.0)
         imp_c = self._imp(g, [(e, [(sv, 5.0)])])
-        imp_c.with_user(self.user_oper).action_cancel()         # cancelled
+        imp_c.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')         # cancelled
         self.assertAlmostEqual(self._avail(sv), 40.0, 3)
 
 

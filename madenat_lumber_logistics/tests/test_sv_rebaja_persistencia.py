@@ -468,7 +468,7 @@ class TestSvRebajaPersistencia(TransactionCase):
         imp = wiz.imputation_id
         self.assertAlmostEqual(
             self.Imputation._i2_lot_available_for_m3(e), 0.0, 3)  # reservado
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
         self.assertAlmostEqual(
             self.Imputation._i2_lot_available_for_m3(e), 10.0, 3)  # liberado
@@ -493,7 +493,7 @@ class TestSvRebajaPersistencia(TransactionCase):
         wiz.action_prepare()
         imp = wiz.imputation_id
         imp.with_user(self.user_oper).action_apply()
-        imp.reversal_reason = 'FLOW-03 reversa.'
+        imp.reason = 'FLOW-03 reversa.'
         imp.with_user(self._jef()).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         wiz2 = self._wizard(guia, sv)          # reasignar + guardar + reabrir

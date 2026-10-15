@@ -327,7 +327,7 @@ class TestSvRebajaSaveLock(TransactionCase):
         self._wline(wiz, etq).cantidad_asignar_m3 = 4.0
         wiz.action_prepare()
         imp = wiz.imputation_id
-        imp.with_user(self.user_oper).action_cancel()  # cancelación externa
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')  # cancelación externa
         imp.invalidate_recordset()
         with self.assertRaises(UserError) as cm:
             wiz.action_prepare()
@@ -411,7 +411,7 @@ class TestSvRebajaSaveLock(TransactionCase):
         self._wline(wiz_a, etq).cantidad_asignar_m3 = 4.0
         wiz_a.action_prepare()
         wiz_b = self._wizard(guia, sv)
-        wiz_a.imputation_id.with_user(self.user_oper).action_cancel()
+        wiz_a.imputation_id.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         with self.assertRaises(UserError) as cm:
             wiz_b.with_user(self.user_oper).action_apply()
         self.assertIn('anulado', str(cm.exception))

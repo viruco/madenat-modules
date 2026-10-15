@@ -360,7 +360,7 @@ class TestSvRebajaSimple(TransactionCase):
         self._wline(wiz, e).cantidad_asignar_m3 = 10.0
         wiz.with_user(self.user_oper).action_apply()
         imp = wiz.imputation_id
-        imp.reversal_reason = 'SIM-16 reversa.'
+        imp.reason = 'SIM-16 reversa.'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(

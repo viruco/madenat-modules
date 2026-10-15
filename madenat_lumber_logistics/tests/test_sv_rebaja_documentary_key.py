@@ -170,8 +170,12 @@ class TestSvRebajaDocumentaryKey(TransactionCase):
         sv = self._sv(guia, 'SV0000DK003B', 100.0)
         legacy = self.Imputation.sudo().create({
             'guia_processing_id': guia.id,
-            'documentary_key': self._base_key_expected(guia),
-            'state': 'cancelled'})
+            'documentary_key': self._base_key_expected(guia)})
+        # FASE 11 (B-1/B-3): la anulación se alcanza por la vía OFICIAL (nacer
+        # en `cancelled` por escritura directa ya no está permitido).
+        legacy.with_user(self.user_oper).action_cancel(
+            reason='DK-03B: legado anulado (perfil IMP04823)')
+        self.assertEqual(legacy.state, 'cancelled')
         self.assertEqual(legacy.documentary_key, self._base_key_expected(guia))
         wiz = self._wizard(guia, sv)
         line = self._wline(wiz, e1)
@@ -192,7 +196,8 @@ class TestSvRebajaDocumentaryKey(TransactionCase):
         wiz = self._prepare(guia, sv, e1, 4.0)
         cancelled = wiz.imputation_id
         cancelled_key = cancelled.documentary_key
-        cancelled.with_user(self.user_oper).action_cancel()
+        cancelled.with_user(self.user_oper).action_cancel(
+            reason='DK-04: anulación de control')
         self.assertEqual(cancelled.state, 'cancelled')
         # Misma selección y mismo reparto ⇒ misma clave base (ocupada).
         wiz2 = self._wizard(guia, sv)

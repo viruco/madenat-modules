@@ -171,12 +171,12 @@ class TestSvRebajaCierre(TransactionCase):
         with self.assertRaises(UserError):
             imp.with_user(self.user_jef).action_reverse()
         # Sólo espacios
-        imp.reversal_reason = '     '
+        imp.reason = '     '
         with self.assertRaises(UserError):
             imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'applied')
         # Motivo válido tras strip
-        imp.reversal_reason = '  Corrección trazable (CIE06)  '
+        imp.reason = '  Corrección trazable (CIE06)  '
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         # Trazabilidad completa registrada
@@ -194,7 +194,7 @@ class TestSvRebajaCierre(TransactionCase):
 
     def test_aud_etq_06b_contexto_no_autoriza_y_sin_permiso(self):
         _g, _e, _sv, imp, _l = self._applied('CIE06B')
-        imp.reversal_reason = 'Intento sin permiso (CIE06B).'
+        imp.reason = 'Intento sin permiso (CIE06B).'
         # Usuario Operaciones (sin atribución de reversa) → AccessError, incluso
         # forzando contexto. Un flag de contexto NO es autorización.
         with self.assertRaises(AccessError):
@@ -243,7 +243,7 @@ class TestSvRebajaCierre(TransactionCase):
         with self.assertRaises(AccessError):
             imp.with_user(user_b).action_apply()
         with self.assertRaises(AccessError):
-            imp.with_user(user_b).action_cancel()
+            imp.with_user(user_b).action_cancel(reason='Anulación de prueba (FASE 11)')
         with self.assertRaises(AccessError):
             imp.with_user(user_b).action_reverse()
         # Contexto forzado: NO es autorización (no habilita otra compañía)
@@ -282,7 +282,7 @@ class TestSvRebajaCierre(TransactionCase):
         self.assertTrue(self._wline(wiz2, e).selected)
         self.assertEqual(len(self._wline(wiz2, e).sv_alloc_ids), 2)
         # Cancelar (draft) → libera
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp.state, 'cancelled')
         self.assertAlmostEqual(self._avail(e), 10.0, 3)
         self.assertAlmostEqual(self._sv_avail(sv1), 100.0, 3)
@@ -315,7 +315,7 @@ class TestSvRebajaCierre(TransactionCase):
         self.assertAlmostEqual(self._sv_avail(sv1), 94.0, 3)
         self.assertAlmostEqual(self._sv_avail(sv2), 96.0, 3)
         # Revertir
-        imp.reversal_reason = 'Ciclo B (CIE09B).'
+        imp.reason = 'Ciclo B (CIE09B).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(self._avail(e), 10.0, 3)
@@ -369,10 +369,10 @@ class TestSvRebajaCierre(TransactionCase):
         self.assertLessEqual(self._avail(e), 0.0)
         # Se anula el borrador excedente (libera su reserva) y se REVERSA el
         # aplicado: sólo entonces se libera el nominal completo.
-        imp2.with_user(self.user_oper).action_cancel()
+        imp2.with_user(self.user_oper).action_cancel(reason='Anulación de prueba (FASE 11)')
         self.assertEqual(imp2.state, 'cancelled')
         self.assertAlmostEqual(self._avail(e), 0.0, 3)   # aún aplicado
-        imp.reversal_reason = 'Liberar nominal completo (CIE10).'
+        imp.reason = 'Liberar nominal completo (CIE10).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertAlmostEqual(self._avail(e), 5.0, 3)
         self.assertAlmostEqual(self._sv_avail(sv1), 100.0, 3)
@@ -396,6 +396,6 @@ class TestSvRebajaCierre(TransactionCase):
         self._alloc(wiz, e, sv, 10.0)
         wiz.with_user(self.user_oper).action_apply()
         imp = wiz.imputation_id
-        imp.reversal_reason = 'Ciclo sin efectos (CIE09C).'
+        imp.reason = 'Ciclo sin efectos (CIE09C).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(snap(), before)

@@ -4,6 +4,50 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.36.0] - 2026-10-15
+
+### Fixed
+- **A-1/B-1 — El estado y las marcas de transición de la imputación SV sólo cambian por las acciones oficiales**
+  (FASE 11; hallazgo ALTA `A-1` de `AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015`). La vía pública `write()` sólo
+  protegía los estados terminales: con el documento en `draft`/`pending` aceptaba **cualquier** destino
+  (`applied`, `cancelled`, `reversed`) ⇒ se podía fabricar un documento «aplicado» **sin firma, sin snapshot, sin
+  ejecutor y sin bitácora** (es la huella exacta de `IMP04823`) saltándose techo duro, locks y validaciones.
+  - `write()` (ORM/RPC) **rechaza** `state` y las MARCAS de transición (`I2_TRANSITION_MARK_FIELDS`: `audit_hash`,
+    `snapshot_json`, ejecutor/fechas, motivos y metadata de anulación/reversa/reapertura y
+    `reversed_imputation_id`) con un `UserError` de negocio; **también** con `sudo()` y `with_context(...)`
+    (ninguna bandera de contexto es autorización).
+  - `create()` **rechaza** nacer en un estado distinto de `draft` y cualquier marca fabricada.
+  - Las acciones oficiales (`action_pending`, `action_back_to_draft`, `action_apply`, `action_cancel`,
+    `action_reverse`, `action_reopen_to_draft` y el sello recíproco de la cadena) escriben por la **vía privada**
+    `_i2_write_protected_state` (`super().write`), no invocable por RPC y sin token ni contexto.
+  - El MOTIVO se captura en el campo libre `reason` (o como parámetro de la acción) y la acción lo **congela** en
+    su campo de marca; en el formulario `reversal_reason`/`cancellation_reason`/`reopen_reason` pasan a **sólo
+    lectura** y `reason` es la única entrada del motivo.
+- **M-2 — La reversa toma los locks de capacidad y revalida el estado.** `action_reverse` adquiere los mismos
+  advisory locks que `action_apply` (etiquetas ns 3 + SV ns 2, en orden determinista) y **revalida el estado tras
+  el bloqueo**: dos sesiones no pueden reversar a la vez ni dejar marcas de «último gana» (usuario/fecha/firma
+  sobrescritos). La otra conexión recibe un conflicto controlado, sin cambios ni bitácora.
+- **M-4 — Cadena de corrección.** Al crear una imputación nueva cuya clave base está ocupada por una imputación
+  **terminal** (reversada/anulada) del mismo alcance (misma guía/procesador/firma), el asistente fija
+  `origin_imputation_id`; al aplicarse la nueva se sella el recíproco `reversed_imputation_id`. Los documentos
+  existentes **no** se modifican y no hay migración de claves.
+- **B-2 — Líneas y repartos inmutables fuera de preparación.** `create`/`write`/`unlink` de
+  `madenat.sv.imputation.line` y `madenat.sv.imputation.sv.line` se bloquean también en `reversed` y `cancelled`
+  (antes sólo en `applied`): no se puede alterar a posteriori lo que se aplicó o anuló. «Volver a borrador»
+  devuelve el documento a preparación con su contenido íntegro.
+- **B-3 — La anulación exige motivo.** `action_cancel` exige motivo no vacío (campo `reason` o parámetro), lo
+  registra en `cancellation_reason` (metadata) y lo incorpora al evento firmado `imputation_cancel`. Sin cambio
+  de grupos (se mantiene el ACL de escritura).
+
+### Notes
+- Nuevo `tests/test_sv_imputation_lifecycle_integrity.py` (**A-1/B-1/M-2/M-4/B-2/B-3**, 17 pruebas) y
+  `TestSvImputationReverseLocks` (lock externo real sobre el SV/etiqueta, limpieza por IDs).
+- Regresión del módulo `logistics` completa comparada **por nombre** con el baseline vigente: **4 failed /
+  0 error** (mismo subconjunto; **0 fallas nuevas**). `IMP04823`/`IMP02220` intactos (estado, valores y hashes).
+- **Datos heredados sin cambios:** `IMP02220` (aplicada sin reparto positivo) e `IMP04823` (anulada sin rastro)
+  quedan como están; los eventos `TX10` no se tocan. **M-3** (régimen de acceso/`compute_sudo` de `stock.lot`)
+  sólo se documenta. Expediente `FASE11_INTEGRIDAD_CICLO_IMPUTACIONES_20261015/`.
+
 ## [18.0.1.32.0] - 2026-10-15
 
 ### Fixed

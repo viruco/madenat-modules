@@ -40,16 +40,47 @@ GROUP_JEFATURA = 'madenat_lumber_core.group_madenat_jefatura_operaciones'
 GROUP_GERENCIA = 'madenat_lumber_core.group_madenat_gerencia'
 
 # Campos escribibles sobre una imputación ya ``applied`` (inmutabilidad D-I2-15).
-# ``state`` NO es libre (corrección AUD-ETQ-01, 2026-10-11): una imputación
-# aplicada sólo admite la transición ``applied → reversed`` ejecutada por
-# ``action_reverse`` (con usuario y motivo). Cualquier otra transición (volver a
-# borrador/pendiente o anular) rompería la historia append-only y liberaría
-# capacidad sin trazabilidad.
-I2_APPLIED_WRITABLE = frozenset([
-    'reversal_date', 'reversal_reason', 'reversed_by_id',
-    'reversed_imputation_id', 'snapshot_json', 'audit_hash',
-    'executed_by_id', 'execution_date', 'message_ids',
+# FASE 11 (A-1): ``state`` y TODAS las marcas de transición quedaron fuera de la
+# vía pública (ver ``I2_TRANSITION_MARK_FIELDS``); sobre un ``applied`` sólo
+# queda como ENTRADA el campo libre ``reason`` (texto del motivo; NO forma parte
+# del snapshot firmado) y el chatter. La transición ``applied → reversed`` la
+# ejecuta ``action_reverse`` (usuario + motivo) por la vía privada del modelo.
+I2_APPLIED_WRITABLE = frozenset(['reason', 'edit_version', 'message_ids'])
+
+# ── A-1 / B-1 (FASE 11, 2026-10-15) — MARCAS DE TRANSICIÓN protegidas ────────
+# "Marca de transición" = el estado y los campos que PRUEBAN que la transición
+# ocurrió (firma, snapshot, ejecutor, fechas, motivos y metadata de
+# anulación/reversa/reapertura). Sólo los métodos OFICIALES de transición los
+# escriben, y lo hacen por la vía privada ``_i2_write_protected_state``
+# (``super().write``), fuera del ``write`` público. La escritura directa por
+# ORM/RPC se RECHAZA con un ``UserError`` de negocio, de modo que no se puede
+# fabricar un ``applied`` sin firma ni un ``cancelled`` sin rastro (A-1/B-1).
+# El MOTIVO se captura como ENTRADA en el campo libre ``reason`` (o como
+# parámetro de la acción) y la acción oficial lo congela en su campo de marca.
+I2_TRANSITION_MARK_FIELDS = frozenset([
+    'state',
+    'snapshot_json', 'audit_hash',
+    'executed_by_id', 'execution_date',
+    'reversed_by_id', 'reversal_date', 'reversal_reason',
+    'reversed_imputation_id',
+    'cancelled_by_id', 'cancellation_date', 'cancellation_reason',
+    'reopened_by_id', 'reopen_date', 'reopen_reason',
 ])
+I2_PROTECTED_TRANSITION_MSG = (
+    'El estado y las marcas de transición de la imputación %(name)s sólo '
+    'cambian con las acciones oficiales (Aplicar, Reversar, Anular, Volver a '
+    'borrador). La escritura directa de estos campos por ORM/RPC no está '
+    'autorizada (AD-91 / FASE 11 A-1): usa la acción correspondiente, que '
+    'registra usuario, fecha y firma.')
+
+# ── I5 / B-2 (FASE 11) — contenido (líneas y repartos) congelado ─────────────
+# Las líneas y los repartos de una imputación sólo se modifican mientras el
+# documento está EN PREPARACIÓN. En un estado terminal (aplicada, reversada,
+# anulada) el contenido es INMUTABLE: los caminos oficiales («Reversar» para una
+# aplicada; «Volver a borrador» para una anulada) devuelven el documento a
+# `draft` antes de permitir tocarlo (así lo reabierto conserva su contenido
+# íntegro y no se puede alterar a posteriori lo que se aplicó o anuló).
+I2_CHILD_EDITABLE_STATES = ('draft', 'pending')
 
 # AUD-ETQ-07/09 (2026-10-12): la autorización de las transiciones protegidas
 # (`cancelled → draft`, `applied → reversed`) NO usa un registro global de
@@ -143,9 +174,12 @@ class MadenatSvImputation(models.Model):
              'enviada por el cliente es una condición de concurrencia.')
     reason = fields.Text(
         string='Motivo',
-        help='Obligatorio para exceso SV-side (blando) o falta de SV '
-             'candidato, mientras se respeta el techo duro de etiqueta '
-             '(D-I2-16, D-I2-17).')
+        help='Campo libre para el motivo: obligatorio para exceso SV-side '
+             '(blando), falta de SV candidato y para las transiciones de '
+             'ANULACIÓN, REVERSA y REAPERTURA (FASE 11 B-3). La acción '
+             'oficial lo congela en su campo de marca (cancellation_reason / '
+             'reversal_reason / reopen_reason), que es de sólo lectura '
+             '(D-I2-16, D-I2-17, AD-91).')
     deviation_flags = fields.Char(
         string='Desviaciones', compute='_compute_deviation_flags',
         store=True, readonly=True)
@@ -507,7 +541,15 @@ class MadenatSvImputation(models.Model):
         # (anulado/reversado): se busca la primera clave libre con discriminador
         # trazable. Determinista (no depende de fecha ni de sesión).
         discriminator = ''
+        # M-4 (FASE 11): documento TERMINAL (anulado/reversado) del mismo
+        # alcance (misma clave base = misma guía/procesador/firma) que ocupaba
+        # la clave; será el ORIGEN de la nueva operación (cadena de corrección).
+        terminal = self.browse()
         while existing:
+            # ``existing`` ocupa la clave ACTUAL y es un documento TERMINAL
+            # (anulado/reversado): eslabón de la cadena de corrección. El último
+            # de la cadena queda como ORIGEN de la operación nueva.
+            terminal = existing
             discriminator = ('%s>%s' % (discriminator, existing.id)
                              if discriminator else str(existing.id))
             key = self._i2_build_documentary_key(
@@ -522,6 +564,8 @@ class MadenatSvImputation(models.Model):
                     'aplicado o cambia la selección para una operación '
                     'nueva.') % existing.name)
         vals = {'guia_processing_id': guia.id, 'documentary_key': key}
+        if terminal:
+            vals['origin_imputation_id'] = terminal.id
         if processor:
             vals['processor_id'] = processor.id
             vals['processor_location_id'] = processor.processor_location_id.id
@@ -533,6 +577,26 @@ class MadenatSvImputation(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            # B-1 (FASE 11): una imputación NACE siempre en borrador. Nacer en
+            # un estado distinto de `draft` o traer marcas de transición
+            # (firma/snapshot/ejecutor/fechas/motivos/metadata) por ORM/RPC
+            # queda RECHAZADO: esos campos sólo los escriben las acciones
+            # oficiales (A-1). `reason` y `origin_imputation_id` NO son marcas
+            # y siguen admitidos.
+            state = vals.get('state')
+            if state and state != 'draft':
+                raise UserError(_(
+                    'Una imputación nueva se crea siempre en borrador; el '
+                    'estado «%s» sólo se alcanza con las acciones oficiales '
+                    '(FASE 11 B-1).') % state)
+            vals.pop('state', None)
+            marks = set(vals) & I2_TRANSITION_MARK_FIELDS
+            if marks:
+                raise UserError(_(
+                    'No se pueden fijar marcas de transición (%s) al crear '
+                    'una imputación; esos campos sólo los escriben las '
+                    'acciones oficiales (FASE 11 B-1).') % ', '.join(
+                        sorted(marks)))
             if not vals.get('documentary_key'):
                 guia = self.env['madenat.guia.processing'].browse(
                     vals.get('guia_processing_id'))
@@ -545,38 +609,31 @@ class MadenatSvImputation(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        # A-1 / B-1 (FASE 11): la vía PÚBLICA (ORM/RPC) nunca cambia el estado
+        # ni las marcas de transición. Las transiciones oficiales las escriben
+        # por `_i2_write_protected_state` (super().write). Así no se puede
+        # fabricar un `applied` sin firma ni un `cancelled` sin rastro, ni
+        # falsificar después la firma, el ejecutor, las fechas o los motivos.
+        marks = set(vals) & I2_TRANSITION_MARK_FIELDS
+        if marks:
+            raise UserError(_(
+                'No se pueden modificar por escritura directa los campos %s: '
+                'son marcas de transición de la imputación %s. Usa las '
+                'acciones oficiales (Aplicar, Reversar, Anular, Volver a '
+                'borrador), que registran usuario, fecha, motivo y firma '
+                '(AD-91 / FASE 11 A-1).') % (
+                    ', '.join(sorted(marks)), self[:1].name or ''))
         for rec in self:
             if rec.state == 'applied':
-                forbidden = set(vals) - I2_APPLIED_WRITABLE - {'state'}
+                # Inmutabilidad D-I2-15: sobre un aplicado sólo queda como
+                # ENTRADA el motivo (`reason`) y el chatter; cualquier otro
+                # campo exige reversa + nueva imputación (AD-91).
+                forbidden = set(vals) - I2_APPLIED_WRITABLE
                 if forbidden:
                     raise UserError(_(
                         'La imputación aplicada %(name)s es inmutable. Corrija '
                         'mediante reversa y una nueva imputación (AD-91).'
                     ) % {'name': rec.name})
-                if vals.get('state'):
-                    # AUD-ETQ-09: `applied → reversed` SÓLO mediante la acción
-                    # controlada `action_reverse` (vía privada de transición).
-                    # Ninguna escritura directa de estado cambia la historia
-                    # append-only (AD-91).
-                    raise UserError(_(
-                        'El estado de una imputación aplicada sólo cambia con '
-                        'la acción «Reversar», que registra usuario y motivo '
-                        '(historia append-only, AD-91).'))
-            elif rec.state == 'cancelled':
-                # RESET-08 / AUD-ETQ-07/09: `cancelled → draft` SÓLO mediante la
-                # transición controlada `action_reopen_to_draft` (vía privada
-                # `_i2_write_protected_state`). NINGUNA escritura directa de
-                # estado queda autorizada: ni con `reopened_by_id`/`reopen_reason`
-                # del cliente, ni con `with_context(...)`, ni con `sudo()`.
-                if vals.get('state'):
-                    raise UserError(_(
-                        'Un documento anulado sólo se reactiva con «Volver a '
-                        'borrador» (transición controlada); la escritura '
-                        'directa del estado no está autorizada.'))
-            elif rec.state == 'reversed' and vals.get('state'):
-                raise UserError(_(
-                    'Un documento reversado no puede volver a borrador ni '
-                    'cambiar de estado; cree una nueva operación (AD-91).'))
         # LOCK / V1 (2026-10-12): guard de versión para la EDICIÓN DIRECTA del
         # documento persistente. El formulario envía `edit_version` (con
         # `force_save`), que refleja la versión CARGADA: si otro actor escribió
@@ -654,8 +711,37 @@ class MadenatSvImputation(models.Model):
         y ``action_reverse``, **después** de validar permisos, compañía, motivo,
         conflicto, capacidad y bloqueos, y de derivar usuario y fecha del entorno
         de ejecución.
+
+        FASE 11 (A-1): es la ÚNICA vía por la que se escriben ``state`` y las
+        marcas de transición (``I2_TRANSITION_MARK_FIELDS``); la invocan las
+        acciones oficiales ``action_pending``, ``action_back_to_draft``,
+        ``action_apply``, ``action_cancel``, ``action_reverse`` y
+        ``action_reopen_to_draft`` (además del sello recíproco de la cadena de
+        corrección).
         """
         return super().write(self._i2_with_version_bump(vals))
+
+    def _i2_check_children_editable(self, what):
+        """I5 / B-2 (FASE 11): bloquea edición de hijos fuera de preparación.
+
+        Se invoca desde ``create``/``write``/``unlink`` de
+        ``madenat.sv.imputation.line`` y ``madenat.sv.imputation.sv.line``.
+        ``what`` describe la operación («añadir líneas», «modificar repartos»…)
+        para dar un mensaje de negocio claro en español.
+        """
+        for imp in self:
+            if imp.state not in I2_CHILD_EDITABLE_STATES:
+                raise UserError(_(
+                    'No se pueden %(what)s de la imputación %(name)s: está '
+                    '%(state)s y su contenido (líneas y repartos) es '
+                    'inmutable. Para corregirla usa «Reversar» (si está '
+                    'aplicada/reversada) o «Volver a borrador» (si está '
+                    'anulada), que la devuelven a preparación (AD-91 / '
+                    'FASE 11 B-2).') % {
+                        'what': what,
+                        'name': imp.name or '',
+                        'state': dict(imp._fields['state'].selection).get(
+                            imp.state, imp.state)})
 
     def unlink(self):
         for rec in self:
@@ -824,7 +910,8 @@ class MadenatSvImputation(models.Model):
                 raise UserError(_(
                     'Solo una imputación en borrador/pendiente puede cambiarse '
                     'de estado.'))
-            rec.write({'state': 'pending'})
+            # A-1 (FASE 11): transición por la VÍA PRIVADA del modelo.
+            rec._i2_write_protected_state({'state': 'pending'})
         return True
 
     def action_back_to_draft(self):
@@ -832,27 +919,43 @@ class MadenatSvImputation(models.Model):
             if rec.state != 'pending':
                 raise UserError(_('Solo una imputación pendiente puede volver a '
                                   'borrador.'))
-            rec.write({'state': 'draft'})
+            # A-1 (FASE 11): transición por la VÍA PRIVADA del modelo.
+            rec._i2_write_protected_state({'state': 'draft'})
         return True
 
-    def action_cancel(self):
+    def action_cancel(self, reason=None):
+        """Anula una imputación de TRABAJO (``draft``/``pending``).
+
+        **B-3 (FASE 11):** exige MOTIVO (no vacío tras ``strip``) y lo deja en
+        la METADATA de anulación (``cancellation_reason``) y en la bitácora
+        ``imputation_cancel`` (texto del motivo dentro del evento firmado). Sin
+        cambio de grupos: se mantiene el ACL de escritura vigente.
+        """
         for rec in self:
             if rec.state not in ('draft', 'pending'):
                 raise UserError(_(
                     'Solo una imputación en borrador/pendiente puede anularse; '
                     'una aplicada se corrige por reversa (AD-91).'))
-            rec.write({
+            motivo = (reason or rec.cancellation_reason or rec.reason or '').strip()
+            if not motivo:
+                raise UserError(_(
+                    'Indique el motivo de la anulación antes de anular '
+                    '(trazabilidad, FASE 11 B-3).'))
+            prev = rec.state
+            # A-1 (FASE 11): estado y metadata de anulación por la VÍA PRIVADA.
+            rec._i2_write_protected_state({
                 'state': 'cancelled',
                 'cancelled_by_id': self.env.user.id,
                 'cancellation_date': fields.Datetime.now(),
-                'cancellation_reason': rec.cancellation_reason or rec.reason,
+                'cancellation_reason': motivo,
             })
             rec.message_post(body=_(
                 '⛔ Anulación de %(name)s (%(prev)s → anulado). Motivo: '
                 '%(reason)s') % {
-                'name': rec.name, 'prev': rec.cancellation_reason or '—',
-                'reason': rec.cancellation_reason or '—'})
-            rec._i2_audit('imputation_cancel', rec._i2_build_snapshot())
+                'name': rec.name, 'prev': prev, 'reason': motivo})
+            rec._i2_audit(
+                'imputation_cancel',
+                rec._i2_build_snapshot(extra={'motivo': motivo}))
         return True
 
     def _i2_check_reopen_permission(self):
@@ -909,7 +1012,7 @@ class MadenatSvImputation(models.Model):
                     'other': others_active, 'nom': nominal, 'docs': docs})
         return True
 
-    def action_reopen_to_draft(self):
+    def action_reopen_to_draft(self, reason=None):
         """Transición controlada **cancelled → draft** («Volver a borrador»).
 
         Autorizada expresamente por Mauricio (2026-10-11). NO aplica la rebaja;
@@ -917,6 +1020,10 @@ class MadenatSvImputation(models.Model):
         motivo, permisos, ausencia de conflicto y capacidad suficiente; deja
         historia de anulación y reapertura. Idempotente: si ya está en borrador
         devuelve un resultado controlado sin repetir efectos.
+
+        El motivo se captura en el campo libre ``reason`` (o como parámetro,
+        p. ej. desde el asistente) y se congela en ``reopen_reason`` (marca de
+        transición, A-1 FASE 11).
         """
         for rec in self:
             if rec.state == 'draft':
@@ -926,24 +1033,25 @@ class MadenatSvImputation(models.Model):
                     'Sólo un documento ANULADO puede volver a borrador; un '
                     'aplicado se corrige por reversa (AD-91).'))
             rec._i2_check_reopen_permission()
-            if not (rec.reopen_reason or '').strip():
+            motivo = (reason or rec.reopen_reason or rec.reason or '').strip()
+            if not motivo:
                 raise UserError(_(
                     'Indique el motivo de la reapertura (trazabilidad).'))
             rec._i2_validate_reopen()
             rec._i2_lock_resources()
             rec._i2_validate_reopen()          # revalidar tras el bloqueo
-            # AUD-ETQ-09: transición por la VÍA PRIVADA del modelo (método
-            # `_`-prefijado, no invocable por RPC; sin token ni contexto).
-            # Usuario y fecha se derivan del entorno de ejecución.
+            # AUD-ETQ-09 / A-1: transición por la VÍA PRIVADA del modelo
+            # (método `_`-prefijado, no invocable por RPC; sin token ni
+            # contexto). Usuario y fecha se derivan del entorno de ejecución.
             rec._i2_write_protected_state({
                 'state': 'draft',
                 'reopened_by_id': self.env.user.id,
-                'reopen_reason': rec.reopen_reason.strip(),
+                'reopen_reason': motivo,
                 'reopen_date': fields.Datetime.now(),
             })
             rec.message_post(body=_(
                 '↩️ Reapertura de %(name)s (anulado → borrador). Motivo: '
-                '%(reason)s') % {'name': rec.name, 'reason': rec.reopen_reason})
+                '%(reason)s') % {'name': rec.name, 'reason': motivo})
             rec._i2_audit('imputation_reopen', rec._i2_build_snapshot())
         return True
 
@@ -1021,7 +1129,7 @@ class MadenatSvImputation(models.Model):
                   '(se permite dejar constancia con motivo).'),
                 reason=self.reason)
 
-    def _i2_build_snapshot(self):
+    def _i2_build_snapshot(self, extra=None):
         self.ensure_one()
         payload = {
             'documentary_key': self.documentary_key,
@@ -1044,6 +1152,11 @@ class MadenatSvImputation(models.Model):
             } for sline in self.sv_line_ids],
             'user': self.env.user.id,
         }
+        if extra:
+            # I6 (FASE 11): el evento firmado puede incorporar datos del motivo
+            # (p. ej. `{'motivo': ...}` en la anulación) sin alterar el resto del
+            # payload ni los snapshots de las otras transiciones.
+            payload.update(extra)
         return json.dumps(payload, sort_keys=True)
 
     def _i2_audit(self, action, snapshot):
@@ -1132,7 +1245,10 @@ class MadenatSvImputation(models.Model):
             rec._i2_validate_hard_cap()
             rec._i2_handle_soft_deviations()
             snapshot = rec._i2_build_snapshot()
-            rec.write({
+            # A-1 (FASE 11): la firma, el snapshot, el ejecutor y la fecha son
+            # marcas de transición: se escriben por la VÍA PRIVADA del modelo
+            # (super().write), nunca por la vía pública.
+            rec._i2_write_protected_state({
                 'state': 'applied',
                 'executed_by_id': self.env.user.id,
                 'execution_date': fields.Datetime.now(),
@@ -1142,11 +1258,26 @@ class MadenatSvImputation(models.Model):
             rec._i2_audit('imputation', snapshot)
             origin = rec.origin_imputation_id
             if origin and not origin.reversed_imputation_id:
-                origin.sudo().write({'reversed_imputation_id': rec.id})
+                # Sello recíproco de la cadena de corrección (marca de reversa):
+                # también por la vía privada.
+                origin.sudo()._i2_write_protected_state(
+                    {'reversed_imputation_id': rec.id})
         return True
 
-    def action_reverse(self):
-        """Reversa la imputación: estado `reversed`; historia intacta."""
+    def action_reverse(self, reason=None):
+        """Reversa la imputación: estado `reversed`; historia intacta.
+
+        **M-2 (FASE 11):** toma los MISMOS locks que ``action_apply``
+        (etiquetas de retorno ns 3 + SV ns 2, en el mismo orden determinista) y
+        **revalida el estado tras el bloqueo**, de modo que dos sesiones no
+        pueden reversar a la vez ni dejar marcas de «último gana»
+        (usuario/fecha/firma sobrescritos). Si otra conexión tiene el lock, o el
+        documento ya no está aplicado, se rechaza de forma CONTROLADA (sin
+        cambios) y el operador puede reintentar tras actualizar la información.
+
+        El motivo se captura en el campo libre ``reason`` (o como parámetro) y
+        la acción lo congela en ``reversal_reason`` (marca de transición).
+        """
         for rec in self:
             if rec.state != 'applied':
                 raise UserError(_(
@@ -1157,20 +1288,31 @@ class MadenatSvImputation(models.Model):
             # (`madenat.processor.return.link.action_reverse`). Se exige motivo
             # **no vacío tras strip** (AUD-ETQ-06: un motivo sólo con espacios
             # NO es trazabilidad).
-            if not ((rec.reversal_reason or '').strip()
-                    or (rec.reason or '').strip()):
+            motivo = (reason or rec.reversal_reason or rec.reason or '').strip()
+            if not motivo:
                 raise UserError(_(
                     'Indique el motivo de la reversa antes de reversar '
                     '(trazabilidad, AD-91 / CANON/19 §19).'))
+            # M-2 (FASE 11): locks de capacidad ANTES de fijar la historia.
+            rec._i2_lock_resources()
+            # Revalidación del estado bajo el lock: si otra sesión ya reversó
+            # (o modificó) el documento, NO se sobrescriben sus marcas.
+            rec.invalidate_recordset(['state'])
+            if rec.state != 'applied':
+                raise UserError(_(
+                    'La imputación %(name)s ya no está aplicada: otra sesión la '
+                    'revirtió o la modificó. No se ha registrado una segunda '
+                    'reversa; actualiza la información y vuelve a intentarlo.'
+                ) % {'name': rec.name})
             snapshot = rec._i2_build_snapshot()
-            # AUD-ETQ-09: `applied → reversed` por la VÍA PRIVADA del modelo
-            # (no RPC). Sustituye a la escritura directa, que la guarda pública
-            # ahora rechaza.
+            # AUD-ETQ-09 / A-1: `applied → reversed` por la VÍA PRIVADA del
+            # modelo (no RPC). Sustituye a la escritura directa, que la guarda
+            # pública ahora rechaza.
             rec._i2_write_protected_state({
                 'state': 'reversed',
                 'reversed_by_id': self.env.user.id,
                 'reversal_date': fields.Datetime.now(),
-                'reversal_reason': rec.reversal_reason or rec.reason,
+                'reversal_reason': motivo,
                 'snapshot_json': snapshot,
                 'audit_hash': hashlib.sha256(snapshot.encode('utf-8')).hexdigest(),
             })
@@ -1301,30 +1443,22 @@ class MadenatSvImputationLine(models.Model):
         for vals in vals_list:
             imp = self.env['madenat.sv.imputation'].browse(
                 vals.get('imputation_id'))
-            if imp.state == 'applied':
-                raise UserError(_(
-                    'No se pueden añadir líneas a una imputación aplicada '
-                    '(inmutable, AD-91).'))
+            # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+            imp._i2_check_children_editable('añadir líneas')
         records = super().create(vals_list)
         records.imputation_id._i2_bump_from_child()
         return records
 
     def write(self, vals):
-        for rec in self:
-            if rec.imputation_id.state == 'applied':
-                raise UserError(_(
-                    'No se pueden modificar líneas de una imputación aplicada '
-                    '(inmutable, AD-91).'))
+        # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+        self.imputation_id._i2_check_children_editable('modificar líneas')
         result = super().write(vals)
         self.imputation_id._i2_bump_from_child()
         return result
 
     def unlink(self):
-        for rec in self:
-            if rec.imputation_id.state == 'applied':
-                raise UserError(_(
-                    'No se pueden eliminar líneas de una imputación aplicada '
-                    '(inmutable, AD-91).'))
+        # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+        self.imputation_id._i2_check_children_editable('eliminar líneas')
         parents = self.imputation_id
         result = super().unlink()
         parents._i2_bump_from_child()
@@ -1432,30 +1566,22 @@ class MadenatSvImputationSvLine(models.Model):
         for vals in vals_list:
             imp = self.env['madenat.sv.imputation'].browse(
                 vals.get('imputation_id'))
-            if imp.state == 'applied':
-                raise UserError(_(
-                    'No se pueden añadir repartos SV a una imputación aplicada '
-                    '(inmutable, AD-91).'))
+            # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+            imp._i2_check_children_editable('añadir repartos SV')
         records = super().create(vals_list)
         records.imputation_id._i2_bump_from_child()
         return records
 
     def write(self, vals):
-        for rec in self:
-            if rec.imputation_id.state == 'applied':
-                raise UserError(_(
-                    'No se pueden modificar repartos SV de una imputación '
-                    'aplicada (inmutable, AD-91).'))
+        # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+        self.imputation_id._i2_check_children_editable('modificar repartos SV')
         result = super().write(vals)
         self.imputation_id._i2_bump_from_child()
         return result
 
     def unlink(self):
-        for rec in self:
-            if rec.imputation_id.state == 'applied':
-                raise UserError(_(
-                    'No se pueden eliminar repartos SV de una imputación '
-                    'aplicada (inmutable, AD-91).'))
+        # I5 / B-2 (FASE 11): contenido congelado fuera de preparación.
+        self.imputation_id._i2_check_children_editable('eliminar repartos SV')
         parents = self.imputation_id
         result = super().unlink()
         parents._i2_bump_from_child()

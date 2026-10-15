@@ -143,7 +143,7 @@ class TestServiceReturnImputationGuard(TransactionCase):
     def test_06_cambio_a_no_permitido_tras_reversa(self):
         guia, imp = self._apply_case('GUARD-06', 'yes')
         imp.with_user(self.user_oper).action_apply()
-        imp.reversal_reason = 'Reversa de prueba (GUARD-06).'
+        imp.reason = 'Reversa de prueba (GUARD-06).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         guia.sudo().write({'service_return_confirmation': 'no'})
@@ -182,7 +182,7 @@ class TestServiceReturnImputationGuard(TransactionCase):
         self.assertEqual(imp.state, 'applied')
         with self.assertRaises(UserError):
             guia.sudo().write({'service_return_confirmation': 'no'})
-        imp.reversal_reason = 'Reversa de prueba (GUARD-09).'
+        imp.reason = 'Reversa de prueba (GUARD-09).'
         imp.with_user(user).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         guia.sudo().write({'service_return_confirmation': 'no'})

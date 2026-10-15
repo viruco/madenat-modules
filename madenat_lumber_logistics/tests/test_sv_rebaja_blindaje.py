@@ -131,7 +131,17 @@ class TestSvRebajaBlindaje(TransactionCase):
                 'imputation_id': imp.id, 'imputation_line_id': line.id,
                 'sv_lot_id': sv.id, 'imputed_volume_m3': vol})
         if state and state != 'draft':
-            imp.write({'state': state})
+            # FASE 11 (B-1): el estado del fixture se alcanza por las vías
+            # OFICIALES (la escritura directa de `state` está prohibida).
+            if state == 'pending':
+                imp.with_user(self.user_oper).action_pending()
+            elif state == 'applied':
+                imp.with_user(self.user_oper).action_apply()
+            elif state == 'cancelled':
+                imp.with_user(self.user_oper).action_cancel(
+                    reason='Fixture en estado %s (FASE 11)' % state)
+            else:
+                raise UserError('Estado de fixture no soportado: %s' % state)
         return imp
 
     def _apply(self, imp):
@@ -155,7 +165,7 @@ class TestSvRebajaBlindaje(TransactionCase):
             imp.write({'state': 'reversed'})
         self.assertEqual(imp.state, 'applied')
         # La reversa por la acción con motivo sí procede (historia intacta).
-        imp.reversal_reason = 'Corrección trazable (AUD-ETQ-01).'
+        imp.reason = 'Corrección trazable (AUD-ETQ-01).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
 
@@ -170,7 +180,7 @@ class TestSvRebajaBlindaje(TransactionCase):
         with self.assertRaises(UserError):
             imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'applied')
-        imp.reversal_reason = 'Motivo de reversa trazable (AUD-ETQ-02).'
+        imp.reason = 'Motivo de reversa trazable (AUD-ETQ-02).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertTrue(self.AuditLog.search([
@@ -254,7 +264,8 @@ class TestSvRebajaBlindaje(TransactionCase):
         I = self.Imputation
         imp = self._imputation(guia, e, sv, 10.0, state='draft')
         self.assertAlmostEqual(I._i2_lot_available_for_m3(e), 0.0, 3)
-        imp.with_user(self.user_oper).action_cancel()
+        imp.with_user(self.user_oper).action_cancel(
+            reason='AUD-ETQ-05: anulación de control')
         self.assertEqual(imp.state, 'cancelled')
         self.assertAlmostEqual(I._i2_lot_available_for_m3(e), 10.0, 3)
         with self.assertRaises(UserError):
