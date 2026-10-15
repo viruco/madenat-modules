@@ -80,6 +80,7 @@ DELIVERY_GROUPS = (
     'madenat_lumber_core.group_madenat_jefatura_operaciones',
     'madenat_lumber_core.group_madenat_gerencia',
 )
+# Roles operativos autorizados a confirmar (draft → confirmed).
 CONFIRM_GROUPS = (
     'madenat_lumber_core.group_madenat_operaciones',
     'madenat_lumber_core.group_madenat_jefatura_operaciones',
@@ -152,8 +153,6 @@ class LumberExportShipment(models.Model):
         string='Estado Distribución'
     )
 
-    
-# =========================================================
     # -- Sub-bloque 3 (2026-10-04) - Excepcion documental B-01 ---------------
     b01_exception_state = fields.Selection([
         ('none', 'Sin excepción B-01'),
@@ -178,6 +177,8 @@ class LumberExportShipment(models.Model):
         'madenat.audit.log', string='Auditoría de cierre B-01', copy=False,
         readonly=True)
 
+
+# =========================================================
     # 🛡️ PARTE 1: EL CANDADO DE BASE DE DATOS (SQL)
     # =========================================================
     # Garantiza que no existan dos embarques con el mismo número.
@@ -343,12 +344,17 @@ class LumberExportShipment(models.Model):
 
     container_seals = fields.Text('Sellos de Contenedores')
    
-    # Fuente ÚNICA documental (B2). El cómputo efectivo canónico vive en
-    # `lumber_document_checklist.py::_compute_document_status` (document_ids +
-    # checklist_id activo/requerido), NO en los 5 booleanos informativos
+    # ══════════════════════════════════════════════════════════════════════
+    # Fuente ÚNICA documental (corrección B2). El cómputo efectivo canónico
+    # vive en `lumber_document_checklist.py::_compute_document_status` y se
+    # basa en `document_ids` + `checklist_id.is_required` (evidencia real),
+    # NO en los 5 booleanos informativos de abajo. Esos booleanos
     # (booking_confirmed, vgm_submitted, bl_received, customs_cleared,
-    # invoice_issued). `document_status` NUNCA es gate de operación física
+    # invoice_issued) quedan como indicadores informativos/de transición y ya
+    # no compiten por `document_status`.
+    # Importante: `document_status` NUNCA es gate de operación física
     # (documentación tardía no bloquea rebaja/zarpe/B-01/R1/R2/Entrega).
+    # ══════════════════════════════════════════════════════════════════════
     document_status = fields.Selection([
         ('not_configured', 'Sin configurar'),
         ('missing', 'Sin evidencia'),
@@ -583,9 +589,16 @@ class LumberExportShipment(models.Model):
             rec.total_shipment_costs_usd = sum(rec.cost_line_ids.mapped('amount_usd'))
             rec.total_cost_per_m3 = (rec.total_shipment_costs_usd / rec.total_volume_m3) if rec.total_volume_m3 else 0.0
 
-    # B2: se elimina el cómputo documental duplicado/legacy del Embarque
-    # (`_compute_document_completion` y `_compute_document_status`). La fuente
-    # única vive en `lumber_document_checklist.py::_compute_document_status`.
+    # ══════════════════════════════════════════════════════════════════════
+    # NOTA (corrección B2): el cómputo de `document_status`,
+    # `document_completion` y los contadores documentales
+    # (`document_pending_count` / `document_missing_count` /
+    # `document_verified_count`) es ÚNICO y vive en
+    # `lumber_document_checklist.py::_compute_document_status`, basado en
+    # `document_ids` + `checklist_id.is_required`. Se elimina aquí el cómputo
+    # histórico basado en 5 booleanos (definición duplicada que dejaba la
+    # semántica ambigua). Los booleanos quedan como indicadores informativos.
+    # ══════════════════════════════════════════════════════════════════════
 
     @api.constrains('estimated_departure','estimated_arrival')
     def _check_dates(self):
@@ -596,8 +609,27 @@ class LumberExportShipment(models.Model):
     # === ACCIONES DE FLUJO ===
 
     def action_confirm(self):
-        """ ✅ CONFIRMACIÓN: Valida datos mínimos logísticos """
+        """Confirmación controlada (draft → confirmed).
+
+        Sólo Operaciones/Jefatura/Gerencia. Bloquea estados no-draft y B-01
+        open/resolved. La transición queda además protegida contra write directo
+        (token de proceso). No modifica inventario.
+        """
         self.ensure_one()
+        if not any(self.env.user.has_group(g) for g in CONFIRM_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para confirmar el Embarque %s. Se requiere '
+                'el rol de Operaciones, Jefatura de Operaciones o Gerencia.'
+            ) % self.name)
+        if self.state != 'draft':
+            raise UserError(_(
+                'Sólo se puede confirmar un Embarque en Borrador (draft). '
+                'Estado actual: %s.') % dict(
+                    self._fields['state'].selection).get(self.state, self.state))
+        if self.b01_exception_state in ('open', 'resolved'):
+            raise UserError(_(
+                'No se puede confirmar el Embarque %s: tiene una excepción '
+                'B-01 (%s).') % (self.name, self.b01_exception_state))
         if not self.container_ids:
             raise ValidationError(_("⛔ No se puede confirmar un embarque sin contenedores."))
         
@@ -728,8 +760,8 @@ class LumberExportShipment(models.Model):
     def _assert_no_rebaja_inconsistency(self):
         """R2: bloquea si algún Contenedor tiene rebaja INCONSISTENTE.
 
-        Se invoca desde el Zarpe (`_assert_departure_context`) y la
-        Entrega/Waiver (`_assert_can_deliver` / `action_approve_delivery_waiver`).
+        Se invoca desde el Zarpe (`_assert_departure_context`) y la Entrega
+        (`_assert_can_deliver`).
         SÓLO lectura: no altera B-01, stock, Costeo ni Finanzas.
         """
         self.ensure_one()
@@ -979,7 +1011,6 @@ class LumberExportShipment(models.Model):
             'user_id': self.env.user.id,
         })
         
-
     # ══════════════════════════════════════════════════════════════════════
     # Sub-bloque 4A (2026-10-04) — REGULARIZACIÓN B-01 (R1) y CIERRE (R4)
     # La rebaja extemporánea mueve inventario REAL con fecha efectiva actual
@@ -1187,7 +1218,7 @@ class LumberExportShipment(models.Model):
                 for c in self.container_ids.sorted('id')
             ],
             'gates': {
-                'entrega_habilitada_tras_cierre': True,
+                'delivery_eligible_after_resolution': True,
                 'draft_still_blocked': True,
                 'rollover_still_blocked': True,
             },
@@ -1241,14 +1272,6 @@ class LumberExportShipment(models.Model):
         ) % (self.env.user.display_name, audit.id))
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
-    def _b01_blocks_delivery(self):
-        """Sub-bloque 4A (2026-10-04): la Entrega sólo queda bloqueada por B-01
-        mientras la excepción esté 'open'. Con 'resolved' la excepción deja de
-        bloquear; los gates normales (Contenedores pendientes, terminal,
-        financiero) siguen aplicándose por separado."""
-        self.ensure_one()
-        return self.b01_exception_state == 'open'
-
     def action_open_rebaja_wizard(self):
         """Abre el asistente «Rebajar por nave» con el alcance del embarque."""
         self.ensure_one()
@@ -1263,6 +1286,43 @@ class LumberExportShipment(models.Model):
                 'default_voyage_id': self.voyage_id.id,
             },
         }
+
+    # ══════════════════════════════════════════════════════════════════════
+    # AD-92 (2026-10-05) — ROLLEO CENTRADO EN EMBARQUE
+    # Reprograma la salida marítima de ESTE Embarque (sólo vessel_id/voyage_id).
+    # Sólo Operaciones/Jefatura/Gerencia y sólo en Borrador/Confirmado. El guard
+    # de servidor del asistente revalida rol, estado, destino y exclusiones.
+    # ══════════════════════════════════════════════════════════════════════
+    def action_open_shipment_rollover_wizard(self):
+        """Abre el asistente de Rolleo centrado en este Embarque."""
+        self.ensure_one()
+        if not any(self.env.user.has_group(g) for g in CONFIRM_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para reprogramar la salida marítima del '
+                'Embarque %s. Se requiere el rol de Operaciones, Jefatura de '
+                'Operaciones o Gerencia.') % self.name)
+        if self.state not in ('draft', 'confirmed'):
+            raise UserError(_(
+                'El Rolleo de Embarque sólo aplica en Borrador o Confirmado. '
+                'Estado actual: %s.') % dict(
+                    self._fields['state'].selection).get(
+                        self.state, self.state))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Rollover de Embarque'),
+            'res_model': 'lumber.vessel.rollover.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_shipment_id': self.id},
+        }
+
+    def _b01_blocks_delivery(self):
+        """Sub-bloque 4A (2026-10-04): la Entrega sólo queda bloqueada por B-01
+        mientras la excepción esté 'open'. Con 'resolved' la excepción deja de
+        bloquear; los gates normales (Contenedores pendientes, terminal,
+        financiero) siguen aplicándose por separado."""
+        self.ensure_one()
+        return self.b01_exception_state == 'open'
 
     def action_deliver(self):
         """Entrega Segura (POLÍTICA D2, AD-98): hito LOGÍSTICO controlado.
@@ -1583,6 +1643,16 @@ class LumberExportShipment(models.Model):
                     raise UserError(_(
                         'Los campos de Entrega sólo pueden ser establecidos '
                         'por la acción operativa autorizada y auditada.'))
+                if any(f in vals for f in B01_WRITE_FIELDS):
+                    raise UserError(_(
+                        'Los campos de excepción B-01 sólo pueden ser '
+                        'establecidos por la acción operativa autorizada y '
+                        'auditada.'))
+            for field_name in B01_WRITE_FIELDS:
+                if field_name in vals and vals.get(field_name):
+                    raise UserError(_(
+                        'Los campos de excepción B-01 no pueden fijarse al '
+                        'crear el Embarque. Use el flujo autorizado de zarpe.'))
             if vals.get('name','/')=='/':
                 vals['name'] = self.env['ir.sequence'].next_by_code('lumber.export.shipment') or '/'
         return super().create(vals_list)
@@ -2041,35 +2111,6 @@ class LumberExportShipment(models.Model):
             'type': 'ir.actions.client',
             'tag': 'reload',
         }
-
-    # ======================================================================
-    # AD-92 (2026-10-05) - ROLLEO CENTRADO EN EMBARQUE
-    # Reprograma la salida marítima de ESTE Embarque (sólo vessel_id/voyage_id).
-    # Guard de servidor: rol autorizado y estados draft/confirmed.
-    # ======================================================================
-    def action_open_shipment_rollover_wizard(self):
-        """Abre el asistente de Rolleo centrado en este Embarque."""
-        self.ensure_one()
-        if not any(self.env.user.has_group(g) for g in CONFIRM_GROUPS):
-            raise AccessError(_(
-                'No tiene permisos para reprogramar la salida marítima del '
-                'Embarque %s. Se requiere el rol de Operaciones, Jefatura de '
-                'Operaciones o Gerencia.') % self.name)
-        if self.state not in ('draft', 'confirmed'):
-            raise UserError(_(
-                'El Rolleo de Embarque sólo aplica en Borrador o Confirmado. '
-                'Estado actual: %s.') % dict(
-                    self._fields['state'].selection).get(
-                        self.state, self.state))
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Rollover de Embarque'),
-            'res_model': 'lumber.vessel.rollover.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_shipment_id': self.id},
-        }
-
 class LumberShipmentCostLine(models.Model):
 
     _name = 'lumber.shipment.cost.line'

@@ -313,8 +313,8 @@ class TestProcessorReturnLink(TransactionCase):
             self.user_oper).create({
                 'wizard_id': wiz.id, 'wizard_line_id': wline.id,
                 'sv_lot_id': sv.id, 'imputed_volume_m3': 10.0})
-        res = wiz.with_user(self.user_oper).action_apply()
-        imp = self.Imputation.browse(res['res_id'])
+        wiz.with_user(self.user_oper).action_apply()
+        imp = wiz.imputation_id   # SIMPLE: Aplicar permanece en el asistente
         self.assertEqual(imp.state, 'applied')
         self.assertEqual(len(imp.return_link_ids), 1)
         self.assertEqual(imp.return_link_ids.state, 'linked')
@@ -384,6 +384,7 @@ class TestProcessorReturnLink(TransactionCase):
         imp = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=imp)
         link.with_user(self.user_oper).action_link()
+        imp.reversal_reason = 'Reversa de prueba (REL-T14).'
         imp.with_user(self.user_jef).action_reverse()
         link.invalidate_recordset()
         self.assertEqual(imp.state, 'reversed')
@@ -404,6 +405,7 @@ class TestProcessorReturnLink(TransactionCase):
         old = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=old)
         link.with_user(self.user_oper).action_link()
+        old.reversal_reason = 'Reversa de prueba (REL-T15).'
         old.with_user(self.user_jef).action_reverse()
         new = self._make_applied_imputation(guia, etiqueta, sv, 10.0)
         link = self.Link._get_or_create_link(picking, guia, imputation=new)

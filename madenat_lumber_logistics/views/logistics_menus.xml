@@ -28,12 +28,16 @@
             action="action_lumber_container_consolidation"
             sequence="15"/>
         
-        <!-- REBAJA POR NAVE (AD-82 / CANON/18 §7.3) -->
+        <!-- REBAJA POR MOTONAVE (AD-82 / CANON/18 §7.3) -->
+        <!-- Reexpuesto tras implementación y pruebas. Visible sólo para el    -->
+        <!-- contrato operativo (Operaciones/Jefatura/Gerencia; Jefatura y     -->
+        <!-- Gerencia heredan Operaciones, por lo que un sólo grupo basta).    -->
         <menuitem
             id="menu_lumber_shipment_rebaja"
-            name="Rebajar por Nave"
+            name="Rebajar por Motonave"
             parent="menu_lumber_logistics"
             action="action_lumber_shipment_rebaja_wizard"
+            groups="madenat_lumber_core.group_madenat_operaciones"
             sequence="17"/>
 
         <!-- CONTENEDORES -->
@@ -84,6 +88,24 @@
             parent="menu_logistics_config" 
             action="action_lumber_shipping_rule"
             sequence="80"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- P2-1: INACTIVAR MENÚ RAÍZ HUÉRFANO DE shipping_core            -->
+        <!-- El menú "Bookings y Reservas" (id 477) quedó huérfano en la     -->
+        <!-- raíz de aplicaciones. Se inactiva por override de metadato      -->
+        <!-- ir.ui.menu desde Logistics (módulo autorizado). No se toca el   -->
+        <!-- módulo madenat_lumber_shipping_core ni ninguno de sus modelos   -->
+        <!-- ni datos operativos. Cambio mínimo y reversible.                -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MADENAT — REEXPOSICIÓN UI (2026-10-03)                          -->
+        <!-- Rebaja por Motonave: REACTIVADA tras implementación + pruebas.  -->
+        <!-- Se reactiva el METADATO del menú (ir.ui.menu). Reversible con   -->
+        <!-- active=False.                                                   -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <record id="menu_lumber_shipment_rebaja" model="ir.ui.menu">
+            <field name="active" eval="True"/>
+        </record>
 
     </data>
 </odoo>

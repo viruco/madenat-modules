@@ -59,9 +59,10 @@
                     <group>
                         <group>
                             <field name="document_status" widget="badge" 
-                                   decoration-success="document_status == 'complete'"
-                                   decoration-warning="document_status == 'incomplete'"
-                                   decoration-danger="document_status == 'pending'"/>
+                                   decoration-success="document_status == 'verified'"
+                                   decoration-info="document_status in ('attached','partial')"
+                                   decoration-warning="document_status in ('pending','missing')"
+                                   decoration-danger="document_status == 'not_configured'"/>
                             
                             <field name="document_completion" widget="progressbar"/>
                         </group>
@@ -205,8 +206,7 @@
                 <field name="backlog_attention" optional="hide"/>
                 <field name="escalated_at" optional="hide" readonly="1"/>
                 <field name="escalated_by_id" optional="hide" readonly="1"/>
-                <field name="backlog_note" optional="show"
-                       help="Nota de gestión del pendiente. Para EXONERAR, complete aquí el motivo con al menos 20 caracteres."/>
+                <field name="backlog_note" optional="show"/>
             </list>
         </field>
     </record>

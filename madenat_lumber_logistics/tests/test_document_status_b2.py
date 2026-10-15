@@ -9,8 +9,8 @@ derivados EXCLUSIVAMENTE de `document_ids` + `checklist_id`
 (activo/requerido). `document_status` es INFORMATIVO: nunca es gate de
 operación física.
 
-Datos 100% aislados (TransactionCase); nada se persiste. No depende de la
-Entrega D2 (hito/waiver), Backlog, Costeo, Billing/Pagos, B-01, Rebaja,
+Datos 100% aislados (TransactionCase); nada se persiste. No depende de D2
+(`action_deliver`/waiver), Backlog, Costeo, Billing/Pagos, B-01, Rebaja,
 Rollover ni Zarpe. No mueve inventario ni genera efectos financieros.
 """
 from odoo.tests import tagged

@@ -253,6 +253,7 @@ class TestSvImputationCandidatesI2(TransactionCase):
         imp_r = self._imp(g, [(e, [(sv, 5.0)])])
         imp_r.with_user(self.user_oper).action_apply()
         self.assertAlmostEqual(self._avail(sv), 35.0, 3)
+        imp_r.reversal_reason = 'Reversa de prueba (I2C-06d).'
         imp_r.with_user(self.user_jef).action_reverse()         # reversed
         self.assertAlmostEqual(self._avail(sv), 40.0, 3)
         g = self._guia('I2C-06e')
@@ -272,8 +273,10 @@ class TestSvImputationCandidatesI2(TransactionCase):
         imp = self._imp(guia, [(etiqueta, [])])
         self.assertFalse(imp._i2_is_missing_sv_candidate())
         self.assertNotIn('NO_SV_CANDIDATE', imp.deviation_flags or '')
-        imp.with_user(self.user_oper).action_apply()  # sin motivo: permitido
-        self.assertEqual(imp.state, 'applied')
+        # Contrato aprobado 2026-10-11: sin reparto NO se aplica.
+        with self.assertRaises(UserError):
+            imp.with_user(self.user_oper).action_apply()
+        self.assertEqual(imp.state, 'draft')
         # B) sin candidato y sin sv_line_ids -> SÍ hay NO_SV_CANDIDATE.
         processor, proc_loc = self._processor('I2C Planta 07')
         g = self._guia('I2C-07b')
@@ -293,19 +296,27 @@ class TestSvImputationCandidatesI2(TransactionCase):
 
     # ── T-I2-CAND-08 ─────────────────────────────────────────────────────
     def test_t_i2_cand_08_guard_blando(self):
-        """Sin candidato: sin motivo pide motivo; con motivo aplica y audita."""
+        """Sin candidato: el flag es INFORMATIVO; Aplicar sin reparto se rechaza.
+
+        Contrato aprobado 2026-10-11: sin reparto el documento sólo puede quedar
+        NO aplicado (ni con motivo). `NO_SV_CANDIDATE` deja de ser excepción de
+        aplicación (no se registra desviación porque no hubo aplicación).
+        """
         processor, proc_loc = self._processor('I2C Planta 08')
         guia = self._guia('I2C-08')
         etiqueta = self._etiqueta(guia, 'I2C-E08', 10.0)
         imp = self._imp(guia, [(etiqueta, [])], processor=processor,
                         processor_location=proc_loc)
+        self.assertIn('NO_SV_CANDIDATE', imp.deviation_flags or '')
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_apply()
         self.assertEqual(imp.state, 'draft')
         imp.reason = 'Sin SV candidato; se deja constancia'
-        imp.with_user(self.user_oper).action_apply()
-        self.assertEqual(imp.state, 'applied')
-        self.assertTrue(self.AuditLog.search([
+        with self.assertRaises(UserError):
+            imp.with_user(self.user_oper).action_apply()
+        self.assertEqual(imp.state, 'draft')
+        self.assertFalse(imp.snapshot_json)
+        self.assertFalse(self.AuditLog.search([
             ('action_type', '=', 'deviation'),
             ('description', 'like', 'I2-NO-SV-CANDIDATE')]))
 
@@ -330,8 +341,9 @@ class TestSvImputationCandidatesI2(TransactionCase):
         with self.assertRaises(UserError):
             imp.with_user(self.user_oper).action_apply()
         imp.reason = 'Contexto sin candidato elegible'
-        imp.with_user(self.user_oper).action_apply()
-        self.assertEqual(imp.state, 'applied')
+        with self.assertRaises(UserError):
+            imp.with_user(self.user_oper).action_apply()
+        self.assertEqual(imp.state, 'draft')
 
     # ── T-I2-CAND-10 ─────────────────────────────────────────────────────
     def test_t_i2_cand_10_visibilidad_multi_company(self):

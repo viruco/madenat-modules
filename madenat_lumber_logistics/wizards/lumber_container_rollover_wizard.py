@@ -154,7 +154,12 @@ class ContainerRolloverWizard(models.TransientModel):
         if not self.current_shipment:
             raise UserError(_("El contenedor '%s' no está asignado a ningún embarque.\n"
                             "El rolleo solo aplica para contenedores ya consolidados.") % self.container_name)
-        
+
+        # P0 (2026-10-03): guarda reutilizable ANTES de cualquier write. Bloquea
+        # contenedores ya rebajados/embarcados y embarques en tránsito/entregado/
+        # cancelado. No sustituye la validación de costos distribuidos (B-07).
+        self.container_id._assert_rollover_eligible()
+
         old_shipment = self.current_shipment
         
         # 2. ✅ REGLA DE ORO - INTEGRIDAD FINANCIERA

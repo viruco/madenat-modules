@@ -34,3 +34,45 @@ from . import test_service_return_imputation_guard
 # Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
 # envío a procesador ↔ retorno.
 from . import test_processor_return_link
+# Operación manual de asignaciones centrada en SV (CANON/19 §19.14, 2026-10-10).
+from . import test_sv_imputation_manual
+# Unificación de acceso «Rebaja de etiquetas» (NAV-01..12, 2026-10-10).
+from . import test_sv_rebaja_navigation
+# Operación y blindaje de «Rebaja de etiquetas» (RET/UX/VOL/SEC/REV/PHY/CON).
+from . import test_sv_rebaja_operativa
+# Selección y asignación explícita al SV de trabajo (ERR/ASG/VOL/PER/SEC/PHY).
+from . import test_sv_rebaja_seleccion_asignacion
+# Material del packing list en el asistente (MAP/GRAN/SEM/AMT/ARCH).
+from . import test_sv_rebaja_material
+# Interfaz clara y concisa de ambas pestañas (CAB/EDIT/MED/ETQ/SIN/USE/MULTI/ARCH).
+from . import test_sv_rebaja_ui_limpia
+# Blindaje del ciclo documental (AUD-ETQ-01..05, 2026-10-11).
+from . import test_sv_rebaja_blindaje
+# Cierre probatorio (AUD-ETQ-06..10, 2026-10-11).
+from . import test_sv_rebaja_cierre
+# Contrato de aplicación (POL-01..08, política aprobada 2026-10-11).
+from . import test_sv_rebaja_contrato
+# Persistencia y recuperación del trabajo (SAVE/FLOW/PHY, 2026-10-11).
+from . import test_sv_rebaja_persistencia
+# Acciones visibles del asistente (UI/MAINT, 2026-10-11).
+from . import test_sv_rebaja_ui_acciones
+# Simplificación operativa de la rebaja (SIMPLE/CLIENT, 2026-10-11).
+from . import test_sv_rebaja_simple
+# Volver a borrador y reasignar (RESET, 2026-10-11).
+from . import test_sv_rebaja_reset
+# Concurrencia real de la reapertura (RESET-16/17, 2026-10-12).
+from . import test_sv_rebaja_reset_concurrency
+# P1 (AUD-ETQ-11): concurrencia sobre la capacidad de la misma etiqueta retornada.
+from . import test_sv_rebaja_reset_lot_capacity
+# P4 (AUD-ETQ-09): aislamiento y limpieza de la autorización de reapertura.
+from . import test_sv_rebaja_reset_token
+# P3 (AUD-ETQ-10): saldos almacenados canónicos vs derechos del usuario.
+from . import test_sv_assignment_user_rights
+# LOCK (2026-10-12): protección contra sobrescritura concurrente de borradores.
+from . import test_sv_rebaja_save_lock
+# V1 (2026-10-12): cobertura de cruces con EDICIÓN DIRECTA (matriz C1–C8).
+from . import test_sv_rebaja_save_lock_direct
+# V3 (2026-10-12): transacción, SerializationFailure y orden de bloqueos (TX).
+from . import test_sv_rebaja_save_lock_tx
+# HOTFIX OWL (2026-10-12): chatter canónico `<chatter/>` (VIEW-01..05).
+from . import test_hotfix_owl_chatter

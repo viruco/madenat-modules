@@ -498,3 +498,4 @@ class TestDocumentaryBacklog(TransactionCase):
         doc.invalidate_recordset()
         self.assertEqual(doc.backlog_state, 'completed')
         self.assertEqual(len(self._backlog_audits(doc, 'waiver')), aud)
+

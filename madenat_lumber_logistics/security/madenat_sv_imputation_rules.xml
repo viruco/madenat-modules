@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Reglas de registro multi-compañía de la imputación documental SV (I2).
+
+      Fundamento (AUD-ETQ-07, 2026-10-11): `madenat.sv.imputation` declara
+      `company_id` obligatorio, pero **no** tenía regla de registro; sólo ACL por
+      grupo. La relación hermana `madenat.processor.return.link` ya aplica este
+      mismo patrón (`['|', ('company_id','in',company_ids), ('company_id','=',False)]`)
+      y `stock.lot` su regla estándar. Se replica para no exponer documentos,
+      líneas ni repartos de una compañía a usuarios de otra.
+
+      Sin efecto para el uso mono-compañía vigente (todas las imputaciones son
+      de la compañía operativa). No sustituye a los permisos por rol (operar,
+      aplicar, reversar): se suman.
+    -->
+    <record id="rule_madenat_sv_imputation_company" model="ir.rule">
+        <field name="name">madenat.sv.imputation: multi-compañía</field>
+        <field name="model_id" ref="model_madenat_sv_imputation"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]</field>
+    </record>
+
+    <record id="rule_madenat_sv_imputation_line_company" model="ir.rule">
+        <field name="name">madenat.sv.imputation.line: multi-compañía</field>
+        <field name="model_id" ref="model_madenat_sv_imputation_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('imputation_id.company_id', 'in', company_ids), ('imputation_id.company_id', '=', False)]</field>
+    </record>
+
+    <record id="rule_madenat_sv_imputation_sv_line_company" model="ir.rule">
+        <field name="name">madenat.sv.imputation.sv.line: multi-compañía</field>
+        <field name="model_id" ref="model_madenat_sv_imputation_sv_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('imputation_id.company_id', 'in', company_ids), ('imputation_id.company_id', '=', False)]</field>
+    </record>
+</odoo>

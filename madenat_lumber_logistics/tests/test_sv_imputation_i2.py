@@ -223,11 +223,14 @@ class TestSvImputationI2(TransactionCase):
             ajeno, [d['lot'] for d in imp._i2_get_sv_candidate_data()])
         self.assertTrue(imp._i2_is_missing_sv_candidate())
         before = self._stock_snapshot()
+        # Contrato aprobado 2026-10-11: sin reparto NO se aplica (ni con motivo).
+        # El flag NO_SV_CANDIDATE es INFORMATIVO, no una excepción de aplicación.
         with self.assertRaises(UserError):
-            imp.with_user(self.user_oper).action_apply()  # sin motivo
+            imp.with_user(self.user_oper).action_apply()
         imp.reason = 'Sin SV candidato; se deja constancia documental'
-        imp.with_user(self.user_oper).action_apply()
-        self.assertEqual(imp.state, 'applied')
+        with self.assertRaises(UserError):
+            imp.with_user(self.user_oper).action_apply()
+        self.assertEqual(imp.state, 'draft')
         self.assertIn('NO_SV_CANDIDATE', imp.deviation_flags or '')
         self.assertEqual(self._stock_snapshot(), before)
 
@@ -264,6 +267,7 @@ class TestSvImputationI2(TransactionCase):
         imp.with_user(self.user_oper).action_apply()
         self.assertAlmostEqual(
             self.Imputation._i2_lot_documental_imputed_m3(etiqueta), 10.0, 3)
+        imp.reversal_reason = 'Reversa de prueba (I2-T08).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         self.assertAlmostEqual(
@@ -309,11 +313,13 @@ class TestSvImputationI2(TransactionCase):
         self.assertEqual(imp.state, 'applied')
         with self.assertRaises(AccessError):
             imp.with_user(self.user_oper).action_reverse()
+        imp.reversal_reason = 'Reversa de prueba (I2-T10 jef).'
         imp.with_user(self.user_jef).action_reverse()
         self.assertEqual(imp.state, 'reversed')
         imp2 = self._make_imputation(guia, [(etiqueta, [(sv, 10.0)])])
         imp2.with_user(self.user_jef).action_apply()
         self.assertEqual(imp2.state, 'applied')
+        imp2.reversal_reason = 'Reversa de prueba (I2-T10 ger).'
         imp2.with_user(self.user_ger).action_reverse()
         self.assertEqual(imp2.state, 'reversed')
 
@@ -383,8 +389,8 @@ class TestSvImputationI2(TransactionCase):
         self.assertTrue(sv_line.exists())
         self.assertEqual(sv_line.wizard_id, wiz)
         self.assertEqual(sv_line.wizard_line_id, wline)
-        res = wiz.with_user(self.user_oper).action_apply()
-        imp = self.Imputation.browse(res['res_id'])
+        wiz.with_user(self.user_oper).action_apply()
+        imp = wiz.imputation_id   # SIMPLE: Aplicar permanece en el asistente
         self.assertEqual(imp.state, 'applied')
         self.assertAlmostEqual(
             self.Imputation._i2_lot_documental_imputed_m3(etiqueta), 10.0, 3)

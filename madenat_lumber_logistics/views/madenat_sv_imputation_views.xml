@@ -6,12 +6,20 @@
         <field name="name">madenat.sv.imputation.tree</field>
         <field name="model">madenat.sv.imputation</field>
         <field name="arch" type="xml">
-            <list string="Imputaciones documentales SV">
+            <!-- Historial de rebajas documentales SV (acceso interno del
+                 recorrido «Rebaja de etiquetas»). Distingue vigentes
+                 (draft/pending/applied) de históricos (reversed/cancelled).
+                 Consultar NO crea documento ni altera saldo. -->
+            <list string="Historial de rebajas"
+                  decoration-success="state == 'applied'"
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'pending'"
+                  decoration-muted="state in ('reversed', 'cancelled')">
                 <field name="name"/>
                 <field name="date"/>
                 <field name="guia_processing_id"/>
                 <field name="processor_id"/>
-                <field name="state"/>
+                <field name="state" widget="badge"/>
                 <field name="nominal_total_m3"/>
                 <field name="imputed_total_m3"/>
                 <field name="deviation_flags"/>
@@ -38,8 +46,21 @@
                             invisible="state != 'applied'"/>
                     <button name="action_cancel" type="object" string="Anular"
                             invisible="state not in ('draft', 'pending')"/>
+                    <button name="action_continue_preparation" type="object"
+                            string="Continuar preparación"
+                            invisible="state not in ('draft', 'pending')"/>
+                    <button name="action_reopen_to_draft" type="object"
+                            string="Volver a borrador"
+                            groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
+                            invisible="state != 'cancelled'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,pending,applied,reversed"/>
+                    <!-- LOCK / V1 (2026-10-12): versión de edición cargada por
+                         el formulario. Con `force_save` el cliente la envía al
+                         guardar; el backend la compara (atómica) y RECHAZA una
+                         edición basada en una versión obsoleta (no sobrescribe).
+                         No cambia la funcionalidad: los campos siguen editables. -->
+                    <field name="edit_version" force_save="1" invisible="1"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -66,6 +87,7 @@
                                     <field name="processed_lot_id"/>
                                     <field name="nominal_volume_m3"/>
                                     <field name="etiqueta_imputado_activo_m3"/>
+                                    <field name="etiqueta_pendiente_m3"/>
                                     <field name="etiqueta_saldo_documental_m3"/>
                                 </list>
                             </field>
@@ -110,14 +132,26 @@
                                 <field name="reversal_date"/>
                                 <field name="origin_imputation_id"/>
                                 <field name="reversed_imputation_id"/>
+                                <field name="cancellation_reason"/>
+                                <field name="cancelled_by_id"/>
+                                <field name="cancellation_date"/>
+                                <field name="reopen_reason"/>
+                                <field name="reopened_by_id"/>
+                                <field name="reopen_date"/>
                             </group>
                         </page>
                     </notebook>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <!-- FIX 2026-10-12 (HOTFIX_OWL_CHATTER_OE_20261012): Odoo 18 CE
+                     ya NO compila el marcado heredado `div.oe_chatter`
+                     (el compilador registra el selector `chatter` sobre el
+                     elemento `<chatter/>`). Con `div.oe_chatter` los campos
+                     `message_follower_ids`/`message_ids` dejaban de ser el
+                     chatter y se renderizaban como listas o2m editables por
+                     defecto (mail.followers / mail.message), mostrando el
+                     botón «Agregar una línea» y provocando un OwlError al
+                     interactuar con ellas. Se usa el marcado canónico. -->
+                <chatter/>
             </form>
         </field>
     </record>
@@ -126,17 +160,28 @@
         <field name="name">madenat.sv.imputation.search</field>
         <field name="model">madenat.sv.imputation</field>
         <field name="arch" type="xml">
-            <search string="Imputaciones documentales SV">
+            <search string="Historial de rebajas">
                 <field name="name"/>
                 <field name="guia_processing_id"/>
                 <field name="processor_id"/>
                 <field name="documentary_key"/>
+                <filter name="filter_vigentes" string="Vigentes"
+                        domain="[('state', 'in', ['draft', 'pending', 'applied'])]"
+                        help="Documentos vigentes: borrador, pendiente y aplicado."/>
+                <filter name="filter_historicos" string="Históricos"
+                        domain="[('state', 'in', ['reversed', 'cancelled'])]"
+                        help="Documentos históricos: reversados y anulados."/>
+                <separator/>
                 <filter name="filter_draft" string="Borrador"
                         domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_pending" string="Pendiente"
                         domain="[('state', '=', 'pending')]"/>
                 <filter name="filter_applied" string="Aplicada"
                         domain="[('state', '=', 'applied')]"/>
+                <filter name="filter_reversed" string="Reversada"
+                        domain="[('state', '=', 'reversed')]"/>
+                <filter name="filter_cancelled" string="Anulada"
+                        domain="[('state', '=', 'cancelled')]"/>
                 <separator/>
                 <filter name="group_guia" string="Guía"
                         context="{'group_by': 'guia_processing_id'}"/>
@@ -146,18 +191,30 @@
         </field>
     </record>
 
+    <!-- Acción de documentos del mecanismo documental SV. Se reutiliza como
+         «Historial de rebajas» dentro del recorrido único «Rebaja de
+         etiquetas». NO tiene entrada propia en el menú principal. -->
     <record id="action_madenat_sv_imputation" model="ir.actions.act_window">
-        <field name="name">Imputaciones documentales SV</field>
+        <field name="name">Historial de rebajas</field>
         <field name="res_model">madenat.sv.imputation</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_madenat_sv_imputation_search"/>
     </record>
 
-    <menuitem id="menu_madenat_sv_imputation"
-              name="Imputaciones documentales SV"
-              parent="menu_lumber_logistics"
-              action="action_madenat_sv_imputation"
-              sequence="19"/>
+    <!-- Unificación de acceso (2026-10-10): el menú «Imputaciones documentales
+         SV» SE RETIRA DE LA NAVEGACIÓN. La operación queda con UN ÚNICO enlace
+         («Rebaja de etiquetas» → menu_madenat_sv_assignment) y los documentos de
+         imputación se consultan DENTRO de ese recorrido (historial interno).
+
+         Mecanismo (reversible, reproducible, sin depender de edición manual):
+         se conserva la definición del `menuitem` (para instalaciones nuevas) y
+         se desactiva su METADATO ir.ui.menu con este `record` posterior. Al
+         reaplicar `-u`, el `menuitem` no vuelve a fijar `active` (sólo nombre,
+         padre, acción y secuencia), por lo que sigue inactivo. No se borra el
+         registro ni el modelo/documentos. Reversible poniendo active=True. -->
+    <record id="menu_madenat_sv_imputation" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 
     <!-- Adición mínima: botón en la guía de procesados para abrir el asistente.
          No rediseña pantallas existentes (CANON/19 §10; AD-91). -->
@@ -198,4 +255,233 @@
             </xpath>
         </field>
     </record>
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- REBAJA DE ETIQUETAS — ÚNICA ENTRADA OPERATIVA (2026-10-10).        -->
+    <!-- Punto de partida del mecanismo DOCUMENTAL de asignación de retornos -->
+    <!-- a etiquetas SV: acción sobre stock.lot (lot_flow_type='volume').    -->
+    <!-- NO crea modelo persistente nuevo: los documentos viven en          -->
+    <!-- madenat.sv.imputation y se consultan DENTRO de este recorrido       -->
+    <!-- (historial interno), no como una segunda operación de menú.        -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <record id="view_madenat_sv_assignment_list" model="ir.ui.view">
+        <field name="name">madenat.sv.assignment.list</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <list string="Etiquetas SV" create="false"
+                  decoration-muted="sv_assignment_documental_balance_m3 &lt;= 0">
+                <field name="name" string="Etiqueta SV"/>
+                <field name="sv_assignment_guia_number" string="N° Guía"/>
+                <field name="sv_assignment_supplier_id" string="Proveedor"
+                       optional="show"/>
+                <field name="product_id"/>
+                <field name="sv_assignment_processor_id" optional="hide"/>
+                <field name="sv_assignment_guia_date" string="Fecha guía"
+                       optional="hide"/>
+                <field name="sv_assignment_nominal_m3"
+                       string="Volumen documental"/>
+                <field name="sv_assignment_applied_m3"
+                       string="Rebajado documental"/>
+                <field name="sv_assignment_work_count"
+                       string="Trabajo en prep." optional="show"/>
+                <field name="sv_assignment_documental_balance_m3"
+                       string="Saldo documental"
+                       decoration-danger="sv_assignment_documental_balance_m3 &lt; 0"
+                       decoration-success="sv_assignment_documental_balance_m3 &gt; 0"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Búsqueda dedicada del recorrido: reemplaza el panel técnico heredado
+         (Partners / Physical Locations / ramas de ubicación). «En stock» es un
+         filtro OPCIONAL y removible: esta operación es DOCUMENTAL y puede
+         requerir etiquetas SV sin existencia física actual; NO equivale al
+         saldo documental. -->
+    <record id="view_madenat_sv_assignment_search" model="ir.ui.view">
+        <field name="name">madenat.sv.assignment.search</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <search string="Etiquetas SV">
+                <field name="name" string="Etiqueta SV"/>
+                <field name="volume_source_guia_id"
+                       string="Guía / Proveedor"
+                       filter_domain="['|', ('volume_source_guia_id', 'ilike', self), ('volume_source_guia_id.partner_id.name', 'ilike', self)]"/>
+                <field name="product_id"/>
+                <separator/>
+                <filter name="filter_con_saldo" string="Con saldo documental"
+                        domain="[('sv_assignment_documental_balance_m3', '&gt;', 0)]"
+                        help="Etiquetas SV con saldo documental pendiente (nominal − aplicado)."/>
+                <filter name="filter_sin_rebajas" string="Sin rebajas aplicadas"
+                        domain="[('sv_assignment_applied_count', '=', 0)]"/>
+                <filter name="filter_con_rebajas" string="Con rebajas aplicadas"
+                        domain="[('sv_assignment_applied_count', '&gt;', 0)]"/>
+                <filter name="filter_sin_saldo" string="Sin saldo documental"
+                        domain="[('sv_assignment_documental_balance_m3', '&lt;=', 0)]"/>
+                <filter name="filter_exceso" string="Exceso documental"
+                        domain="[('sv_assignment_documental_balance_m3', '&lt;', 0)]"
+                        help="La suma asignada (activa) supera el volumen documental del SV (política blanda)."/>
+                <separator/>
+                <filter name="filter_in_stock" string="En stock"
+                        domain="[('product_qty', '&gt;', 0)]"
+                        help="Filtro OPCIONAL de existencia física (quants). NO es el saldo documental: la rebaja de etiquetas es documental y puede operar sobre etiquetas SV sin existencia física actual."/>
+                <separator/>
+                <filter name="group_guia" string="Guía de procedencia"
+                        context="{'group_by': 'volume_source_guia_id'}"/>
+                <filter name="group_product" string="Producto"
+                        context="{'group_by': 'product_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Bloque C (§19.16): vistas de apoyo para elegir la GUÍA de retorno.
+         Son ADITIVAS y no disruptivas: columnas OPCIONALES en el listado
+         compartido de guías (las usa el «Buscar más» del selector) y filtros de
+         retorno; no se cambia el display_name ni la vista por defecto. La
+         elegibilidad se fuerza por el dominio del campo (Sí y no cancelada). -->
+    <record id="view_madenat_guia_processing_sv_return_list" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.list.sv.return</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id"
+               ref="madenat_lumber_core.view_madenat_guia_processing_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="sv_ret_etiquetas_count" optional="hide"
+                       string="Etiquetas retorno"/>
+                <field name="sv_ret_nominal_m3" optional="hide"
+                       string="Vol. documental m³"/>
+                <field name="sv_ret_aplicado_m3" optional="hide"
+                       string="Rebajado doc. m³"/>
+                <field name="sv_ret_pendiente_m3" optional="hide"
+                       string="Pendiente doc. m³"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_madenat_guia_processing_sv_return_search" model="ir.ui.view">
+        <field name="name">madenat.guia.processing.search.sv.return</field>
+        <field name="model">madenat.guia.processing</field>
+        <field name="inherit_id"
+               ref="madenat_lumber_core.view_madenat_guia_processing_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="filter_sv_return_only"
+                        string="Sólo retornos confirmados"
+                        domain="[('service_return_confirmation', '=', 'yes'), ('state', '!=', 'cancelled')]"/>
+                <filter name="filter_sv_return_pending"
+                        string="Retornos sin rebajas aplicadas"
+                        domain="[('service_return_confirmation', '=', 'yes'), ('state', '!=', 'cancelled'), ('sv_imputation_ids', 'not any', [('state', '=', 'applied')])]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_madenat_sv_assignment_form" model="ir.ui.view">
+        <field name="name">madenat.sv.assignment.form</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <form string="Etiqueta SV" create="false" edit="false">
+                <header>
+                    <button name="%(action_madenat_sv_imputation_wizard)d"
+                            type="action" string="Registrar rebaja"
+                            class="btn-primary"
+                            context="{'default_sv_lot_id': id, 'active_model': 'stock.lot', 'active_id': id}"/>
+                    <button name="action_open_sv_rebajas" type="object"
+                            string="Historial de rebajas" class="btn-secondary"
+                            icon="fa-history"/>
+                    <button name="%(action_madenat_sv_imputation)d"
+                            type="action" string="Ver historial completo"
+                            class="btn-link"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="volume_source_guia_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="sv_assignment_processor_id"
+                                   readonly="1"/>
+                            <field name="sv_assignment_nominal_m3"
+                                   string="Volumen documental" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="sv_assignment_applied_m3"
+                                   string="Rebajado documental" readonly="1"/>
+                            <field name="sv_assignment_documental_balance_m3"
+                                   string="Saldo documental" readonly="1"/>
+                            <field name="sv_assignment_applied_count"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        Esta operación registra asignaciones documentales de
+                        retornos a etiquetas SV. No genera movimientos de stock
+                        ni modifica el saldo del ledger SV.
+                    </div>
+                    <group string="Trabajo en preparación (no aplicado)">
+                        <field name="sv_assignment_work_imputation_ids"
+                               nolabel="1">
+                            <list decoration-info="state == 'draft'"
+                                  decoration-warning="state == 'pending'">
+                                <field name="name"/>
+                                <field name="guia_processing_id"/>
+                                <field name="state" widget="badge"/>
+                                <field name="write_date"
+                                       string="Actualizado"/>
+                                <button name="action_continue_preparation"
+                                        type="object" string="Continuar"
+                                        icon="fa-pencil"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Asignaciones documentales (histórico)">
+                        <field name="sv_assignment_sv_line_ids"
+                               nolabel="1" readonly="1">
+                            <list>
+                                <field name="imputation_name"/>
+                                <field name="guia_processing_id"/>
+                                <field name="processed_lot_id"/>
+                                <field name="imputed_volume_m3"/>
+                                <field name="imputation_state"
+                                       widget="badge"/>
+                                <field name="execution_date"/>
+                                <field name="executed_by_id"/>
+                                <button name="action_open_imputation"
+                                        type="object" string="Abrir documento"
+                                        icon="fa-external-link"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_madenat_sv_assignment" model="ir.actions.act_window">
+        <field name="name">Rebaja de etiquetas</field>
+        <field name="res_model">stock.lot</field>
+        <field name="domain">[('lot_flow_type', '=', 'volume')]</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_madenat_sv_assignment_search"/>
+        <field name="view_ids"
+               eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'list', 'view_id': ref('view_madenat_sv_assignment_list')}),
+                      (0, 0, {'view_mode': 'form', 'view_id': ref('view_madenat_sv_assignment_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay etiquetas SV (Lote Volumen).
+            </p>
+            <p>
+                Abra una etiqueta SV y pulse «Registrar rebaja». Esta operación
+                registra asignaciones documentales de retornos a etiquetas SV:
+                NO genera movimientos de stock ni modifica el saldo del ledger SV.
+            </p>
+        </field>
+    </record>
+
+    <!-- ÚNICO enlace operativo del mecanismo documental SV en Logística
+         Exportación. Reutiliza el menú existente (xmlid conservado). -->
+    <menuitem id="menu_madenat_sv_assignment"
+              name="Rebaja de etiquetas"
+              parent="menu_lumber_logistics"
+              action="action_madenat_sv_assignment"
+              sequence="18"/>
 </odoo>

@@ -10,7 +10,22 @@ El zarpe ya no descuenta stock (AD-82). Cuando hay contenedores sin rebajar,
 No bloquea al profesional (D8); toda excepción queda auditada.
 """
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
+
+
+# Sub-bloque 3 (2026-10-04): grupos del flujo de zarpe.
+# Abrir/visualizar el flujo: Operaciones/Jefatura/Gerencia.
+# Confirmar el zarpe (normal o B-01): Jefatura/Gerencia.
+ZARPE_OPEN_GROUPS = (
+    'madenat_lumber_core.group_madenat_operaciones',
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+ZARPE_CONFIRM_GROUPS = (
+    'madenat_lumber_core.group_madenat_jefatura_operaciones',
+    'madenat_lumber_core.group_madenat_gerencia',
+)
+ZARPE_B01_MIN_REASON = 20
 
 
 class LumberShipmentZarpeWizard(models.TransientModel):
@@ -31,11 +46,23 @@ class LumberShipmentZarpeWizard(models.TransientModel):
         string='Motivo de la excepción',
         help='Obligatorio para zarpar sin rebajar (excepción registrada).')
 
+    def _check_open_group(self):
+        if not any(self.env.user.has_group(g) for g in ZARPE_OPEN_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para operar el zarpe. Se requiere el rol de '
+                'Operaciones, Jefatura de Operaciones o Gerencia.'))
+
+    def _check_confirm_group(self):
+        if not any(self.env.user.has_group(g) for g in ZARPE_CONFIRM_GROUPS):
+            raise AccessError(_(
+                'No tiene permisos para confirmar el zarpe. Se requiere el rol '
+                'de Jefatura de Operaciones o Gerencia.'))
+
     @api.depends('shipment_id')
     def _compute_pending(self):
         for wiz in self:
             pending = wiz.shipment_id.container_ids.filtered(
-                lambda c: c.state != 'rebajado')
+                lambda c: not wiz.shipment_id._is_container_rebajado_fisico(c))
             wiz.pending_container_ids = pending
             wiz.pending_count = len(pending)
             wiz.pending_names = ', '.join(pending.mapped('name'))
@@ -43,6 +70,7 @@ class LumberShipmentZarpeWizard(models.TransientModel):
     def action_rebajar_y_zarpar(self):
         """Rebaja cada contenedor pendiente (savepoint) y luego zarpa."""
         self.ensure_one()
+        self._check_confirm_group()
         failures = []
         for container in self.pending_container_ids:
             try:
@@ -71,13 +99,17 @@ class LumberShipmentZarpeWizard(models.TransientModel):
         }
 
     def action_zarpar_con_excepcion(self):
-        """Zarpa con excepción registrada (motivo obligatorio + auditoría)."""
+        """Zarpe con excepción DOCUMENTAL B-01 (motivo obligatorio >= 20)."""
         self.ensure_one()
-        if not (self.reason or '').strip():
+        self._check_confirm_group()
+        reason = (self.reason or '').strip()
+        if len(reason) < ZARPE_B01_MIN_REASON:
             raise UserError(_(
-                'Debe indicar el motivo para zarpar con contenedores sin '
-                'rebajar (excepción registrada).'))
-        self.shipment_id._set_in_transit(exception_reason=self.reason)
+                'Debe indicar un motivo de al menos %d caracteres para zarpar '
+                'con contenedores sin rebajar (excepción B-01).'
+            ) % ZARPE_B01_MIN_REASON)
+        self.shipment_id._set_in_transit(
+            exception_reason=reason, is_b01=True)
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',

@@ -231,6 +231,7 @@
                             string="Rebajar contenedor"
                             type="object"
                             class="btn-primary"
+                            groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
                             invisible="state not in ('loaded', 'sealed') or b01_exception_state == 'open'"
                             confirm="¿Rebajar el inventario de este contenedor? Se genera UNA salida nativa de stock y el contenedor pasa a 'Rebajado'."/>
                     <button name="action_reverse_rebaja"
@@ -240,11 +241,12 @@
                             groups="madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"
                             invisible="state != 'rebajado'"
                             confirm="¿Revertir la rebaja? Se creará el RETORNO FÍSICO TOTAL (Clientes → ubicación interna de origen, mismo lote). Sólo si el retorno queda validado se revertirán estado, SV y auditoría. No hay retorno parcial."/>
+                    <!-- MADENAT: NO DISPONIBLE HASTA REDISEÑO/UAT — bloqueo operativo temporal (rollover). Reversible por XML. -->
                     <button name="action_manage_rollover"
                             string="🔄 Rollover"
                             type="object"
                             class="btn-warning"
-                            invisible="state not in ('loaded', 'sealed')"
+                            invisible="1"
                             help="Gestionar rolleo del contenedor"/>
                     <field name="state"
                            widget="statusbar"

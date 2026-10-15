@@ -81,10 +81,13 @@
                         <field name="audit_hash" readonly="1"/>
                     </group>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <!-- FIX 2026-10-12 (HOTFIX_OWL_CHATTER_OE_20261012): mismo defecto
+                     que en `madenat.sv.imputation.form`. Odoo 18 CE ya no compila
+                     `div.oe_chatter`; sin el chatter, `message_follower_ids`/
+                     `message_ids` se renderizan como listas o2m editables por
+                     defecto (botón «Agregar una línea» + OwlError). Marcado
+                     canónico. -->
+                <chatter/>
             </form>
         </field>
     </record>

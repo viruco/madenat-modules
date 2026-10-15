@@ -6,9 +6,16 @@
         <field name="arch" type="xml">
             <form string="Zarpe con pendientes de rebaja">
                 <div class="alert alert-warning" role="alert">
-                    <b>Hay contenedores SIN rebajar.</b> El zarpe no descuenta
-                    inventario: puede rebajarlos ahora o zarpar con una
-                    excepción registrada (motivo obligatorio).
+                    <b>Hay contenedores SIN rebajar.</b>
+                    <ul class="mb-1">
+                        <li>«Rebajar y zarpar» realiza la rebaja física y luego zarpa.</li>
+                        <li>«Zarpar con excepción (B-01)» abre una <b>excepción
+                            documental bloqueante</b>.</li>
+                    </ul>
+                    <b>Esta excepción no realiza rebaja ni movimiento de inventario.</b>
+                    Los contenedores pendientes conservarán su estado físico. El Embarque
+                    quedará bloqueado para Borrador, Rolleo, Entrega/Cierre, Costeo y
+                    procesos financieros hasta regularización autorizada.
                 </div>
                 <group>
                     <field name="shipment_id" readonly="1"/>
@@ -16,16 +23,16 @@
                     <field name="pending_names" readonly="1"/>
                 </group>
                 <field name="pending_container_ids" invisible="1"/>
-                <group string="Excepción (solo si zarpa sin rebajar)">
+                <group string="Excepción documental B-01 (solo si zarpa sin rebajar)">
                     <field name="reason"
-                           placeholder="Explique por qué zarpa sin rebajar..."/>
+                           placeholder="Motivo (mínimo 20 caracteres) por el que zarpa sin rebajar..."/>
                 </group>
                 <footer>
                     <button name="action_rebajar_y_zarpar" type="object"
                             string="Rebajar y zarpar" class="btn-primary"/>
                     <button name="action_zarpar_con_excepcion" type="object"
-                            string="Zarpar con excepción" class="btn-secondary"
-                            confirm="Se zarpará registrando una excepción auditada. ¿Continuar?"/>
+                            string="Zarpar con excepción (B-01)" class="btn-secondary"
+                            confirm="Esta excepción NO realiza rebaja ni movimiento de inventario. Los contenedores pendientes conservarán su estado físico. El Embarque quedará bloqueado para Borrador, Rolleo, Entrega/Cierre, Costeo y procesos financieros hasta regularización autorizada. ¿Confirmar el zarpe con excepción B-01?"/>
                     <button string="Cancelar" special="cancel" class="btn-link"/>
                 </footer>
             </form>
