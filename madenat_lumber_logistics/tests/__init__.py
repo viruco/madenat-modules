@@ -82,3 +82,6 @@ from . import test_sv_rebaja_work_filter
 # S3 (FASE 10, 2026-10-15): bloqueo del guardado/aplicación de un documento de
 # rebaja VACÍO, sin borrado silencioso (F3; SG-01..06).
 from . import test_sv_rebaja_empty_guard
+# S1 (FASE 10, 2026-10-15): clave documental con las ETIQUETAS SELECCIONADAS y
+# reglas de estado terminal (F1; DK-01..08).
+from . import test_sv_rebaja_documentary_key

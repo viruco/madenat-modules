@@ -584,8 +584,22 @@ class MadenatSvImputationWizard(models.TransientModel):
 
     # ── Construcción del documento ───────────────────────────────────────
     def _i2_signature(self):
+        """Firma DETERMINISTA de la operación preparada (S1, FASE 10).
+
+        Incluye las **etiquetas incluidas** (marcadas o con reparto, D4/D5) con
+        su volumen nominal, **además** de los repartos SV. Así la clave
+        documental identifica *qué* se registra, no sólo *a qué SV*: dos
+        preparaciones con selecciones distintas de la misma guía no colisionan
+        entre sí ni con un documento aplicado/terminal previo (defecto F1).
+
+        La firma SÓLO se usa para construir claves NUEVAS: los documentos ya
+        creados conservan su ``documentary_key`` (no se recalcula ni migra).
+        """
         self.ensure_one()
         parts = []
+        for wline in self._i2_included_lines().sorted('processed_lot_id'):
+            parts.append('L%s:%.3f' % (
+                wline.processed_lot_id.id, wline.nominal_volume_m3 or 0.0))
         for wline in self.line_ids.sorted('processed_lot_id'):
             for alloc in wline.sv_alloc_ids.sorted('sv_lot_id'):
                 parts.append('%s:%s:%.3f' % (

@@ -4,6 +4,35 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.32.0] - 2026-10-15
+
+### Fixed
+- **S1 — Clave documental con las ETIQUETAS SELECCIONADAS y reglas de estado terminal (defecto F1, causa raíz).**
+  `_i2_signature()` sólo incluía los **repartos SV**, no las etiquetas seleccionadas, y `_i2_get_or_create()`
+  buscaba por `documentary_key` **sin filtrar estado** (la clave es UNIQUE). Cualquier preparación de la guía 1198
+  **sin reparto** colisionaba con el documento **APLICADO `IMP02220`** ⇒
+  `UserError: … ya no admite preparación (estado applied)`: las etiquetas nunca se registraban.
+  - `_i2_signature()` incluye ahora las **etiquetas incluidas** (`_i2_included_lines()` ordenadas por
+    `processed_lot_id`) con su volumen nominal —`L<id>:<nominal>`— **además** de los repartos SV y de forma
+    determinista.
+  - `_i2_get_or_create()` devuelve **sólo** documentos en estado de trabajo (`draft`/`pending`):
+    - `applied` ⇒ mensaje claro («Esta rebaja ya se aplicó con esta misma selección…») y **sin duplicar**;
+    - `reversed`/`cancelled` ⇒ documento **NUEVO** con clave **distinta y trazable** (discriminador determinista
+      con el id del documento que ocupa la clave), sin alterar el documento terminal.
+  - **Retrocompatibilidad total:** la receta **base** de la clave
+    (`I2|guia|processor|signature` ⇒ `IMP-<guia>-<sha256[:16]>`) **no cambia**; `discriminator=''` produce el
+    resultado histórico byte a byte ⇒ las claves y firmas de los documentos ya aplicados (p. ej. `IMP02220`,
+    `IMP-1198-E95825AAF94E58AD`) siguen **idénticas y verificables**. **No hay migración de datos.**
+  - Una sola implementación central: la receta de la clave y las reglas de reutilización viven en el modelo; el
+    asistente sólo aporta la firma.
+
+### Notes
+- Nuevo `tests/test_sv_rebaja_documentary_key.py` (**DK-01..08**, T1/T4/T5 y E7 del diagnóstico): 9/9 en verde;
+  incluye el perfil `IMP04823` (documento anulado con la clave base) y la clave histórica con `signature=''`.
+- Regresión del módulo `logistics` completa: **4 failed de 528** (el MISMO subconjunto de 10 fallas del baseline;
+  0 fallas nuevas por nombre). `IMP04823`/`IMP02220` intactos (hashes de fila/líneas/repartos idénticos).
+  Expediente `FASE10_REBAJA_SV_ETIQUETAS_20261015/`.
+
 ## [18.0.1.31.0] - 2026-10-15
 
 ### Fixed

@@ -442,11 +442,24 @@ class MadenatSvImputation(models.Model):
     # CLAVE DOCUMENTAL E IDEMPOTENCIA (D-I2-17) — sin `picking_id`.
     # ══════════════════════════════════════════════════════════════════════
     @api.model
-    def _i2_build_documentary_key(self, guia, processor=None, signature=''):
+    def _i2_build_documentary_key(self, guia, processor=None, signature='',
+                                  discriminator=''):
+        """Clave documental (idempotencia, D-I2-17).
+
+        La receta **base** —``I2|guia|processor|signature``— NO cambia: los
+        documentos históricos conservan exactamente su clave. El
+        ``discriminator`` (S1, FASE 10) es **opcional** y se añade al final SÓLO
+        cuando hace falta una clave DISTINTA para una operación nueva que
+        colisiona con un documento en estado TERMINAL; así la clave sigue siendo
+        determinista y **trazable** (incluye el id del documento que ocupaba la
+        clave) sin tocar las existentes ni migrar datos.
+        """
         raw = 'I2|%s|%s|%s' % (
             guia.id if guia else 0,
             processor.id if processor else 0,
             signature or '')
+        if discriminator:
+            raw = '%s|%s' % (raw, discriminator)
         digest = hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16].upper()
         return 'IMP-%s-%s' % (guia.id if guia else 0, digest)
 
@@ -460,18 +473,54 @@ class MadenatSvImputation(models.Model):
 
     @api.model
     def _i2_get_or_create(self, guia, processor=None, signature=''):
-        """Devuelve (sin duplicar) la imputación de trabajo de la guía.
+        """Devuelve (sin duplicar) la imputación de TRABAJO de la guía.
 
-        Idempotencia estable: si existe una imputación de trabajo, se reutiliza;
-        si no, se busca por `documentary_key` (reintento) antes de crear.
+        Idempotencia estable: si existe una imputación de **trabajo**
+        (draft/pending) se reutiliza; si no, se busca por ``documentary_key`` un
+        documento reutilizable antes de crear.
+
+        S1 (FASE 10): sólo se devuelve un documento en estado de TRABAJO
+        (draft/pending). Un documento en estado TERMINAL **no** se adopta:
+        ``documentary_key`` es UNIQUE y antes se devolvía por coincidencia de
+        clave, provocando «ya no admite preparación (estado applied)» /
+        «fue anulado» (defecto F1).
+
+        * ``applied`` → la operación **ya se aplicó con esta selección**: se
+          informa con un mensaje claro y NO se duplica.
+        * ``reversed``/``cancelled`` → la operación es NUEVA: se crea un
+          documento con una clave DISTINTA y **trazable** (discriminador con el
+          id del documento que ocupa la clave), sin tocar claves históricas.
         """
         work = self._i2_find_work_for_guia(guia)
         if work:
             return work
         key = self._i2_build_documentary_key(guia, processor, signature)
         existing = self.search([('documentary_key', '=', key)], limit=1)
-        if existing:
+        if existing and existing.state in ('draft', 'pending'):
             return existing
+        if existing and existing.state == 'applied':
+            raise UserError(_(
+                'Esta rebaja ya se aplicó con esta misma selección de etiquetas '
+                '(%s). No se duplica: consulta el documento aplicado o cambia '
+                'la selección para una operación nueva.') % existing.name)
+        # La clave base está ocupada por un documento terminal no aplicado
+        # (anulado/reversado): se busca la primera clave libre con discriminador
+        # trazable. Determinista (no depende de fecha ni de sesión).
+        discriminator = ''
+        while existing:
+            discriminator = ('%s>%s' % (discriminator, existing.id)
+                             if discriminator else str(existing.id))
+            key = self._i2_build_documentary_key(
+                guia, processor, signature, discriminator=discriminator)
+            existing = self.search([('documentary_key', '=', key)], limit=1)
+            if existing and existing.state in ('draft', 'pending'):
+                return existing
+            if existing and existing.state == 'applied':
+                raise UserError(_(
+                    'Esta rebaja ya se aplicó con esta misma selección de '
+                    'etiquetas (%s). No se duplica: consulta el documento '
+                    'aplicado o cambia la selección para una operación '
+                    'nueva.') % existing.name)
         vals = {'guia_processing_id': guia.id, 'documentary_key': key}
         if processor:
             vals['processor_id'] = processor.id
