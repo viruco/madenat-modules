@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.24.0
-**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (3) — alta **AD-108** (FASE 8: M1 menú `menu_madenat_sv_imputation` sin `name` corregido —restitucion del `<menuitem>` antes del `<record>`; `logistics` 18.0.1.29.0—; M2 prueba de longitudes a `product.product`; método de verificacion en dos pasos + camino `-u` desde un dump anterior al WIP de costing; DR demostrada; 0 fallas nuevas atribuibles; configuracion no sembrada en el alta limpia; D1 `costing` caracterizado). Version 04 12.23.0 → 12.24.0. Sin push ni despliegue. | 2026-10-15 (2) — alta **AD-107** (cierre de D18: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decision; reparacion K2 de la instalacion desde cero de intake —movimiento puro verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` → no instala `logistics` desde cero; hallazgo de despliegue: no mezclar «BD con WIP» y «codigo sin WIP» por la vista de `costing`). Version 04 12.22.0 → 12.23.0. Sin push ni despliegue. | 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Versión documental:** 12.25.0
+**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (4) — alta **AD-109** (FASE 10 — corrección del registro de etiquetas en la rebaja SV: defectos F1/F2/F3 del diagnostico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015`; **S2** filtro efectivo de «Trabajo en preparacion» y «Continuar» operativo en estados terminales (`logistics`: campo O2M→M2M calculado no almacenado + `search` explicita; `logistics` 18.0.1.29.0 → 18.0.1.30.0, commit `19611d0`); **S3** bloqueo del guardado/aplicacion sin ninguna etiqueta incluida, sin borrado silencioso (`logistics` 18.0.1.30.0 → 18.0.1.31.0, commit `e2d6b64`); **S1** firma/clave documental con las etiquetas seleccionadas + reglas de estado terminal (applied ⇒ mensaje claro sin duplicar; reversed/cancelled ⇒ documento nuevo con clave distinta y trazable) y **retrocompatibilidad total** de la receta base de la clave (`logistics` 18.0.1.31.0 → 18.0.1.32.0); pruebas T1–T7 del informe en suites nuevas (WF/SG/DK) primero en rojo; regresion por nombre con el mismo conjunto del baseline; sin migraciones, sin cambios en `IMP04823`/`IMP02220`, sin push ni despliegue). Version 04 12.24.0 → 12.25.0. Sin push ni despliegue. | 2026-10-15 (3) — alta **AD-108** (FASE 8: M1 menú `menu_madenat_sv_imputation` sin `name` corregido —restitucion del `<menuitem>` antes del `<record>`; `logistics` 18.0.1.29.0—; M2 prueba de longitudes a `product.product`; método de verificacion en dos pasos + camino `-u` desde un dump anterior al WIP de costing; DR demostrada; 0 fallas nuevas atribuibles; configuracion no sembrada en el alta limpia; D1 `costing` caracterizado). Version 04 12.23.0 → 12.24.0. Sin push ni despliegue. | 2026-10-15 (2) — alta **AD-107** (cierre de D18: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decision; reparacion K2 de la instalacion desde cero de intake —movimiento puro verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` → no instala `logistics` desde cero; hallazgo de despliegue: no mezclar «BD con WIP» y «codigo sin WIP» por la vista de `costing`). Version 04 12.22.0 → 12.23.0. Sin push ni despliegue. | 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3143,4 +3143,104 @@ anterior; `VIEW-01/04` en navegador sigue pendiente de ejecución manual.
 
 <!-- actualizado: 2026-10-15 (3) — alta AD-108 (FASE 8): **M1 cerrado** (menú `menu_madenat_sv_imputation` sin `name`: se restituye su `<menuitem>` antes del `<record>`; `logistics` 18.0.1.29.0; barrido de la clase: 0 casos) y **M2 cerrado** (prueba de longitudes a `product.product`, solo test); **método de verificación** en dos pasos (instalabilidad sin tests / suites con `--test-tags`) + **camino `-u` desde un dump anterior al WIP de costing**; **DR demostrada** (`-i` de los 4 módulos con exit 0); fallas A∩B = 4 del baseline y **0 nuevas atribuibles a M1/M2**; hallazgo de configuración no sembrada en el alta limpia (precisión decimal 2 vs 4, 1 producto vs 20, parámetros `madenat.*`); **D1 `costing` caracterizado** con recomendación (coherente por separado HEAD/WIP; rompe la mezcla); P2-2 sigue fuera. Versión 04 12.23.0 → 12.24.0. Commits locales de la FASE 8 (solo local); sin push ni despliegue. -->
 
+
+
+### AD-109 (2026-10-15) — Registro de etiquetas en la rebaja SV: defectos F1/F2/F3 y correcciones S2/S3/S1 (FASE 10)
+
+**Origen.** Diagnóstico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/INFORME_DIAGNOSTICO.md` sobre
+`SV00000000841` (guía 1198): **el registro de etiquetas SÍ funciona en el caso sano** (E7), pero en el caso
+reportado no quedaba ninguna etiqueta registrada por **tres defectos encadenados preexistentes** (ninguno
+introducido por las FASES 5–8 ni por el WIP; las cinco funciones implicadas son idénticas en HEAD y en el WIP y
+existen desde `2888745`, 2026-10-02, I2/AD-91):
+
+| # | Defecto | Causa | Efecto operativo |
+|---|---|---|---|
+| **F1** | `_i2_signature()` no incluía la **selección de etiquetas** (sólo los repartos SV) y `_i2_get_or_create()` buscaba por `documentary_key` **sin filtrar estado** (`documentary_key` es UNIQUE) | `models/madenat_sv_imputation.py` (`_i2_build_documentary_key`, `_i2_get_or_create`) y `wizards/madenat_sv_imputation_wizard.py` (`_i2_signature`) | Para la guía 1198 cualquier «Guardar» **sin reparto** colisionaba con el documento **APLICADO `IMP02220`** ⇒ `UserError: … ya no admite preparación (estado applied)` ⇒ **las etiquetas nunca se registraban** |
+| **F2** | `sv_assignment_work_imputation_ids` declaraba `domain=[('state','in',('draft','pending'))]` sobre un `One2many`: **el ORM no aplica el `domain` declarativo al leer**; el contador usaba ese mismo campo | `models/…` (`sv_assignment_work_imputation_ids`, `_compute_sv_assignment_work`, `action_continue_preparation`) | La sección «Trabajo en preparación» **listaba y contaba** documentos ANULADOS/APLICADOS/REVERSADOS (la anulada `IMP04823`) y ofrecía «Continuar», que fallaba con `UserError` |
+| **F3** | «Guardar borrador» (`_i2_build_imputation`) **no exigía ≥1 etiqueta incluida** (sólo `action_apply` lo hacía); `_i2_included_lines()` = `selected or sv_alloc_ids` y las candidatas se abrían con `selected=False` | `wizards/…` (`_i2_build_imputation`, borrado de líneas no incluidas) | Guardar sin seleccionar (o desmarcar todo) dejaba o **borraba líneas en silencio**: es el estado exacto de `IMP04823` (0 líneas + vínculo al SV) |
+
+
+**1. S2 — «Trabajo en preparación» con filtro EFECTIVO (defecto F2).** (`logistics` 18.0.1.29.0 → **18.0.1.30.0**;
+commit `19611d0`)
+`stock.lot.sv_assignment_work_imputation_ids` pasa de `One2many` con `domain` declarativo a **`Many2many`
+calculado y NO almacenado** (`store=False`; relación explícita
+`stock_lot_madenat_sv_imputation_work_rel`, sin tabla) que resuelve la lista con **búsqueda explícita en el
+servidor** (`work_sv_lot_id` + `state in ('draft','pending')`), en línea con `sv_assignment_imputation_ids`;
+conserva nombre y semántica y **no** usa `sudo` (respeta compañía y reglas de registro). El contador
+(`sv_assignment_work_count`) y `sv_assignment_work_m3` se calculan con la MISMA búsqueda.
+`action_continue_preparation` sobre un estado **terminal** ya no lanza un error técnico: devuelve una
+**notificación operativa** (`display_notification`) con la ruta disponible («Volver a borrador» para un anulado;
+reversa para un aplicado/reversado). El botón «Continuar» sigue disponible sólo para `draft`/`pending`.
+**Pruebas:** `tests/test_sv_rebaja_work_filter.py` (**WF-01..07**, T2/T3), primero en rojo (WF-02..06 fallaban);
+se actualizan SAVE-13 y FLOW-02 (esperaban `UserError` al continuar un aplicado/anulado) a la ruta operativa.
+
+**2. S3 — Bloqueo del documento de rebaja VACÍO (defecto F3).** (`logistics` 18.0.1.30.0 → **18.0.1.31.0**;
+commit `e2d6b64`)
+`_i2_build_imputation` comprueba `_i2_included_lines()` **antes** de crear o actualizar el documento; sin ninguna
+etiqueta incluida lanza un `UserError` de negocio en español («No se puede guardar un documento de rebaja sin
+etiquetas. Selecciona al menos una etiqueta…»). Al rechazar **antes** de escribir, un guardado inválido no crea
+documento (ni vacío) y **no pierde** las líneas ya registradas. Se conservan los flujos legítimos (anular,
+«Volver a borrador», reabrir), el caso SAVE-05 (destino SV previsto con cantidad 0) y el techo duro.
+**Evidencia de independencia:** `action_cancel` / `action_reopen_to_draft` / `action_reverse` **no** pasan por
+`_i2_build_imputation` (se invocan desde el documento, no desde el asistente) ⇒ ninguno depende de «guardar
+vacío». **Pruebas:** `tests/test_sv_rebaja_empty_guard.py` (**SG-01..06**, T6), primero en rojo (SG-01/SG-03).
+Las pruebas evitan el **savepoint que Odoo interpone en `assertRaises`** (revierte los efectos del bloque y
+
+**3. S1 — Clave documental con las etiquetas seleccionadas (defecto F1 · causa raíz).**
+(`logistics` 18.0.1.31.0 → **18.0.1.32.0**)
+* `_i2_signature()` incluye ahora las **etiquetas incluidas** (`_i2_included_lines()` ordenadas por
+  `processed_lot_id`) con su volumen nominal —prefijo `L<id>:<nominal>`— **además** de los repartos SV. La firma
+  sólo se usa para construir claves NUEVAS.
+* `_i2_get_or_create()` devuelve **sólo** documentos en estado de trabajo (draft/pending). Ante coincidencia de
+  clave con un documento terminal: **`applied`** ⇒ mensaje claro («Esta rebaja ya se aplicó con esta misma
+  selección…») y **sin duplicar**; **`reversed`/`cancelled`** ⇒ documento NUEVO con clave **distinta y trazable**
+  (`discriminator` = id del documento que ocupaba la clave, encadenado si hiciera falta), de forma determinista.
+* **Una sola implementación central**: la receta de la clave y las reglas de reutilización viven en el modelo; el
+  asistente sólo aporta la firma.
+
+**4. Retrocompatibilidad (regla dura).** La receta **base** de la clave —`I2|guia|processor|signature` ⇒
+`IMP-<guia>-<sha256[:16]>`— **no cambia**: con `discriminator=''` (valor por defecto) el resultado es
+**byte a byte** el histórico. Por eso la **clave de `IMP02220`** (`IMP-1198-E95825AAF94E58AD`) y la de cualquier
+documento aplicado existente siguen siendo idénticas y verificables; **no se migra ni se reescribe ninguna clave
+ni firma histórica**. La firma de los documentos ya aplicados (p. ej. `IMP02220`) se mantiene intacta: la
+verificación de firmas de documentos históricos funciona exactamente igual. `documentary_key` sigue siendo
+UNIQUE; la clave nueva nunca colisiona porque el discriminador produce un material distinto.
+
+**5. Riesgo residual específico.** La reutilización de claves se apoya en `documentary_key` UNIQUE + el
+condicional `_check_single_work_per_guia` + el bloqueo de recursos de `action_apply`; la comprobación de
+concurrencia real (dos transacciones simultáneas) sigue cubierta por la suite `test_sv_rebaja_save_lock_tx`
+existente (no modificada).
+
+**6. Resultado de la validación (LOCAL).** TDD por corrección (rojo → verde). Regresión del módulo `logistics`
+completa tras cada commit, **comparada por NOMBRE** con el baseline vigente (FASE 5, HEAD `677294b`):
+**4 failed + 0 error** en las tres corridas (el mismo subconjunto logístico de las 10 fallas del baseline:
+`TestProcessorLocations.test_09_auditoria_envio_normal` y `TestProcessorShipmentAD89.test_t1/t5/t6`) ⇒
+**0 fallas nuevas**. Sin `-u all`, sin cambios en datos reales, sin tocar `IMP04823`/`IMP02220` (hashes de fila,
+líneas y repartos idénticos antes/después).
+
+**7. Pendientes (fuera del alcance de esta fase).** (a) **Decisión sobre `IMP04823`** (anulada, vacía, con
+vínculo al SV): es un dato de origen, no un defecto del flujo; opciones: conservarla como historia anulada o
+reabrir/rehacer la rebaja de la guía 1198 con una selección válida (ninguna de las dos se ejecutó). (b) **Cómo
+resolver la rebaja de `SV00000000841` en datos reales** con el nuevo flujo (preparar la selección correcta).
+(c) **Verificación en el remoto** del comportamiento corregido (esta fase es local). (d) **Trigger de bitácora**:
+`IMP04823` no tiene evento de creación ni de anulación en `madenat_audit_log` (su anulación no pasó por el
+código) — se mantiene como hallazgo abierto. (e) **D1 (`costing`)** sigue fuera, según AD-108.
+(f) `VIEW-01/04` (navegador) sigue pendiente de confirmación manual.
+
+**Evidencia:** expediente `FASE10_REBAJA_SV_ETIQUETAS_20261015/` (`pre/`: respaldo del árbol, dump de
+`madenat_test`, SHA256 de los 11 archivos del WIP, conteos y hashes de `IMP02220`/`IMP04823`; `logs/`:
+`*_tdd_before.log`, `*_after.log`, `s*_logistics_full.log`, listas de fallas por nombre; `evidence/`: scripts de
+comprobación; `INFORME_FASE10.md`). Fuera del alcance: `costing` y el menú de `reports` (P2-2/D1).
+
+<!-- actualizado: 2026-10-15 (4) — alta AD-109 (FASE 10): corrección del registro de etiquetas en la rebaja SV.
+**F1/F2/F3** documentados con archivo:línea y reproducción; **S2** = campo de trabajo calculado no almacenado con
+búsqueda explícita + contador coherente + «Continuar» operativo (18.0.1.30.0, `19611d0`); **S3** = `UserError` de
+negocio sin ninguna etiqueta incluida, comprobado ANTES de escribir (18.0.1.31.0, `e2d6b64`); **S1** = firma con
+etiquetas seleccionadas + reglas de estado terminal (applied ⇒ mensaje claro; reversed/cancelled ⇒ documento nuevo
+con clave distinta y trazable) con **retrocompatibilidad byte a byte** de la receta base (18.0.1.32.0); pruebas
+nuevas WF-01..07, SG-01..06 y DK-01..08 primero en rojo; regresión por nombre con el mismo subconjunto del
+baseline (0 nuevas); sin migraciones, sin cambios en `IMP04823`/`IMP02220`, sin push ni despliegue.
+Versión 04 12.24.0 → 12.25.0. -->
+
+enmascararía la creación/borrado real) usando un `try/except` propio.
 

@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.31.0
+**Versión documental:** 1.32.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -1964,4 +1964,74 @@ del chatter se filtraban como listas o2m editables (`mail.message`/`mail.followe
 (`<chatter/>`) en `sv_imputation` y `processor_return_link`; pruebas VIEW 5/5; regresión sin fallas nuevas.
 Módulo `madenat_lumber_logistics` 18.0.1.25.0 → 18.0.1.26.0. Versión documental 1.30.0 → 1.31.0.
 Sin commit/push/despliegue. -->
+
+
+---
+
+## 19.34 — FASE 10: corrección del registro de etiquetas en la rebaja SV (AD-109)
+
+**Contexto.** Diagnóstico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/` sobre `SV00000000841`
+(guía 1198): el registro **sí** funcionaba en el caso sano (E7), pero en el caso reportado no quedaba ninguna
+etiqueta por **tres defectos encadenados preexistentes** (**F1**, **F2**, **F3**; detalle en `04` **AD-109**).
+Esta sección fija el comportamiento **VIGENTE** tras la corrección (S2 → S3 → S1).
+
+**19.34.1 Cuál es el «trabajo en preparación» de un SV (S2 · F2).** `stock.lot.sv_assignment_work_imputation_ids`
+es un **calculado NO almacenado** (`Many2many`, `store=False`) que se resuelve con **búsqueda explícita en el
+servidor**: `work_sv_lot_id = SV` **y** `state in ('draft','pending')`. El `domain` declarativo de un `One2many`
+**no lo aplica el ORM al leer**; por eso antes la sección listaba y contaba documentos **anulados/aplicados/
+reversados**. `sv_assignment_work_count` y `sv_assignment_work_m3` usan la misma búsqueda. Un documento
+**terminal** nunca aparece ni cuenta como trabajo. El **vínculo de trazabilidad** `work_sv_lot_id` **no se
+limpia** al anular/aplicar (el documento sigue siendo localizable por `action_open_sv_rebajas`).
+
+**19.34.2 «Continuar» (S2).** `action_continue_preparation` sólo abre el asistente para `draft`/`pending`. Sobre un
+estado **terminal** devuelve una **notificación operativa** (`display_notification`) —no un error técnico—: para
+`cancelled`, la ruta «Volver a borrador» (§19.27); para `applied`/`reversed`, la ruta de reversa.
+
+**19.34.3 No hay documentos de rebaja VACÍOS (S3 · F3).** `_i2_build_imputation` exige **al menos una etiqueta
+incluida** (`selected` **o** con reparto) y lo comprueba **antes** de crear/actualizar: sin etiquetas incluidas
+lanza un `UserError` de negocio en español y **no** crea documento ni borra líneas ya registradas. El borrado de
+líneas no incluidas (§19.24.2) sigue existiendo pero **nunca** puede vaciar el documento. Los flujos de
+anulación, reapertura (RESET) y reversa **no** pasan por este camino y no dependen de «guardar vacío». El caso
+«destino previsto con cantidad 0» (§19.24.3, SAVE-05) sigue permitido.
+
+**19.34.4 Identidad documental: la firma incluye la SELECCIÓN (S1 · F1).** La **firma** de una preparación
+(`_i2_signature`) incluye las **etiquetas incluidas** con su volumen nominal (`L<id>:<nominal>`, ordenadas por
+`processed_lot_id`) **además** de los repartos SV. La clave documental sigue siendo
+`IMP-<guia>-<sha256('I2|guia|processor|signature')[:16]>` —**receta base sin cambios**— de modo que las claves y
+firmas **históricas** (p. ej. `IMP02220` = `IMP-1198-E95825AAF94E58AD`) se conservan **idénticas y verificables**
+y **no** hay migración. `documentary_key` sigue siendo UNIQUE.
+
+**19.34.5 Reglas de reutilización por estado (S1).** `_i2_get_or_create`:
+
+| Estado del documento con la misma clave | Comportamiento |
+|---|---|
+| `draft` / `pending` | **se reutiliza** (idempotencia; §19.24.4) |
+| `applied` | **NO se reutiliza**: mensaje claro «ya se aplicó con esta misma selección» (sin duplicar) |
+| `reversed` / `cancelled` | **NO se adopta**: se crea un documento **NUEVO** con clave **distinta y trazable** (discriminador determinista = id del documento que ocupaba la clave, encadenado si hiciera falta) |
+
+La regla se apoya además en `_i2_find_work_for_guia` + `_check_single_work_per_guia` (una sola imputación de
+trabajo por guía). **Una sola implementación central**: la receta de la clave y la reutilización viven en el
+modelo; el asistente sólo aporta la firma.
+
+**19.34.6 Pruebas.** `tests/test_sv_rebaja_work_filter.py` (**WF-01..07**: T2/T3), `tests/test_sv_rebaja_empty_guard.py`
+(**SG-01..06**: T6) y `tests/test_sv_rebaja_documentary_key.py` (**DK-01..08**: T1/T4/T5 + E7, incluido el perfil
+`IMP04823` y la clave histórica con `signature=''`); en las tres, **primero en rojo** contra el código anterior.
+Se actualizan SAVE-13 y FLOW-02 (esperaban `UserError` al continuar un aplicado/anulado) a la ruta operativa. Las
+pruebas de S3 evitan el **savepoint que Odoo interpone en `assertRaises`** (revertiría los efectos y ocultaría la
+creación/borrado) con un `try/except` propio.
+
+**19.34.7 Versiones y evidencia.** `madenat_lumber_logistics` **18.0.1.29.0 → 18.0.1.30.0** (S2, `19611d0`) →
+**18.0.1.31.0** (S3, `e2d6b64`) → **18.0.1.32.0** (S1, `7ac1fcb`). Regresión del módulo `logistics` comparada
+**por nombre** con el baseline (FASE 5, HEAD `677294b`): **4 failed + 0 error** en las tres corridas (mismo
+subconjunto logístico de las 10 fallas del baseline) ⇒ **0 fallas nuevas**. `IMP04823`/`IMP02220` intactos.
+Expediente `FASE10_REBAJA_SV_ETIQUETAS_20261015/`. Sin push ni despliegue.
+
+<!-- actualizado: 2026-10-15 (1) — §19.34 FASE 10 (AD-109): **S2** («Trabajo en preparación» calculado no
+almacenado con búsqueda explícita por estado; contador coherente; «Continuar» operativo en estados terminales),
+**S3** (`UserError` de negocio sin ninguna etiqueta incluida, comprobado antes de escribir ⇒ sin documentos vacíos
+ni borrado silencioso) y **S1** (firma/clave con las etiquetas seleccionadas; `_i2_get_or_create` sólo reutiliza
+trabajo; `applied` ⇒ mensaje claro sin duplicar; `reversed`/`cancelled` ⇒ documento nuevo con clave distinta y
+trazable; receta base de la clave **sin cambios** ⇒ firmas y claves históricas idénticas). Pruebas WF-01..07,
+SG-01..06 y DK-01..08 primero en rojo. `madenat_lumber_logistics` 18.0.1.29.0 → 18.0.1.30.0 → 18.0.1.31.0 →
+18.0.1.32.0. Versión documental 1.31.0 → 1.32.0. Sin commit/push/despliegue. -->
 
