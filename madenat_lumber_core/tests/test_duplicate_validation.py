@@ -131,18 +131,30 @@ class TestDuplicateValidation(TransactionCase):
     # ──────────────────────────────────────────────────────────────────
     # TEST 2: Bloquea con guía existente en madenat.guia.processing
     # ──────────────────────────────────────────────────────────────────
-    def test_02_duplicate_in_guia_processing(self):
-        """Subir un PDF cuya guía ya existe en madenat.guia.processing → UserError."""
+    def test_02_homonym_guia_vs_reception(self):
+        """Coincidencia de número con una GUÍA PROCESADA vista desde la ruta de
+        Recepción = HOMÓNIMO entre flujos → NO bloquea (CANON/12 §5.2: el número
+        no es clave global). La identidad natural propia (mismo modelo SÍ
+        bloquea).
+
+        NOTA (2026-10-07): expectativa derivada de la matriz documental (el
+        parche previo bloqueaba cross-model; se corrige a la política simétrica).
+        """
         gp = self._create_guia_processing('88002')
 
-        _logger.info("🔍 TEST 2: verificando duplicado en madenat.guia.processing para guía 88002")
+        _logger.info("🔍 TEST 2: homónimo guía↔recepción no bloquea (88002)")
+        # Alcance por defecto = modelo propio (recepción) → no bloquea.
+        self.parser._check_guide_duplicate('88002', partner_id=gp.partner_id.id)
+        # Identidad natural de la guía (mismo modelo) → sí bloquea.
         with self.assertRaises(UserError) as ctx:
-            self.parser._check_guide_duplicate('88002', partner_id=gp.partner_id.id)
+            self.parser._check_guide_duplicate(
+                '88002', partner_id=gp.partner_id.id,
+                exclude_model='madenat.guia.processing')
 
         error_msg = str(ctx.exception)
         self.assertIn('88002', error_msg)
         self.assertIn('Guías Procesadas', error_msg)
-        _logger.info("✅ TEST 2 PASADO: UserError lanzado para duplicado en guia.processing")
+        _logger.info("✅ TEST 2 PASADO: homónimo no bloquea; mismo modelo sí")
 
     # ──────────────────────────────────────────────────────────────────
     # TEST 3: Guía nueva válida NO bloquea
