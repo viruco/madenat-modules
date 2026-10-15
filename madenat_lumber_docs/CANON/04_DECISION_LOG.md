@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.22.0
-**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Versión documental:** 12.23.0
+**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (2) — alta **AD-107** (cierre de D18: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decision; reparacion K2 de la instalacion desde cero de intake —movimiento puro verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` → no instala `logistics` desde cero; hallazgo de despliegue: no mezclar «BD con WIP» y «codigo sin WIP» por la vista de `costing`). Version 04 12.22.0 → 12.23.0. Sin push ni despliegue. | 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3017,3 +3017,57 @@ formaliza la decisión. El pendiente **D7** de la FASE 1 queda **DECIDIDO = CONS
 
 <!-- actualizado: 2026-10-15 (1) — alta AD-106 (supuesto de una sola compañía: sin `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura declarada; y conservación de los 3 usuarios inactivos `@madenat.test`, D7 = CONSERVAR). Versión 04 12.21.0 → 12.22.0. Registrado en el commit local ① de la FASE 5 (commits ordenados, solo local); sin push ni despliegue. -->
 
+### AD-107 (2026-10-15) — Cierre de D18, P2-2 fuera y hallazgos de instalación desde cero (FASE 7)
+
+**1. D18 — CERRADO.** Los 5 archivos que el triaje de FASE 1 marcó `desconocido` se incorporan al historial
+**sin modificar su contenido** (verificado por SHA256), cada uno en el commit de su módulo:
+
+- `madenat_lumber_core/tests/test_duplicate_validation.py` (D18-1) → `bfda876` `fix(core)`.
+- `madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py` y `..._views.xml`
+  (D18-2/D18-3) + `tests/test_rebaja_contenedor.py` (D18-4) + `tests/test_service_return_imputation_guard.py`
+  (D18-5) → `56405cb` `feat(logistics)`, con **18.0.1.27.0 → 18.0.1.28.0** y CHANGELOG.
+
+**Atribución documental:** CANON/18 §7.3/§14.1/§14.5 (asistente de rebaja por nave), expediente
+`AUDIT_B01_20261004`, CANON/12 §5.2/§6.2 (el número de guía no es discriminador) y los guards AUD-ETQ-02/06 ya
+commiteados en `ded5e89`. La FASE 6 demostró que la exclusión previa dejaba el historial **no desplegable**
+(`madenat_lumber_logistics` no cargaba: `No matching record found for external id
+'model_lumber_shipment_rebaja_wizard_line'`). Incorporados los archivos, **el CSV de ACL carga sin error**.
+
+**2. P2-2 — FUERA (decisión).** `madenat_lumber_reports/views/lumber_reports_menu.xml` (inactiva el menú vacío
+«📈 Reportes MADENAT») **no se commitea ni se despliega**: su origen no está demostrado («P2-2» solo aparece en
+el comentario del propio cambio) y el módulo depende de `madenat_lumber_costing` (D1 bloqueado).
+**Reabrir** solo con decisión expresa de Mauricio.
+
+**3. Reparación de instalación desde cero (K2) — APLICADA.** `madenat_lumber_intake/views/intake_console_views.xml`
+definía la acción `action_madenat_lumber_intake_new` **después** de usarla (uso en la línea 20; definición en
+la 1116) ⇒ `ValueError: External ID not found …` al instalar. Se corrige con un **movimiento puro** del bloque
+(ids, nombres y contenido intactos; +12/−12). **Verificado:** instalación desde cero de `madenat_lumber_intake`
+en base limpia **exit 0**. Barrido de referencias adelantadas en todos los módulos instalables: era la **única**.
+
+**4. HALLAZGO ABIERTO Y BLOQUEANTE (requiere decisión).** `madenat_lumber_logistics` **no instala desde cero**:
+`views/madenat_sv_imputation_views.xml:215` contiene `<record id="menu_madenat_sv_imputation" model="ir.ui.menu">
+<field name="active" eval="False"/></record>` **sin `name`**, y el `<menuitem>` que lo definía fue **retirado**
+en `ded5e89` (④) pese a que su propio comentario afirma que se conserva «para instalaciones nuevas» ⇒ al crear
+el registro desde cero: `NotNullViolation: null value in column "name" of relation "ir_ui_menu"` ⇒
+`Failed to load registry`. En una base **existente** el `-u` no falla (el menú ya existe y no se reescribe el
+nombre), por lo que el defecto quedó **latente**. **No se corrigió** (queda fuera de K2): opciones mínimas
+`(a)` restituir el `<menuitem>` antes del `<record>` —lo que el comentario dice— o `(b)` añadir
+`<field name="name">Imputaciones documentales SV</field>` al `<record>`.
+
+**5. HALLAZGO (despliegue) — no mezclar «BD con WIP» y «código sin WIP».** Al actualizar (`-u`) sobre una base
+cuyo estado proviene de la era-WIP, Odoo re-valida **todas** las vistas cargadas y falla en
+`madenat_lumber_costing/views/lumber_cost_distribution_views.xml` con
+`action_apply_c2 no es una acción válida en lumber.cost.distribution`: esa acción existe **solo** en el WIP de
+`costing` (**D1, no commiteado**). ⇒ Antes de desplegar hay que comprobar en el destino que ninguna vista
+almacenada referencia métodos ausentes del código a entregar (y resolver D1 o el WIP correspondiente).
+
+**6. Defecto de prueba pendiente (K7).** `test_length_uom_and_subproducto` pasa un id de **`product.template`**
+a un campo `Many2one('product.product')` (`mixin_lumber_ingest.py:415`) ⇒ `MissingError` en base limpia.
+Es un defecto **de la prueba** (no introducido por la FASE 5/7); recomendación: buscar en `product.product`.
+
+**7. Regla operativa vigente.** El despliegue al TEST remoto se hace por **`-u`** de los módulos indicados
+(no `-u all`). La capacidad de **instalación desde cero / DR** queda **pendiente** del hallazgo 4.
+
+**Evidencia:** expedientes `FASE6_HEAD_CHECK_20261015/` y `FASE7_CIERRE_D18_20261015/`.
+
+<!-- actualizado: 2026-10-15 (2) — alta AD-107 (cierre de D18 en 2 commits: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decisión; reparación K2 de la instalación desde cero de intake —movimiento puro del bloque de la acción, verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: el `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` impide instalar `logistics` desde cero (`NotNullViolation`), introducido por `ded5e89` al retirar su `<menuitem>`; hallazgo de despliegue: no mezclar «BD con WIP» y «código sin WIP» por la vista de `costing` (`action_apply_c2`); defecto de prueba K7 pendiente). Versión 04 12.22.0 → 12.23.0. Commits locales de la FASE 7 (solo local); sin push ni despliegue. -->
