@@ -131,7 +131,13 @@ class MadenatLumberIntakeReclassifyWizard(models.TransientModel):
         self.env['madenat.audit.log'].sudo().create(self._audit_vals(src, old_tipo))
 
         src.with_context(
-            madenat_reclassify_allow_verified_unlink=True
+            madenat_reclassify_allow_verified_unlink=True,
+            # H1 (FASE 4): la eliminación exige MOTIVO explícito por cualquier
+            # vía. La reclasificación (AD-73) aporta su propio texto de negocio
+            # (no es un «borrado directo»).
+            madenat_guia_delete_reason=_(
+                'Reclasificación de tipo de ingreso (AD-73): %(old)s → %(new)s'
+            ) % {'old': old_tipo, 'new': self.tipo_ingreso_correcto},
         ).unlink()
 
         new_wizard = self.env['madenat.lumber.intake.wizard'].create({

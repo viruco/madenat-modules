@@ -698,9 +698,21 @@ class MadenatLumberIntakeConsole(models.Model):
     # ------------------------------------------------------------------
     # Resumen y evidencia documental
     # ------------------------------------------------------------------
-    @api.depends('source_model', 'source_res_id',
-                 'volume_detail_line_ids.volume_m3',
-                 'volume_detail_line_ids')
+    # AUD-ETQ-08 (2026-10-12): dependencia CORREGIDA. La versión anterior
+    # dependía de `volume_detail_line_ids.volume_m3`, donde
+    # `volume_detail_line_ids` es un proxy Many2many VIRTUAL (compute+inverse,
+    # store=False) NO buscable. Odoo no puede determinar qué filas de la
+    # consola recalcular cuando se modifica `madenat.lumber.volume.detail.line`
+    # y advertía el aviso «should be searchable» para CADA campo calculado por
+    # este método. La consola es una vista SQL de SOLO LECTURA (`_auto=False`)
+    # cuyos campos no se almacenan y se recomputan por lectura; los datos reales
+    # viven en el registro origen y su detalle documental (relación real
+    # `madenat.lumber.volume.detail.line.guia_id`). Por eso la dependencia
+    # canónica —idéntica a la del resto de los computes de esta consola, incluido
+    # `_compute_declared_piece_line_totals`, que también lee `src.volume_detail_m3`
+    # y no advierte— son los campos de IDENTIDAD del origen. No se implementa un
+    # `search` ficticio, no se elimina semántica y no se usa recomputación global.
+    @api.depends('source_model', 'source_res_id', 'ingestion_type')
     def _compute_review_metrics(self):
         for rec in self:
             src = rec._get_source_record()

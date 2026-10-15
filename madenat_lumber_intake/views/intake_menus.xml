@@ -42,4 +42,20 @@
     <record id="madenat_lumber_core.menu_guia_processing_list" model="ir.ui.menu">
         <field name="groups_id" eval="[(6, 0, [ref('madenat_lumber_core.group_madenat_jefatura_operaciones')])]"/>
     </record>
+
+    <!--
+        P2-4: Inactivar la entrada temporal/duplicada "Ingreso de Madera New"
+        (madenat_ingestion_engine.menu_madenat_ingestion_root, id 505).
+
+        La puerta de entrada oficial, validada por UAT y base del manual, es
+        "Ingreso de Madera" (id 500) -> madenat.lumber.intake.console.
+
+        Se inactiva SOLO el metadato de menú por override XML desde Intake
+        (que ya depende de madenat_ingestion_engine). No se elimina el modelo,
+        las vistas ni la acción de madenat.ingestion.document, y no se
+        modifica ni desinstala el módulo madenat_ingestion_engine.
+    -->
+    <record id="madenat_ingestion_engine.menu_madenat_ingestion_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 </odoo>

@@ -32,6 +32,8 @@
                            invisible="not blockers"/>
                     <field name="purge_blockers" nolabel="1" readonly="1"
                            invisible="not purge_blockers"/>
+                    <field name="attribution_notes" nolabel="1" readonly="1"
+                           invisible="not attribution_notes"/>
                 </group>
 
                 <group string="Modo de ciclo de vida">

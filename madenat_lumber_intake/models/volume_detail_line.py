@@ -313,6 +313,31 @@ class MadenatLumberVolumeDetailLine(models.Model):
                 values.pop('guia_id', None)
         return super().onchange(values, field_names, fields_spec)
 
+    # ── Recomputación real de la consola (AUD-ETQ-08, 2026-10-12) ─────────
+    # La consola `madenat.lumber.intake.console` es una VISTA SQL (`_auto=False`)
+    # cuyos campos no se almacenan y se recomputan por lectura. No existe una
+    # relación ORM directa consola↔línea de detalle, por lo que la caché de la
+    # consola NO se invalidaba sola al cambiar una línea: una segunda lectura en
+    # el MISMO entorno devolvía valores obsoletos (defecto confirmado). Para que
+    # la actualización sea real en el mismo entorno, cada create/write/unlink de
+    # esta línea invalida de forma DIRIGIDA los campos calculados de la consola
+    # que dependen del detalle (un solo modelo, sólo los campos afectados).
+    # No es recomputación global, no hay `search` ficticio y no se cambia `store`.
+    CONSOLE_METRIC_COMPUTES = (
+        '_compute_review_metrics',
+        '_compute_declared_piece_line_totals',
+        '_compute_official_volume_effective',
+    )
+
+    def _invalidate_console_metrics(self):
+        """Invalida (dirigidamente) las métricas de la consola que dependen del
+        detalle documental, para que se recomputen en el MISMO entorno."""
+        Console = self.env['madenat.lumber.intake.console']
+        fnames = [name for name, field in Console._fields.items()
+                  if field.compute in self.CONSOLE_METRIC_COMPUTES]
+        if fnames:
+            Console.invalidate_model(fnames)
+
     @api.model_create_multi
     def create(self, vals_list):
         """Crea líneas del detalle documental.
@@ -348,7 +373,9 @@ class MadenatLumberVolumeDetailLine(models.Model):
                 # El diálogo es SIEMPRE captura manual: nunca pdf/excel/header.
                 vals['origin'] = 'manual'
             sanitized.append(vals)
-        return super().create(sanitized)
+        records = super().create(sanitized)
+        records._invalidate_console_metrics()
+        return records
 
     def write(self, vals):
         """Marca el ajuste manual del operador sobre las piezas declaradas.
@@ -379,7 +406,24 @@ class MadenatLumberVolumeDetailLine(models.Model):
             incoming = vals.get('pieces') or 0
             if any((line.pieces or 0) != incoming for line in self):
                 vals = dict(vals, manually_adjusted=True)
-        return super().write(vals)
+        result = super().write(vals)
+        self._invalidate_console_metrics()
+        return result
+
+    def unlink(self):
+        """Elimina líneas del detalle documental.
+
+        Además de la baja ORM, invalida de forma dirigida las métricas de la
+        consola que dependen del detalle, para que una lectura posterior en el
+        MISMO entorno refleje la eliminación (AUD-ETQ-08).
+        """
+        Console = self.env['madenat.lumber.intake.console']
+        fnames = [name for name, field in Console._fields.items()
+                  if field.compute in self.CONSOLE_METRIC_COMPUTES]
+        result = super().unlink()
+        if fnames:
+            Console.invalidate_model(fnames)
+        return result
 
     @api.depends('guia_id', 'guia_id.volume_detail_line_ids', 'source_line_no')
     def _compute_line_no(self):

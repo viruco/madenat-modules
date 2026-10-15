@@ -24,6 +24,8 @@ from . import test_intake_console_sv_actions
 from . import test_volume_ui_hierarchy
 from . import test_volume_operations_screen
 from . import test_guide_lifecycle
+from . import test_guide_lifecycle_delete_attribution
+from . import test_guide_lifecycle_phase2
 from . import test_reopen_oc_reextraction
 from . import test_intake_volume_detail_pieces
 from . import test_intake_apply_declared_header_line
@@ -32,5 +34,13 @@ from . import test_intake_volume_declared_grid_ux
 from . import test_intake_volume_declared_grid_onchange
 from . import test_intake_volume_declared_grid_rpc
 from . import test_acl_sod_intake_and_costs
+from . import test_guia_delete_acl
+from . import test_search_console_oc_fecha_modality
 # Confirmación de retorno de servicio no bloqueante (2026-10-07).
 from . import test_service_return_confirmation
+# AUD-ETQ-08 (2026-10-12): dependencias coherentes de los computes de la consola.
+from . import test_intake_console_compute_depends
+# P2 (AUD-ETQ-08): recomputación REAL de las métricas de la consola.
+from . import test_intake_metrics_recompute
+# G1 (FASE 3): guardas de eliminación de guías (D-G1..D-G4), escenarios a–m.
+from . import test_guia_delete_guards

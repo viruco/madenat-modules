@@ -25,6 +25,9 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 GROUP_JEFATURA = 'madenat_lumber_core.group_madenat_jefatura_operaciones'
+# H2 (FASE 4): la guarda de eliminación de guía ya NO exige el grupo técnico
+# `stock.group_stock_manager`; el rol lo rige `_guia_delete_group_ok()` en el
+# modelo (`GUIA_DELETE_GROUPS`).
 PURGE_CONFIRMATION = 'PURGAR'
 
 # Modelos que referencian registros por (res_model, res_id) o (model, res_id)
@@ -138,6 +141,89 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
         help='Lotes vinculados a la guía sin historia material (sin '
              'operaciones SV, sin movimientos y sin quants).',
     )
+    # Notas de atribución NO bloqueantes: documentos con número coincidente que
+    # se atribuyen positivamente a OTRO documento (p. ej. el ingreso de una
+    # recepción homónima). Se muestran separados de los bloqueadores reales
+    # para no inducir a error («no bloquea por compartir número»).
+    attribution_notes = fields.Text(
+        string='Atribución documental (no bloqueante)',
+        compute='_compute_lifecycle_diagnostics',
+        readonly=True,
+        help='Coincidencias de número descartadas por atribución a otro '
+             'documento. No representan dependencia de esta guía.',
+    )
+
+
+    # ── Atribución por RELACIONES (no por número textual) ─────────────────
+    def _picking_positively_foreign(self, picking, own_lot_ids):
+        """Evidencia de que el albarán pertenece a OTRO documento.
+
+        Es la clave para no bloquear por una mera coincidencia de número: un
+        albarán que la guía NO documenta (p. ej. el ingreso de una recepción
+        homónima) se identifica por (1) su vínculo fuerte con una
+        `lumber.reception` o (2) portar únicamente lotes de otro documento
+        (`stock.lot.reception_id`) y ninguno de los lotes propios de la guía.
+        Sin esta evidencia NO se atribuye ni en un sentido ni en otro.
+        """
+        fields = picking._fields
+        if 'reception_id' in fields and picking.reception_id:
+            return True
+        line_lots = picking.move_line_ids.mapped('lot_id')
+        if line_lots and not (set(line_lots.ids) & set(own_lot_ids)):
+            if ('reception_id' in line_lots._fields
+                    and line_lots.mapped('reception_id')):
+                return True
+        return False
+
+    def _classify_guia_pickings(self, guia, own_lot_ids):
+        """Clasifica los albaranes candidatos en propios / ambiguos / ajenos.
+
+        Candidato = comparte el número por `origin` o porta un vínculo fuerte
+        (FK `guia_processing_id` o un lote propio de la guía).
+
+        Devuelve `(own, ambiguous, foreign, direct_link)`:
+
+        * `own`        → dependencia material REAL (FK o lote propio). Bloquea.
+        * `ambiguous`  → coincide el número, sin vínculo verificable ni
+                         evidencia de pertenencia a otro documento. Bloquea con
+                         mensaje específico (requiere verificación/política).
+        * `foreign`    → coincide el número pero se atribuye a otro documento.
+                         NO bloquea. Se informa por separado.
+        * `direct_link`→ subconjunto de `own` vinculado por el FK fuerte.
+        """
+        Picking = self.env['stock.picking']
+        empty = Picking.browse()
+        fields = Picking._fields
+        direct_link = (
+            Picking.search([('guia_processing_id', '=', guia.id)])
+            if 'guia_processing_id' in fields else empty)
+        lot_link = (
+            Picking.search([('move_ids.move_line_ids.lot_id', 'in',
+                             list(own_lot_ids))])
+            if own_lot_ids else empty)
+        own = direct_link | lot_link
+        origin = (
+            Picking.search([('origin', '=', guia.name)]) if guia.name
+            else empty)
+        ambiguous = empty
+        foreign = empty
+        for picking in (origin - own):
+            if self._picking_positively_foreign(picking, own_lot_ids):
+                foreign |= picking
+            else:
+                ambiguous |= picking
+        return own, ambiguous, foreign, direct_link
+
+    def _attribution_notes(self, diag):
+        """Notas NO bloqueantes (coincidencias descartadas por atribución)."""
+        notes = []
+        foreign = diag.get('foreign_pickings')
+        if foreign:
+            notes.append(
+                '- %s albarán(es) con número coincidente NO vinculados a la '
+                'guía (pertenecen a otro documento): no cuentan como '
+                'dependencia.' % len(foreign))
+        return notes
 
 
     # ── Diagnóstico único de bloqueadores ─────────────────────────────────
@@ -157,18 +243,25 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             ('volume_source_guia_id', '=', guia.id),
             ('guia_processing_id', '=', guia.id),
         ])
-        pickings = env['stock.picking'].search([
-            '|',
-            ('origin', '=', guia_name),
-            ('move_ids.move_line_ids.lot_id', 'in', lots.ids),
-        ])
-        moves = env['stock.move'].search([
-            '|',
-            ('origin', '=', guia_name),
-            ('move_line_ids.lot_id', 'in', lots.ids),
-        ])
-        move_lines = env['stock.move.line'].search([('lot_id', 'in', lots.ids)])
-        quants = env['stock.quant'].search([('lot_id', 'in', lots.ids)])
+        own_lot_ids = lots.ids
+        # Atribución por RELACIONES y cadena documental (no por número textual):
+        #   · propios   → FK `guia_processing_id` o lotes propios de la guía.
+        #   · ajenos    → coinciden en el número pero pertenecen a otro
+        #                 documento (p. ej. una recepción homónima).
+        #   · ambiguos  → coinciden en el número sin vínculo verificable.
+        (own_pickings, ambiguous_pickings, foreign_pickings,
+         direct_link_pickings) = self._classify_guia_pickings(guia, own_lot_ids)
+        # Sólo propios y ambiguos son dependencias que bloquean; los ajenos se
+        # informan aparte y NO bloquean.
+        pickings = own_pickings | ambiguous_pickings
+        moves = (env['stock.move'].search(
+            [('move_line_ids.lot_id', 'in', own_lot_ids)])
+            if own_lot_ids else env['stock.move'])
+        move_lines = (env['stock.move.line'].search(
+            [('lot_id', 'in', own_lot_ids)]) if own_lot_ids
+            else env['stock.move.line'])
+        quants = (env['stock.quant'].search([('lot_id', 'in', own_lot_ids)])
+                  if own_lot_ids else env['stock.quant'])
         nonzero_quants = quants.filtered(
             lambda q: (q.quantity or 0.0) != 0.0)
 
@@ -267,6 +360,10 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             'lots': lots,
             'technical_lots': technical_lots,
             'pickings': pickings,
+            'own_pickings': own_pickings,
+            'ambiguous_pickings': ambiguous_pickings,
+            'foreign_pickings': foreign_pickings,
+            'direct_link_pickings': direct_link_pickings,
             'moves': moves,
             'move_lines': move_lines,
             'quants': quants,
@@ -387,9 +484,12 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             self.mode == 'A' and self._lifecycle_dev_environment_ok())
         labels = (
             ('lots', 'lote(s) vinculados a la guía (incluye lote SV técnico)'),
-            ('pickings', 'albarán(es) con origin de la guía, en cualquier estado'),
-            ('moves', 'movimiento(s) de stock con origin de la guía'),
-            ('move_lines', 'línea(s) de movimiento con la etiqueta SV'),
+            ('pickings',
+             'albarán(es) vinculados a la guía (vínculo directo o lote '
+             'propio) o con atribución textual ambigua pendiente'),
+            ('moves', 'movimiento(s) de stock con lote propio de la guía'),
+            ('move_lines',
+             'línea(s) de movimiento con lote propio de la guía'),
             ('quants', 'registro(s) de stock.quant (incluye saldos en cero)'),
             ('operations', 'operación(es) SV en cualquier estado'),
             ('cost_lines', 'línea(s) de costo'),
@@ -409,6 +509,22 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             count = len(diag[key])
             if count:
                 messages.append('- %s %s' % (count, label))
+        # Desglose específico de los albaranes: vínculo directo (FK) vs
+        # coincidencia textual ambigua. No duplica la cuenta: describe el
+        # mismo conjunto de `diag['pickings']`.
+        direct = diag.get('direct_link_pickings')
+        if direct:
+            messages.append(
+                '  · %s por vínculo directo (guia_processing_id): %s'
+                % (len(direct),
+                   ', '.join('%s [%s]' % (p.name, p.state) for p in direct)))
+        ambiguous = diag.get('ambiguous_pickings')
+        if ambiguous:
+            messages.append(
+                '  · %s con coincidencia textual de número sin vínculo '
+                'verificable (atribución ambigua, requiere verificación): %s'
+                % (len(ambiguous),
+                   ', '.join(p.name for p in ambiguous[:10])))
         if not relax_documental:
             for model_name, count in sorted(diag['generic_refs'].items()):
                 messages.append(
@@ -465,6 +581,35 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             messages.append('- período financiero cerrado')
         return messages
 
+    def _delete_access_blocker(self):
+        """Pre-chequeo de UX: ¿podrá el usuario ejecutar el `unlink()`?
+
+        Comprueba las DOS condiciones que el servidor exigirá al borrar una
+        guía elegible:
+
+        1. permiso efectivo `unlink` (`ir.model.access`) sobre
+           `madenat.guia.processing`;
+        2. **rol autorizado (H2, FASE 4)**: «Jefatura de Operaciones» o
+           administrador del sistema (`_guia_delete_group_ok`), NO el grupo
+           técnico de Inventario.
+
+        Devuelve la lista de requisitos faltantes (vacía si el usuario podrá
+        ejecutar la eliminación). **No sustituye** la seguridad del servidor:
+        solo informa ANTES de ofrecer una ejecución que fallará; la ACL y las
+        guardas del modelo siguen aplicándose en el momento real.
+        """
+        self.ensure_one()
+        missing = []
+        if not self.env['madenat.guia.processing'].has_access('unlink'):
+            missing.append(_(
+                'permiso de eliminación (unlink) sobre la Guía '
+                '(rol «Jefatura de Operaciones»)'))
+        # H2 (FASE 4): el rol lo rige la POLÍTICA de guías (jefatura/sistema),
+        # no el grupo técnico `stock.group_stock_manager`.
+        if not self.env['madenat.guia.processing']._guia_delete_group_ok():
+            missing.append(_('rol «Jefatura de Operaciones»'))
+        return missing
+
     def _lifecycle_blockers(self, diag, mode):
         """Bloqueadores aplicables al modo solicitado (textos únicos)."""
         if mode == 'B':
@@ -478,6 +623,10 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             messages.extend(self._trace_blockers(diag))
         if mode in ('C', 'D'):
             messages.extend(self._purge_blockers(diag))
+        # Permisos de borrado (A intenta eliminar; C elimina guía + lote).
+        if mode in ('A', 'C'):
+            for missing in self._delete_access_blocker():
+                messages.append('- permiso: falta %s' % missing)
         seen, unique = set(), []
         for message in messages:
             if message not in seen:
@@ -499,6 +648,8 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
             wizard.has_volume_lot = bool(diag['lots'])
             wizard.technical_lots_text = ', '.join(
                 diag['technical_lots'].mapped('name')) or False
+            notes = wizard._attribution_notes(diag)
+            wizard.attribution_notes = '\n'.join(notes) if notes else False
             wizard.requirements_ok = wizard._requirements_ok(diag)
 
     # ── Precondiciones por modo ───────────────────────────────────────────
@@ -598,17 +749,66 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
         return self._run_controlled_purge(diag)
 
     # ── Modo A ────────────────────────────────────────────────────────────
+    def _acquire_delete_lock(self, guia_id):
+        """Serializa (best-effort) las eliminaciones Modo A concurrentes.
+
+        Toma un *advisory transaction lock* de PostgreSQL sobre la guía para
+        que dos eliminaciones Modo A de la MISMA guía no se intercalen entre la
+        validación y el borrado. No es `sudo()`, ni `SQL DELETE`, ni un bypass
+        de permisos: es un candado de transacción (se libera solo al terminar
+        la transacción). Si el backend no fuese PostgreSQL, se degrada sin
+        fallar (la revalidación inmediata y el savepoint siguen aplicando).
+        """
+        try:
+            self.env.cr.execute(
+                'SELECT pg_advisory_xact_lock(%s, %s)',
+                (0x4D414445, int(guia_id)))
+        except Exception:  # pragma: no cover - defensivo
+            pass
+
     def _run_delete_definitive(self, diag):
-        """Elimina definitivamente la guía sin ninguna traza registrada."""
+        """Elimina definitivamente la guía sin ninguna traza registrada.
+
+        Antes de borrar REVALIDA, con el MISMO criterio que el diagnóstico
+        (`_lifecycle_diagnosis` + `_lifecycle_blockers`), que no apareció
+        ninguna dependencia material/financiera propia ni una atribución
+        ambigua. La revalidación y el `unlink()` ocurren en la MISMA
+        transacción: si algo falla, el rollback es completo (nunca queda una
+        eliminación parcial). El `unlink()` conserva intactas todas las
+        protecciones del core y las demás rutas.
+        """
         self.ensure_one()
         guia = diag['guia']
+        self._acquire_delete_lock(guia.id)
+
+        # Revalidación inmediata (ventana mínima validación → borrado): se
+        # relee el estado desde la base y se recalcula el diagnóstico con datos
+        # frescos, no con el `diag` previo.
+        guia.invalidate_recordset()
+        fresh = self._lifecycle_diagnosis()
+        if not self.acknowledge:
+            raise UserError(_(
+                'Debe confirmar explícitamente la eliminación definitiva '
+                '(Modo A).'))
+        blockers = self._lifecycle_blockers(fresh, 'A')
+        if blockers:
+            raise UserError(_(
+                'La guía %(name)s dejó de cumplir las precondiciones del '
+                'Modo A y NO se eliminó:\n%(blockers)s'
+            ) % {'name': guia.name or '', 'blockers': '\n'.join(blockers)})
+
         self._lifecycle_log(
             'guia_delete_permanent',
             _('Eliminación definitiva de la guía %s desde la Consola de '
               'Ingreso de Madera. Motivo: %s')
             % (guia.name, (self.reason or '').strip()),
-            guia, self._lifecycle_snapshot(diag, 'A'))
-        guia.unlink()
+            guia, self._lifecycle_snapshot(fresh, 'A'))
+        # G1 (FASE 3): se comparte la guarda central del core. Aquí ya se
+        # auditó con snapshot (`_lifecycle_log`), así que se marca como
+        # registrada y se pasa el motivo para no duplicar la bitácora.
+        guia.with_context(
+            madenat_guia_delete_logged=True,
+            madenat_guia_delete_reason=(self.reason or '').strip()).unlink()
         return self._console_reload_action()
 
 
@@ -656,7 +856,11 @@ class MadenatLumberIntakeGuideLifecycle(models.TransientModel):
               'Motivo: %s')
             % (guia.name, len(technical_lots), (self.reason or '').strip()),
             guia, snapshot)
-        guia.unlink()
+        # G1 (FASE 3): comparte la guarda central del core y evita duplicar la
+        # bitácora (ya registrada arriba con snapshot).
+        guia.with_context(
+            madenat_guia_delete_logged=True,
+            madenat_guia_delete_reason=(self.reason or '').strip()).unlink()
         return self._console_reload_action()
 
     # ── Modo D ────────────────────────────────────────────────────────────
