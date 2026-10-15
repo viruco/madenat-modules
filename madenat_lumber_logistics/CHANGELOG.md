@@ -4,6 +4,41 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.30.0] - 2026-10-15
+
+### Fixed
+- **S2 — «Trabajo en preparación»: filtro EFECTIVO por estado (defecto F2).** El campo
+  `stock.lot.sv_assignment_work_imputation_ids` declaraba
+  `domain="[('state','in',('draft','pending'))]"`, pero el ORM **no aplica** el `domain` de un
+  `One2many` al leer: la sección «Trabajo en preparación (no aplicado)» de la ficha del SV
+  **listaba y contaba** documentos ANULADOS/APLICADOS/REVERSADOS (caso `SV00000000841`: la
+  anulada `IMP04823`) y ofrecía «Continuar», que terminaba en `UserError`.
+  - El campo pasa a ser un `Many2many` **calculado y NO almacenado** (`store=False`; relación
+    explícita `stock_lot_madenat_sv_imputation_work_rel`, sin tabla) que resuelve la lista con
+    una **búsqueda explícita en el servidor** (`work_sv_lot_id` + `state in ('draft','pending')`),
+    en línea con `sv_assignment_imputation_ids`. Conserva nombre y semántica; sin `sudo`
+    (respeta compañía y reglas de registro).
+  - `sv_assignment_work_count` y `sv_assignment_work_m3` se calculan con la MISMA búsqueda
+    (antes `len(lot.sv_assignment_work_imputation_ids)`), de modo que el contador excluye los
+    estados terminales.
+  - `action_continue_preparation`: sobre un estado terminal ya **no** lanza un error técnico;
+    devuelve una **notificación operativa** (`display_notification`): para un anulado, la ruta
+    «Volver a borrador»; para un aplicado/reversado, la ruta de reversa. El botón «Continuar»
+    sigue disponible sólo para `draft`/`pending`.
+
+### Changed
+- Se actualizan las aserciones previas que esperaban `UserError` al continuar un documento
+  aplicado/anulado (`test_sv_rebaja_persistencia`, SAVE-13 y FLOW-02), coherentes con la ruta
+  operativa aprobada.
+
+### Notes
+- Cero cambios en datos, en la firma/clave documental o en los documentos existentes
+  (`IMP04823`/`IMP02220` intactos). Sin migración. Nuevo `tests/test_sv_rebaja_work_filter.py`
+  (**WF-01..07**, T2/T3 del diagnóstico): 7/7 en verde.
+- Regresión del módulo `logistics` completa: **4 failed de 513** (el MISMO subconjunto de 10
+  fallas del baseline; 0 fallas nuevas por nombre). Expediente
+  `FASE10_REBAJA_SV_ETIQUETAS_20261015/`.
+
 ## [18.0.1.29.0] - 2026-10-15
 
 ### Fixed

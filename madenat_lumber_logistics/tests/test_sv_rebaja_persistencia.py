@@ -393,8 +393,10 @@ class TestSvRebajaPersistencia(TransactionCase):
         imp = wiz.imputation_id
         imp.with_user(self.user_oper).action_apply()
         self.assertEqual(imp.state, 'applied')
-        with self.assertRaises(UserError):
-            imp.action_continue_preparation()
+        # S2 (FASE 10): sobre un APLICADO «Continuar» devuelve un mensaje
+        # operativo (no un error técnico) y NO abre el asistente del aplicado.
+        notice = imp.action_continue_preparation()
+        self.assertEqual(notice.get('tag'), 'display_notification')
         wiz2 = self._wizard(guia, sv)          # no reutiliza el aplicado
         self.assertFalse(wiz2.imputation_id)
         imp.invalidate_recordset()
@@ -470,8 +472,12 @@ class TestSvRebajaPersistencia(TransactionCase):
         self.assertEqual(imp.state, 'cancelled')
         self.assertAlmostEqual(
             self.Imputation._i2_lot_available_for_m3(e), 10.0, 3)  # liberado
-        with self.assertRaises(UserError):
-            imp.action_continue_preparation()
+        # S2 (FASE 10): sobre un ANULADO «Continuar» devuelve la ruta
+        # operativa («Volver a borrador»), sin error técnico.
+        notice = imp.action_continue_preparation()
+        self.assertEqual(notice.get('tag'), 'display_notification')
+        self.assertIn(
+            'Volver a borrador', (notice.get('params') or {}).get('message'))
 
     # ══════════════════════════════════════════════════════════════════════
     # FLOW-03: aplicar → revertir → reasignar → guardar → reabrir → aplicar

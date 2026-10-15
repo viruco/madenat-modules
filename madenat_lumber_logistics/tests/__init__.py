@@ -76,3 +76,6 @@ from . import test_sv_rebaja_save_lock_direct
 from . import test_sv_rebaja_save_lock_tx
 # HOTFIX OWL (2026-10-12): chatter canónico `<chatter/>` (VIEW-01..05).
 from . import test_hotfix_owl_chatter
+# S2 (FASE 10, 2026-10-15): «Trabajo en preparación» con filtro EFECTIVO por
+# estado (F2) y «Continuar» operativo sobre estados terminales (WF-01..07).
+from . import test_sv_rebaja_work_filter

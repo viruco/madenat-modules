@@ -905,12 +905,39 @@ class MadenatSvImputation(models.Model):
         guardado, de modo que al continuar se reconstruyan las mismas etiquetas,
         cantidades y destinos. No aplica nada ni crea un documento nuevo: el
         asistente reutiliza la imputación de trabajo de la guía.
+
+        S2 (FASE 10): sobre un estado TERMINAL (aplicado/reversado/anulado) NO
+        se lanza un error técnico: se devuelve una **notificación operativa** con
+        la ruta disponible («Volver a borrador» para un anulado; reversa para un
+        aplicado/reversado). El botón «Continuar» de la sección del SV ya no
+        ofrece estados terminales (el campo filtra por estado en el servidor);
+        esto cubre la llamada directa y los enlaces heredados.
         """
         self.ensure_one()
         if self.state not in ('draft', 'pending'):
-            raise UserError(_(
-                'Sólo un trabajo no aplicado (borrador/pendiente) puede '
-                'continuarse; un aplicado se corrige por reversa (SAVE).'))
+            if self.state == 'cancelled':
+                message = _(
+                    'El documento %(name)s está ANULADO y no es «Trabajo en '
+                    'preparación». Usa «Volver a borrador» en el documento '
+                    '(indicando el motivo) para continuar, si su capacidad '
+                    'sigue disponible.'
+                ) % {'name': self.name}
+            else:
+                message = _(
+                    'El documento %(name)s está %(state)s: ya no es «Trabajo en '
+                    'preparación». Se corrige por reversa desde el documento '
+                    '(no se continúa un documento ya aplicado).'
+                ) % {'name': self.name, 'state': self.state}
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Trabajo en preparación'),
+                    'message': message,
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
         action = self.env['ir.actions.act_window']._for_xml_id(
             'madenat_lumber_logistics.action_madenat_sv_imputation_wizard')
         # UI: se usa el mismo formulario amplio (target del propio action) para
@@ -1447,10 +1474,19 @@ class StockLot(models.Model):
     # SAVE (2026-10-11): TRABAJO NO APLICADO relacionado con este SV (borradores y
     # pendientes). Permite localizar y continuar lo preparado aunque todavía no
     # tenga reparto positivo. Se mantiene SEPARADO de los agregados aplicados.
-    sv_assignment_work_imputation_ids = fields.One2many(
-        'madenat.sv.imputation', 'work_sv_lot_id',
-        domain="[('state', 'in', ('draft', 'pending'))]",
-        string='Trabajo en preparación')
+    # S2 (FASE 10, 2026-10-15): antes era un ``One2many`` con
+    # ``domain=[('state','in',('draft','pending'))]``, pero el ORM **no aplica**
+    # el ``domain`` declarativo de un O2M al leer (defecto F2): la sección del
+    # SV listaba y contaba documentos anulados/aplicados. Ahora es un campo
+    # calculado NO almacenado que resuelve la lista con una **búsqueda explícita
+    # en el servidor** (mismo patrón que ``sv_assignment_imputation_ids``). No
+    # crea tabla alguna (``store=False``) y conserva nombre y semántica.
+    sv_assignment_work_imputation_ids = fields.Many2many(
+        'madenat.sv.imputation',
+        relation='stock_lot_madenat_sv_imputation_work_rel',
+        column1='lot_id', column2='imputation_id',
+        string='Trabajo en preparación',
+        compute='_compute_sv_assignment_work', store=False)
     sv_assignment_work_count = fields.Integer(
         string='N° trabajo en preparación',
         compute='_compute_sv_assignment_work')
@@ -1554,16 +1590,28 @@ class StockLot(models.Model):
                 'imputation_id.processor_id')[:1]
 
     @api.depends('sv_assignment_sv_line_ids.imputed_volume_m3',
-                 'sv_assignment_sv_line_ids.imputation_id.state',
-                 'sv_assignment_work_imputation_ids.state')
+                 'sv_assignment_sv_line_ids.imputation_id.state')
     def _compute_sv_assignment_work(self):
         """Trabajo NO aplicado del SV (borradores/pendientes), separado de lo
-        aplicado. No se suma a «Rebajado documental»."""
+        aplicado. No se suma a «Rebajado documental».
+
+        S2 (FASE 10): la lista y el contador se resuelven con una **búsqueda
+        explícita en el servidor** por ``work_sv_lot_id`` y estado de trabajo.
+        El ``domain`` declarativo de un O2M no se evaluaba al leer (defecto F2),
+        por lo que un documento anulado/aplicado seguía listándose y contando
+        como «trabajo en preparación». Sin ``sudo``: respeta compañía y reglas
+        de registro del usuario (mismo régimen que la proyección en vivo).
+        """
+        Imputation = self.env['madenat.sv.imputation']
         for lot in self:
+            work = Imputation.search([
+                ('work_sv_lot_id', '=', lot.id),
+                ('state', 'in', ('draft', 'pending')),
+            ])
+            lot.sv_assignment_work_imputation_ids = work
             work_lines = lot.sv_assignment_sv_line_ids.filtered(
                 lambda l: l.imputation_id.state in ('draft', 'pending'))
-            lot.sv_assignment_work_count = len(
-                lot.sv_assignment_work_imputation_ids)
+            lot.sv_assignment_work_count = len(work)
             lot.sv_assignment_work_m3 = sum(
                 work_lines.mapped('imputed_volume_m3'))
 
