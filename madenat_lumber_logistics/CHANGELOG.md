@@ -4,6 +4,31 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.28.0] - 2026-10-15
+
+### Added
+- **Rebaja por nave — asistente `lumber.shipment.rebaja.wizard` (cierre de D18).** Se incorpora al historial el
+  asistente documentado en `CANON/18` **§7.3** («Rebajar por nave (masiva)»: selección de nave/viaje, lista de
+  contenedores consolidados pendientes, idempotencia por (contenedor, lote), resumen de volúmenes
+  EXPORT/NOMINAL y saldos SV) y **§14.1** («rebaja masiva con **savepoint por contenedor** e informe de
+  éxitos/fallos», y «rechazo en servidor» con `_rebaja_require_group`). Incluye el submodelo
+  `lumber.shipment.rebaja.wizard.line`, su vista y las pruebas de contenedor/rolleo/zarpe (`§14.5`).
+
+### Fixed
+- **`action_reverse()` exige motivo de reversa (AUD-ETQ-02 / CANON/19 §19).** Se adaptan las pruebas
+  `test_service_return_imputation_guard` (casos 06 y 09), que reversaban sin motivo, al guard ya entregado en
+  la versión 18.0.1.27.0.
+
+### Notes
+- **Motivo del commit.** El asistente quedó **fuera del historial** en la FASE 5 (triaje `desconocido` = D18).
+  Al commitearse su ACL (`security/ir.model.access.csv`, commit `ded5e89`) sin el modelo, el módulo
+  **no cargaba**: FASE 6/V1 reprodujo `Failed to load registry` con
+  `No matching record found for external id 'model_lumber_shipment_rebaja_wizard_line'`.
+- **Evidencia:** `CANON/18` §7.3/§14.1/§14.5; expediente `AUDIT_B01_20261004` (que ya analizaba
+  `_classify` en este estado del árbol); re-verificación de instalación desde cero de la FASE 7.
+- El contenido de los 4 archivos incorporados es **idéntico** al del WIP previo (verificado por SHA256).
+- Sin cambios en modelos persistentes, datos, ACL ni `ir.rule`; no requiere scripts de migración.
+
 ## [18.0.1.27.0] - 2026-10-12
 
 ### Fixed

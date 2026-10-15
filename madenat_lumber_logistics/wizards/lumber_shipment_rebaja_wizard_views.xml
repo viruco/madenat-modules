@@ -4,28 +4,69 @@
         <field name="name">lumber.shipment.rebaja.wizard.form</field>
         <field name="model">lumber.shipment.rebaja.wizard</field>
         <field name="arch" type="xml">
-            <form string="Rebajar por nave">
+            <form string="Rebajar por Motonave">
                 <group>
                     <group string="Alcance">
                         <field name="vessel_id" options="{'no_create': True}"/>
-                        <field name="voyage_id" options="{'no_create': True}"/>
+                        <field name="voyage_available" invisible="1"/>
+                        <field name="voyage_id" options="{'no_create': True}"
+                               invisible="not voyage_available"/>
                     </group>
-                    <group string="Pendientes de rebaja">
+                    <group string="Resumen (sobre la selección)">
                         <field name="container_count"/>
+                        <field name="excluded_count"/>
+                        <field name="selected_count"/>
+                        <field name="total_lots"/>
                         <field name="total_nominal_m3"/>
+                        <field name="total_export_m3"/>
+                        <field name="total_physical_m3"/>
+                        <field name="total_rebaja_m3"/>
+                        <field name="total_sv_m3"/>
+                        <field name="total_rebajado_m3"/>
                     </group>
                 </group>
-                <field name="available_container_ids" invisible="1"/>
-                <label for="container_ids"
-                       string="Contenedores consolidados (Cargado/Sellado) del alcance"/>
-                <field name="container_ids"
-                       nolabel="1"
-                       context="{'list_view_ref': 'madenat_lumber_logistics.view_lumber_container_list'}"/>
+                <div class="alert alert-warning" role="alert">
+                    La rebaja genera una SALIDA FÍSICA IRREVERSIBLE de stock.
+                    Cada contenedor se procesa con savepoint independiente: puede
+                    existir un resultado PARCIAL (revise el detalle por contenedor).
+                </div>
+                <notebook>
+                    <page string="Rebajables">
+                        <field name="available_container_ids" invisible="1"/>
+                        <field name="excluded_container_ids" invisible="1"/>
+                        <label for="container_ids"
+                               string="Seleccione contenedores del alcance de la motonave (elegibles)"/>
+                        <field name="container_ids" nolabel="1"
+                               context="{'list_view_ref': 'madenat_lumber_logistics.view_lumber_container_list'}"/>
+                    </page>
+                    <page string="Clasificación (rebajables y excluidos)">
+                        <field name="line_ids" readonly="1">
+                            <list decoration-success="eligible"
+                                  decoration-muted="not eligible">
+                                <field name="eligible"/>
+                                <field name="container_id"/>
+                                <field name="shipment_id"/>
+                                <field name="booking"/>
+                                <field name="container_state"/>
+                                <field name="patio_names"/>
+                                <field name="lot_count"/>
+                                <field name="nominal_m3"/>
+                                <field name="export_m3"/>
+                                <field name="physical_m3"/>
+                                <field name="rebaja_m3"/>
+                                <field name="sv_m3"/>
+                                <field name="already_rebajado_m3"/>
+                                <field name="exclusion_reason"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
                 <field name="result_message" readonly="1"/>
                 <footer>
                     <button name="action_rebajar"
                             string="Rebajar seleccionados"
-                            type="object" class="btn-primary"/>
+                            type="object" class="btn-primary"
+                            confirm="¿Confirmar la REBAJA FÍSICA IRREVERSIBLE de los contenedores seleccionados? Se creará una salida de stock por contenedor."/>
                     <button string="Cancelar" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>
