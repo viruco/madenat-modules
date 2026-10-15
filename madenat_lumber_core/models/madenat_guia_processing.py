@@ -3324,10 +3324,118 @@ class MadenatGuiaProcessing(models.Model):
             pass
         return None
 
+    def _check_guide_identity_duplicate(self, vals):
+        """Reutiliza el validador compartido al fijar la identidad documental.
+
+        Identidad natural: ``name`` + ``partner_id`` (la guía no tiene
+        ``company_id``). Reglas (ver matriz de alineación documental):
+
+        - AJUSTE A (identidad incompleta): si el proveedor aún no se conoce, la
+          captura se permite y NO se declara duplicado; se revalidará al
+          completarse. No fusiona ni sobrescribe otro documento.
+        - Duplicado confirmado (mismo modelo, mismo ``name`` y mismo
+          ``partner_id`` conocido) → BLOQUEA con el mensaje de C1. Se ejecuta
+          antes de ``super().write()`` (sin cabecera parcial; atomicidad).
+        - AJUSTE C (homónimo): coincidencia de número con identidad distinta
+          (otro proveedor u otro modelo/flujo) → NO bloquea; se registra un
+          aviso no bloqueante en el chatter (``mail.thread``, mecanismo existente).
+        - Excluye al PROPIO registro por modelo+id (no es duplicado de sí mismo).
+        - Escrituras por lote: valida cada registro por separado.
+
+        Sólo se ejecuta si la escritura toca la identidad (``name`` o
+        ``partner_id``).
+        """
+        if not vals or ('name' not in vals and 'partner_id' not in vals):
+            return
+        parser = self.env['madenat.reception.parser']
+        seen = set()
+        for rec in self:
+            name = vals.get('name', rec.name)
+            if not name or name == _('New'):
+                continue
+            partner_id = vals.get('partner_id', rec.partner_id.id) or None
+            # Sin cambio de identidad en ESTA escritura → sin revalidar ni
+            # reavisar (evita avisos repetidos en guardados, relecturas y
+            # reintentos con la misma identidad).
+            if (name == rec.name
+                    and partner_id == (rec.partner_id.id or None)):
+                continue
+            # AJUSTE A: identidad incompleta (proveedor desconocido) → no se
+            # puede confirmar duplicado; se conserva la captura.
+            if not partner_id:
+                continue
+            key = (name, partner_id)
+            # Conflicto dentro del MISMO lote de escritura: varios registros no
+            # pueden quedar con la misma identidad completa a la vez.
+            if len(self) > 1 and key in seen:
+                raise UserError(_(
+                    "⛔ GUÍA DUPLICADA EN LA OPERACIÓN: el número %(guide)s "
+                    "quedaría repetido en varios registros del mismo lote "
+                    "(mismo proveedor)."
+                ) % {'guide': name})
+            seen.add(key)
+            # Duplicado confirmado (mismo modelo o cross-model mismo emisor): bloquea.
+            parser._check_guide_duplicate(
+                name,
+                partner_id=partner_id,
+                exclude_id=rec.id,
+                exclude_model='madenat.guia.processing',
+                cross_model=True,
+            )
+            # AJUSTE C: homónimo (mismo número, identidad NO confirmada). Sólo
+            # se llega aquí si NO hubo duplicado confirmado. Aviso no bloqueante.
+            hit = parser._check_guide_duplicate(
+                name,
+                partner_id=None,
+                exclude_id=rec.id,
+                exclude_model='madenat.guia.processing',
+                cross_model=True,
+                raise_on_match=False,
+            )
+            if hit:
+                rec._warn_guide_homonym(name, hit[0])
+
+    def _check_guide_identity_duplicate_on_create(self, vals_list):
+        """Valida duplicados al crear guías, incluidos conflictos dentro del lote.
+
+        Sólo aplica a ``create()`` con identidad COMPLETA: ``name`` real y
+        ``partner_id`` conocido. AJUSTE A: una identidad incompleta (proveedor
+        desconocido) NO bloquea; se conserva la captura. Detecta además
+        duplicados ENTRE registros del mismo lote, porque la cabecera aún no
+        existe en la base de datos.
+        """
+        parser = self.env['madenat.reception.parser']
+        seen = set()
+        for vals in vals_list:
+            name = vals.get('name')
+            if not name or name == _('New'):
+                continue
+            partner_id = vals.get('partner_id') or None
+            if not partner_id:
+                continue  # AJUSTE A: identidad incompleta → no bloquea
+            key = (name, partner_id)
+            if key in seen:
+                raise UserError(_(
+                    "⛔ GUÍA DUPLICADA EN LA OPERACIÓN: el número %(guide)s "
+                    "aparece más de una vez en la misma creación (mismo "
+                    "proveedor). Verifique el lote e intente nuevamente."
+                ) % {'guide': name})
+            seen.add(key)
+            parser._check_guide_duplicate(
+                name,
+                partner_id=partner_id,
+                exclude_model='madenat.guia.processing',
+                cross_model=True,
+            )
+
     def create(self, vals):
         # 🔐 GUARD (Fase C.1): crear una guía es operación de Ingreso/Recepción.
         # Cubre UI, RPC, importación y ORM; no confía sólo en la ACL.
         self._require_intake_operational_group()
+        # 🛡️ VALIDACIÓN DE DUPLICADO (identidad natural: name + partner_id).
+        # Se ejecuta ANTES de crear: no deja cabecera duplicada ni parcial.
+        vals_seq = [vals] if isinstance(vals, dict) else list(vals)
+        self._check_guide_identity_duplicate_on_create(vals_seq)
         return super().create(vals)
 
     def write(self, vals):
@@ -3344,6 +3452,9 @@ class MadenatGuiaProcessing(models.Model):
                 if guide_num:
                     vals = dict(vals)
                     vals['name'] = guide_num
+        # 🛡️ VALIDACIÓN DE DUPLICADO al fijar/completar la identidad documental.
+        # Se ejecuta ANTES de escribir; no deja cabecera parcial duplicada.
+        self._check_guide_identity_duplicate(vals)
         return super().write(vals)
 
     def _read_excel_sheets(self, file_path):
@@ -4899,6 +5010,14 @@ class MadenatGuiaProcessing(models.Model):
             'origin': f'Return of {consumption.name}',
             'location_id': consumption.location_dest_id.id,
             'location_dest_id': consumption.location_id.id,
+            # 🛡️ CORRECCIÓN PREVENTIVA (fuga de atribución): si esta reversa se
+            # ejecuta desde el asistente de ciclo de vida, su `env` arrastra el
+            # contexto `default_guia_processing_id`; Odoo inyecta ese valor por
+            # defecto en CUALQUIER `stock.picking.create` (ver
+            # `models.default_get`). Forzar `False` evita atribuir el retorno a
+            # la guía (vínculo fuerte espurio). El retorno NO pertenece a la
+            # guía: `guia_processing_id` es la llave del ingreso de producción.
+            'guia_processing_id': False,
         })
 
         for move in moves_done:
@@ -5154,6 +5273,9 @@ class MadenatGuiaProcessing(models.Model):
                 'origin': 'Return of %s' % picking.name,
                 'location_id': picking.location_dest_id.id,
                 'location_dest_id': picking.location_id.id,
+                # 🛡️ CORRECCIÓN PREVENTIVA: el retorno SV no es un ingreso de
+                # producción; forzar `False` evita la fuga por contexto.
+                'guia_processing_id': False,
             })
             for move in moves:
                 move_lines = lines.filtered(lambda l: l.move_id == move)
@@ -5197,6 +5319,32 @@ class MadenatGuiaProcessing(models.Model):
                 'revertido con el lote <b>%s</b> (%.3f m³). Retorno: <b>%s</b>.'
             ) % (picking.name, lot.name, required_qty, return_picking.name))
         return return_picking
+
+    def _picking_is_foreign_document(self, picking):
+        """True si el albarán pertenece positivamente a OTRO documento.
+
+        `action_force_cancel` seleccionaba los albaranes a revertir por
+        `origin == guia.name` (número textual), lo que puede incluir un
+        albarán de OTRA cabecera con el mismo número (p. ej. la recepción
+        homónima). Este predicado identifica esos documentos ajenos por
+        relaciones fuertes: su vínculo con una `lumber.reception`
+        (`reception_id`) o porque TODOS sus lotes pertenecen a otra recepción
+        y ninguno es lote propio de la guía. Sin evidencia, NO se marca ajeno.
+        """
+        self.ensure_one()
+        if 'reception_id' in picking._fields and picking.reception_id:
+            return True
+        own_lot_ids = set(self.env['stock.lot'].search([
+            '|',
+            ('volume_source_guia_id', '=', self.id),
+            ('guia_processing_id', '=', self.id),
+        ]).ids)
+        line_lots = picking.move_line_ids.mapped('lot_id')
+        if line_lots and not (set(line_lots.ids) & own_lot_ids):
+            if ('reception_id' in line_lots._fields
+                    and line_lots.mapped('reception_id')):
+                return True
+        return False
 
     def action_force_cancel(self):
         """
@@ -5243,6 +5391,20 @@ class MadenatGuiaProcessing(models.Model):
             pickings = self.env['stock.picking'].search([
                      ('origin', '=', rec.name),
             ])
+            # 🛡️ Atribución fuerte — NO revertir documentos AJENOS que solo
+            # coinciden por el número textual: un albarán de otra cabecera
+            # (p. ej. la recepción homónima con el mismo número) NO es de esta
+            # guía. Caso real: el receipt 436 (recepción 1369) fue revertido por
+            # Modo B por compartir el número '15183'; corregir sólo el FK del
+            # retorno no bastaba. Sin evidencia de pertenencia ajena, el albarán
+            # se conserva como candidato (no se pierde atribución válida).
+            ajenos = pickings.filtered(rec._picking_is_foreign_document)
+            if ajenos:
+                _logger.warning(
+                    "🛡️ Modo B: %d albarán(es) ajenos excluidos de la reversión "
+                    "(coincidencia de número con otra cabecera): %s",
+                    len(ajenos), ajenos.mapped('name'))
+            pickings = pickings - ajenos
             _logger.info(f"🔎 Albaranes para '{rec.name}': {len(pickings)} → {pickings.mapped('name')}")
 
             albaranes_hechos = pickings.filtered(lambda p: p.state == 'done')
@@ -5338,6 +5500,13 @@ class MadenatGuiaProcessing(models.Model):
                             'origin':           f'Return of {picking.name}',
                             'location_id':      picking.location_dest_id.id,   # WH/Stock → origen del retorno
                             'location_dest_id': picking.location_id.id,         # destino original del picking
+                            # 🛡️ CORRECCIÓN PREVENTIVA (fuga de atribución): el
+                            # retorno de cancelación NO es un ingreso de
+                            # producción de la guía. Forzar `False` evita que el
+                            # contexto `default_guia_processing_id` del asistente
+                            # (Modo B) lo marque con la guía y lo convierta en un
+                            # vínculo fuerte espurio (caso real: retorno 7813).
+                            'guia_processing_id': False,
                         })
                         _logger.info(
                             f"📦 Return picking creado: {return_picking.name} "
@@ -5994,6 +6163,104 @@ class MadenatGuiaProcessing(models.Model):
         self.ensure_one()
         self.excel_attachment_id = self._store_binary_as_attachment('excel_file', 'excel_filename', 'Excel Packing')
         return {'type': 'ir.actions.act_window_close'}
+    # ══════════════════════════════════════════════════════════════════════
+    # G1 (FASE 3) — GUARDAS DE ELIMINACIÓN DE GUÍA (política D-G1/D-G3)
+    # Guarda ÚNICA, compartida por la vía directa y por el asistente.
+    # ══════════════════════════════════════════════════════════════════════
+    _GUIA_DELETE_REASON_CTX = 'madenat_guia_delete_reason'
+    _GUIA_DELETE_LOGGED_CTX = 'madenat_guia_delete_logged'
+
+    # H2 (FASE 4) — grupos AUTORIZADOS a eliminar una guía (política de rol).
+    # Sustituye a la exigencia del grupo técnico `stock.group_stock_manager`.
+    GUIA_DELETE_GROUPS = (
+        'madenat_lumber_core.group_madenat_jefatura_operaciones',
+        'base.group_system',
+    )
+
+    def _guia_delete_group_ok(self):
+        """True si el usuario pertenece a un grupo autorizado a eliminar guías.
+
+        Única comprobación de rol (H2): la usan el modelo (`unlink`) y el
+        asistente (`_delete_access_blocker`). NO amplía permisos de stock ni
+        crea grupos nuevos.
+        """
+        user = self.env.user
+        return any(user.has_group(g) for g in self.GUIA_DELETE_GROUPS)
+
+    def _guia_deletion_blockers(self):
+        """Dependencias que IMPIDEN eliminar esta guía (política D-G1).
+
+        Devuelve la lista de motivos concretos (str). Lista vacía ⇒ la guía se
+        puede eliminar (y sus lotes vacíos se eliminan de forma controlada para
+        no dejar huérfanos). **No** lanza; el llamador decide.
+        """
+        self.ensure_one()
+        env = self.env
+        msgs = []
+        Lot = env['stock.lot'].sudo()
+        lots_vol = Lot.search([('volume_source_guia_id', '=', self.id)])
+        lots_link = Lot.search([('guia_processing_id', '=', self.id)])
+        lots = lots_vol | lots_link
+        if lots_vol:
+            msgs.append(_('- %s lote(s) SV de volumen cuyo origen es esta guía '
+                          '(volume_source_guia_id).') % len(lots_vol))
+        if lots:
+            n = env['stock.quant'].sudo().search_count(
+                [('lot_id', 'in', lots.ids)])
+            if n:
+                msgs.append(_('- %s registro(s) de stock.quant sobre lotes de '
+                              'la guía.') % n)
+            n = env['stock.move.line'].sudo().search_count(
+                [('lot_id', 'in', lots.ids)])
+            if n:
+                msgs.append(_('- %s línea(s) de movimiento sobre los lotes de '
+                              'la guía.') % n)
+            n = len(lots.mapped('cost_line_ids'))
+            if n:
+                msgs.append(_('- %s línea(s) de coste ligadas a los lotes de '
+                              'la guía.') % n)
+        n = env['stock.picking'].sudo().search_count(
+            [('guia_processing_id', '=', self.id)])
+        if n:
+            msgs.append(_('- %s albarán(es) vinculados a la guía.') % n)
+        if 'madenat.sv.operation' in env:
+            n = env['madenat.sv.operation'].sudo().search_count(
+                [('guia_processing_id', '=', self.id)])
+            if n:
+                msgs.append(_('- %s operación(es) SV sobre etiquetas de la '
+                              'guía.') % n)
+        if 'madenat.sv.imputation' in env:
+            n = env['madenat.sv.imputation'].sudo().search_count(
+                [('guia_processing_id', '=', self.id)])
+            if n:
+                msgs.append(_('- %s imputación(es) de rebaja SV de la guía.')
+                            % n)
+        if 'madenat.processor.return.link' in env:
+            n = env['madenat.processor.return.link'].sudo().search_count(
+                [('guia_processing_id', '=', self.id)])
+            if n:
+                msgs.append(_('- %s relación(es) de conciliación envío–retorno.')
+                            % n)
+        return msgs
+
+    def _guia_log_deletion(self, reason):
+        """Registra en `madenat.audit.log` la eliminación (D-G3), con motivo."""
+        self.ensure_one()
+        self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'guia_delete_permanent',
+            'guia_processing_id': self.id,
+            'batch_id': self.name or '',
+            'description': _(
+                'Eliminación de la guía %(name)s (estado %(state)s; %(lines)s '
+                'línea(s), %(lots)s lote(s) vinculados). Motivo: %(reason)s')
+            % {'name': self.name or '', 'state': self.state,
+               'lines': self.env['madenat.guia.processing.line'].sudo(
+                   ).search_count([('processing_id', '=', self.id)]),
+               'lots': self.env['stock.lot'].sudo().search_count(
+                   [('guia_processing_id', '=', self.id)]),
+               'reason': reason},
+        })
+
     def unlink(self):
         """
         🛡️ BLINDAJE DE CABECERA - madenat.guia.processing
@@ -6014,8 +6281,54 @@ class MadenatGuiaProcessing(models.Model):
                     "Solo se pueden eliminar guías en estado 'Borrador' o 'Cancelado'."
                 )
 
-        # 2. LIMPIEZA CASCADA — stock.moves huérfanos
+        # 1b. H2 (FASE 4) — ROL AUTORIZADO (jefatura/sistema). Una sola guarda
+        #     de grupo; sustituye la exigencia de stock.group_stock_manager.
+        if not self._guia_delete_group_ok():
+            raise UserError(_(
+                'No tiene permisos para eliminar guías procesadas. Se requiere '
+                'el rol «Jefatura de Operaciones» (o un administrador del '
+                'sistema).'))
+
+        # 2. G1 (FASE 3) — PRE-CHEQUEO DE DEPENDENCIAS (política D-G1/D-G2):
+        #    mensaje de NEGOCIO antes de que la base falle por clave foránea.
+        for rec in self:
+            blockers = rec._guia_deletion_blockers()
+            if blockers:
+                raise UserError(_(
+                    'No se puede eliminar la guía %(name)s porque tiene '
+                    'dependencias materiales o documentales:\n%(blockers)s\n\n'
+                    'Alternativas: ANULE la guía, CORRÍJALA (corrección '
+                    'documental) o REVIERTA/regularice la operación '
+                    'correspondiente; no la elimine.')
+                    % {'name': rec.name or '', 'blockers': '\n'.join(blockers)})
+
+        # 3. LIMPIEZA CASCADA — stock.moves huérfanos (exige stock_manager)
         self._cleanup_orphan_moves_guia()
+
+        # 4. G1 (FASE 3) — MOTIVO + BITÁCORA (D-G3) y borrado controlado de los
+        #    lotes vinculados (vacíos: ya se comprobó que no tienen quant,
+        #    movimientos, coste, SV ni imputaciones) para no dejar huérfanos.
+        # H1 (FASE 4): el MOTIVO es OBLIGATORIO en TODA vía. La eliminación
+        # nativa desde la interfaz (lista/formulario) NO aporta motivo: se
+        # BLOQUEA con un mensaje que guía al asistente (opción que menos cambia
+        # las vistas: sin tocar botones ni formularios).
+        reason = (self.env.context.get(self._GUIA_DELETE_REASON_CTX)
+                  or '').strip()
+        if not reason:
+            raise UserError(_(
+                'Para eliminar la guía %(name)s debe indicar un MOTIVO. Use la '
+                'acción de eliminación con motivo (Consola de Ingreso de Madera '
+                '→ Ciclo de vida de la guía → Modo A, con motivo) en lugar del '
+                'borrado directo.')
+                % {'name': self[:1].name or ''})
+        if not self.env.context.get(self._GUIA_DELETE_LOGGED_CTX):
+            for rec in self:
+                rec._guia_log_deletion(reason)
+        for rec in self:
+            empty_lots = self.env['stock.lot'].sudo().search(
+                [('guia_processing_id', '=', rec.id)])
+            if empty_lots:
+                empty_lots.sudo().unlink()
 
         return super().unlink()
 
@@ -6024,12 +6337,14 @@ class MadenatGuiaProcessing(models.Model):
         🧹 Elimina stock.moves huérfanos generados por esta guía de procesamiento.
         v3.0 — Eliminación 100% ORM. Cero SQL crudo. Falla segura si hay integridad comprometida.
         """
-        # 🔒 TD-001: Guardia de grupo antes de eliminar stock.moves
-        if not self.env.user.has_group('stock.group_stock_manager'):
-            raise UserError(
-                "No tienes permisos para eliminar movimientos de stock huérfanos.\n"
-                "Se requiere el grupo 'Inventario / Administrador'."
-            )
+        # 🔒 H2 (FASE 4): la eliminación de la guía (y de sus moves huérfanos)
+        # se rige por la POLÍTICA de rol de guías (jefatura/sistema), NO por el
+        # grupo técnico `stock.group_stock_manager`.
+        if not self._guia_delete_group_ok():
+            raise UserError(_(
+                'No tiene permisos para eliminar guías procesadas. Se requiere '
+                'el rol «Jefatura de Operaciones» (o un administrador del '
+                'sistema).'))
         names = self.mapped('name')
         moves = self.env['stock.move'].sudo().search([
             ('origin', 'in', names),

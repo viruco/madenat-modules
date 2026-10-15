@@ -109,6 +109,31 @@ class LumberIngestMixin(models.AbstractModel):
             self._require_intake_operational_group()
         return True
 
+    # ── Aviso NO bloqueante de homónimo de guía (AD-88, patrón chatter) ─────
+    def _warn_guide_homonym(self, name, model_name):
+        """Publica un aviso NO bloqueante de homónimo en el chatter.
+
+        Compartido por ``lumber.reception`` y ``madenat.guia.processing`` (ambos
+        heredan este mixin). No expone datos de otro registro: sólo el N° que el
+        usuario ya conoce y la categoría del documento coincidente. La detección
+        efectiva permanece en servidor (C1); este aviso es UX y no sustituye la
+        validación. No crea ningún documento: sólo comenta sobre el propio.
+        """
+        for record in self:
+            if not hasattr(record, 'message_post'):
+                continue
+            label = (_('Recepción directa')
+                     if model_name == 'lumber.reception'
+                     else _('Guía Procesada'))
+            record.message_post(body=_(
+                "⚠️ <b>Número de guía coincidente</b><br/>"
+                "El N° de guía <b>%(guide)s</b> coincide con otro documento "
+                "(%(label)s) de identidad distinta. "
+                "<b>No se bloqueó el ingreso.</b><br/>Verifique si se trata del "
+                "mismo documento; si lo es, edite el registro existente en "
+                "lugar de crear uno nuevo."
+            ) % {'guide': name, 'label': label})
+
     # ========================================================================
     # MÉTODOS PÚBLICOS DE GESTIÓN DE PRODUCTO (LEGACY + MEJORAS)
     # ========================================================================

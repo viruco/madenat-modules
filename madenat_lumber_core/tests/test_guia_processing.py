@@ -155,14 +155,19 @@ class TestMadenatGuiaProcessing(TransactionCase):
             "Guia en draft debe poder cancelarse")
 
     def test_06_eliminar_guia_draft(self):
-        """unlink debe funcionar si la guia esta en draft"""
+        """unlink debe funcionar si la guia esta en draft.
+
+        H1 (FASE 4): la vía directa exige MOTIVO explícito en el contexto
+        (`madenat_guia_delete_reason`); ya no existe un motivo por defecto.
+        """
         guia = self.GuiaModel.create({
             'name': 'TEST-006',
             'partner_id': self.partner.id,
             'assignment_location_id': self.location.id,
         })
         guia_id = guia.id
-        guia.unlink()
+        guia.with_context(
+            madenat_guia_delete_reason='TEST-006 limpieza de prueba').unlink()
         result = self.GuiaModel.search([('id', '=', guia_id)])
         self.assertFalse(result,
             "Guia en draft debe poder eliminarse")

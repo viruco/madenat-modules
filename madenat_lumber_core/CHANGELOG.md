@@ -1,3 +1,75 @@
+## [18.0.6.9.0] - 2026-10-12
+
+### Added
+- **H3 / H-SEC-5 (FASE 4) — La bitácora `madenat.audit.log` es APPEND-ONLY.** `write()` y `unlink()` lanzan un
+  `UserError` de **negocio** —incluso con `sudo()` y para el grupo de sistema— mediante
+  `_audit_mutation_allowed()`: única excepción **test-only** = token VIVO `madenat_sv_test_cleanup_token` +
+  entorno estricto (`--test-enable` real + BD de test). Un token arbitrario NO habilita nada.
+  **LÍMITE HONESTO:** no impide `UPDATE`/`DELETE` por **SQL directo** ni por un **administrador de base de
+  datos**; la defensa adicional (trigger de BD o hash encadenado) queda **propuesta y NO implementada**.
+  Las correcciones se registran siempre como **eventos NUEVOS**, nunca editando.
+- **H2 (FASE 4) — Rol autorizado para eliminar guías.** `GUIA_DELETE_GROUPS` + `_guia_delete_group_ok()`
+  (jefatura de operaciones **o** grupo de sistema) sustituyen la exigencia del grupo técnico
+  `stock.group_stock_manager` en `unlink()` y en `_cleanup_orphan_moves_guia()`. No se amplían permisos de
+  stock ni se crean grupos.
+- Suite `tests/test_audit_log_immutability.py` (H3: bloqueo de `write`/`unlink`, ACL y bypass test-only).
+
+### Changed
+- **H1 (FASE 4) — Motivo OBLIGATORIO en la vía directa.** Se elimina el valor por defecto («sin motivo
+  declarado») de la FASE 3: sin `madenat_guia_delete_reason` no vacío el `unlink()` **se bloquea** con un
+  `UserError` que guía al asistente. La eliminación nativa de la interfaz (lista/formulario) queda por tanto
+  **bloqueada con mensaje**, sin modificar botones ni vistas.
+- ACL `access_madenat_audit_log_manager`: **retirados `write` y `unlink`** a `base.group_system`
+  (`1,1,1,1` → `1,0,1,0`); `create`/`read` se conservan.
+- `test_guia_processing.test_06` pasa motivo explícito (dependía del valor por defecto retirado).
+
+### Fixed
+- **H3 — limpieza test-only del ledger** (`madenat_sv_internal._sv_test_cleanup_token`): el borrado de la
+  bitácora aporta el token de limpieza (mismo patrón inerte), imprescindible tras activar la inmutabilidad.
+
+## [18.0.6.8.0] - 2026-10-12
+
+### Added
+- **G1 (FASE 3) — Guardas de eliminación de `madenat.guia.processing` (D-G1..D-G3).** Nueva guarda **central y única**
+  en `unlink()`, reutilizada por la vía directa y por el asistente (sin duplicar lógica):
+  - **Pre-chequeo de dependencias (`_guia_deletion_blockers`)**: bloquea si algún lote de la guía tiene
+    `stock.quant`, `stock.move.line`, líneas de coste, o si hay lotes SV de volumen (`volume_source_guia_id`),
+    albaranes vinculados, operaciones SV, imputaciones SV o relaciones envío–retorno. **Mensaje de NEGOCIO** en
+    español (D-G2) con el nombre de la guía, el motivo concreto y **alternativas** (anular/corregir/revertir);
+    **nunca** un error técnico de clave foránea.
+  - **Motivo + bitácora (D-G3)**: registra en `madenat.audit.log` (`action_type='guia_delete_permanent'`) el
+    usuario/motivo/estado antes de eliminar; si el registro falla, se aborta. Motivo desde el contexto
+    (`madenat_guia_delete_reason`); la vía directa usa un motivo por defecto documentado
+    («sin motivo declarado») para no romper la compatibilidad.
+  - **Borrado controlado de lotes vacíos**: los lotes vinculados **sin** existencias/movimientos/SV/coste se
+    eliminan junto con la guía ⇒ **no quedan lotes huérfanos** (comportamiento elegido y documentado).
+  - Se mantienen intactas las guardas por **estado** (solo `draft`/`cancelled`) y el **bypass test-only**
+    (marcador + `--test-enable`).
+- Contexto interno `madenat_guia_delete_logged` para que el asistente (que ya audita con snapshot) **no duplique**
+  la bitácora.
+
+### Notes
+- **Local** (`madenat_test`); sin commit/push/despliegue. **Brecha H-SEC-5 pendiente** (la bitácora aún puede
+  alterarse). Expediente `AUDITORIA_INTEGRAL_20261012/fase3/`.
+
+## [18.0.6.7.0] - 2026-10-12
+### Fixed
+- **Diagnóstico `stock_quant_lot_id_fkey` (etiqueta SV con existencias).** El intento de **eliminar**
+  desde el visor estándar de lotes una etiqueta SV con existencia física (+40.315 m³ en `WH/Stock`) se
+  bloqueaba con el **mensaje técnico** de PostgreSQL (`stock_quant_lot_id_fkey`, ON DELETE RESTRICT).
+  **La causa no era un defecto** (el sistema protegía correctamente el historial), pero el mensaje era
+  ininteligible para Operaciones.
+  - **Opción 2 (guarda proactiva):** `stock.lot._sv_guard_unlink()` ahora bloquea **antes** de la BD la
+    **etiqueta SV de volumen con filas en `stock.quant`** (mismo criterio exacto que la FK: existencia de
+    fila, aunque la cantidad sea 0) con un mensaje de negocio; el caso legítimo (sin existencias ni
+    historial) sigue permitido. Se conserva intacto el bypass test-only por marcador.
+  - **Opción 1 (traducción):** `stock.lot.unlink()` traduce la `ForeignKeyViolation` a un mensaje de
+    negocio (con `savepoint` para dejar la transacción utilizable). **No** altera el invariante: el lote
+    sigue sin poder eliminarse.
+### Added
+- **Pruebas:** `tests/test_sv_lot_unlink_guard.py` (4 pruebas: guarda con/sin existencias, bypass test-only
+  intacto, y traducción del error de FK).
+
 ## [18.0.6.6.0] - 2026-10-10
 ### Added
 - **Auditoría (CANON/19 §19.11) — valores ADITIVOS del `Selection` `madenat.audit.log.action_type`:**

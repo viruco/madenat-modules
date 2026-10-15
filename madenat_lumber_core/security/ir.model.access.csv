@@ -22,10 +22,10 @@ access_stock_lot_cost_line_admin,stock.lot.cost.line.admin,model_stock_lot_cost_
 access_madenat_subproducto_user,madenat.subproducto.user,model_madenat_subproducto,base.group_user,1,1,1,0
 access_madenat_subproducto_manager,madenat.subproducto.manager,model_madenat_subproducto,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
 access_madenat_audit_log_user,madenat.audit.log.user,model_madenat_audit_log,base.group_user,1,0,1,0
-access_madenat_audit_log_manager,madenat.audit.log.manager,model_madenat_audit_log,base.group_system,1,1,1,1
+access_madenat_audit_log_manager,madenat.audit.log.manager,model_madenat_audit_log,base.group_system,1,0,1,0
 access_madenat_guia_processing_user,madenat.guia.processing.user,model_madenat_guia_processing,base.group_user,1,0,0,0
 access_madenat_guia_processing_operaciones,madenat.guia.processing.operaciones,model_madenat_guia_processing,madenat_lumber_core.group_madenat_operaciones,1,1,1,0
-access_madenat_guia_processing_manager,madenat.guia.processing.manager,model_madenat_guia_processing,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,0
+access_madenat_guia_processing_manager,madenat.guia.processing.manager,model_madenat_guia_processing,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
 access_validation_checklist_item_user,validation.checklist.item.user,model_validation_checklist_item,base.group_user,1,1,1,0
 access_validation_checklist_item_manager,validation.checklist.item.manager,model_validation_checklist_item,madenat_lumber_core.group_madenat_jefatura_operaciones,1,1,1,1
 access_lumber_reception_line_user,lumber.reception.line.user,model_lumber_reception_line,base.group_user,1,0,0,0

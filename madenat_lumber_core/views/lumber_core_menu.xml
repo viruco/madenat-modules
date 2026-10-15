@@ -47,10 +47,126 @@
             <field name="context">{'search_default_order_by_date': 1, 'default_tipo_recepcion': 'service'}</field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- P2-5 — TRAZABILIDAD 360° (madenat.audit.log, solo lectura)      -->
+        <!-- Vistas profesionales readonly, sin botones de negocio, sin       -->
+        <!-- chatter (el modelo no hereda mail.thread). El modelo no tiene    -->
+        <!-- FKs directas a stock.lot / lumber.container /                   -->
+        <!-- lumber.export.shipment / stock.picking / operación SV ni         -->
+        <!-- imputación SV, por lo que NO se ofrecen filtros por esos objetos.-->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_madenat_audit_log_list" model="ir.ui.view">
+            <field name="name">madenat.audit.log.list</field>
+            <field name="model">madenat.audit.log</field>
+            <field name="arch" type="xml">
+                <list string="Trazabilidad 360°" create="false" edit="false" delete="false">
+                    <field name="timestamp"/>
+                    <field name="action_type"/>
+                    <field name="user_id"/>
+                    <field name="reception_id"/>
+                    <field name="guia_processing_id"/>
+                    <field name="batch_id"/>
+                    <field name="description"/>
+                    <field name="month" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_madenat_audit_log_form" model="ir.ui.view">
+            <field name="name">madenat.audit.log.form</field>
+            <field name="model">madenat.audit.log</field>
+            <field name="arch" type="xml">
+                <form string="Trazabilidad 360°" create="false" edit="false" delete="false">
+                    <sheet>
+                        <group>
+                            <group string="Evento">
+                                <field name="timestamp" readonly="1"/>
+                                <field name="action_type" readonly="1"/>
+                                <field name="user_id" readonly="1"/>
+                                <field name="month" readonly="1"/>
+                            </group>
+                            <group string="Referencias">
+                                <field name="batch_id" readonly="1"/>
+                                <field name="reception_id" readonly="1"/>
+                                <field name="guia_processing_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Descripción">
+                            <field name="description" nolabel="1" readonly="1"/>
+                        </group>
+                        <notebook>
+                            <page string="Evidencia Firmada">
+                                <group>
+                                    <field name="audit_hash" readonly="1"/>
+                                </group>
+                                <field name="audit_snapshot" readonly="1"/>
+                            </page>
+                            <page string="Metadatos Técnicos">
+                                <group>
+                                    <field name="create_uid" readonly="1"/>
+                                    <field name="create_date" readonly="1"/>
+                                    <field name="write_uid" readonly="1"/>
+                                    <field name="write_date" readonly="1"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="view_madenat_audit_log_search" model="ir.ui.view">
+            <field name="name">madenat.audit.log.search</field>
+            <field name="model">madenat.audit.log</field>
+            <field name="arch" type="xml">
+                <search string="Trazabilidad 360°">
+                    <field name="reception_id"/>
+                    <field name="guia_processing_id"/>
+                    <field name="user_id"/>
+                    <field name="batch_id"/>
+                    <field name="description"/>
+                    <separator/>
+                    <filter name="filter_creation" string="Creación Producto" domain="[('action_type', '=', 'creation')]"/>
+                    <filter name="filter_omission" string="Omisión Producto" domain="[('action_type', '=', 'omission')]"/>
+                    <filter name="filter_lot_creation" string="Creación Lote" domain="[('action_type', '=', 'lot_creation')]"/>
+                    <filter name="filter_lot_update" string="Actualización Lote" domain="[('action_type', '=', 'lot_update')]"/>
+                    <filter name="filter_consumption" string="Salida a Proceso" domain="[('action_type', '=', 'consumption')]"/>
+                    <filter name="filter_validation_signature" string="Firma de Validación" domain="[('action_type', '=', 'validation_signature')]"/>
+                    <filter name="filter_reclassification" string="Reclasificación Tipo de Ingreso" domain="[('action_type', '=', 'reclassification')]"/>
+                    <filter name="filter_volume_operational_update" string="Actualización Volumen Operativo" domain="[('action_type', '=', 'volume_operational_update')]"/>
+                    <filter name="filter_conciliation_manual_confirm" string="Confirmación Manual de Conciliación" domain="[('action_type', '=', 'conciliation_manual_confirm')]"/>
+                    <filter name="filter_sv_operation" string="Operación de Etiqueta SV" domain="[('action_type', '=', 'sv_operation')]"/>
+                    <filter name="filter_guia_delete_blocked" string="Eliminación de Guía Bloqueada" domain="[('action_type', '=', 'guia_delete_blocked')]"/>
+                    <filter name="filter_guia_delete_permanent" string="Eliminación Definitiva de Guía" domain="[('action_type', '=', 'guia_delete_permanent')]"/>
+                    <filter name="filter_guia_purged" string="Purga Controlada de Guía" domain="[('action_type', '=', 'guia_purged')]"/>
+                    <filter name="filter_rebaja" string="Rebaja de Contenedor" domain="[('action_type', '=', 'rebaja')]"/>
+                    <filter name="filter_rebaja_reverse" string="Reversa de Rebaja" domain="[('action_type', '=', 'rebaja_reverse')]"/>
+                    <filter name="filter_deviation" string="Desviación Aceptada" domain="[('action_type', '=', 'deviation')]"/>
+                    <filter name="filter_processor_shipment" string="Envío a Procesador" domain="[('action_type', '=', 'processor_shipment')]"/>
+                    <filter name="filter_imputation" string="Imputación Documental SV" domain="[('action_type', '=', 'imputation')]"/>
+                    <filter name="filter_imputation_reverse" string="Reversa de Imputación Documental SV" domain="[('action_type', '=', 'imputation_reverse')]"/>
+                    <separator/>
+                    <filter name="filter_timestamp" string="Rango de Fecha" date="timestamp"/>
+                    <group expand="0" string="Agrupar Por">
+                        <filter name="group_month" string="Mes" context="{'group_by': 'month'}"/>
+                        <filter name="group_action_type" string="Tipo de Acción" context="{'group_by': 'action_type'}"/>
+                        <filter name="group_user" string="Usuario" context="{'group_by': 'user_id'}"/>
+                        <filter name="group_reception" string="Recepción" context="{'group_by': 'reception_id'}"/>
+                        <filter name="group_guia_processing" string="Guía de Procesamiento" context="{'group_by': 'guia_processing_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+
         <record id="action_madenat_audit_logs" model="ir.actions.act_window">
-            <field name="name">📊 Registro de Auditoría</field>
+            <field name="name">Trazabilidad 360°</field>
             <field name="res_model">madenat.audit.log</field>
             <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_madenat_audit_log_list"/>
+            <field name="search_view_id" ref="view_madenat_audit_log_search"/>
             <field name="context">{}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">Sin registros de auditoría</p>
@@ -121,10 +237,14 @@
                   parent="menu_madenat_root"
                   sequence="10"/>
 
+        <!-- P2-3: Carpeta vacía "🚢 Exportaciones" (id 442) inactivada.
+             No se toca Embarques, Contenedores, Consolidación ni Rebaja por
+             Nave (viven bajo Logística Exportación). Solo metadato de menú. -->
         <menuitem id="menu_export_main"
                   name="🚢 Exportaciones"
                   parent="menu_madenat_root"
-                  sequence="20"/>
+                  sequence="20"
+                  active="0"/>
 
         <menuitem id="menu_madenat_reports_main"
                   name="📊 Reportes y Listados"
@@ -176,10 +296,14 @@
                   sequence="10"/>
 
         <!-- ▸ Costeo y Finanzas → Pagos y Facturación -->
+        <!-- P2-3: Carpeta vacía "Pagos y Facturación" (id 451) inactivada.
+             No se toca Costeo, Facturación, Pagos, Contabilidad ni menús
+             financieros realmente funcionales. Solo metadato de menú. -->
         <menuitem id="menu_finance_payments"
                   name="Pagos y Facturación"
                   parent="menu_finance_main"
-                  sequence="20"/>
+                  sequence="20"
+                  active="0"/>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- MENÚS PROPIOS DE CORE REPARENTADOS CORRECTAMENTE               -->
@@ -227,13 +351,16 @@
                   sequence="10"
                   groups="group_madenat_jefatura_operaciones"/>
 
-        <!-- ▸ Auditoría → Trazabilidad 360° -->
+        <!-- ▸ Auditoría → Trazabilidad 360° (P2-5)
+             Consulta de control/auditoría readonly. Grupos autorizados:
+             Jefatura de Stock, Auditoría MADENAT, Jefatura de Operaciones y
+             Gerencia. NO se incluye Operaciones ni stock.group_user básico. -->
         <menuitem id="menu_madenat_audit"
                   name="Trazabilidad 360°"
                   parent="menu_audit_main"
                   action="action_madenat_audit_logs"
                   sequence="10"
-                  groups="stock.group_stock_manager"/>
+                  groups="stock.group_stock_manager,madenat_lumber_core.group_madenat_auditoria,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- INVENTORY ADJUSTMENTS (migrado desde reports)                  -->

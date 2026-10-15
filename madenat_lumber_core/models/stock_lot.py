@@ -23,6 +23,7 @@ import re
 import math
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from psycopg2 import errors as psycopg2_errors
 import logging
 from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch
 
@@ -1261,8 +1262,26 @@ class StockLotExtended(models.Model):
         for lot in self:
             if lot.cost_line_ids:
                 lot.cost_line_ids.unlink()
-        
-        return super(StockLotExtended, self).unlink()
+
+        try:
+            # Savepoint: permite traducir la violación de integridad a un
+            # mensaje de negocio y dejar la transacción utilizable (Odoo, por
+            # defecto, deja el error técnico de PostgreSQL).
+            with self.env.cr.savepoint():
+                return super(StockLotExtended, self).unlink()
+        except psycopg2_errors.ForeignKeyViolation as err:
+            # 🛡️ La integridad referencial de la BD protege el lote (p. ej.
+            # `stock_quant_lot_id_fkey`, ON DELETE RESTRICT). NO se altera el
+            # invariante — el lote sigue sin poder eliminarse —: solo se
+            # traduce el mensaje técnico a lenguaje de negocio.
+            lot = self[:1]
+            raise ValidationError(_(
+                'La etiqueta/lote %s tiene existencias o documentos que lo '
+                'referencian y no puede eliminarse. Use la reversión o la '
+                'regularización de la guía/etiqueta SV correspondiente '
+                '(\u00abRebajar etiqueta SV\u00bb / \u00abRegularizar volumen de '
+                'etiqueta SV\u00bb) en lugar de eliminar el registro.'
+            ) % (lot.name or lot.id)) from err
 
     # ==============================================================================
     # MÉTODOS DE ACCIÓN (BOTONES)

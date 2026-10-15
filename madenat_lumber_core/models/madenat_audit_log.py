@@ -1,10 +1,49 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api  # ✅ AGREGAR: api
+from odoo import _, models, fields, api
+from odoo.exceptions import UserError
 
 class MadenatAuditLog(models.Model):
     _name = 'madenat.audit.log'
     _description = 'Logs de Auditoría MADENAT'
     _order = 'timestamp desc'
+
+    # ══════════════════════════════════════════════════════════════════════
+    # H3 (FASE 4) — INMUTABILIDAD MÍNIMA (H-SEC-5)
+    # La bitácora es APPEND-ONLY: no se edita ni se borra por ORM, NI con
+    # `sudo()`. Única excepción: limpieza de PRUEBAS (test-only, inerte sin
+    # `--test-enable` real) que aporta el token de contexto
+    # `madenat_sv_test_cleanup_token`.
+    # LÍMITE HONESTO: NO impide UPDATE/DELETE por SQL directo ni por un
+    # administrador de base de datos (ver CANON/04 AD-105).
+    # ══════════════════════════════════════════════════════════════════════
+    def _audit_mutation_allowed(self):
+        """Única excepción: limpieza de PRUEBAS con token VIVO.
+
+        Exige (1) el token `madenat_sv_test_cleanup_token` en el contexto,
+        (2) el entorno de pruebas ESTRICTO (`--test-enable` real + BD de test)
+        y (3) que el token corresponda a una limpieza EN CURSO (marcadores
+        existentes). Un token arbitrario NO habilita nada.
+        """
+        token = self.env.context.get('madenat_sv_test_cleanup_token')
+        marker = self.env['madenat.sv.internal.marker'].sudo()
+        if not token or not marker._sv_test_enable_strict():
+            return False
+        return bool(marker.search_count([('token', '=', token)]))
+
+    def write(self, vals):
+        if self._audit_mutation_allowed():
+            return super().write(vals)
+        raise UserError(_(
+            'La bitácora de auditoría (madenat.audit.log) es APPEND-ONLY: no '
+            'se puede modificar. Registre una CORRECCIÓN como un evento NUEVO, '
+            'nunca editando el registro anterior.'))
+
+    def unlink(self):
+        if self._audit_mutation_allowed():
+            return super().unlink()
+        raise UserError(_(
+            'La bitácora de auditoría (madenat.audit.log) es APPEND-ONLY: no '
+            'se puede eliminar. Registre una CORRECCIÓN como un evento NUEVO.'))
 
     reception_id = fields.Many2one('lumber.reception', string='Recepción', ondelete='cascade')
     # ══════════════════════════════════════════════════════════════════════════
@@ -67,6 +106,11 @@ class MadenatAuditLog(models.Model):
         # reversa. Valores ADITIVOS al Selection.
         ('imputation', 'Imputación Documental SV'),
         ('imputation_reverse', 'Reversa de Imputación Documental SV'),
+        # RESET (2026-10-11): ciclo de mantenimiento de la imputación documental
+        # — anulación (draft/pending → cancelled) y REAPERTURA controlada
+        # (cancelled → draft, «Volver a borrador»). Valores ADITIVOS.
+        ('imputation_cancel', 'Anulación de Imputación Documental SV'),
+        ('imputation_reopen', 'Reapertura de Imputación Documental SV'),
         # AD-92 (2026-10-05): rolleo centrado en Embarque.
         ('vessel_rollover', 'Rolleo de Embarque'),
         ('vessel_rollover_item', 'Detalle de Rolleo de Embarque'),
@@ -88,6 +132,17 @@ class MadenatAuditLog(models.Model):
         # (Política D2, AD-98, hito logístico controlado). Evento append-only
         # con snapshot determinista y firma SHA-256. Valor ADITIVO al Selection.
         ('shipment_delivery', 'Entrega de Embarque'),
+        # Sub-bloque 6 (2026-10-04): Costeo provisional post-Entrega (Política
+        # C2). Distribución por volumen logístico final por lote, su
+        # redistribución formal (supersede de costos tardíos) y su anulación.
+        # Eventos append-only con snapshot determinista y firma SHA-256.
+        # Valores ADITIVOS al Selection (no reemplazan a otros).
+        ('shipment_cost_distribution',
+         'Distribución de Costos de Embarque'),
+        ('shipment_cost_distribution_supersede',
+         'Redistribución de Costos de Embarque'),
+        ('shipment_cost_distribution_cancel',
+         'Anulación de Distribución de Costos'),
         # AD-100 (2026-10-05): workflow NO bloqueante del Backlog Documental.
         # Escalamiento, cierre y exoneración de `lumber.shipment.document` con
         # snapshot determinista y firma SHA-256 + chatter. Valores ADITIVOS al

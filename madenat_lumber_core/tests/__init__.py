@@ -51,3 +51,16 @@ from . import test_guia_documental_correction
 from . import test_guia_processing_security
 from . import test_reception_security
 from . import test_manifest_external_xml_dependencies
+# 🛡️ 2026-10-07: validación efectiva de guías duplicadas en la ingesta
+# (Procesado / Volúmenes / formulario directo) reutilizando C1.
+# 🛡️ 2026-10-07 (cierre): aviso no bloqueante en Recepción, prevención de
+# avisos repetidos y compatibilidad de los llamadores de C1.
+from . import test_guide_duplicate_warnings
+from . import test_guide_duplicate_ingest
+# 🛡️ 2026-10-07 — REGRESIÓN incidente guía 15183 (cross-model mismo emisor).
+from . import test_guide_dup_regression_15183
+# 🛡️ 2026-10-12 — DIAGNÓSTICO `stock_quant_lot_id_fkey`: la etiqueta SV con
+# existencias no se elimina (guarda proactiva + traducción del error de FK).
+from . import test_sv_lot_unlink_guard
+# 🔐 FASE 4 (H3 / H-SEC-5) — inmutabilidad mínima de la bitácora append-only.
+from . import test_audit_log_immutability

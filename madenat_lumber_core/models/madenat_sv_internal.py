@@ -303,7 +303,9 @@ class MadenatSvInternalMarker(models.Model):
                             ('batch_id', 'in', lot_names)]
         audit = self.env['madenat.audit.log'].sudo().search(audit_domain)
         if audit:
-            audit.unlink()
+            # H3 (FASE 4): la bitácora es APPEND-ONLY; el borrado test-only
+            # requiere el token de limpieza (mismo patrón inerte que el resto).
+            audit.with_context(**cleanup_ctx).unlink()
         # Operaciones SV DERIVADAS de lotes marcados (el ledger es append-only:
         # solo se eliminan en este contexto test-only).
         if lot_ids:

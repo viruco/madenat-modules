@@ -1301,6 +1301,20 @@ class StockLotSv(models.Model):
                     '(madenat.sv.operation) y no puede eliminarse. Registre '
                     'una operación de reversa/regularización.'
                 ) % (lot.name or lot.id))
+            # La etiqueta SV con existencias tampoco se elimina: es el ancla de
+            # trazabilidad de la Guía y `stock.quant` la referencia con
+            # ON DELETE RESTRICT (`stock_quant_lot_id_fkey`). El criterio es la
+            # EXISTENCIA de fila en `stock.quant` (aunque la cantidad sea 0),
+            # idéntico al que aplica PostgreSQL, para dar un mensaje de negocio
+            # en lugar del error técnico de integridad.
+            if lot.lot_flow_type == 'volume' and self.env['stock.quant'].sudo(
+                    ).search_count([('lot_id', '=', lot.id)]):
+                raise ValidationError(_(
+                    'La etiqueta SV %s tiene existencias en stock y no puede '
+                    'eliminarse. Es el ancla de trazabilidad de la Guía %s. '
+                    'Registre una operación SV de reversa/regularización.'
+                ) % (lot.name or lot.id,
+                     lot.guia_number or lot.guia_processing_id.id))
 
     # ── Acciones de UI ────────────────────────────────────────────────────
     def _sv_wizard_action(self, name, model, **context_defaults):

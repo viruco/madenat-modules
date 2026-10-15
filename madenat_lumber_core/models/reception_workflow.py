@@ -96,7 +96,8 @@ class LumberReceptionWorkflow:
 
             # 2.5 🛡️ VALIDACIÓN TEMPRANA DE DUPLICADOS (2026-06-11)
             # Se ejecuta ANTES de Gate 1, cabecera, staging y creación de lotes.
-            # Si la guía ya existe, bloquea el flujo completo con UserError.
+            # Duplicado CONFIRMADO (mismo modelo = recepción) → bloquea con
+            # UserError. Homónimo (otro flujo / otro proveedor) → sólo advierte.
             guide_no_for_check = dg_data.get('guide_no') or pl_data.get('guide_no') or ''
             if guide_no_for_check:
                 reception._add_log("🔍 Verificando duplicados antes de continuar...")
@@ -104,7 +105,7 @@ class LumberReceptionWorkflow:
                     "🔍 PIPELINE: validación temprana de duplicados guía=%s reception=%s",
                     guide_no_for_check, reception.name
                 )
-                parser._check_guide_duplicate(guide_no_for_check, exclude_id=reception.id)
+                self._check_duplicate_and_warn(reception, guide_no_for_check)
                 reception._add_log("✅ Validación de duplicados superada — guía no existe en el sistema")
             else:
                 _logger.warning(
@@ -253,3 +254,43 @@ class LumberReceptionWorkflow:
             
         reception.write(header_vals)
         reception._add_log(f"📊 CABECERA: {commercial_vol:.3f}m³ | {net_total:,.0f} CLP")
+
+    def _check_duplicate_and_warn(self, reception, guide_no):
+        """Valida duplicados de una recepción y avisa si hay homónimo.
+
+        - **Duplicado CONFIRMADO** (mismo modelo = ``lumber.reception``): bloquea
+          con ``UserError`` (comportamiento vigente del pipeline).
+        - **HOMÓNIMO** (mismo número con identidad distinta / otro flujo): NO
+          bloquea y publica un aviso no bloqueante en el chatter de la recepción.
+          El aviso se emite SÓLO cuando el número detectado difiere del
+          almacenado en la cabecera: un guardado/relectura/reintento sin cambio
+          de número no repite el aviso.
+
+        La intención se expresa con argumentos explícitos (``cross_model``,
+        ``exclude_model``, ``raise_on_match``) para no depender de los valores
+        por defecto de C1. Atomicidad: el aviso vive en la misma transacción; si
+        el pipeline falla después, se revierte con el resto (no queda aviso de
+        un ingreso inexistente).
+        """
+        parser = self.env['madenat.reception.parser']
+        parser._check_guide_duplicate(
+            guide_no,
+            partner_id=reception.supplier_id.id or None,
+            exclude_id=reception.id,
+            exclude_model='lumber.reception',
+            cross_model=True,
+        )
+        # Aviso homónimo (no bloqueante) sólo si el número cambia respecto del
+        # almacenado (evita repetir en guardados/relecturas/reintentos).
+        if guide_no.strip() == (reception.name or '').strip():
+            return
+        hit = parser._check_guide_duplicate(
+            guide_no,
+            partner_id=None,
+            exclude_id=reception.id,
+            exclude_model='lumber.reception',
+            cross_model=True,
+            raise_on_match=False,
+        )
+        if hit:
+            reception._warn_guide_homonym(guide_no, hit[0])
