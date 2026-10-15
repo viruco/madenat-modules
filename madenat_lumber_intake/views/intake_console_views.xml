@@ -2,6 +2,18 @@
 <odoo>
 
     <!-- =========================================================
+         ACCIÓN: NUEVO INGRESO
+         ========================================================= -->
+    <record id="action_madenat_lumber_intake_new" model="ir.actions.act_window">
+        <field name="name">Nuevo Ingreso</field>
+        <field name="res_model">madenat.lumber.intake.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_madenat_lumber_intake_console"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <!-- =========================================================
          LISTA: CONSOLA GLOBAL DE INGRESOS
          ========================================================= -->
     <record id="view_madenat_lumber_intake_console_list" model="ir.ui.view">
@@ -1108,18 +1120,6 @@
             <p class="o_view_nocontent_smiling_face">Consola Global de Ingresos MADENAT</p>
             <p>Revise el resumen del ingreso y decida entre "Enviar a Stock" o "Modificar origen".</p>
         </field>
-    </record>
-
-    <!-- =========================================================
-         ACCIÓN: NUEVO INGRESO
-         ========================================================= -->
-    <record id="action_madenat_lumber_intake_new" model="ir.actions.act_window">
-        <field name="name">Nuevo Ingreso</field>
-        <field name="res_model">madenat.lumber.intake.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
-        <field name="binding_model_id" ref="model_madenat_lumber_intake_console"/>
-        <field name="binding_view_types">list</field>
     </record>
 
 </odoo>
