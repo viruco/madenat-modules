@@ -79,3 +79,6 @@ from . import test_hotfix_owl_chatter
 # S2 (FASE 10, 2026-10-15): «Trabajo en preparación» con filtro EFECTIVO por
 # estado (F2) y «Continuar» operativo sobre estados terminales (WF-01..07).
 from . import test_sv_rebaja_work_filter
+# S3 (FASE 10, 2026-10-15): bloqueo del guardado/aplicación de un documento de
+# rebaja VACÍO, sin borrado silencioso (F3; SG-01..06).
+from . import test_sv_rebaja_empty_guard

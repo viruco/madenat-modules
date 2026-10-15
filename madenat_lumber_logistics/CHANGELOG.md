@@ -4,6 +4,29 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.31.0] - 2026-10-15
+
+### Fixed
+- **S3 — No persistir/borrar en silencio un documento de rebaja VACÍO (defecto F3).** «Guardar borrador»
+  (`_i2_build_imputation`) **no** exigía ninguna etiqueta incluida: sólo `action_apply` lo comprobaba. Guardar
+  sin seleccionar (o desmarcar todo lo ya registrado) dejaba o **borraba líneas en silencio**, produciendo el
+  documento vacío vinculado al SV que explica `IMP04823`.
+  - `_i2_build_imputation` comprueba ahora `_i2_included_lines()` **antes** de crear o actualizar el documento y
+    lanza un `UserError` de negocio en español («No se puede guardar un documento de rebaja sin etiquetas.
+    Selecciona al menos una etiqueta…») cuando no hay ninguna incluida.
+  - Al rechazar **antes** de escribir, un guardado inválido no crea documento nuevo (ni vacío) y **no pierde**
+    las líneas ya registradas. Los flujos legítimos (anular, «Volver a borrador», reabrir) no pasan por este
+    camino y quedan intactos; el caso SAVE-05 (destino SV previsto con cantidad 0) sigue permitido; el techo duro
+    y las validaciones de `action_apply` no cambian.
+
+### Notes
+- Nuevo `tests/test_sv_rebaja_empty_guard.py` (**SG-01..06**, T6 del diagnóstico): 6/6 en verde. Las pruebas
+  comprueban los efectos reales (creación/borrado) con un `try/except` propio, **sin** el savepoint que Odoo
+  interpone en `assertRaises` y que enmascararía esos efectos.
+- Regresión del módulo `logistics` completa: **4 failed de 519** (el MISMO subconjunto de 10 fallas del baseline;
+  0 fallas nuevas por nombre). Sin cambios en datos, firmas ni documentos históricos. Sin migración.
+  Expediente `FASE10_REBAJA_SV_ETIQUETAS_20261015/`.
+
 ## [18.0.1.30.0] - 2026-10-15
 
 ### Fixed

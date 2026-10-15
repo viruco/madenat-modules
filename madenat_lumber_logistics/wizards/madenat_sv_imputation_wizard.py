@@ -614,6 +614,19 @@ class MadenatSvImputationWizard(models.TransientModel):
         # rechaza sin dejar documentos ni estados parciales (§19.16).
         Imputation._i2_check_guia_is_eligible_return(
             self.guia_processing_id)
+        # S3 (FASE 10, 2026-10-15): NO se persiste un documento de rebaja VACÍO
+        # —ni se borran en silencio las líneas ya registradas— exigiendo al
+        # menos UNA etiqueta incluida (marcada O con reparto explícito, D4/D5).
+        # La comprobación va ANTES de crear/actualizar: un guardado rechazado no
+        # deja documento nuevo ni pierde líneas. Los flujos legítimos (anular,
+        # «Volver a borrador», reabrir) no pasan por aquí y siguen intactos.
+        included = self._i2_included_lines()
+        if not included:
+            raise UserError(_(
+                'No se puede guardar un documento de rebaja sin etiquetas. '
+                'Selecciona al menos una etiqueta (o asigna un destino SV con '
+                'cantidad) antes de guardar; no se admiten documentos de '
+                'rebaja vacíos.'))
         imp = self.imputation_id
         if not (imp and imp.exists()):
             # El asistente se abrió SIN documento vinculado. Si otra sesión creó
@@ -664,7 +677,7 @@ class MadenatSvImputationWizard(models.TransientModel):
         # reparto positivo).
         if self.sv_lot_id and imp.work_sv_lot_id != self.sv_lot_id:
             imp.work_sv_lot_id = self.sv_lot_id
-        included = self._i2_included_lines()
+        # `included` ya se calculó y validó arriba (S3): no se recalcula.
         existing_by_lot = {l.processed_lot_id.id: l for l in imp.line_ids}
         keep_line_ids = set()
         for wline in included:
