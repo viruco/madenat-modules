@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import AccessError
 
 class ShippingVessel(models.Model):
     _name = 'shipping.vessel'
@@ -52,12 +53,16 @@ class ShippingVessel(models.Model):
             if rec.imo_number and (not rec.imo_number.isdigit() or len(rec.imo_number) != 7):
                 # Advertencia suave o log, no bloqueante para flexibilidad
                 pass
-    # ======================================================================
+
+    # ==========================================================================
     # AD-92 (2026-10-05): Rolleo CENTRADO EN EMBARQUE.
-    # La Motonave es un maestro histórico reutilizable: NO es un conjunto
-    # seguro de cargas. Este botón sólo ofrece CONSULTA (listado de Embarques
-    # de la Motonave); el rolleo se ejecuta desde el Embarque.
-    # ======================================================================
+    # El rolleo ya NO se ejecuta desde la Motonave. Una Motonave es un maestro
+    # histórico reutilizable (muchos viajes y Embarques de meses distintos): NO
+    # es un conjunto seguro de cargas afectadas. Este botón sólo ofrece
+    # CONSULTA: abre la lista de Embarques filtrada por esta Motonave; desde
+    # allí el operador abre el Embarque específico y ejecuta «Rollover de
+    # Embarque». NO reasigna nada.
+    # ==========================================================================
     def action_open_vessel_shipments(self):
         """Abre la lista de Embarques de esta Motonave (sólo consulta)."""
         self.ensure_one()

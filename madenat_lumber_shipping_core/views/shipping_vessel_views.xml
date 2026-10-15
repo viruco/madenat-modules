@@ -20,12 +20,14 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <!-- AD-92 (2026-10-05): consulta de Embarques de la Motonave. -->
+                    <!-- AD-92 (2026-10-05): el Rolleo ya no se ejecuta desde la
+                         Motonave. Este botón sólo abre la lista de Embarques
+                         filtrada por esta Motonave (consulta); el rolleo se
+                         ejecuta desde el Embarque («Rollover de Embarque»). -->
                     <button name="action_open_vessel_shipments"
                             type="object"
                             string="Ver Embarques de esta Motonave"
                             class="btn-secondary"
-                            help="Consulta: listado de Embarques de esta Motonave"
                             groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
                 </header>
                 <sheet>
@@ -45,7 +47,7 @@
                         </group>
                     </group>
                 </sheet>
-                hatter/>
+                <chatter/>
             </form>
         </field>
     </record>
