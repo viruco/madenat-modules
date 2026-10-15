@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.25.0
-**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (4) — alta **AD-109** (FASE 10 — corrección del registro de etiquetas en la rebaja SV: defectos F1/F2/F3 del diagnostico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015`; **S2** filtro efectivo de «Trabajo en preparacion» y «Continuar» operativo en estados terminales (`logistics`: campo O2M→M2M calculado no almacenado + `search` explicita; `logistics` 18.0.1.29.0 → 18.0.1.30.0, commit `19611d0`); **S3** bloqueo del guardado/aplicacion sin ninguna etiqueta incluida, sin borrado silencioso (`logistics` 18.0.1.30.0 → 18.0.1.31.0, commit `e2d6b64`); **S1** firma/clave documental con las etiquetas seleccionadas + reglas de estado terminal (applied ⇒ mensaje claro sin duplicar; reversed/cancelled ⇒ documento nuevo con clave distinta y trazable) y **retrocompatibilidad total** de la receta base de la clave (`logistics` 18.0.1.31.0 → 18.0.1.32.0); pruebas T1–T7 del informe en suites nuevas (WF/SG/DK) primero en rojo; regresion por nombre con el mismo conjunto del baseline; sin migraciones, sin cambios en `IMP04823`/`IMP02220`, sin push ni despliegue). Version 04 12.24.0 → 12.25.0. Sin push ni despliegue. | 2026-10-15 (3) — alta **AD-108** (FASE 8: M1 menú `menu_madenat_sv_imputation` sin `name` corregido —restitucion del `<menuitem>` antes del `<record>`; `logistics` 18.0.1.29.0—; M2 prueba de longitudes a `product.product`; método de verificacion en dos pasos + camino `-u` desde un dump anterior al WIP de costing; DR demostrada; 0 fallas nuevas atribuibles; configuracion no sembrada en el alta limpia; D1 `costing` caracterizado). Version 04 12.23.0 → 12.24.0. Sin push ni despliegue. | 2026-10-15 (2) — alta **AD-107** (cierre de D18: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decision; reparacion K2 de la instalacion desde cero de intake —movimiento puro verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` → no instala `logistics` desde cero; hallazgo de despliegue: no mezclar «BD con WIP» y «codigo sin WIP» por la vista de `costing`). Version 04 12.22.0 → 12.23.0. Sin push ni despliegue. | 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Versión documental:** 12.26.0
+**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (5) — alta **AD-110** (FASE 11 — integridad del ciclo de vida de las imputaciones SV): **A-1/B-1** `state` y las marcas de transición sólo cambian por las acciones OFICIALES (vía privada `_i2_write_protected_state`; `write`/`create` públicos los rechazan, también con `sudo()` y contexto: **sin bandera de contexto** por decisión de diseño); el motivo se captura en `reason` y la acción lo congela en su marca; **M-2** la reversa toma los locks de capacidad y revalida el estado; **M-4** cadena `origin_imputation_id`↔`reversed_imputation_id`; **B-2** líneas y repartos inmutables fuera de preparación; **B-3** anulación con motivo obligatorio en metadata y bitácora. **M-3** y los datos heredados (`IMP02220`, `IMP04823`, eventos TX10) quedan documentados y sin tocar. `madenat_lumber_logistics` 18.0.1.32.0 → **18.0.1.36.0**; 17 pruebas nuevas en verde; regresión por nombre con el mismo subconjunto del baseline; sin migraciones, sin push ni despliegue. Versión 04 12.25.0 → 12.26.0. | 2026-10-15 (4) — alta **AD-109** (FASE 10 — corrección del registro de etiquetas en la rebaja SV: defectos F1/F2/F3 del diagnostico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015`; **S2** filtro efectivo de «Trabajo en preparacion» y «Continuar» operativo en estados terminales (`logistics`: campo O2M→M2M calculado no almacenado + `search` explicita; `logistics` 18.0.1.29.0 → 18.0.1.30.0, commit `19611d0`); **S3** bloqueo del guardado/aplicacion sin ninguna etiqueta incluida, sin borrado silencioso (`logistics` 18.0.1.30.0 → 18.0.1.31.0, commit `e2d6b64`); **S1** firma/clave documental con las etiquetas seleccionadas + reglas de estado terminal (applied ⇒ mensaje claro sin duplicar; reversed/cancelled ⇒ documento nuevo con clave distinta y trazable) y **retrocompatibilidad total** de la receta base de la clave (`logistics` 18.0.1.31.0 → 18.0.1.32.0); pruebas T1–T7 del informe en suites nuevas (WF/SG/DK) primero en rojo; regresion por nombre con el mismo conjunto del baseline; sin migraciones, sin cambios en `IMP04823`/`IMP02220`, sin push ni despliegue). Version 04 12.24.0 → 12.25.0. Sin push ni despliegue. | 2026-10-15 (3) — alta **AD-108** (FASE 8: M1 menú `menu_madenat_sv_imputation` sin `name` corregido —restitucion del `<menuitem>` antes del `<record>`; `logistics` 18.0.1.29.0—; M2 prueba de longitudes a `product.product`; método de verificacion en dos pasos + camino `-u` desde un dump anterior al WIP de costing; DR demostrada; 0 fallas nuevas atribuibles; configuracion no sembrada en el alta limpia; D1 `costing` caracterizado). Version 04 12.23.0 → 12.24.0. Sin push ni despliegue. | 2026-10-15 (2) — alta **AD-107** (cierre de D18: `bfda876` core y `56405cb` logistics 18.0.1.28.0; P2-2 fuera por decision; reparacion K2 de la instalacion desde cero de intake —movimiento puro verificado con exit 0—; HALLAZGO BLOQUEANTE abierto: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` → no instala `logistics` desde cero; hallazgo de despliegue: no mezclar «BD con WIP» y «codigo sin WIP» por la vista de `costing`). Version 04 12.22.0 → 12.23.0. Sin push ni despliegue. | 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3243,4 +3243,100 @@ baseline (0 nuevas); sin migraciones, sin cambios en `IMP04823`/`IMP02220`, sin 
 Versión 04 12.24.0 → 12.25.0. -->
 
 enmascararía la creación/borrado real) usando un `try/except` propio.
+
+
+### AD-110 (2026-10-15) — Integridad del ciclo de vida de las imputaciones SV: A-1, B-1, M-2, M-4, B-2 y B-3 (FASE 11)
+
+**Origen.** Auditoría de sólo lectura `AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015/INFORME_AUDITORIA.md`
+(§1.2 matriz de transiciones, §7 propuestas) sobre `madenat.sv.imputation` (`logistics` 18.0.1.32.0, HEAD
+`ee7b7c6`). Dictamen: la vía OFICIAL del ciclo está bien construida (métodos propios, permisos por rol,
+validaciones, locks y bitácora firmada), pero la **vía pública `write()`** permitía, con el documento en
+`draft`/`pending`, fijar `state` a CUALQUIER destino, y `create()` permitía nacer en estado terminal.
+
+**1. Decisión A-1/B-1 — `state` y las marcas de transición sólo cambian por las acciones OFICIALES.**
+- Se define `I2_TRANSITION_MARK_FIELDS` = `state`, `audit_hash`, `snapshot_json`, `executed_by_id`,
+  `execution_date`, `reversed_by_id`, `reversal_date`, `reversal_reason`, `reversed_imputation_id`,
+  `cancelled_by_id`, `cancellation_date`, `cancellation_reason`, `reopened_by_id`, `reopen_date`,
+  `reopen_reason`.
+- `write()` público (ORM/RPC) **rechaza** cualquier intersección con esas marcas con un `UserError` de negocio;
+  **no** hay excepción para `sudo()` ni para `with_context(...)`. Se conserva la inmutabilidad previa del
+  `applied` (`I2_APPLIED_WRITABLE`), ahora reducida a la ENTRADA del motivo (`reason`), el token de concurrencia
+  (`edit_version`) y el chatter.
+- `create()` normaliza `state='draft'` y **rechaza** cualquier otro estado y cualquier marca fabricada.
+- Las acciones oficiales (`action_pending`, `action_back_to_draft`, `action_apply`, `action_cancel`,
+  `action_reverse`, `action_reopen_to_draft`) y el **sello recíproco** de la cadena
+  (`origin.reversed_imputation_id`) escriben por la **vía privada** `_i2_write_protected_state`
+  (`super().write` + bump de `edit_version`), método `_`-prefijado **no invocable por RPC**.
+- **Decisión de diseño explícita: NO se usa una bandera de contexto.** El contexto de una llamada RPC lo controla
+  el cliente y es falsificable (las suites ya probaban `with_context(i2_reopen=True)`); la autorización es la del
+  propio método oficial (permiso + estado + validaciones) y la escritura base no es alcanzable por RPC.
+- **Entrada del motivo.** El motivo se captura en el campo libre `reason` (o como parámetro de la acción, p. ej.
+  desde el asistente) y la acción lo **congela** en su campo de marca. En el formulario,
+  `reversal_reason`/`cancellation_reason`/`reopen_reason` pasan a **sólo lectura** (y `origin_imputation_id`
+  también: la cadena la gestiona el sistema). Razón: esos campos eran a la vez ENTRADA (cliente) y MARCA
+  (historia), y esa ambigüedad era la puerta por la que la escritura directa podía falsificar la historia.
+- **Invariante de cierre:** no se puede fabricar un `applied` sin firma (`audit_hash` + `snapshot_json` +
+  `executed_by_id` + `execution_date`) ni un `cancelled` sin rastro (`cancelled_by_id` + `cancellation_date` +
+  motivo + evento `imputation_cancel`).
+
+**2. Decisión M-2 — la reversa toma los locks de capacidad y revalida el estado.** `action_reverse` adquiere los
+mismos advisory locks que `action_apply` (`_i2_lock_resources`: etiquetas ns 3 + SV ns 2, orden determinista) y
+**revalida el estado tras el bloqueo**. Si otra conexión tiene el lock, o el documento dejó de estar `applied`, se
+rechaza de forma CONTROLADA (mensaje funcional, sin cambios parciales, sin bitácora y sin «último gana»). No se
+añade reintento automático: el mensaje permite reintentar tras actualizar la información (mismo patrón que
+`action_apply`/`action_reopen_to_draft`).
+
+**3. Decisión M-4 — cadena de corrección automática.** En `_i2_get_or_create`, cuando la clave base está ocupada
+por una imputación TERMINAL (mismo alcance: misma guía/procesador/firma), la operación nueva nace con
+`origin_imputation_id` apuntando al último eslabón terminal de la cadena; al aplicarse, `action_apply` sella el
+recíproco `reversed_imputation_id` en el origen (vía privada). **No** se tocan documentos existentes ni claves.
+
+**4. Decisión B-2 — el contenido sólo se edita en preparación.** Líneas y repartos (`madenat.sv.imputation.line`,
+`madenat.sv.imputation.sv.line`) sólo admiten `create`/`write`/`unlink` con el padre en `draft`/`pending`
+(`I2_CHILD_EDITABLE_STATES`); en `applied`, `reversed` y `cancelled` fallan con mensaje de negocio. Los caminos
+oficiales («Reversar», «Volver a borrador») devuelven el documento a preparación antes de permitir tocar el
+contenido, de modo que lo reabierto conserva su contenido íntegro y no se altera a posteriori lo aplicado/anulado.
+
+**5. Decisión B-3 — la anulación exige motivo.** `action_cancel` exige motivo no vacío (tras `strip`), lo registra
+en `cancellation_reason` (metadata) y lo incorpora al payload firmado del evento `imputation_cancel`
+(`{'motivo': …}`). Sin cambio de grupos: se mantiene el ACL de escritura vigente.
+
+**6. M-3 (documentado, NO corregido).** Los agregados canónicos de `stock.lot` (`sv_assignment_nominal_m3`,
+`sv_assignment_applied_m3`, `sv_assignment_applied_count`, `sv_assignment_documental_balance_m3`) son
+`store=True, compute_sudo=True`, mientras la proyección viva (`sv_assignment_imputation_ids` y el trabajo) es
+`store=False` con `compute_sudo` implícito `False`: un usuario sin ACL sobre `madenat.sv.imputation` obtiene
+`AccessError` al leerla. Es una incoherencia de RÉGIMEN DE ACCESO (no de exactitud) y queda como **hallazgo
+abierto**, con la recomendación de decidir el régimen (excluir de la vista, documentar el `AccessError` o `sudo`
+acotado a compañía) en una fase propia.
+
+**7. Datos heredados (NO se modifican).** `IMP02220` (aplicada con 0 repartos positivos) e `IMP04823` (anulada sin
+metadata, sin bitácora y sin firma) son DATO DE ORIGEN: se conservan tal cual, igual que los 8 eventos
+`imputation` de guías `TX10` sin `guia_processing_id`. Regularizarlos es una decisión de negocio **pendiente** y
+fuera del alcance de esta fase.
+
+**8. Alcance y límites.** Sólo `madenat_lumber_logistics` (nunca `-u all`); no se tocan `costing` ni el menú de
+`reports` (WIP local preexistente). Sin migración de datos, sin cambios de esquema y sin cambios en las claves
+documentales históricas (`_i2_build_documentary_key` intacta). Los recomputes de `stock.lot` siguen
+disparándose con las transiciones.
+
+**9. Validación (LOCAL).** TDD: la suite nueva `tests/test_sv_imputation_lifecycle_integrity.py` (A-1/B-1/M-2/
+M-4/B-2/B-3; 17 pruebas, con matriz por grupos operaciones/jefatura/gerencia/auditoría/sin grupo, invariantes
+documentales y `TestSvImputationReverseLocks` con lock externo real y limpieza por IDs) quedó en **verde**;
+regresión del módulo `logistics` completa comparada **por nombre** con el baseline vigente: **4 failed / 0 error**
+(el mismo subconjunto; **0 fallas nuevas**). `IMP04823`/`IMP02220` sin cambios (estado, valores y hashes).
+`madenat_lumber_logistics` **18.0.1.32.0 → 18.0.1.36.0**.
+
+**Evidencia:** expediente `FASE11_INTEGRIDAD_CICLO_IMPUTACIONES_20261015/` (`pre/`: respaldo del árbol, dump de
+`madenat_test`, SHA256 del WIP y hashes de los documentos reales; `logs/`: baseline, suite nueva y regresión
+completa; `INFORME_FASE11.md`, `RUNBOOK_FASE11.md`, `CHECKLIST_MANUAL_MAURICIO.md`).
+
+<!-- actualizado: 2026-10-15 (5) — alta AD-110 (FASE 11): integridad del ciclo de vida de las imputaciones SV.
+A-1/B-1 = `state` y las marcas de transición sólo por las acciones OFICIALES (vía privada
+`_i2_write_protected_state`; `write`/`create` públicos los rechazan, también con `sudo()` y contexto; **sin
+bandera de contexto** por decisión de diseño); el motivo se captura en `reason` y la acción lo congela en su
+marca; M-2 = locks y revalidación de estado en la reversa; M-4 = cadena `origin_imputation_id` ↔
+`reversed_imputation_id`; B-2 = líneas y repartos inmutables fuera de preparación; B-3 = anulación con motivo
+obligatorio en metadata y bitácora. M-3 y los datos heredados (`IMP02220`, `IMP04823`, eventos TX10) quedan
+documentados y sin tocar. `logistics` 18.0.1.32.0 → 18.0.1.36.0; 17 pruebas nuevas en verde; regresión por nombre
+con el mismo subconjunto del baseline; sin migraciones, sin push ni despliegue. Versión 04 12.25.0 → 12.26.0. -->
 

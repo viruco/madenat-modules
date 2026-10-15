@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.32.0
+**Versión documental:** 1.33.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -2034,4 +2034,47 @@ trabajo; `applied` ⇒ mensaje claro sin duplicar; `reversed`/`cancelled` ⇒ do
 trazable; receta base de la clave **sin cambios** ⇒ firmas y claves históricas idénticas). Pruebas WF-01..07,
 SG-01..06 y DK-01..08 primero en rojo. `madenat_lumber_logistics` 18.0.1.29.0 → 18.0.1.30.0 → 18.0.1.31.0 →
 18.0.1.32.0. Versión documental 1.31.0 → 1.32.0. Sin commit/push/despliegue. -->
+
+
+## 19.35 (2026-10-15) — Integridad del ciclo de vida de la imputación: A-1, B-1, M-2, M-4, B-2 y B-3 (FASE 11, AD-110)
+
+**Regla [VIGENTE].** `state` y las **marcas de transición** (`audit_hash`, `snapshot_json`, `executed_by_id`,
+`execution_date`, `reversed_by_id`, `reversal_date`, `reversal_reason`, `reversed_imputation_id`,
+`cancelled_by_id`, `cancellation_date`, `cancellation_reason`, `reopened_by_id`, `reopen_date`, `reopen_reason`)
+**sólo** cambian por las acciones oficiales (`action_pending`, `action_back_to_draft`, `action_apply`,
+`action_cancel`, `action_reverse`, `action_reopen_to_draft`), que escriben por la vía privada
+`_i2_write_protected_state` (`super().write`). `write()`/`create()` públicos (ORM/RPC) las rechazan con
+`UserError`, también con `sudo()` y con `with_context(...)`; **no se usa bandera de contexto** (el contexto de una
+llamada RPC lo controla el cliente). `create()` nace siempre en `draft`.
+
+**Entrada del motivo.** El motivo se captura en el campo libre `reason` (o como parámetro de la acción) y la acción
+lo congela en su marca; `reversal_reason`/`cancellation_reason`/`reopen_reason` y `origin_imputation_id` son de
+**sólo lectura** en el formulario.
+
+**M-2.** `action_reverse` toma los mismos advisory locks que `action_apply` (etiquetas ns 3 + SV ns 2, orden
+determinista) y **revalida el estado tras el bloqueo** ⇒ sin «último gana» (usuario/fecha/firma) ante dos sesiones
+concurrentes.
+
+**M-4.** La operación nueva que nace sobre una clave base ocupada por una imputación **terminal** del mismo alcance
+enlaza `origin_imputation_id`; al aplicarse se sella el recíproco `reversed_imputation_id`. No se tocan documentos
+existentes ni claves.
+
+**B-2.** Las líneas y los repartos sólo se editan con el padre en `draft`/`pending`; en `applied`, `reversed` y
+`cancelled` `create`/`write`/`unlink` se rechazan («Reversar»/«Volver a borrador» devuelven el documento a
+preparación con su contenido íntegro).
+
+**B-3.** `action_cancel` exige motivo no vacío y lo registra en `cancellation_reason` y en el evento firmado
+`imputation_cancel` (`{'motivo': …}`). Sin cambio de grupos.
+
+**Pruebas.** `tests/test_sv_imputation_lifecycle_integrity.py` (**A-1/B-1/M-2b/M-4/B-2/B-3**; 17 pruebas, con la
+matriz por grupos y los invariantes documentales) y `TestSvImputationReverseLocks` (lock externo real sobre SV y
+etiqueta, limpieza por IDs), primero en rojo. Regresión del módulo `logistics` comparada **por nombre** con el
+mismo subconjunto del baseline. `madenat_lumber_logistics` **18.0.1.32.0 → 18.0.1.36.0**. Expediente
+`FASE11_INTEGRIDAD_CICLO_IMPUTACIONES_20261015/`.
+
+<!-- actualizado: 2026-10-15 (2) — §19.35 FASE 11 (AD-110): A-1/B-1 `state` y marcas de transición sólo por las
+acciones oficiales (vía privada `_i2_write_protected_state`; sin bandera de contexto); motivo por `reason` y
+congelado en la marca; M-2 locks y revalidación de estado en la reversa; M-4 cadena `origin_imputation_id` ↔
+`reversed_imputation_id`; B-2 contenido inmutable fuera de preparación; B-3 anulación con motivo obligatorio en
+metadata y bitácora. Versión documental 1.32.0 → 1.33.0. Sin push ni despliegue. -->
 
