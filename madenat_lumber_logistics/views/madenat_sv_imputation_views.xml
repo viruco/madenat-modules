@@ -212,6 +212,11 @@
          reaplicar `-u`, el `menuitem` no vuelve a fijar `active` (sólo nombre,
          padre, acción y secuencia), por lo que sigue inactivo. No se borra el
          registro ni el modelo/documentos. Reversible poniendo active=True. -->
+    <menuitem id="menu_madenat_sv_imputation"
+              name="Imputaciones documentales SV"
+              parent="menu_lumber_logistics"
+              action="action_madenat_sv_imputation"
+              sequence="19"/>
     <record id="menu_madenat_sv_imputation" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>

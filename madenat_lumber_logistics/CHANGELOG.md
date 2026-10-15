@@ -4,6 +4,26 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.29.0] - 2026-10-15
+
+### Fixed
+- **Instalación desde cero de `madenat_lumber_logistics` (defecto latente introducido en `ded5e89`).** En
+  `views/madenat_sv_imputation_views.xml` el `<record id="menu_madenat_sv_imputation" model="ir.ui.menu">`
+  quedo **sin `name`** al retirarse su `<menuitem>` (unificación de acceso, 2026-10-10): en una base existente
+  el `-u` no falla (el menu ya esta creado y no se reescribe su nombre), pero al **instalar desde cero** el
+  registro se crea sin nombre ⇒ `NotNullViolation: null value in column "name" of relation "ir_ui_menu"` ⇒
+  `Failed to load registry`. Se **restituye el `<menuitem>`** (mismos `name`/`parent`/`action`/`sequence`)
+  **antes** del `<record>`, que es exactamente el mecanismo documentado en el expediente
+  `UNIFY_SV_REBAJA_MENU_20261010` («`record` posterior al `menuitem` ⇒ no reaparece al reaplicar `-u`;
+  reversible»). El menu sigue **inactivo** y la recuperacion de navegacion (`active=True` + `-u`) vuelve a ser
+  posible tambien en un alta limpia. Sin cambios de id, nombre, accion ni visibilidad.
+
+### Notes
+- Evidencia: FASE 8 (A-Paso 1: `-i` de los 4 modulos con **exit 0**; `madenat_lumber_logistics` carga en
+  4.70 s) y FASE 7 (`NotNullViolation` detectado). Barrido de la misma clase en todos los modulos instalables:
+  **0 casos restantes**.
+- Sin cambios en modelos, datos, ACL ni `ir.rule`; no requiere scripts de migracion.
+
 ## [18.0.1.28.0] - 2026-10-15
 
 ### Added
