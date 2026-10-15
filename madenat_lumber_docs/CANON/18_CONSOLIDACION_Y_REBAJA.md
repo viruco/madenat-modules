@@ -648,7 +648,7 @@ B-01 open
 ```
 
 - **R1 — Regularización física (AD-95).** Usa el **motor nativo de Rebaja**
-  sobre Contenedores **pendientes elegibles** del propio
+  (`_rebajar_container`) sobre Contenedores **pendientes elegibles** del propio
   Embarque (`loaded`/`sealed`, con stock). Motivo y aprobación ≥ 20 caracteres.
   **Savepoint por Contenedor** + **rollback total** ante cualquier fallo (sin
   rebaja parcial). **No** cambia `state`/`actual_departure` (no retrofecha el
@@ -667,7 +667,7 @@ B-01 open
 
 | Par | Distinción |
 |---|---|
-| **R1 ≠ R2** | R1 es **rebaja extemporánea** (salida nativa, fecha actual). R2 es el **retorno físico total** de la reversa (Clientes → ubicación interna de origen, mismo lote). La evidencia de cierre de R4 se apoya en **Rebaja aplicada**, nunca en retorno. |
+| **R1 ≠ R2** | R1 es **rebaja extemporánea** (salida nativa, fecha actual). R2 es el **retorno físico total** de la reversa (Clientes → ubicación interna de origen, mismo lote, `origin_returned_move_id`). La evidencia de cierre de R4 se apoya en **Rebaja aplicada**, nunca en retorno. |
 | **R4 ≠ Entrega** | R4 sólo **deja de bloquear** por B-01 (`_b01_blocks_delivery()`); **no** ejecuta la Entrega, que conserva sus demás gates físicos/logísticos. |
 
 **Evidencia.** `lumber_export_shipment.py` (`action_open_b01_regularization_wizard`,

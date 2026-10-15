@@ -75,6 +75,42 @@ Si el cambio solo modifica vistas XML o datos, se puede forzar la actualización
 
 ---
 
+## Registro de correcciones de despliegue (2026-10-06)
+
+La actualización remota de `madenat_lumber_logistics` falló primero por un **registro obsoleto** y luego por un **atributo inválido en una vista lista**. Corregido en el código local (DEV):
+
+| # | Error remoto | Archivo | Corrección |
+|---|---|---|---|
+| A | `Cannot update missing record: madenat_lumber_shipping_core.menu_shipping_booking` | `madenat_lumber_logistics/views/logistics_menus.xml` | **Eliminado** el bloque `<record id="madenat_lumber_shipping_core.menu_shipping_booking" model="ir.ui.menu"><field name="active" eval="False"/></record>` (apuntaba a un registro de Shipping inexistente). Se **conserva** el `menuitem id="menu_shipping_booking"` ("Reservas") definido en Logistics (acción, padre y secuencia intactos). |
+| B | `Invalid attribute help for element field` (vista `lumber.shipment.document.backlog.list`) | `madenat_lumber_logistics/views/lumber_document_checklist_views.xml` | `<field name="backlog_note" optional="show" help="…"/>` → `<field name="backlog_note" optional="show"/>`. Se conservan header, botones (Escalar/Cerrar/Exonerar), `groups`/`invisible`/`confirm` y decoraciones. **No** se toca `<field name="help" type="html">` de la acción. |
+
+**Actualización remota:** tras aplicar ambas correcciones, terminó con `Modules loaded`, `Registry loaded` y **resultado 0** (reportado por el usuario).
+
+**Validación local efectivamente realizada:** XML **bien formado** en ambos archivos (`xml.dom.minidom`); bloque obsoleto ausente; `menuitem` de Reservas presente; `backlog_note` con `optional="show"` y sin `help`.
+
+**Límites:** no se ejecutó Odoo ni `-u` localmente; **no** se declara "validado por Odoo en local". XML bien formado ≠ validación completa de vistas por Odoo.
+
+**Pendientes existentes (fuera de alcance, sin modificar):** avisos de grupos no encontrados; dependencias de `volume_detail_line_ids`; ACL eliminadas durante la actualización; menús por perfil; edición de etiquetas/lotes/packing; estados/guards/métodos de negocio.
+
+**Paquete:** si existe `madenat_addons.tar.gz`, debe **regenerarse** para incluir estas correcciones; el paquete anterior **no** está actualizado.
+
+---
+
+## Paquete ACUMULADO pendiente para TEST remoto (2026-10-12) — **NO EJECUTADO**
+
+| Módulo | Versión local vigente | Nota |
+|---|---|---|
+| `madenat_lumber_logistics` | **18.0.1.26.0** | HOTFIX OWL chatter (`div.oe_chatter` → `<chatter/>`) + WIP de rebaja |
+| `madenat_lumber_core` | 18.0.6.7.0 | WIP previo (audit log / guarda FK etiqueta SV) |
+| `madenat_lumber_intake` | 18.0.0.13.0 | WIP previo |
+| `madenat_lumber_costing` | 18.0.1.0.0 | WIP previo |
+
+- **Comando (por módulo, NUNCA `-u all`):**
+  `odoo -d <db> -u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics --stop-after-init --no-http`
+- **TEST remoto:** **NO inspeccionado ni modificado** en esta intervención; Cristhian usa la **versión anterior**.
+  Leer en **solo lectura** la versión instalada antes de desplegar.
+- **Detalle y rollback:** expediente `HOTFIX_OWL_CHATTER_OE_20261012/docs/PLAN_DESPLIEGUE_ACUMULADO.md`.
+
 ## Relacionado
 
 - [[entorno_wsl2_docker]]

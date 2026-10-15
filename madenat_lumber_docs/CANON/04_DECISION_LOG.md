@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.18.0
-**Última actualización:** 2026-10-07  <!-- actualizado: 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
+**Versión documental:** 12.22.0
+**Última actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (1) — alta **AD-106** (supuesto de **UNA sola compañía**: no se implementa `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura; se **conservan** los 3 usuarios inactivos `@madenat.test`). Versión 04 12.21.0 → 12.22.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-12 (3) — alta **AD-105** (H1 motivo obligatorio por cualquier vía; H2 rol jefatura/sistema en lugar del grupo técnico `stock.group_stock_manager`; H3/**H-SEC-5** bitácora APPEND-ONLY por ORM con bypass test-only inerte y **límite SQL/DBA declarado**; H4 escenario (f) de costos; H6 fixtures `*_oper`). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Versión 04 12.20.0 → 12.21.0. Expediente `AUDITORIA_INTEGRAL_20261012/fase4/`. Sin commit/push. | 2026-10-12 (2) — alta **AD-104** (guardas G1 de eliminación de guía D-G1..D-G4 + fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 SIGUE PENDIENTE. Versión 04 12.19.0 → 12.20.0. Sin commit/push. | 2026-10-12 (1) — alta **AD-103** (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como POLÍTICA; no autoriza borrado de datos reales; guardas de integridad/trazabilidad **pendientes**). Versión 04 12.18.0 → 12.19.0. Sin commit/push. | 2026-10-07 (2) — alta AD-102 (retorno de servicio: identificación no bloqueante + reglas de imputación I2; implementado/probado en copia aislada `IMPL_SERVICE_RETURN_AB_20261007/`, NO aplicado). Ver 12 §11.9, 19 §19.9, 03 §12, 05, 02 §17.10. | 2026-10-07 — alta AD-101 (búsqueda, filtros y agrupaciones de la Consola de Intake: OC documental vs OC vinculada; `guide_date_kind`; modalidades; producto real por líneas; procesador por Orden de Procesamiento; aplicado en `madenat_test`). Ver 00 §4.10 y 03 §11. | 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16; (5) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (feat/procesadores-guardas-20261002): parcial manual sin motivo, físico/reservado/libre y backorder nativo; (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`; I2 documental sin efecto en stock; salida nativa + ledger `action_type='imputacion'` a I3; saldo físico / `sv_available_m3` / saldo documental separados; cabecera por guía, inmutabilidad y reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo a I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación; (7) — precisa la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES) y el saldo documental aplicado de SV (I2_DOCUMENTAL_STATES). Ver CANON/19 §6/§7.3; (8) — precisa el alcance del principio de no-borrado: aplica también a la corrección/reset de recepción (`lumber.reception.action_reset_to_draft`, 00 §4.2), que revierte por movimientos nativos y nunca borra/escribe `stock.quant`, lotes, pickings ni movimientos; límite explícito: el reset de guía `action_reopen_to_draft` permanece PENDIENTE; (9) — G1: reapertura de guía no bloqueante y trazable (wizard + reversión nativa del consumo BT-04; conservación de historia física sin vínculo fuerte; sin escribir/borrar `stock.quant` ni mutar `origin`; auditoría `deviation` + chatter). G2 (llave fuerte `stock.picking.guia_processing_id`) y G3 (reversión nativa automática del ingreso de producción por esa llave) IMPLEMENTADOS. Ver 00 §4.3. -->
 **Estado:** Canonical / activo
 
 ---
@@ -2906,3 +2906,114 @@ se reutiliza el mecanismo I2 existente.
 <!-- actualizado: 2026-10-02 (4) — alta AD-90 (semántica de inventario en procesador y pendiente de consolidación documental). Complementa AD-87/AD-88/AD-89. Ver CANON/19 §2/§3/§5.4/§7.3/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (6) — alta AD-91 (modelo documental de imputación SV por guía procesada, I2): modelos `madenat.sv.imputation`/`.line`/`.sv.line`; I2 sin efecto en stock; salida nativa + ledger a I3; tres saldos separados; cabecera por guía; inmutabilidad/reversa; idempotencia por clave documental propia (no `picking_id`); severidad dura etiqueta-side / blanda SV-side; costo I5; merma/cierre posterior. Resuelve C-1/C-2/C-3. Ver CANON/19 §2/§4/§5/§6/§7/§13.2/§16. Solo documentación. -->
 <!-- actualizado: 2026-10-02 (7) — precisa en I2 la reserva documental temporal de capacidad nominal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal hasta aplicar/cancelar/reversar; sin cambio funcional. Ver CANON/19 §6/§7.3. Solo documentación. -->
+
+### AD-103 (2026-10-12) — Jefatura de Operaciones puede eliminar `madenat.guia.processing` (higiene de la base)
+
+**Decisión (autor: Mauricio, 2026-10-12).** El grupo **Jefatura de Operaciones** puede eliminar registros de
+`madenat.guia.processing`, con el fin de **higiene de la base de datos y limpieza del sistema**.
+
+**Alcance.** Aprueba que el permiso `unlink` de jefatura sobre ese modelo **exista como política** (el cambio de
+ACL vive en el WIP de `madenat_lumber_core`/`madenat_lumber_intake`). **No** autoriza borrar ningún dato real en
+esta fase ni modificar ACL/vistas/código en el marco de esta decisión.
+
+**Condición (pendiente).** Guardas de integridad y trazabilidad **por decidir**; ficha de análisis y matriz de
+escenarios en `AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`.
+**Estado:** permiso **aprobado**; guardas **pendientes**.
+
+**Riesgo residual declarado.** Hasta que Mauricio apruebe las guardas, el cambio de ACL **NO** debe incluirse en
+ningún despliegue al TEST remoto sin documentar expresamente el riesgo.
+
+<!-- actualizado: 2026-10-12 (1) — alta AD-103 (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como política, sin autorizar borrado de datos reales; guardas de integridad/trazabilidad PENDIENTES). Ver `AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`. Solo documentación. -->
+
+### AD-104 (2026-10-12) — Guardas de eliminación de guía (G1) y saneamiento de fixtures (G2)
+
+**Decisiones aprobadas por Mauricio (FASE 3):**
+- **D-G1.** Se **bloquea** el borrado si algún lote de la guía tiene `stock.quant`, movimientos, historial SV,
+  imputaciones o return-links.
+- **D-G2.** Los errores técnicos de FK se convierten en **mensajes de negocio** que sugieren **anular, corregir o
+  revertir**.
+- **D-G3.** Toda eliminación (**vía directa o asistente**) **exige motivo** y deja registro en
+  `madenat.audit.log`.
+- **D-G4.** El bloqueo de la bitácora (**H-SEC-5**) **NO** se implementa en esta fase.
+
+**Implementación (mínima):** guarda **única** en `madenat.guia.processing.unlink()` (`madenat_lumber_core`
+**18.0.6.7.0 → 18.0.6.8.0**): pre-chequeo `_guia_deletion_blockers`, motivo + bitácora (`_guia_log_deletion`) y
+**borrado controlado de lotes vacíos** (sin huérfanos). El asistente (`madenat_lumber_intake`
+**18.0.0.13.0 → 18.0.0.14.0**) comparte la guarda y **no duplica** la bitácora. Se **corrige** la fixture
+`test_guide_lifecycle_phase2.TestDeleteConcurrency` (limpieza por ID) y se añade
+`test_guia_delete_guards.py` (escenarios a–m).
+
+**Limitaciones declaradas.** (1) El **motivo** en la vía directa usa un valor por defecto documentado
+(«sin motivo declarado») para no romper un test existente; endurecerlo requiere decisión. (2) **H-SEC-5 sigue
+pendiente**: mientras la bitácora pueda alterarse, el registro de eliminaciones **no es inmutable por garantía
+técnica** — brecha declarada. (3) La cobertura de **costos** (escenario f) es indirecta.
+
+**Evidencia:** `AUDITORIA_INTEGRAL_20261012/fase3/` (diseño, matriz a–m, pruebas, regresión, dry-run de residuos).
+
+<!-- actualizado: 2026-10-12 (2) — alta AD-104 (guardas G1 de eliminación de guía D-G1..D-G4 + saneamiento de fixture G2). Core 18.0.6.7.0 → 18.0.6.8.0; intake 18.0.0.13.0 → 18.0.0.14.0. H-SEC-5 (bloqueo de bitácora) SIGUE PENDIENTE. Ver `AUDITORIA_INTEGRAL_20261012/fase3/`. Solo documentación. -->
+
+### AD-105 (2026-10-12) — Motivo obligatorio, rol de jefatura y bitácora APPEND-ONLY (FASE 4)
+
+**Decisiones aprobadas por Mauricio (FASE 4):**
+- **H1 — Motivo obligatorio en TODA vía.** Se retira el valor por defecto de la vía directa (cierre del desvío
+  D-G3 de la FASE 3): sin `madenat_guia_delete_reason` no vacío, `unlink()` **se bloquea** con un `UserError`
+  que guía al asistente. La eliminación nativa de la interfaz (lista/formulario) queda **bloqueada con mensaje**
+  —opción elegida por ser la que **menos cambia las vistas** (sin tocar botones, acciones ni formularios)—. Las
+  vías legítimas (asistente de ciclo de vida, Modo A y **reclasificación AD-73**) aportan su **propio motivo de
+  negocio**.
+- **H2 — Rol autorizado = «Jefatura de Operaciones» (o sistema).** `_guia_delete_group_ok()` (constante
+  `GUIA_DELETE_GROUPS`) sustituye la exigencia del grupo técnico `stock.group_stock_manager` en `unlink()` y en
+  `_cleanup_orphan_moves_guia()`, y es la **única** comprobación reutilizada por el modelo y el asistente.
+  **No** se amplían permisos de stock ni se crean grupos. Operaciones, Auditoría y usuarios internos **no**
+  pueden eliminar; `stock_manager` **sin** jefatura tampoco.
+- **H3 — H-SEC-5 mínimo IMPLEMENTADO.** `madenat.audit.log` pasa a ser **APPEND-ONLY**: `write()` y `unlink()`
+  lanzan `UserError` de **negocio** —incluso con `sudo()` y para el grupo de sistema—; la ACL del grupo de
+  sistema pasa de `1,1,1,1` a **`1,0,1,0`** (se conservan `create`/`read`). Única excepción: la limpieza
+  **test-only** (token vivo `madenat_sv_test_cleanup_token` + `--test-enable` **real** + BD de test), inerte sin
+  `--test-enable`. Las correcciones se registran como **eventos NUEVOS**, nunca editando.
+- **H4/H6 — Cobertura y fixtures.** Prueba dedicada del escenario **(f)** de costos; fixtures de las suites
+  `test_sv_rebaja_*` saneadas (sin residuo de socios `*_oper`).
+- **H5 — Saneamiento LOCAL** de residuos de prueba en `madenat_test`, con **simulación previa** y borrado por
+  **IDs explícitos** uno a uno.
+
+**Afirmación ajustada («bitácora inmutable»).** Lo garantizado es **inmutabilidad por ORM**: `write`/`unlink`
+bloqueados sin excepción para `sudo` ni para el grupo de sistema, salvo el bypass de pruebas **inerte**. **NO**
+se garantiza inmutabilidad frente a **SQL directo** ni frente a un **administrador de base de datos**.
+
+**Límite persistente y defensa propuesta (NO implementada).** Trigger de base de datos que rechace
+`UPDATE`/`DELETE` sobre `madenat_audit_log`, o **hash encadenado** por registro. Requiere decisión de Mauricio.
+
+**Evidencia:** `AUDITORIA_INTEGRAL_20261012/fase4/` (diseño, matriz antes/después, pruebas, regresión,
+simulación y ejecución del saneamiento, diff y hashes).
+
+<!-- actualizado: 2026-10-12 (3) — alta AD-105 (H1 motivo obligatorio en toda vía; H2 rol jefatura/sistema en lugar de stock_manager; H3/H-SEC-5 bitácora APPEND-ONLY por ORM con bypass test-only inerte y límite SQL/DBA declarado; H4 escenario f; H6 fixtures *_oper). Core 18.0.6.8.0 → 18.0.6.9.0; intake 18.0.0.14.0 → 18.0.0.15.0; logistics 18.0.1.26.0 → 18.0.1.27.0. Ver `AUDITORIA_INTEGRAL_20261012/fase4/`. Solo documentación. -->
+
+### AD-106 (2026-10-15) — Supuesto de una sola compañía y conservación de los usuarios de prueba inactivos
+
+**Contexto.** La auditoría integral del 2026-10-12 dejó **abierta** la pregunta de si `madenat.guia.processing`
+debe aislarse por compañía (`company_id` + `ir.rule`), porque hoy **no** declara `company_id` **ni** tiene regla
+de registro de compañía (fase4, §9 y §10). La imputación documental SV (`madenat.sv.imputation`, `AUD-ETQ-07`)
+**sí** tiene `company_id` obligatorio y su regla de registro multi-compañía en
+`madenat_lumber_logistics/security/madenat_sv_imputation_rules.xml`; esta decisión **no** la modifica.
+
+**Decisión (aprobada por Mauricio — FASE 5, C-3).**
+
+- **Supuesto vigente:** MADENAT opera con **UNA sola compañía**.
+- **No** se implementa `company_id` **ni** `ir.rule` de compañía en `madenat.guia.processing` (tampoco se
+  cambian sus permisos por este motivo). El control de acceso vigente es **por rol** (jefatura / operaciones /
+  auditoría), según AD-103, AD-104 y AD-105.
+- **Condición de reapertura:** si en el futuro existe **más de una compañía**, esta decisión debe **reabrirse**
+  antes de operar guías compartidas entre compañías.
+- **Riesgo residual declarado (no ocultado):** un usuario **con jefatura de otra compañía** podría ver o
+  eliminar guías; hoy es inocuo porque sólo hay una compañía (la FASE 4 probó que **sin** jefatura la
+  eliminación se bloquea).
+
+**Conservación de datos de prueba.** Los **3 usuarios inactivos** `@madenat.test` (`v3_concil_oper@`,
+`v3_concil_jef@`, `impl_sv_check@`) se **conservan**: no se eliminan ni se anonimizan. El saneamiento H5 de la
+FASE 4 borró los residuos de socios y de bitácora y dejó estos usuarios explícitamente documentados; esta AD
+formaliza la decisión. El pendiente **D7** de la FASE 1 queda **DECIDIDO = CONSERVAR**.
+
+**Evidencia.** `AUDITORIA_INTEGRAL_20261012/` — README §4.3 (H-DATA-1) y §7 (D7); `fase4/README.md` §7, §9 y §10.
+
+<!-- actualizado: 2026-10-15 (1) — alta AD-106 (supuesto de una sola compañía: sin `company_id` ni `ir.rule` de compañía en `madenat.guia.processing`, con condición de reapertura declarada; y conservación de los 3 usuarios inactivos `@madenat.test`, D7 = CONSERVAR). Versión 04 12.21.0 → 12.22.0. Registrado en el commit local ① de la FASE 5 (commits ordenados, solo local); sin push ni despliegue. -->
+

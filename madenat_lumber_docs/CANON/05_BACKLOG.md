@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.18.0
-**Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — nueva sección al final de «REVALIDACIÓN 2026-10-08 (2.ª pasada)»: **cierre funcional 2026-10-10** — Q1 (presentación de volúmenes) y Q2 (Nota de Venta JCE) **IMPLEMENTADOS EN DESARROLLO**; Q3 (packing PDF Arauco) **DECISIÓN FUNCIONAL** (ruta de Volúmenes); Q4 (ingresos reales `41994`/`95083`) **EJECUTADO EN DESARROLLO sin stock**; Q5 (V3) y Q6 (OwlError) **pendientes/no reproducidos**; Q7/Q8 **pendientes**. Ver `02_CONTINUIDAD.md` §17.16 y `03_TESTS.md` §14. | 2026-10-08 (5) — nueva sección «**REVALIDACIÓN 2026-10-08 (2.ª pasada) — pruebas reconstruidas con la biblioteca de muestras**»: antecedente incorporado (**Mauricio confirma que se probaron todos los ingresos**; formatos en `muestras_documentos_ingreso`, fuera de `custom_addons`). Rectifica la 1.ª pasada: **cerrado con evidencia reconstruida** R02 (11 ingresos reales), R03 (subproducto 100 % de líneas), R06 (26270: adjuntos + **17 lotes** + picking + réplica en TEST remoto), R09 (95806 guía por Volúmenes), R11 (4495589 guía, fixture byte-idéntico + motor real); **parcial**: R05 (equivalencia con `39519`), R08 (fixture derivado «investigación 95083»), R07 (**48,009 = volumen de embarque, no un error**); **pendientes** Q1–Q8 (presentación de volúmenes, Nota de Venta JCE, packing PDF Arauco, ingresos reales de 41994/95083, V3, OwlError, réplica remota, fixtures). Límites conservados. Ver `02_CONTINUIDAD.md` §17.15 y `03_TESTS.md` §13.5–13.6. | 2026-10-08 (4) — nueva sección «Solicitudes de Cristhian (2026-09-02 / 2026-09-07) — AUDITORÍA 2026-10-08»: se clasifican R01–R16 con evidencia; **solo R02, R12, R13, R14 (parcial) y R16 (parcial) quedan acreditadas**; R03/R04/R05/R06/R07/R08/R09/R10/R11/R15 permanecen ABIERTAS. No se cierra ningún requisito de proveedor: **ninguno** tiene evidencia de ingesta real (la base `madenat_test` del TEST remoto contiene **1** registro en `madenat_guia_processing`: guía **26270** Ferramenta, `validated`, `packing_volume_declared_m3` **vacío**, `documental_conciliation_state='partial'`). Ver `02_CONTINUIDAD.md` §17.14 y `03_TESTS.md` §13. | 2026-10-08 (3) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior (AD-102)» pasa a **APLICADO EN EL DESARROLLO EXISTENTE (`madenat_test`)** + reorganización de la UI de Ingreso de Madera; dirigidas **88/88** sobre `madenat_test` (incl. Cristhian uid 8, `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — entorno aislado RECREADO (autorizado; workcopy `:ro`, sin diffs; filestore repoblado); **V3 pendiente de evidencia manual**. | 2026-10-08 (1) — RETOMA (SOLO LECTURA): revalidación conforme (rama/HEAD Git, SHA-256 de A/B/AB = checkpoint, workcopy = activo + 15 archivos de `AB_completo.diff`, `--dry-run` limpio, A/B ausente del activo y de `madenat_test`); **entorno aislado NO conservado** (reinicio del host: `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue pendiente**; recrear el aislamiento pendiente de autorización. Ver 02 §17.12. | 2026-10-07 (3) — PAUSA (reanuda 2026-10-08): sección «Retorno de servicio…» marca la pausa; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (incl. Cristhian uid 8, su=False); V3 pendiente; A/B no aplicados. Ver 02 §17.11. | 2026-10-07 (2) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior» actualizada a IMPLEMENTADO EN AISLAMIENTO (AD-102; copia `IMPL_SERVICE_RETURN_AB_20261007/`; 85/85 pruebas dirigidas; 0 regresiones). | nueva entrada «Confirmación de retorno de servicio (2026-10-07) — PENDIENTE (NO aplicado)» (antecedente `IMPL_SERVICE_RETURN_20261006/`; retoma en `02_CONTINUIDAD.md` §17). | nueva sección «Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101) — APLICADO (madenat_test)» con sus pendientes (V3, instalación en base limpia, volumen numérico, otros orígenes de procesador, Abiertos/Finalizados). Ver 00 §4.10 y 03 §11. | 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado; (9) — AD-91: I2 con alcance cerrado documental (modelo aditivo madenat.sv.imputation/.line/.sv.line; cabecera por guía, inmutabilidad/reversa, idempotencia por clave documental propia; duro etiqueta-side / blando SV-side; sin efecto en stock, sin ledger, sin costo); salida nativa + ledger a I3; costo a I5; merma/cierre posterior; I2 sigue PENDIENTE. Ver CANON/19 §4/§5/§6/§7/§13.2/§16; (10) — precisa la reserva documental temporal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger; sin cambio funcional ni de estado. Ver CANON/19 §6/§7.3. -->
+**Versión documental:** 8.27.0
+**Fecha de actualización:** 2026-10-15  <!-- actualizado: 2026-10-15 (1) — nueva sección final «Supuesto de una sola compañía (AD-106) y conservación de los usuarios de prueba inactivos»: `madenat.guia.processing` sin `company_id` ni `ir.rule` de compañía mientras MADENAT opere con una sola compañía (condición de reapertura) y los 3 usuarios `@madenat.test` se conservan (D7 = CONSERVAR). Versión 05 8.26.0 → 8.27.0. Commit local ① (FASE 5); sin push ni despliegue. | 2026-10-10 (1) — nueva sección al final de «REVALIDACIÓN 2026-10-08 (2.ª pasada)»: **cierre funcional 2026-10-10** — Q1 (presentación de volúmenes) y Q2 (Nota de Venta JCE) **IMPLEMENTADOS EN DESARROLLO**; Q3 (packing PDF Arauco) **DECISIÓN FUNCIONAL** (ruta de Volúmenes); Q4 (ingresos reales `41994`/`95083`) **EJECUTADO EN DESARROLLO sin stock**; Q5 (V3) y Q6 (OwlError) **pendientes/no reproducidos**; Q7/Q8 **pendientes**. Ver `02_CONTINUIDAD.md` §17.16 y `03_TESTS.md` §14. | 2026-10-08 (5) — nueva sección «**REVALIDACIÓN 2026-10-08 (2.ª pasada) — pruebas reconstruidas con la biblioteca de muestras**»: antecedente incorporado (**Mauricio confirma que se probaron todos los ingresos**; formatos en `muestras_documentos_ingreso`, fuera de `custom_addons`). Rectifica la 1.ª pasada: **cerrado con evidencia reconstruida** R02 (11 ingresos reales), R03 (subproducto 100 % de líneas), R06 (26270: adjuntos + **17 lotes** + picking + réplica en TEST remoto), R09 (95806 guía por Volúmenes), R11 (4495589 guía, fixture byte-idéntico + motor real); **parcial**: R05 (equivalencia con `39519`), R08 (fixture derivado «investigación 95083»), R07 (**48,009 = volumen de embarque, no un error**); **pendientes** Q1–Q8 (presentación de volúmenes, Nota de Venta JCE, packing PDF Arauco, ingresos reales de 41994/95083, V3, OwlError, réplica remota, fixtures). Límites conservados. Ver `02_CONTINUIDAD.md` §17.15 y `03_TESTS.md` §13.5–13.6. | 2026-10-08 (4) — nueva sección «Solicitudes de Cristhian (2026-09-02 / 2026-09-07) — AUDITORÍA 2026-10-08»: se clasifican R01–R16 con evidencia; **solo R02, R12, R13, R14 (parcial) y R16 (parcial) quedan acreditadas**; R03/R04/R05/R06/R07/R08/R09/R10/R11/R15 permanecen ABIERTAS. No se cierra ningún requisito de proveedor: **ninguno** tiene evidencia de ingesta real (la base `madenat_test` del TEST remoto contiene **1** registro en `madenat_guia_processing`: guía **26270** Ferramenta, `validated`, `packing_volume_declared_m3` **vacío**, `documental_conciliation_state='partial'`). Ver `02_CONTINUIDAD.md` §17.14 y `03_TESTS.md` §13. | 2026-10-08 (3) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior (AD-102)» pasa a **APLICADO EN EL DESARROLLO EXISTENTE (`madenat_test`)** + reorganización de la UI de Ingreso de Madera; dirigidas **88/88** sobre `madenat_test` (incl. Cristhian uid 8, `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — entorno aislado RECREADO (autorizado; workcopy `:ro`, sin diffs; filestore repoblado); **V3 pendiente de evidencia manual**. | 2026-10-08 (1) — RETOMA (SOLO LECTURA): revalidación conforme (rama/HEAD Git, SHA-256 de A/B/AB = checkpoint, workcopy = activo + 15 archivos de `AB_completo.diff`, `--dry-run` limpio, A/B ausente del activo y de `madenat_test`); **entorno aislado NO conservado** (reinicio del host: `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue pendiente**; recrear el aislamiento pendiente de autorización. Ver 02 §17.12. | 2026-10-07 (3) — PAUSA (reanuda 2026-10-08): sección «Retorno de servicio…» marca la pausa; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (incl. Cristhian uid 8, su=False); V3 pendiente; A/B no aplicados. Ver 02 §17.11. | 2026-10-07 (2) — sección «Retorno de servicio — identificación no bloqueante + imputación posterior» actualizada a IMPLEMENTADO EN AISLAMIENTO (AD-102; copia `IMPL_SERVICE_RETURN_AB_20261007/`; 85/85 pruebas dirigidas; 0 regresiones). | nueva entrada «Confirmación de retorno de servicio (2026-10-07) — PENDIENTE (NO aplicado)» (antecedente `IMPL_SERVICE_RETURN_20261006/`; retoma en `02_CONTINUIDAD.md` §17). | nueva sección «Búsqueda, filtros y agrupaciones de la Consola de Intake (2026-10-07, AD-101) — APLICADO (madenat_test)» con sus pendientes (V3, instalación en base limpia, volumen numérico, otros orígenes de procesador, Abiertos/Finalizados). Ver 00 §4.10 y 03 §11. | 2026-10-02 (7) — AD-90 / D-I1-05: semántica SV en procesador (custodia operativa MADENAT, pendiente de consolidación documental); refinamiento de I2 a consolidación/imputación documental etiquetas→SV (no producción ni genealogía); cuatro categorías de saldo y dos órdenes temporales; I2 sigue PENDIENTE. Ver 19_IMPUTACION_SV_Y_PROCESADORES.md §2/§3/§5.4/§7.3/§16; (8) — corrección AD-89 D-I1-03/D-I1-04 IMPLEMENTADA (rama feat/procesadores-guardas-20261002): parcial manual sin motivo, libre = físico − reservado ajeno (reserva ajena intacta) y backorder nativo documentado; (9) — AD-91: I2 con alcance cerrado documental (modelo aditivo madenat.sv.imputation/.line/.sv.line; cabecera por guía, inmutabilidad/reversa, idempotencia por clave documental propia; duro etiqueta-side / blando SV-side; sin efecto en stock, sin ledger, sin costo); salida nativa + ledger a I3; costo a I5; merma/cierre posterior; I2 sigue PENDIENTE. Ver CANON/19 §4/§5/§6/§7/§13.2/§16; (10) — precisa la reserva documental temporal de etiqueta (I2_ACTIVE_STATES: draft/pending/applied, techo duro) frente al saldo documental aplicado de SV (I2_DOCUMENTAL_STATES: applied); pending mantiene la reserva temporal; draft/pending sin efecto en stock/ledger; sin cambio funcional ni de estado. Ver CANON/19 §6/§7.3. -->
 <!-- actualizado: 2026-10-10 (2) — nueva sección «Conciliación envío–retorno (Bloque A/B/C) — IMPLEMENTADO (2026-10-10)»: modelo `madenat.processor.return.link`, cierra la brecha (a) de CANON/19 §19.10; Bloque D cuantitativo PENDIENTE. Versión 05 8.16.0 → 8.17.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (3) — sección «Conciliación envío–retorno (Bloque A/B/C)»: **ajuste de integridad** (`19` §19.13): reversa vs. procedencia, reimputación con historia, consistencia de compañía + regla de registro, elegibilidad dura (done/tipo interno), volúmenes N:M referenciales (`aggregator=False`). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Versión 05 8.17.0 → 8.18.0. Bloque D fuera de alcance. Sin commit/push. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
@@ -741,3 +741,205 @@ Detalle y evidencia: `02_CONTINUIDAD.md` **§17.16**; corridas: `03_TESTS.md` **
 - **Cierre versionado:** `madenat_lumber_logistics` **18.0.1.8.0** · `madenat_lumber_core` **18.0.6.6.0**.
 - **Bloque D:** **NO implementado** (decisión «opción 3»; `linked` = vínculo registrado). Diseño: `19` §19.12.
 - **Pendiente de evidencia manual:** navegador real (V3 *pixel*); concurrencia; base limpia.
+
+---
+
+## Operación manual de asignaciones centrada en SV (2026-10-10) — IMPLEMENTADO (`madenat_test`)
+
+Continúa la conciliación envío–retorno (Bloque A/B/C). Reordena I2 alrededor del **SV** sin crear
+documento de negocio, ledger ni motor de saldos nuevos. `CANON/19` **§19.14**; `02` §17.16.12;
+`03` §16.
+
+- **Entrada/consulta (A):** acción **Logística → Asignaciones SV** sobre `stock.lot`
+  (`lot_flow_type='volume'`) con vistas dedicadas; cabecera con guía de procedencia, procesador,
+  nominal, total imputado **aplicado** y **saldo documental I2**; detalle con imputación/guía/
+  etiqueta/volumen/estado/fecha/usuario y acceso al documento.
+- **Alta desde el SV (B):** botón «Asignar retorno» → asistente existente con `sv_lot_id` (contexto
+  orientador; sin reparto/cantidades/aplicación automática). Reutiliza la imputación de trabajo.
+- **Selección explícita (C):** `selected` + «Seleccionar todas»/«Quitar selección»; operación nueva
+  sin auto-inclusión. Pestañas: «Etiquetas del retorno», «Asignación a SV», «Envíos relacionados»,
+  «Motivo / reversa».
+- **Conservación del borrador (D):** reconciliación (**upsert**) por etiqueta y por (línea, SV);
+  reabrir conserva selección y reparto; bloqueo de cambio de guía. **No** es el Bloque D cuantitativo.
+- **Integridad etiqueta–guía (E):** constraint de modelo + apply; **0** inconsistencias históricas.
+- **Coherencia de volumen (F):** `0 < Σ reparto ≤ nominal`; parciales admitidos; techo duro de lote y
+  exceso blando SV-side conservados.
+- **Pruebas:** `T-MAN-01..12` = **12/12**; regresión `madenat_lumber_logistics` = **286 pruebas,
+  4 fallas** (las mismas preexistentes/ambientales), **0 errores**.
+- **Cierre versionado:** `madenat_lumber_logistics` **18.0.1.9.0**; `19` **1.11.0**.
+- **Pendiente de evidencia manual:** navegador real (V3 *pixel*). Guion:
+  `IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`.
+- **Bloque D (conciliación cuantitativa):** **NO implementado** (`19` §19.12). **Sin** commit/push.
+
+---
+
+## Corrección de duplicidad de accesos SV — «Rebaja de etiquetas» (2026-10-10)
+
+**Estado:** IMPLEMENTADO EN DESARROLLO (`madenat_test`). Cierra la **duplicidad de navegación** que
+reproducía la misma operación documental en «Asignaciones SV» e «Imputaciones documentales SV».
+`CANON/19` **§19.15**; `02` §17.16.13; `03` §17.
+
+- **Único acceso:** **«Rebaja de etiquetas»** (menú `menu_madenat_sv_assignment` reutilizado) sobre
+  `stock.lot` volumen. «Imputaciones documentales SV» **retirado de la navegación**
+  (`ir.ui.menu` 542 `active=False`), preservando la acción (867 → «Historial de rebajas»).
+- **Navegación interna:** «Registrar rebaja», «Historial de rebajas» (por SV) y «Ver historial
+  completo» **dentro** del recorrido; **sin** segundo menú.
+- **Sin cambios en:** «Rebajar por Motonave», «Consolidación», ingesta, modelo/asistente/`apply`/
+  `reverse`/saldos/permisos/auditoría.
+- **Pruebas:** NAV-01..12 = **11/11**; regresión 298 pruebas, 4 fallas (las mismas preexistentes),
+  0 errores. La **2.ª** `-u` verifica NAV-10 (sin reaparición del menú).
+- **Versión:** `madenat_lumber_logistics` **18.0.1.10.0**; `19` **1.12.0**.
+- **Pendiente mínimo:** **V3 *pixel*** (navegador real) — guion manual. **Sin** commit/push.
+
+<!-- actualizado: 2026-10-10 (4) — sección «Corrección de duplicidad de accesos SV — Rebaja de
+etiquetas»: cierra la duplicidad de navegación con evidencia (NAV-01..12, 2.ª `-u`). Versión 05
+8.19.0 → 8.20.0. Sin commit/push. -->
+
+---
+
+## Operación y blindaje «Rebaja de etiquetas» (2026-10-10)
+
+**Estado:** IMPLEMENTADO EN DESARROLLO (`madenat_test`). Mejora de inicio a fin de la operación
+existente. `CANON/19` **§19.16**; `02` §17.16.14; `03` §18.
+
+- **Elegibilidad:** sólo guías `service_return_confirmation='yes'` y no canceladas; rechazo de
+  selección forzada en modelo (onchange + antes de construir), sin estados parciales; históricos
+  consultables.
+- **Cantidades:** nominal / rebajado aplicado / reservado / disponible documental, con exclusión del
+  documento en curso (sin doble conteo). N:M no duplica totales.
+- **Listado/búsqueda:** columnas separadas y filtros documentales buscables (agregados `store=True`);
+  «En stock» opcional; columnas opcionales de retorno en guías.
+- **Concurrencia:** advisory lock de **etiqueta + SV** en orden determinista (cierre de CON-01).
+- **Pruebas:** `test_sv_rebaja_operativa.py` = **20/20**; regresión **318 pruebas, 4 fallas**
+  (preexistentes), 0 errores.
+- **Pendiente mínimo:** **V3 *pixel*** (navegador). **Sin** commit/push. **Bloque D** cuantitativo
+  fuera de alcance.
+
+**Pendientes específicos conservados:** Bloque D cuantitativo (§19.12); V3 de navegador; la búsqueda
+por proveedor en el listado SV usa un `filter_domain` combinado «Guía/Proveedor» (la ruta punteada
+`volume_source_guia_id.partner_id` no es válida como campo de búsqueda; alternativa sustentada).
+
+<!-- actualizado: 2026-10-10 (5) — sección «Operación y blindaje Rebaja de etiquetas»: elegibilidad,
+cantidades, filtros buscables y concurrencia con evidencia (20/20; regresión 318). Versión 05
+8.20.0 → 8.21.0. Sin commit/push. -->
+
+---
+
+## Corrección de «Seleccionar todas» y asignación explícita (2026-10-10)
+
+**Estado:** **CORREGIDO EN DESARROLLO** (`madenat_test`), con causa demostrada y pruebas. `CANON/19`
+**§19.17**; `02` §17.16.15; `03` §19. El fallo reportado por Mauricio se **cierra con evidencia**;
+la **aceptación visual sigue pendiente**.
+
+- **Causa:** subcampo `readonly` de x2many sin `force_save` ⇒ el cliente no enviaba
+  `processed_lot_id` (Odoo 18 `record.js::_getChanges`). **Corrección:** `force_save="1"`; sin tocar
+  `required` ni usar `sudo`.
+- **Flujo:** Seleccionar ≠ asignar ≠ aplicar. Acción explícita «Asignar seleccionadas al SV de
+  trabajo» (volumen 0) + «Usar disponible»; resumen «X etiquetas · Y m³ preparados …».
+- **Pruebas:** `test_sv_rebaja_seleccion_asignacion.py` = **16/16**; regresión **334 pruebas, 4 fallas**
+  (preexistentes), 0 errores.
+- **Pendientes concretos:** **aceptación visual de Mauricio (V3)**; Bloque D cuantitativo fuera de
+  alcance.
+
+<!-- actualizado: 2026-10-10 (6) — sección «Corrección de Seleccionar todas y asignación explícita»:
+causa force_save, acciones explícitas y evidencia (16/16; regresión 334). Versión 05 8.21.0 → 8.22.0.
+Sin commit/push. -->
+
+---
+
+## Rediseño operativo del asistente «Registrar rebaja» (2026-10-10)
+
+**Estado:** IMPLEMENTADO EN DESARROLLO (`madenat_test`). **Interfaz anterior rechazada por Mauricio;
+rediseño operativo entregado para nueva revisión visual.** `CANON/19` **§19.18**; `02` §17.16.16;
+`03` §20.
+
+- **Material del packing list** en columnas separadas (etiqueta/`ref`, SKU, producto, subproducto,
+  dimensiones, piezas, volumen) + documental avanzada en columnas **opcionales**.
+- **SKU/dimensiones declaradas** por la regla de promoción (sin cortar el nombre); guía 19827 **17/17**.
+- **Granularidad por lote** (etiqueta repetida = lotes distintos; sin doble conteo).
+- **Formulario amplio** (`o_xxl_form_view`, `target=current`) del mismo asistente.
+- **Cantidades:** «Cantidad preparada» solo lectura; edición en «Asignación a SV» (mismo mecanismo).
+- **Pruebas:** `test_sv_rebaja_material.py` = **8/8**; regresión **342 pruebas, 4 fallas**
+  (preexistentes), 0 errores.
+- **Pendiente único relevante:** **aceptación visual de Mauricio (V3)**.
+
+<!-- actualizado: 2026-10-10 (7) — sección «Rediseño operativo del asistente Registrar rebaja»:
+material del packing list, granularidad y formulario amplio (8/8; regresión 342). Versión 05
+8.22.0 → 8.23.0. Sin commit/push. -->
+
+## Interfaz clara y concisa del asistente «Registrar rebaja» — ambas pestañas (2026-10-10)
+
+**Estado:** IMPLEMENTADO EN DESARROLLO (`madenat_test`). **Aceptación visual de Mauricio pendiente.**
+`CANON/19` **§19.19**; `02` §17.16.17; `03` §21.
+
+- **Cabecera única** (SV, guía, saldo documental del SV, seleccionadas, con reparto preparado, total
+  preparado para el SV); sin repetir el saldo completo del SV por fila.
+- **Totales con nombre y unidad**; subtotal del SV de trabajo separado del total general con varios SV.
+- **«A asignar (m³)» editable** en «Materiales del retorno» (mismo reparto; sin saldo paralelo).
+- **Etiqueta limpia + medidas**; SKU/código técnico como información secundaria.
+- **Asignación a SV** con 4 columnas en un solo SV; «SV destino» sólo con varios SV.
+- **Acciones breves**; «Usar disponible» no sobrescribe lo editado; footer Revisar y aplicar.
+- **Disponibilidad cero:** causa real (Aplicado/Reservado/Sin capacidad) + aviso de no asignables.
+- **Pruebas:** `test_sv_rebaja_ui_limpia.py` = **13/13**; regresión **355 pruebas, 4 fallas
+  (preexistentes), 0 errores**.
+- **Pendiente único relevante:** **aceptación visual de Mauricio (V3)**.
+
+<!-- actualizado: 2026-10-10 (11) — sección «Interfaz clara y concisa del asistente Registrar rebaja —
+ambas pestañas»: cabecera única, totales con unidad, A asignar editable, identidad limpia + medidas,
+causa real de disponibilidad cero (13/13; regresión 355). Versión 05 8.23.0 → 8.24.0. Sin commit/push. -->
+
+
+## HOTFIX bloqueante — OwlError al abrir «Registrar rebaja» (2026-10-10)
+
+**Estado:** CORREGIDO EN DESARROLLO (`madenat_test`) · **renderización real pendiente de comprobación
+manual** · **aceptación pendiente**. `CANON/19` **§19.20**; `02` §17.16.18; `03` §22.
+
+- **Error real del navegador (Mauricio):** `Can not evaluate python expression: (bool(not
+  wizard_id.multi_sv))` — `Name 'wizard_id' is not defined` (`ListRenderer.evalColumnInvisible`).
+- **Causa:** `column_invisible` se evalúa con el contexto del **formulario padre**; no admite campos de
+  fila (`wizard_id`). **No** fue caché.
+- **Corrección:** `column_invisible="not parent.multi_sv"` + `<field name="multi_sv" invisible="1"/>`
+  en el padre. Sin tocar Owl/assets/core; sin capturar la excepción.
+- **Pruebas:** casos A–E + invariantes de arch = **20/20**; regresión **362 pruebas, 4 fallas
+  preexistentes, 0 errores**.
+- **Pendiente único relevante:** **comprobación manual de renderización + aceptación visual de Mauricio**.
+
+<!-- actualizado: 2026-10-10 (12) — sección «HOTFIX bloqueante — OwlError al abrir Registrar rebaja»:
+`column_invisible` fuera de contexto (`wizard_id` → `parent.multi_sv`) + carga de `multi_sv`. Versión 05
+8.24.0 → 8.25.0. Sin commit/push. -->
+
+## HOTFIX OWL — «Agregar una línea» en el documento de rebaja (`div.oe_chatter`, 2026-10-12)
+
+- **Síntoma:** en `madenat.sv.imputation` (p. ej. `IMP04823`), «Agregar una línea» ⇒ `OwlError`
+  `TypeError: Cannot read properties of undefined (reading 'includes') at get urlRelation`.
+- **Causa (demostrada):** Odoo 18 CE ya **no** compila `div.oe_chatter`; los campos del chatter se filtraban
+  como listas o2m editables (`mail.message`/`mail.followers`). Ver `19` §19.33.
+- **Corrección (mínima):** `div.oe_chatter` → `<chatter/>` en `view_madenat_sv_imputation_form` y
+  `view_madenat_processor_return_link_form`. Módulo `madenat_lumber_logistics` **18.0.1.26.0**.
+- **Pruebas:** VIEW-01..05 de servidor 5/5; logistics 4/506 (0 nuevas); core+intake+logistics 6/4 de 1284
+  (0 nuevas). **Navegador PENDIENTE.**
+- **Hallazgos (no corregidos):** `madenat_vendor_payment` (mismo `div.oe_chatter`, módulo no instalado);
+  endurecer `create` por RPC de `mail.message`/`mail.followers` (**decisión separada**).
+
+<!-- actualizado: 2026-10-12 (13) — HOTFIX OWL chatter (`div.oe_chatter` → `<chatter/>`). Versión 05
+8.25.0 → 8.26.0. Sin commit/push/despliegue. -->
+
+
+## Supuesto de una sola compañía (AD-106) y conservación de los usuarios de prueba inactivos — 2026-10-15
+
+- **Supuesto vigente (decidido):** MADENAT opera con **una sola compañía**. `madenat.guia.processing` **no**
+  implementa `company_id` ni `ir.rule` de compañía; el control de acceso es **por rol** (jefatura /
+  operaciones / auditoría), según AD-103/AD-104/AD-105. Ver `04_DECISION_LOG.md` **AD-106**.
+- **Pendiente condicionado (reabrir):** si se incorpora **una segunda compañía**, debe **reabrirse** la decisión
+  (aislamiento por compañía de las guías) **antes** de operar guías compartidas entre compañías.
+- **Conservado (decidido):** los **3 usuarios inactivos** de prueba `@madenat.test` (`v3_concil_oper@`,
+  `v3_concil_jef@`, `impl_sv_check@`) se **conservan**; no se eliminan ni se anonimizan. El pendiente **D7**
+  (FASE 1) queda **DECIDIDO = CONSERVAR**.
+- **Fuera de alcance (no aprobado):** limpieza generalizada de la bitácora de pruebas de **todas** las suites
+  que hacen `commit()`; trigger de base de datos o hash encadenado para la bitácora (sigue **propuesto y no
+  implementado**); despliegue al TEST remoto.
+
+**Evidencia:** `AUDITORIA_INTEGRAL_20261012/README.md` §4.3 (H-DATA-1) y §7 (D7); `fase4/README.md` §7, §9, §10.
+
+<!-- actualizado: 2026-10-15 (1) — sección «Supuesto de una sola compañía (AD-106) y conservación de los usuarios de prueba inactivos». Versión 05 8.26.0 → 8.27.0. Commit local ① de la FASE 5 (commits ordenados, solo local); sin push ni despliegue. -->
+

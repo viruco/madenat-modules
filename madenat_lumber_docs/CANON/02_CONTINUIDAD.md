@@ -1,6 +1,6 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.19.0
+**Versión documental:** 12.40.0
 **Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test`: **P0** OwlError **NO REPRODUCIDO** (diagnóstico estático: 0 campos `many2one` sin `relation`, 0 JS propio que altere `Many2OneField`, 0 incidencias en logs; paso manual de captura); **P1** volumen — proxies `vol_compra_m3`/`vol_embarque_m3` en la Consola (Ferramenta 26270: guía/compra 57,840 y embarque 48,009) + rótulos inequívocos en la Guía; **P3** ingresos reales Fátima `41994` (`lumber.reception` 7950 `verified`, 14 líneas, Σ 50,497) y Byc `95083` (`madenat.guia.processing` 33250 `verified`, 8 líneas) **sin stock**; **P4-JCE** normalización de `5/4x5.3/8x16` (documento real: 12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y **P4-Arauco** (packing PDF → ruta de Volúmenes); pruebas dirigidas **34/34** y intake **380** (2 fallas de UI consolidada corregidas); respaldo `CIERRE_PENDIENTES_20261010/db/madenat_test_pre_20261010.dump`. Sin commit/push ni despliegue remoto. | 2026-10-08 (5) — §17.15 **REVALIDACIÓN (2.ª pasada) con la biblioteca externa de muestras** `muestras_documentos_ingreso` (ruta real `…/odoo-18-ce/muestras_documentos_ingreso`, **fuera** de `custom_addons`; 63 archivos, 52 únicos por SHA-256, 4 subdirectorios): **antecedente incorporado** de que Mauricio confirma que **se probaron todos los ingresos**; **reconstrucción de las pruebas** desde los respaldos de base con `pg_restore` (solo lectura sobre el archivo): base **local** `madenat_test` (dump 2026-10-08 09:29) con **11 cabeceras de guía** — `26270` (Ferramenta, `validated`, adjuntos `26270.pdf`+`26270.xlsx`, **17 lotes** con los M3 del packing, 1 picking), **19846/19827/19826** (Ferramenta, 19/17/17 lotes), **4495589** (Arauco, `granel`/`validated`, lote `GRANEL 4495589`, pickings con purga `[PURGADO-TEST]` y reversa), **95806** (JCE, `granel`/`verified`) — y **7** `lumber.reception` (`39519`, `41471`, `41964`, `97183`, `100006`, `15183`, `900001`); **fixture real byte-idéntico** `HLZF75_4495589.pdf` + **fixtures derivados** de Byc/Fátima/JCE; **conciliación por línea** de Ferramenta (⇒ el **48,009** es el volumen de **embarque** con espesor nominal y ancho +1/8", **no** un error; guía/packing/físico = **57,840**); **matriz R01–R16 revalidada** y **correcciones C1–C10**; TEST remoto con **1** guía (26270, replicada con sus 17 lotes). **Sin cambios de código, datos ni servicios; sin commit/push; sin correos.** | 2026-10-08 (4) — §17.14 AUDITORÍA DE LAS SOLICITUDES DE CRISTHIAN (2026-09-02 / 2026-09-07) + CONSOLIDACIÓN DE ENTORNOS: se contrastan las 16 solicitudes (R01–R16) contra documentación, código vigente y evidencias; **matriz consolidada** en §17.14.2; hallazgos y contradicciones en §17.14.3. Verificado en esta intervención: **desarrollo local (código)** rama `feat/guia-correccion-documental-preservada-20261002` / HEAD `e302c48` con **62 modificados + 14 sin seguimiento** (sin commit/push); **servicio local 8069 NO operativo desde esta distro** (Docker Desktop sin integración en la distro: `docker` no disponible y `127.0.0.1:8069` sin respuesta ⇒ sin consultas ni pruebas locales); **TEST remoto `144.22.50.236`** (`/opt/odoo18-test`, servicio `odoo18-test` activo, base `madenat_test`) inspeccionado **SOLO LECTURA** por SSH con `sudo -u postgres psql`. Comparación de código local↔TEST remoto: **314 archivos** `.py/.xml/.csv` de `madenat_lumber_core/intake/logistics/ingestion_engine` con **0 discrepancias de hash** y **39 archivos presentes solo en el remoto** (legado: `.bak/`, `views.backup/`, `views/views.backup/`, `backups_20260819_*`, `lumber_reception_test.py`, `scripts/migrate_reception_relations.py`, `views/lumber_reception_views_OLD.xml`, `security/madenat_intake_security.xml`, `models/lumber_container_rollover_wizard.py`). `custom_addons` **NO** es repositorio git en el remoto (el repo git es `/opt/odoo18-test`, ilegible por `dubious ownership` en git 2.25.1). Ninguna corrección aplicada: **no se modificó código, datos ni servicios**. | 2026-10-08 (3) — §17.13 A/B **APLICADO EN EL DESARROLLO EXISTENTE** (`madenat_test` / `http://localhost:8069`, `odoo18_app`): respaldo verificado (`BACKUP_AB_APPLY_20261008/`); `AB_completo.diff` aplicado **una sola vez** (15 archivos byte a byte = workcopy); actualización controlada `-u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics` con el servicio detenido (0 ERROR/0 CRITICAL; columna `service_return_confirmation` presente); **reorganización de la UI de Ingreso de Madera** (resumen en 2 columnas, «Aplicar cambios» debajo, línea de retorno a todo el ancho, Evidencia documental en 3 columnas con encabezado único, packing list a todo el ancho); dirigidas del gate sobre `madenat_test` **88/88 en verde** (incl. Cristhian uid 8, `su=False`); **retirado el aislamiento temporal** (`srvretab_web` :8070, volumen `srvretab_web_data`, bases `srvretab_*_20261007`, `/tmp/gate`, `/tmp/ab_dryrun`, `/tmp/iso_*`); **V3 (navegador) SIGUE PENDIENTE**. | 2026-10-08 (2) — §17.12bis entorno aislado RECREADO con autorización expresa (vía «montar el workcopy `:ro`», **sin aplicar diffs**): `srvretab_web` en `127.0.0.1:8070`, selector limitado a `srvretab_gate_20261007`, filestore del aislamiento repoblado desde el volumen del stack (`:ro`; assets 500→200); ninguna base ni servicio activo modificados; **V3 sigue pendiente** de evidencia manual. | 2026-10-08 (1) — §17.12 retoma de SOLO LECTURA (2026-10-08): revalidación conforme (rama/HEAD/estado Git sin cambios; SHA-256 de A/B/AB = checkpoint; workcopy = árbol activo + los 15 archivos de `AB_completo.diff`; `patch --dry-run` limpio, sin aplicar; A/B ausente del código activo y de `madenat_test`); expediente y gate conservados; **entorno aislado NO conservado** (reinicio del host: contenedor `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue PENDIENTE**; recrear el aislamiento queda pendiente de autorización. | 2026-10-07 (2) — §17.11 checkpoint de pausa (reanuda 2026-10-08): A/B solo en aislamiento; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (Cristhian uid 8, su=False, grupos intactos); V3 pendiente; A/B no aplicados; SHA-256 vigentes; corrección del plan de reversión. | 2026-10-07 — §17: auditoría de retoma de la «confirmación de retorno de servicio» al enviar a stock (NO aplicada en el código activo; su especificación vive solo como antecedente técnico en `IMPL_SERVICE_RETURN_20261006/`). §16: búsqueda, filtros y agrupaciones de la Consola de Intake, aplicada en `madenat_test` (AD-101). Histórico 2026-09-28 — Fase 2 (AD-80): UX de volumen oficial, bloque SV visible y ciclo de vida de guías (§15) -->
 <!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.10 relación de conciliación envío–retorno (Bloque A/B/C): modelo `madenat.processor.return.link`, estados draft/linked/reversed, permisos por rol, append-only, auditoría aditiva, asistente de imputación reutilizado, pestañas y menú. Cierra la brecha (a) de CANON/19 §19.10. Bloque D (cuantitativo) NO implementado. Versión 02 12.17.0 → 12.18.0; 19 1.8.0 → 1.9.0. Sin commit/push. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
@@ -1673,5 +1673,467 @@ Continuación de §17.16.10; cierra los controles pendientes de A/B/C (`CANON/19
   `03_TESTS.md` §15.6.
 - **Versión:** `madenat_lumber_logistics` **18.0.1.8.0**. **Sin** commit/push ni despliegue remoto.
 
+#### 17.16.12 Operación manual de asignaciones centrada en SV (2026-10-10)
+
+Continuación de §17.16.11; implementa los bloques A–G de `CANON/19` **§19.14**:
+
+- **Entrada/consulta (A):** acción **Logística → Asignaciones SV** sobre `stock.lot`
+  (`lot_flow_type='volume'`) con **vistas dedicadas** (`view_madenat_sv_assignment_list/_form`);
+  sin modelo persistente nuevo ni alteración de otras vistas de lotes. Cabecera con guía de
+  procedencia, procesador, nominal, total imputado **aplicado** y **saldo documental I2**; detalle
+  con imputación/guía/etiqueta/volumen/estado/fecha/usuario y acceso al documento.
+- **Alta desde el SV (B):** botón **«Asignar retorno»** abre el asistente existente con `sv_lot_id`
+  en contexto (orienta; no genera reparto ni aplica). Reutiliza la imputación de trabajo de la guía
+  si ya existe.
+- **Selección explícita (C):** booleano `selected` + «Seleccionar todas»/«Quitar selección»; una
+  operación nueva **no** auto-incluye etiquetas.
+- **Conservación del borrador (D):** `_i2_build_imputation` reconcilia (**upsert**) por
+  `processed_lot_id` y `(línea, SV)`; reabrir reproduce selección y reparto; cambio de guía de una
+  imputación de trabajo **bloqueado**. **No** es el Bloque D cuantitativo (§19.12), fuera de alcance.
+- **Integridad etiqueta–guía (E, D10):** constraint `_check_label_belongs_to_guia` +
+  `_i2_validate_payload`; históricos inspeccionados (sólo lectura): **0** inconsistencias.
+- **Coherencia de volumen (F, D10/D11):** constraints `_check_reparto_within_nominal` y
+  `_check_within_line_nominal` (`0 < Σ reparto ≤ nominal`); parciales admitidos; techo duro
+  etiqueta-side y exceso blando SV-side conservados.
+- **Pruebas:** `test_sv_imputation_manual.py` (T-MAN-01..12) = **12/12**; regresión
+  `madenat_lumber_logistics` = **286 pruebas, 4 fallas** (las **mismas** preexistentes/ambientales
+  del `deviation` histórico: ids 19889/19941/20342/20381/21739), **0 errores**. Ver `03_TESTS.md` §15.7.
+- **Integración web/RPC (no V3):** menú «Asignaciones SV» visible para Operaciones y `default_get`
+  del asistente con contexto SV OK. **V3 *pixel* pendiente.**
+- **Versión:** `madenat_lumber_logistics` **18.0.1.9.0**; `19` 1.10.0 → **1.11.0**.
+  **Sin** commit/push ni despliegue remoto.
+
+#### 17.16.13 Corrección de duplicidad de accesos — «Rebaja de etiquetas» (2026-10-10)
+
+- **Duplicidad corregida:** «Asignaciones SV» e «Imputaciones documentales SV» eran dos accesos
+  paralelos a la **misma** operación documental. Queda **UN ÚNICO** enlace operativo: **«Rebaja de
+  etiquetas»**.
+- **Registros/acciones afectados:** menú `menu_madenat_sv_assignment` (renombrado «Rebaja de
+  etiquetas»); menú `menu_madenat_sv_imputation` **retirado de navegación**
+  (`ir.ui.menu.active = False`, con `record` posterior para que **no reaparezca** al reaplicar `-u`);
+  acción `action_madenat_sv_assignment` («Rebaja de etiquetas», `stock.lot`); acción
+  `action_madenat_sv_imputation` («Historial de rebajas», `madenat.sv.imputation`, **preservada**);
+  acción/asistente `madenat_sv_imputation_wizard` («Registrar rebaja»).
+- **Documentos/acciones preservados:** modelos `madenat.sv.imputation[.line|.sv.line]`, asistente,
+  `action_apply`/`action_reverse`, saldos documentales, permisos, auditoría e historial **intactos**.
+- **Navegación interna:** desde el SV, «Registrar rebaja», «Historial de rebajas» (por SV) y «Ver
+  historial completo»; **sin** segundo enlace de menú.
+- **Resultado real (metadatos/SQL):** `ir.ui.menu` **545** «Rebaja de etiquetas» activo (acción 874 →
+  `stock.lot`); `ir.ui.menu` **542** «Imputaciones documentales SV» **inactivo** (acción 867
+  preservada como «Historial de rebajas»); tras una **segunda** actualización `542` **permanece
+  inactivo** y `545` activo. Sin navegador real: comprobación de metadatos/SQL; **V3 *pixel*
+  pendiente**.
+- **Pruebas:** nueva suite `test_sv_rebaja_navigation.py` (NAV-01..12) = **11/11**; regresión
+  `madenat_lumber_logistics` = **298 pruebas, 4 fallas** (las **mismas** preexistentes/ambientales
+  del `deviation` histórico), **0 errores**.
+- **Versión:** `madenat_lumber_logistics` **18.0.1.10.0**; `19` 1.11.0 → **1.12.0**. **Sin**
+  commit/push ni despliegue remoto.
+
+<!-- actualizado: 2026-10-10 (7) — §17.16.13 unificación de acceso «Rebaja de etiquetas» (único
+punto de entrada; retiro reproducible del menú «Imputaciones documentales SV»; historial interno).
+Módulo `madenat_lumber_logistics` 18.0.1.10.0. Versión 02 12.20.0 → 12.21.0. Sin commit/push. -->
+
+#### 17.16.14 Operación y blindaje de «Rebaja de etiquetas» (2026-10-10)
+
+- **Elegibilidad (Bloque B):** el selector de guía ofrece sólo `service_return_confirmation='yes'` y
+  `state!='cancelled'`; el modelo rechaza selección forzada No/vacío/cancelada en `onchange` y antes
+  de construir el documento (`_i2_build_imputation`), sin estados parciales. Históricos consultables.
+- **Magnitudes (Bloque D):** ayudantes `_i2_lot_reserved_m3` / `_i2_lot_applied_m3` /
+  `_i2_lot_available_for_m3` (nominal = `_i2_lot_nominal_m3`); disponible y aplicado previo **excluyen
+  el documento en curso** (sin doble conteo). Columnas del asistente: Nominal lote / Rebajado aplicado
+  / Reservado borrador-pend. / Disponible documental.
+- **Listado/Búsqueda (A/C):** columnas separadas (N° Guía, Proveedor, Fecha opcional, Producto,
+  Procesador, magnitudes); agregados `sv_assignment_*` **`store=True`** para filtros documentales
+  buscables (Con/Sin saldo, Con/Sin rebajas, Exceso); «En stock» opcional; columnas opcionales de
+  retorno en el listado de guías.
+- **Concurrencia (CON-01):** `_i2_lock_resources` bloquea **etiqueta de retorno (ns 3)** y **SV
+  (ns 2)** en orden global determinista, antes de revalidar techos; fallo controlado sin estados
+  parciales.
+- **Pruebas:** nueva suite `test_sv_rebaja_operativa.py` (RET/UX/VOL/SEC/REV/PHY/CON) = **20/20**;
+  regresión `madenat_lumber_logistics` = **318 pruebas, 4 fallas** (las mismas preexistentes), **0
+  errores**.
+- **Versión:** `madenat_lumber_logistics` **18.0.1.11.0**; `19` 1.12.0 → **1.13.0**. **Sin** commit/push.
+
+<!-- actualizado: 2026-10-10 (8) — §17.16.14 operación y blindaje «Rebaja de etiquetas»: elegibilidad
+de retorno, semántica de magnitudes, filtros buscables, resumen sin doble conteo, concurrencia.
+Módulo 18.0.1.11.0. Versión 02 12.21.0 → 12.22.0. Sin commit/push. -->
+
+#### 17.16.15 Corrección de «Seleccionar todas» y asignación explícita (2026-10-10)
+
+- **Error manual reportado por Mauricio:** al pulsar «Seleccionar todas» en una apertura nueva,
+  `madenat.sv.imputation.wizard.line` faltaba el campo obligatorio `processed_lot_id`.
+- **Causa demostrada (no supuesta):** el cliente Odoo 18
+  (`web/static/src/model/relational_model/record.js::_getChanges`) **omite** los subcampos `readonly`
+  de una x2many salvo `force_save="1"`; el campo era `readonly="1"` sin `force_save`.
+- **Corrección real:** `force_save="1"` en `processed_lot_id`; `create="false"` en el listado de
+  asignación. No se quitó `required`, no se añadió etiqueta ficticia, no se capturó la excepción, no
+  se usó `sudo`, no se exigió guardar antes.
+- **Asignación explícita:** `action_assign_selected` (fila por etiqueta con SV de trabajo y volumen 0)
+  y `action_use_available` (`min(disponible, nominal)`); resumen `assigned_summary`; «Pendiente de
+  reparto». No aplica, no mueve stock, no duplica, no borra reparto a otros SV.
+- **Semántica:** «Nominal comprometido» (lado etiqueta) ≠ «Rebajado etiqueta aplicado» ≠ «volumen
+  asignado al SV». Caso parcial (nominal 5, SV 3) ya no se lee como «5 rebajado».
+- **Pruebas:** nueva suite `test_sv_rebaja_seleccion_asignacion.py` (ERR/ASG/VOL/PER/SEC/PHY) =
+  **16/16**; regresión `madenat_lumber_logistics` = **334 pruebas, 4 fallas** (las mismas
+  preexistentes), **0 errores**.
+- **Versión:** `madenat_lumber_logistics` **18.0.1.12.0**; `19` 1.13.0 → **1.14.0**. **Aceptación
+  visual de Mauricio pendiente.**
+
+<!-- actualizado: 2026-10-10 (9) — §17.16.15 corrección de «Seleccionar todas» (causa force_save) y
+asignación explícita al SV. Módulo 18.0.1.12.0. Versión 02 12.22.0 → 12.23.0. Sin commit/push. -->
+
+#### 17.16.16 Rediseño operativo del asistente «Registrar rebaja» (2026-10-10)
+
+- **Motivo:** la presentación fue **rechazada por Mauricio** (encabezados truncados, etiqueta vacía,
+  lote concatenado, exceso de indicadores, recorrido poco evidente).
+- **Mapeo de material:** etiqueta = `stock.lot.ref`; SKU y dimensiones declaradas =
+  `madenat.guia.processing.line` asociada por la **regla de promoción** (nombre = etiqueta + SKU +
+  dígitos de la guía); producto/subproducto/dimensiones técnicas/piezas/volumen = `stock.lot`. Guía
+  real 19827: **17/17** mapeados, sin cortar nombres.
+- **Granularidad:** una fila = un lote; etiqueta repetida ⇒ lotes distintos (no dedup); disponibilidad
+  por lote (sin doble conteo).
+- **Vista:** tabla de material con columnas separadas + avanzadas **opcionales**; asistente como
+  **formulario amplio** (`o_xxl_form_view`, `target=current`); cabecera compacta con saldo documental
+  del SV; acciones principales junto a la tabla y FIFO/pendiente en menor jerarquía.
+- **Cantidades:** «Cantidad preparada» solo lectura (reparto real); edición en «Asignación a SV».
+- **Pruebas:** nueva suite `test_sv_rebaja_material.py` (MAP/GRAN/SEM/AMT/ARCH) = **8/8**; regresión
+  `madenat_lumber_logistics` = **342 pruebas, 4 fallas** (las mismas preexistentes), **0 errores**.
+- **Versión:** `madenat_lumber_logistics` **18.0.1.13.0**; `19` 1.14.0 → **1.15.0**. **Aceptación
+  visual de Mauricio pendiente.**
+
+<!-- actualizado: 2026-10-10 (10) — §17.16.16 rediseño del asistente «Registrar rebaja» (material del
+packing list, granularidad, formulario amplio). Módulo 18.0.1.13.0. Versión 02 12.23.0 → 12.24.0.
+Sin commit/push. -->
+
 
 <!-- actualizado: 2026-10-08 (2) — §17.12bis entorno aislado RECREADO con autorización expresa (vía «montar el workcopy `:ro`», sin aplicar diffs): `srvretab_web` en `127.0.0.1:8070`, selector limitado a `srvretab_gate_20261007`, filestore del aislamiento repoblado desde el volumen del stack (`:ro`; assets 500→200, faltantes solo avatares de `res.partner`); ninguna base ni el servicio activo modificados; **V3 pendiente de evidencia manual**. | 2026-10-08 — §17.12 retoma de solo lectura (revalidación conforme: rama/HEAD Git, SHA-256 = checkpoint, workcopy = activo + 15 archivos de `AB_completo.diff`, `--dry-run` limpio, A/B ausente del código activo y de `madenat_test`; **entorno aislado no conservado** por reinicio del host: `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío, base `srvretab_gate_20261007` intacta; **V3 sigue pendiente**; recrear el aislamiento pendiente de autorización). Sin cambios de código, base ni servicios. | 2026-10-07 (2) — §17.11 checkpoint de pausa (reanuda 2026-10-08): A/B solo en aislamiento; gate 45/45; dirigidas 88/88 incl. Cristhian (uid 8, su=False); V3 pendiente; A/B no aplicados; hashes vigentes; reversión no equivale a restauración completa. | 2026-10-07 — §17: auditoría de retoma de la confirmación de retorno de servicio (no aplicada; especificación solo en el antecedente `IMPL_SERVICE_RETURN_20261006/`). Sin cambios de código ni datos. Solo documentación. -->
+### 17.16.17 Interfaz clara y concisa de «Registrar rebaja» — ambas pestañas (2026-10-10)
+
+- **Cabecera única:** SV de trabajo, guía, **saldo documental del SV**, **seleccionadas**, **con reparto
+  preparado** y **preparado para el SV (m³)**; no se repite el nominal/saldo del SV por fila.
+- **Totales con unidad:** Piezas de origen, Volumen documental de origen (≠ volumen a imputar), Disponible
+  documental de las seleccionadas (sin doble conteo) y Preparado para el SV; con varios SV se separa el
+  subtotal del SV de trabajo del total general.
+- **«A asignar (m³)» editable** en «Materiales del retorno», integrado con el MISMO reparto
+  (`sv_alloc_ids`); sin saldo paralelo y sin borrar repartos a otros SV.
+- **Etiqueta limpia + medidas** («45 × 125 mm · 2,900 m»): distingue etiquetas repetidas sin cambiar
+  `display_name`; SKU y código técnico como información secundaria.
+- **Asignación a SV:** con un solo SV, **Etiqueta · Medidas · Disponible (m³) · A asignar (m³)** con el SV
+  destino en la cabecera; «SV destino» sólo con varios SV.
+- **Acciones:** Seleccionar todas · Quitar selección · **Preparar asignación** · Usar disponible (mismo
+  alcance; no sobrescribe lo editado); footer Guardar borrador · **Revisar y aplicar** · Cancelar;
+  FIFO/pendiente en `btn-link`.
+- **Disponibilidad cero:** estado real por fila (Disponible/Aplicado/Reservado/Sin capacidad) y aviso de no
+  asignables; no se borran reservas.
+- **Pruebas:** `test_sv_rebaja_ui_limpia.py` (CAB/EDIT/MED/ETQ/SIN/USE/MULTI/ARCH) = **13/13**; regresión
+  `madenat_lumber_logistics` = **355 pruebas, 4 fallas** (las mismas preexistentes), **0 errores**.
+- **Versión:** `madenat_lumber_logistics` **18.0.1.14.0**; `19` 1.15.0 → **1.16.0**. **Aceptación visual
+  de Mauricio pendiente.**
+
+<!-- actualizado: 2026-10-10 (11) — §17.16.17 interfaz limpia de ambas pestañas del asistente «Registrar
+rebaja». Módulo 18.0.1.14.0. Versión 02 12.24.0 → 12.25.0. Sin commit/push. -->
+
+
+### 17.16.18 HOTFIX bloqueante — OwlError al abrir «Registrar rebaja» (2026-10-10)
+
+- **Error real del navegador (Mauricio):** `EvalError: Can not evaluate python expression:
+  (bool(not wizard_id.multi_sv))` — `Name 'wizard_id' is not defined` (`ListRenderer.evalColumnInvisible`).
+- **Causa:** `column_invisible` se evalúa con el contexto del **formulario padre** (`parent`), no con los
+  campos de cada fila ⇒ `wizard_id` no existe. **No** fue caché.
+- **Corrección:** `column_invisible="not parent.multi_sv"` + carga explícita
+  `<field name="multi_sv" invisible="1"/>` en el padre. Sin tocar Owl/assets/core; sin capturar la
+  excepción; sin eliminar la condición.
+- **Preservado:** cantidad editable, reparto como fuente de verdad, repartos a otros SV, identidad del
+  material, `processed_lot_id` + `force_save`, disponibilidad/reservas/aplicación/reversa, permisos,
+  atomicidad e idempotencia.
+- **Pruebas:** casos A–E e invariantes de arch (ningún `column_invisible` con `wizard_id`; `multi_sv`
+  cargado en el padre) = **20/20** en `test_sv_rebaja_ui_limpia.py`; regresión **362 pruebas, 4 fallas
+  preexistentes, 0 errores**.
+- **Límite:** **renderización real pendiente** (sin navegador). Estado: **«Incidencia bloqueante de
+  renderización; aceptación pendiente»**. Módulo **18.0.1.14.1**.
+
+<!-- actualizado: 2026-10-10 (12) — §17.16.18 HOTFIX OwlError de «Registrar rebaja» (`column_invisible`
+fuera de contexto). Módulo 18.0.1.14.1. Versión 02 12.25.0 → 12.26.0. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (1) — §17.16.19 AUDITORÍA INTEGRAL Y BLINDAJE DEL CICLO DE REBAJA DE ETIQUETAS
+(AUD-ETQ-01..05). Cuatro defectos demostrados y corregidos sobre el mecanismo I2 existente:
+**AUD-ETQ-01** inmutabilidad real del aplicado (`state` fuera de `I2_APPLIED_WRITABLE`; única transición
+`applied → reversed` vía `action_reverse`); **AUD-ETQ-02** reversa con motivo obligatorio (paridad con
+`madenat.processor.return.link`); **AUD-ETQ-03** mapa lote↔packing sin elección arbitraria ante colisión
+(`_i2_build_packing_map`); **AUD-ETQ-04** causa del saldo concreta y trazable (`disponibilidad_detalle` +
+acceso a los documentos que la explican). **Caso reportado explicado:** la etiqueta de la guía `19827` no
+estaba disponible porque la imputación aplicada `IMP02220` (guía 1198) consumió su nominal; `lot_flow_type`
+NULL en 147/151 lotes y `IMP02220` aplicada con 0 repartos SV = anomalías históricas **NO reparadas**
+(propuesta dry-run + autorización). Suite nueva `test_sv_rebaja_blindaje.py` **0 failed / 0 errors of 7**;
+regresión `madenat_lumber_logistics` **4 failed / 0 errors of 369** (mismas 4 preexistentes). **V3
+(navegador) y concurrencia multi-cursor simultánea PENDIENTES. Sin reparación histórica.** Módulo
+`madenat_lumber_logistics` **18.0.1.14.1 → 18.0.1.15.0**; `19` 1.17.0 → **1.18.0**; `03` 6.26.0 →
+**6.27.0**; `02` 12.26.0 → **12.27.0**. Expediente: `AUDIT_REBAJA_ETIQUETAS_20261011/`. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (2) — §17.16.20 CIERRE PROBATORIO DEL CICLO DE REBAJA DE ETIQUETAS
+(AUD-ETQ-06..10): diagnóstico de IMP02220 (guía 19827: aplicada sin reparto SV; **válida según el código,
+funcionalmente incompleta**; no reparada), contrato de «aplicación sin reparto» **BLOQUEADO** (decisión de
+Mauricio), **concurrencia real OK** (cursores independientes + barrera: Q1/Q2/Q3, sin sobreconsumo, una
+sola reversión, sin efectos físicos, 0 residuos), **seguridad multi-compañía** (nueva `ir.rule` para
+`madenat.sv.imputation*`), motivo de reversa con `strip`, y ciclos A/B con balances (incl. nominal 5 /
+reparto 3). Suite `test_sv_rebaja_cierre.py` **0 failed/0 errors of 8**; regresión `madenat_lumber_logistics`
+**4 failed/0 errors of 377** (mismas 4 preexistentes). Módulo `madenat_lumber_logistics`
+**18.0.1.15.0 → 18.0.1.16.0**; `19` 1.18.0 → **1.19.0**; `03` 6.27.0 → **6.28.0**; `02` 12.27.0 →
+**12.28.0**. **V3 (navegador) PENDIENTE. Sin reparación histórica.** Expediente:
+`AUDIT_REBAJA_ETIQUETAS_20261011/`. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (3) — §17.16.21 CONTRATO DE APLICACIÓN SIN REPARTO: **propuesta de política
+pendiente de aprobación** (Aplicar exige ≥1 reparto positivo a un SV autorizado; sin reparto sólo estado
+no aplicado; el parcial mantiene el compromiso nominal con pendiente explícito), **validación backend
+prevista** (`_i2_validate_payload`, no implementada), mensaje operativo, pruebas POL-01..08 (borrador no
+registrado), **dry-run de IMP02220** (conservar con clasificación vs revertir y reasignar; NO ejecutado) y
+**guion de navegador A–I**. Expediente `CONTRATO_APLICACION_20261011/`; `19` §19.23. **Contrato NO
+modificado; BLOQUEADO por decisión de negocio.** Módulo `madenat_lumber_logistics` **18.0.1.16.0** (sin
+cambio de versión). `19` 1.19.0 → **1.20.0**; `02` 12.28.0 → **12.29.0**. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (4) — §17.16.21 **CONTRATO DE APLICACIÓN: POLÍTICA APROBADA POR MAURICIO E
+IMPLEMENTADA**. Aplicar exige ≥1 reparto con cantidad positiva hacia un SV autorizado (validado en
+`_i2_validate_payload`, antes de locks/techos/escritura; cubre interfaz/ORM/RPC sin efectos parciales);
+sin reparto sólo estado **no aplicado**; parcial con **pendiente explícito** (`etiqueta_pendiente_m3`);
+`NO_SV_CANDIDATE` pasa a **informativo**. Suite `test_sv_rebaja_contrato.py` **POL-01..08 = 0 failed/0
+errors of 8**; regresión `madenat_lumber_logistics` **4 failed/0 errors of 385** (mismas 4 preexistentes).
+4 pruebas previas actualizadas (T-I2-06, CAND-07/08/09). **IMP02220 sin reparar.** Módulo
+`madenat_lumber_logistics` **18.0.1.16.0 → 18.0.1.17.0**; `19` 1.20.0 → **1.21.0**; `03` 6.28.0 →
+**6.29.0**; `02` 12.29.0 → **12.30.0**. **Aceptación en navegador pendiente (guion A–I).** Expediente
+`CONTRATO_APLICACION_20261011/`. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (5) — §17.16.22 **PERSISTENCIA Y RECUPERACIÓN DEL TRABAJO (SAVE)**.
+Incidencia «las asignaciones preparadas no se guardan»: **causa C1** (filas de reparto a **cantidad 0**
+creadas por «Preparar asignación» hacían **fallar** «Guardar borrador» con `UserError`) + **C2** (un
+borrador sin reparto positivo no se localizaba desde el SV). Corrección mínima en la **misma mecánica**:
+el destino previsto a 0 **no bloquea** el guardado (no se persiste reparto inválido; el negativo sí se
+rechaza); nuevo **`madenat.sv.imputation.work_sv_lot_id`** y panel «Trabajo en preparación» +
+**`action_continue_preparation`** (Continuar) para localizar/continuar desde el SV; dominio del historial
+ampliado. Suite `test_sv_rebaja_persistencia.py` (**SAVE-01..14, FLOW-01..03, PHY-01**) **18/18**;
+3 pruebas previas actualizadas; regresión con las mismas 4 fallas preexistentes. Módulo
+`madenat_lumber_logistics` **18.0.1.17.0 → 18.0.1.18.0**; `19` 1.21.0 → **1.22.0**; `03` 6.29.0 →
+**6.30.0**; `02` 12.30.0 → **12.31.0**. **Aceptación en navegador pendiente.** Contrato de aplicación y
+política de reservas **sin cambios**; IMP02220 y `lot_flow_type` histórico **intactos**. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (6) — §17.16.23 **ACCIONES VISIBLES DEL ASISTENTE «REGISTRAR REBAJA»**.
+Causa: el asistente (formulario amplio, `target="current"`) tenía sus acciones **sólo** en un `<footer>`
+(no renderizado fuera de diálogo) ⇒ «Guardar borrador»/«Revisar y aplicar»/«Descartar» **invisibles**.
+Corrección mínima: acciones en el **`<header>` nativo**, `<footer>` retirado, «Abrir documento»
+(`action_open_document`), «Descartar y volver» (`action_discard_changes`) y confirmación con referencia
+(`save_result`); «Continuar preparación» usa el mismo formulario amplio. Suite
+`test_sv_rebaja_ui_acciones.py` (UI-01..05 + confirmación). Módulo `madenat_lumber_logistics`
+**18.0.1.18.0 → 18.0.1.19.0**; `19` 1.22.0 → **1.23.0**; `03` 6.30.0 → **6.31.0**; `02` 12.31.0 →
+**12.32.0**. **Aceptación en navegador pendiente.** Sin cambio de política; IMP02220 y `lot_flow_type`
+histórico intactos. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (7) — §17.16.24 **SIMPLIFICACIÓN OPERATIVA (recorrido de DOS acciones)**.
+Solicitud de Mauricio: «sólo aplicar o guardar lo seleccionado; no obligar a abrir el documento». La
+ventana pasa a **[Guardar] [Aplicar] [Volver]**; ya **no** se exige «Preparar asignación» ni Guardar antes
+de Aplicar ni abrir el documento. `action_apply` sincroniza (vía `_i2_build_imputation`), aplica y
+**permanece** (`apply_result`); `action_prepare` **permanece** (`save_result`); opciones avanzadas en «Más
+opciones» (Abrir documento / Dejar pendiente / Proponer FIFO); tablas en sólo lectura tras aplicar;
+mensajes según problema real (falta de cantidad vs. sin disponibilidad). Suite
+`test_sv_rebaja_simple.py` (**SIMPLE-01..17** + **CLIENT-01..03**); 2 pruebas de UI y 4 de `res['res_id']`
+actualizadas (mismas aserciones). Módulo `madenat_lumber_logistics` **18.0.1.19.0 → 18.0.1.20.0**; `19`
+1.23.0 → **1.24.0**; `03` 6.31.0 → **6.32.0**; `02` 12.32.0 → **12.33.0**. **Aceptación en navegador
+pendiente.** Contrato de aplicación y política de reservas **sin cambios**; permisos **sin ampliar**;
+**sobrescritura concurrente de borradores sigue pendiente de autorización**; IMP02220 y `lot_flow_type`
+histórico intactos. Sin commit/push. -->
+
+
+<!-- actualizado: 2026-10-11 (8) — §17.16.25 **VOLVER A BORRADOR Y REASIGNAR (RESET)**. Autorización expresa
+de Mauricio: `cancelled → draft` **controlada** (`action_reopen_to_draft`: motivo, permisos, guía, sin
+trabajo activo, capacidad; locks + revalidación; idempotente). `write()` no elude la transición;
+`applied`/`reversed → draft` prohibidos. Trazabilidad de anulación/reapertura + chatter + auditoría
+`imputation_cancel`/`imputation_reopen` (core aditivo). Incidencia **IMP04823** diagnosticada (A+D) y
+mensaje operativo. Suite `test_sv_rebaja_reset.py` **14/14**; regresión con las mismas 4 fallas
+preexistentes. **Concurrencia RESET-16/17 pendiente.** Módulos `madenat_lumber_logistics`
+**18.0.1.20.0 → 18.0.1.21.0** (+ `madenat_lumber_core` audit log); `19` 1.24.0 → **1.25.0**; `03` 6.32.0 →
+**6.33.0**; `02` 12.33.0 → **12.34.0**. IMP04823/IMP02220 intactos. Sin commit/push. -->
+
+---
+
+<!-- actualizado: 2026-10-12 (1) — §17.16.26 **BLINDAJE LOCAL Y ESTABILIZACIÓN (AUD-ETQ-07/08)**. (a) Reapertura
+`cancelled → draft`: autorización por **token de PROCESO** (no acepta identidad del cliente ni flag de
+contexto); la **vía directa de `write` se rechaza**; `applied`/`reversed → draft` siguen prohibidos. (b)
+**Concurrencia REAL RESET-16/17** acreditada con transacciones independientes (advisory lock + revalidación):
+una sola transición, sin sobreconsumo, sin doble reserva ni doble auditoría; limpieza test-only verificada.
+(c) Advertencias de cálculo **eliminadas**: `stock.lot` `sv_assignment_*` (separación de computes + 
+`compute_sudo=False`) y consola de intake `volume_detail_line_ids` (dependencia corregida a la identidad del
+origen). Suites: `TestSvRebajaReset` (14) + `TestSvRebajaResetConcurrency` (3) + `TestIntakeConsoleComputeDepends`
+(2) ⇒ **0 failed / 0 error**. Módulos `madenat_lumber_logistics` **18.0.1.21.0 → 18.0.1.22.0**;
+`madenat_lumber_intake` **18.0.0.11.0 → 18.0.0.12.0**; `19` 1.25.0 → **1.26.0**; `03` 6.33.0 → **6.34.0**;
+`02` 12.34.0 → **12.35.0**. **Sobrescritura de borradores**: propuesta registrada, **pendiente** de
+autorización de Mauricio. **Sin commit/push/despliegue; TEST remoto y datos históricos intactos.** -->
+
+---
+
+<!-- actualizado: 2026-10-12 (2) — §17.16.27 **VERIFICACIÓN PROBATORIA DE CUATRO PUNTOS (P1–P4)**. P1:
+concurrencia sobre la capacidad de la MISMA etiqueta retornada (dos guías sobre un mismo lote; advisory lock +
+revalidación de capacidad; **sin cambio de código**). P2: recomputación REAL de las métricas de intake en el
+MISMO entorno (defecto + corrección por invalidación dirigida en el detalle del volumen). P3: saldos
+almacenados **canónicos** (`compute_sudo=True`) vs proyección por usuario (`compute_sudo=False`); sin
+AccessError ni exposición entre compañías. P4: **vía privada de transición** `_i2_write_protected_state`
+(elimina el registro global de tokens; sin ventana de autorización reutilizable). Suites dirigidas
+**0 failed / 0 error** (P1 3 + P2 1 + P3 2 + P4 7). Módulos `madenat_lumber_logistics` **18.0.1.22.0 →
+18.0.1.23.0**; `madenat_lumber_intake` **18.0.0.12.0 → 18.0.0.13.0**; `19` 1.26.0 → **1.27.0**;
+`03` 6.34.0 → **6.35.0**; `02` 12.35.0 → **12.36.0**. Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+<!-- actualizado: 2026-10-12 (3) — §17.16.28 **BLINDAJE DE BORRADORES (LOCK)**. Contrato de concurrencia
+**APROBADO por Mauricio**: `edit_version` (versión lógica del documento) + **guard del documento**
+(`pg_try_advisory_xact_lock` ns 1 + comparación de `expected_edit_version` + flush) → Guardar/Aplicar basados en
+una versión obsoleta se **rechazan** (no sobrescriben ni fusionan); botón **«Recargar versión actual»**;
+líneas/repartos y edición directa **elevan** la versión; sin adopción silenciosa del primer borrador ajeno;
+mensaje operativo sin error técnico. Recorrido sencillo intacto. Suite `test_sv_rebaja_save_lock.py`
+(**LOCK-01..19**, FLOW-01..03, PHY-01) + reproducción del defecto ⇒ **0 failed / 0 error**. **Límite declarado:**
+form-vs-form directo (sin asistente) sigue el ORM estándar (pendiente). Módulo `madenat_lumber_logistics`
+**18.0.1.23.0 → 18.0.1.24.0**; `19` 1.27.0 → **1.28.0**; `03` 6.35.0 → **6.36.0**; `02` 12.36.0 → **12.37.0**.
+Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+<!-- actualizado: 2026-10-12 (4) — §17.16.29 **CIERRE V1–V3 del blindaje de borradores**. V1: cobertura de la
+EDICIÓN DIRECTA — Alternativa A (`force_save` reutilizando `edit_version`; guard atómico en `write`) ⇒ matriz
+**C1–C8 ACREDITADA** (asistente↔asistente, directo↔asistente, form↔form, línea→padre, directo→aplicar,
+asistente→estado, transición→contenido); sin retirar permisos; límite residual: escritura ORM/RPC **sin**
+`edit_version`. V2: evidencia de **cliente** **PENDIENTE** (sin navegador; guion entregado). V3: transacción y
+bloqueos **ACREDITADA** (TX-01..13; orden determinista `1→2→3`; rechazo por VERSIÓN con lock libre y por LOCK
+ocupado; sin reintento automático; rollback íntegro). Módulo `madenat_lumber_logistics` **18.0.1.24.0 →
+18.0.1.25.0**; `19` 1.28.0 → **1.29.0**; `03` 6.36.0 → **6.37.0**; `02` 12.37.0 → **12.38.0**. Sin
+commit/push/despliegue; TEST remoto intacto. -->
+
+#### 17.16.19 Auditoría integral y blindaje del ciclo de rebaja de etiquetas (AUD-ETQ-01..05, 2026-10-11)
+
+> **Dictamen: COMPLETO CON LÍMITES.**
+> El «ciclo de rebaja documental de etiquetas» (I2, `madenat.sv.imputation`) **existe, es persistente y opera** sobre el mecanismo único (modelo + asistente + `action_apply`/`action_reverse`). La auditoría **confirmó cuatro defectos reales** (uno de ellos explica la captura «disponibilidad 0, sin reparto, aviso genérico») y se corrigieron con validación y pruebas. Se añadieron **7 pruebas** (AUD-ETQ-01..05) y se ajustaron 5 archivos de pruebas existentes al motivo obligatorio de reversa.
+
+**Fuente (literal):** `AUDIT_REBAJA_ETIQUETAS_20261011/README.md` §1. Módulo `madenat_lumber_logistics` **18.0.1.14.1 → 18.0.1.15.0**.
+
+#### 17.16.20 Cierre probatorio del ciclo de rebaja de etiquetas (AUD-ETQ-06..10, 2026-10-11)
+
+> **Dictamen final: COMPLETO TÉCNICAMENTE; ACEPTACIÓN DEL USUARIO PENDIENTE.** Concurrencia real, seguridad multi-compañía, inmutabilidad/reversa, ciclos con balances y diagnóstico de IMP02220 cerrados con pruebas. Queda **bloqueada por decisión de negocio** una única cuestión (contrato de «aplicación sin reparto», §CI-3) y **pendiente V3 (navegador)**. Módulo **18.0.1.15.0 → 18.0.1.16.0**.
+
+**Fuente (literal):** `AUDIT_REBAJA_ETIQUETAS_20261011/README.md` §«CIERRE PROBATORIO (2026-10-11, 2.ª sesión)».
+
+#### 17.16.21 Contrato de aplicación sin reparto (política aprobada e implementada, 2026-10-11)
+
+> En la rebaja a SV, «Aplicar» requiere al menos un reparto válido con cantidad positiva hacia un SV autorizado. Sin reparto, el documento sólo puede permanecer en un estado no aplicado. El reparto parcial mantiene la política vigente de compromiso nominal, mostrando expresamente la cantidad que queda comprometida sin repartir.
+
+**Estado (literal):** POLÍTICA APROBADA POR MAURICIO (2026-10-11) e IMPLEMENTADA en `madenat_lumber_logistics` **18.0.1.17.0**. **Aceptación operativa (navegador) pendiente.**
+**Fuente (literal):** `CONTRATO_APLICACION_20261011/README.md` §1.
+
+#### 17.16.22 Persistencia y recuperación del trabajo de rebaja (SAVE, 2026-10-11)
+
+> **Incidencia:** «Al preparar las asignaciones, estas no van quedando guardadas» (Mauricio).
+> **C1 — Pérdida real en el guardado.** «Preparar asignación» (`action_assign_selected`) crea filas de reparto a **cantidad 0**. Al pulsar **«Guardar borrador»** (`action_prepare` → `_i2_build_imputation`), el código **lanzaba `UserError`** ante **cualquier** fila a 0 ⇒ **no se creaba/actualizaba el documento**.
+> **C2 — Falta de acceso.** Un borrador **sin reparto positivo** no se localizaba desde el SV: el dominio del historial (`action_open_sv_rebajas`) era `[('sv_line_ids.sv_lot_id','=', id)]`, que exige una fila de reparto.
+
+**Fuente (literal):** `SAVE_REBAJA_20261011/README.md` §1. Módulo `madenat_lumber_logistics` **18.0.1.17.0 → 18.0.1.18.0**.
+
+#### 17.16.23 Acciones visibles del asistente «Registrar rebaja» (UI, 2026-10-11)
+
+> **Incidencia:** Mauricio no ve acciones para guardar ni un recorrido claro para mantener las rebajas.
+> El asistente se abre como **formulario amplio** (`action_madenat_sv_imputation_wizard`, `target = current`) pero sus operaciones estaban **sólo** dentro de un **`<footer>`**. En Odoo, un `<footer>` de vista form **se renderiza únicamente en diálogos** (`target="new"`); en un formulario de **página completa** (`target="current"`) **no se muestra**. La vista **no tenía `<header>`**.
+
+**Fuente (literal):** `UI_SAVE_REBAJA_20261011/README.md` §1. Módulo `madenat_lumber_logistics` **18.0.1.18.0 → 18.0.1.19.0**.
+
+#### 17.16.24 Simplificación operativa: recorrido de dos acciones (SIMPLE, 2026-10-11)
+
+> **Solicitud expresa de Mauricio:** «sólo aplicar o guardar lo seleccionado; no complicar el flujo ni obligar a abrir el documento para aplicar».
+> **Elegir guía → seleccionar material → indicar m³ → [Guardar] o [Aplicar]**, y **[Volver]** para navegar. No se exige «Preparar asignación», ni Guardar antes de Aplicar, ni abrir el documento, ni cambiar de pestaña. La simplificación afecta la **interacción**, no las validaciones ni la trazabilidad.
+
+**Fuente (literal):** `SIMPLE_REBAJA_20261011/README.md` §1. Módulo `madenat_lumber_logistics` **18.0.1.19.0 → 18.0.1.20.0**.
+
+#### 17.16.25 Volver a borrador y reasignar (RESET, 2026-10-11)
+
+> **Solicitud expresa de Mauricio:** si una rebaja está **cancelada**, poder **volverla a borrador**, corregir sus asignaciones y continuar.
+> `IMP04823` (id **2733**) existe con **`state = cancelled`** y `guia_processing_id = 1198` (guía «19827»). El asistente quedaba **ligado** al documento cuando era borrador; al **cancelarse**, `Guardar`/`Aplicar` invocaban `_i2_build_imputation`, que lanzaba «La imputación IMP04823 ya no admite preparación (estado cancelled)».
+> **Contrato de «Volver a borrador»:** transición **controlada** `cancelled → draft` (autorizada). **Precondiciones**: estado `cancelled`; permiso (Operaciones/Jefatura/Gerencia); compañía autorizada (regla de registro); guía elegible vigente; **ausencia** de trabajo activo sobre la guía.
+
+**Fuente (literal):** `RESET_REBAJA_20261011/README.md` §1/§2. Módulos `madenat_lumber_logistics` **18.0.1.20.0 → 18.0.1.21.0** y `madenat_lumber_core` (audit log, 2 valores aditivos).
+
+#### 17.16.26 Blindaje local y estabilización (AUD-ETQ-07/08, 2026-10-12)
+
+> 1. **Vía directa de `write` (`cancelled → draft`)**: `write()` autorizaba la transición aceptando una **identidad suministrada por el cliente** (`reopened_by_id` + `reopen_reason`), **sin** ejecutar las mismas garantías que `action_reopen_to_draft` (no corría `_i2_validate_reopen`, ni locks, ni auditoría).
+> 2. **Advertencia `stock.lot` `sv_assignment_*`**: 6 campos compartían `_compute_sv_assignment` con `store` mixto (4 con `store=True`, 2 con `store=False`) ⇒ Odoo advertía `inconsistent 'store'` e `inconsistent 'compute_sudo'`.
+
+**Correcciones (literal):** AUD-ETQ-07 (logistics, `madenat_sv_imputation.py`: token efímero de PROCESO), AUD-ETQ-08a (logistics: separación `_compute_sv_assignment`/`_compute_sv_assignment_live`) y AUD-ETQ-08b (intake, `intake_console.py`: dependencia de `_compute_review_metrics`).
+**Versiones antes (literal):** logistics `18.0.1.21.0`, intake `18.0.0.11.0`, core `18.0.6.6.0`.
+**Fuente (literal):** `BLINDAJE_REBAJA_LOCAL_20261012/README.md` §0/§1/§2.
+
+#### 17.16.27 Verificación probatoria de cuatro puntos de blindaje (P1–P4, 2026-10-12)
+
+> | Punto | Dictamen | Resumen |
+> |---|---|---|
+> | **P1** — concurrencia sobre la MISMA etiqueta retornada | **ACREDITADO** | El mecanismo (advisory lock + revalidación de capacidad) ya lo garantiza; **sin cambio de código**. |
+> | **P2** — recomputación real de intake | **CORREGIDO Y ACREDITADO** | Defecto confirmado (caché obsoleta en el MISMO entorno) → corrección por invalidación dirigida. |
+> | **P3** — saldos almacenados vs derechos del usuario | **CORREGIDO Y ACREDITADO** | Defecto confirmado (`compute_sudo=False` → `AccessError`/dependencia del usuario) → `compute_sudo=True` en los canónicos. |
+> | **P4** — aislamiento y limpieza de la autorización | **CORREGIDO Y ACREDITADO** | Defecto confirmado (token global sin identidad de transacción) → vía privada de transición. |
+
+**Fuente (literal):** `VERIF_CUATRO_PUNTOS_20261012/README.md` §1.
+
+#### 17.16.28 Blindaje de borradores: protección contra sobrescritura concurrente (LOCK, 2026-10-12)
+
+> **CORREGIDO Y ACREDITADO.** El riesgo «la última escritura gana» queda resuelto para el **recorrido del asistente** (Guardar/Aplicar/Dejar pendiente): una edición basada en una versión obsoleta se **rechaza de forma controlada**; no se sobrescribe ni se fusiona; se puede **recargar** la versión vigente. **Límite declarado:** la edición simultánea de dos **formularios persistentes directos** (form-vs-form, sin asistente) queda **pendiente** (comportamiento ORM estándar de Odoo).
+
+**Fuente (literal):** `BLINDAJE_SOBRESCRITURA_20261012/README.md` §1. **Autorización:** Mauricio.
+
+#### 17.16.29 Cierre V1–V3 del blindaje de borradores (2026-10-12)
+
+> | Verificación | Dictamen |
+> |---|---|
+> | **V1** — cobertura de cruces con edición directa | **CORREGIDA Y ACREDITADA** (matriz C1–C8; límite residual ORM-sin-versión declarado) |
+> | **V2** — comportamiento real del cliente | **PENDIENTE** (sin navegador/herramienta; guion entregado; no se sustituye por ORM) |
+> | **V3** — transacción, SerializationFailure y orden de bloqueos | **ACREDITADA** (TX-01..13) |
+
+**Fuente (literal):** `CIERRE_SOBRESCRITURA_V123_20261012/README.md` §1.
+
+#### 17.16.30 HOTFIX OWL — «Agregar una línea» en el documento de rebaja (`div.oe_chatter`, 2026-10-12)
+
+**Incidencia:** en `madenat.sv.imputation` (p. ej. `IMP04823`), «Agregar una línea» en dos tablas del
+formulario ⇒ `OwlError: TypeError: Cannot read properties of undefined (reading 'includes') at get
+urlRelation at Many2OneField.template`.
+
+**Causa demostrada:** Odoo 18 CE (`18.0-20260817`) **no compila** el marcado heredado `div.oe_chatter` (el
+compilador registra `selector: "chatter"` ⇒ `<chatter/>`; `oe_chatter` no existe en los assets). Al no haber
+chatter, `message_ids`/`message_follower_ids` se renderizaban como **listas o2m editables** por defecto
+(`mail.message`/`mail.followers`) con «Agregar una línea»; la columna `res_id` (`many2one_reference`) sin
+relación determinable dispara el TypeError.
+
+**Corrección mínima:** `div.oe_chatter` → `<chatter/>` en `view_madenat_sv_imputation_form` y
+`view_madenat_processor_return_link_form`. Sin cambios de modelo/datos/permisos. Ver `19` §19.33.
+
+**Pruebas:** VIEW-01..05 de servidor 5/5 (`tests/test_hotfix_owl_chatter.py`); `madenat_lumber_logistics`
+4 failed/0 error de 506 (mismas 4 preexistentes; baseline 4/444 ⇒ 0 nuevas); core+intake+logistics 6/4 de
+1284 (mismo conjunto que el baseline 6/1217 ⇒ 0 nuevas). **Navegador PENDIENTE** (sin navegador; guion).
+Módulo `madenat_lumber_logistics` **18.0.1.25.0 → 18.0.1.26.0**. Sin commit/push; TEST remoto intacto.
+
+<!-- actualizado: 2026-10-12 (5) — §17.16.30 HOTFIX OWL chatter (`div.oe_chatter` → `<chatter/>`) en
+`sv_imputation`/`processor_return_link`. Versión 02 12.38.0 → **12.39.0** (cabecera alineada: estaba 12.34.0,
+por debajo de 12.38.0 ya registrado por entregas previas). **Numeración corregida:** esta sección se había
+rotulado `17.16.19` (ya reservada por la entrega AUD-ETQ-01..05) → renumerada a **17.16.30**. **Hallazgo (NO
+corregido aquí):** los changelog citan §17.16.19..§17.16.29, pero esas secciones de cuerpo NO existen en 02
+(solo comentarios; su contenido vive en los expedientes `AUDIT_REBAJA_ETIQUETAS_20261011/`,
+`RESET_REBAJA_20261011/`, `SIMPLE_REBAJA_20261011/`, `UI_SAVE_REBAJA_20261011/`, `SAVE_REBAJA_20261011/`,
+`CONTRATO_APLICACION_20261011/`, `BLINDAJE_REBAJA_LOCAL_20261012/`, `CIERRE_SOBRESCRITURA_V123_20261012/`).
+No se reconstruyen de memoria. Nota: no existía entrada (5) de 2026-10-12 (el cierre §19.32 no registró entrada
+en 02). Sin commit/push/despliegue. -->
+
+<!-- actualizado: 2026-10-12 (6) — D13 (FASE 2 limitada): **restituidos los CUERPOS de §17.16.19…§17.16.29**
+(antes sólo citados). Transcripción **LITERAL** desde los expedientes (`AUDIT_REBAJA_ETIQUETAS_20261011`,
+`CONTRATO_APLICACION_20261011`, `SAVE_REBAJA_20261011`, `UI_SAVE_REBAJA_20261011`, `SIMPLE_REBAJA_20261011`,
+`RESET_REBAJA_20261011`, `BLINDAJE_REBAJA_LOCAL_20261012`, `VERIF_CUATRO_PUNTOS_20261012`,
+`BLINDAJE_SOBRESCRITURA_20261012`, `CIERRE_SOBRESCRITURA_V123_20261012`), con su fuente en cada sección. **No**
+se modificó ninguna línea existente; **sólo** se insertaron cuerpos en su posición numérica (§17.16.19..29
+entre §17.16.18 y §17.16.30). **26/26 referencias cruzadas resueltas**; versiones **monótonas**; marcadores
+balanceados. Versión 02 12.39.0 → **12.40.0**; **índice 12.29.0 → 12.30.0**. Sin commit/push/despliegue. -->
+

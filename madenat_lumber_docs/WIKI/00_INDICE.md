@@ -1,8 +1,8 @@
 # MADENAT — Índice de Conocimiento Operativo
 
-**Versión:** 2.0.0
-**Fecha:** 2026-06-30
-**Estado:** ACTIVO — Actualizado en auditoría documental 2026-06-30
+**Versión:** 2.0.2
+**Fecha:** 2026-10-12
+**Estado:** ACTIVO — Actualizado en auditoría documental 2026-06-30; alta de `03_OPERACION/higiene_entorno.md` (2026-10-07); **2026-10-12: HOTFIX OWL chatter** — `div.oe_chatter` → `<chatter/>` en `madenat.sv.imputation`/`processor.return.link` (`madenat_lumber_logistics` **18.0.1.26.0**; ver `CANON/19` §19.33 y `HOTFIX_OWL_CHATTER_OE_20261012/`)
 
 ---
 
@@ -89,6 +89,7 @@
 | `03_OPERACION/backup_restauracion.md` | Procedimiento de backup PostgreSQL, restauración, frecuencia |
 | `03_OPERACION/variables_entorno.md` | Variables docker-compose, odoo.conf, puertos, credenciales dev vs prod |
 | `03_OPERACION/migracion_odoo19.md` | Checklist migración Odoo 18→19, cambios conocidos, preparación |
+| `03_OPERACION/higiene_entorno.md` | Limpieza acotada del entorno: inventario, comprobaciones, acciones, espacio recuperado y límites de reconstrucción |
 
 ---
 

@@ -1,6 +1,6 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.19.0
+**Versión documental:** 6.38.0
 **Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
 <!-- actualizado: 2026-10-10 (2) — §15 relación de conciliación envío–retorno (Bloque A/B/C): suite nueva T1–T12 = 12/12; regresión `madenat_lumber_logistics` = 3 failed, 0 error of 265 (3 fallas PRE-EXISTENTES por aserción global de `deviation`; 0 fallas nuevas). Bloque D no implementado. Versión 03 6.17.0 → 6.18.0. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 <!-- actualizado: 2026-10-10 (3) — §15.5 controles A/B/C **acreditados** (reversa/procedencia, reimputación, compañía+regla, elegibilidad dura, N:M presentación) y §15.6 ajuste de integridad (T13–T22 = 22/22; regresión 275 pruebas, 4 fallas: 3 preexistentes + 1 ambiental por evidencia V3 7973, 0 errores). Versión 03 6.18.0 → 6.19.0. -->
@@ -937,3 +937,602 @@ completamente verde. Las **4 fallas**:
 
 **No ejecutado (fuera de alcance):** navegador real (V3 *pixel*); concurrencia real; base limpia;
 Bloque **D** cuantitativo.
+
+---
+
+## 16. Operación manual de asignaciones centrada en SV (2026-10-10) — T-MAN
+
+Suite nueva `madenat_lumber_logistics/tests/test_sv_imputation_manual.py` (**T-MAN-01..12**),
+100 % transaccional. Cubre los bloques A–G de `CANON/19` §19.14:
+
+| Prueba | Cubre |
+|---|---|
+| T-MAN-01 | Contexto SV: `default_get` fija `sv_lot_id` y **no** auto-incluye guía/líneas |
+| T-MAN-02 | Selección explícita: sin selección «Proponer FIFO» falla; «Seleccionar todas»/«Quitar» |
+| T-MAN-03 | Selección de **subconjunto**: aplica sólo la etiqueta marcada |
+| T-MAN-04 | Reapertura (default_get → create): conserva selección y reparto; no duplica |
+| T-MAN-05 | Criterio de aceptación: **dos guías, un SV** mediante dos documentos |
+| T-MAN-06 | Integridad etiqueta–guía (D10): etiqueta ajena rechazada por ORM |
+| T-MAN-07 | Reparto > nominal rechazado; varias líneas no lo eluden |
+| T-MAN-08 | Reparto **parcial** admitido (D11) |
+| T-MAN-09 | Edición del nominal no elude la capacidad; techo duro de lote conservado |
+| T-MAN-10 | Documento multi-SV: reabrir desde un SV no pierde el reparto a otros SV |
+| T-MAN-11 | Sin efecto en `stock.quant`/`stock.move` ni en el ledger `madenat.sv.operation` |
+| T-MAN-12 | Reapertura por `onchange` (guía con imputación de trabajo) reproduce el borrador |
+
+**Resultado de la suite dirigida:** `0 failed, 0 error(s) of 12 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` =
+**`4 failed, 0 error(s) of 286 tests`**. Las **4 fallas** son las **mismas preexistentes/ambientales**
+documentadas en §15.6 (aserción global `deviation` sobre eventos históricos
+19889/19941/20342/20381/21739, 2026-10-04/05/07) ⇒ **0 fallas nuevas, 0 errores**. **No** se
+modificó ningún test existente ni se borró evidencia (la nueva suite pasó sin adaptar los tests
+previos del asistente, porque la inclusión explícita convive con el reparto creado por ORM).
+
+**Integración web/RPC (no V3, no sustituye al navegador):** sesión autenticada de Operaciones;
+menú **«Asignaciones SV»** visible; `default_get` del asistente con `active_model='stock.lot'`
+devuelve `sv_lot_id`. **V3 *pixel* pendiente** (guion manual en
+`IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`).
+
+**No ejecutado (fuera de alcance):** navegador real (V3); concurrencia real; base limpia; Bloque D.
+
+---
+
+## 17. Unificación de acceso «Rebaja de etiquetas» (NAV-01..12, 2026-10-10)
+
+Suite nueva `tests/test_sv_rebaja_navigation.py` (`TestSvRebajaNavigation`). Datos **100 %
+transaccionales** (`TransactionCase`, rollback); no crea ni borra datos. Los casos **NAV-01..05, 10,
+11, 12** verifican **metadatos** (menús/acciones/vistas vía ORM); **NAV-06..09** verifican
+comportamiento reutilizando el asistente/modelo existentes.
+
+| Caso | Verifica |
+| --- | --- |
+| NAV-01 | Sólo un enlace operativo visible «Rebaja de etiquetas» en Logística Exportación |
+| NAV-02 | «Asignaciones SV» e «Imputaciones documentales SV» no son accesos paralelos |
+| NAV-03 | El enlace abre el listado SV existente (`stock.lot`, volumen) — no un modelo nuevo |
+| NAV-04 | Desde un SV se accede a sus documentos de imputación |
+| NAV-05 | El historial completo sigue disponible dentro del recorrido |
+| NAV-06 | Consultar/navegar no crea documentos ni altera saldos |
+| NAV-07 | Registrar usa el asistente y modelo existentes |
+| NAV-08 | Guardar y reabrir conserva selección y reparto |
+| NAV-09 | Aplicar/reversar mantienen permisos (Operaciones no reversa) |
+| NAV-10 | El menú retirado no se reactiva (estado resultante acreditado en test; 2.ª `-u` fuera del test) |
+| NAV-11 | «Rebajar por Motonave» y «Consolidación» no cambian |
+| NAV-12 | La ingesta no recibe nuevas pantallas ni pasos |
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 11 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 298
+tests`**. Las **4 fallas** son **exactamente** las mismas preexistentes/ambientales de
+`test_processor_locations.test_09_auditoria_envio_normal` y
+`test_processor_shipment_ad89.test_t1/t5/t6` (aserción global `deviation` sobre eventos históricos
+19889/19941/20342/20381/21739 + idempotencia de pickings), ya presentes en la línea base 18.0.1.9.0
+⇒ **0 fallas nuevas, 0 errores**.
+
+**Actualización en desarrollo:** `odoo --database=madenat_test --update=madenat_lumber_logistics
+--stop-after-init --no-http --log-level=info` (sin `-u all`), **exit 0**; ejecutada **dos veces**
+para acreditar NAV-10 (el menú retirado **no** reaparece). Metadatos reales: `ir.ui.menu` 545 activo
+«Rebaja de etiquetas»; 542 inactivo «Imputaciones documentales SV»; acción 867 preservada
+(«Historial de rebajas»).
+
+**Diferencia XML/metadatos/RPC vs. navegador.** La verificación es de **XML/carga de módulo**,
+**metadatos ORM/SQL** y **pruebas transaccionales**; **no** hay navegador real
+(Playwright/Selenium/Chromium) en el entorno ⇒ **V3 *pixel* pendiente** y **no** se sustituye por lo
+anterior.
+
+<!-- actualizado: 2026-10-10 (7) — §17 NAV-01..12 unificación «Rebaja de etiquetas»: dirigidas 11/11;
+regresión 298 pruebas, 4 fallas preexistentes, 0 errores; 2.ª `-u` sin reaparición del menú. Versión
+03 6.20.0 → 6.21.0. Sin commit/push. -->
+
+---
+
+## 18. Operación y blindaje «Rebaja de etiquetas» (RET/UX/VOL/SEC/REV/PHY/CON, 2026-10-10)
+
+Suite nueva `tests/test_sv_rebaja_operativa.py` (`TestSvRebajaOperativa`). Datos **100 %
+transaccionales** (`TransactionCase`, rollback).
+
+| Caso | Verifica |
+| --- | --- |
+| RET-01 | El dominio canónico y el dominio del campo del asistente sólo admiten `yes` (y no cancelada) |
+| RET-02 | Guías No/vacía/cancelada no son candidatas |
+| RET-03 | Selección forzada por ORM rechazada y **sin crear documento** |
+| RET-04 | Históricos siguen consultables tras dejar de ser candidatos |
+| UX-01 | Búsqueda por número de guía encuentra el retorno |
+| UX-02 | Búsqueda por etiqueta (interna y `external_labels`) |
+| UX-03 | Seleccionar guía **no** incluye etiquetas automáticamente |
+| UX-04 | Seleccionar todas / subconjunto |
+| UX-05 | Guardar y reabrir conserva selección y reparto |
+| VOL-01 | Semántica nominal/aplicado/reservado/disponible |
+| VOL-02 | El documento en curso no se cuenta dos veces |
+| VOL-03 | Reparto parcial permitido |
+| VOL-04 | Exceso contra la capacidad equivalente rechazado |
+| VOL-05 | Varios documentos no eluden el techo duro |
+| VOL-06 | Repartos N:M no duplican totales |
+| SEC-01 | Permisos (Operaciones aplica; sin grupo → AccessError) y compañía |
+| SEC-02 | Aplicación inválida sin estado parcial (guía no elegible entre preparar y aplicar) |
+| REV-01 | Reversa conserva historia y restituye el saldo documental |
+| PHY-01 | Sin movimientos de stock, `sv_available_m3` intacto, sin ledger `imputacion` |
+| CON-01 | Advisory lock de la etiqueta serializa la aplicación (otra sesión) |
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 20 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 318
+tests`**. Las **4 fallas** son **las mismas** preexistentes/ambientales
+(`test_processor_locations.test_09`, `test_processor_shipment_ad89.test_t1/t5/t6`) ⇒ **0 fallas
+nuevas, 0 errores**.
+
+**Actualización en desarrollo:** `odoo --database=madenat_test --update=madenat_lumber_logistics
+--stop-after-init --no-http --log-level=info`, **exit 0** (sin `-u all`). **Diferencia XML/metadatos
+vs. navegador:** verificación por XML/ORM/SQL y pruebas; **V3 *pixel* pendiente**.
+
+<!-- actualizado: 2026-10-10 (8) — §18 RET/UX/VOL/SEC/REV/PHY/CON: dirigidas 20/20; regresión 318
+pruebas, 4 fallas preexistentes, 0 errores. Versión 03 6.21.0 → 6.22.0. Sin commit/push. -->
+
+---
+
+## 19. Corrección de «Seleccionar todas» y asignación explícita (ERR/ASG/…, 2026-10-10)
+
+Suite nueva `tests/test_sv_rebaja_seleccion_asignacion.py`
+(`TestSvRebajaSeleccionAsignacion`). Datos **100 % transaccionales** (rollback). Los casos **ERR**
+usan el **ciclo de formulario** (apertura → elección de guía → acción), no sólo registros
+pre-persistidos.
+
+| Caso | Verifica |
+| --- | --- |
+| ERR-01 | La vista fuerza el envío del identificador (`processed_lot_id` con `force_save="1"`) |
+| ERR-02 | Apertura nueva → elegir guía → «Seleccionar todas» (sin guardar antes) conserva el id |
+| ERR-03 | Guardar, reabrir y «Seleccionar todas» |
+| ERR-04 | Cambiar la selección no pierde `processed_lot_id` |
+| ASG-01 | «Asignar seleccionadas» crea filas (volumen 0) y «Usar disponible» las completa |
+| ASG-02 | Sin selección → rechazo comprensible |
+| ASG-03 | Sin cantidad válida → preparación incompleta clara y sin documento |
+| ASG-04 | Repetir «Asignar» no duplica filas |
+| ASG-05 | Se conserva el reparto a otros SV |
+| ASG-06 | Asignar no aplica ni altera saldos aplicados |
+| VOL-01 | Caso parcial: nominal 5, SV 3 → pendiente 2; totales lado etiqueta (5) y lado SV (3) |
+| VOL-02 | Exceso contra el nominal comprometido rechazado |
+| PER-01 | Guardar/reabrir conserva selección, cantidades y reparto |
+| SEC-01 | Dominio canónico, elegibilidad forzada por ORM rechazada sin documento |
+| SEC-02 | Sin permiso no aplica (AccessError) |
+| PHY-01 | Sin movimientos de stock ni cambio en `sv_available_m3` |
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 16 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 334
+tests`** — las **4 fallas** son las mismas preexistentes (`test_processor_locations.test_09`,
+`test_processor_shipment_ad89.test_t1/t5/t6`) ⇒ **0 nuevas, 0 errores**.
+
+**Límite de navegador:** causa y corrección se verifican por **fuente del cliente** (`record.js`) +
+**arch de la vista** + **ciclo de formulario** ORM; **V3 *pixel* pendiente**.
+
+<!-- actualizado: 2026-10-10 (9) — §19 ERR/ASG/VOL/PER/SEC/PHY: dirigidas 16/16; regresión 334
+pruebas, 4 fallas preexistentes, 0 errores. Versión 03 6.22.0 → 6.23.0. Sin commit/push. -->
+
+---
+
+## 20. Rediseño operativo del asistente «Registrar rebaja» (MAP/GRAN/SEM/AMT/ARCH, 2026-10-10)
+
+Suite nueva `tests/test_sv_rebaja_material.py` (`TestSvRebajaMaterial`). Datos **100 % transaccionales**.
+
+| Caso | Verifica |
+| --- | --- |
+| MAP-01 | Etiqueta (`ref`), SKU origen, dimensiones, piezas y volumen del material |
+| MAP-02 | Etiqueta repetida ⇒ **lotes distintos**, sin deduplicar |
+| MAP-03 | Sin línea de packing ⇒ SKU/declaradas vacías (ausencia honesta), datos del lote presentes |
+| MAP-04 | El volumen documental **no** se recalcula desde dimensiones |
+| GRAN-01 | Disponibilidad por lote, **sin doble conteo** (2 lotes × 5 = 10) |
+| SEM-01 | «Cantidad preparada» = 3 y «Pendiente de reparto» = 2 (nominal 5) |
+| AMT-01 | Cantidad cero/negativa rechazada; exceso > nominal rechazado |
+| ARCH-01 | Formulario amplio (`o_xxl_form_view`) y `target=current` del mismo action |
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 8 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 342
+tests`** — las **4 fallas** son las mismas preexistentes (`test_processor_locations.test_09`,
+`test_processor_shipment_ad89.test_t1/t5/t6`) ⇒ **0 nuevas, 0 errores**.
+
+**Mapeo real (solo lectura, guía 19827):** 17 lotes → 17 líneas de packing, **17/17** coincidencias
+(etiqueta/SKU/dimensiones/piezas/volumen), incluidas etiquetas repetidas (D7670, D7717, D7719, D7720,
+D7721) con distinto largo. **V3 *pixel* pendiente** (interfaz rechazada por Mauricio; rediseño
+operativo entregado para nueva revisión).
+
+<!-- actualizado: 2026-10-10 (10) — §20 MAP/GRAN/SEM/AMT/ARCH: dirigidas 8/8; regresión 342 pruebas,
+4 fallas preexistentes, 0 errores. Versión 03 6.23.0 → 6.24.0. Sin commit/push. -->
+
+## 21. Interfaz clara y concisa del asistente «Registrar rebaja» (CAB/EDIT/MED/ETQ/SIN/USE/MULTI/ARCH, 2026-10-10)
+
+Suite nueva `test_sv_rebaja_ui_limpia.py` (13 casos). Datos 100 % transaccionales.
+
+| Caso | Verifica |
+| --- | --- |
+| CAB-01 | Seleccionadas ≠ con reparto preparado ≠ total; totales de origen con unidad |
+| EDIT-01 | «A asignar» editable crea/actualiza la fila del SV de trabajo |
+| EDIT-02 | Volumen 0 elimina SÓLO la fila del SV de trabajo; conserva otros SV |
+| MED-01 | Medidas legibles «45 × 125 mm · 2,900 m» |
+| ETQ-01/02 | Etiqueta limpia (packing), no el nombre concatenado; fallback a `ref` |
+| ETQ-03 | Etiqueta repetida distinguida por medidas (sin deduplicar) |
+| SIN-01 | Causa real del cero: Disponible/Aplicado/Reservado/Sin capacidad |
+| SIN-02 | «Seleccionar todas» informa cuántas no son asignables |
+| USE-01 | «Usar disponible» no sobrescribe cantidad editada |
+| MULTI-01 | `multi_sv`; subtotal del SV de trabajo ≠ total general |
+| ARCH-01/02 | Columnas/botones/textos; saldo del SV no repetido por fila |
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 13 tests`.
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 355
+tests`** — las 4 fallas son las mismas preexistentes (`test_processor_locations.test_09`,
+`test_processor_shipment_ad89.test_t1/t5/t6`) ⇒ **0 nuevas, 0 errores**.
+
+**V3 *pixel* pendiente** (sin navegador en el entorno).
+
+<!-- actualizado: 2026-10-10 (11) — §21 CAB/EDIT/MED/ETQ/SIN/USE/MULTI/ARCH: dirigidas 13/13; regresión
+355 pruebas, 4 fallas preexistentes, 0 errores. Versión 03 6.24.0 → 6.25.0. Sin commit/push. -->
+
+
+## 22. HOTFIX OwlError de «Registrar rebaja» — `column_invisible` fuera de contexto (OWL, 2026-10-10)
+
+Suite `test_sv_rebaja_ui_limpia.py::TestSvRebajaOwlColumnInvisible` (7 casos). Datos 100 % transaccionales.
+
+| Caso | Verifica |
+| --- | --- |
+| OWL-01 | La vista efectiva: ningún `column_invisible` referencia `wizard_id` |
+| OWL-02 | El formulario padre carga `<field name="multi_sv" invisible="1"/>` |
+| OWL-03 (A) | Apertura sin líneas de reparto → `multi_sv` False (columna oculta) |
+| OWL-04 (B) | Reparto sólo al SV de trabajo → `multi_sv` False |
+| OWL-05 (C) | Reparto a varios SV → `multi_sv` True con destinos correctos |
+| OWL-06 (D) | 1 SV → varios → 1 SV: visibilidad y reparto se conservan |
+| OWL-07 (E) | Guardar/reabrir conserva datos y visibilidad (`multi_sv`) |
+
+---
+
+## 23. Auditoría integral y blindaje del ciclo de rebaja de etiquetas (AUD-ETQ-01..05, 2026-10-11)
+
+**Suite nueva:** `madenat_lumber_logistics/tests/test_sv_rebaja_blindaje.py` (7 pruebas).
+
+| ID | Acredita |
+| --- | --- |
+| AUD-ETQ-01 | `applied` **no** vuelve a draft/pending/cancelled por `write`; `applied→reversed` sólo por `action_reverse` (con usuario) |
+| AUD-ETQ-02 | `action_reverse` exige motivo; audita `imputation_reverse`; reversa repetida no duplica |
+| AUD-ETQ-03 | colisión del mapa lote↔packing ⇒ asociación vacía (no elige arbitrariamente); mapa normal sigue |
+| AUD-ETQ-04 / 04b | causa concreta del saldo (`disponibilidad_detalle`), documentos (`disponibilidad_imputacion_ids`) y acciones de acceso; casos aplicado/reservado/sin-capacidad; nota concreta con el nombre del documento |
+| AUD-ETQ-05 / 05b | cancelar borrador libera la reserva; repetir no altera; una aplicada no se anula |
+
+**Comandos y resultados (base `madenat_test`, contenedor `odoo18_app`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics:TestSvRebajaBlindaje
+# → 0 failed, 0 error(s) of 7 tests  (EXIT=0)
+
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → 4 failed, 0 error(s) of 369 tests (EXIT=1)
+#   las 4 fallas son las MISMAS preexistentes de test_processor_locations / test_processor_shipment_ad89
+```
+Evidencia: `AUDIT_REBAJA_ETIQUETAS_20261011/logs/{test_blindaje.log,regression.log}`.
+
+**Ajuste de pruebas existentes:** motivo de reversa en los llamados a `action_reverse` de
+`test_sv_imputation_i2`, `test_sv_imputation_candidates`, `test_service_return_imputation_guard`,
+`test_processor_return_link`, `test_sv_rebaja_operativa` (política corregida, no cosmética).
+
+**Límites:** sin navegador (renderización pendiente); concurrencia multi-cursor simultánea pendiente
+(advisory locks probados reteniendo el lock); sin reparación histórica.
+
+<!-- actualizado: 2026-10-11 (1) — §23 AUD-ETQ-01..05: dirigidas 7/7 en verde; regresión 369 pruebas,
+4 fallas preexistentes, 0 errores. Versión 03 6.26.0 → 6.27.0. Sin commit/push. -->
+
+
+**Resultado dirigido (corrida nueva):** `0 failed, 0 error(s) of 20 tests` (clase UI + clase OWL).
+
+**Regresión de módulo (corrida nueva):** `madenat_lumber_logistics` = **`4 failed, 0 error(s) of 362
+tests`** — las 4 fallas son las mismas preexistentes (`test_processor_locations.test_09`,
+`test_processor_shipment_ad89.test_t1/t5/t6`) ⇒ **0 nuevas, 0 errores**.
+
+**Límite:** la **renderización real** (eval de la expresión en el cliente Owl) queda **pendiente de
+comprobación manual**: no hay navegador. El fallo **apareció** en la comprobación real del navegador y
+**no** fue detectado por las validaciones XML/ORM previas.
+
+<!-- actualizado: 2026-10-10 (12) — §22 HOTFIX OwlError de «Registrar rebaja»: casos A–E + invariantes
+de arch; dirigidas 20/20; regresión 362 pruebas, 4 fallas preexistentes, 0 errores. Renderización real
+pendiente (sin navegador). Versión 03 6.25.0 → 6.26.0. Sin commit/push. -->
+
+
+---
+
+## 24. Cierre probatorio del ciclo de rebaja de etiquetas (AUD-ETQ-06..10, 2026-10-11)
+
+**Suite nueva:** `madenat_lumber_logistics/tests/test_sv_rebaja_cierre.py` (8 pruebas).
+
+| ID | Acredita |
+| --- | --- |
+| AUD-ETQ-08 | inmutabilidad profunda: `write`/`unlink`/`create` sobre líneas y repartos de un aplicado y `unlink` del aplicado ⇒ `UserError` |
+| AUD-ETQ-06 | reversa: motivo vacío/espacios ⇒ `UserError`; trazabilidad (usuario/fecha/motivo/auditoría); repetida sin doble efecto; sin permiso y contexto forzado ⇒ `AccessError` |
+| AUD-ETQ-07 | multi-compañía sin `sudo`: usuario de otra compañía no ve/edita/aplica/reversa el documento ajeno; contexto no autoriza; lotes ajenos bloqueados |
+| AUD-ETQ-09a | ciclo A: preparar→guardar→reabrir→cancelar(libera)→reasignar→aplicar (2 SV) |
+| AUD-ETQ-09b | ciclo B: preparar→aplicar→revertir(restituye)→reasignar→aplicar; historia append-only |
+| AUD-ETQ-10 | parcial 5/3: nominal comprometido; los 2 m³ no reutilizables; los libera anular/revertir |
+| AUD-ETQ-09c | ciclos sin efectos físicos (stock.move/move.line/picking) |
+
+**Concurrencia real (sonda externa, cursores independientes + `threading.Barrier`):**
+`AUDIT_REBAJA_ETIQUETAS_20261011/evidence/concurrency_probe.py` → Q1/Q2/Q3 OK, sin sobreconsumo, una sola
+reversa, sin efectos físicos, 0 residuos. **RESULTADO GLOBAL: OK** (`logs_cierre/concurrency.log`).
+
+**Comandos y resultados (base `madenat_test`, contenedor `odoo18_app`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics:TestSvRebajaCierre
+# → 0 failed, 0 error(s) of 8 tests  (EXIT=0)
+
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
+```
+
+**Límite:** renderización/navegador (V3) pendiente.
+
+<!-- actualizado: 2026-10-11 (2) — §24 AUD-ETQ-06..10: dirigidas 8/8 en verde; concurrencia real OK;
+regresión con las mismas 4 fallas preexistentes. Versión 03 6.27.0 → 6.28.0. Sin commit/push. -->
+
+
+---
+
+## 25. Contrato de aplicación — POL-01..08 (aprobado 2026-10-11)
+
+**Política aprobada:** Aplicar exige ≥ 1 reparto válido con cantidad positiva hacia un SV autorizado; sin
+reparto el documento sólo queda **no aplicado**; el parcial mantiene el compromiso nominal con **pendiente
+explícito**. `NO_SV_CANDIDATE` pasa a **informativo** (no excepción de aplicación).
+
+**Suite nueva:** `madenat_lumber_logistics/tests/test_sv_rebaja_contrato.py` (8 pruebas).
+
+| ID | Acredita |
+| --- | --- |
+| POL-01 | sin filas de reparto ⇒ `UserError`; estado `draft`; sin snapshot; capacidad intacta |
+| POL-02 | fila con cantidad 0 ⇒ `ValidationError`; sin reparto ⇒ aplicación rechazada |
+| POL-03 | reparto positivo válido ⇒ `applied` |
+| POL-04 | parcial 5/3 ⇒ `nominal_total=5`, `imputed_total=3`, `etiqueta_pendiente_m3=2`, disponible 0 |
+| POL-05 | guardar/reabrir incompleto ⇒ `draft` conservado, sin reparto, sin aplicación |
+| POL-06 | ORM/RPC directo sin reparto ⇒ mismo rechazo |
+| POL-07 | repetición tras rechazo ⇒ sin documento parcial, sin consumo extra |
+| POL-08 | aplicar→revertir→reasignar→aplicar con balances e historia |
+
+**Pruebas actualizadas (conducta anterior):** `test_sv_imputation_i2.T-I2-06`,
+`test_sv_imputation_candidates.CAND-07/08/09` — antes aplicaban sin reparto con motivo; ahora **exigen
+rechazo** y estado no aplicado (política aprobada). No se alteró ninguna otra aserción.
+
+**Comandos y resultados (base `madenat_test`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics:TestSvRebajaContratoAplicacion
+# → 0 failed, 0 error(s) of 8 tests  (EXIT=0)
+
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → 4 failed, 0 error(s) of 385 tests  (mismas 4 preexistentes)
+```
+Evidencia: `CONTRATO_APLICACION_20261011/logs_pol.log`, `logs_regression.log`.
+
+**Límite:** aceptación en navegador pendiente (guion A–I).
+
+<!-- actualizado: 2026-10-11 (3) — §25 contrato de aplicación: POL-01..08 en verde (8/8); regresión 385
+pruebas con las mismas 4 fallas preexistentes; 4 pruebas previas actualizadas a la política aprobada.
+Versión 03 6.28.0 → 6.29.0. Sin commit/push. -->
+
+
+---
+
+## 26. Persistencia y recuperación del trabajo de rebaja (SAVE/FLOW/PHY, 2026-10-11)
+
+**Incidencia:** «al preparar las asignaciones, estas no van quedando guardadas».
+**Causa demostrada:** «Preparar asignación» crea filas de reparto a **cantidad 0** y «Guardar borrador»
+(`_i2_build_imputation`) **lanzaba `UserError`** ante cualquier fila a 0 ⇒ no se guardaba el documento
+(reproducido: `REPRO-02`). Además (C2): un borrador sin reparto positivo no era localizable desde el SV.
+
+**Suite nueva:** `madenat_lumber_logistics/tests/test_sv_rebaja_persistencia.py` (18 pruebas).
+
+| ID | Acredita |
+| --- | --- |
+| SAVE-01..05 | preparar+cantidad→guardar persistente; localizar desde SV y reabrir; actualizar sin duplicar; guardar dos veces; **cero no bloquea** el guardado |
+| SAVE-06..09 | dos SV; cero sólo en el SV de trabajo; descartar cambios; limpieza del transitorio |
+| SAVE-10..14 | atomicidad ante fallo; permisos/compañía sin `sudo`; dos sesiones sin duplicar; aplicado no reabrible; firma sin colisión |
+| FLOW-01..03 | guardar→reabrir→aplicar; cancelar (reservas); aplicar→revertir→reasignar→guardar→reabrir→aplicar |
+| PHY-01 | guardar/recuperar sin efectos físicos |
+
+**Pruebas existentes actualizadas (conducta anterior):**
+`test_sv_rebaja_material.test_amt_01` (cero ya no bloquea; negativo sí),
+`test_sv_rebaja_navigation.test_nav_04_05` (dominio del historial incluye `work_sv_lot_id`),
+`test_sv_rebaja_seleccion_asignacion.test_asg_03` (guardar sin cantidad no falla; queda borrador).
+
+**Comandos y resultados (base `madenat_test`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics:TestSvRebajaPersistencia
+# → 0 failed, 0 error(s) of 18 tests  (EXIT=0)
+
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
+```
+Evidencia: `SAVE_REBAJA_20261011/logs/{repro.log,save.log,regression.log}`.
+
+**Límite:** aceptación en navegador pendiente (guion A–I). Política de conflicto de dos sesiones de
+borrador: **última escritura gana** (sin bloqueo optimista; cambio requeriría autorización).
+
+<!-- actualizado: 2026-10-11 (4) — §26 persistencia/recuperación (SAVE-01..14, FLOW-01..03, PHY-01);
+dirigidas 18/18; regresión con las mismas 4 fallas preexistentes; 3 pruebas previas actualizadas.
+Versión 03 6.29.0 → 6.30.0. Sin commit/push. -->
+
+
+---
+
+## 27. Acciones visibles del asistente «Registrar rebaja» (UI-01..05, 2026-10-11)
+
+**Causa:** el asistente (formulario amplio, `target="current"`) tenía sus acciones **sólo** en un
+`<footer>`, que Odoo **no renderiza** fuera de un diálogo ⇒ «Guardar borrador» / «Revisar y aplicar» /
+«Descartar» **invisibles**. Evidencia del arch efectivo (vista 2889): `<header>` ausente, `<footer>`
+presente, `target=current`. **Corrección:** acciones en el **`<header>` nativo** + `<footer>` retirado.
+
+**Suite nueva:** `tests/test_sv_rebaja_ui_acciones.py`.
+
+| ID | Acredita |
+| --- | --- |
+| UI-01 | la entrada (SV → Registrar rebaja) abre la vista correcta (`res_model`, `view_mode`, `target`, `view_id`) |
+| UI-02 | acciones en `<header>` y **sin** `<footer>`; `groups=` en «Revisar y aplicar»; `invisible` por estado |
+| UI-03 | los botones llaman a **métodos de negocio**: guardar crea el documento persistente; Abrir documento lo abre; Descartar y volver regresa al SV sin borrarlo |
+| UI-04/05 | visibilidad coherente; sin expresiones de fila/`wizard_id`/`parent.` (proxy de OwlError) |
+| CONF | confirmación con **referencia real y estado**; `action_open_document` exige documento |
+
+**Comandos y resultados (base `madenat_test`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
+```
+Evidencia: `UI_SAVE_REBAJA_20261011/logs/regression.log`.
+
+**Límite:** evidencia de navegador pendiente (guion `docs/GUION_NAVEGADOR_UI.md`); no se declara
+«verificado en pantalla».
+
+<!-- actualizado: 2026-10-11 (5) — §27 acciones del asistente en `<header>`; UI-01..05 + confirmación.
+Versión 03 6.30.0 → 6.31.0. Sin commit/push. -->
+
+
+---
+
+## 28. Simplificación operativa: recorrido de dos acciones (SIMPLE/CLIENT, 2026-10-11)
+
+**Solicitud:** «sólo aplicar o guardar lo seleccionado; no obligar a abrir el documento».
+
+**Suite nueva:** `tests/test_sv_rebaja_simple.py` (17 + CLIENT).
+
+| ID | Acredita |
+| --- | --- |
+| SIMPLE-01 | botonera de dos acciones en `<header>` (Guardar/Aplicar) + Volver; sin `<footer>` |
+| SIMPLE-02 | seleccionar → m³ (inverse) → **Aplicar sin Guardar ni Preparar**; una sola rebaja correcta |
+| SIMPLE-03 | seleccionar → m³ → **Guardar**; documento persistente, no aplicado, misma ventana |
+| SIMPLE-04 | Guardar → salir → Continuar; datos y referencia recuperados |
+| SIMPLE-05 | borrador → **Aplicar desde el asistente** (sin Abrir documento) |
+| SIMPLE-06/07 | repetir Guardar/Aplicar no duplica ni consume dos veces |
+| SIMPLE-08/09 | cero permite Guardar (no Aplicar); negativo/exceso rechazados sin efectos |
+| SIMPLE-10 | etiquetas sin disponibilidad → mensaje concreto |
+| SIMPLE-11/12 | repartos a otros SV conservados; «Usar disponible» no sobrescribe |
+| SIMPLE-13/14 | descartar conserva el último guardado; tras aplicar, resultado y sólo lectura |
+| SIMPLE-15 | permisos y compañía rechazados en backend (sin `sudo`) |
+| SIMPLE-16 | aplicar → revertir → nueva asignación → aplicar (historia) |
+| SIMPLE-17 | sin efectos físicos |
+| CLIENT-01/02/03 | cantidad editada llega al reparto; acciones visibles en `target=current`; sin expresiones fuera de contexto |
+
+**Comandos y resultados (base `madenat_test`):**
+```
+odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init --no-http \
+     --http-port=8071 --test-tags /madenat_lumber_logistics
+# → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
+```
+Evidencia: `SIMPLE_REBAJA_20261011/logs/regression.log`.
+
+**Límite:** evidencia de navegador pendiente (guion `docs/GUION_NAVEGADOR_SIMPLE.md`).
+
+<!-- actualizado: 2026-10-11 (6) — §28 recorrido simplificado Guardar/Aplicar; SIMPLE-01..17 + CLIENT.
+Versión 03 6.31.0 → 6.32.0. Sin commit/push. -->
+
+
+---
+
+## 29. Volver a borrador y reasignar (RESET, 2026-10-11)
+
+**Suite nueva:** `tests/test_sv_rebaja_reset.py` (RESET-01..15, 18 + PHY-01).
+
+| ID | Acredita |
+| --- | --- |
+| RESET-01/03 | draft → anular → reabrir: misma referencia y `documentary_key`; auditoría cancel+reopen; reserva restablecida |
+| RESET-02 | pending → anular → reabrir con reservas correctas |
+| RESET-04 | repetir reapertura no duplica auditoría ni reserva |
+| RESET-05 | capacidad consumida por otro documento ⇒ rechazo; A sigue cancelado y B aplicado intacto |
+| RESET-06 | otro trabajo activo de la guía ⇒ conflicto claro sin sobrescritura |
+| RESET-07/10 | permisos/compañía rechazados (sin `sudo`); motivo vacío/espacios rechazado |
+| RESET-08 | `write({'state':'draft'})` directo **no** elude la transición (ni con contexto forzado) |
+| RESET-09 | `applied`/`reversed` **no** vuelven a borrador |
+| RESET-11 | asistente abierto + cancelación externa ⇒ mensaje operativo y salida «Volver a borrador» |
+| RESET-12/13 | reabrir → corregir → Guardar → Continuar; reabrir → reasignar → Aplicar |
+| RESET-14/18 | varios SV conservados; nueva apertura no reutiliza el cancelado |
+| RESET-15 | fallo intermedio (guía no elegible) ⇒ atomicidad |
+| RESET-16/17 | **concurrencia REAL** (transacciones independientes): dos reaperturas del mismo anulado y reapertura ∥ consumo de la misma capacidad (SV) ⇒ una sola transición, sin sobreconsumo, sin doble reserva ni doble auditoría; rollback de la perdedora. `test_sv_rebaja_reset_concurrency.py` (2026-10-12) |
+| AUD-ETQ-07 | `write` directo (incl. `reopened_by_id`+motivo+fecha+contexto) **RECHAZADO**: exige la acción controlada (token de proceso) |
+| AUD-ETQ-08 | computes `sv_assignment_*` (`store`/`compute_sudo` coherentes, **sin sudo**) y consola de intake sin proxy virtual no buscable |
+| P1 (AUD-ETQ-11) | concurrencia sobre la **misma etiqueta retornada**: A/B cancelados (6 m³ c/u, lote 10) → advisory lock rechaza a la perdedora; revalidación de capacidad tras el bloqueo. `test_sv_rebaja_reset_lot_capacity.py` |
+| P2 (AUD-ETQ-08) | recomputación REAL de la consola de intake en el **MISMO** entorno y en **transacción nueva** tras create/write/unlink del detalle. `test_intake_metrics_recompute.py` |
+| P3 (AUD-ETQ-10) | saldo almacenado **canónico** (`compute_sudo=True`) independiente del usuario; proyección por usuario; sin AccessError ni exposición entre compañías. `test_sv_assignment_user_rights.py` |
+| P4 / TOK-01..09 | vía privada de transición; sin residual, sin autorización cruzada, identidad del entorno, sin estado compartido. `test_sv_rebaja_reset_token.py` |
+| LOCK-01..19 | **sobrescritura concurrente**: `edit_version` + guard del documento (advisory ns 1 + comparación + flush) rechaza la edición obsoleta en Guardar/Aplicar; líneas/repartos y edición directa invalidan; «Recargar versión actual»; sin adopción silenciosa. `test_sv_rebaja_save_lock.py` |
+| FLOW-01..03 / PHY-01 | recorrido sencillo, Aplicar sin Guardar previo, multi-SV conserva destinos, sin movimientos físicos |
+| V1 / C1–C8 | **edición directa**: `force_save` de `edit_version` + guard atómico en `write()` ⇒ rechazo de la edición obsoleta en los 8 cruces (asistente↔asistente, directo↔asistente, form↔form, línea→padre, directo→aplicar, asistente→estado, transición→contenido). `test_sv_rebaja_save_lock_direct.py` |
+| V3 / TX-01..13 | **transacción y bloqueos**: rollback íntegro, cursor utilizable, sin reintento automático, sin auditoría de transición fallida, rechazo por VERSIÓN (lock libre) y por LOCK (ocupado), orden `1→2→3` sin deadlock. `test_sv_rebaja_save_lock_tx.py` |
+| PHY-01 | sin efectos físicos en todo el ciclo (anular→reabrir→aplicar) |
+| ~~RESET-16/17~~ | **SUPERADO** (2026-10-12): concurrencia real acreditada — ver filas RESET-16/17 |
+
+**Comandos y resultados (base `madenat_test`):**
+```
+odoo -d madenat_test -u madenat_lumber_core,madenat_lumber_logistics --test-enable --stop-after-init \
+     --no-http --http-port=8071 --test-tags /madenat_lumber_logistics
+# → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
+```
+Evidencia: `RESET_REBAJA_20261011/logs/{reset.log,regression.log}`.
+
+<!-- actualizado: 2026-10-11 (7) — §29 RESET: transición cancelled → draft; 14 pruebas + regresión con las
+mismas 4 fallas preexistentes; concurrencia RESET-16/17 pendiente. Versión 03 6.32.0 → 6.33.0. -->
+
+<!-- actualizado: 2026-10-12 (1) — §29 RESET: **concurrencia RESET-16/17 acreditada** (transacciones
+PostgreSQL independientes, advisory lock + revalidación, barrera/timeout; sin sobreconsumo, sin doble reserva
+ni doble auditoría; limpieza test-only verificada) y **AUD-ETQ-07** (write directo rechazado: token de
+proceso). Nuevas pruebas: `test_sv_rebaja_reset_concurrency.py` (RESET-16/17 + limpieza) y
+`test_intake_console_compute_depends.py` (AUD-ETQ-08). Suites dirigidas ⇒ 0 failed / 0 error. Versión 03
+6.33.0 → **6.34.0**. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-12 (2) — §29 RESET: **verificación probatoria P1–P4**. P1 `test_sv_rebaja_reset_lot_capacity.py`
+(3), P2 `test_intake_metrics_recompute.py` (1), P3 `test_sv_assignment_user_rights.py` (2), P4
+`test_sv_rebaja_reset_token.py` (7) ⇒ **0 failed / 0 error**. Versión 03 6.34.0 → **6.35.0**. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-12 (3) — §29+ **BLINDAJE DE BORRADORES (LOCK-01..19, FLOW, PHY)**. `edit_version` +
+guard del documento (advisory ns 1 + comparación + flush); rechazo controlado de la edición obsoleta en Guardar
+y Aplicar; «Recargar versión actual»; líneas/repartos y edición directa elevan la versión; LOCK-16 con
+transacciones independientes (barrera). `test_sv_rebaja_save_lock.py` ⇒ **0 failed / 0 error**. Versión 03
+6.35.0 → **6.36.0**. Sin commit/push. -->
+
+## 30. HOTFIX OWL — «Agregar una línea» en el documento de rebaja (VIEW-01..05, 2026-10-12)
+
+**Causa:** Odoo 18 CE ya no compila `div.oe_chatter` (compilador por selector de nodo ⇒ `<chatter/>`); los
+campos del chatter (`message_ids`/`message_follower_ids` de `mail.thread`) quedaban como listas o2m editables
+por defecto (`mail.message`/`mail.followers`) con «Agregar una línea» ⇒ `OwlError` en `get urlRelation`
+(`res_id` = `many2one_reference` sin relación determinable). Ver `19` §19.33.
+
+**Corrección:** `div.oe_chatter` → `<chatter/>` en `view_madenat_sv_imputation_form` y
+`view_madenat_processor_return_link_form`. Módulo `madenat_lumber_logistics` 18.0.1.25.0 → **18.0.1.26.0**.
+
+**Pruebas de servidor** (`tests/test_hotfix_owl_chatter.py`, `TestHotfixOwlChatter`):
+
+```
+--test-tags madenat_lumber_logistics:TestHotfixOwlChatter
+# → 0 failed, 0 error(s) of 5 tests   (EXIT=0)
+#   VIEW-01 (proxy) get_view resuelve form+chatter; VIEW-02/03/04 no hay campos de
+#   chatter filtrados ni «Agregar una línea»; VIEW-05 arch efectivo sin many2one
+#   sin relación (ni many2one_reference sin su model_field).
+```
+
+**Regresión:**
+
+```
+--test-tags madenat_lumber_logistics
+# → 4 failed, 0 error(s) of 506 tests  (mismas 4 preexistentes; baseline 4/444 ⇒ 0 nuevas)
+
+--update=madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics \
+  --test-tags madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics
+# → 6 failed, 4 error(s) of 1284 tests  (mismo conjunto que el baseline 6/1217 ⇒ 0 nuevas)
+```
+
+**Límite:** VIEW-01/02/03/04/06/07 en **cliente** (navegador) **PENDIENTES** (sin navegador; guion
+`HOTFIX_OWL_CHATTER_OE_20261012/docs/GUION_MANUAL_NAVEGADOR.md`). Una validación XML/ORM **no** demuestra la
+evaluación en Owl.
+
+<!-- actualizado: 2026-10-12 (4) — §30 HOTFIX OWL chatter: VIEW 5/5; logistics 4/506 (0 nuevas);
+core+intake+logistics 6/4 de 1284 (0 nuevas). Versión 03 6.37.0 → **6.38.0** (cabecera alineada: estaba
+6.33.0, por debajo de 6.37.0 ya registrado por entregas previas). §30 es consecutiva (§29 → §30, sin
+duplicado). Sin commit/push. -->
+

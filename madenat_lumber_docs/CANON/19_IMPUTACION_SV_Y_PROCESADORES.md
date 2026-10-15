@@ -1,7 +1,7 @@
 # 19 — Imputación SV (etiqueta→SV) y Saldo por Procesador
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE
-**Versión documental:** 1.10.0
+**Versión documental:** 1.31.0
 **Fecha de creación:** 2026-10-01
 **Estado:** ✅ Vigente — Documento canónico de la **imputación declarada** entre la etiqueta de madera procesada y una o varias etiquetas SV (Lote Volumen), y del **saldo por procesador**. **No sustituye** a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `12_FLUJOS_INGESTA.md`, `13_CONSOLIDACION_OPERATIVA.md`, `17_CONSTITUCION_VOLUMENES.md` ni `18_CONSOLIDACION_Y_REBAJA.md`; los referencia y los alinea.
 **Responsable revisión:** Arquitecto / Tech Lead — Alta del documento a solicitud del usuario (decisiones D1–D10 del 2026-10-01); **Fase A 2026-10-01:** renumeración de fases (bloque **I0** = ya hecho en `feat/imputacion-sv-i1-20261001`; **I1** canónico pendiente con alcance ampliado); **Fase B 2026-10-02:** **I1 canónico IMPLEMENTADO** en `feat/procesadores-ubicaciones-20261001`; **post-I1 2026-10-02:** decisiones **D-I1-01..D-I1-04** (AD-89), solo documentación; **AD-90 2026-10-02:** semántica de inventario en procesador y **pendiente de consolidación documental** (complementa AD-87/88/89; **I2 sigue pendiente**); **AD-91 2026-10-02:** **I2 acotado a documental sin efecto en stock** (modelo aditivo `madenat.sv.imputation`/`.line`/`.sv.line`), **salida nativa + ledger `imputacion` a I3**, **tres saldos separados**, **idempotencia documental propia**, **severidad dura etiqueta-side / blanda SV-side**, **costo I5**, **merma/cierre posterior**; resuelve **C-1/C-2/C-3**.
@@ -889,6 +889,295 @@ conciliación cuantitativa ni cierra el envío.
 - `aggregator=False` (sin `sum`/`avg`/pivot/`read_group`) + ayuda explícita; las vistas no usan
   sumatorios. **No** hay reparto/prorrateo, resta, rendimiento ni saldo (Bloque D).
 
+### 19.14 Operación manual de asignaciones centrada en SV (2026-10-10)
+
+> **Naturaleza.** Implementación **acotada y DOCUMENTAL** que reordena la operación de I2 alrededor
+> del **SV**: «abro un SV, selecciono una guía de retorno, incluyo todas o algunas etiquetas,
+> introduzco su asignación, reviso y aplico; después incorporo otra guía al mismo SV mediante otro
+> documento». Reutiliza `madenat.sv.imputation` (cabecera por guía), sus líneas, el asistente y la
+> aplicación/reversa existentes. **No** crea un documento de negocio nuevo, **no** crea otro ledger ni
+> otro motor de saldos, y **no** toca stock, `stock.quant`, `sv_available_m3` ni `madenat.sv.operation`.
+
+**19.14.1 Entrada y consulta (Bloque A).** Acción **Logística → Asignaciones SV** sobre `stock.lot`
+(`lot_flow_type='volume'`) con **vistas dedicadas** (`view_madenat_sv_assignment_list`/`_form`); no
+altera las demás vistas de lotes ni crea modelo persistente. Cabecera: etiqueta SV, guía de
+procedencia (`volume_source_guia_id`), producto, procesador (cuando la relación está acreditada),
+**volumen nominal documental**, **total imputado aplicado** (sólo `applied`), **saldo documental
+I2** (magnitud propia, distinta de `sv_available_m3`) y el aviso «La imputación no modifica stock ni
+saldo del ledger SV». Detalle: imputación, guía de retorno, etiqueta procesada, volumen asignado a
+este SV, estado, fecha de aplicación, usuario y acceso al documento. Se distingue `draft`/`pending`
+de `applied` y de `reversed`/`cancelled`; **no** se suman reservas pendientes como imputaciones
+aplicadas y **no** se oculta historia.
+
+**19.14.2 Alta manual desde el SV (Bloque B).** Botón **«Asignar retorno»** abre el asistente
+existente con el SV en contexto (`sv_lot_id`). El contexto **orienta**; **no** genera reparto, **no**
+introduce cantidades y **no** aplica. El usuario elige guía, etiquetas y reparto. No se preselecciona
+guía por fecha/volumen. Si ya existe una imputación de trabajo elegible para esa guía, se **reutiliza**
+y se reproduce su estado; no se crea una segunda imputación de trabajo (D-I2-15).
+
+**19.14.3 Selección explícita de etiquetas (Bloque C).** Booleano `selected` por línea +
+«Seleccionar todas» / «Quitar selección» e indicadores seleccionadas/disponibles. Abrir una operación
+nueva **no** incluye etiquetas automáticamente; abrir un borrador reproduce selección y reparto
+guardados. Nombres de pestañas: «Etiquetas del retorno», «Asignación a SV», «Envíos relacionados»,
+«Motivo / reversa».
+
+**19.14.4 Conservación del borrador (Bloque D).** `_i2_build_imputation` reconcilia por
+`processed_lot_id` y por `(línea, SV)` (**upsert**), conservando referencias; no borra y recrea
+indiscriminadamente ni duplica líneas. Un cambio de guía sobre una imputación de trabajo ya vinculada
+se **bloquea**. Deseleccionar/quitar una etiqueta con reparto descarta **sólo** la propuesta
+transitoria (draft/pending); no toca historia aplicada. Este bloque de conservación **no** es el
+Bloque D cuantitativo (§19.12), que sigue **fuera de alcance**.
+
+**19.14.5 Integridad etiqueta–guía (Bloque E, D10).** Constraint de modelo
+`_check_label_belongs_to_guia` (además de `_i2_validate_payload` en el apply): `processed_lot_id`
+debe pertenecer a `guia_processing_id.lot_ids` y no ser un SV. Se valida en creación, escritura,
+apply y selección forzada por ORM/RPC; no se confía sólo en el dominio de UI. Inspección de
+históricos (sólo lectura, 2026-10-10): **0** inconsistencias.
+
+**19.14.6 Coherencia de volumen documental (Bloque F, D10/D11).** Ambos campos son la **misma
+magnitud documental** (m³). Se añaden constraints de modelo `_check_reparto_within_nominal` (línea) y
+`_check_within_line_nominal` (reparto): `0 < Σ reparto ≤ nominal autorizado` de la etiqueta; se
+admiten **parciales**; no se elude por varias líneas del mismo documento, por edición del nominal ni
+por ORM/RPC. Se **conserva** el techo duro etiqueta-side existente (Σ líneas activas ≤ nominal del
+lote) y la política de **exceso blando SV-side**. La concurrencia sigue por *advisory lock* por SV
+(no se declara resuelta por inspección estática).
+
+**19.14.7 Alcance y límites.** Sin conciliación cuantitativa (Bloque D), sin FIFO automático, sin
+aplicación multi-documento conjunta (cada documento tiene su propia transacción), sin movimientos de
+stock, rendimiento, merma ni cierre físico. La ingesta permanece separada y sin nuevos pasos. Módulo
+`madenat_lumber_logistics` **18.0.1.9.0**.
+
+---
+
+### 19.15 Acceso unificado «Rebaja de etiquetas» (2026-10-10)
+
+> **Decisión funcional vigente (sustituye instrucciones anteriores de menú).**
+> **«Rebaja de etiquetas» es el ÚNICO acceso operativo a la asignación documental SV.** La pantalla
+> de etiquetas SV y los documentos de imputación (`madenat.sv.imputation`) son **vistas del mismo
+> mecanismo**, no dos operaciones independientes. La navegación anterior se **sustituye**; no se
+> añade una tercera entrada.
+
+**19.15.1 Nombre operativo y punto de entrada único.** En **Logística Exportación** existe un
+**solo** enlace para la operación: **«Rebaja de etiquetas»** (menú `menu_madenat_sv_assignment`,
+reutilizado; acción `action_madenat_sv_assignment` sobre `stock.lot` con
+`domain=[('lot_flow_type','=', 'volume')]`). Los menús anteriores «Asignaciones SV» e
+«Imputaciones documentales SV» **no** son accesos paralelos: el primero se renombra y el segundo se
+**retira de la navegación** (`ir.ui.menu.active = False`; mecanismo reproducible en 19.15.4).
+
+**19.15.2 Relación etiquetas SV ↔ documentos de imputación.** La entrada abre el **listado de
+etiquetas SV** («Etiquetas SV»). Al abrir una etiqueta, además de las asignaciones documentales
+existentes, se ofrecen **«Registrar rebaja»** (asistente existente, `madenat.sv.imputation.wizard`),
+**«Historial de rebajas»** (documentos que asignan a ese SV; reutiliza la acción
+`action_madenat_sv_imputation` con dominio por `sv_line_ids.sv_lot_id`) y **«Ver historial
+completo»** (todos los documentos). **No** hay un segundo menú: el historial vive **dentro** del
+recorrido. El historial distingue **vigentes** (`draft`, `pending`, `applied`) de **históricos**
+(`reversed`, `cancelled`).
+
+**19.15.3 Flujo manual (recorrido único).** `Rebaja de etiquetas` → seleccionar SV →
+**Registrar rebaja** (asistente existente: guía de retorno, selección de etiquetas, reparto) →
+revisar → **Aplicar** → consultar el documento y su historia. Aplicar/reversar conservan
+**permisos** y comportamiento vigentes. Abrir una consulta **no** crea documento, **no** aplica y
+**no** modifica saldo.
+
+**19.15.4 Alcance documental y retiro reproducible del menú.** La operación **sigue siendo
+documental**: no genera movimientos de stock ni modifica el ledger SV (`sv_available_m3`). El menú
+retirado conserva su definición XML (instalaciones nuevas) y se desactiva por un `record` posterior
+sobre `ir.ui.menu`; al reaplicar `-u` el `menuitem` no vuelve a fijar `active`, por lo que **no
+reaparece**. Reversible con `active=True`. No se borran modelos, documentos ni acciones.
+
+**19.15.5 Nombres/rótulos.** Menú y acción: **«Rebaja de etiquetas»**; listado: **«Etiquetas SV»**;
+acceso a documentos: **«Historial de rebajas»**; preparación: **«Registrar rebaja»** (asistente
+existente). Encabezados documentales: **Volumen documental / Rebajado documental / Saldo
+documental**. Se conservan los identificadores técnicos (modelos y campos). Ayuda de efecto
+documental en acción y ficha.
+
+**19.15.6 Pantalla.** Búsqueda dedicada (Etiqueta SV, Guía de procedencia, Producto; sin panel
+técnico de ubicaciones/partners). «En stock» es un filtro **opcional y removible** (existencia
+física por `quants`): **no** es el saldo documental. No se impone «En stock» como condición.
+
+**19.15.7 Fuera de alcance.** «Rebajar por Motonave» y «Consolidación» **no cambian**; la ingesta no
+recibe nuevas pantallas ni pasos. Sin conciliación cuantitativa (Bloque D). Módulo
+`madenat_lumber_logistics` **18.0.1.10.0**.
+
+---
+
+### 19.16 Operación y blindaje de «Rebaja de etiquetas» (2026-10-10)
+
+**19.16.1 Elegibilidad de la guía de retorno (Bloque B).** Una **nueva operación** sólo ofrece guías
+`service_return_confirmation == 'yes'` **y** `state != 'cancelled'` (dominio canónico
+`_i2_return_guide_domain`). Es la misma condición que exige `action_apply` (destino Sí) más la
+exclusión de canceladas. **No** se usa `tipo_recepcion` como filtro duro: la doctrina identifica el
+retorno por la confirmación (AD-102) y el tipo de ingreso no es prueba suficiente ni necesaria. Un
+dominio de interfaz **no** es validación de negocio: el modelo (`_i2_check_guia_is_eligible_return`)
+rechaza guía No/vacía/cancelada en la apertura del asistente (`onchange`) y **antes** de
+construir/modificar el documento (`_i2_build_imputation`), **sin estados ni documentos parciales**.
+Los **históricos** siguen consultables (consulta ≠ regularización). Se conserva el control de destino
+Sí en `action_apply` y la regla que permite dejar `pending` sin exigir Sí.
+
+**19.16.2 Semántica de cantidades documentales (Bloque D).** Cuatro magnitudes diferenciadas por
+etiqueta de retorno (todas en m³, **sólo documentales**):
+
+| Magnitud | Fórmula | Estados |
+| --- | --- | --- |
+| **Nominal** (capacidad) | `_i2_lot_nominal_m3` = `volume_purchase_m3` (o `volumen_m3`) | — |
+| **Rebajado / aplicado** | `_i2_lot_applied_m3` = Σ `nominal_volume_m3` de líneas | `applied` |
+| **Reservado** | `_i2_lot_reserved_m3` = Σ `nominal_volume_m3` de líneas | `draft`/`pending` |
+| **Disponible documental** | `_i2_lot_available_for_m3` = nominal − Σ activos **excluyendo el documento en curso** | `draft`/`pending`/`applied` |
+
+El **techo duro** etiqueta-side sigue siendo Σ activos ≤ nominal. Excluir el documento en curso evita
+que la propia operación se cuente dos veces al editarla. La suma de reparto N:M **no** duplica totales
+(`nominal_total_m3` = suma de líneas; `imputed_total_m3` = suma de repartos). El SV mantiene su propia
+magnitud (`sv_saldo_documental_m3`).
+
+**19.16.3 Listado, búsqueda y filtros (Bloques A/C).** El listado «Etiquetas SV» separa N° Guía,
+Proveedor, Fecha (opcional), Producto, Procesador y las tres magnitudes (no concatena). Los agregados
+`sv_assignment_*` pasan a **`store=True`** para habilitar filtros documentales buscables (**Con/Sin
+saldo documental**, **Con/Sin rebajas aplicadas**, **Exceso documental**) — sin dominios sobre campos
+no buscables. «En stock» sigue siendo un filtro **opcional** (existencia física por `quants`, distinto
+del saldo documental). La búsqueda admite Etiqueta SV, Guía/Proveedor y Producto; los campos
+calculados no almacenados **no** se usan como filtros. Columnas opcionales de retorno y filtros de
+retorno en el listado de guías (usados por «Buscar más»); no se cambió `display_name` ni la vista por
+defecto.
+
+**19.16.4 Resumen y mensajes (Bloque E/F).** El asistente muestra el **resumen documental**
+(disponibles, seleccionadas, nominal incluido, reparto de la operación, **aplicado previo** y
+**disponible documental**, ambos excluyendo el documento en curso) y el mensaje breve «Actualiza el
+saldo documental SV. No mueve stock ni modifica el ledger SV». Si no hay etiquetas, se explica que no
+se generaron o no son elegibles; si no hay guías candidatas, se indica revisar la identificación del
+retorno en la guía (sin marcarla automáticamente).
+
+**19.16.5 Concurrencia (CON-01).** `action_apply` toma advisory locks de transacción en un **orden
+global determinista** que incluye la **etiqueta de retorno** (namespace 3) y el **SV** (namespace 2),
+**antes** de revalidar los techos. Cierra el riesgo de que dos documentos apliquen a la MISMA etiqueta
+hacia SV distintos superando su capacidad. Si otra transacción posee el lock, la operación falla de
+forma **controlada** (sin escrituras parciales). Probado con una sesión que retiene el lock.
+
+**19.16.6 Efecto y alcance.** La operación sigue siendo **documental**: no crea movimientos de stock,
+no altera `stock.quant`/`stock.move`, no toca `sv_available_m3` ni el ledger `madenat.sv.operation`.
+Reutiliza el único menú, el modelo `madenat.sv.imputation*`, el asistente y `action_apply`/
+`action_reverse` existentes. Sin nuevos menús, wizard, documento, ledger ni motor de saldos. **Bloque
+D cuantitativo fuera de alcance**. Módulo `madenat_lumber_logistics` **18.0.1.11.0**.
+
+---
+
+### 19.17 Corrección de «Seleccionar todas» y asignación explícita (2026-10-10)
+
+**19.17.1 Causa demostrada del fallo.** Al pulsar «Seleccionar todas» en una apertura nueva, el
+CREATE de cada fila de `madenat.sv.imputation.wizard.line` llegaba **sin** `processed_lot_id` y el
+`create` fallaba por campo obligatorio. La causa **no** estaba en `required` ni en un comando
+concreto, sino en el **cliente**: en Odoo 18 (`web/static/src/model/relational_model/record.js`,
+`_getChanges`) un subcampo **`readonly`** de una x2many **se omite** del payload salvo
+`force_save="1"`. El campo era `readonly="1"` **sin** `force_save`.
+
+**19.17.2 Corrección (fuente).** `processed_lot_id` pasa a `readonly="1" force_save="1"` para que el
+cliente **envíe** el identificador. **No** se retiró `required`, **no** se añadió una etiqueta
+ficticia, **no** se capturó la excepción, **no** se usó `sudo` ni se exigió guardar antes como
+solución. La asignación a SV pasa a `create="false"` (las filas se crean por acción explícita), lo
+que además evita filas nuevas sin `wizard_line_id`.
+
+**19.17.3 Flujo (Seleccionar ≠ asignar ≠ aplicar).** Elegir guía de retorno → **seleccionar**
+etiquetas («Seleccionar todas» sólo marca; no asigna ni aplica) → **«Asignar seleccionadas al SV de
+trabajo»** (crea una fila por etiqueta con el SV de trabajo y **volumen 0**) → introducir el volumen
+o **«Usar disponible»** (`min(disponible documental, nominal comprometido)`, acción explícita) →
+revisar el **resumen** («X etiquetas · Y m³ preparados para SV…») → **Guardar** o **Aplicar**. Nada
+se aplica automáticamente; sólo `action_apply` registra la rebaja documental.
+
+**19.17.4 Asignación explícita.** `action_assign_selected` no aplica, no mueve stock, no crea otro
+documento, **no duplica** filas, **no sobrescribe** cantidades ya editadas y **no borra** repartos a
+otros SV (el detalle avanzado multi-SV se conserva). `action_use_available` es la única vía de
+autorrelleno y es una acción expresa. Si una fila asignada queda con volumen 0, la preparación se
+rechaza con mensaje claro (`_i2_build_imputation`), sin estados parciales.
+
+**19.17.5 Identificadores y semántica de cantidades.** Columnas primarias: Seleccionar · Etiqueta
+proveedor (`external_labels`) · Lote interno (`processed_lot_id.name`) · Disponible para esta
+operación · Nominal comprometido. Secundarias (opcionales): Capacidad nominal, **Rebajado etiqueta
+aplicado**, Reservado, Pendiente de reparto. No se renombra `display_name` ni se recortan nombres;
+si `external_labels` está vacío, el identificador interno actúa de respaldo. Se distingue
+**Nominal comprometido** (lado etiqueta) de **volumen asignado al SV** (tabla de asignación): un
+reparto parcial (nominal 5, SV 3) no se presenta como «5 rebajado».
+
+**19.17.6 Límites.** Sin nuevos menús/wizard/documento/ledger/motor de saldos; sin cambios en
+ingesta; **Bloque D cuantitativo fuera de alcance**; V3 *pixel* pendiente. Módulo
+`madenat_lumber_logistics` **18.0.1.12.0**.
+
+---
+
+### 19.18 Rediseño operativo del asistente «Registrar rebaja» (2026-10-10)
+
+**19.18.1 Motivo.** La presentación anterior fue **rechazada por Mauricio** (encabezados truncados,
+etiqueta de proveedor vacía, lote interno concatenado, exceso de indicadores documentales y recorrido
+poco evidente). Se rediseña la **interfaz del mismo asistente**; no se crea otro wizard, menú ni
+mecanismo.
+
+**19.18.2 Mapeo de datos (referencia «DETALLE DEL PACKING LIST»).**
+
+| Dato | Modelo.campo | Relación | Unidad | Si falta |
+| --- | --- | --- | --- | --- |
+| Etiqueta | `stock.lot.ref` | identidad del lote | — | vacío |
+| SKU origen | `madenat.guia.processing.line.sku_original` | vía nombre reconstruido (regla de promoción) | — | «—» |
+| Producto | `stock.lot.product_id` | directo | — | vacío |
+| Subproducto | `stock.lot.subproducto_id` | directo | — | vacío |
+| Espesor/Ancho técnico | `stock.lot.espesor_mm` / `ancho_mm` | directo | mm | 0 |
+| Largo técnico | `stock.lot.largo_m` | directo | m | 0 |
+| Espesor/Ancho/Largo declarado | `guia.processing.line.espesor_nominal_mm` / `ancho_nominal_mm` / `largo_nominal_m` | vía nombre | mm/m | 0 |
+| Piezas | `stock.lot.piezas` | directo | pzs | 0 |
+| Volumen documental | `stock.lot.volume_purchase_m3` | directo | m³ | 0 |
+| Volumen embarque | `stock.lot.vol_shipment_m3` | directo | m³ | 0 |
+
+**19.18.3 Relación lote↔línea de packing.** No existe FK almacenada. El lote se promovió con
+`name = f"{line.lot_name} {line.sku_original} {dígitos(guia.name)}"`. La línea de packing se asocia
+por **esa misma regla** (mapa construido una vez por guía; lectura agrupada). Si no coincide → «—».
+**No** se corta el nombre ni se inventan valores. Verificado en la guía real **19827**: **17/17**.
+
+**19.18.4 Granularidad.** Una fila = un `stock.lot` (unidad asignable real). Una **etiqueta repetida**
+son **lotes distintos** (distinto largo/piezas/SKU) y **no** se deduplican. La disponibilidad se
+calcula por lote (`_i2_lot_available_for_m3`) ⇒ sin doble conteo. Si el mecanismo asignara por detalle,
+se reutilizaría; hoy asigna por lote y se muestra el material como subdetalle legible.
+
+**19.18.5 Vista y recorrido.** Cabecera compacta (SV, guía, **saldo documental del SV**, seleccionadas,
+total preparado, resumen). Tabla principal con columnas: Seleccionar · Etiqueta · SKU origen ·
+Producto · Subproducto(opcional) · Espesor/Ancho/Largo · Piezas · Volumen documental · Disponible ·
+Cantidad preparada. Documental avanzada (nominal, comprometido, aplicado, reservas, pendiente, lote
+interno, declaradas, embarque) en **columnas opcionales**. Botonera junto a la tabla: Seleccionar
+todas · Quitar selección · **Asignar seleccionadas al SV de trabajo** · **Usar disponible**. El
+asistente se abre como **formulario amplio** (`o_xxl_form_view`, `target=current`) para dar espacio;
+misma acción/wizard.
+
+**19.18.6 Cantidades.** «Cantidad preparada» en la tabla principal es de **solo lectura** y refleja el
+reparto real (`sv_line_ids`); la edición del volumen ocurre en «Asignación a SV» (mismo mecanismo, sin
+saldo paralelo). Se distingue **Volumen documental de origen** ≠ **Disponibilidad** ≠ **Cantidad
+preparada** ≠ **Aplicado** ≠ **Pendiente de reparto** ≠ **Saldo documental del SV**. No se recalcula el
+volumen documental desde dimensiones. Caso parcial (nominal 5, SV 3): pendiente 2, sin llamar «5
+rebajado» a la reserva.
+
+**19.18.7 Límites.** Sin cambios de negocio (disponibilidad, reservas, reparto, aplicación, reversa).
+Sin nuevos menús/wizard/documento/ledger. Ingesta intacta. Bloque D fuera de alcance. V3 *pixel*
+pendiente. Módulo `madenat_lumber_logistics` **18.0.1.13.0**.
+
+<!-- actualizado: 2026-10-10 (10) — §19.18 rediseño operativo del asistente «Registrar rebaja»:
+tabla de material del packing list (etiqueta/sku/dimensiones/piezas/volumen), mapeo por regla de
+promoción, granularidad por lote sin doble conteo, formulario amplio y jerarquía de acciones.
+Versión 1.14.0 → 1.15.0. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-10 (9) — §19.17 corrección de «Seleccionar todas» (causa: readonly de
+x2many sin force_save en el cliente; fix force_save="1") y asignación explícita al SV de trabajo
+(action_assign_selected / action_use_available), resumen y semántica de cantidades. Versión
+1.13.0 → 1.14.0. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-10 (8) — §19.16 operación y blindaje de «Rebaja de etiquetas»: elegibilidad
+de retorno (Sí + no cancelada) validada en modelo, semántica nominal/aplicado/reservado/disponible,
+listado y filtros documentales buscables, resumen sin doble conteo, mensajes, concurrencia por lock
+de etiqueta+SV. Versión 1.12.0 → 1.13.0. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-10 (7) — §19.15 acceso unificado «Rebaja de etiquetas»: único punto de
+entrada operativo; retiro reproducible de «Imputaciones documentales SV» de la navegación; historial
+interno. Versión 1.11.0 → 1.12.0. Sin commit/push. -->
+
+<!-- actualizado: 2026-10-10 (6) — §19.14 operación manual de asignaciones centrada en SV
+(bloques A–G): entrada/consulta por SV, alta desde el SV, selección explícita, conservación del
+borrador, integridad etiqueta–guía (D10) y coherencia de volumen (D10/D11). Versión 1.10.0 → 1.11.0.
+Bloque D cuantitativo sigue fuera de alcance. Sin commit/push. -->
+
 <!-- actualizado: 2026-10-10 (5) — §19.13 ajuste de integridad A/B/C (reversa vs. procedencia,
 reimputación, compañía + regla de registro, elegibilidad dura, volúmenes referenciales N:M).
 Bloque D cuantitativo sigue fuera de alcance. Versión 1.9.0 → 1.10.0. -->
@@ -896,3 +1185,783 @@ Bloque D cuantitativo sigue fuera de alcance. Versión 1.9.0 → 1.10.0. -->
 <!-- actualizado: 2026-10-10 (4) — §19.12 Bloque D (conciliación cuantitativa): diseño requerido y
 decisión de etapa «opción 3» (no implementado; `linked` = vínculo registrado). §19.11 vuelto a
 confirmar. V3 (proxy de navegador) de A/B/C ejecutada. Versión 1.9.0. -->
+### 19.19 Interfaz clara y concisa de «Registrar rebaja» — ambas pestañas (2026-10-10)
+
+**19.19.1 Motivo.** El requisito adicional exige el **mismo criterio visual** en las dos pestañas
+(«Materiales del retorno» y «Asignación a SV»): no basta mejorar la primera si la segunda repite
+contexto, muestra nombres concatenados y saldos duplicados. Se interviene el **mismo asistente**
+(`madenat.sv.imputation.wizard`); no se crea otro wizard, menú ni mecanismo.
+
+**19.19.2 Cabecera única.** Se muestra una vez: SV de trabajo, guía de retorno, **saldo documental del
+SV**, **etiquetas seleccionadas**, **con reparto preparado** y **total preparado para el SV (m³)**. Se
+distingue explícitamente **seleccionadas ≠ con reparto preparado ≠ total en m³**; no se presenta «N
+etiquetas» como N asignaciones válidas si todas siguen en cero (`prepared_line_count` sólo cuenta
+cantidades > 0). El nominal y el saldo completo del SV **ya no** se repiten por fila.
+
+**19.19.3 Totales y unidades (§7).** Piezas de origen (`packing_pieces_total`), Volumen documental de
+origen (`packing_documental_volume_total_m3`, distinto del volumen a imputar), Disponible documental de
+las seleccionadas (`available_total_m3`, agregable sin doble conteo por calcularse por lote) y Preparado
+para el SV (`prepared_total_m3`, subtotal del SV de trabajo). Con varios SV, `assigned_total_m3` es el
+total general (se muestra sólo si `multi_sv`).
+
+**19.19.4 Materiales del retorno (§2).** Columnas: Seleccionar · **Etiqueta limpia** · SKU origen ·
+Producto · Espesor (mm) · Ancho (mm) · Largo (m) · Piezas · Vol. documental (m³) · Disponible (m³) ·
+**A asignar (m³) — editable**. Subproducto, dimensiones declaradas y código técnico quedan como columnas
+opcionales. La etiqueta es el `lot_name` del packing (sin el `stock.lot.name` concatenado); `display_name`
+no se modifica.
+
+**19.19.5 «A asignar» editable (§2).** Campo `cantidad_asignar_m3` con `compute` + `inverse`. El `inverse`
+escribe en `sv_alloc_ids` la fila de esa etiqueta hacia el SV de trabajo: crea, actualiza o elimina
+**sólo** esa fila (volumen 0 la elimina); **no** toca repartos a otros SV ni crea un saldo paralelo.
+Editar la cantidad marca la etiqueta como seleccionada.
+
+**19.19.6 Asignación a SV (§3).** Caso de un solo SV: **Etiqueta · Medidas · Disponible (m³) · A asignar
+(m³)**; el SV destino está en la cabecera. Con varios SV aparece la columna **«SV destino»**
+(`column_invisible="not wizard_id.multi_sv"`). La identificación material (etiqueta limpia + medidas) es la
+misma en ambas pestañas.
+
+**19.19.7 Medidas (§3).** `medidas` = «espesor × ancho mm · largo m» en formato es-ES («45 × 125 mm ·
+2,900 m»), derivado de las dimensiones técnicas del lote; permiten distinguir etiquetas visibles repetidas
+sin deduplicar.
+
+**19.19.8 Acciones (§4).** Etiquetas breves: Seleccionar todas · Quitar selección · **Preparar
+asignación** · Usar disponible. «Preparar asignación» aclara en su `help`: «Prepara el reparto al SV de
+trabajo; no aplica la rebaja». «Usar disponible» tiene el **mismo** alcance en ambas pestañas (filas del SV
+de trabajo de etiquetas seleccionadas) y **no sobrescribe** una cantidad ya escrita (sólo rellena ceros).
+Footer: Guardar borrador · **Revisar y aplicar** · Cancelar; Proponer FIFO y Dejar pendiente como
+`btn-link` (jerarquía menor).
+
+**19.19.9 Textos de ayuda (§5).** Una línea bajo la tabla: «Selecciona el material, indica los m³ y prepara
+la asignación. Sólo Aplicar registra la rebaja.» y el aviso breve «Rebaja documental: no mueve stock
+físico.». Se retiran los párrafos con explicaciones de implementación.
+
+**19.19.10 Filas sin disponibilidad (§6).** `disponibilidad_estado` deriva la causa real de los saldos:
+**Disponible / Aplicado / Reservado / Sin capacidad documental**. «Seleccionar todas» informa cuántas
+etiquetas seleccionadas carecen de disponibilidad (`not_assignable_line_count`, `no_availability_note`);
+no se tratan como asignables ni se borran reservas.
+
+**19.19.11 Límites.** Sin cambios de negocio (disponibilidad, reservas, reparto, aplicación, reversa,
+idempotencia, atomicidad). Sin nuevos menús/wizard/documento/ledger. Ingesta intacta. Aceptación visual de
+Mauricio pendiente. Módulo `madenat_lumber_logistics` **18.0.1.14.0**.
+
+<!-- actualizado: 2026-10-10 (11) — §19.19 interfaz clara y concisa de ambas pestañas del asistente
+«Registrar rebaja»: cabecera única, totales con unidad, «A asignar» editable, identidad limpia + medidas,
+SV destino condicional, acciones breves y causa real de disponibilidad cero. Versión 1.15.0 → 1.16.0.
+Sin commit/push. -->
+
+
+### 19.20 HOTFIX bloqueante — OwlError por `column_invisible` fuera de contexto (2026-10-10)
+
+**19.20.1 Error real del navegador (reportado por Mauricio).**
+`EvalError: Can not evaluate python expression: (bool(not wizard_id.multi_sv))` —
+`Name 'wizard_id' is not defined`; origen: `ListRenderer.evalColumnInvisible`. El asistente «Registrar
+rebaja» **no abría**.
+
+**19.20.2 Causa demostrada.** En Odoo 18 `column_invisible` se evalúa con el **contexto del formulario
+contenedor** (`web/static/src/views/list/list_renderer.js::evalColumnInvisible` →
+`evaluateBooleanExpr(columnInvisible, this.props.list.evalContext)`). En una lista embebida en un
+formulario, ese contexto expone `parent` (registro del formulario) y **no** los campos de cada fila
+(`record.js` define `evalContext.parent → parentRecord.evalContext`). Por eso `wizard_id` —campo de las
+filas `madenat.sv.imputation.wizard.sv.line`— **no está definido** y la expresión falla. **No** fue un
+problema de caché.
+
+**19.20.3 Corrección.** `column_invisible="not parent.multi_sv"` (patrón canónico de Odoo core; p. ej.
+`account.move.line` usa `column_invisible="parent.move_type …"`) y **carga explícita** de
+`<field name="multi_sv" invisible="1"/>` en el formulario padre para que `parent.multi_sv` esté
+disponible. **No** se añadió `wizard_id` como columna (no se evalúa con los valores de cada fila), **no**
+se eliminó la condición, **no** se capturó la excepción, **no** se tocó Owl ni assets del core. Revisión
+acotada: es el único `column_invisible` del asistente.
+
+**19.20.4 Preservado.** Cantidad editable desde Materiales, reparto como fuente de verdad, repartos a
+otros SV, identidad/descripción del material, `processed_lot_id` obligatorio + `force_save`,
+disponibilidad, reservas, aplicación, reversa, permisos, atomicidad e idempotencia. Sin nuevos modelos,
+menús ni mecanismos.
+
+**19.20.5 Pruebas y límites.** Casos A–E sobre el **arch efectivo** y el ORM: apertura sin reparto,
+reparto sólo al SV de trabajo (columna oculta), varios SV (columna visible con destinos correctos),
+ida/vuelta 1↔varios SV sin pérdida, guardar/reabrir con conservación, invariante «ningún
+`column_invisible` usa `wizard_id`» y carga de `multi_sv` en el padre. **Renderización real pendiente de
+comprobación manual** (sin navegador). **No** se afirma que las pruebas XML/ORM previas detectaran el
+fallo: apareció en la comprobación real del navegador. Estado: **«Incidencia bloqueante de
+renderización; aceptación pendiente»**. Módulo `madenat_lumber_logistics` **18.0.1.14.1**.
+
+---
+
+### 19.21 Auditoría integral y blindaje del ciclo de rebaja de etiquetas (2026-10-11)
+
+Expediente de evidencia: `AUDIT_REBAJA_ETIQUETAS_20261011/`. Cuatro defectos demostrados y corregidos
+sobre el mecanismo **existente** (sin nuevo menú, wizard, ledger ni motor de saldos; sin efectos físicos).
+Módulo `madenat_lumber_logistics` **18.0.1.15.0**.
+
+**19.21.1 Inmutabilidad real de un aplicado (AUD-ETQ-01).** `state` estaba dentro de
+`I2_APPLIED_WRITABLE`, así que `write({'state': ...})` sobre una imputación `applied` permitía volver a
+`draft`/`pending`/`cancelled` por ORM/RPC, **liberando capacidad y reescribiendo la historia** (contradice
+AD-91). Ahora `state` no es libre: sobre `applied` la **única** transición admitida es `→ reversed`, y
+sólo mediante `action_reverse` (con usuario de reversa); cualquier otra se rechaza en el modelo. Evita
+«des-aplicar» sin trazabilidad.
+
+**19.21.2 Reversa con motivo obligatorio (AUD-ETQ-02).** `madenat.sv.imputation.action_reverse` no exigía
+motivo; la relación hermana `madenat.processor.return.link.action_reverse` sí. Ahora exige
+`reversal_reason`/`reason` no vacío (trazabilidad, §12/§16-R02). Ajuste de llamados de prueba existentes.
+
+**19.21.3 Mapa lote↔packing sin elección arbitraria (AUD-ETQ-03).** `_compute_packing_line` usaba
+`setdefault` y, ante una **colisión** de clave (dos líneas de packing con el mismo
+`lot_name`+SKU+dígitos), asociaba la primera. Ahora la clave colisionante se marca **ambigua** y la
+asociación queda vacía (no se elige al azar). Lógica extraída a `_i2_build_packing_map`.
+
+**19.21.4 Causa del saldo concreta y trazable (AUD-ETQ-04).** La disponibilidad cero se explicaba con un
+aviso genérico. El asistente ahora expone por etiqueta `disponibilidad_detalle` (documento(s) y volumen
+que la consumen, derivados de los saldos reales) y ofrece **acceso a los documentos** que la explican
+(`disponibilidad_imputacion_ids`, `action_open_consuming_documents` por fila y
+`action_open_no_availability_docs` global). Sólo lectura; no crea ni modifica documentos. **Caso
+reportado:** la etiqueta de la guía `19827` no estaba disponible porque la imputación aplicada
+`IMP02220` (guía 1198) ya había consumido su nominal; ahora el asistente lo **nombra** y enlaza.
+
+**19.21.5 Pruebas y límites.** Nuevo `test_sv_rebaja_blindaje.py` (AUD-ETQ-01..05; 7 pruebas):
+**0 failed / 0 errors**; regresión de módulo **4 failed / 0 errors of 369** (las 4 fallas son las
+**mismas** preexistentes de `test_processor_locations`/`test_processor_shipment_ad89`). **Renderización
+real pendiente de navegador** (V3). **Concurrencia multi-cursor simultánea pendiente** (el blindaje usa
+advisory locks en orden determinista; probado reteniendo el lock). **Sin reparación histórica.**
+
+<!-- actualizado: 2026-10-11 (1) — §19.21 auditoría integral y blindaje del ciclo de rebaja de etiquetas:
+inmutabilidad real del aplicado, motivo obligatorio de reversa, mapa lote↔packing sin elección arbitraria
+y causa del saldo trazable. Versión 1.17.0 → 1.18.0. Módulo 18.0.1.14.1 → 18.0.1.15.0. Sin commit/push. -->
+
+
+
+---
+
+### 19.22 Cierre probatorio del ciclo de rebaja de etiquetas (2026-10-11)
+
+Expediente: `AUDIT_REBAJA_ETIQUETAS_20261011/` (README, `logs_cierre/`, `evidence/concurrency_probe.py`).
+Módulo `madenat_lumber_logistics` **18.0.1.15.0 → 18.0.1.16.0**.
+
+**19.22.1 IMP02220 — diagnóstico documental (NO reparado).** Documento `id=1189` (`IMP02220`), compañía 1,
+guía **1198 / «19827»**, creado/aplicado por usuario 8 el **2026-10-10 22:30:45** (`create_date ==
+write_date == execution_date`, una sola transacción), `processor_id` vacío, `state=applied`, **sin**
+reversa. Contiene **2 líneas** (`18368` 3.263 m³ + `18372` 4.225 m³ = **7.488 m³**) y **0 repartos SV**.
+`documentary_key = IMP-1198-E95825AAF94E58AD` coincide **exactamente** con
+`_i2_build_documentary_key(guia=1198, processor=None, signature='')` ⇒ se creó por el **camino normal del
+asistente** (`_i2_build_imputation` → `_i2_get_or_create`) con **firma vacía** (ninguna asignación a SV
+al aplicar). Sin entrada de auditoría `deviation` ni `imputation_reverse`.
+
+Respuestas verificables:
+- **A. ¿Modalidad válida?** El código **permite** aplicar con etiquetas y sin reparto, pero **no** existe
+  regla explícita que la declare válida: la desviación blanda `NO_SV_CANDIDATE` sólo se marca si **no hay
+  candidato**. Como entonces **sí** había candidatos (`SV00000001175` saldo 30.315 y `SV00000000841`
+  saldo 40.315), no se activó advertencia. ⇒ **modalidad tolerada, no documentada** (brecha, ver 19.22.2).
+- **B. ¿Rebajó saldo SV?** **No.** Σ `imputed_volume_m3` de sus repartos = **0**; ningún SV cambió su
+  saldo documental por IMP02220.
+- **C. ¿Comprometió capacidad de etiquetas sin destino?** **Sí.** Comprometió **7.488 m³** nominales de
+  dos etiquetas (cada una queda con disponible 0), sin SV destino.
+- **D. ¿Válido / incompleto / anomalía?** **Documento válido según el código** (superó techos duros,
+  integridad etiqueta–guía, permiso y destino Sí) pero **funcionalmente incompleto** (sin destino SV).
+  No hay evidencia de reparto borrado (la firma del `documentary_key` prueba firma **vacía** al crear).
+  Clasificación: **«aplicación completa a nivel de documento, incompleta a nivel de asignación SV»**, no
+  corrupción. **No** se modifica IMP02220 ni `lot_flow_type`. `lot_flow_type=NULL` (147/151 lotes) es una
+  **anomalía de datos independiente**, sin relación causal demostrada con IMP02220.
+
+**19.22.2 Contrato de «aplicación sin reparto» — BLOQUEADO (requiere decisión).** No está definido en
+el canon ni en el código si aplicar etiquetas sin destino SV, **existiendo candidatos**, debe rechazarse,
+advertirse con motivo o considerarse un compromiso documental legítimo. Alternativas:
+(a) **rechazar**; (b) **desviación blanda** `I2-LABELS-WITHOUT-REPARTO` (motivo + auditoría, como
+`NO_SV_CANDIDATE`); (c) **permitir** explícitamente como compromiso y documentar cómo se completa después.
+Impacto: todo documento con etiquetas seleccionadas y reparto vacío (p. ej. IMP02220). **No se adopta
+regla silenciosa**; queda a decisión de Mauricio.
+
+**19.22.3 Concurrencia REAL (cursores independientes + barrera).** Sonda
+`evidence/concurrency_probe.py` (dos transacciones simultáneas por caso, `threading.Barrier`, base
+`madenat_test`): **Q1** doble aplicación sobre la misma etiqueta ⇒ 1 aplicado, la otra falla de forma
+controlada por advisory lock (Σ activo = 10 = nominal; **sin sobreconsumo**); **Q2** doble reversa ⇒
+estado `reversed`, **1** auditoría de reversa, la 2.ª transacción falla por serialización (sin doble
+restitución); **Q3** aplicar ∥ cancelar reserva ⇒ techo duro rechaza el sobreconsumo (Σ activo ≤ nominal).
+`stock.move/move.line/picking/quant` **sin cambios**; **0 residuos** de prueba. **RESULTADO GLOBAL: OK**.
+
+
+**19.22.4 Seguridad multi-compañía (sin `sudo`).** Antes **no** existía regla de registro para
+`madenat.sv.imputation*` (sólo ACL por grupo) ⇒ exposición de lectura/escritura/aplicación entre
+compañías. Se añadió `security/madenat_sv_imputation_rules.xml` (regla global de compañía para cabecera,
+líneas y repartos), replicando el patrón ya vigente en `madenat.processor.return.link` y `stock.lot`.
+Probado con usuario no administrador de otra compañía: `search` no expone, `read/write/unlink` y
+`apply/cancel/reverse` → `AccessError`; contexto forzado **no** autoriza; lotes ajenos bloqueados por la
+regla estándar. Uso mono-compañía sin efecto.
+
+**19.22.5 Motivo de reversa (política).** La reversa de un aplicado exige motivo **no vacío tras
+`strip`** y registra usuario/fecha/motivo + auditoría `imputation_reverse` (paridad con
+`madenat.processor.return.link`). Un flag de contexto **no** constituye autorización. Repetir la reversa
+no produce doble efecto.
+
+**19.22.6 Ciclos con balances (datos de prueba).** **A** preparar→guardar→reabrir→cancelar (libera
+reserva)→reasignar (documento nuevo)→aplicar; **B** preparar→aplicar→revertir (restituye)→reasignar→
+aplicar, con **dos SV** y parciales (la cadena queda explicable: original `reversed` + nuevo `applied`,
+historia append-only). **Caso nominal 5 / reparto 3:** el nominal queda **totalmente comprometido**
+(disponible 0); los 2 m³ restantes **no** son reutilizables mientras el documento esté activo; los libera
+**anular** (si es borrador) o **revertir** (si está aplicado). `stock` sin cambios.
+
+**19.22.7 Pendientes.** (1) decisión sobre 19.22.2; (2) reparación histórica de IMP02220 y `lot_flow_type`
+NULL (dry-run + respaldo + autorización); (3) renderización/navegador (V3) y recorrido de aceptación;
+(4) la 2.ª reversa concurrente falla con error de serialización de BD (sin doble efecto): se propone
+mensaje amable si se desea, sin urgencia funcional.
+
+<!-- actualizado: 2026-10-11 (2) — §19.22 cierre probatorio: diagnóstico IMP02220, contrato de aplicación
+sin reparto (bloqueado), concurrencia real OK, seguridad multi-compañía (nueva ir.rule), motivo de reversa
+con strip, ciclos con balances. Versión 1.18.0 → 1.19.0. Módulo 18.0.1.15.0 → 18.0.1.16.0. Sin commit/push. -->
+
+
+---
+
+### 19.23 Contrato de aplicación sin reparto — APROBADO E IMPLEMENTADO (2026-10-11)
+
+Expediente: `CONTRATO_APLICACION_20261011/`. **Política APROBADA por Mauricio (2026-10-11) e
+implementada** en `madenat_lumber_logistics` **18.0.1.17.0**. **Aceptación operativa (navegador)
+pendiente.**
+
+**19.23.1 Política propuesta (a aprobar por Mauricio).** «En la rebaja a SV, **Aplicar** requiere al menos
+un reparto válido con cantidad positiva hacia un SV autorizado. Sin reparto, el documento sólo puede
+permanecer en un estado **no aplicado**. El reparto parcial mantiene la política vigente de **compromiso
+nominal**, mostrando expresamente la cantidad que queda comprometida sin repartir.» **No** se interpreta
+el silencio como autorización. Si se requiere una modalidad de **compromiso sin destino**, se define por
+separado (finalidad, estado, reservas, compleción posterior, cancelación, trazabilidad y diferencia
+respecto a una rebaja aplicada a SV); **no** como excepción por motivo genérico.
+
+**19.23.2 Validación backend (IMPLEMENTADA).** En
+`madenat.sv.imputation._i2_validate_payload()` —que `action_apply` ejecuta **antes** de locks, techos y
+escritura—: se exige ≥ 1 reparto con `imputed_volume_m3 > 0` hacia un `lot_flow_type='volume'`. Cubre
+interfaz, ORM y RPC; **no** consume capacidad ni crea documento aplicado si falla. «Una fila de volumen
+cero no satisface el requisito» (además del `constraint` vigente). Se conservan `action_prepare`/
+`action_pending` (trabajo incompleto), reservas, reparto parcial/multi-SV, inmutabilidad, reversa con
+motivo, idempotencia, concurrencia y ausencia de efectos físicos. Se añade
+`madenat.sv.imputation.line.etiqueta_pendiente_m3` (pendiente de reparto explícito) y se muestra en la
+pestaña «Etiquetas».
+
+**19.23.3 Mensaje operativo.** «No se puede aplicar la rebaja: asigna una cantidad positiva a un SV.
+Puedes guardar el documento sin aplicarlo.» La revisión previa muestra **nominal comprometido** ≠
+**repartido a SV** ≠ **pendiente de reparto** ≠ **efecto por saldo de SV**.
+
+**19.23.4 Pruebas del contrato (borrador).** `POL-01..POL-08` en
+`CONTRATO_APLICACION_20261011/evidence/POL_contrato_tests_draft.py`, **no registrado** en
+`tests/__init__.py` para no dejar la suite en rojo antes de la aprobación. Se activan y ejecutan tras
+aprobar, junto con la regresión.
+
+**19.23.5 IMP02220 (separado, NO reparado).** Dry-run en
+`CONTRATO_APLICACION_20261011/evidence/imp02220_dryrun.md`. Registro: «Aplicado bajo comportamiento
+anterior; nominal comprometido sin reparto SV; pendiente de decisión de regularización». Alternativas:
+**Alt-1** conservar con clasificación (por defecto) o **Alt-2** revertir y reasignar (si se autoriza y hay
+destino real). **No** se ejecuta reversa ni reparación; **no** se vincula `lot_flow_type=NULL` sin
+evidencia causal.
+
+**19.23.6 Aceptación.** Guion A–I en `CONTRATO_APLICACION_20261011/docs/GUION_NAVEGADOR_CONTRATO.md`.
+**Sin navegador en el entorno del agente** ⇒ aceptación **pendiente de Mauricio**; no se sustituye por
+XML/ORM/SQL. Dictamen: **contrato implementado y probado; aceptación operativa pendiente.** Política
+**aprobada por Mauricio el 2026-10-11**; validación backend en `_i2_validate_payload`; POL‑01..08 en
+verde; `NO_SV_CANDIDATE` pasa a informativo. Módulo **18.0.1.17.0**.
+
+<!-- actualizado: 2026-10-11 (3) — §19.23 contrato de aplicación sin reparto: propuesta de política
+pendiente de aprobación, validación backend prevista, mensaje, pruebas POL (borrador), dry-run de IMP02220
+y guion de navegador. Contrato NO modificado. Versión 1.19.0 → 1.20.0. Sin commit/push. -->
+
+
+---
+
+### 19.24 Persistencia y recuperación del trabajo de rebaja (SAVE, 2026-10-11)
+
+Expediente: `SAVE_REBAJA_20261011/`. Módulo `madenat_lumber_logistics` **18.0.1.17.0 → 18.0.1.18.0**.
+Incidencia: «al preparar las asignaciones, estas no van quedando guardadas». **Dos causas separadas.**
+
+**19.24.1 Causa demostrada.**
+- **C1 (pérdida, P2+P7):** «Preparar asignación» crea filas de reparto a **cantidad 0** y
+  `_i2_build_imputation` **lanzaba `UserError`** («Indique un volumen mayor que cero…») ante cualquier
+  fila a 0 ⇒ **no se creaba/actualizaba el documento**. Evidencia `REPRO-02`.
+- **C2 (acceso, P4):** un borrador **sin reparto positivo** no se localizaba desde el SV
+  (`action_open_sv_rebajas` exigía `sv_line_ids.sv_lot_id`), y al reabrir desde el SV no se precargaba
+  la guía. Evidencia por lectura de código + `REPRO-03` (con reparto sí funciona).
+
+**19.24.2 Corrección (misma mecánica, sin modelo/ledger/wizard/menú nuevos).**
+- `_i2_build_imputation`: el **destino previsto sin cantidad** (fila a 0) **no se persiste** como reparto
+  (el reparto exige volumen > 0 y el `constraint` sigue) pero **no bloquea** el guardado; se conserva la
+  etiqueta/línea y el resto de repartos.
+- Nuevo **`madenat.sv.imputation.work_sv_lot_id`** (SV de trabajo), fijado al guardar; relación de
+  trabajo (no saldo, no ledger).
+- `stock.lot`: `sv_assignment_work_imputation_ids`/`_work_count`/`_work_m3` (**trabajo no aplicado**,
+  separado de los agregados aplicados; **no** se suma a «Rebajado documental»).
+- **`action_continue_preparation`** (botón «Continuar» en el SV y en el documento): reabre el asistente
+  con guía+SV precargados (no aplica, no duplica); `_i2_guia_from_context` honra
+  `default_guia_processing_id`.
+- Descubrimiento: `action_open_sv_rebajas` incluye `work_sv_lot_id`.
+
+**19.24.3 Cantidades cero.** Se conserva la etiqueta/línea; **no** se persiste un reparto a 0; **no** se
+elimina la selección; **no** se debilitan constraints. Límite documentado: el modelo no puede almacenar
+«destino previsto sin cantidad» en `sv.line` (no se crea otra fuente de verdad).
+
+**19.24.4 Identidad y duplicados.** `documentary_key` con firma; `_i2_find_work_for_guia` +
+`_check_single_work_per_guia` ⇒ **actualizar, no recrear**. Un aplicado no se reutiliza; **no** se
+reutiliza IMP02220 por coincidencia de clave; firmas vacías de guías distintas **no colisionan**.
+
+**19.24.5 Reservas y atomicidad.** `draft`/`pending` reservan el nominal (política vigente, sin cambios);
+el fallo de guardado **no** deja documento parcial ni reserva huérfana (validación antes de escribir);
+cancelar libera; revertir restituye. Sin commits manuales ni `sudo` en pruebas.
+
+**19.24.6 Pruebas y límites.** `tests/test_sv_rebaja_persistencia.py` (**SAVE-01..14, FLOW-01..03,
+PHY-01**) recorriendo los métodos reales de guardado/reapertura. **Aceptación en navegador pendiente**
+(guion A–I). Política de conflicto de dos sesiones de borrador: **última escritura gana** (sin bloqueo
+optimista; una detección de sobrescritura **requeriría autorización**). No se cambió «Preparar» para que
+guarde.
+
+<!-- actualizado: 2026-10-11 (4) — §19.24 persistencia/recuperación del trabajo (SAVE): causa C1 (cero
+bloqueaba el guardado) + C2 (descubrimiento desde el SV), corrección mínima (work_sv_lot_id, continuar,
+trabajo en preparación), cantidades cero, identidad, reservas, pruebas SAVE/FLOW/PHY. Versión 1.21.0 →
+1.22.0. Módulo 18.0.1.17.0 → 18.0.1.18.0. Sin commit/push. -->
+
+
+---
+
+### 19.25 Acciones operativas del asistente «Registrar rebaja» (UI, 2026-10-11)
+
+Expediente: `UI_SAVE_REBAJA_20261011/`. Módulo `madenat_lumber_logistics` **18.0.1.18.0 → 18.0.1.19.0**.
+
+**19.25.1 Causa demostrada (acciones ausentes).** El asistente se abre como **formulario amplio**
+(`action_madenat_sv_imputation_wizard`, `target="current"`) pero sus operaciones estaban **sólo** en un
+**`<footer>`**; en Odoo el `<footer>` de una vista form **sólo se renderiza en diálogos** (`target="new"`),
+no en página completa. La vista (id 2889) **no tenía `<header>`** ⇒ «Guardar borrador», «Revisar y
+aplicar», «Dejar pendiente», «Proponer FIFO» y «Cancelar» quedaban **invisibles** (los métodos existían).
+Descartado: caché, grupos, estados, vista distinta, formulario incompleto.
+
+**19.25.2 Corrección (mínima, nativa).** Las acciones se colocan en el **`<header>`** del propio form y se
+retira el `<footer>`. Botones: **Guardar borrador** (`action_prepare`), **Revisar y aplicar**
+(`action_apply`, con `groups=` y validación backend), **Abrir documento** (`action_open_document`, visible
+sólo con `imputation_id`), **Dejar pendiente** (`action_pending`), **Proponer FIFO** (`action_propose_fifo`)
+y **Descartar y volver** (`action_discard_changes`). Visibilidad por estado vía `imputation_state`
+(related). Sin modelo/wizard/menú/ledger nuevos; sin autosave documental; sin ampliar permisos.
+
+**19.25.3 Confirmación y guardado.** `action_prepare`/`action_pending` crean/actualizan el **documento**
+(`_i2_build_imputation`), **permanecen** en el asistente (recargan el propio registro) y muestran
+`save_result` con la **referencia y el estado** («Documento IMP… guardado (estado: draft). No se ha
+aplicado la rebaja. Las etiquetas seleccionadas mantienen la reserva documental prevista.»). Guardar el
+`TransientModel` ≠ guardar la imputación. «Abrir documento» abre el persistente; «Descartar y volver»
+regresa al SV **sin** borrar el borrador guardado ni liberar reservas. Tras aplicar se abre el documento
+(resultado).
+
+**19.25.4 Mantenimiento por estado.** draft/pending: consultar · continuar · aplicar (si cumple contrato) ·
+cancelar · abrir. applied: consultar · historia · revertir con motivo (Jefatura/Gerencia) · **no** editable
+ni eliminable. reversed/cancelled: consultar · nueva operación. Reasignación: antes, reparto editable;
+después, **reversa + nueva operación**. Accesible desde el SV (panel «Trabajo en preparación» →
+Continuar; historial con `work_sv_lot_id`).
+
+**19.25.5 Pruebas y límites.** `tests/test_sv_rebaja_ui_acciones.py` (**UI-01..05** + confirmación):
+entrada/vista, acciones en `<header>` y sin `<footer>`, botones que llaman a métodos de negocio,
+visibilidad coherente y sin expresiones fuera de contexto, y confirmación con referencia. **Evidencia de
+navegador pendiente** (el entorno no tiene navegador; guion `docs/GUION_NAVEGADOR_UI.md`). No se declara
+«verificado en pantalla». Riesgo de sobrescritura concurrente («última escritura gana») **pendiente**.
+
+<!-- actualizado: 2026-10-11 (5) — §19.25 acciones operativas del asistente en `<header>` (causa: `<footer>`
+no renderizado en `target=current`), confirmación con referencia, Abrir documento y Descartar y volver;
+pruebas UI-01..05. Versión 1.22.0 → 1.23.0. Módulo 18.0.1.18.0 → 18.0.1.19.0. Sin commit/push. -->
+
+
+---
+
+### 19.26 Simplificación operativa: recorrido de DOS acciones (2026-10-11)
+
+Expediente: `SIMPLE_REBAJA_20261011/`. Solicitud expresa de Mauricio: «sólo aplicar o guardar lo
+seleccionado; no complicar el flujo ni obligar a abrir el documento para aplicar». Módulo
+`madenat_lumber_logistics` **18.0.1.19.0 → 18.0.1.20.0**.
+
+**19.26.1 Recorrido.** En la **misma ventana**: elegir guía → seleccionar material → indicar m³ →
+**[Guardar]** (continuar después) o **[Aplicar]** (ejecutar la rebaja), más **[Volver]**. **No** se exige
+«Preparar asignación», ni Guardar antes de Aplicar, ni abrir el documento, ni cambiar de pestaña en el caso
+habitual de un SV. Botonera principal en el `<header>`: `action_prepare` («Guardar»), `action_apply`
+(«Aplicar») y `action_discard_changes` («Volver», con `confirm`). La simplificación afecta la
+**interacción**, no las validaciones ni la trazabilidad.
+
+**19.26.2 Aplicar sin abrir el documento.** `action_apply` → `_i2_build_imputation()` (sincroniza y crea/
+actualiza el documento) → validaciones existentes → `action_apply` (una sola vez) → enlaces de retorno →
+`apply_result` («Rebaja IMP… aplicada · X,XXX m³ hacia SV…») → **permanece** en la ventana. Repetir Aplicar
+no duplica ni consume dos veces (idempotencia intacta).
+
+**19.26.3 Guardar.** `action_prepare` crea/actualiza el documento, **permanece** y muestra `save_result`
+(referencia + estado + reserva documental prevista). Guardar repetido actualiza el mismo documento.
+
+**19.26.4 Sincronización interna (sin «Preparar»).** La cantidad de la tabla Materiales
+(`cantidad_asignar_m3`, compute+inverse) escribe el reparto hacia el SV de trabajo; `_i2_build_imputation`
+lo persiste al Guardar/Aplicar. No hay segunda cantidad independiente; no se sustituyen repartos de otros
+SV. «Preparar asignación» (`action_assign_selected`) queda como **control avanzado** de la tabla.
+
+**19.26.5 Opciones avanzadas.** Grupo «Más opciones (avanzado)»: Abrir documento (consulta), Dejar
+pendiente, Proponer FIFO (métodos conservados). Desde el SV e historial siguen disponibles continuar,
+consultar, cancelar no aplicado, consultar aplicado, revertir con motivo (permisos) y nueva asignación.
+
+**19.26.6 Mensajes y bloqueo.** Sin reparto positivo: «Indica los m³ a rebajar en las etiquetas
+seleccionadas.» (hay disponibilidad) o «Las etiquetas seleccionadas no tienen disponibilidad…» (consumidas
+por otra operación). Tras aplicar, las tablas quedan en **sólo lectura** (sin apariencia de borrador
+editable). Fila cero permite Guardar y **no** Aplicar; cantidad negativa se rechaza; el exceso nombra
+etiqueta y límite. El contrato de aplicación, el techo duro, los locks, la atomicidad, la inmutabilidad y
+la reversa permanecen **sin cambios**.
+
+**19.26.7 Pruebas y límites.** `tests/test_sv_rebaja_simple.py` (**SIMPLE-01..17** + **CLIENT-01..03**).
+Actualizadas `test_sv_rebaja_ui_limpia.test_arch_01` y `test_sv_rebaja_ui_acciones.test_ui_02` al nuevo
+recorrido. **Evidencia de navegador pendiente** (guion `docs/GUION_NAVEGADOR_SIMPLE.md`). La
+**sobrescritura concurrente de borradores** sigue como **riesgo pendiente de autorización**. IMP02220 y
+`lot_flow_type` histórico **intactos**.
+
+<!-- actualizado: 2026-10-11 (6) — §19.26 simplificación: recorrido de dos acciones (Guardar/Aplicar) en
+la misma ventana, sin «Preparar» obligatorio ni abrir el documento; mensajes por problema real; tablas en
+sólo lectura tras aplicar; pruebas SIMPLE/CLIENT. Versión 1.23.0 → 1.24.0. Módulo 18.0.1.19.0 →
+18.0.1.20.0. Sin commit/push. -->
+
+
+---
+
+### 19.27 Volver a borrador y reasignar rebajas (RESET, 2026-10-11)
+
+Expediente: `RESET_REBAJA_20261011/`. Autorización expresa de Mauricio: una rebaja **cancelada** puede
+volver a **borrador** para corregir y continuar. Módulos `madenat_lumber_logistics`
+**18.0.1.20.0 → 18.0.1.21.0** y `madenat_lumber_core` (audit log aditivo).
+
+**19.27.1 Incidencia.** `IMP04823` (id 2733) en `state = cancelled`, guía 1198. El asistente quedaba ligado
+al documento cuando era borrador; al cancelarse, «Guardar/Aplicar» fallaban con «ya no admite preparación
+(estado cancelled)», **sin acción de reapertura**. Causa: **A+D** (referencia correcta a un cancelado sin
+salida + mensaje no operativo).
+
+**19.27.2 Contrato.** `madenat.sv.imputation.action_reopen_to_draft()`: **cancelled → draft** controlada.
+Precondiciones: motivo no vacío (`strip`), permisos (Operaciones/Jefatura/Gerencia), compañía (regla),
+guía elegible, **sin otro trabajo activo** de la guía, **capacidad suficiente** (el borrador vuelve a
+**reservar** su nominal) y coherencia de líneas/repartos. `applied`/`reversed` **no** pueden volver a
+borrador. **No** aplica la rebaja; **no** libera capacidad ajena.
+
+**19.27.3 Backend.** `_i2_check_reopen_permission`, `_i2_validate_reopen` (conflicto + capacidad, nombrando
+etiquetas y documentos), `_i2_lock_resources` + **revalidación tras el bloqueo**, idempotencia (si ya es
+`draft`, no repite efectos). `write()` **no** permite eludirla: `cancelled → draft` exige
+`reopened_by_id` + motivo en la **misma** escritura y revalida permisos; `reversed → draft` y
+`applied → draft` siguen **prohibidos**; un flag de contexto **no** autoriza.
+
+**19.27.4 Historia y reservas.** Campos `cancelled_by_id`/`cancellation_date`/`cancellation_reason` y
+`reopened_by_id`/`reopen_date`/`reopen_reason`; `message_post`; auditoría `imputation_cancel` /
+`imputation_reopen` (valores **aditivos** en `madenat.audit.log`). Referencia y `documentary_key`
+conservados. Reabrir **restablece la reserva** de borrador (no se declara «sin efecto»).
+
+**19.27.5 UI.** draft/pending: [Guardar][Aplicar][Volver]. cancelled: **[Volver a borrador]** [Volver] +
+campo **Motivo de reapertura** + aviso; Guardar/Aplicar ocultos. applied: sólo lectura/reversa.
+reversed: historia, sin reapertura.
+
+**19.27.6 Pruebas y límites.** `tests/test_sv_rebaja_reset.py` (**RESET-01..15, 18, PHY-01**). **Concurrencia
+RESET-16/17 declarada PENDIENTE** (no acreditada). `IMP04823` inspeccionado en lectura, **no reabierto**;
+`IMP02220` intacto. Aceptación en navegador pendiente.
+
+<!-- actualizado: 2026-10-11 (7) — §19.27 «Volver a borrador» (cancelled → draft controlada): contrato,
+validaciones backend, historia/reservas, botones por estado y pruebas RESET; concurrencia pendiente.
+Versión 1.24.0 → 1.25.0. Módulos 18.0.1.20.0 → 18.0.1.21.0 (+ core audit log). Sin commit/push. -->
+
+---
+
+### 19.28 Blindaje local y estabilización: reapertura por token, concurrencia RESET-16/17 y advertencias de cálculo (2026-10-12)
+
+**Alcance.** Intervención **LOCAL** (`madenat_test`), **sin commit/push/despliegue** y **sin cambios en el
+TEST remoto**. Cierra verificaciones pendientes de integridad y elimina las **advertencias de cálculo**
+reportadas en el despliegue, sin rediseñar la interfaz ni añadir pasos obligatorios.
+
+**19.28.1 Reapertura: vía directa de `write` (AUD-ETQ-07).** La autorización de `cancelled → draft` deja de
+depender de una **identidad suministrada por el cliente** (`reopened_by_id`+`reopen_reason` en la misma
+escritura) y pasa a un **token efímero de PROCESO** (set en memoria, clave `(dbname, uid, imputation_id)`)
+que `action_reopen_to_draft` añade justo antes de su `write` y consume la guarda. Resultado permitido **A**:
+la escritura directa se **RECHAZA** y exige la acción controlada; es **inmune a `with_context(...)`** (no es
+un flag de contexto) y **no acepta identidad del cliente** (usuario y fecha se derivan del entorno). Se
+mantienen **prohibidos** `applied → draft` y `reversed → draft`. `sudo()` directo tampoco elude la guarda.
+
+**19.28.2 Concurrencia RESET-16/17 (real).** `tests/test_sv_rebaja_reset_concurrency.py`
+(`SingleTransactionCase`; conexiones PostgreSQL **independientes** vía `db_connect`, coordinadas por
+eventos/barrera y timeouts):
+* **RESET-16** — dos sesiones reabren el MISMO anulado: A ejecuta `action_reopen_to_draft` y **mantiene el
+  advisory lock de transacción**; B es rechazada por el lock con el mensaje funcional («Otra operación está
+  modificando…»), **sin** error técnico de PostgreSQL. Una sola transición efectiva, **sin doble reserva**
+  (disponible 0), **sin doble auditoría** (`imputation_reopen` = 1) y líneas/repartos sin duplicar.
+* **RESET-17** — reapertura concurrente con otra operación (aplicación) que consume la **MISMA capacidad
+  documental del SV** (dos etiquetas distintas hacia el mismo SV): la perdedora falla de forma controlada y
+  hace **rollback íntegro**; **sin sobreconsumo** (asignado 12 ≤ nominal 100) y sin auditoría del evento
+  rechazado. Prueba de **«sin registros de prueba persistentes»** incluida (limpieza verificada).
+
+**19.28.3 Advertencias de cálculo `stock.lot` (`sv_assignment_*`, AUD-ETQ-08).** Odoo advertía
+`inconsistent 'compute_sudo'` e `inconsistent 'store'` porque **seis** campos compartían un mismo compute
+almacenado y no almacenado a la vez. Se **separa** el compute: `_compute_sv_assignment` (agregados
+`store=True`) y `_compute_sv_assignment_live` (proyección no almacenada: `sv_assignment_imputation_ids`,
+`sv_assignment_processor_id`). Se fija **`compute_sudo=False` explícito** en los campos almacenados (su
+valor por defecto sería `True`): el compute **nunca** corre como superusuario, **respeta reglas de registro
+y compañía** y **no** filtra datos de otra compañía. **Sin** cambios de valor (antes/después equivalentes).
+
+**19.28.4 Advertencias de cálculo de la consola de intake (`volume_detail_line_ids`).** La dependencia
+`@api.depends('volume_detail_line_ids.volume_m3', …)` del compute de métricas de la consola dependía de un
+proxy **Many2many VIRTUAL** (compute+inverse, `store=False`, **no buscable**), produciendo el aviso
+«should be searchable» para cada campo calculado. Se **corrige la dependencia** a los campos de **identidad
+del origen** (`source_model`, `source_res_id`, `ingestion_type`) —idéntica a la del resto de los computes de
+la consola—. **No** se implementa un `search` ficticio, **no** se cambia `store` y **no** se usa
+recomputación global. **Sin** cambios en la ingesta ni en la política de volumen.
+
+**19.28.5 Límites y pendientes.** La **sobrescritura de borradores** («última escritura gana») sigue
+**pendiente** con una **propuesta** registrada (`BLINDAJE_REBAJA_LOCAL_20261012/docs/`) que **no** se activa
+sin aprobación explícita de Mauricio. Aceptación en navegador **pendiente**. `IMP02220`/`IMP04823` e
+históricos **intactos**.
+
+<!-- actualizado: 2026-10-12 (1) — §19.28 blindaje local: reapertura por token de proceso (write directo
+RECHAZADO), concurrencia REAL RESET-16/17 (advisory lock + revalidación, sin sobreconsumo ni doble
+auditoría), separación de computes `sv_assignment_*` con `compute_sudo=False` y corrección de la dependencia
+de la consola de intake. Versión 1.25.0 → 1.26.0. Módulos `madenat_lumber_logistics` 18.0.1.21.0 → 18.0.1.22.0
+y `madenat_lumber_intake` 18.0.0.11.0 → 18.0.0.12.0. Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+### 19.29 Verificación probatoria de cuatro puntos de blindaje (2026-10-12)
+
+**Alcance.** Reproducir y demostrar cuatro verificaciones pendientes de §19.28, corregir **solo** defectos
+confirmados y actualizar la documentación. **Local** (`madenat_test`), **sin** commit/push/despliegue.
+
+**19.29.1 P1 — Concurrencia sobre la MISMA etiqueta retornada (ACREDITADO).**
+La prueba RESET-17 (saldo del SV, 12 ≤ 100) se conserva como caso **adicional**. El caso obligatorio —dos
+operaciones compitiendo por la capacidad insuficiente del **mismo lote**— se acredita en
+`tests/test_sv_rebaja_reset_lot_capacity.py`: lote `E` (nominal 10) compartido por dos guías (la unicidad
+`_check_single_work_per_guia` es por **guía**, no por etiqueta); **A** (guía 1, `cancelled`, 6 m³) y **B**
+(guía 2, `cancelled`, 6 m³); SV destino amplio (100). **Cuándo se toma la reserva:** al existir la línea en
+estado activo (`draft`/`pending`/`applied`) — creación de borrador y **reapertura**—. La reapertura SÍ toma
+capacidad. Transacciones **independientes** (cursors propios, `Environment` por hilo, barreras/eventos,
+timeouts): los DOS órdenes (A primero / B primero) rechazan a la perdedora por el **advisory lock**
+(`_i2_lock_resources`); con el bloqueo ya libre, la **revalidación de capacidad** del lote
+(`_i2_validate_reopen`, mensaje «ya está comprometida … de … m») rechaza la reapertura. **El límite lo protege
+la ETIQUETA (lote) + el advisory lock de transacción + la revalidación posterior.** Compromiso agregado dentro
+del límite (6 ≤ 10), sin reserva parcial, sin auditoría de la transición que no ocurrió, sin doble consumo y
+sin modificar el otro documento. **Sin corrección de código**: el mecanismo ya lo garantiza.
+
+**19.29.2 P2 — Recomputación REAL de las métricas de intake (CORREGIDO Y ACREDITADO).**
+**Defecto confirmado:** la consola es una vista SQL (`_auto=False`); su caché no se invalidaba al cambiar una
+línea del detalle (no hay relación ORM directa consola↔línea), por lo que una **segunda lectura en el MISMO
+entorno** devolvía valores **obsoletos** (solo un entorno nuevo reflejaba el cambio). **Corrección mínima:**
+`madenat.lumber.volume.detail.line` invalida **dirigidamente** (`invalidate_model`) los campos calculados de la
+consola que dependen del detalle, en `create`/`write`/`unlink`. No es `search` ficticio, ni se elimina la
+dependencia del origen, ni se cambia `store`, ni hay recomputación global. `tests/test_intake_metrics_recompute.py`
+acredita create/write/unlink con actualización en el **mismo entorno** y en **transacción nueva**.
+
+**19.29.3 P3 — Saldos almacenados canónicos vs derechos del usuario (CORREGIDO Y ACREDITADO).**
+**Semántica:** `sv_assignment_nominal_m3`/`_applied_m3`/`_applied_count`/`_documental_balance_m3` = agregados
+**canónicos ALMACENADOS**; `sv_assignment_imputation_ids`/`sv_assignment_processor_id` = proyección NO
+almacenada **por usuario**. **Defecto confirmado:** con `compute_sudo=False` en los almacenados, un usuario con
+acceso a `stock.lot` pero sin acceso a `madenat.sv.imputation` (ACL por rol) provocaba `AccessError` al
+recomputar, de modo que el saldo canónico dependía de **quién** disparaba el cálculo. **Corrección:**
+`compute_sudo=True` en los almacenados (canónico, con derechos plenos, acotado a las relaciones propias del
+lote → company-scoped), `compute_sudo=False` en la proyección por usuario. `tests/test_sv_assignment_user_rights.py`
+acredita: el restringido **no** lee las imputaciones ni escribe el lote SV (guard del core) → no hay vía normal
+para corromper el saldo; forzando el recompute del ORM bajo el restringido el saldo queda canónico **sin**
+`AccessError`; la proyección por usuario **no** filtra documentos; **sin** exposición entre compañías.
+
+**19.29.4 P4 — Aislamiento y limpieza de la autorización de reapertura (CORREGIDO Y ACREDITADO).**
+**Defecto confirmado:** el registro global `_I2_REOPEN_TOKENS` con clave `(dbname, uid, id)` **no** distinguía
+transacción → dejaba una **ventana de autorización reutilizable** (una escritura directa en otra transacción
+podía consumir el token de la acción). **Corrección:** se elimina el registro global y se introduce una **vía
+privada de transición** `_i2_write_protected_state` (método `_`-prefijado, **no** invocable por RPC —Odoo lo
+bloquea en `call_kw`—, escribe con `super().write`). La guarda pública `write()` rechaza **toda** transición
+protegida (`cancelled → draft`, `applied → reversed`, y cualquier cambio sobre `reversed`). `action_reopen_to_draft`
+y `action_reverse` usan la vía privada. `tests/test_sv_rebaja_reset_token.py` acredita TOK-01..09 (sin residual,
+documento intacto ante excepción, sin autorización cruzada, multi-registro, identidad del entorno, sin estado
+compartido).
+
+**19.29.5 Versiones y límites.** `madenat_lumber_logistics` **18.0.1.22.0 → 18.0.1.23.0** y
+`madenat_lumber_intake` **18.0.0.12.0 → 18.0.0.13.0** (core sin cambios). Convivencia multi-proceso de la
+autorización: **no hay estado compartido** (garantía por construcción); no se pudo levantar dos workers reales
+(límite declarado). La sobrescritura de borradores sigue pendiente de autorización.
+
+<!-- actualizado: 2026-10-12 (2) — §19.29 verificación probatoria P1–P4: P1 concurrencia sobre la misma
+etiqueta retornada (acreditado, sin cambio de código); P2 recomputación real de intake (defecto + corrección
+por invalidación dirigida); P3 saldos almacenados canónicos (compute_sudo=True) vs proyección por usuario;
+P4 vía privada de transición (elimina el token global). Versión 1.26.0 → 1.27.0. Módulos 18.0.1.22.0 →
+18.0.1.23.0 y 18.0.0.12.0 → 18.0.0.13.0. Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+### 19.30 Blindaje de borradores: protección contra sobrescritura concurrente (LOCK, 2026-10-12)
+
+**Autorización.** **Mauricio autorizó** resolver el riesgo pendiente «la última escritura gana» en el borrador
+de rebaja. Se implementa el contrato de concurrencia (antes solo propuesto). **Local** (`madenat_test`),
+**sin** commit/push/despliegue.
+
+**19.30.1 Contrato aprobado.** Un guardado o aplicación basado en una **versión obsoleta** del documento se
+**rechaza de forma controlada**; **no** se sobrescribe ni se fusiona trabajo ajeno; se **conservan** los cambios
+locales (sin otra fuente persistente de verdad); se permite **recargar** la versión vigente con advertencia de
+descarte; **no** hay «forzar guardado» ni «última escritura gana»; la detección y la escritura son **atómicas**.
+El recorrido sencillo (seleccionar material → m³ → Guardar/Aplicar/Volver) **no cambia**.
+
+**19.30.2 Mapa de escritores.** Todos los caminos que modifican el trabajo pasan por `_i2_build_imputation`
+(asistente): `action_prepare` (Guardar), `action_pending` (Dejar pendiente), `action_apply` (Aplicar). La
+reconstrucción (`_i2_reconstruct_commands`, `action_continue_preparation`, `action_reload_current`) solo **lee**.
+Las transiciones de estado (`action_apply`, `action_cancel`, `action_reopen_to_draft`, `action_reverse`) escriben
+`state` (contenido). La **edición directa** del documento y de sus hijos (líneas/repartos) también escribe
+contenido.
+
+**19.30.3 Diseño de versión (`edit_version`).** Campo entero **monotónico** en `madenat.sv.imputation` (columna
+aditiva; `default=1`). **No** usa memoria global del proceso ni un valor del cliente como credencial: la versión
+enviada es una **condición de concurrencia**. Se **captura** al abrir/reconstruir el asistente
+(`default_get`/`_onchange`/`reconstruct` → `expected_edit_version`) y se **actualiza solo tras una operación
+exitosa**. `write_date` se descartó: no cambia cuando solo cambian líneas/repartos y su precisión es de segundo.
+
+**19.30.4 Qué invalida la edición.** Cambian `edit_version`: cabecera (guía, procesador, motivo, `work_sv_lot_id`,
+`state`) y **líneas/repartos** (`create`/`write`/`unlink` elevan la versión del documento padre). **No** la
+cambian los campos de **trazabilidad/historia** (`I2_VERSION_NEUTRAL_FIELDS`: snapshot, hash, usuario/fecha de
+aplicación/reversa/reapertura, chatter) ⇒ evita conflictos falsos por chatter o lecturas.
+
+**19.30.5 Atomicidad y locks.** En `_i2_build_imputation`, **antes** de escribir: (1) **estado** (un documento
+anulado/aplicado/reversado no admite preparación → mensaje operativo), (2) **guard del documento**
+`_i2_assert_edit_version`: `pg_try_advisory_xact_lock` (namespace **1** = documento) + comparación de
+`expected_edit_version`; se **integra** con los locks de capacidad existentes (namespaces 2 y 3) en **orden
+determinista** (1→2→3) → sin interbloqueos. `_i2_guarded_build` fuerza el **flush** dentro de la transacción y
+traduce un `SerializationFailure` de PostgreSQL (carrera comparación/escritura bajo REPEATABLE READ) al **mismo**
+mensaje operativo. Sin commits manuales; sin reintento que sobrescriba (una edición obsoleta sigue obsoleta).
+
+**19.30.6 Creación concurrente del primer borrador.** Si el asistente se abrió **sin** documento y otra sesión
+creó trabajo para la misma guía, **no** se adopta ni sobrescribe: se muestra la **referencia** del trabajo
+existente y se permite abrirlo o recargar (respetando la unicidad `_check_single_work_per_guia`).
+
+**19.30.7 Mensaje y recuperación.** Mensaje operativo («El documento IMP… cambió desde que lo abriste…») sin
+error técnico. Botón **«Recargar versión actual»** (`action_reload_current`) en el asistente: descarta los
+cambios no guardados (con confirmación), reconstruye desde el documento vigente y actualiza la versión esperada.
+**Sin** fusión automática ni bypass de conflicto.
+
+**19.30.8 Cobertura de edición directa y LÍMITE.** La edición directa del documento y de líneas/repartos **eleva**
+la versión ⇒ un asistente abierto con versión anterior **detecta** el cambio (LOCK-06/07/19). **Límite
+declarado:** la protección es del **recorrido del asistente** (operativo); la edición **simultánea de dos
+formularios persistentes directos** (form-vs-form, sin asistente) sigue el comportamiento ORM estándar de Odoo
+(no hay locking optimista en el formulario persistente) y queda **explícitamente pendiente** (no se afirma
+cobertura total).
+
+**19.30.9 Pruebas.** `tests/test_sv_rebaja_save_lock.py` (**LOCK-01..19**, FLOW-01..03, PHY-01 + reproducción del
+defecto). Las pruebas de concurrencia real usan transacciones independientes con barrera/eventos (LOCK-16).
+Límite multi-worker: no se levantaron dos procesos; el guard no depende del proceso que atiende.
+
+<!-- actualizado: 2026-10-12 (3) — §19.30 blindaje de borradores (contrato de concurrencia APROBADO por
+Mauricio): `edit_version` + guard del documento (advisory ns 1 + comparación + flush) que rechaza la edición
+obsoleta en Guardar y Aplicar; «Recargar versión actual»; cobertura de líneas/repartos y edición directa; límite
+declarado para form-vs-form directo. Versión 1.27.0 → 1.28.0. Módulo `madenat_lumber_logistics` 18.0.1.23.0 →
+18.0.1.24.0. Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+### 19.31 Cierre de V1–V3 del blindaje de borradores (2026-10-12)
+
+**19.31.1 V1 — Cobertura de cruces con edición directa (CORREGIDA Y ACREDITADA).** El formulario
+persistente `madenat.sv.imputation` **es editable** en `draft`/`pending` (guía, procesador, motivo, líneas con
+nominal y repartos con volumen). **Decisión: Alternativa A** (mínima, sin cambiar la funcionalidad): se reutiliza
+`edit_version`; el formulario la envía con **`force_save="1"`** (atributo nativo de Odoo 18) y `write()` la
+compara de forma **atómica** (`_i2_assert_edit_version`) ⇒ **rechaza** la edición obsoleta. Matriz **C1–C8
+ACREDITADA** (`tests/test_sv_rebaja_save_lock_direct.py`): C1 asistente↔asistente; C2 directo→asistente obsoleto;
+C3 asistente→form obsoleto; C4 form↔form; C5 línea directa→padre obsoleto; C6 directo→asistente que aplica;
+C7 asistente→form obsoleto que cambia estado; C8 transición→form obsoleto que edita. **Límite residual declarado:**
+una escritura **ORM/RPC sin `edit_version`** (script/cliente programático) no se compara (la versión avanza, y todo
+formulario/asistente abierto lo detecta después) — cerrar esa vía exigiría exigir la versión en TODA escritura de
+contenido (refactor no «mínimo», no implementado sin decisión). **No** se retiraron permisos ni se ocultaron vías
+(Alternativa B no aplicada).
+
+**19.31.2 V2 — Comportamiento real del cliente (PENDIENTE).** **No hay navegador ni herramienta de automatización
+utilizable** en el entorno local (sin `chromium`/`chrome`/`firefox`/`chromedriver`/`playwright`/`selenium`). **No**
+se sustituye por ORM/XML ni se fabrican capturas. Se entrega **guion exacto** para Mauricio/Cristhian
+(`docs/GUION_V2_CLIENTE.md`): dos pestañas, Guardar/Aplicar/Dejar pendiente, capturas del mensaje, de la
+conservación de las ediciones locales, del documento intacto, de la confirmación de recarga y del guardado
+posterior. A nivel ORM, `LOCK-14` acredita que el rechazo **no** adopta la versión ajena en silencio; la
+conservación de las ediciones **en el navegador** sólo la prueba V2.
+
+**19.31.3 V3 — Transacción, SerializationFailure y orden de bloqueos (ACREDITADA).** `_i2_guarded_build` fuerza
+`flush_all()` dentro de la transacción y traduce `SerializationFailure` al mensaje operativo; **sin** `commit`
+manual, **sin** continuar con el cursor tras un error PG, **sin** reintento que sobrescriba. **Orden de bloqueos
+determinista** `1 (documento) → 2 (SV) → 3 (etiqueta)`; las rutas sin documento (reabrir/revertir/cancelar)
+toman solo 2/3 ⇒ **sin deadlock**. `tests/test_sv_rebaja_save_lock_tx.py` (**TX-01..13, 0 failed/0 error**):
+rollback íntegro (doc/líneas/repartos/versión), cursor utilizable, reintento humano, sin reintento automático, sin
+auditoría de transición fallida, fallo tras flush sin avance, **rechazo por VERSIÓN con el lock LIBRE** (TX-07),
+rechazo por LOCK ocupado (TX-08), aplicar∥guardar (TX-10), etc. **Límite:** multi-worker real no ejecutado (el
+guard no depende del proceso).
+
+<!-- actualizado: 2026-10-12 (4) — §19.31 cierre V1–V3: V1 edición directa (Alternativa A con `force_save`,
+matriz C1–C8 acreditada; límite residual ORM-sin-versión), V2 PENDIENTE (sin navegador; guion entregado), V3
+transacción/bloqueos (TX-01..13 acreditadas; orden 1→2→3 sin deadlock). Versión 1.28.0 → 1.29.0. Módulo
+`madenat_lumber_logistics` 18.0.1.24.0 → 18.0.1.25.0. Sin commit/push/despliegue; TEST remoto intacto. -->
+
+---
+
+### 19.32 Incidencia `stock_quant_lot_id_fkey` — la etiqueta SV con existencias no se elimina (2026-10-12)
+
+**Síntoma.** Al pulsar **«Eliminar»** en el visor **estándar** de lotes sobre la etiqueta **`SV000000841`**
+(`stock.lot` 10215, +40.315 m³ en `WH/Stock`) apareció el mensaje técnico de PostgreSQL
+(`stock_quant_lot_id_fkey`, ON DELETE RESTRICT). Usuario: Cristhian (uid 8), base `madenat_test`.
+
+**Dictamen (por qué NO es un defecto de la causa):** el lote **tiene existencia física** y es el ancla de
+trazabilidad de la **Guía 4495589** y de la recepción **EMB-02395**; la BD **protegió correctamente** el historial.
+La eliminación se pidió desde la **interfaz estándar de Odoo** (no hay acción/menú MADENAT sobre `stock.lot`) y
+**ningún flujo del desarrollo** elimina lotes con existencias (`StockLotExtended.unlink()` sólo limpia líneas de
+costo). Además, **`stock.lot` no tiene `active`**: no existe «archivar»; el texto genérico «mejor archívelo» no
+aplica a lotes.
+
+**Defecto colateral (UX) y corrección mínima aplicada.** `_sv_guard_unlink()` sólo protegía la etiqueta SV **con
+historial** (`sv_operation_ids`); una etiqueta **recién recepcionada, sin operaciones y con existencias** (este caso)
+quedaba a merced del error técnico. Se aplican **dos** cambios (módulo `madenat_lumber_core` **18.0.6.6.0 →
+18.0.6.7.0**), **sin** alterar el invariante (el lote sigue sin poder eliminarse):
+1. **Guarda proactiva (Opción 2):** `_sv_guard_unlink()` bloquea la etiqueta SV de volumen con **filas en
+   `stock.quant`** (mismo criterio exacto que la FK: existencia de fila, aunque la cantidad sea 0) con mensaje de
+   negocio. Bypass test-only por marcador **intacto**.
+2. **Traducción (Opción 1):** `stock.lot.unlink()` envuelve el borrado en `savepoint` y traduce la
+   `ForeignKeyViolation` a un mensaje de negocio (`ValidationError`), **sin** cambiar qué se puede borrar.
+- **Pruebas:** `madenat_lumber_core/tests/test_sv_lot_unlink_guard.py` (4) — guarda con/sin existencias, bypass
+  test-only intacto y traducción del error de FK. **4 → 0 failed/0 error**.
+- **Regresión** `core+intake+logistics`: **1279 → 6 failed / 4 error**, **el mismo** conjunto de 10 fallos
+  preexistentes (diff **idéntico** a la base). Intake 467/0. **Cero regresiones.**
+- **No mutación:** lote 10215 y sus quants (7840/7841) intactos; sin residuos de prueba.
+
+**Acción operativa correcta (comunicada):** **no** eliminar; si hay un error real, usar la **reversa/corrección de
+la guía** o una **operación SV** («Rebajar etiqueta SV» / «Regularizar volumen de etiqueta SV»).
+
+<!-- actualizado: 2026-10-12 (5) — §19.32 incidencia `stock_quant_lot_id_fkey`: diagnóstico solo lectura (causa =
+uso incorrecto del visor estándar de lotes; el sistema protegió el historial), corrección mínima de robustez
+(guarda proactiva de la etiqueta SV con existencias + traducción de la FK a mensaje de negocio) y 4 pruebas
+nuevas; regresión core+intake+logistics con el MISMO conjunto de 10 fallos preexistentes. Módulo
+`madenat_lumber_core` 18.0.6.6.0 → 18.0.6.7.0. Versión documental 1.29.0 → 1.30.0. Sin commit/push/despliegue. -->
+
+### 19.33 HOTFIX bloqueante — OwlError al «Agregar una línea» en el documento (`div.oe_chatter` en Odoo 18) (2026-10-12)
+
+**Síntoma (reportado):** en el formulario de `madenat.sv.imputation` (p. ej. `IMP04823`, abierto desde
+«Rebaja de etiquetas / SV…»), pulsar **«Agregar una línea»** en dos tablas (encabezados
+`Fecha · Asunto · Autor · Modelo de documento relacionado · ID del documento relacionado` y
+`Nombre del modelo del documento relacionado · ID del documento relacionado · Contacto relacionado`) produce
+`OwlError: TypeError: Cannot read properties of undefined (reading 'includes') at get urlRelation at
+Many2OneField.template`.
+
+**Causa demostrada:** Odoo 18 CE (`18.0-20260817`) **ya NO compila** el marcado heredado `div.oe_chatter`.
+El compilador de formularios registra el chatter por **selector de nodo**
+(`mail/static/src/chatter/web/form_compiler.js`: `registry…add("chatter_compiler", { selector: "chatter" })`
+⇒ elemento **`<chatter/>`**); la cadena `oe_chatter` **no existe** en los assets del core (`grep -i oe_chatter`
+⇒ 0 coincidencias; sin shim). Sin chatter, `message_ids`/`message_follower_ids` (campos de `mail.thread`)
+quedan como **One2many sueltos** y se renderizan con sus **listas por defecto editables** (`mail.message`
+→ Fecha/Asunto/Autor/Modelo/ID; `mail.followers` → Nombre modelo/ID/Contacto) ⇒ botón **«Agregar una línea»**.
+Al interactuar, el cliente calcula `Many2OneField.get urlRelation` (`this.relation.includes(".")`) y la columna
+`res_id` (**`many2one_reference`**, sin relación fija) deja `this.relation` en `undefined` ⇒ `TypeError`.
+
+**Mapeo:** `message_ids` → `mail.message` (`res_id`=`many2one_reference`, `model_field='model'`; lista
+`view_message_tree`, sin `create="0"`); `message_follower_ids` → `mail.followers`
+(`res_id`=`many2one_reference`, `model_field='res_model'`; lista `view_followers_tree`). **No** son modelos
+MADENAT; los registros los crea `mail.thread` (chatter), **no** la vista.
+
+**Corrección mínima (solo vistas):** `div.oe_chatter` → **`<chatter/>`** en
+`view_madenat_sv_imputation_form` y `view_madenat_processor_return_link_form` (mismo recorrido envío–retorno).
+Sin tocar modelos, datos, permisos ni `mail`; sin `ir.rule`. `madenat.sv.imputation` hereda solo `mail.thread`
+⇒ `has_activities=False` (auto). Descartado: captura JS, `mail`/core, chatter propio, borrar campos, `create="0"`
+sobre las listas por defecto.
+
+**Pruebas:** `tests/test_hotfix_owl_chatter.py` (`TestHotfixOwlChatter`, VIEW-01..05 de servidor) **5/5**;
+`madenat_lumber_logistics` = **4 failed / 0 error de 506** (mismas 4 preexistentes;
+baseline mismo día **4/444** ⇒ **0 nuevas**); `core+intake+logistics` = **6 failed / 4 error de 1284**
+(mismo conjunto que el baseline **6/1217** ⇒ **0 nuevas**).
+
+**Hallazgo (no corregido):** `madenat_vendor_payment/views/lumber_shipment_cost_views.xml` conserva un
+`div.oe_chatter` (módulo **no instalado** ⇒ no reproduce). **Decisión separada:** `create` por RPC de
+`mail.message`/`mail.followers` (no ejecutada).
+
+**Límite:** aceptación en **navegador** **PENDIENTE** (sin navegador); guion entregado. Módulo
+`madenat_lumber_logistics` **18.0.1.25.0 → 18.0.1.26.0**. Sin commit/push/despliegue; TEST remoto intacto.
+
+<!-- actualizado: 2026-10-12 (6) — §19.33 HOTFIX OWL chatter: Odoo 18 ya no compila `div.oe_chatter`; los campos
+del chatter se filtraban como listas o2m editables (`mail.message`/`mail.followers`) con «Agregar una línea» y
+`OwlError` en `get urlRelation` (`res_id` = `many2one_reference`). Corrección mínima de vistas
+(`<chatter/>`) en `sv_imputation` y `processor_return_link`; pruebas VIEW 5/5; regresión sin fallas nuevas.
+Módulo `madenat_lumber_logistics` 18.0.1.25.0 → 18.0.1.26.0. Versión documental 1.30.0 → 1.31.0.
+Sin commit/push/despliegue. -->
+
