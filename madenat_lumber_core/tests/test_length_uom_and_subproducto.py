@@ -31,7 +31,7 @@ class TestLengthUomAndSubproducto(TransactionCase):
         super().setUp()
         self.LumberReception = self.env['lumber.reception']
         self.LumberReceptionLine = self.env['lumber.reception.line']
-        self.Product = self.env['product.template']
+        self.Product = self.env['product.product']
         self.Subproduct = self.env['madenat.subproducto']
         self.Partner = self.env['res.partner']
 
@@ -44,7 +44,7 @@ class TestLengthUomAndSubproducto(TransactionCase):
         self.product = self.Product.search([], limit=1)
         self.assertTrue(
             self.product,
-            "Precondición fallida: no hay product.template disponible en la BD de test."
+            "Precondición fallida: no hay product.product disponible en la BD de test."
         )
 
         self.subproduct = self.Subproduct.create({
