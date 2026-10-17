@@ -3401,4 +3401,52 @@ Para proveedores sin integración automática (Arauco, JCE, BYC, Fátima, etc.) 
 
 <!-- actualizado: 2026-10-17 — alta AD-112 (FASE 12 / Bloque 2): WP-F P1–P5 disponibilidad documental y trazabilidad en imputación SV; WP-E plantilla estándar PACKING_METRICO_ASERRADA y guía de llenado; WP-G alineación documental (D-E0-1, D-E0-2). `logistics` 18.0.1.37.0 → 18.0.1.38.0; `ingestion` 18.0.1.1.0 → 18.0.1.2.0. Versión 04 12.27.0 → 12.28.0. -->
 
+### AD-113 (2026-10-17) — Operaciones Bloque 3: Ancho de Exportación S2S Canónico con Opción Manual (WP-B) y Equivalencia Guía vs Packing 'ok_rounded' (WP-A)
+
+**1. Contexto y Aprobación.**
+En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la FASE 12 (Requerimientos de Operaciones / Cristhian), se implementan los paquetes WP-B y WP-A bajo estándares de arquitectura canónica, TDD, preservación de datos almacenados y control de versiones monótonas:
+- **Paso 0 previo:** Auditoría y corrección de la simulación de WP-B para las 2 líneas UAT (1880 y 1881) y el Contenedor 1509:
+  - Línea 1880 (Lote 15970): Almacenado 0,144 m³ | Actual recalculado 0,144 m³ | S2S canónico 0,133 m³ (baja -0,011 m³).
+  - Línea 1881 (Lote 15971): Almacenado 0,144 m³ (0,116 m³ en stock.lot origen) | Actual recalculado 0,144 m³ | S2S canónico 0,133 m³ (frente a línea baja -0,011 m³; frente a lote sube +0,017 m³).
+  - Contenedor 1509: Almacenado 0,260 m³ (suma de lotes 0,144 + 0,116 = 0,260 m³, promedio 0,130 m³ por línea) | Actual recalculado 0,288 m³ (desde líneas) o 0,260 m³ (desde lotes) | S2S canónico 0,266 m³ (sube +0,006 m³ respecto a valor almacenado del contenedor).
+  - Causa raíz de la discrepancia (0,130 frente a 0,144): El contenedor sumó directamente los dos lotes físicos donde 15971 tenía 0,116 m³ calculados con la fórmula antigua nominal 6/4", mientras que las líneas de embarque almacenaban 0,144 m³. Con S2S ambas líneas unifican su exportación en 0,133 m³ (100 mm -> 3.625").
+  - Confirmación: Únicamente existen esas 2 líneas de embarque en `madenat_test`.
+
+**2. WP-B — Ancho de exportación S2S canónico y opción manual.**
+- **Cálculo canónico:** `_compute_vol_shipment_m3` en `madenat.guia.processing.line` y en `stock.lot` utiliza la tabla canónica S2S (`width_mapping.py` / `lumber.width.s2s.map`) para anchos entre 75 y 155 mm (excluyendo 135 mm).
+  - Ancho 100 mm -> 3.625" (92,075 mm).
+  - Ancho 145 mm -> 5.375" (136,525 mm, valor crítico).
+- **Exclusiones canónicas:** Fuera del rango de la tabla (< 75 mm o > 155 mm) y para 135 mm, se mantiene la división directa métrica por 25,4 (sin escalones inventados).
+- **Opción manual con auditoría obligatoria:**
+  - Campos en `madenat.guia.processing.line`: `export_width_manual_inches` (Float), `export_width_manual_user_id` (Many2one res.users), `export_width_manual_date` (Datetime), `export_width_manual_reason` (Text).
+  - Restricción `@api.constrains('export_width_manual_inches', 'export_width_manual_reason')`: motivo obligatorio; lanza `ValidationError` si se asigna ancho manual sin motivo.
+  - Registro automático en bitácora (chatter) de la guía (`processing_id.message_post`): anota usuario, fecha, motivo y valor asignado.
+- **Inmutabilidad y simulación previa:** NO se recalculan valores almacenados. El nuevo cálculo aplica a registros nuevos o editados. Se entregan scripts de solo lectura (`simulacion_solo_lectura_remoto.py` y `simulacion_solo_lectura_remoto.sql`) para que Mauricio mida el impacto sobre el TEST remoto antes del despliegue.
+- **Cobertura TDD:** Suite `madenat_lumber_core/tests/test_export_width_s2s_wpb.py` (6 pruebas en verde).
+
+**3. WP-A — Regla de equivalencia Guía vs Packing ('ok_rounded').**
+- **Regla canónica de equivalencia:**
+  - $d =$ decimales declarados de la guía (con tope configurable mediante `ir.config_parameter` `madenat.guia_packing_max_decimal_places`, por defecto 3).
+  - La guía y el packing son equivalentes si `round(packing, d) == round(guía, d)`.
+  - Cuando son equivalentes: estado `'ok_rounded'` ("Consistente por redondeo") en `documental_conciliation_state`.
+  - El packing es el volumen operativo (`volume_operational_m3 = round(packing, 3)`, origen `'excel'`).
+  - Guía sin packing genera estado `'partial'`.
+  - Diferencias no toleradas generan estado `'difference'`.
+- **Casos de prueba mínimos certificados:**
+  - Guía 57,84 contra packing 57,839556 ($d=2$) -> `ok_rounded` (PASS).
+  - Guía 57,840 contra packing 57,839556 ($d=3$) -> `ok_rounded` (PASS).
+  - Guía 57,84 contra packing 57,846 ($d=2$) -> `difference` (PASS).
+  - Guía sin packing -> `partial` (PASS).
+- **Precisión extendida:** Campo `packing_volume_declared_m3` ampliado a `digits=(16, 6)` para preservar sin truncamiento la precisión declarada en documentos reales.
+- **UI y Vistas:** Decoración visual badge `decoration-info="documental_conciliation_state == 'ok_rounded'"` en la vista formulario de Guía de Procesado, en la Consola de Ingreso (`intake_console_views.xml`) y en la fachada de formulario (`intake_guia_processing_facade_views.xml`).
+- **Cobertura TDD:** Suite `madenat_lumber_core/tests/test_guia_packing_equivalence_wpa.py` (6 pruebas en verde).
+
+**4. Versiones e Impacto.**
+- `madenat_lumber_core`: 18.0.6.9.0 → 18.0.6.10.0 (WP-B) → 18.0.6.11.0 (WP-A)
+- `madenat_lumber_intake`: 18.0.0.16.0 → 18.0.0.17.0 (WP-A)
+- CHANGELOG actualizado en ambos módulos.
+- Sin cambios en costing, reports, bitácora ni datos de negocio reales (`IMP04823`, `IMP02220`).
+
+<!-- actualizado: 2026-10-17 — alta AD-113 (FASE 12 / Bloque 3): WP-B ancho de exportación S2S canónico y opción manual auditada en líneas de procesado; WP-A regla de equivalencia guía vs packing (ok_rounded) a precisión declarada d con tope parametrizable y packing como volumen operativo. `core` 18.0.6.10.0 → 18.0.6.11.0; `intake` 18.0.0.16.0 → 18.0.0.17.0. Versión 04 12.28.0 → 12.29.0. -->
+
 
