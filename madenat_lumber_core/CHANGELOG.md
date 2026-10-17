@@ -1,3 +1,15 @@
+## [18.0.6.10.0] - 2026-10-17
+
+### Added
+- **WP-B (FASE 12) — Ancho de exportación canónico y opción manual**:
+  - `MadenatGuiaProcessingLine._compute_vol_shipment_m3` y `StockLotExtended._compute_vol_shipment_m3`: aplican la tabla canónica Rough -> S2S (`width_mapping.py` y `lumber.width.s2s.map`) para anchos entre 75 y 155 mm (excluyendo 135 mm).
+  - Fuera del rango de la tabla (< 75 mm o > 155 mm) y para 135 mm: mantiene la división directa métrica por 25.4.
+  - Campos de asignación manual en `madenat.guia.processing.line`: `export_width_manual_inches`, `export_width_manual_user_id`, `export_width_manual_date`, `export_width_manual_reason`.
+  - Motivo obligatorio: `_check_export_width_manual_reason` lanza `ValidationError` si se asigna ancho manual sin motivo.
+  - Trazabilidad y bitácora: la asignación de ancho manual registra usuario, fecha, motivo y valor en el chatter (`processing_id.message_post`).
+  - No altera valores almacenados preexistentes (aplica en creación o edición).
+  - Suite de pruebas: `tests/test_export_width_s2s_wpb.py` (6 tests PASS).
+
 ## [18.0.6.9.0] - 2026-10-12
 
 ### Added

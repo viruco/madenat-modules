@@ -64,3 +64,5 @@ from . import test_guide_dup_regression_15183
 from . import test_sv_lot_unlink_guard
 # 🔐 FASE 4 (H3 / H-SEC-5) — inmutabilidad mínima de la bitácora append-only.
 from . import test_audit_log_immutability
+# 📐 FASE 12 (WP-B): Ancho de Exportación S2S Canónico y Opción Manual.
+from . import test_export_width_s2s_wpb

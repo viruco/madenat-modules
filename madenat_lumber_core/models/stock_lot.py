@@ -26,6 +26,7 @@ from odoo.exceptions import UserError, ValidationError
 from psycopg2 import errors as psycopg2_errors
 import logging
 from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch
+from .width_mapping import WidthMappingTable
 
 
 _logger = logging.getLogger(__name__)
@@ -522,13 +523,18 @@ class StockLotExtended(models.Model):
             espesor_in = e_mm / float(MM_PER_INCH)
             ancho_in = a_mm / float(MM_PER_INCH)
             
-            # REGLA DE HOLGURA (Overmeasure): 
-            # Si el producto NO es Standard (ej. Madera Rough), sumamos 1/8" (0.125) 
-            # al ancho para compensar la pérdida de volumen por cepillado.
-            # Nominal fijado por wizard = valor comercial S2S → overmeasure cero
+            # REGLA S2S / HOLGURA (WP-B):
+            # Si el producto usa nominal fijado o estándar comercial, se respeta ancho_in.
+            # Si es madera rough, se aplica la tabla canónica S2S (75 a 155 mm, excepto 135 mm).
+            # Fuera de rango o para 135 mm, rige la conversión directa a pulgadas.
             using_nominal = (lot.espesor_nominal_mm > 0 or lot.ancho_nominal_mm > 0)
-            overmeasure = 0.0 if (is_std or using_nominal) else float(get_s2s_adjustment(self.env, a_mm))
-            ancho_calculo = ancho_in + overmeasure
+            if is_std or using_nominal:
+                ancho_calculo = ancho_in
+            elif 75.0 <= a_mm <= 155.0 and round(a_mm, 1) != 135.0:
+                s2s_val = WidthMappingTable.get_value(a_mm, format_type='decimal', env=self.env)
+                ancho_calculo = float(s2s_val) if s2s_val else (a_mm / float(MM_PER_INCH))
+            else:
+                ancho_calculo = a_mm / float(MM_PER_INCH)
 
             # ====================================================================
             # 4. 🚀 BIFURCACIÓN DE LÓGICA DE NEGOCIO (FACTOR 1550 vs 5085)

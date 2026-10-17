@@ -47,6 +47,7 @@ from .excel_table_detection import (
     detect_excel_table,
     detect_excel_table_across_sheets,
 )
+from .width_mapping import WidthMappingTable
 
 _logger = logging.getLogger(__name__)
 
@@ -223,6 +224,28 @@ class MadenatGuiaProcessingLine(models.Model):
         store=True,
         digits=(16, 3),
         help="Volumen real calculado desde dimensiones imperiales editables"
+    )
+
+    # ---- WP-B: Opción manual de ancho de exportación ----
+    export_width_manual_inches = fields.Float(
+        string='Ancho manual export (in)',
+        digits=(16, 4),
+        help='Ancho manual de exportación en pulgadas. Si se define, anula la tabla canónica S2S.'
+    )
+    export_width_manual_user_id = fields.Many2one(
+        'res.users',
+        string='Usuario ancho manual',
+        readonly=True,
+        help='Usuario que asignó el ancho manual de exportación.'
+    )
+    export_width_manual_date = fields.Datetime(
+        string='Fecha ancho manual',
+        readonly=True,
+        help='Fecha y hora en que se asignó el ancho manual de exportación.'
+    )
+    export_width_manual_reason = fields.Char(
+        string='Motivo ancho manual',
+        help='Motivo obligatorio por el cual se asigna un ancho manual de exportación.'
     )
     
     # ==========================================================================
@@ -444,12 +467,16 @@ class MadenatGuiaProcessingLine(models.Model):
     # 2. CÁLCULO VOLUMEN EXPORTACIÓN (Con Lógica de Prioridad Pies)
     # ==========================================================================
     @api.depends('thickness_visual', 'width_visual', 'length_ft', 'pieces', 
-                 'largo_m', 'largo_nominal_m', 'vol_purchase_m3')
+                 'largo_m', 'largo_nominal_m', 'vol_purchase_m3',
+                 'export_width_manual_inches', 'ancho_mm')
     def _compute_vol_shipment_m3(self):
         """
         Calcula Volumen de Exportación (m³).
         🛡️ BLINDAJE: Si el cálculo geométrico real falla o faltan datos visuales,
         el sistema rescata el Volumen Nominal (vol_purchase_m3) para evitar ceros.
+        WP-B: Utiliza la tabla canónica Rough -> S2S (width_mapping.py / lumber.width.s2s.map)
+        para anchos entre 75 y 155 mm (excluyendo 135 mm). Fuera de rango o para 135 mm
+        se mantiene división directa por 25.4. Admite override manual con motivo obligatorio.
         """
         FACTOR_PIES = float(BLANK_CLEAR_FACTOR)
 
@@ -485,9 +512,20 @@ class MadenatGuiaProcessingLine(models.Model):
                     # Regla de negocio: blank se ingesta y se embarca con dimensiones exactas
                     vol = (e_in * a_in * line.length_ft * line.pieces) / FACTOR_PIES
                 else:
-                    # FÓRMULA METROS — S2S/RIP: con ajuste de cepillado (+1/8")
-                    recargo = get_s2s_adjustment(self.env, line.ancho_mm)
-                    width_calc = a_in + float(recargo)
+                    # FÓRMULA METROS — S2S/RIP: con tabla canónica S2S (WP-B)
+                    if line.export_width_manual_inches and line.export_width_manual_inches > 0:
+                        width_calc = line.export_width_manual_inches
+                    else:
+                        width_mm = line.ancho_mm or 0.0
+                        if 75.0 <= width_mm <= 155.0 and round(width_mm, 1) != 135.0:
+                            s2s_val = WidthMappingTable.get_value(
+                                width_mm, format_type='decimal', env=self.env
+                            )
+                            width_calc = float(s2s_val) if s2s_val else (width_mm / float(MM_PER_INCH))
+                        else:
+                            # Fuera de rango (< 75 mm o > 155 mm) y 135 mm: división directa por 25.4
+                            width_calc = (width_mm / float(MM_PER_INCH)) if width_mm > 0 else a_in
+
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
                         line.vol_shipment_m3 = fallback_vol
@@ -575,6 +613,69 @@ class MadenatGuiaProcessingLine(models.Model):
                     
                     except Exception as e:
                         _logger.error(f"Error validando espesor '{line.thickness_visual}': {e}")
+
+    # ==========================================================================
+    # WP-B: Restricciones y Bitácora de Ancho Manual
+    # ==========================================================================
+    @api.constrains('export_width_manual_inches', 'export_width_manual_reason')
+    def _check_export_width_manual_reason(self):
+        for line in self:
+            if line.export_width_manual_inches and line.export_width_manual_inches > 0:
+                if not line.export_width_manual_reason or not line.export_width_manual_reason.strip():
+                    raise ValidationError(_(
+                        'Debe indicar obligatoriamente un motivo para fijar un ancho manual de exportación en la línea %s.'
+                    ) % (line.lot_name or line.id))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('export_width_manual_inches', 0.0) and vals.get('export_width_manual_inches') > 0:
+                vals['export_width_manual_user_id'] = self.env.user.id
+                vals['export_width_manual_date'] = fields.Datetime.now()
+        records = super().create(vals_list)
+        for line in records:
+            if line.export_width_manual_inches and line.export_width_manual_inches > 0 and line.processing_id:
+                msg = _(
+                    "✏️ <b>Ancho manual de exportación fijado</b> en línea/lote <i>%s</i>:<br/>"
+                    "• Ancho manual: %s pulgadas<br/>"
+                    "• Motivo: %s<br/>"
+                    "• Usuario: %s<br/>"
+                    "• Fecha: %s"
+                ) % (
+                    line.lot_name or f"ID {line.id}",
+                    line.export_width_manual_inches,
+                    line.export_width_manual_reason or '(sin motivo)',
+                    self.env.user.name,
+                    fields.Datetime.to_string(fields.Datetime.now())
+                )
+                line.processing_id.message_post(body=msg)
+        return records
+
+    def write(self, vals):
+        if 'export_width_manual_inches' in vals:
+            manual_in = vals.get('export_width_manual_inches') or 0.0
+            if manual_in > 0:
+                vals['export_width_manual_user_id'] = self.env.user.id
+                vals['export_width_manual_date'] = fields.Datetime.now()
+        res = super().write(vals)
+        if 'export_width_manual_inches' in vals and vals.get('export_width_manual_inches'):
+            for line in self:
+                if line.export_width_manual_inches > 0 and line.processing_id:
+                    msg = _(
+                        "✏️ <b>Ancho manual de exportación fijado</b> en línea/lote <i>%s</i>:<br/>"
+                        "• Ancho manual: %s pulgadas<br/>"
+                        "• Motivo: %s<br/>"
+                        "• Usuario: %s<br/>"
+                        "• Fecha: %s"
+                    ) % (
+                        line.lot_name or f"ID {line.id}",
+                        line.export_width_manual_inches,
+                        line.export_width_manual_reason or '(sin motivo)',
+                        self.env.user.name,
+                        fields.Datetime.to_string(fields.Datetime.now())
+                    )
+                    line.processing_id.message_post(body=msg)
+        return res
     
 # ============================================================================
 # BLOQUE 2: MODELO PRINCIPAL (CABECERA DEL DOCUMENTO)

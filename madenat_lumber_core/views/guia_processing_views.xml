@@ -702,7 +702,28 @@
                                             class="text-center"
                                             decoration-success="1"
                                             placeholder="5 3/8"
-                                            help="Ancho Nominal. El sistema sumará +1/8 automáticamente."/>
+                                            help="Ancho Nominal / S2S. Aplica tabla canónica Rough -> S2S (o ancho manual)."/>
+
+                                        <field name="export_width_manual_inches"
+                                            string="Ancho manual (in)"
+                                            width="110px"
+                                            optional="hide"
+                                            help="Ancho manual de exportación en pulgadas (requiere motivo)."/>
+                                        <field name="export_width_manual_reason"
+                                            string="Motivo ancho manual"
+                                            width="150px"
+                                            optional="hide"
+                                            help="Motivo obligatorio al asignar ancho manual."/>
+                                        <field name="export_width_manual_user_id"
+                                            string="Usuario manual"
+                                            width="110px"
+                                            optional="hide"
+                                            readonly="1"/>
+                                        <field name="export_width_manual_date"
+                                            string="Fecha manual"
+                                            width="110px"
+                                            optional="hide"
+                                            readonly="1"/>
 
 
 
