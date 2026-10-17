@@ -48,8 +48,10 @@
                             <field name="tipo_ingreso" invisible="1"/>
                             <field
                                 name="ingestion_profile"
-                                invisible="tipo_ingreso != 'producto'"
-                                help="El perfil se usa para la lectura previa de compra; no se aplica a Procesados." />
+                                invisible="intake_modality == 'volume'" />
+                            <field
+                                name="confirm_profile_mismatch"
+                                invisible="not profile_warning_message and not confirm_profile_mismatch" />
                             <field
                                 name="classification_result"
                                 string="Clasificación documental detectada"
@@ -145,6 +147,13 @@
                         El documento se procesará como Ingreso por Volúmenes.
                         El Packing List Excel es opcional y, si se adjunta, se
                         utilizará como respaldo o detalle adicional.
+                    </div>
+
+                    <div class="alert alert-warning"
+                         invisible="not profile_warning_message"
+                         role="alert">
+                        <strong>Advertencia de coherencia de perfil:</strong>
+                        <field name="profile_warning_message" readonly="1" nolabel="1" />
                     </div>
 
                     <div class="alert alert-danger"

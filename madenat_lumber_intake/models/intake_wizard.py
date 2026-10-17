@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import re
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
@@ -49,7 +50,18 @@ class MadenatLumberIntakeWizard(models.Model):
         ],
         string='Perfil de lectura',
         default='metric',
-        help='Se utiliza únicamente para la vista previa de producto.',
+        help='Perfil de ingesta aplicado a la lectura previa y transferido al registro derivado (Producto o Procesado).',
+    )
+
+    confirm_profile_mismatch = fields.Boolean(
+        string='Confirmar discrepancia de perfil',
+        default=False,
+        help='Marque esta casilla si verificó que el perfil seleccionado es el deseado '
+             'a pesar de la advertencia de coherencia entre el perfil y los datos del documento.',
+    )
+    profile_warning_message = fields.Text(
+        string='Advertencia de coherencia de perfil',
+        readonly=True,
     )
 
     tipo_ingreso_auto_detectado = fields.Boolean(
@@ -260,6 +272,79 @@ class MadenatLumberIntakeWizard(models.Model):
                             ),
                         }
                     }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Guarda de coherencia de perfil (asistida, no bloqueante)
+    # ─────────────────────────────────────────────────────────────────────
+    def _check_profile_coherence(self):
+        """Verifica coherencia entre el perfil seleccionado y los datos del documento.
+
+        Devuelve un texto de advertencia si detecta inconsistencia, o None si no hay.
+        No bloqueante: requiere confirmación explícita (confirm_profile_mismatch).
+        """
+        self.ensure_one()
+        if self.intake_modality == 'volume' or not self.excel_file:
+            return None
+
+        try:
+            excel_bytes = base64.b64decode(self.excel_file)
+            result = extract_document(
+                excel_bytes, self.excel_filename or 'packing.xlsx'
+            )
+        except Exception:
+            return None
+
+        lines = result.lines or []
+        if not lines:
+            return None
+
+        # 1. Perfil f5085 con largos métricos estándar sin pies
+        if self.ingestion_profile == 'f5085':
+            metric_lengths = []
+            has_feet_indicator = False
+            for l in lines:
+                l_raw = str(l.get('length_value_raw') or '').strip()
+                l_unit = str(l.get('length_unit') or '').strip().lower()
+                if "'" in l_raw or 'ft' in l_raw or l_unit == 'ft':
+                    has_feet_indicator = True
+                    break
+                try:
+                    val = float(l_raw)
+                    # Largos típicos en metros con decimales (ej: 3.2, 3.25, 3.7, 4.05) o en mm (> 100)
+                    if (1.5 <= val <= 6.5 and (round(val, 2) != round(val, 0) or val in (2.0, 3.0, 4.0, 5.0, 6.0))) or val > 100:
+                        metric_lengths.append(l_raw)
+                except (ValueError, TypeError):
+                    pass
+
+            if metric_lengths and not has_feet_indicator:
+                ejemplos = ', '.join(metric_lengths[:3])
+                return _(
+                    "El perfil seleccionado es 'Madera Bruta — Grado Clear (f5085)', "
+                    "pero el documento contiene largos métricos estándar (ej: %s) "
+                    "sin indicación de pies (ft). El perfil f5085 interpreta los largos en pies "
+                    "y aplica factores imperiales, lo que causará una subestimación severa "
+                    "del volumen si las medidas están en metros."
+                ) % ejemplos
+
+        # 2. Perfil metric con anchos fraccionarios
+        elif self.ingestion_profile == 'metric':
+            frac_widths = []
+            frac_pattern = re.compile(r'\d+\s+\d+/\d+|\b\d+/\d+|[½¼¾⅜⅝⅞]')
+            for l in lines:
+                w_raw = str(l.get('width_value_raw') or '').strip()
+                if frac_pattern.search(w_raw) or l.get('width_unit') == 'inch':
+                    frac_widths.append(w_raw)
+
+            if frac_widths:
+                ejemplos = ', '.join(frac_widths[:3])
+                return _(
+                    "El perfil seleccionado es 'Madera Bruta — Sistema Métrico', "
+                    "pero el documento contiene anchos fraccionarios en pulgadas (ej: %s). "
+                    "El perfil métrico espera anchos en milímetros y no interpretará "
+                    "adecuadamente las fracciones imperiales."
+                ) % ejemplos
+
+        return None
 
     # ─────────────────────────────────────────────────────────────────────
     # Lectura y preview — solo Producto
@@ -547,6 +632,14 @@ class MadenatLumberIntakeWizard(models.Model):
         total_volume = sum((l.get('volume_m3') or 0) for l in lines)
         warnings_text = '\n'.join(result.warnings or []) or False
 
+        profile_warning = self._check_profile_coherence()
+        if profile_warning:
+            self.profile_warning_message = profile_warning
+            if warnings_text:
+                warnings_text = profile_warning + '\n' + warnings_text
+            else:
+                warnings_text = profile_warning
+
         self.write({
             'state': 'previewed',
             'preview_data': '\n'.join(preview_lines),
@@ -637,6 +730,20 @@ class MadenatLumberIntakeWizard(models.Model):
                 _('El ingreso no está en un estado derivable.')
             )
 
+        # Guarda de coherencia de perfil (ADVERTENCIA con confirmación explícita)
+        if self.intake_modality == 'normal':
+            profile_warning = self._check_profile_coherence()
+            if profile_warning:
+                self.profile_warning_message = profile_warning
+                if not self.confirm_profile_mismatch:
+                    raise UserError(
+                        _('⚠️ ADVERTENCIA DE COHERENCIA DE PERFIL:\n\n'
+                          '%(warning)s\n\n'
+                          'Para continuar de todos modos con este perfil, marque la casilla '
+                          '"Confirmar discrepancia de perfil" en el formulario y vuelva a '
+                          'presionar "Continuar ingreso".') % {'warning': profile_warning}
+                    )
+
     def _existing_target(self):
         self.ensure_one()
         if not self.target_model or not self.target_res_id:
@@ -693,6 +800,7 @@ class MadenatLumberIntakeWizard(models.Model):
                     'assignment_location_id': self.assignment_location_id.id,
                     'guide_pdf_file': self.pdf_file,
                     'guide_pdf_filename': self.pdf_filename,
+                    'ingestion_profile': self.ingestion_profile,
                 }
 
                 guia = self.env['madenat.guia.processing'].create(vals)

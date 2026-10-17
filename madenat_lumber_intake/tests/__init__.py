@@ -46,4 +46,6 @@ from . import test_intake_metrics_recompute
 from . import test_guia_delete_guards
 # FASE 12 (Bloque 1 / WP-C): búsqueda y menú 'Ingresos por Volúmenes'
 from . import test_volume_console_search_menu
+# FASE 12 (Perfil de Ingesta Fase A): transferencia y guarda de coherencia
+from . import test_intake_profile_coherence
 

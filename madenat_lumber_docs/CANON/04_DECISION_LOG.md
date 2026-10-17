@@ -3447,6 +3447,45 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 - CHANGELOG actualizado en ambos módulos.
 - Sin cambios en costing, reports, bitácora ni datos de negocio reales (`IMP04823`, `IMP02220`).
 
-<!-- actualizado: 2026-10-17 — alta AD-113 (FASE 12 / Bloque 3): WP-B ancho de exportación S2S canónico y opción manual auditada en líneas de procesado; WP-A regla de equivalencia guía vs packing (ok_rounded) a precisión declarada d con tope parametrizable y packing como volumen operativo. `core` 18.0.6.10.0 → 18.0.6.11.0; `intake` 18.0.0.16.0 → 18.0.0.17.0. Versión 04 12.28.0 → 12.29.0. -->
+---
+
+### AD-114 (2026-10-17) — Auditoría de Perfiles de Ingesta (Fase A): Transferencia de Perfil a Procesados y Guarda de Coherencia Asistida no Bloqueante en Wizard
+
+**1. Contexto y Causa Raíz:**
+- En la auditoría de perfiles de ingesta (`f1550`, `f5085`, `metric`), se constató que `intake_wizard.py:688-698` (`_route_procesado`) omitía `'ingestion_profile'` al crear `madenat.guia.processing`. Por omisión, el ORM asignaba el valor por defecto del modelo (`default='f5085'`), dejando guías procesadas con perfil `f5085` aun cuando el operador hubiese seleccionado `metric` o `f1550`.
+- El wizard carecía de guardas para advertir discrepancias groseras entre el perfil seleccionado y las dimensiones del documento. Si un operador selecciona `f5085` (Clear Blanks imperial) con un packing que declara metros estándar (ej: 3.25 m, 3.70 m, 4.05 m) sin pies, interpretar los metros como pies genera un colapso del volumen a un ~25%–30% del volumen real. Similarmente, si selecciona `metric` para un documento con anchos fraccionarios en pulgadas (ej: 5 5/8"), el parser métrico no interpreta adecuadamente las fracciones imperiales.
+
+**2. Decisiones de Fase A (Bajo Riesgo):**
+- **Transferencia de Perfil en Procesados:** En `_route_procesado()`, se pasa explícitamente `'ingestion_profile': self.ingestion_profile` en `vals`.
+- **Preservación Estricta de Defaults y Cálculos:** Se mantiene `default='f5085'` en `madenat_guia_processing.py` sin alteración (a la espera de confirmación de Mauricio). NO se modifica `_compute_vol_shipment_m3` de procesados ni las fórmulas de recepción. NO se alteran perfiles de guías históricas existentes en base de datos.
+- **Guarda de Coherencia no Bloqueante con Confirmación Explícita:**
+  - En `madenat.lumber.intake.wizard`, método `_check_profile_coherence()` analiza las líneas del packing Excel:
+    - **Caso 1 (`f5085`):** Detecta largos métricos estándar (rango 1.5–6.5 m con decimales o > 100 mm) sin indicadores de pies (`'` o `ft`).
+    - **Caso 2 (`metric`):** Detecta anchos con fracciones de pulgada (regex `\d+\s+\d+/\d+|\b\d+/\d+|[½¼¾⅜⅝⅞]`) o unidad `inch`.
+  - **Comportamiento en UI:**
+    - En `action_preview_document()`: añade el mensaje a `preview_warnings` y persiste `profile_warning_message`.
+    - En `action_route_document()`: si existe discrepancia y no ha sido confirmada (`not confirm_profile_mismatch`), emite `UserError` indicando la discrepancia y solicitando confirmación explícita mediante la casilla `"Confirmar discrepancia de perfil"`.
+    - Al marcar `confirm_profile_mismatch = True`, la acción continúa normalmente sin bloquear la operación (asistida, no bloqueante).
+- **Documentación de Falsos Positivos:**
+  - *Perfil f5085 con largos métricos:* Exportación de Clear Blanks contratados bajo especificación imperial pero cortados en largos métricos específicos para clientes europeos o sudamericanos; o documentos donde el largo en metros figura como columna referencial complementaria.
+  - *Perfil metric con fracciones:* Packing list métrico con glosas o notas descriptivas que contienen barras `/` (ej: "1/2 calidad"), o dimensiones nominales híbridas en la descripción comercial de la madera.
+  - Por la existencia de estos casos válidos de negocio, la guarda es estrictamente de advertencia con confirmación, nunca un bloqueo rígido irrecuperable.
+
+**3. Vistas y UI:**
+- En `intake_wizard_views.xml`:
+  - Campo `ingestion_profile` visible para cualquier modalidad normal (`invisible="intake_modality == 'volume'"`), disponible tanto para Producto como para Procesado.
+  - Banner de advertencia `alert alert-warning` con `profile_warning_message`.
+  - Casilla `confirm_profile_mismatch` visible condicionalmente ante advertencia activa.
+
+**4. Cobertura TDD y Certificación:**
+- Suite `madenat_lumber_intake/tests/test_intake_profile_coherence.py` con 5 pruebas certificadas:
+  1. `test_01_route_procesado_transfers_ingestion_profile` (PASS).
+  2. `test_02_profile_f5085_with_metric_lengths_warns_and_requires_confirm` (PASS).
+  3. `test_03_profile_metric_with_fractional_widths_warns_and_requires_confirm` (PASS).
+  4. `test_04_preview_document_sets_profile_warning_message` (PASS).
+  5. `test_05_profile_coherent_passes_without_warning` (PASS).
+- Versión `madenat_lumber_intake`: 18.0.0.17.0 → 18.0.0.18.0.
+
+<!-- actualizado: 2026-10-17 — alta AD-114 (FASE 12 / Perfiles Fase A): transferencia de ingestion_profile a procesados, guarda de coherencia asistida con confirmación explícita no bloqueante en wizard, y preservación de defaults y cálculos. `intake` 18.0.0.17.0 → 18.0.0.18.0. Versión 04 12.29.0 → 12.30.0. -->
 
 
