@@ -119,6 +119,9 @@ class MadenatSvImputationWizard(models.TransientModel):
         compute='_compute_selection_summary',
         help='Σ del volumen DOCUMENTAL del packing list de origen. NO es el '
              'volumen que se imputará al SV.')
+    selectable_line_count = fields.Integer(
+        string='Seleccionables', compute='_compute_selection_summary',
+        help='Cantidad de etiquetas del retorno con saldo documental disponible para asignación.')
     not_assignable_line_count = fields.Integer(
         string='Sin disponibilidad', compute='_compute_selection_summary',
         help='Etiquetas seleccionadas sin disponibilidad documental para una '
@@ -193,11 +196,9 @@ class MadenatSvImputationWizard(models.TransientModel):
                     lot, exclude_imputation=current)
                 for lot in selected.mapped('processed_lot_id'))
             # Filas seleccionadas sin disponibilidad documental (no asignables).
-            no_avail = selected.filtered(
-                lambda l: float_compare(
-                    l.etiqueta_disponible_m3, 0.0,
-                    precision_rounding=I2_VOLUME_PRECISION) <= 0)
-            wiz.not_assignable_line_count = len(no_avail)
+            wiz.selectable_line_count = len(wiz.line_ids.filtered('asignable'))
+            wiz.not_assignable_line_count = wiz.available_line_count - wiz.selectable_line_count
+            no_avail = selected.filtered(lambda l: not l.asignable)
             if no_avail:
                 details = '; '.join(
                     '%s — %s' % (
@@ -213,13 +214,23 @@ class MadenatSvImputationWizard(models.TransientModel):
             else:
                 wiz.no_availability_note = ''
             # Resumen breve: seleccionadas ≠ con reparto preparado ≠ total.
-            wiz.assigned_summary = _(
-                '%(sel)s seleccionadas · %(prep)s etiquetas con reparto '
-                'preparado · %(vol).3f m³ → %(sv)s') % {
-                'sel': len(selected),
-                'prep': wiz.prepared_line_count,
-                'vol': wiz.prepared_total_m3,
-                'sv': wiz.sv_lot_id.name or '—'}
+            if wiz.not_assignable_line_count:
+                wiz.assigned_summary = _(
+                    '%(sel)s seleccionadas (%(unavail)s sin saldo) · %(prep)s etiquetas con reparto '
+                    'preparado · %(vol).3f m³ → %(sv)s') % {
+                    'sel': len(selected),
+                    'unavail': wiz.not_assignable_line_count,
+                    'prep': wiz.prepared_line_count,
+                    'vol': wiz.prepared_total_m3,
+                    'sv': wiz.sv_lot_id.name or '—'}
+            else:
+                wiz.assigned_summary = _(
+                    '%(sel)s seleccionadas · %(prep)s etiquetas con reparto '
+                    'preparado · %(vol).3f m³ → %(sv)s') % {
+                    'sel': len(selected),
+                    'prep': wiz.prepared_line_count,
+                    'vol': wiz.prepared_total_m3,
+                    'sv': wiz.sv_lot_id.name or '—'}
 
     def action_open_no_availability_docs(self):
         """Abre los documentos que explican el saldo de las etiquetas sin
@@ -489,13 +500,28 @@ class MadenatSvImputationWizard(models.TransientModel):
         return True
 
     def action_select_all(self):
-        """Marca todas las candidatas como incluidas (elección expresa).
+        """Marca todas las candidatas disponibles como incluidas (elección expresa).
 
-        Sólo cambia la **selección**. No asigna al SV, no calcula cantidades y
-        no aplica nada (Seleccionar ≠ preparar reparto ≠ aplicar).
+        P2: Limita la selección a etiquetas disponibles (asignables). Si alguna etiqueta
+        se omite por falta de saldo, devuelve display_notification de advertencia.
         """
+        omitted = 0
         for wiz in self:
-            wiz.line_ids.write({'selected': True})
+            assignable = wiz.line_ids.filtered('asignable')
+            unassignable = wiz.line_ids - assignable
+            assignable.write({'selected': True})
+            omitted += len(unassignable)
+        if omitted > 0:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Selección parcial de etiquetas'),
+                    'message': _('%d etiqueta(s) omitida(s) por falta de saldo documental (ver pestaña «Sin disponibilidad»).') % omitted,
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
         return True
 
     @api.model
@@ -982,6 +1008,9 @@ class MadenatSvImputationWizardLine(models.TransientModel):
         help='Etiqueta LIMPIA del packing list (no el nombre concatenado del '
              'lote). Si no hay coincidencia de packing, se usa la referencia '
              'interna del lote y, en último caso, su nombre técnico.')
+    asignable = fields.Boolean(
+        string='Asignable', compute='_compute_asignable', store=False,
+        help='Indica si la etiqueta tiene saldo documental disponible para ser asignada.')
     medidas = fields.Char(
         string='Medidas', compute='_compute_medidas', store=False,
         help='Medidas técnicas legibles: espesor × ancho (mm) · largo (m). '
@@ -1232,6 +1261,11 @@ class MadenatSvImputationWizardLine(models.TransientModel):
                 line.disponibilidad_estado = 'no_capacity'
             else:
                 line.disponibilidad_estado = 'other'
+
+    @api.depends('disponibilidad_estado')
+    def _compute_asignable(self):
+        for line in self:
+            line.asignable = (line.disponibilidad_estado == 'available')
 
     # Etiquetas legibles de los estados I2 para el detalle de disponibilidad.
     _I2_STATE_LABELS = {

@@ -331,6 +331,29 @@ class MadenatSvImputation(models.Model):
         return self._i2_lot_nominal_m3(lot) - active
 
     @api.model
+    def _i2_lot_consuming_docs_detail(self, lot, exclude_imputation=None):
+        """Detalle legible y nominativo de documentos que consumen la capacidad de la etiqueta."""
+        Line = self.env['madenat.sv.imputation.line']
+        domain = [('processed_lot_id', '=', lot.id),
+                  ('imputation_id.state', 'in', ('draft', 'pending', 'applied'))]
+        if exclude_imputation:
+            domain.append(('imputation_id', '!=', exclude_imputation.id))
+        consuming = Line.search(domain)
+        imputations = consuming.mapped('imputation_id')
+        if not imputations:
+            return ''
+        state_labels = {
+            'draft': 'borrador',
+            'pending': 'pendiente',
+            'applied': 'aplicada',
+        }
+        parts = []
+        for imp in imputations.sorted(lambda i: (i.state, i.id)):
+            vol = sum(consuming.filtered(lambda c: c.imputation_id == imp).mapped('nominal_volume_m3'))
+            parts.append('%s (%s, %.3f m³)' % (imp.name, state_labels.get(imp.state, imp.state), vol))
+        return '; '.join(parts)
+
+    @api.model
     def _i2_sv_nominal_m3(self, sv_lot):
         return sv_lot.volume_purchase_m3 or sv_lot.volumen_m3 or 0.0
 
@@ -839,11 +862,19 @@ class MadenatSvImputation(models.Model):
             total = self._i2_lot_active_imputed_m3(lot)
             if float_compare(total, nominal,
                              precision_rounding=I2_VOLUME_PRECISION) > 0:
+                doc_detail = self._i2_lot_consuming_docs_detail(lot, exclude_imputation=self)
+                lot_label = lot.ref or lot.name
+                if doc_detail:
+                    raise UserError(_(
+                        'Techo duro de etiqueta superado: la etiqueta %(lot)s acumula %(total).3f m³ '
+                        'imputados (activos) frente a su volumen nominal editable de %(nominal).3f m³ (D-I2-16a). '
+                        'Documento(s) causante(s): %(docs)s.'
+                    ) % {'lot': lot_label, 'total': total, 'nominal': nominal, 'docs': doc_detail})
                 raise UserError(_(
                     'Techo duro de etiqueta superado: la etiqueta %(lot)s '
                     'acumula %(total).3f m³ imputados (activos) frente a su '
                     'volumen nominal editable de %(nominal).3f m³ (D-I2-16a).'
-                ) % {'lot': lot.name, 'total': total, 'nominal': nominal})
+                ) % {'lot': lot_label, 'total': total, 'nominal': nominal})
 
     def _i2_lock_resources(self):
         """Serializa la aplicación concurrente (etiquetas de retorno y SV).

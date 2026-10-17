@@ -4,6 +4,17 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.38.0] - 2026-10-17
+
+### Added
+- **WP-F (FASE 12 / AD-112) — P1–P5: Control y trazabilidad de disponibilidad en imputación documental SV**:
+  - **P1**: Campo computado `asignable` en `madenat.sv.imputation.wizard.line` (`disponibilidad_estado == 'available'`). Toggle `selected` con `readonly="not asignable"` para impedir selección de etiquetas sin saldo documental.
+  - **P2**: `action_select_all()` restringe la selección únicamente a etiquetas con saldo disponible (`asignable=True`). Muestra notificación de advertencia cliente detallando cuántas etiquetas fueron omitidas.
+  - **P3**: Pestaña «Sin disponibilidad» (`unavailable_material`) en el formulario del asistente, visible si `not_assignable_line_count > 0`, con lista de solo lectura y botón «Ver documentos» (`action_open_consuming_documents`).
+  - **P4**: Coherencia en resumen del asistente: campo `selectable_line_count` y desglose de etiquetas sin saldo en `assigned_summary`.
+  - **P5**: Error nominativo detallado al validar techo duro o payload en `madenat.sv.imputation`: helper `_i2_lot_consuming_docs_detail(lot)` que lista los documentos y estados que causan el bloqueo.
+  - Pruebas automatizadas en `tests/test_sv_imputation_availability_p1_p5.py`.
+
 ## [18.0.1.37.0] - 2026-10-17
 
 ### Changed

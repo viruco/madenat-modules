@@ -277,11 +277,13 @@ class TestSvRebajaUiLimpia(TransactionCase):
         guia_cons = self._guia('UI-SIN02-CONS')
         self._imputation(guia_cons, e_res, sv, 4.0, state='draft')
         wiz = self._wizard(guia, sv=sv)
-        wiz.action_select_all()
-        self.assertEqual(wiz.selected_line_count, 2)
+        res = wiz.action_select_all()
+        # WP-F P2: action_select_all sólo selecciona etiquetas con saldo (asignables)
+        self.assertEqual(wiz.selected_line_count, 1)
         self.assertEqual(wiz.not_assignable_line_count, 1)
-        self.assertTrue(wiz.no_availability_note)
-        self.assertIn('1 de las etiquetas', wiz.no_availability_note)
+        self.assertIsInstance(res, dict)
+        self.assertEqual(res.get('tag'), 'display_notification')
+        self.assertIn('1 etiqueta(s) omitida(s)', res.get('params', {}).get('message', ''))
 
     # ══════════════════════════════════════════════════════════════════════
     # USE — «Usar disponible» no sobrescribe lo editado

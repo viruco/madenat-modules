@@ -139,8 +139,10 @@
                                readonly="imputation_state in ('applied', 'reversed', 'cancelled')">
                             <list editable="bottom" create="false"
                                   delete="false">
+                                <field name="asignable" column_invisible="True"/>
                                 <field name="selected"
-                                       widget="boolean_toggle"/>
+                                       widget="boolean_toggle"
+                                       readonly="not asignable"/>
                                 <!-- Identificación (etiqueta limpia) -->
                                 <field name="etiqueta" readonly="1"/>
                                 <field name="sku_origen" readonly="1"/>
@@ -212,6 +214,31 @@
                         <p class="text-muted">
                             Selecciona el material, indica los m³ y prepara la
                             asignación. Sólo Aplicar registra la rebaja.
+                        </p>
+                    </page>
+                    <page string="Sin disponibilidad" name="unavailable_material" invisible="not_assignable_line_count == 0">
+                        <field name="line_ids" readonly="1">
+                            <list create="false" delete="false">
+                                <field name="asignable" column_invisible="True"/>
+                                <field name="etiqueta"/>
+                                <field name="sku_origen"/>
+                                <field name="producto_id"/>
+                                <field name="espesor_mm"/>
+                                <field name="ancho_mm"/>
+                                <field name="largo_m"/>
+                                <field name="piezas_lote" sum="Piezas"/>
+                                <field name="volumen_documental_m3" sum="Vol. documental (m³)"/>
+                                <field name="etiqueta_disponible_m3" sum="Disponible (m³)"/>
+                                <field name="disponibilidad_estado"/>
+                                <field name="disponibilidad_detalle" string="Causa del saldo"/>
+                                <button name="action_open_consuming_documents"
+                                        type="object" string="Ver documentos"
+                                        icon="fa-external-link"
+                                        invisible="not disponibilidad_imputacion_ids"/>
+                            </list>
+                        </field>
+                        <p class="text-muted">
+                            Etiquetas de la guía sin disponibilidad documental para una nueva operación (consumidas o reservadas).
                         </p>
                     </page>
                     <page string="Asignación a SV">

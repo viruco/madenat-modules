@@ -87,4 +87,7 @@ from . import test_sv_rebaja_empty_guard
 from . import test_sv_imputation_lifecycle_integrity
 # FASE 12 (Bloque 1 / WP-B rótulos, 2026-10-17): unificación de rótulos de volumen.
 from . import test_volume_labels_unification
+# FASE 12 (Bloque 2 / WP-F P1-P5, 2026-10-17): disponibilidad de etiquetas en imputación SV.
+from . import test_sv_imputation_availability_p1_p5
+
 
