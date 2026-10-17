@@ -1048,6 +1048,7 @@
             <search string="Buscar Ingresos">
                 <field name="guide_name" string="Guía"/>
                 <field name="partner_id" string="Proveedor"/>
+                <field name="state" string="Estado"/>
                 <field name="processor_id" string="Procesador"/>
                 <field name="product_filter_id" string="Producto (contiene)"/>
 
@@ -1069,7 +1070,7 @@
                      que NO se pueden forzar como radio. Ver LIMITES.md. -->
                 <filter name="type_product" string="Producto" domain="[('ingestion_type', '=', 'product')]"/>
                 <filter name="type_processed" string="Procesado" domain="[('ingestion_type', '=', 'processed')]"/>
-                <filter name="type_volume" string="Volúmenes" domain="[('ingestion_type', '=', 'volume')]"/>
+                <filter name="type_volume" string="Ingresos por Volúmenes" domain="[('ingestion_type', '=', 'volume')]"/>
                 <separator/>
 
                 <!-- OC: vinculada / pendiente / no indicada (predicados puros
@@ -1119,6 +1120,23 @@
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Consola Global de Ingresos MADENAT</p>
             <p>Revise el resumen del ingreso y decida entre "Enviar a Stock" o "Modificar origen".</p>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         ACCIÓN: INGRESOS POR VOLÚMENES (WP-C / FASE 12)
+         ========================================================= -->
+    <record id="action_madenat_lumber_intake_console_volume" model="ir.actions.act_window">
+        <field name="name">Ingresos por Volúmenes</field>
+        <field name="res_model">madenat.lumber.intake.console</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_madenat_lumber_intake_console_list"/>
+        <field name="search_view_id" ref="view_madenat_lumber_intake_console_search"/>
+        <field name="domain">[('ingestion_type', '=', 'volume')]</field>
+        <field name="context">{'search_default_type_volume': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ingresos por Volúmenes</p>
+            <p>Listado y seguimiento exclusivo de recepciones de madera en modalidad volumen.</p>
         </field>
     </record>
 

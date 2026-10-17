@@ -4,6 +4,18 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.0.16.0] - 2026-10-17
+
+### Added
+- **WP-C (FASE 12 / AD-111) — Menú y acción dedicados «Ingresos por Volúmenes»**:
+  - Acción `action_madenat_lumber_intake_console_volume` sobre `madenat.lumber.intake.console`,
+    con dominio pre-filtrado `ingestion_type = 'volume'` y contexto `'search_default_type_volume': 1`.
+  - Menú `menu_madenat_lumber_intake_volume` integrado en la rama canónica de recepción
+    (`madenat_lumber_core.menu_ops_reception_cat`), visible para el grupo operativo (`group_madenat_operaciones`).
+  - Campo de búsqueda por `state` ("Estado") en la vista `view_madenat_lumber_intake_console_search`.
+  - Actualización del rótulo del filtro `type_volume` a «Ingresos por Volúmenes».
+  - Pruebas automatizadas en `tests/test_volume_console_search_menu.py`.
+
 ## [18.0.0.15.0] - 2026-10-12
 
 ### Changed

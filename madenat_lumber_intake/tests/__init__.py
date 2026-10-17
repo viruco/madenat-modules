@@ -44,3 +44,6 @@ from . import test_intake_console_compute_depends
 from . import test_intake_metrics_recompute
 # G1 (FASE 3): guardas de eliminación de guías (D-G1..D-G4), escenarios a–m.
 from . import test_guia_delete_guards
+# FASE 12 (Bloque 1 / WP-C): búsqueda y menú 'Ingresos por Volúmenes'
+from . import test_volume_console_search_menu
+

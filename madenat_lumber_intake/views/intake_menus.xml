@@ -24,6 +24,19 @@
         groups="madenat_lumber_core.group_madenat_operaciones"/>
 
     <!--
+        WP-C (FASE 12): acceso directo y pre-filtrado a "Ingresos por Volúmenes"
+        en la misma rama canónica de recepción:
+          MADENAT Lumber → Operaciones → Abastecimiento → Gestión de Entradas
+    -->
+    <menuitem
+        id="menu_madenat_lumber_intake_volume"
+        name="Ingresos por Volúmenes"
+        parent="madenat_lumber_core.menu_ops_reception_cat"
+        action="action_madenat_lumber_intake_console_volume"
+        sequence="2"
+        groups="madenat_lumber_core.group_madenat_operaciones"/>
+
+    <!--
         Consolidación de navegación: los accesos nativos a los modelos fuente
         (`Ingreso de Guías` y `Guías Procesadas`) quedan reservados a Jefatura de
         Operaciones (grupo avanzado/supervisión) para que el operador no tenga que
