@@ -3330,13 +3330,41 @@ regresión del módulo `logistics` completa comparada **por nombre** con el base
 `madenat_test`, SHA256 del WIP y hashes de los documentos reales; `logs/`: baseline, suite nueva y regresión
 completa; `INFORME_FASE11.md`, `RUNBOOK_FASE11.md`, `CHECKLIST_MANUAL_MAURICIO.md`).
 
-<!-- actualizado: 2026-10-15 (5) — alta AD-110 (FASE 11): integridad del ciclo de vida de las imputaciones SV.
-A-1/B-1 = `state` y las marcas de transición sólo por las acciones OFICIALES (vía privada
-`_i2_write_protected_state`; `write`/`create` públicos los rechazan, también con `sudo()` y contexto; **sin
-bandera de contexto** por decisión de diseño); el motivo se captura en `reason` y la acción lo congela en su
-marca; M-2 = locks y revalidación de estado en la reversa; M-4 = cadena `origin_imputation_id` ↔
-`reversed_imputation_id`; B-2 = líneas y repartos inmutables fuera de preparación; B-3 = anulación con motivo
-obligatorio en metadata y bitácora. M-3 y los datos heredados (`IMP02220`, `IMP04823`, eventos TX10) quedan
-documentados y sin tocar. `logistics` 18.0.1.32.0 → 18.0.1.36.0; 17 pruebas nuevas en verde; regresión por nombre
-con el mismo subconjunto del baseline; sin migraciones, sin push ni despliegue. Versión 04 12.25.0 → 12.26.0. -->
+### AD-111 (2026-10-17) — Operaciones Bloque 1: Consola e Ingresos por Volúmenes (WP-C) y Unificación de Rótulos de Volumen (WP-B)
+
+**1. Contexto y Aprobación.** En la Compuerta E2 de la FASE 12 (requerimientos de Operaciones / Cristhian), Mauricio
+aprobó la ejecución inmediata del Bloque 1:
+- WP-C: filtro y menú "Ingresos por Volúmenes" con búsqueda por guía, proveedor y estado. Incluye investigación de la guía 95806 (JCE) con proveedor "S.I.I. - LOS ANGELES" (D-E0-3) y propuesta de corrección sin alterar datos existentes.
+- WP-B rótulos: unificar rótulos de volumen en las vistas de embarque y contenedor: "Vol. Compra (m³)" para el volumen de compra por etiqueta, "Vol. Export (m³)" para el de exportación, y "Vol. Documental (m³)" claramente distinguido.
+
+**2. WP-C (Consola y Menú 'Ingresos por Volúmenes').**
+- Se incorpora el campo `<field name="state" string="Estado"/>` en la vista de búsqueda `view_madenat_lumber_intake_console_search` de `madenat_lumber_intake`.
+- Se actualiza el rótulo del filtro `type_volume` a «Ingresos por Volúmenes» con dominio `[('ingestion_type', '=', 'volume')]`.
+- Se crea la acción de ventana dedicada `action_madenat_lumber_intake_console_volume` sobre `madenat.lumber.intake.console`, con dominio pre-filtrado `ingestion_type = 'volume'` y contexto `'search_default_type_volume': 1`.
+- Se añade el submenú `menu_madenat_lumber_intake_volume` bajo la rama canónica `madenat_lumber_core.menu_ops_reception_cat` (Gestión de Entradas), con secuencia 2 y permiso para `madenat_lumber_core.group_madenat_operaciones`.
+- Suite TDD en `madenat_lumber_intake/tests/test_volume_console_search_menu.py` (4 pruebas en verde).
+
+**3. Causa Raíz D-E0-3 (Guía 95806 / JCE -> "S.I.I. - LOS ANGELES").**
+- Hallazgo: En `GDE 95806.pdf`, el membrete del emisor (JCE) es una imagen gráfica vectorial/raster en la cabecera izquierda (`Im1`), carente de capa de texto seleccionable.
+- En el recuadro DTE superior derecho (timbre electrónico de guía), se ubican: RUT (`96.547.890-6`), tipo y folio (`Nº 95806`) y la oficina tributaria del SII: `S.I.I. - LOS ANGELES`.
+- `_find_emitter_company_name()` en `madenat_guia_processing.py` descartó encabezados estándar (`GUÍA`, `DESPACHO`, `ELECTRÓNICA`), pero la cadena `S.I.I. - LOS ANGELES` fue evaluada como razón social válida por no pertenecer `ANGELES` al set de palabras reservadas.
+- Al no existir previamente el RUT `96.547.890-6` en la base de datos, `_resolve_or_create_supplier()` ejecutó `auto_create` creando el `res.partner` ID 2417 con nombre «S.I.I. - LOS ANGELES». Al procesar la guía 95806, el resolver por VAT asignó dicho partner.
+- No se modificaron los datos en la base de datos (requisito explícito). Se presentan opciones operativas a Mauricio.
+
+**4. WP-B rótulos (Unificación de Rótulos de Volumen).**
+- Homologación completa de vistas XML en `madenat_lumber_logistics`:
+  - Contenedor (`lumber_container_views.xml`): lista (`total_vol_shipment_m3` -> «Vol. Export (m³)», `total_volume_purchase_m3` -> «Vol. Compra (m³)»); formulario (labels homónimos en grupo Volúmenes y Rendimiento); grilla de lotes asignados (`volume_purchase_m3` -> «Vol. Compra (m³)», `vol_shipment_m3` -> «Vol. Export (m³)`).
+  - Asistente de selección de lotes (`lumber_container_lot_wizard_views.xml`): lotes para exportación (`vol_shipment_m3` -> «Vol. Export (m³)»); grilla de selección (`volume_purchase_m3` -> «Vol. Compra (m³)», `vol_shipment_m3` -> «Vol. Export (m³)`).
+  - Embarque (`lumber_export_shipment_views.xml`): pivot (`total_nominal_volume_m3` -> «Vol. Compra (m³)», `total_volume_m3` -> «Vol. Export (m³)»); totales KPIs (`total_volume_m3` -> «Vol. Export (m³)», `total_nominal_volume_m3` -> «Vol. Compra (m³)»); pestaña contenedores (`total_volume_purchase_m3` -> «Vol. Compra (m³)», `volume_m3` -> «Vol. Export (m³)»); auditoría de cálculo (`physical_volume_m3` -> «Vol. Compra (m³)», `export_volume_m3` -> «Vol. Export (m³)»); lista de embarques (`total_volume_m3` -> «Vol. Export (m³)`).
+  - Imputación documental SV (`madenat_sv_imputation_views.xml`): `sv_assignment_nominal_m3` y `sv_ret_nominal_m3` claramente etiquetados como «Vol. Documental (m³)».
+- Suite TDD en `madenat_lumber_logistics/tests/test_volume_labels_unification.py` (5 pruebas en verde).
+
+**5. Versiones e Impacto.**
+- `madenat_lumber_intake`: 18.0.0.15.0 -> 18.0.0.16.0
+- `madenat_lumber_logistics`: 18.0.1.36.0 -> 18.0.1.37.0
+- CHANGELOG actualizado en ambos módulos.
+- Sin cambios en costing, reports, bitácora ni datos de negocio reales (`IMP04823`, `IMP02220`).
+
+<!-- actualizado: 2026-10-17 — alta AD-111 (FASE 12 / Bloque 1): WP-C búsqueda y menú Ingresos por Volúmenes, causa raíz D-E0-3 JCE/S.I.I., y WP-B unificación canónica de rótulos de volumen (Vol. Compra (m³), Vol. Export (m³), Vol. Documental (m³)). `intake` 18.0.0.15.0 → 18.0.0.16.0; `logistics` 18.0.1.36.0 → 18.0.1.37.0. Versión 04 12.26.0 → 12.27.0. -->
+
 
