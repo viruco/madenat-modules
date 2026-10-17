@@ -78,3 +78,79 @@ class TestPackingMetricoTemplate(TransactionCase):
         self.assertEqual(l2["lot_number"], "ETQ-002")
         self.assertEqual(l2["pieces"], 160)
         self.assertAlmostEqual(l2["volume_m3"], 3.240, places=3)
+
+    def test_04_synthetic_data_roundtrip_accepted(self):
+        """Demuestra que el extractor de packing_metrico_aserrada acepta la plantilla
+        llenada con datos sintéticos (ida y vuelta: escritura en plantilla -> extracción).
+        """
+        import io
+        import openpyxl
+
+        # Cargar la plantilla base en memoria
+        wb = openpyxl.load_workbook(io.BytesIO(self.file_bytes))
+        ws = wb.active
+
+        # Escribir cabecera sintética
+        ws["B2"] = "PROVEEDOR SINTETICO S.A."
+        ws["E2"] = "GUIA-SINT-999"
+        ws["H2"] = "2026-11-01"
+
+        # Sobrescribir filas de datos con datos sintéticos
+        ws["A5"] = 101
+        ws["B5"] = "PRD-SYNTH-1"
+        ws["C5"] = "PINO RADIATA ASERRADO"
+        ws["D5"] = "LOTE-SYNTH-001"
+        ws["E5"] = 25.4
+        ws["F5"] = 100.0
+        ws["G5"] = 3.20
+        ws["H5"] = 20
+        ws["I5"] = 10
+        ws["J5"] = 200
+        ws["K5"] = 1.626
+
+        ws["A6"] = 102
+        ws["B6"] = "PRD-SYNTH-2"
+        ws["C6"] = "PINO VERDE DIMENSIONADO"
+        ws["D6"] = "LOTE-SYNTH-002"
+        ws["E6"] = 50.0
+        ws["F6"] = 150.0
+        ws["G6"] = 4.00
+        ws["H6"] = 10
+        ws["I6"] = 8
+        ws["J6"] = 80
+        ws["K6"] = 2.400
+
+        # Eliminar filas 7 y 8 que tenían ejemplos en la plantilla original
+        ws.delete_rows(7, 2)
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        synth_bytes = buf.getvalue()
+
+        # Extraer usando el lector oficial de producción
+        res = extract_document(synth_bytes, "PACKING_SINTETICO.xlsx")
+
+        self.assertEqual(res.detected_profile_code, "packing_metrico_aserrada")
+        self.assertEqual(res.header.get("customer_name"), "PROVEEDOR SINTETICO S.A.")
+        self.assertEqual(res.header.get("guide_number"), "GUIA-SINT-999")
+        self.assertEqual(res.header.get("guide_date"), "2026-11-01")
+        self.assertEqual(len(res.lines), 2)
+
+        l1 = res.lines[0]
+        self.assertEqual(l1["package_no"], "101")
+        self.assertEqual(l1["lot_number"], "LOTE-SYNTH-001")
+        self.assertEqual(l1["thickness_value_raw"], "25.4")
+        self.assertEqual(l1["width_value_raw"], "100")
+        self.assertEqual(l1["length_value_raw"], "3.2")
+        self.assertEqual(l1["pieces"], 200)
+        self.assertAlmostEqual(l1["volume_m3"], 1.626, places=3)
+
+        l2 = res.lines[1]
+        self.assertEqual(l2["package_no"], "102")
+        self.assertEqual(l2["lot_number"], "LOTE-SYNTH-002")
+        self.assertEqual(l2["thickness_value_raw"], "50")
+        self.assertEqual(l2["width_value_raw"], "150")
+        self.assertEqual(l2["length_value_raw"], "4")
+        self.assertEqual(l2["pieces"], 80)
+        self.assertAlmostEqual(l2["volume_m3"], 2.400, places=3)
+
