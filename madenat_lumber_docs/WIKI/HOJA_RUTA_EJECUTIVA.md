@@ -1,70 +1,49 @@
 # Hoja de Ruta Ejecutiva — MADENAT Lumber Core
 
 **Estado:** ACTIVO  
-**Última actualización:** 2026-05-23  
-**Objetivo:** mostrar el foco ejecutivo real del proyecto sin perder alineación con la documentación técnica canónica.
+**Última actualización:** 2026-10-17  
+**Fase activa:** FASE 12 — Requerimientos de Operaciones (Cristhian)  
+**Objetivo:** Guiar el avance técnico y ejecutivo del sistema MADENAT (Odoo 18 CE) manteniendo alineación estricta entre decisiones de negocio (Mauricio), requerimientos operativos (Cristhian) y el código en producción.
 
 ---
 
-## 1. Estado general
+## 1. Estado General y Arquitectura
 
-El proyecto mantiene una base funcional sólida y una documentación mucho más ordenada que en fases anteriores.  
-La suite base T01–T14 se considera el núcleo estable del negocio y la Fase 6 financiera ya no está ausente a nivel estructural, porque existe una acción manual desde shipment para crear consolidación de facturación. [file:5][file:4]
-
----
-
-## 2. Foco ejecutivo actual
-
-La prioridad ya no es “seguir agregando features” sin control.  
-El foco actual es cerrar correctamente el feature de largo con unidad de ingreso, dejar evidencia formal de T29–T32 y validar de punta a punta el flujo manual de consolidación antes de ampliar automatización financiera. [file:5][file:7]
+El sistema opera sobre una base arquitectónica robusta y documentada:
+- **Puerta de Entrada Unificada (`madenat_lumber_intake`):** Consola única para recepciones de madera bruta (compra directa) y guías de procesamiento (maquila / servicios), con navegación especializada para «Ingresos por Volúmenes» (AD-111).
+- **Motor de Ingesta Normalizada (`madenat_ingestion_engine`):** Extracción agnóstica de documentos (Excel/PDF) con soporte de perfiles métricos/imperiales y plantilla estándar descargable para aserraderos sin integración automática (AD-112).
+- **Consolidación y Exportación (`madenat_lumber_logistics`):** Trazabilidad documental de rebajas SV, blindaje contra sobreconsumos de etiquetas (techo duro) y unificación de rótulos de volumen («Vol. Compra (m³)», «Vol. Export (m³)», «Vol. Documental (m³)»).
 
 ---
 
-## 3. Prioridades por orden
+## 2. Hitos y Fases Recientes
 
-1. Confirmar coherencia total entre documentación, vistas, tests y código para largo/unidades. [file:5][file:4]
-2. Ejecutar y registrar T29–T32 con evidencia reproducible. [file:5][file:7]
-3. Validar funcionalmente la Fase 6 manual desde shipment en `delivered` hasta consolidación creada. [file:5]
-4. Repriorizar backlog financiero sobre una base ya validada. [file:5][file:4]
-5. Mantener documentación canónica sincronizada sin volver a fragmentar el estado. [file:13][file:7]
-
----
-
-## 4. Riesgos activos
-
-| Riesgo | Severidad | Estado |
-|---|---|---|
-| Constraint `stock_lot_check_cost_positive` [file:5] | Alta [file:5] | Abierto [file:5] |
-| Modelo financiero aún incompleto [file:5][file:4] | Alta [file:5] | Abierto [file:5] |
-| Warnings XML menores [file:5][file:4] | Media [file:5] | Abierto [file:5] |
-| Monolito parcial en `lumber_reception.py` [file:5][file:4] | Media [file:5] | Abierto [file:5] |
+| Fase / Hito | Decisión Canon | Estado | Alcance Principal |
+| :--- | :---: | :---: | :--- |
+| **FASE 10** | AD-109 | **Cerrada** | Registro de etiquetas en rebaja SV: clave documental única (S1), filtro de borrador en preparación (S2), y bloqueo de guardado sin selección (S3). |
+| **FASE 11** | AD-110 | **Cerrada** | Integridad del ciclo de vida de imputaciones SV: blindaje contra mutación de `state` fuera de acciones oficiales (A-1/B-1), reversa protegida con locks de recursos (M-2), trazabilidad encadenada origin↔reversed (M-4) y anulación con motivo firmado (B-3). |
+| **FASE 12 (Bloque 1)** | AD-111 | **Cerrada** | Operaciones Bloque 1: Menú y búsqueda por estado en «Ingresos por Volúmenes» (WP-C), unificación canónica de rótulos de volumen en embarque y contenedores (WP-B), e investigación causa raíz guía 95806 / JCE (D-E0-3). |
+| **FASE 12 (Bloque 2)** | AD-112 | **Cerrada** | Operaciones Bloque 2: Disponibilidad de etiquetas en imputación SV (WP-F P1–P5), plantilla estándar métrica descargable y guía de llenado (WP-E), y alineación documental wiki/canon (WP-G). |
+| **FASE 12 (Bloque 3)** | — | **Detenido** | Pendiente de autorización: Conciliación documental envíos vs. retornos (WP-D), imputación diferida / borrador (WP-A), cálculo m³ factura vs. documental (WP-B cálculo). |
 
 ---
 
-## 5. Resultado esperado del siguiente ciclo
+## 3. Prioridades Ejecutivas y Próximos Pasos
 
-Al cierre del siguiente ciclo deberían existir cinco resultados visibles:
-
-- módulo actualizando limpio;
-- T29–T32 ejecutadas y registradas;
-- flujo manual shipment → consolidation validado;
-- continuidad y backlog alineados al estado real;
-- criterio de deploy basado en evidencia y no en percepción. [file:5][file:7]
-
----
-
-## 6. Criterio ejecutivo de avance
-
-Se considera que el proyecto avanza de forma sana cuando:
-
-- el módulo instala sin romper registry;
-- las pruebas base siguen firmes;
-- los escenarios nuevos quedan evidenciados;
-- la documentación cuenta la misma historia que el código;
-- el siguiente frente se abre solo después de cerrar el actual. [file:7][file:4][file:5]
+1. **Revisión de Checkpoint Bloque 2:** Validación funcional en navegador por parte de Mauricio de los cambios de WP-F (toggle deshabilitado para etiquetas sin saldo, pestaña «Sin disponibilidad», resumen y mensaje de error nominativo) y de WP-E (plantilla Excel generada).
+2. **Definición de Bloque 3:** Autorización explícita de Mauricio respecto al alcance, diseño y orden de ejecución para WP-D, WP-A y WP-B cálculo.
+3. **Decisiones de Negocio Pendientes (Sin alteración de código previa):**
+   - **Guía 95806 (JCE):** Decidir entre renombramiento del partner 2417 o reclasificación de la guía de despacho.
+   - **Documento Histórico `IMP02220`:** Decidir anulación o preservación en UI del documento aplicado con 0 repartos.
+   - **Documento Histórico `IMP04823`:** Conservar como evidencia histórica anulada o recrear rebaja limpia de guía 1198.
 
 ---
 
-## 7. Próximo frente mayor
+## 4. Riesgos Activos y Criterios de Blindaje
 
-Una vez cerrada la validación de largo/unidades y del flujo manual de consolidación, el siguiente frente mayor vuelve a ser la evolución de la Fase 6 financiera con base documental y funcional estable. [file:4][file:5]
+| Riesgo | Severidad | Mitigación Implementada |
+| :--- | :---: | :--- |
+| **Sobreconsumo de Etiquetas en Imputaciones Concurrentes** | Crítica | Locks transaccionales deterministas (`pg_try_advisory_xact_lock`), validación dura de techo nominal en `_i2_validate_hard_cap` y bloqueo visual en UI con `readonly="not asignable"`. |
+| **Mutaciones No Autorizadas de Estado de Negocio** | Alta | Vía privada `_i2_write_protected_state` y rechazo estricto en `write()` público para transiciones sin acción oficial. |
+| **Inconsistencia de Volúmenes por Rótulos Ambiguos** | Media | Homologación estandarizada en todas las vistas: «Vol. Compra (m³)» vs «Vol. Export (m³)» vs «Vol. Documental (m³)» (WP-B). |
+| **Colisión de Puertos / Despliegue en Entorno de Pruebas** | Baja | Protocolo estricto CLI con puerto aislado 8070 y pruebas locales por nombre sin `-u all`. |
