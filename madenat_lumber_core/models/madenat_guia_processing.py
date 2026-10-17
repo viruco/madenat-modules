@@ -1228,10 +1228,16 @@ class MadenatGuiaProcessing(models.Model):
                     pdf, packing, declared_d=rec.guia_volume_declared_decimals
                 )
                 if is_equiv:
-                    if has_lineas and abs(pdf - packing) < 1e-5 and abs(pdf - lineas) < 1e-5:
-                        state = 'consistent'
-                    else:
+                    if abs(pdf - packing) >= 1e-6:
+                        # Coincidencia lograda por redondeo a d decimales declarados (WP-A)
                         state = 'ok_rounded'
+                    else:
+                        # Coincidencia idéntica entre Guía y Packing
+                        if has_lineas:
+                            state = 'consistent' if abs(pdf - lineas) < 1e-5 else 'difference'
+                        else:
+                            # Evidencia parcial al faltar la tercera fuente (líneas)
+                            state = 'partial'
                 else:
                     state = 'difference'
 
