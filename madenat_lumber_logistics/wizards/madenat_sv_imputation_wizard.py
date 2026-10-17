@@ -198,7 +198,7 @@ class MadenatSvImputationWizard(models.TransientModel):
             # Filas seleccionadas sin disponibilidad documental (no asignables).
             wiz.selectable_line_count = len(wiz.line_ids.filtered('asignable'))
             wiz.not_assignable_line_count = wiz.available_line_count - wiz.selectable_line_count
-            no_avail = selected.filtered(lambda l: not l.asignable)
+            no_avail = wiz.line_ids.filtered(lambda l: not l.asignable)
             if no_avail:
                 details = '; '.join(
                     '%s — %s' % (
@@ -207,7 +207,7 @@ class MadenatSvImputationWizard(models.TransientModel):
                         or _('sin disponibilidad documental'))
                     for l in no_avail)
                 wiz.no_availability_note = _(
-                    '%(n)s de las etiquetas seleccionadas no tienen '
+                    '%(n)s de las etiquetas no tienen '
                     'disponibilidad documental para una operación nueva. Se '
                     'conservan, pero no admiten una asignación positiva. '
                     'Causa: %(det)s') % {'n': len(no_avail), 'det': details}
@@ -237,7 +237,7 @@ class MadenatSvImputationWizard(models.TransientModel):
         disponibilidad seleccionadas (§15). Sólo lectura; no altera nada."""
         self.ensure_one()
         docs = self.line_ids.filtered(
-            lambda l: l.selected and l.disponibilidad_imputacion_ids
+            lambda l: (l.selected or not l.asignable) and l.disponibilidad_imputacion_ids
         ).mapped('disponibilidad_imputacion_ids')
         return {
             'type': 'ir.actions.act_window',

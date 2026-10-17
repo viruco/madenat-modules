@@ -4,6 +4,11 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.39.0] - 2026-10-17
+
+### Fixed
+- **Robustez de disponibilidad en asistente SV**: cálculo de `no_availability_note` y `action_open_no_availability_docs()` alineado para considerar todas las etiquetas no asignables del asistente con independencia de su selección activa.
+
 ## [18.0.1.38.0] - 2026-10-17
 
 ### Added
