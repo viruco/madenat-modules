@@ -4,6 +4,18 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.37.0] - 2026-10-17
+
+### Changed
+- **WP-B rótulos (FASE 12 / AD-111) — Unificación de rótulos de volumen en vistas de Embarque y Contenedor**:
+  - Homologación canónica de rótulos de volumen:
+    - «Vol. Compra (m³)» para el volumen de compra por etiqueta (`volume_purchase_m3`, `total_volume_purchase_m3`, `total_nominal_volume_m3`, `physical_volume_m3`).
+    - «Vol. Export (m³)» para el volumen de exportación (`vol_shipment_m3`, `total_vol_shipment_m3`, `volume_m3`, `total_volume_m3`, `export_volume_m3`).
+    - «Vol. Documental (m³)» claramente distinguido en las vistas de imputaciones documentales SV (`sv_assignment_nominal_m3`, `sv_ret_nominal_m3`).
+  - Sustitución de `volumen_m3` ("Vol. Físico") en la grilla de lotes de contenedor y asistente por `volume_purchase_m3` («Vol. Compra (m³)») para reflejar el volumen de compra de la etiqueta.
+  - Eliminación de etiquetas inconsistentes y ambiguas («Vol. Físico», «Vol. Emb.», «Vol. Nominal (m³)», «m³ Embarque», «Volumen Exportación (facturable)»).
+  - Pruebas automatizadas en `tests/test_volume_labels_unification.py`.
+
 ## [18.0.1.36.0] - 2026-10-15
 
 ### Fixed

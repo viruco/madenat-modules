@@ -11,7 +11,7 @@
                 <field name="ancho_inch_frac" string="Ancho"/>
                 <field name="largo_ft_frac" string="Largo (m.)"/>
                 <field name="piezas" string="Piezas" sum="Total Piezas"/>
-                <field name="vol_shipment_m3" string="Volumen (m³)" sum="Total Volumen" decoration-bf="1"/>
+                <field name="vol_shipment_m3" string="Vol. Export (m³)" sum="Total Volumen" decoration-bf="1"/>
             </list>
         </field>
     </record>
@@ -36,8 +36,8 @@
                 <field name="largo_m" string="L (m)" width="65px" optional="show"/>
 
                 <field name="piezas" string="Pzas" width="70px" sum="Total"/>
-                <field name="volumen_m3" string="Vol. Físico" width="100px" sum="Total" optional="show"/>
-                <field name="vol_shipment_m3" string="Vol. Emb." width="110px" sum="Total" decoration-bf="1"/>
+                <field name="volume_purchase_m3" string="Vol. Compra (m³)" width="100px" sum="Total" optional="show"/>
+                <field name="vol_shipment_m3" string="Vol. Export (m³)" width="110px" sum="Total" decoration-bf="1"/>
                 <field name="volumen_mbf" string="Vol. MBF" width="100px" sum="Total" decoration-bf="1"/>
 
                 <field name="guia_number" string="Guía/Rece" width="130px"/>

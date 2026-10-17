@@ -10,8 +10,8 @@
                     
                     <field name="estimated_departure" type="col"/> 
 
-                    <field name="total_nominal_volume_m3" string="Vol. Físico Compra (m³)" type="measure"/>
-                    <field name="total_volume_m3" string="Vol. Físico Embarque (m³)" type="measure"/>
+                    <field name="total_nominal_volume_m3" string="Vol. Compra (m³)" type="measure"/>
+                    <field name="total_volume_m3" string="Vol. Export (m³)" type="measure"/>
                     
                     <field name="yield_efficiency_pct" string="Eficiencia Yield (%)" type="measure"/>
                     <field name="total_volume_mbf" string="Total MBF" type="measure"/>
@@ -210,8 +210,8 @@
                             <field name="total_packages"/>
                         </group>
                         <group>
-                            <field name="total_volume_m3" string="Vol. de Embarque Total (m³)" decoration-bf="1"/>
-                            <field name="total_nominal_volume_m3" string="Vol. Físico Total (m³)" class="text-muted"/>
+                            <field name="total_volume_m3" string="Vol. Export (m³)" decoration-bf="1"/>
+                            <field name="total_nominal_volume_m3" string="Vol. Compra (m³)" class="text-muted"/>
                             <field name="total_volume_mbf" string="Volumen MBF Total" decoration-bf="1" decoration-success="1" digits="[16, 3]"/>
                             <field name="total_weight_kg" string="Peso Total Carga (Kg)"/>
                         </group>
@@ -226,8 +226,8 @@
                                     <field name="seal_number"/>
                                     <field name="packages" sum="Total Paquetes"/>
                               
-                                    <field name="total_volume_purchase_m3" string="Vol. Nominal (m³)" sum="Total Nominal" digits="[16, 3]"/>
-                                    <field name="volume_m3" string="Vol. Exportación (m³)" sum="Total Exportación" digits="[16, 3]"/>
+                                    <field name="total_volume_purchase_m3" string="Vol. Compra (m³)" sum="Total Nominal" digits="[16, 3]"/>
+                                    <field name="volume_m3" string="Vol. Export (m³)" sum="Total Exportación" digits="[16, 3]"/>
                                     <field name="volume_mbf" string="Vol. MBF" sum="Total MBF" digits="[16, 3]"/>
                                     <field name="gross_weight_kg" sum="Total Peso Kg"/>
                                     <field name="state" widget="badge" 
@@ -250,9 +250,9 @@
                                 <list string="Detalle de Conversión" decoration-muted="export_volume_m3 == 0">
                                     <field name="display_label" string="N° Etiqueta"/>
                                     <field name="container_id" optional="show"/>
-                                    <field name="physical_volume_m3" string="Vol. Físico (m³)" sum="Total Físico" optional="show"/>
+                                    <field name="physical_volume_m3" string="Vol. Compra (m³)" sum="Total Físico" optional="show"/>
                                     <field name="export_width_inches" string="Ancho Nom. (plg)" optional="show"/>
-                                    <field name="export_volume_m3" string="Vol. Facturable (m³)" sum="Total Facturable" 
+                                    <field name="export_volume_m3" string="Vol. Export (m³)" sum="Total Facturable" 
                                            decoration-bf="1" decoration-success="export_volume_m3 > physical_volume_m3"/>
                                 </list>
                             </field>
@@ -385,7 +385,7 @@
                 <field name="vessel_id"/>
                 <field name="customer_id" optional="show"/>
                 <field name="container_count" string="Cont."/>
-                <field name="total_volume_m3" string="m³ Embarque" sum="Total"/>
+                <field name="total_volume_m3" string="Vol. Export (m³)" sum="Total"/>
                 <field name="yield_efficiency_pct" string="Yield %" 
                        decoration-danger="yield_efficiency_pct &lt; 90" 
                        decoration-success="yield_efficiency_pct >= 90"/>

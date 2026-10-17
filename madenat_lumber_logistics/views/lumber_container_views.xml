@@ -152,13 +152,13 @@
                        optional="hide"/>
                 
                 <field name="total_vol_shipment_m3"
-                       string="Vol. Exportación (m³)"
+                       string="Vol. Export (m³)"
                        sum="Total Exportación"
                        optional="show"
                        digits="[16, 3]"/>
                        
                 <field name="total_volume_purchase_m3"
-                       string="Vol. Nominal (m³)"
+                       string="Vol. Compra (m³)"
                        sum="Total Nominal"
                        optional="hide"
                        digits="[16, 3]"/>
@@ -364,7 +364,7 @@
 
                                 <group string="Volúmenes y Rendimiento">
                                     <label for="total_vol_shipment_m3"
-                                           string="Volumen Exportación (facturable)"/>
+                                           string="Vol. Export (m³)"/>
                                     <div class="o_row">
                                         <field name="total_vol_shipment_m3"
                                                decoration-bf="1"
@@ -373,7 +373,7 @@
                                     </div>
 
                                     <label for="total_volume_purchase_m3"
-                                           string="Volumen Nominal (Costo)"/>
+                                           string="Vol. Compra (m³)"/>
                                     <div class="o_row">
                                         <field name="total_volume_purchase_m3" digits="[16, 3]"/>
                                         <span> m³</span>
@@ -424,8 +424,8 @@
                                  <field name="length_ft" string="L (ft)" width="65px" optional="show"/>
                                  <field name="largo_m" string="L (m)" width="65px" optional="show"/>
                                  <field name="piezas" string="Pzas" sum="Total Pzas"/>
-                                 <field name="volumen_m3" string="Vol. Físico" width="100px" sum="Total" optional="show"/>
-                                 <field name="vol_shipment_m3" string="Vol. Emb." width="110px" sum="Total" decoration-bf="1"/>
+                                 <field name="volume_purchase_m3" string="Vol. Compra (m³)" width="100px" sum="Total" optional="show"/>
+                                 <field name="vol_shipment_m3" string="Vol. Export (m³)" width="110px" sum="Total" decoration-bf="1"/>
                                  <field name="volumen_mbf" string="Vol. MBF" width="100px" sum="Total" decoration-bf="1"/>
                                  <field name="guia_number" string="Guía/Rece" width="130px" optional="show"/>
                                  <field name="location_id" string="Ubicación" width="130px" optional="show"/>

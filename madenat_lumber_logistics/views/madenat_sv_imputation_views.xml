@@ -290,7 +290,7 @@
                 <field name="sv_assignment_guia_date" string="Fecha guía"
                        optional="hide"/>
                 <field name="sv_assignment_nominal_m3"
-                       string="Volumen documental"/>
+                       string="Vol. Documental (m³)"/>
                 <field name="sv_assignment_applied_m3"
                        string="Rebajado documental"/>
                 <field name="sv_assignment_work_count"
@@ -359,7 +359,7 @@
                 <field name="sv_ret_etiquetas_count" optional="hide"
                        string="Etiquetas retorno"/>
                 <field name="sv_ret_nominal_m3" optional="hide"
-                       string="Vol. documental m³"/>
+                       string="Vol. Documental (m³)"/>
                 <field name="sv_ret_aplicado_m3" optional="hide"
                        string="Rebajado doc. m³"/>
                 <field name="sv_ret_pendiente_m3" optional="hide"
@@ -413,7 +413,7 @@
                             <field name="sv_assignment_processor_id"
                                    readonly="1"/>
                             <field name="sv_assignment_nominal_m3"
-                                   string="Volumen documental" readonly="1"/>
+                                   string="Vol. Documental (m³)" readonly="1"/>
                         </group>
                         <group>
                             <field name="sv_assignment_applied_m3"

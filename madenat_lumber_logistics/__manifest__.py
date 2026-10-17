@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Logistics',
-    'version': '18.0.1.36.0',
+    'version': '18.0.1.37.0',
     'category': 'Inventory/Logistics',
     'summary': 'Gestión avanzada de embarques y consolidación de exportación',
     'author': 'MADENAT / Desarrollo Senior',

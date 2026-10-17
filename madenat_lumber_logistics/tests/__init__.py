@@ -85,3 +85,6 @@ from . import test_sv_rebaja_empty_guard
 # FASE 11 (2026-10-15): integridad del ciclo de vida de las imputaciones
 # (A-1, B-1, M-2, M-4, B-2, B-3).
 from . import test_sv_imputation_lifecycle_integrity
+# FASE 12 (Bloque 1 / WP-B rótulos, 2026-10-17): unificación de rótulos de volumen.
+from . import test_volume_labels_unification
+
