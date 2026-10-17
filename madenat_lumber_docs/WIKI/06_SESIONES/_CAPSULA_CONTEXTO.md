@@ -25,11 +25,12 @@
 ---
 
 ## 3. Estado de Fases Recientes (Reconciliación D-E0-1)
-- **FASE 10 (AD-109) — 100% CERRADA:** Correcciones S1 (firma/clave documental con etiquetas seleccionadas), S2 (filtro y reanudación operativa de borrador en preparación) y S3 (bloqueo sin etiquetas incluidas).
-- **FASE 11 (AD-110) — 100% CERRADA:** Integridad de ciclo de vida de imputaciones SV. A-1/B-1 (escritura de `state` protegida contra mutaciones directas vía RPC/ORM), M-2 (reversa con locks de capacidad), M-4 (trazabilidad encadenada origin↔reversed), B-2 (líneas inmutables tras preparación) y B-3 (anulación con motivo obligatorio firmado).
-- **FASE 12 — Operaciones (Bloques 1 y 2 CERRADOS):**
+- **FASE 10 (AD-109) — Implementada y probada en local:** Correcciones S1 (firma/clave documental con etiquetas seleccionadas), S2 (filtro y reanudación operativa de borrador en preparación) y S3 (bloqueo sin etiquetas incluidas). Pendiente de verificación manual de Mauricio y de despliegue al TEST.
+- **FASE 11 (AD-110) — Implementada y probada en local:** Integridad de ciclo de vida de imputaciones SV. A-1/B-1 (escritura de `state` protegida contra mutaciones directas vía RPC/ORM), M-2 (reversa con locks de capacidad), M-4 (trazabilidad encadenada origin↔reversed), B-2 (líneas inmutables tras preparación) y B-3 (anulación con motivo obligatorio firmado). Pendiente de verificación manual de Mauricio y de despliegue al TEST.
+- **FASE 12 — Operaciones (Bloques 1 y 2 en local; Bloque 3 en espera):**
   - **Bloque 1 (AD-111):** WP-C (búsqueda por estado y submenú «Ingresos por Volúmenes»); WP-B rótulos (unificación de «Vol. Compra (m³)», «Vol. Export (m³)» y «Vol. Documental (m³)»); investigación D-E0-3 (guía 95806 / JCE -> "S.I.I.").
   - **Bloque 2 (AD-112):** WP-F P1–P5 (control de disponibilidad de etiquetas en imputación SV: `asignable`, `action_select_all` seguro, pestaña «Sin disponibilidad», resumen coherente, error nominativo); WP-E (plantilla estándar `PACKING_METRICO_ASERRADA.xlsx` y guía de llenado); WP-G (alineación documental canónica y wiki).
+  - **Bloque 3 (DETENIDO / NO INICIADO):** Alcance aprobado: WP-B ancho de exportación (tabla existente en `width_mapping.py` y `lumber.width.s2s.map`, simulación de solo lectura sobre embarques existentes, sin recalcular valores almacenados, opción manual con usuario y fecha) y WP-A comparación guía vs packing (a la precisión declarada de la guía con tope de 3 decimales, estado `ok_rounded`, parametrizable). WP-D (patios) sigue EN ESPERA (no existe "conciliación documental" ni "imputación diferida" aprobadas).
 
 ---
 

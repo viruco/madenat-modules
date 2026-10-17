@@ -1,6 +1,6 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.31.0
+**Versión documental:** 8.32.0
 **Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-10 (2) — nueva sección «Conciliación envío–retorno (Bloque A/B/C) — IMPLEMENTADO (2026-10-10)»: modelo `madenat.processor.return.link`, cierra la brecha (a) de CANON/19 §19.10; Bloque D cuantitativo PENDIENTE. Versión 05 8.16.0 → 8.17.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (3) — sección «Conciliación envío–retorno (Bloque A/B/C)»: **ajuste de integridad** (`19` §19.13): reversa vs. procedencia, reimputación con historia, consistencia de compañía + regla de registro, elegibilidad dura (done/tipo interno), volúmenes N:M referenciales (`aggregator=False`). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Versión 05 8.17.0 → 8.18.0. Bloque D fuera de alcance. Sin commit/push. -->
@@ -1036,12 +1036,12 @@ Sin push ni despliegue. -->
   - Generador `generate_packing_template.py` y guía `docs/GUIA_LLENADO_PACKING_METRICO.md`.
   - Módulo: `madenat_ingestion_engine` 18.0.1.1.0 → 18.0.1.2.0.
 - **WP-G — Alineación documental:**
-  - Reconciliación de D-E0-1 (`_CAPSULA_CONTEXTO.md` actualizada al estado real 100% de Fases 10 y 11).
+  - Reconciliación de D-E0-1 (`_CAPSULA_CONTEXTO.md` actualizada al estado real: Fases 10 y 11 implementadas y probadas en local, pendientes de verificación manual de Mauricio y de despliegue al TEST).
   - Reconciliación de D-E0-2 (`HOJA_RUTA_EJECUTIVA.md` sincronizada con AD-110, AD-111, AD-112).
   - Backlog canónico actualizado.
 
 ### Bloque 3 — DETENIDO (Pendiente de Autorización de Mauricio)
-- **WP-D:** Conciliación documental (envíos a procesador vs. retornos).
-- **WP-A:** Imputación diferida (borrador preservado para trabajo concurrente).
-- **WP-B cálculo:** Cálculo de m³ factura vs. documental con control de tolerancia.
+- **WP-B ancho de exportación:** Uso de la tabla existente en `width_mapping.py` y `lumber.width.s2s.map`, simulación de solo lectura sobre embarques existentes sin recalcular valores almacenados, opción manual con usuario y fecha.
+- **WP-A comparación guía vs packing:** A la precisión declarada de la guía con tope de 3 decimales, estado `ok_rounded`, parametrizable.
+- **WP-D (patios):** Sigue EN ESPERA. No existe "conciliación documental" ni "imputación diferida" aprobadas.
 

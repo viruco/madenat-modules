@@ -20,18 +20,18 @@ El sistema opera sobre una base arquitectónica robusta y documentada:
 
 | Fase / Hito | Decisión Canon | Estado | Alcance Principal |
 | :--- | :---: | :---: | :--- |
-| **FASE 10** | AD-109 | **Cerrada** | Registro de etiquetas en rebaja SV: clave documental única (S1), filtro de borrador en preparación (S2), y bloqueo de guardado sin selección (S3). |
-| **FASE 11** | AD-110 | **Cerrada** | Integridad del ciclo de vida de imputaciones SV: blindaje contra mutación de `state` fuera de acciones oficiales (A-1/B-1), reversa protegida con locks de recursos (M-2), trazabilidad encadenada origin↔reversed (M-4) y anulación con motivo firmado (B-3). |
-| **FASE 12 (Bloque 1)** | AD-111 | **Cerrada** | Operaciones Bloque 1: Menú y búsqueda por estado en «Ingresos por Volúmenes» (WP-C), unificación canónica de rótulos de volumen en embarque y contenedores (WP-B), e investigación causa raíz guía 95806 / JCE (D-E0-3). |
-| **FASE 12 (Bloque 2)** | AD-112 | **Cerrada** | Operaciones Bloque 2: Disponibilidad de etiquetas en imputación SV (WP-F P1–P5), plantilla estándar métrica descargable y guía de llenado (WP-E), y alineación documental wiki/canon (WP-G). |
-| **FASE 12 (Bloque 3)** | — | **Detenido** | Pendiente de autorización: Conciliación documental envíos vs. retornos (WP-D), imputación diferida / borrador (WP-A), cálculo m³ factura vs. documental (WP-B cálculo). |
+| **FASE 10** | AD-109 | **Local OK** (Pend. Verif. / TEST) | Registro de etiquetas en rebaja SV: clave documental única (S1), filtro de borrador en preparación (S2), y bloqueo de guardado sin selección (S3). Implementada y probada en local; pendiente verificación manual Mauricio y despliegue a TEST. |
+| **FASE 11** | AD-110 | **Local OK** (Pend. Verif. / TEST) | Integridad del ciclo de vida de imputaciones SV: blindaje contra mutación de `state` fuera de acciones oficiales (A-1/B-1), reversa protegida con locks de recursos (M-2), trazabilidad encadenada origin↔reversed (M-4) y anulación con motivo firmado (B-3). Implementada y probada en local; pendiente verificación manual Mauricio y despliegue a TEST. |
+| **FASE 12 (Bloque 1)** | AD-111 | **Local OK** | Operaciones Bloque 1: Menú y búsqueda por estado en «Ingresos por Volúmenes» (WP-C), unificación canónica de rótulos de volumen en embarque y contenedores (WP-B), e investigación causa raíz guía 95806 / JCE (D-E0-3). |
+| **FASE 12 (Bloque 2)** | AD-112 | **Local OK** | Operaciones Bloque 2: Disponibilidad de etiquetas en imputación SV (WP-F P1–P5), plantilla estándar métrica descargable y guía de llenado (WP-E), y alineación documental wiki/canon (WP-G). |
+| **FASE 12 (Bloque 3)** | — | **Detenido** (Pendiente Autorización) | Alcance aprobado: WP-B ancho de exportación (tabla existente en `width_mapping.py` y `lumber.width.s2s.map`, simulación de solo lectura sobre embarques existentes, sin recalcular valores almacenados, opción manual con usuario y fecha) y WP-A comparación guía vs packing (a la precisión declarada de la guía con tope de 3 decimales, estado `ok_rounded`, parametrizable). WP-D (patios) sigue EN ESPERA (no existe "conciliación documental" ni "imputación diferida" aprobadas). |
 
 ---
 
 ## 3. Prioridades Ejecutivas y Próximos Pasos
 
 1. **Revisión de Checkpoint Bloque 2:** Validación funcional en navegador por parte de Mauricio de los cambios de WP-F (toggle deshabilitado para etiquetas sin saldo, pestaña «Sin disponibilidad», resumen y mensaje de error nominativo) y de WP-E (plantilla Excel generada).
-2. **Definición de Bloque 3:** Autorización explícita de Mauricio respecto al alcance, diseño y orden de ejecución para WP-D, WP-A y WP-B cálculo.
+2. **Definición de Bloque 3:** Autorización explícita de Mauricio respecto al inicio de WP-B ancho de exportación y WP-A comparación guía vs packing (manteniendo WP-D patios en espera).
 3. **Decisiones de Negocio Pendientes (Sin alteración de código previa):**
    - **Guía 95806 (JCE):** Decidir entre renombramiento del partner 2417 o reclasificación de la guía de despacho.
    - **Documento Histórico `IMP02220`:** Decidir anulación o preservación en UI del documento aplicado con 0 repartos.
