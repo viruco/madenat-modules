@@ -229,7 +229,8 @@ class MadenatLumberIntakeConsole(models.Model):
         readonly=True, digits=(16, 3))
     documental_conciliation_state = fields.Selection(
         [('not_available', 'Sin evidencia'), ('partial', 'Parcial'),
-         ('consistent', 'Consistente'), ('difference', 'Con diferencia')],
+         ('consistent', 'Consistente'), ('ok_rounded', 'Consistente por redondeo'),
+         ('difference', 'Con diferencia')],
         string='Conciliación documental', compute='_compute_review_metrics',
         readonly=True)
     packing_pieces_declared = fields.Integer(

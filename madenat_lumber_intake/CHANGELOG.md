@@ -4,6 +4,13 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.0.17.0] - 2026-10-17
+
+### Added
+- **WP-A (FASE 12) — Estado de conciliación 'ok_rounded' en Consola de Ingreso**:
+  - Incorporación del valor `'ok_rounded'` ("Consistente por redondeo") en el campo `documental_conciliation_state` de la fachada `madenat.lumber.intake.console`.
+  - Decoración visual `decoration-info="documental_conciliation_state == 'ok_rounded'"` en la Consola y en la fachada de formulario (`intake_console_views.xml`, `intake_guia_processing_facade_views.xml`).
+
 ## [18.0.0.16.0] - 2026-10-17
 
 ### Added

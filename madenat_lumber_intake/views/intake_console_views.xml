@@ -300,6 +300,7 @@
                             <field name="packing_pieces_declared" string="Piezas Packing" readonly="1"/>
                             <field name="documental_conciliation_state" string="Conciliación documental" widget="badge"
                                    decoration-success="documental_conciliation_state == 'consistent'"
+                                   decoration-info="documental_conciliation_state == 'ok_rounded'"
                                    decoration-warning="documental_conciliation_state == 'partial'"
                                    decoration-danger="documental_conciliation_state == 'difference'"
                                    decoration-muted="documental_conciliation_state == 'not_available'"/>

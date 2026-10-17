@@ -1,3 +1,15 @@
+## [18.0.6.11.0] - 2026-10-17
+
+### Added
+- **WP-A (FASE 12) — Regla de equivalencia Guía vs Packing ('ok_rounded')**:
+  - Regla canónica: `d` = decimales declarados de la guía (tope configurable mediante `ir.config_parameter` `madenat.guia_packing_max_decimal_places`, por defecto 3).
+  - La guía y el packing son equivalentes si `round(packing, d) == round(guía, d)`.
+  - Nuevo estado `'ok_rounded'` ("Consistente por redondeo") en `documental_conciliation_state`.
+  - Cuando son equivalentes, el volumen del Packing es el valor operativo (`volume_operational_m3 = round(packing, 3)`).
+  - Guía sin packing genera estado `'partial'`.
+  - Soporte de precisión extendida a 6 decimales en `packing_volume_declared_m3` para resguardar valores reales como 57,839556 m³.
+  - Suite de pruebas unitarias: `tests/test_guia_packing_equivalence_wpa.py` (6 tests PASS).
+
 ## [18.0.6.10.0] - 2026-10-17
 
 ### Added

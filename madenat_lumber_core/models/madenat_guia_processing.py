@@ -943,7 +943,7 @@ class MadenatGuiaProcessing(models.Model):
 
     # --- TOTALES DECLARADOS DE PACKING (evidencia documental, no operativo) ---
     packing_volume_declared_m3 = fields.Float(
-        string='Vol. Packing declarado (m³)', digits=(16, 3),
+        string='Vol. Packing declarado (m³)', digits=(16, 6),
         help='Total de volumen declarado en el Packing Excel de origen.')
     packing_pieces_declared = fields.Integer(
         string='Piezas Packing declaradas',
@@ -1010,6 +1010,7 @@ class MadenatGuiaProcessing(models.Model):
             ('not_available', 'Sin evidencia'),
             ('partial', 'Parcial'),
             ('consistent', 'Consistente'),
+            ('ok_rounded', 'Consistente por redondeo'),
             ('difference', 'Con diferencia'),
         ],
         string='Estado de evidencia documental',
@@ -1021,6 +1022,11 @@ class MadenatGuiaProcessing(models.Model):
             'por PDF/guía, el total declarado del Packing y la suma de '
             'volúmenes documentales de sus líneas.'
         ),
+    )
+    guia_volume_declared_decimals = fields.Integer(
+        string='Decimales declarados guía',
+        default=0,
+        help='Cantidad de decimales declarados en la guía. Si es 0 o no se especifica, se detecta de la precisión declarada del volumen PDF (con tope según parámetro).',
     )
 
     # --- VOLÚMENES MBF (Todos usan _compute_all_totals) ---
@@ -1136,17 +1142,71 @@ class MadenatGuiaProcessing(models.Model):
                 rec.diff_packing_lineas_m3 = 0.0
 
 
+    # ==========================================================================
+    # WP-A: Regla de Equivalencia Guía vs Packing
+    # ==========================================================================
+    def _get_guia_packing_max_decimals(self):
+        """Obtiene el tope de decimales configurado en ir.config_parameter (default: 3)."""
+        val = self.env['ir.config_parameter'].sudo().get_param('madenat.guia_packing_max_decimal_places', '3')
+        try:
+            return max(1, int(val))
+        except (ValueError, TypeError):
+            return 3
+
+    def _detect_declared_decimals(self, val, max_d=3, explicit_d=0):
+        """Determina los decimales declarados 'd' aplicando el tope 'max_d'.
+
+        Si explicit_d > 0, se usa ese valor acotado a max_d.
+        Si val es str, se cuentan los dígitos después del punto/coma.
+        Si val es float, se infiere la cantidad de decimales significativos.
+        """
+        if explicit_d and explicit_d > 0:
+            return min(int(explicit_d), max_d)
+        if not val:
+            return max_d
+        if isinstance(val, str):
+            s = val.strip().replace(',', '.')
+            if '.' in s:
+                return min(len(s.split('.')[1]), max_d)
+            return 0
+        s = f"{val:.10f}".rstrip('0').rstrip('.')
+        if '.' in s:
+            return min(len(s.split('.')[1]), max_d)
+        return 0
+
+    def check_guia_packing_equivalence(self, guia_vol, packing_vol, declared_d=None):
+        """Determina si el volumen de la guía y el del packing son equivalentes.
+
+        Regla WP-A: d = decimales declarados de la guía (tope configurable en max_d).
+        La guía y el packing son equivalentes si round(packing, d) == round(guía, d).
+
+        Returns:
+            tuple: (is_equivalent, d, rounded_guia, rounded_packing)
+        """
+        max_d = self._get_guia_packing_max_decimals()
+        d = self._detect_declared_decimals(guia_vol, max_d=max_d, explicit_d=declared_d or 0)
+        r_guia = round(float(guia_vol or 0.0), d)
+        r_packing = round(float(packing_vol or 0.0), d)
+        is_equiv = (r_guia == r_packing)
+        return is_equiv, d, r_guia, r_packing
+
     @api.depends(
         'vol_comercial_pdf',
         'packing_volume_declared_m3',
         'sum_vol_documental_m3',
+        'guia_volume_declared_decimals',
     )
     def _compute_documental_conciliation_state(self):
         """Estado informativo de conciliación de evidencia documental.
 
-        Separa "coincidencia" de "evidencia ausente" usando float_compare
-        con precisión 0.001 (mismo decimal que los campos fuente). No escribe
-        en otros campos, no cambia estado de guía ni genera acciones.
+        Aplica la regla WP-A:
+        - d = decimales declarados de la guía (con tope de 3 por defecto, parametrizable).
+        - Si round(packing, d) == round(guía, d):
+            - Si coinciden exactamente a 3 decimales estrictos y con líneas: 'consistent'.
+            - Si coinciden al nivel de redondeo declarado: 'ok_rounded'.
+            - En ambos casos, el packing es el valor operativo.
+        - Si no coinciden: 'difference'.
+        - Si falta packing o guía: 'partial' (o 'not_available' si no hay fuentes).
         """
         for rec in self:
             pdf = rec.vol_comercial_pdf or 0.0
@@ -1160,17 +1220,28 @@ class MadenatGuiaProcessing(models.Model):
 
             if available == 0:
                 state = 'not_available'
-            elif available < 3:
+            elif not has_packing or not has_pdf:
+                # Falta PDF o falta Packing -> evidencia documental incompleta
                 state = 'partial'
             else:
-                consistent = (
-                    float_compare(pdf, packing, precision_rounding=0.001) == 0
-                    and float_compare(pdf, lineas, precision_rounding=0.001) == 0
-                    and float_compare(packing, lineas, precision_rounding=0.001) == 0
+                is_equiv, d, r_pdf, r_pck = rec.check_guia_packing_equivalence(
+                    pdf, packing, declared_d=rec.guia_volume_declared_decimals
                 )
-                state = 'consistent' if consistent else 'difference'
+                if is_equiv:
+                    if has_lineas and abs(pdf - packing) < 1e-5 and abs(pdf - lineas) < 1e-5:
+                        state = 'consistent'
+                    else:
+                        state = 'ok_rounded'
+                else:
+                    state = 'difference'
 
             rec.documental_conciliation_state = state
+            # WP-A: El packing es el valor operativo cuando hay consistencia/redondeo
+            if state in ('consistent', 'ok_rounded') and has_packing:
+                if hasattr(rec, 'volume_operational_m3') and hasattr(rec, 'volume_operational_source'):
+                    if getattr(rec, 'volume_operational_source', '') != 'manual':
+                        rec.volume_operational_m3 = round(packing, 3)
+                        rec.volume_operational_source = 'excel'
 
 
 

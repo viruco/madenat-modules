@@ -66,3 +66,5 @@ from . import test_sv_lot_unlink_guard
 from . import test_audit_log_immutability
 # 📐 FASE 12 (WP-B): Ancho de Exportación S2S Canónico y Opción Manual.
 from . import test_export_width_s2s_wpb
+# ⚖️ FASE 12 (WP-A): Regla de Equivalencia Guía vs Packing ('ok_rounded').
+from . import test_guia_packing_equivalence_wpa
