@@ -3488,4 +3488,45 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 
 <!-- actualizado: 2026-10-17 — alta AD-114 (FASE 12 / Perfiles Fase A): transferencia de ingestion_profile a procesados, guarda de coherencia asistida con confirmación explícita no bloqueante en wizard, y preservación de defaults y cálculos. `intake` 18.0.0.17.0 → 18.0.0.18.0. Versión 04 12.29.0 → 12.30.0. -->
 
+---
+
+### AD-115 (2026-10-17) — Restablecimiento de Cálculo Automático en Procesados (Opción a) y Preservación de Ancho Manual Prevalente
+
+**1. Contexto y Evidencia Matemática (Auditoría Guía 26270):**
+- **Hallazgo:** Tras la implementación del Bloque 3 (commit `036cc9b`), la evaluación matemática de la Guía 26270 arrojó una caída de volumen de exportación de **-1,386 m³ (-2,89%)**: de los **48,009 m³** almacenados en BD a **46,623 m³**.
+- **Validación Operativa:** Cristhian (jefe de operaciones) confirmó que *"VOL.M3 está bien"* (48,009 m³), validando que el valor histórico es el contractual y comercialmente correcto para la exportación.
+- **Auditoría 17/17 líneas:** Se verificó que las 17 líneas de la Guía 26270 fueron escritas por `_compute_vol_shipment_m3` con la lógica preexistente a `036cc9b`. El código previo reproduce exactamente **48,009 m³** (coincidencia idéntica al 100% en todas y cada una de las 17 líneas).
+- **Origen de la diferencia en 150 mm (~5%–6% vs 2% esperado):**
+  - La expectativa teórica de -2,17% correspondía a comparar $5\text{ }5/8"$ ($5,625"$) con nominal $5\text{ }3/4"$ ($5,750"$).
+  - Sin embargo, en la base de datos la guía 26270 registró `width_visual = '150mm'`. La función `parse_fraction_to_decimal_inch('150mm')` convirtió la medida a $150 / 25,4 = 5,9055118"$.
+  - Como 150 mm figura en la lista de exclusiones de sobreancho `[150.0, 160.0, 170.0, 180.0, 200.0]`, el recargo fue `0.0`. Por tanto, el histórico utilizó **$w = 5,9055"$** exactos.
+  - Al imponer `036cc9b` el valor de $5,625"$ ($5\text{ }5/8"$), la caída fue de $\frac{5,625}{5,9055} = 0,9525 \to \mathbf{-4,75\%}$ (y frente a la fórmula teórica con sobreancho $+1/8"$, $\mathbf{-6,73\%}$).
+- **Origen de la lista de exclusiones `[150.0, 160.0, 170.0, 180.0, 200.0]`:**
+  - Rastreo en Git: Definida desde el commit baseline v1.0 (`994bcbd`, `utils_uom.py:651`), como fallback y parámetro `madenat.s2s_exclusion_widths`.
+  - Formalizada en la Fase 3 (AD-30, 2026-06-02) en `madenat.ingestion.config.get_s2s_exclusion_widths()`.
+  - Justificación de negocio: En Madenat, la madera aserrada de ancho igual o superior a 150 mm se considera comercialmente "madera ancha" que históricamente no lleva recargo de cepillado de $1/8"$.
+
+**2. Decisión — Opción (a) Aprobada por Mauricio:**
+- **Restablecimiento del Cálculo Automático:** En `MadenatGuiaProcessingLine._compute_vol_shipment_m3` y `StockLotExtended._compute_vol_shipment_m3`, se restablece la fórmula preexistente:
+  $$w_{calc} = a_{in} + \text{float}(recargo)$$
+  donde $a_{in} = \text{parse\_fraction\_to\_decimal\_inch}(line.width\_visual)$ y $recargo = get\_s2s\_adjustment(env, line.ancho\_mm)$.
+- **Prevalencia del Ancho Manual (WP-B):** Se conserva íntegramente la arquitectura de ancho manual introducida en el Bloque 3:
+  - Campos: `export_width_manual_inches`, `export_width_manual_user_id`, `export_width_manual_date`, `export_width_manual_reason`.
+  - Si el operador define un ancho manual ($>0$), este **prevalece** sobre el cálculo automático.
+  - El motivo sigue siendo obligatorio (lanza `ValidationError` si falta).
+  - Se mantiene la trazabilidad y la anotación en el chatter/bitácora de la guía.
+- **Invarianza de Datos:** No se modifican las reglas de 150 mm ni la lista de exclusiones (a la espera de la validación de perfiles por Cristhian). No se recalculan registros almacenados preexistentes (sumas de control MD5 verificadas antes y después).
+
+**3. Cobertura TDD:**
+- En `madenat_lumber_core/tests/test_export_width_s2s_wpb.py`:
+  - 6 pruebas adaptadas a la fórmula automática con recargo estándar y lista de exclusiones.
+  - Nueva prueba añadida: `test_07_regression_guia_26270_synthetic_lines` reproduciendo sintéticamente las líneas de 100 mm (2,450 m³), 125 mm (4,096 m³) y 150 mm (3,915 m³) de la Guía 26270, más la prevalencia del ancho manual fijado.
+  - Resultado: 7/7 pruebas PASS (0 fallos, 0 errores).
+
+**4. Versiones:**
+- `madenat_lumber_core`: 18.0.6.11.0 → 18.0.6.12.0.
+
+<!-- actualizado: 2026-10-17 — alta AD-115 (FASE 12 / WP-B Opción a): restablecimiento de cálculo automático de volumen de embarque en procesados y lotes, preservación de opción manual prevalente, trazabilidad y suite de regresión 26270. `core` 18.0.6.11.0 → 18.0.6.12.0. Versión 04 12.30.0 → 12.31.0. -->
+
+
 

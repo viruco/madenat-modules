@@ -523,18 +523,13 @@ class StockLotExtended(models.Model):
             espesor_in = e_mm / float(MM_PER_INCH)
             ancho_in = a_mm / float(MM_PER_INCH)
             
-            # REGLA S2S / HOLGURA (WP-B):
-            # Si el producto usa nominal fijado o estándar comercial, se respeta ancho_in.
-            # Si es madera rough, se aplica la tabla canónica S2S (75 a 155 mm, excepto 135 mm).
-            # Fuera de rango o para 135 mm, rige la conversión directa a pulgadas.
+            # REGLA DE HOLGURA (Overmeasure) / AD-115:
+            # Si el producto NO es Standard (ej. Madera Rough), sumamos 1/8" (0.125) 
+            # al ancho para compensar la pérdida de volumen por cepillado según get_s2s_adjustment.
+            # Nominal fijado por wizard = valor comercial S2S → overmeasure cero.
             using_nominal = (lot.espesor_nominal_mm > 0 or lot.ancho_nominal_mm > 0)
-            if is_std or using_nominal:
-                ancho_calculo = ancho_in
-            elif 75.0 <= a_mm <= 155.0 and round(a_mm, 1) != 135.0:
-                s2s_val = WidthMappingTable.get_value(a_mm, format_type='decimal', env=self.env)
-                ancho_calculo = float(s2s_val) if s2s_val else (a_mm / float(MM_PER_INCH))
-            else:
-                ancho_calculo = a_mm / float(MM_PER_INCH)
+            overmeasure = 0.0 if (is_std or using_nominal) else float(get_s2s_adjustment(self.env, a_mm))
+            ancho_calculo = ancho_in + overmeasure
 
             # ====================================================================
             # 4. 🚀 BIFURCACIÓN DE LÓGICA DE NEGOCIO (FACTOR 1550 vs 5085)

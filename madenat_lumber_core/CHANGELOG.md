@@ -1,3 +1,12 @@
+## [18.0.6.12.0] - 2026-10-17
+
+### Fixed
+- **WP-B / AD-115 — Restablecimiento de cálculo automático de volumen de embarque y preservación de opción manual**:
+  - En `MadenatGuiaProcessingLine._compute_vol_shipment_m3` y `StockLotExtended._compute_vol_shipment_m3`, se restablece el cálculo automático preexistente a 036cc9b (`width_calc = a_in + float(recargo)` con `recargo = get_s2s_adjustment(self.env, line.ancho_mm)`).
+  - Causa raíz de la auditoría: La tabla neta S2S introducida en 036cc9b generaba una reducción de -1,386 m³ (-2,89%) en las 17 líneas de la Guía 26270 (46,623 m³ vs 48,009 m³ almacenados y considerados correctos por operaciones). Para 150 mm, el histórico almacenado utilizaba conversión métrica directa (150/25.4 = 5.9055") por encontrarse 150 mm en la lista de exclusiones de recargo (`[150.0, 160.0, 170.0, 180.0, 200.0]`).
+  - Prevalencia de ancho manual: Si el operador define `export_width_manual_inches` (>0 con motivo obligatorio), este prevalece sobre el cálculo automático.
+  - Suite de pruebas adaptada: `tests/test_export_width_s2s_wpb.py` adaptada a 7 tests PASS, incluyendo test de regresión con líneas sintéticas de la Guía 26270.
+
 ## [18.0.6.11.0] - 2026-10-17
 
 ### Added

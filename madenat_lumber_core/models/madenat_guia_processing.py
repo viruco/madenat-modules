@@ -474,9 +474,9 @@ class MadenatGuiaProcessingLine(models.Model):
         Calcula Volumen de Exportación (m³).
         🛡️ BLINDAJE: Si el cálculo geométrico real falla o faltan datos visuales,
         el sistema rescata el Volumen Nominal (vol_purchase_m3) para evitar ceros.
-        WP-B: Utiliza la tabla canónica Rough -> S2S (width_mapping.py / lumber.width.s2s.map)
-        para anchos entre 75 y 155 mm (excluyendo 135 mm). Fuera de rango o para 135 mm
-        se mantiene división directa por 25.4. Admite override manual con motivo obligatorio.
+        WP-B / AD-115 (Opción a): Admite override manual export_width_manual_inches con motivo obligatorio.
+        Si no se fija manual, restablece el cálculo automático preexistente (a_in + recargo get_s2s_adjustment)
+        garantizando total coherencia comercial con los volúmenes históricos de embarque (ej. Guía 26270).
         """
         FACTOR_PIES = float(BLANK_CLEAR_FACTOR)
 
@@ -512,19 +512,15 @@ class MadenatGuiaProcessingLine(models.Model):
                     # Regla de negocio: blank se ingesta y se embarca con dimensiones exactas
                     vol = (e_in * a_in * line.length_ft * line.pieces) / FACTOR_PIES
                 else:
-                    # FÓRMULA METROS — S2S/RIP: con tabla canónica S2S (WP-B)
+                    # FÓRMULA METROS — S2S/RIP:
+                    # Opción (a) / AD-115: El ancho manual de exportación prevalece si existe.
+                    # Si no, se restablece el cálculo automático preexistente a 036cc9b:
+                    # a_in (parse_fraction_to_decimal_inch de width_visual) + get_s2s_adjustment(ancho_mm).
                     if line.export_width_manual_inches and line.export_width_manual_inches > 0:
                         width_calc = line.export_width_manual_inches
                     else:
-                        width_mm = line.ancho_mm or 0.0
-                        if 75.0 <= width_mm <= 155.0 and round(width_mm, 1) != 135.0:
-                            s2s_val = WidthMappingTable.get_value(
-                                width_mm, format_type='decimal', env=self.env
-                            )
-                            width_calc = float(s2s_val) if s2s_val else (width_mm / float(MM_PER_INCH))
-                        else:
-                            # Fuera de rango (< 75 mm o > 155 mm) y 135 mm: división directa por 25.4
-                            width_calc = (width_mm / float(MM_PER_INCH)) if width_mm > 0 else a_in
+                        recargo = get_s2s_adjustment(self.env, line.ancho_mm)
+                        width_calc = a_in + float(recargo)
 
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
