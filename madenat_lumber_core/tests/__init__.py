@@ -82,4 +82,6 @@ from . import test_double_rounding_j2
 from . import test_visual_dimension_l3
 # 📏 FASE 12 (Bloque 5A / AD-126): Tabla de Espesores Reales Físicos.
 from . import test_lumber_thickness_real_map_5a
+# 🌲 FASE 12 (Bloque 5B / AD-126): Volumen Real Físico F3.
+from . import test_vol_physical_real_5b
 

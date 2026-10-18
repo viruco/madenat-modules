@@ -490,6 +490,15 @@ class StockLotExtended(models.Model):
         help="Volumen calculado según regla comercial del producto (Nominal) o Físico si no hay regla."
     )
 
+    # Bloque 5B (AD-126): Volumen Real Físico (Fórmula F3)
+    vol_physical_real_m3 = fields.Float(
+        string='Volumen Real Físico (m³)',
+        compute='_compute_vol_physical_real_m3',
+        store=True,
+        digits=(16, 3),
+        help="Volumen físico real (F3): Espesor real (mm) × Ancho nominal (mm) × Largo (m) × Piezas / 1.000.000"
+    )
+
     @api.depends(
         'product_id.use_commercial_standard',
         'product_id.commercial_thickness_mm',
@@ -597,6 +606,56 @@ class StockLotExtended(models.Model):
                 # Fallback de seguridad ante datos mal formateados en fracciones
                 # 🚀 CAMBIO 8: Usamos Nominal en vez de 0.0
                 lot.vol_shipment_m3 = nominal   
+
+    @api.depends('thickness_visual', 'espesor_nominal_mm', 'espesor_mm', 'ancho_nominal_mm',
+                 'ancho_mm', 'largo_m', 'largo_ft_frac', 'piezas')
+    def _compute_vol_physical_real_m3(self):
+        """Calcula el Volumen Real Físico (m³) para el lote según Fórmula F3 (AD-126 / Bloque 5B).
+
+        F3: espesor_real_mm × ancho_nominal_mm × largo_m × piezas / 1.000.000
+        No se calcula para Blanks directo a stock ni para perfiles donde no aplique.
+        Redondeado una sola vez con r3() (ROUND_HALF_UP).
+        """
+        for lot in self:
+            if lot.largo_ft_frac:
+                lot.vol_physical_real_m3 = 0.0
+                continue
+
+            piezas = lot.piezas or 0
+            if piezas <= 0:
+                lot.vol_physical_real_m3 = 0.0
+                continue
+
+            # Obtener espesor real en mm desde lumber.thickness.real.map
+            e_real_mm = None
+            thick_vis = getattr(lot, 'thickness_visual', None)
+            if thick_vis:
+                e_real_mm = self.env['madenat.ingestion.config'].get_thickness_real_mm(
+                    thickness_visual=thick_vis
+                )
+            if not e_real_mm and lot.espesor_nominal_mm and lot.espesor_nominal_mm > 0:
+                thick_in = lot.espesor_nominal_mm / 25.4
+                e_real_mm = self.env['madenat.ingestion.config'].get_thickness_real_mm(
+                    thickness_inches=thick_in
+                )
+
+            if not e_real_mm or e_real_mm <= 0:
+                lot.vol_physical_real_m3 = 0.0
+                continue
+
+            # Ancho nominal en mm: prioridad ancho_nominal_mm > ancho_mm
+            w_mm = lot.ancho_nominal_mm if lot.ancho_nominal_mm > 0 else lot.ancho_mm
+            if not w_mm or w_mm <= 0:
+                lot.vol_physical_real_m3 = 0.0
+                continue
+
+            l_m = lot.largo_m
+            if not l_m or l_m <= 0:
+                lot.vol_physical_real_m3 = 0.0
+                continue
+
+            vol_f3 = (e_real_mm * w_mm * l_m * piezas) / 1000000.0
+            lot.vol_physical_real_m3 = r3(vol_f3)
 
     # ==============================================================================
     # SECCIÓN 6: DIMENSIONES FINALES POST-PROCESO...

@@ -225,6 +225,15 @@ class MadenatGuiaProcessingLine(models.Model):
         help="Volumen real calculado desde dimensiones imperiales editables"
     )
 
+    # Bloque 5B (AD-126): Volumen Real Físico (Fórmula F3)
+    vol_physical_real_m3 = fields.Float(
+        string='Vol. Real Físico (m³)',
+        compute='_compute_vol_physical_real_m3',
+        store=True,
+        digits=(16, 3),
+        help="Volumen físico real (F3): Espesor real (mm) × Ancho nominal (mm) × Largo (m) × Piezas / 1.000.000"
+    )
+
     # ---- WP-B: Opción manual de ancho de exportación ----
     export_width_manual_inches = fields.Float(
         string='Ancho manual export (in)',
@@ -551,6 +560,55 @@ class MadenatGuiaProcessingLine(models.Model):
                 # Si algo explota en el cálculo, el sistema no se detiene: usa el nominal.
                 _logger.error(f"⚠️ Error en cálculo real para ID {line.id}, usando nominal: {e}")
                 line.vol_shipment_m3 = fallback_vol
+
+    # ==========================================================================
+    # COMPUTE: Volumen Real Físico F3 (Bloque 5B — AD-126)
+    # ==========================================================================
+    @api.depends('thickness_visual', 'espesor_nominal_mm', 'ancho_nominal_mm', 'ancho_mm',
+                 'largo_m', 'largo_nominal_m', 'pieces', 'processing_id.ingestion_profile')
+    def _compute_vol_physical_real_m3(self):
+        """Calcula el Volumen Real Físico (m³) según Fórmula F3 (AD-126 / Bloque 5B).
+
+        F3: espesor_real_mm × ancho_nominal_mm × largo_m × piezas / 1.000.000
+        No se calcula para Blanks directo a stock ni para perfiles donde no aplique.
+        Redondeado una sola vez con r3() (ROUND_HALF_UP).
+        """
+        for line in self:
+            profile = line.processing_id.ingestion_profile if line.processing_id else False
+            if profile == 'f5085' and getattr(line, 'length_ft', 0) > 0.1:
+                line.vol_physical_real_m3 = 0.0
+                continue
+
+            if not line.pieces or line.pieces <= 0:
+                line.vol_physical_real_m3 = 0.0
+                continue
+
+            # Obtener espesor real en mm desde lumber.thickness.real.map
+            e_real_mm = None
+            if line.thickness_visual:
+                e_real_mm = self.env['madenat.ingestion.config'].get_thickness_real_mm(
+                    thickness_visual=line.thickness_visual
+                )
+
+            # Si no hay mapeo de espesor real para la escuadría visual, no aplica F3
+            if not e_real_mm or e_real_mm <= 0:
+                line.vol_physical_real_m3 = 0.0
+                continue
+
+            # Ancho nominal en mm: prioridad ancho_nominal_mm > ancho_mm
+            w_mm = line.ancho_nominal_mm if line.ancho_nominal_mm > 0 else line.ancho_mm
+            if not w_mm or w_mm <= 0:
+                line.vol_physical_real_m3 = 0.0
+                continue
+
+            # Largo en m: prioridad largo_m > largo_nominal_m
+            l_m = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
+            if not l_m or l_m <= 0:
+                line.vol_physical_real_m3 = 0.0
+                continue
+
+            vol_f3 = (e_real_mm * w_mm * l_m * line.pieces) / 1000000.0
+            line.vol_physical_real_m3 = r3(vol_f3)
 
     # ==========================================================================
     # MÉTODOS AUXILIARES: Conversión de Fracciones
