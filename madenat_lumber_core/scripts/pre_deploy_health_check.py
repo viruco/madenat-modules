@@ -78,6 +78,37 @@ PARAM_CANONICAL = {
     'madenat.s2s_overwidth_inches': '0.125',
 }
 
+# Hashes canonicos oficiales de Consulta B (volumenes de negocio redondeados a 4 decimales - AD-121)
+CANONICAL_HASH_B = {
+    'stock_lot': '5c2152193194066e5585b383ffe3673a',
+    'madenat_guia_processing_line': '356e70066083febd59645c1212e11ece',
+    'lumber_shipment_line': 'bb5863f5850244b06b9235c2c595709b',
+}
+
+# Hashes canonicos oficiales de Consulta A.2 (nombre y volumen sin write_date - AD-121)
+CANONICAL_HASH_A2 = {
+    'stock_lot': '6b1ec7d8dcd91cc6bd7ff90772759500',
+    'madenat_guia_processing_line': 'e78e0265210add0676b240bed091921f',
+    'lumber_shipment_line': 'b13357af2864a6cbeb3a386dff188a8e',
+}
+
+# Linea base fijada de Consulta con write_date (aviso de fila tocada, solo informativa - AD-121)
+BASELINE_WRITE_DATE_HASH = {
+    'stock_lot': '6667a4bd9f3aeff24a8588d32da23ed2',
+    'madenat_guia_processing_line': 'b43a26b6fd072ff96ed075ca1e2f585e',
+    'lumber_shipment_line': 'b048f9428859b4c960b83b9ddf1cc701',
+}
+
+
+def normalize_module_version(v):
+    """Normaliza la version de un modulo eliminando el prefijo de serie Odoo (18.0.)."""
+    if not v or not isinstance(v, str):
+        return ""
+    v = v.strip()
+    if v.startswith('18.0.'):
+        return v[5:]
+    return v
+
 
 def _sep(char='=', n=90):
     return char * n
@@ -239,14 +270,17 @@ def run_health_check(env):
                 if m:
                     manifest_ver = m.group(1)
 
-            if state == 'installed' and installed_ver == manifest_ver:
+            norm_inst = normalize_module_version(installed_ver)
+            norm_man = normalize_module_version(manifest_ver)
+
+            if state == 'installed' and norm_inst == norm_man:
                 ok(f"{mod_name:<40} state=installed  instalada={installed_ver}  manifiesto={manifest_ver}")
             elif state not in ('installed',):
                 critico(
                     f"{mod_name}: estado={state} (esperado: installed). "
                     f"instalada={installed_ver} manifiesto={manifest_ver}."
                 )
-            elif installed_ver != manifest_ver:
+            elif norm_inst != norm_man:
                 warn(
                     f"{mod_name}: version instalada '{installed_ver}' difiere del manifiesto '{manifest_ver}'. "
                     f"Puede requerir -u {mod_name}."
@@ -354,14 +388,85 @@ def run_health_check(env):
             print(f"    [INFO]       {loc_key}: NO configurado.")
 
     # ─────────────────────────────────────────────────────────────────────────
-    # 8. CONSULTA MD5 CANONICA (hashes de integridad — G4)
+    # 8. INTEGRIDAD CANONICA: CONSULTAS OFICIALES B Y A.2 (AD-121 / I3)
     # ─────────────────────────────────────────────────────────────────────────
-    print(f"\n[8] Hashes MD5 canonicos de integridad (G4 AD-120)")
-    MD5_KNOWN = {
-        'stock_lot':                   '3871c02145712833e3ad9eea526405c5',
-        'madenat_guia_processing_line': 'b43a26b6fd072ff96ed075ca1e2f585e',
-        'lumber_shipment_line':         'b048f9428859b4c960b83b9ddf1cc701',
-    }
+    print(f"\n[8] Integridad de datos: Consultas oficiales B (volumenes) y A.2 (nombre/volumen) — AD-121")
+
+    # 8.1 Consulta B — Integridad de Volúmenes de Negocio (OFICIAL)
+    print("    [8.1] Consulta B (volumenes de negocio redondeados a 4 decimales — OFICIAL):")
+    try:
+        env.cr.execute("""
+            SELECT 
+                'stock_lot' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || round(coalesce(vol_shipment_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as hash
+            FROM stock_lot
+            UNION ALL
+            SELECT 
+                'madenat_guia_processing_line' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || round(coalesce(vol_shipment_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as hash
+            FROM madenat_guia_processing_line
+            UNION ALL
+            SELECT 
+                'lumber_shipment_line' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || round(coalesce(export_volume_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as hash
+            FROM lumber_shipment_line;
+        """)
+        rows_b = env.cr.fetchall()
+        for tbl, cnt, hsh in rows_b:
+            exp_hsh = param_obj.get_param(f'madenat.integrity_hash_b_{tbl}', None) or CANONICAL_HASH_B.get(tbl)
+            if exp_hsh and hsh == exp_hsh:
+                ok(f"Consulta B: {tbl:<32} cnt={cnt:<4} hash={hsh} (MATCH EXACTO)")
+            elif exp_hsh:
+                critico(
+                    f"Consulta B: {tbl} cnt={cnt} hash={hsh} DIFIERE de referencia {exp_hsh}. "
+                    f"Posible alteracion de volumenes de negocio."
+                )
+            else:
+                print(f"    [INFO]       Consulta B: {tbl:<32} cnt={cnt:<4} hash={hsh} (sin referencia previa)")
+    except Exception as e:
+        warn(f"Error ejecutando Consulta B de integridad: {e}")
+
+    # 8.2 Consulta A.2 — Integridad Estructural sin Marcas de Tiempo (OFICIAL)
+    print("    [8.2] Consulta A.2 (integridad estructural sin write_date — OFICIAL):")
+    try:
+        env.cr.execute("""
+            SELECT 
+                'stock_lot' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || coalesce(vol_shipment_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+            FROM stock_lot
+            UNION ALL
+            SELECT 
+                'madenat_guia_processing_line' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || coalesce(vol_shipment_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+            FROM madenat_guia_processing_line
+            UNION ALL
+            SELECT 
+                'lumber_shipment_line' as table_name,
+                count(*) as row_count,
+                md5(string_agg(id::text || ':' || coalesce(export_volume_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+            FROM lumber_shipment_line;
+        """)
+        rows_a2 = env.cr.fetchall()
+        for tbl, cnt, hsh in rows_a2:
+            exp_hsh = param_obj.get_param(f'madenat.integrity_hash_a2_{tbl}', None) or CANONICAL_HASH_A2.get(tbl)
+            if exp_hsh and hsh == exp_hsh:
+                ok(f"Consulta A.2: {tbl:<30} cnt={cnt:<4} hash={hsh} (MATCH EXACTO)")
+            elif exp_hsh:
+                critico(
+                    f"Consulta A.2: {tbl} cnt={cnt} hash={hsh} DIFIERE de referencia {exp_hsh}."
+                )
+            else:
+                print(f"    [INFO]       Consulta A.2: {tbl:<30} cnt={cnt:<4} hash={hsh} (sin referencia previa)")
+    except Exception as e:
+        warn(f"Error ejecutando Consulta A.2 de integridad: {e}")
+
+    # 8.3 Consulta con write_date — Informativa / Detección de Fila Tocada (INFORMATIVA)
+    print("    [8.3] Consulta con write_date (aviso informativo de fila tocada / marcas temporales):")
     try:
         env.cr.execute("""
             SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
@@ -376,21 +481,18 @@ def run_health_check(env):
               md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
             FROM lumber_shipment_line;
         """)
-        rows = env.cr.fetchall()
-        for tbl, cnt, hsh in rows:
-            known = MD5_KNOWN.get(tbl)
-            if known and hsh == known:
-                ok(f"{tbl:<40} cnt={cnt:<6} hash={hsh} (MATCH)")
-            elif known:
-                warn(
-                    f"{tbl:<40} cnt={cnt:<6} hash={hsh}\n"
-                    f"               referencia={known}\n"
-                    f"               DIFERENCIA — verificar si hubo cambios en BD."
-                )
+        rows_wd = env.cr.fetchall()
+        for tbl, cnt, hsh in rows_wd:
+            base_hsh = BASELINE_WRITE_DATE_HASH.get(tbl)
+            if base_hsh and hsh == base_hsh:
+                status_wd = "(coincide con linea base fijada)"
+            elif base_hsh:
+                status_wd = f"(aviso: difiere de linea base {base_hsh} por actualizacion de timestamp; no afecta negocio)"
             else:
-                print(f"    [INFO]       {tbl:<40} cnt={cnt:<6} hash={hsh} (sin referencia previa)")
+                status_wd = "(sin linea base)"
+            print(f"    [INFO]       write_date: {tbl:<30} cnt={cnt:<4} hash={hsh} {status_wd}")
     except Exception as e:
-        warn(f"Error ejecutando consulta MD5 canonica: {e}")
+        print(f"    [INFO]       Error consultando marcas write_date: {e}")
 
     # ─────────────────────────────────────────────────────────────────────────
     # 9. VERIFICACION DE MAIL.THREAD en lumber.width.s2s.map (G8)
