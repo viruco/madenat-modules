@@ -18,24 +18,10 @@ def run_simulation(env):
     print("SIMULACIÓN DE IMPACTO DE ANCHO DE EXPORTACIÓN S2S (SOLO LECTURA)")
     print("=" * 80)
 
-    # 1. Mapeo Canónico S2S (width_mapping.py / lumber.width.s2s.map)
-    S2S_WIDTH_MAP = {
-        75: 2.625,   # 2 5/8" (66.675 mm)
-        80: 2.750,   # 2 3/4" (69.850 mm)
-        85: 2.9375,  # 2 15/16" (74.6125 mm)
-        90: 3.125,   # 3 1/8" (79.375 mm)
-        100: 3.625,  # 3 5/8" (92.075 mm)
-        105: 3.750,  # 3 3/4" (95.250 mm)
-        110: 4.000,  # 4" (101.600 mm)
-        115: 4.125,  # 4 1/8" (104.775 mm)
-        120: 4.375,  # 4 3/8" (111.125 mm)
-        125: 4.500,  # 4 1/2" (114.300 mm)
-        130: 4.750,  # 4 3/4" (120.650 mm)
-        140: 5.125,  # 5 1/8" (130.175 mm)
-        145: 5.375,  # 5 3/8" (136.525 mm) - Valor Crítico
-        150: 5.500,  # 5 1/2" (139.700 mm)
-        155: 5.750,  # 5 3/4" (146.050 mm)
-    }
+    # 1. Mapeo Canónico S2S leído directamente del modelo ORM (AD-120/AD-122 / Regla D6)
+    S2SModel = env['lumber.width.s2s.map']
+    active_maps = S2SModel.sudo().search([('active', '=', True)])
+    S2S_WIDTH_MAP = {r.rough_mm: r.s2s_decimal for r in active_maps}
 
     def calc_s2s_vol(ancho_mm, espesor_mm, largo_m, pieces):
         if not (ancho_mm and espesor_mm and largo_m and pieces):
