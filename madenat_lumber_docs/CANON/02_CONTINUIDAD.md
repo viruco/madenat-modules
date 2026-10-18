@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.44.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4J (AD-122): §18.1 clarificación de empaquetado/rsync como ejemplo ilustrativo preliminar sin decisión de método (D4), eliminación definitiva de copias S2S en código productivo y corrección de doble redondeo. Versión 02 12.43.0 → 12.44.0. Sin push ni despliegue. -->
+**Versión documental:** 12.45.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4N: §18.2 incorporación de prohibición absoluta de -i (--init) en despliegue y pruebas (recarga forzada de XML ignorando noupdate="1"), uso exclusivo de -u quirúrgico sobre módulos requeridos, y ratificación de prohibición de -u all. Versión 02 12.44.0 → 12.45.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4J (AD-122): §18.1 clarificación de empaquetado/rsync como ejemplo ilustrativo preliminar sin decisión de método (D4), eliminación definitiva de copias S2S en código productivo y corrección de doble redondeo. Versión 02 12.43.0 → 12.44.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): verificación de método de entrega no definido (D4), rsync/empaquetado como método previamente documentado en borradores técnicos, y normalización de versiones en script de salud. Versión 02 12.42.0 → 12.43.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): verificación de D4 (método de entrega sin git pull documentado pero no ejecutado), línea base fijada stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 volúmenes redondeados a 4 decimales: 5c2152...) y sumas complementarias. Versión 02 12.41.0 → 12.42.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
@@ -2158,10 +2159,16 @@ balanceados. Versión 02 12.39.0 → **12.40.0**; **índice 12.29.0 → 12.30.0*
   3. En cualquier caso, no se tocan carpetas legadas (`.bak/`, `views.backup/`) existentes en el remoto.
   4. **Ratificación D4:** No se define ningún método activo; la determinación del canal de entrega queda reservada a la definición formal de Mauricio y la Gerencia.
 
-### 18.2 Módulos a Actualizar (Determinación Quirúrgica, Nunca `-u all`)
-- **Regla Estricta:** Queda terminantemente prohibido ejecutar `-u all` (violación de R6).
+### 18.2 Módulos a Actualizar (Determinación Quirúrgica con `-u`, Prohibición Absoluta de `-i`, Nunca `-u all`)
+- **Prohibición Absoluta de `-i` (`--init`):**
+  Queda terminantemente prohibido utilizar el parámetro `-i` (`--init`) en cualquier procedimiento de despliegue, actualización o ejecución de pruebas sobre bases de datos existentes o productivas.
+  *Evidencia técnica canónica (Bloque 4N):* El modo `init` (`-i`) de Odoo recarga forzadamente la totalidad de los datos XML de los módulos indicados, ignorando por diseño el atributo `noupdate="1"` sobre registros existentes y sobreescribiendo configuraciones vivas en BD (como ocurrió en las ejecuciones de los Bloques 4J y 4K sobre `madenat.out_of_table_behavior` de 'direct' a 'warning').
+- **Uso Exclusivo de `-u` (`--update` Quirúrgico):**
+  En todos los procedimientos de despliegue, entrega o verificación de suites de tests solo se autoriza el uso de `-u` (`--update`), aplicado exclusivamente sobre los módulos cuyos modelos, vistas o lógica hayan cambiado.
+- **Prohibición Estricta de `-u all`:**
+  Queda terminantemente prohibido ejecutar `-u all` (violación de R6).
 - **Comparación de Manifiestos:**
-  - `madenat_lumber_core`: Versión local 18.0.6.17.0 frente a 18.0.6.15.0 instalada. **REFIERE ACTUALIZACIÓN OBLIGATORIA** (`-u madenat_lumber_core`).
+  - `madenat_lumber_core`: Versión local 18.0.6.19.0 frente a 18.0.6.15.0 instalada. **REFIERE ACTUALIZACIÓN OBLIGATORIA** (`-u madenat_lumber_core`).
   - `madenat_lumber_intake`: 18.0.0.18.0 (idéntica en manifiesto y BD remota). No requiere `-u` a menos que se hayan modificado vistas.
   - `madenat_lumber_billing`: Normalizada la comparación de versión en `pre_deploy_health_check.py` (AD-121), `18.0.1.0.0` coincide con `1.0.0`, descartando falsas alarmas.
   - Comando canónico previsto:
