@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.36.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4F (AD-119): tabla S2S sin copia en código y UserError en tabla vacía (F1), blanks y retiro limpio de deduction_factor del modelo sin drop column (F2), constante única 1550.003 (F3), auditoría exhaustiva de literales con archivo:línea (F4), verificación dual de hashes MD5 (F5), corrección de origen de 47,417 m³ a "no reconstruido" y citas de líneas de ramas (F6), script de comprobación pre-deploy de solo lectura (F7), propuesta de parametrización de patios sin duplicados (F8), runbook de despliegue a TEST remoto (F9). Versión 04 12.35.0 → 12.36.0. | Cierre Bloque 4E (AD-118). -->
+**Versión documental:** 12.37.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4G (AD-120): decisiones Mauricio D1 a D6; retiro de _BLANKS_NOMINAL_MAP (G1); verificación de vectores f5085 y vol_documental (G2); pre_deploy_health_check.py reescrito con niveles OK/ADVERTENCIA/CRITICO y chequeo de intake/shipping_core (G3); consultas fijadas MD5 invariantes y redondeadas (G4); UserError de tabla S2S acotado a perfil imperial (G5); conteo de 1.533 tests (G6); simulacion_embarques_solo_lectura_remoto.py inocuo (G7); tabla S2S editable por interfaz con tracking, coherencia y sin recálculo histórico (G8); runbook borrador en CANON/02 (G9); backlog técnico diferido a-e (G10). Versión 04 12.36.0 → 12.37.0. | Cierre Bloque 4F (AD-119). -->
 **Estado:** Canonical / activo
 
 ---
@@ -3695,8 +3695,42 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
   9. **Runbook de Despliegue Remoto (F9 — Solo Plan):**
      - Se diseña el procedimiento operacional seguro: respaldo previo de BD (`pg_dump`) y código (`git tag`), actualización quirúrgica (`-u madenat_lumber_core`), validación con script F7 pre y post despliegue, y criterios de reversa.
 
+---
 
+### AD-120 — Cierre Técnico Final en Desarrollo (Bloque 4G)
+- **Fecha:** 2026-10-18
+- **Estado:** Implementado en Local / Aprobado
+- **Módulo:** `madenat_lumber_core` (18.0.6.15.0 → 18.0.6.16.0)
+- **Contexto:** Cierre técnico definitivo del Bloque 4G con resoluciones vinculantes de Mauricio (D1 a D6) y ejecución de los puntos técnicos G1 a G10 sin cambios de configuración ni de datos, sin despliegue, sin push y sin `-u all`.
 
+#### 1. Decisiones Vinculantes de Mauricio (D1 a D6)
+- **D1 (Configuración y Parámetros):** No se realiza ningún cambio de configuración ni de datos en ninguna base de datos. El parámetro `madenat.out_of_table_behavior` (actualmente 'direct' en `madenat_test`) se conserva tal cual. El script de salud G3 lo detecta y clasifica como **ADVERTENCIA** frente al canónico esperado 'warning', sin bloquear ni modificar la BD.
+- **D2 (Marcado de Patios):** No se marca `is_patio` en ninguna ubicación física (`MARVAL` id=18, `PUERTO CORONEL` id=17, `Bodega Tepornac` id=19). El Bloque 4C se da por aprobado en desarrollo. El marcado definitivo queda formalmente diferido en el backlog (§G10c).
+- **D3 (Guía 26270):** Se mantiene el volumen histórico almacenado de 48,009 m³ en la Guía 26270 (Ferramenta). No se altera ninguna fila histórica (R5).
+- **D4 (Despliegue y Pruebas UAT):** Seguimos en desarrollo local (`madenat_test`). No se ejecuta despliegue ni se define canal push hacia el TEST remoto. Se deja el procedimiento de despliegue operacional (§18 en `CANON/02`) como borrador técnico para ejecución futura autorizada.
+- **D5 (Procedimiento de Entrega):** Queda terminado e incorporado en `CANON/02` sin asumir `git pull` (utilizando empaquetado/rsync según §17.14) y con actualización quirúrgica por comparación de versiones de manifiestos, nunca `-u all`.
+- **D6 (Tabla S2S Editable en UI sin Hardcode):** Los 15 anchos canónicos definidos por Cristhian Elgueta se respetan y no se alteran. Se habilita su edición segura desde la interfaz (Configuración > Anchos S2S) con auditoría completa vía `mail.thread` (chatter), validación de coherencia decimal/etiqueta dentro de ±1/16" (0.0625), y garantía de que una edición solo afecta cálculos NUEVOS sin recalcular registros históricos almacenados (R5).
 
-
+#### 2. Resoluciones Técnicas G1 a G10
+1. **G1 — Retiro de Literales Hardcode (Commit `bbea0fd`):** Retirada la constante a nivel de clase `_BLANKS_NOMINAL_MAP` y `_NOMINAL_TOLERANCE` de `reception_parser.py`. La resolución nominal delega exclusivamente en `madenat.ingestion.config.get_blank_nominal_map()`. Auditoría de literales verificada.
+2. **G2 — Vectores de Blanks en Registro Real `f5085`:** Verificación matemática y de ejecución sobre la base de datos real:
+   - 100 mm (ancho 3 5/8" + 1/8" = 3.750"): 16 ft × 250 = 4.425 m³; 16 ft × 270 = 4.778 m³.
+   - 140 mm (ancho 4 7/8" + 1/8" = 5.000"): 16 ft × 250 = 5.899 m³; 16 ft × 270 = 6.371 m³.
+   - Discrepancia legacy de 1 milésima (4.240 vs 4.241 / 4.579 vs 4.580) explicada por división directa sobre factor `5085.312` frente a aproximaciones intermedias de conversión métrica/pies.
+   - Preservación estricta de `vol_documental_m3 > 0` sin recálculo demostrada (`lumber_reception.py:841-842`).
+3. **G3 — Script de Comprobación Previa al Despliegue (Commit `a022be5`):** `pre_deploy_health_check.py` opera en modo estricto de solo lectura (`env.cr.rollback()`). Estructurado en 3 niveles de retorno: OK, ADVERTENCIA (código 0, lista diferencias no bloqueantes: D1 `out_of_table_behavior = 'direct'`, D2 `is_patio = False`), y CRÍTICO (código 1). Incluye comparación de versiones instaladas vs manifiesto para todos los módulos MADENAT (incluidos intake y shipping_core).
+4. **G4 — Consulta Canónica Fijada MD5:** Ejecución dual de consultas de integridad antes y después del trabajo técnico:
+   - Consulta A (Texto crudo fijado): `madenat_guia_processing_line` (82 filas, hash `b43a26b6fd072ff96ed075ca1e2f585e`) y `lumber_shipment_line` (11 filas, hash `b048f9428859b4c960b83b9ddf1cc701`) se conservan 100% idénticos e invariantes. `stock_lot` (152 filas, hash `6667a4bd9f3aeff24a8588d32da23ed2`) refleja timestamps de sesión previa.
+   - Consulta B (Volúmenes redondeados Informe 4E): suma y hashes de volúmenes redondeados a 4 decimales invariantes (`531.2920` m³ stock_lot, `295.8210` m³ processing_line, `53.6030` m³ shipment_line).
+   - Consulta fijada registrada en `CANON/17` §10.
+5. **G5 — Ámbito del UserError por Tabla S2S Vacía (Commit `2a5c8ef`):** Modificado `madenat_ingestion_config.py` para acotar la excepción `UserError` de tabla S2S vacía únicamente a perfiles imperiales que dependan de la tabla (ancho < `direct_width_min_mm` = 170 mm). Perfiles métricos y anchos directos (>= 170 mm) se ejecutan sin error aunque la tabla se encuentre vacía.
+6. **G6 — Reconciliación de Conteo de Pruebas:** Conteo de pruebas unitarias reconciliado: 1.530 pruebas baseline + 3 pruebas nuevas G5 = 1.533 pruebas. Las 4 pruebas nuevas de G8 corren en suite modular dedicada.
+7. **G7 — Script de Simulación de Embarques Remoto (Commit `3efe7b5`):** Incorporado `scripts/simulacion_embarques_solo_lectura_remoto.py` verificado como 100% inocuo de solo lectura (0 sentencias INSERT, UPDATE, DELETE, write, create o commit).
+8. **G8 — Tabla S2S Editable en UI con Trazabilidad (Commit `9134290`):**
+   - Habilitada herencia `mail.thread` y `mail.activity.mixin` en `lumber.width.s2s.map` con tracking en `rough_mm`, `s2s_decimal`, `s2s_label`, `active`.
+   - Constraint de coherencia `_check_decimal_label_coherence` que impide divergencias entre la etiqueta fraccionaria y el valor decimal (tolerancia ±1/16" = 0.0625).
+   - Permisos de edición otorgados a `group_lumber_config_manager` y `group_madenat_auditoria` en `ir.model.access.csv`.
+   - Regla de negocio documentada en vista y código: editar un ancho solo afecta cálculos nuevos; no recalcula registros históricos almacenados (R5/D6). Suite unitaria `test_lumber_width_s2s_map_g8.py` (4/4 pasando).
+9. **G9 — Runbook de Despliegue Remoto (Commit `6682b58`):** Documentado en `CANON/02` §18 con estado formal "Borrador, no ejecutado", detallando método de entrega sin git pull, actualización quirúrgica sin `-u all`, respaldo triple, ejecución del script G3 y criterios de reversa.
+10. **G10 — Backlog Técnico Diferido (Commit `cc348f3`):** Registradas formalmente en `CANON/05` con estado DIFERIDO y utilidad esperada las iniciativas (a) Bloque 5, (b) fitosanitario configurable, (c) marcado de patios sin IDs numéricos, (d) filtro de motonave, y (e) no autorización de corrección histórica de la guía 26270.
 

@@ -1,8 +1,8 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.13.0\
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.4 Fuente única S2S sin copia en código (F1, UserError si vacía), retiro de deduction_factor de fórmula F4 (F2), constante única 1550.003 (F3) y actualización de citas de 4 ramas (AD-119). Versión 1.12.0 → 1.13.0. | 2026-10-18: Bloque 4E (AD-118). -->\
+**Versión documental:** 1.14.0\
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.5 Cierre Técnico Final (AD-120) — UserError S2S acotado a perfil imperial (G5), tabla S2S editable por interfaz con tracking y coherencia decimal/etiqueta (G8), preservación histórica sin recálculo (R5/D6). Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 4F (AD-119). -->\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
@@ -541,4 +541,10 @@ Procesado de servicio **es un retorno de servicio** mediante `service_return_con
 - **Retiro de deduction_factor del modelo (F2):** Se elimina el campo `deduction_factor` de `lumber.export.formula` y de las vistas XML sin alterar las columnas ni filas en la base de datos PostgreSQL, garantizando la preservación estricta de datos históricos.
 - **Constante única 1550.003 (F3):** Se unifica en `utils_uom.py` la constante a `Decimal('1550.003')` con alias `INCH_SQ_METERS_TO_M3 = CONST_M3_TO_IN2_M`, demostrándose matemáticamente impacto cero ($0,000\text{ m}^3$) en todos los volúmenes del sistema.
 - **Script de comprobación pre-deploy (F7):** Script de solo lectura en `madenat_lumber_core/scripts/pre_deploy_health_check.py` para validar 15 anchos, parámetros y perfiles antes y después de cualquier despliegue.
+
+### 12.5 Cierre Técnico Final y Gobernanza de Anchos S2S (AD-120)
+- **Ámbito del UserError por tabla S2S vacía (G5):** El error de interrupción `UserError` se limita estrictamente a las ramas que dependen de la tabla S2S (perfiles imperiales $f1550$ / $f5085$ con ancho rough $< 170\text{ mm}$). Los perfiles métricos y anchos directos ($\ge 170\text{ mm}$) o con señal explícita documental (`is_s2s_inches=True`) no dependen de la tabla S2S y no se bloquean aunque la tabla se encuentre vacía.
+- **Edición por interfaz con trazabilidad y coherencia (G8 / D6):** El modelo `lumber.width.s2s.map` habilita trazabilidad completa en chatter (`mail.thread`) para auditoría de modificaciones (usuario, fecha y valores anteriores). Se implementa constraint de coherencia `_check_decimal_label_coherence` que impide divergencias entre la etiqueta fraccionaria y el decimal almacenado dentro de una tolerancia de $\pm 1/16"$ ($0,0625$).
+- **Invarianza de registros históricos (R5/D6):** Editar un registro en `lumber.width.s2s.map` solo afecta cálculos NUEVOS; no recalcula registros históricos almacenados en `madenat_guia_processing_line` ni `stock_lot`. Para deshabilitar un ancho se utiliza el archivado (`active=False`) preservando la historia.
+
 

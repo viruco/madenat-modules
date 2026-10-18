@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.7.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4F (AD-119): corrección canónica de 115 mm en tabla (4 3/8 = 4,375 -> 4,500" con sobreancho = 1,742 m³ en 100 pzas), origen de 47,417 m³ clasificado como "no reconstruido", constante única 1550.003 y retiro limpio de deduction_factor del modelo. Versión 1.6.0 → 1.7.0. | 2026-10-18: Cierre Bloque 4E (AD-118). -->
+**Versión documental:** 1.8.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4G (AD-120): registro canónico de la consulta fijada MD5 (G4), delimitación del UserError S2S a perfil imperial (G5) y gobernanza de edición por interfaz sin recálculo histórico (G8/D6). Versión 1.7.0 → 1.8.0. | 2026-10-18: Cierre Bloque 4F (AD-119). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -253,3 +253,52 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
 - **Editabilidad Operativa:** El volumen y el metraje MBF calculados deben permitir modificación manual justificada por el usuario.
 - **Patios Creables:** Soporte explícito en Odoo para que Operaciones cree y gestione recintos como ubicaciones internas (`stock.location`): Patio MARVAL (acopio), Patio Ferramenta (servicio de cepillado), Patio Puerto Coronel (embarque portuario).
 - **Consolidación por Motonave:** Consolidación por tarja y contenedor con listados agrupados por buque/motonave (`shipping.vessel`).
+
+---
+
+## 10. Consulta Canónica Fijada de Integridad MD5 (AD-120 G4 / R5)
+
+Para garantizar la inmutabilidad histórica estricta requerida por **R5** y verificar la no-regresión de datos ante intervenciones técnicas y despliegues, se fija la siguiente consulta canónica de verificación dual:
+
+### 10.1 Consulta A — Texto Crudo Fijado (Integridad Estructural de Filas y Volúmenes)
+```sql
+SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(name::text,''), ',' ORDER BY id)) AS hash
+FROM stock_lot
+UNION ALL
+SELECT 'madenat_guia_processing_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(vol_shipment_m3::text,''), ',' ORDER BY id))
+FROM madenat_guia_processing_line
+UNION ALL
+SELECT 'lumber_shipment_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
+FROM lumber_shipment_line;
+```
+
+**Valores canónicos de referencia:**
+| Tabla | Filas | Hash MD5 Canónico | Estado de Invarianza |
+|---|---|---|---|
+| `stock_lot` | 152 | `3871c02145712833e3ad9eea526405c5` / `6667a4bd9f3aeff24a8588d32da23ed2`* | Auditado |
+| `madenat_guia_processing_line` | 82 | `b43a26b6fd072ff96ed075ca1e2f585e` | ✅ 100% Invariante |
+| `lumber_shipment_line` | 11 | `b048f9428859b4c960b83b9ddf1cc701` | ✅ 100% Invariante |
+
+*\*Nota: en `stock_lot`, el hash varía si algún registro actualizó su marca temporal `write_date` en sesiones anteriores sin alterar los volúmenes.*
+
+### 10.2 Consulta B — Volúmenes Numéricos Redondeados (Informe 4E)
+```sql
+SELECT 'stock_lot' as tbl, count(*) as cnt, sum(round(coalesce(vol_shipment_m3, 0)::numeric, 4)) as vol_sum FROM stock_lot
+UNION ALL
+SELECT 'madenat_guia_processing_line', count(*), sum(round(coalesce(vol_shipment_m3, 0)::numeric, 4)) FROM madenat_guia_processing_line
+UNION ALL
+SELECT 'lumber_shipment_line', count(*), sum(round(coalesce(export_volume_m3, 0)::numeric, 4)) FROM lumber_shipment_line;
+```
+- `stock_lot`: 152 filas · Suma = 531.2920 m³
+- `madenat_guia_processing_line`: 82 filas · Suma = 295.8210 m³
+- `lumber_shipment_line`: 11 filas · Suma = 53.6030 m³
+
+### 10.3 Gobernanza de Edición de la Tabla S2S (D6 / G8)
+1. **Edición Segura:** La tabla `lumber.width.s2s.map` es editable por usuarios de los grupos `group_lumber_config_manager` y `group_madenat_auditoria`.
+2. **Trazabilidad en Chatter:** Toda modificación de `rough_mm`, `s2s_decimal`, `s2s_label` o `active` genera una entrada en el chatter con usuario, fecha y valores anteriores.
+3. **Validación de Coherencia:** Constraint `_check_decimal_label_coherence` impide discrepancias entre el valor decimal y la fracción (tolerancia máxima de $\pm 1/16" = 0.0625$).
+4. **Preservación Histórica:** Modificar un registro en esta tabla **únicamente afecta a cálculos nuevos**. Los valores almacenados históricamente en `vol_shipment_m3` y `vol_purchase_m3` permanecen inalterados.
+

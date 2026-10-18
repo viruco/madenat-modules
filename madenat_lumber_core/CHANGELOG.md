@@ -1,3 +1,24 @@
+## [18.0.6.16.0] - 2026-10-18
+
+### Added
+- **Bloque 4G (AD-120) — Cierre Técnico Final en Desarrollo (Sin Push Ni Despliegue)**:
+  - **G1 (Retiro de copias hardcode)**:
+    - Retirada la constante a nivel de clase `_BLANKS_NOMINAL_MAP` y `_NOMINAL_TOLERANCE` de `reception_parser.py`. Delega canónicamente en `madenat.ingestion.config.get_blank_nominal_map()`.
+  - **G3 (Script pre_deploy_health_check.py reescrito con 3 niveles)**:
+    - Niveles OK, ADVERTENCIA (código 0, detecta `out_of_table_behavior = 'direct'` y patios `is_patio = False` según D1/D2) y CRÍTICO (código 1).
+    - Verificación de versiones de todos los módulos MADENAT (incluidos intake y shipping_core) y tabla de 15 anchos de Cristhian. Modo solo lectura con rollback forzado.
+  - **G5 (UserError de tabla S2S vacía acotado a perfiles imperiales)**:
+    - El `UserError` por tabla vacía en `madenat_ingestion_config.py` queda acotado exclusivamente a las rutas dependientes de la tabla S2S (perfiles imperiales con ancho < 170 mm).
+    - Perfiles métricos y anchos directos (>= 170 mm) no se interrumpen aunque la tabla esté vacía.
+  - **G7 (Script de simulación de embarques solo lectura remoto)**:
+    - Incorporado `scripts/simulacion_embarques_solo_lectura_remoto.py` (estrictamente de solo lectura, sin operaciones de escritura ni commit).
+  - **G8 (Tabla S2S: edición por interfaz con trazabilidad y coherencia)**:
+    - Modelo `lumber.width.s2s.map` con tracking de campos (`mail.thread`) para auditoría de cambios (usuario, fecha, valores).
+    - Constraint de coherencia `_check_decimal_label_coherence` entre `s2s_decimal` y `s2s_label` (tolerancia máxima ±1/16" = 0.0625).
+    - Permisos de edición otorgados a `group_lumber_config_manager` y `group_madenat_auditoria`; lectura para usuarios base.
+    - Preservación estricta de registros históricos (R5/D6): editar un ancho en la tabla solo afecta cálculos nuevos.
+    - Suite de pruebas unitarias dedicada `test_lumber_width_s2s_map_g8.py` (4/4 pasando).
+
 ## [18.0.6.15.0] - 2026-10-18
 
 ### Added
