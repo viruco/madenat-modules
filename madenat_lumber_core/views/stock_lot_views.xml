@@ -201,6 +201,18 @@
                     </field>
                 </group>
               </page>
+
+              <page string="🌡️ Secado en Horno" name="drying">
+                <group string="Parámetros de Secado en Horno">
+                  <group>
+                    <field name="drying_date"/>
+                  </group>
+                  <group>
+                    <field name="drying_temp_c"/>
+                    <field name="drying_duration_hours"/>
+                  </group>
+                </group>
+              </page>
             </notebook>
           </sheet>
           <chatter/>

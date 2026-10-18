@@ -177,6 +177,30 @@ class MadenatIngestionConfig(models.AbstractModel):
         from .utils_uom import MM_PER_INCH
         return float(rough_mm) / float(MM_PER_INCH)
 
+    @api.model
+    def get_drying_temp_range(self):
+        """Retorna tupla (min_c, max_c) para temperatura de secado en horno (default 50.0, 90.0)."""
+        param_obj = self.env['ir.config_parameter'].sudo()
+        try:
+            min_c = float(param_obj.get_param('madenat.drying_temp_min_c', '50.0'))
+            max_c = float(param_obj.get_param('madenat.drying_temp_max_c', '90.0'))
+            return (min_c, max_c)
+        except Exception as e:
+            _logger.warning("IngestionConfig: error al leer rangos de temp de secado: %s", e)
+            return (50.0, 90.0)
+
+    @api.model
+    def get_drying_duration_range(self):
+        """Retorna tupla (min_h, max_h) para duración de secado en horno (default 50.0, 80.0)."""
+        param_obj = self.env['ir.config_parameter'].sudo()
+        try:
+            min_h = float(param_obj.get_param('madenat.drying_duration_min_hours', '50.0'))
+            max_h = float(param_obj.get_param('madenat.drying_duration_max_hours', '80.0'))
+            return (min_h, max_h)
+        except Exception as e:
+            _logger.warning("IngestionConfig: error al leer rangos de duración de secado: %s", e)
+            return (50.0, 80.0)
+
     # =====================================================================
     # 4. RANGOS ESPESOR->VISUAL
     # =====================================================================

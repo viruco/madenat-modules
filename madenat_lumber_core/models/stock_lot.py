@@ -67,8 +67,39 @@ class StockLotExtended(models.Model):
     thickness_visual = fields.Char("Espesor Comercial", help="Ej: 6/4")
     width_visual = fields.Char("Ancho Comercial", help="Ej: 5 5/8, RW")
     
-    # Campo para volumen físico REAL (el de embarque) si no existe 'vol_shipment_m3'
-    # En su archivo veo 'volumeshipmentm3', usaremos ese si ya existe.
+    # === SECADO EN HORNO (Bloque 4D-1 / AD-116 / F6) ===
+    drying_temp_c = fields.Float(
+        string="Temp. Secado (°C)",
+        copy=False,
+        digits=(6, 1),
+        help="Temperatura de secado en horno (rango parametrizable en madenat.drying_temp_min_c/max_c).",
+    )
+    drying_duration_hours = fields.Float(
+        string="Duración Secado (h)",
+        copy=False,
+        digits=(6, 1),
+        help="Duración del proceso de secado en horno en horas (rango parametrizable en madenat.drying_duration_min_hours/max_hours).",
+    )
+    drying_date = fields.Date(
+        string="Fecha Secado",
+        copy=False,
+        help="Fecha en que se completó el ciclo de secado en horno.",
+    )
+
+    @api.constrains('drying_temp_c', 'drying_duration_hours')
+    def _check_drying_parameters(self):
+        config = self.env['madenat.ingestion.config']
+        temp_min, temp_max = config.get_drying_temp_range()
+        dur_min, dur_max = config.get_drying_duration_range()
+        for lot in self:
+            if lot.drying_temp_c and (lot.drying_temp_c < temp_min or lot.drying_temp_c > temp_max):
+                raise ValidationError(_(
+                    "Temperatura de secado fuera de rango permitido: %.1f °C (rango: %.1f - %.1f °C)."
+                ) % (lot.drying_temp_c, temp_min, temp_max))
+            if lot.drying_duration_hours and (lot.drying_duration_hours < dur_min or lot.drying_duration_hours > dur_max):
+                raise ValidationError(_(
+                    "Duración de secado fuera de rango permitido: %.1f h (rango: %.1f - %.1f h)."
+                ) % (lot.drying_duration_hours, dur_min, dur_max))
 
 
     # ============================================================================
