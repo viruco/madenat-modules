@@ -72,4 +72,6 @@ from . import test_guia_packing_equivalence_wpa
 from . import test_patios_f7
 # 🌡️ FASE 12 (Bloque 4D-1 / F6 / AD-116): Secado en Horno en stock.lot.
 from . import test_drying_lot_f6
+# 🪵 FASE 12 (Bloque 4G/4H / G8 / AD-121): Tabla S2S — coherencia exacta decimal/etiqueta y trazabilidad chatter.
+from . import test_lumber_width_s2s_map_g8
 
