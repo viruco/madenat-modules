@@ -1,7 +1,7 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.40.0
-**Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test`: **P0** OwlError **NO REPRODUCIDO** (diagnóstico estático: 0 campos `many2one` sin `relation`, 0 JS propio que altere `Many2OneField`, 0 incidencias en logs; paso manual de captura); **P1** volumen — proxies `vol_compra_m3`/`vol_embarque_m3` en la Consola (Ferramenta 26270: guía/compra 57,840 y embarque 48,009) + rótulos inequívocos en la Guía; **P3** ingresos reales Fátima `41994` (`lumber.reception` 7950 `verified`, 14 líneas, Σ 50,497) y Byc `95083` (`madenat.guia.processing` 33250 `verified`, 8 líneas) **sin stock**; **P4-JCE** normalización de `5/4x5.3/8x16` (documento real: 12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y **P4-Arauco** (packing PDF → ruta de Volúmenes); pruebas dirigidas **34/34** y intake **380** (2 fallas de UI consolidada corregidas); respaldo `CIERRE_PENDIENTES_20261010/db/madenat_test_pre_20261010.dump`. Sin commit/push ni despliegue remoto. | 2026-10-08 (5) — §17.15 **REVALIDACIÓN (2.ª pasada) con la biblioteca externa de muestras** `muestras_documentos_ingreso` (ruta real `…/odoo-18-ce/muestras_documentos_ingreso`, **fuera** de `custom_addons`; 63 archivos, 52 únicos por SHA-256, 4 subdirectorios): **antecedente incorporado** de que Mauricio confirma que **se probaron todos los ingresos**; **reconstrucción de las pruebas** desde los respaldos de base con `pg_restore` (solo lectura sobre el archivo): base **local** `madenat_test` (dump 2026-10-08 09:29) con **11 cabeceras de guía** — `26270` (Ferramenta, `validated`, adjuntos `26270.pdf`+`26270.xlsx`, **17 lotes** con los M3 del packing, 1 picking), **19846/19827/19826** (Ferramenta, 19/17/17 lotes), **4495589** (Arauco, `granel`/`validated`, lote `GRANEL 4495589`, pickings con purga `[PURGADO-TEST]` y reversa), **95806** (JCE, `granel`/`verified`) — y **7** `lumber.reception` (`39519`, `41471`, `41964`, `97183`, `100006`, `15183`, `900001`); **fixture real byte-idéntico** `HLZF75_4495589.pdf` + **fixtures derivados** de Byc/Fátima/JCE; **conciliación por línea** de Ferramenta (⇒ el **48,009** es el volumen de **embarque** con espesor nominal y ancho +1/8", **no** un error; guía/packing/físico = **57,840**); **matriz R01–R16 revalidada** y **correcciones C1–C10**; TEST remoto con **1** guía (26270, replicada con sus 17 lotes). **Sin cambios de código, datos ni servicios; sin commit/push; sin correos.** | 2026-10-08 (4) — §17.14 AUDITORÍA DE LAS SOLICITUDES DE CRISTHIAN (2026-09-02 / 2026-09-07) + CONSOLIDACIÓN DE ENTORNOS: se contrastan las 16 solicitudes (R01–R16) contra documentación, código vigente y evidencias; **matriz consolidada** en §17.14.2; hallazgos y contradicciones en §17.14.3. Verificado en esta intervención: **desarrollo local (código)** rama `feat/guia-correccion-documental-preservada-20261002` / HEAD `e302c48` con **62 modificados + 14 sin seguimiento** (sin commit/push); **servicio local 8069 NO operativo desde esta distro** (Docker Desktop sin integración en la distro: `docker` no disponible y `127.0.0.1:8069` sin respuesta ⇒ sin consultas ni pruebas locales); **TEST remoto `144.22.50.236`** (`/opt/odoo18-test`, servicio `odoo18-test` activo, base `madenat_test`) inspeccionado **SOLO LECTURA** por SSH con `sudo -u postgres psql`. Comparación de código local↔TEST remoto: **314 archivos** `.py/.xml/.csv` de `madenat_lumber_core/intake/logistics/ingestion_engine` con **0 discrepancias de hash** y **39 archivos presentes solo en el remoto** (legado: `.bak/`, `views.backup/`, `views/views.backup/`, `backups_20260819_*`, `lumber_reception_test.py`, `scripts/migrate_reception_relations.py`, `views/lumber_reception_views_OLD.xml`, `security/madenat_intake_security.xml`, `models/lumber_container_rollover_wizard.py`). `custom_addons` **NO** es repositorio git en el remoto (el repo git es `/opt/odoo18-test`, ilegible por `dubious ownership` en git 2.25.1). Ninguna corrección aplicada: **no se modificó código, datos ni servicios**. | 2026-10-08 (3) — §17.13 A/B **APLICADO EN EL DESARROLLO EXISTENTE** (`madenat_test` / `http://localhost:8069`, `odoo18_app`): respaldo verificado (`BACKUP_AB_APPLY_20261008/`); `AB_completo.diff` aplicado **una sola vez** (15 archivos byte a byte = workcopy); actualización controlada `-u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics` con el servicio detenido (0 ERROR/0 CRITICAL; columna `service_return_confirmation` presente); **reorganización de la UI de Ingreso de Madera** (resumen en 2 columnas, «Aplicar cambios» debajo, línea de retorno a todo el ancho, Evidencia documental en 3 columnas con encabezado único, packing list a todo el ancho); dirigidas del gate sobre `madenat_test` **88/88 en verde** (incl. Cristhian uid 8, `su=False`); **retirado el aislamiento temporal** (`srvretab_web` :8070, volumen `srvretab_web_data`, bases `srvretab_*_20261007`, `/tmp/gate`, `/tmp/ab_dryrun`, `/tmp/iso_*`); **V3 (navegador) SIGUE PENDIENTE**. | 2026-10-08 (2) — §17.12bis entorno aislado RECREADO con autorización expresa (vía «montar el workcopy `:ro`», **sin aplicar diffs**): `srvretab_web` en `127.0.0.1:8070`, selector limitado a `srvretab_gate_20261007`, filestore del aislamiento repoblado desde el volumen del stack (`:ro`; assets 500→200); ninguna base ni servicio activo modificados; **V3 sigue pendiente** de evidencia manual. | 2026-10-08 (1) — §17.12 retoma de SOLO LECTURA (2026-10-08): revalidación conforme (rama/HEAD/estado Git sin cambios; SHA-256 de A/B/AB = checkpoint; workcopy = árbol activo + los 15 archivos de `AB_completo.diff`; `patch --dry-run` limpio, sin aplicar; A/B ausente del código activo y de `madenat_test`); expediente y gate conservados; **entorno aislado NO conservado** (reinicio del host: contenedor `srvretab_web` inexistente, puerto 8070 cerrado, `/tmp/gate` vacío; base `srvretab_gate_20261007` intacta) ⇒ **V3 sigue PENDIENTE**; recrear el aislamiento queda pendiente de autorización. | 2026-10-07 (2) — §17.11 checkpoint de pausa (reanuda 2026-10-08): A/B solo en aislamiento; gate sobre copia del activo con cambios locales 45/45; dirigidas 88/88 (Cristhian uid 8, su=False, grupos intactos); V3 pendiente; A/B no aplicados; SHA-256 vigentes; corrección del plan de reversión. | 2026-10-07 — §17: auditoría de retoma de la «confirmación de retorno de servicio» al enviar a stock (NO aplicada en el código activo; su especificación vive solo como antecedente técnico en `IMPL_SERVICE_RETURN_20261006/`). §16: búsqueda, filtros y agrupaciones de la Consola de Intake, aplicada en `madenat_test` (AD-101). Histórico 2026-09-28 — Fase 2 (AD-80): UX de volumen oficial, bloque SV visible y ciclo de vida de guías (§15) -->
+**Versión documental:** 12.41.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
 <!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.10 relación de conciliación envío–retorno (Bloque A/B/C): modelo `madenat.processor.return.link`, estados draft/linked/reversed, permisos por rol, append-only, auditoría aditiva, asistente de imputación reutilizado, pestañas y menú. Cierra la brecha (a) de CANON/19 §19.10. Bloque D (cuantitativo) NO implementado. Versión 02 12.17.0 → 12.18.0; 19 1.8.0 → 1.9.0. Sin commit/push. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.11 ajuste de integridad del vínculo envío–retorno (reversa vs. procedencia, reimputación, compañía+regla de registro, elegibilidad dura, volúmenes N:M referenciales). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Regresión: 275 pruebas, 4 fallas (3 preexistentes + 1 ambiental por evidencia V3 7973), 0 errores. Versión 02 12.18.0 → 12.19.0. Sin commit/push. -->
@@ -2136,4 +2136,107 @@ en 02). Sin commit/push/despliegue. -->
 se modificó ninguna línea existente; **sólo** se insertaron cuerpos en su posición numérica (§17.16.19..29
 entre §17.16.18 y §17.16.30). **26/26 referencias cruzadas resueltas**; versiones **monótonas**; marcadores
 balanceados. Versión 02 12.39.0 → **12.40.0**; **índice 12.29.0 → 12.30.0**. Sin commit/push/despliegue. -->
+
+---
+
+## 18. Procedimiento Operacional de Despliegue a TEST Remoto (G9 AD-120 — Borrador, No Ejecutado)
+
+> **ESTADO FORMAL: BORRADOR, NO EJECUTADO.**
+> Este procedimiento define los pasos exactos para una futura entrega y despliegue hacia el servidor TEST remoto (`144.22.50.236` / `/opt/odoo18-test`).
+> En cumplimiento estricto de **D4 / R6**, este procedimiento **NO ha sido ejecutado** en esta intervención y permanece como diseño canónico aprobado para cuando se autorice formalmente la ventana de despliegue.
+
+### 18.1 Método de Entrega y Transferencia (Sin Git Pull)
+- **Constatación de Entorno (§17.14):** En el servidor TEST remoto (`144.22.50.236`), la carpeta `/opt/odoo18-test/custom_addons` **no es un repositorio Git clonado** conectado a la rama de desarrollo `feat/guia-correccion-documental-preservada-20261002`, y el repositorio `/opt/odoo18-test` presenta restricciones de propiedad (`dubious ownership` en git 2.25.1).
+- **Método Canónico de Entrega:** Se prohíbe asumir `git pull`. La entrega de código debe realizarse exclusivamente mediante:
+  1. Empaquetado de artefactos o sincronización dirigida vía `rsync` sobre SSH (`rsync -avz --exclude '__pycache__' --exclude '.git' ./custom_addons/madenat_lumber_core/ usuario@144.22.50.236:/opt/odoo18-test/custom_addons/madenat_lumber_core/`).
+  2. O aplicación de un paquete de cambios `.tar.gz` o `git archive` generado localmente desde el commit de cierre 4G.
+  3. No se tocan carpetas legadas (`.bak/`, `views.backup/`) existentes en el remoto.
+
+### 18.2 Módulos a Actualizar (Determinación Quirúrgica, Nunca `-u all`)
+- **Regla Estricta:** Queda terminantemente prohibido ejecutar `-u all` (violación de R6).
+- **Comparación de Manifiestos:**
+  - `madenat_lumber_core`: Versión local 18.0.6.16.0 frente a 18.0.6.15.0 instalada. **REFIERE ACTUALIZACIÓN OBLIGATORIA** (`-u madenat_lumber_core`).
+  - `madenat_lumber_intake`: 18.0.0.18.0 (idéntica en manifiesto y BD remota). No requiere `-u` a menos que se hayan modificado vistas.
+  - `madenat_lumber_billing`: En caso de que la salud previa (G3) reporte discrepancia de versión (instalada `18.0.1.0.0` vs manifiesto `1.0.0`), se puede incluir `-u madenat_lumber_billing`.
+  - Comando canónico previsto:
+    ```bash
+    odoo -c /etc/odoo/odoo.conf -d madenat_test --no-http --stop-after-init -u madenat_lumber_core
+    ```
+
+### 18.3 Respaldo Previo Obligatorio (Base de Datos, Filestore y Código)
+Antes de tocar cualquier archivo en el servidor remoto:
+1. **Base de Datos PostgreSQL:**
+   ```bash
+   sudo -u postgres pg_dump -Fc madenat_test > /opt/backups/madenat_test_pre_4g_$(date +%Y%m%d_%H%M%S).dump
+   ```
+2. **Filestore de Odoo:**
+   ```bash
+   sudo tar -czf /opt/backups/filestore_madenat_test_$(date +%Y%m%d_%H%M%S).tar.gz /var/lib/odoo/.local/share/Odoo/filestore/madenat_test
+   ```
+3. **Snapshot de Código Remoto:**
+   ```bash
+   sudo tar -czf /opt/backups/custom_addons_pre_4g_$(date +%Y%m%d_%H%M%S).tar.gz /opt/odoo18-test/custom_addons
+   ```
+
+### 18.4 Script de Salud Pre-Deploy (G3) — Ejecución Previa y Posterior
+1. **Ejecución Previa (Lectura Inocua):**
+   ```bash
+   odoo shell -c /etc/odoo/odoo.conf -d madenat_test --no-http < /opt/odoo18-test/custom_addons/madenat_lumber_core/scripts/pre_deploy_health_check.py
+   ```
+   - Debe arrojar **0 CRÍTICOS** (código de salida 0).
+   - Registra advertencias conocidas (D1: `out_of_table_behavior = 'direct'`, D2: `is_patio = False`).
+2. **Ejecución Posterior:** Tras el `-u madenat_lumber_core`, se reejecuta el script G3. Si el script arroja código de salida 1 (CRÍTICO), se detiene el proceso y se inicia reversa.
+
+### 18.5 Medición Dual de Integridad MD5 (Consulta Fijada G4)
+En el propio servidor remoto, ejecutar la consulta canónica fijada antes y después del despliegue:
+```sql
+SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(name::text,''), ',' ORDER BY id)) AS hash
+FROM stock_lot
+UNION ALL
+SELECT 'madenat_guia_processing_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(vol_shipment_m3::text,''), ',' ORDER BY id))
+FROM madenat_guia_processing_line
+UNION ALL
+SELECT 'lumber_shipment_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
+FROM lumber_shipment_line;
+```
+- **Criterio de Invarianza:** Los hashes de `madenat_guia_processing_line` (`b43a26b6fd072ff96ed075ca1e2f585e`) y `lumber_shipment_line` (`b048f9428859b4c960b83b9ddf1cc701`) deben permanecer **estrictamente idénticos**. Cualquier cambio en estas tablas aborta el despliegue.
+
+### 18.6 Efecto de `noupdate="1"` sobre Datos y Parámetros
+- Los 15 anchos de la tabla S2S y los parámetros del sistema declarados en `data/lumber_width_s2s_data.xml` y `data/ir_config_parameter_data.xml` están marcados con `noupdate="1"`.
+- **Efecto operativo:** El comando `-u madenat_lumber_core` **no sobreescribe** valores ya existentes en la BD remota (respeta D1: `out_of_table_behavior = 'direct'` y ediciones manuales de Cristhian). Solo creará registros si sus XML IDs no existen aún en la base de datos.
+
+### 18.7 Verificación Posterior de Solo Lectura (Vectores Canónicos)
+Una vez actualizado Odoo, se verifican en `odoo shell`:
+1. **15 Anchos Canónicos S2S:** Mapeo de 115 mm resuelve a 4.375" (etiqueta '4 3/8') + sobreancho 0.125" = 4.500" (volumen 1.742 m³ en 100 pzas).
+2. **Vectores de Blanks (registro real `f5085` ID 1):**
+   - 100 mm: 16 ft × 250 = 4.425 m³; × 270 = 4.778 m³.
+   - 140 mm: 16 ft × 250 = 5.899 m³; × 270 = 6.371 m³.
+3. **Preservación de Volumen Documental:** Lotes con `vol_documental_m3 > 0` conservan su volumen sin recálculo.
+
+### 18.8 Criterios de Parada y Plan de Reversa (Rollback)
+- **Criterios de Parada Inmediata:**
+  - Falla de sintaxis o error de carga durante `-u madenat_lumber_core`.
+  - Discrepancia en los hashes MD5 históricos de `madenat_guia_processing_line` o `lumber_shipment_line`.
+  - Script G3 arroja código de salida 1 (CRÍTICO).
+- **Procedimiento de Reversa:**
+  1. Detener servicio Odoo (`sudo systemctl stop odoo18-test`).
+  2. Restaurar dump de base de datos (`dropdb madenat_test && createdb madenat_test && pg_restore -d madenat_test /opt/backups/madenat_test_pre_4g_*.dump`).
+  3. Restaurar snapshot de código anterior en `/opt/odoo18-test/custom_addons`.
+  4. Reiniciar servicio (`sudo systemctl start odoo18-test`).
+
+### 18.9 Lista de Validación Funcional para Cristhian Elgueta (UAT)
+1. **Configuración > Anchos S2S (`lumber.width.s2s.map`):**
+   - Confirmar visibilidad de los 15 anchos activos (75 a 155 mm).
+   - Verificar que 115 mm muestre 4.375" decimal y fracción "4 3/8".
+   - Probar edición de una etiqueta/decimal y comprobar que el chatter registra el cambio con usuario y fecha.
+   - Comprobar que si se intenta guardar una etiqueta incoherente (ej. '4 3/8' con 4.125), el sistema rechaza el guardado con mensaje claro de coherencia.
+2. **Recepción de Madera (Blanks):**
+   - Ingresar lote de Blanks con perfil `f5085` y verificar cálculo de volumen con espesor 1.5" y ancho S2S + 1/8".
+   - Confirmar que lotes con volumen documental declarado conservan su valor.
+3. **Patios y Ubicaciones:**
+   - Confirmar que los filtros de patio operan normalmente (D2 mantiene pendientes documentados).
+
 
