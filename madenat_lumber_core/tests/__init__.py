@@ -74,4 +74,7 @@ from . import test_patios_f7
 from . import test_drying_lot_f6
 # 🪵 FASE 12 (Bloque 4G/4H / G8 / AD-121): Tabla S2S — coherencia exacta decimal/etiqueta y trazabilidad chatter.
 from . import test_lumber_width_s2s_map_g8
-
+# 🛡️ FASE 12 (Bloque 4I / I3 / AD-121): Comprobación pre-deploy y normalización de versiones.
+from . import test_pre_deploy_health_check
+# 🎯 FASE 12 (Bloque 4J / J2 / AD-122): Prevención de doble redondeo de volúmenes y MBF.
+from . import test_double_rounding_j2

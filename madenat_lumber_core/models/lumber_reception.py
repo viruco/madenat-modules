@@ -16,7 +16,6 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from .utils_uom import (
     INCH_SQ_METERS_TO_M3,
-    S2S_WIDTH_LOOKUP,
     MM_PER_INCH, FT_TO_M,
     M3_DIVISOR, MBF_DIVISOR,
     S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
@@ -825,8 +824,7 @@ class LumberReceptionLine(models.Model):
                 t = line.thickness_nominal or line.thickness
                 w = line.width_nominal or line.width
                 l = line.length_nominal or line.length
-                line.vol_purchase_m3 = round((t * w * l * line.pieces) / float(M3_DIVISOR), 3)
-                # Usar r3() para consistencia con Regla de Oro
+                # Usar r3() para consistencia con Regla de Oro (ROUND_HALF_UP)
                 line.vol_purchase_m3 = r3((t * w * l * line.pieces) / float(M3_DIVISOR))
             
             else:

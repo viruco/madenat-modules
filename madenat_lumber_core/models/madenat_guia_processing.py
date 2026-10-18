@@ -22,7 +22,6 @@ from collections import defaultdict
 from .utils_uom import (
     INCH_SQ_METERS_TO_M3,
     MBF_TO_M3,
-    S2S_WIDTH_LOOKUP,
     MM_PER_INCH, M_TO_FT, S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
     M3_DIVISOR, MBF_DIVISOR,
     calculate_volume_metric_m3,
@@ -1282,7 +1281,7 @@ class MadenatGuiaProcessing(models.Model):
             if state in ('consistent', 'ok_rounded') and has_packing:
                 if hasattr(rec, 'volume_operational_m3') and hasattr(rec, 'volume_operational_source'):
                     if getattr(rec, 'volume_operational_source', '') != 'manual':
-                        rec.volume_operational_m3 = round(packing, 3)
+                        rec.volume_operational_m3 = r3(packing)
                         rec.volume_operational_source = 'excel'
 
 
@@ -4085,7 +4084,7 @@ class MadenatGuiaProcessing(models.Model):
 
                 # 4. Inyección Atómica de Resultados
                 l.update({
-                    'vol_shipment_m3': round(vol_m3, 4),
+                    'vol_shipment_m3': r3(vol_m3),
                     'espesor_mm': e_mm,
                     'ancho_mm': a_mm,
                     'largo_m': l_m,

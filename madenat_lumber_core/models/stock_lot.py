@@ -1240,7 +1240,7 @@ class StockLotExtended(models.Model):
             board_feet = (thickness_inch * width_inch * length_feet * pieces) / 12
             mbf = board_feet / 1000
             
-            return round(mbf, 4)
+            return float(mbf)
             
         except Exception as e:
             _logger.warning("Error calculando MBF desde fracciones: %s", str(e))
@@ -1259,7 +1259,7 @@ class StockLotExtended(models.Model):
             board_feet = (thickness_inch * width_inch * length_feet * pieces) / 12
             mbf = board_feet / 1000
             
-            return round(mbf, 4)
+            return float(mbf)
             
         except Exception as e:
             _logger.warning("Error calculando MBF desde métricas: %s", str(e))
