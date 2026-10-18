@@ -117,12 +117,12 @@ class MadenatIngestionConfig(models.AbstractModel):
         except Exception as e:
             _logger.warning("IngestionConfig: fallo Fase1 width_s2s_map: %s", e)
 
-        # Fuente 3: Hardcode legacy (14 anchos canónicos de planilla de cubicación)
+        # Fuente 3: Hardcode legacy (15 anchos canónicos con 115 mm activo)
         _logger.warning("IngestionConfig: usando hardcode legacy width_s2s_map")
         return {75:(2.625,"2 5/8"), 85:(2.875,"2 7/8"), 90:(3.125,"3 1/8"), 95:(3.375,"3 3/8"),
-                100:(3.625,"3 5/8"), 105:(3.875,"3 7/8"), 110:(3.875,"3 7/8"), 120:(4.375,"4 3/8"),
-                125:(4.625,"4 5/8"), 130:(4.875,"4 7/8"), 140:(4.875,"4 7/8"), 145:(5.375,"5 3/8"),
-                150:(5.625,"5 5/8"), 155:(5.875,"5 7/8")}
+                100:(3.625,"3 5/8"), 105:(3.875,"3 7/8"), 110:(3.875,"3 7/8"), 115:(4.375,"4 3/8"),
+                120:(4.375,"4 3/8"), 125:(4.625,"4 5/8"), 130:(4.875,"4 7/8"), 140:(4.875,"4 7/8"),
+                145:(5.375,"5 3/8"), 150:(5.625,"5 5/8"), 155:(5.875,"5 7/8")}
 
     @api.model
     def get_s2s_overwidth_inches(self):
