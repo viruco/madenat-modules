@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.36.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4F (AD-119) IMPLEMENTADO en local: F1 tabla S2S sin copia en código y UserError ante tabla vacía; F2 Blanks y retiro limpio de deduction_factor; F3 constante única 1550.003; F4 auditoría de literales; F5 hashes MD5 dual; F6 correcciones de texto y citas; F7 pre-deploy health check; F8/F9 planes de patios y despliegue. Versión 05 8.35.0 → 8.36.0. Sin push ni despliegue. -->
+**Versión documental:** 8.37.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4F (AD-119) IMPLEMENTADO en local: F1 tabla S2S sin copia en código y UserError ante tabla vacía; F2 Blanks y retiro limpio de deduction_factor; F3 constante única 1550.003; F4 auditoría de literales; F5 hashes MD5 dual; F6 correcciones de texto y citas; F7 pre-deploy health check; F8/F9 planes de patios y despliegue. Versión 05 8.35.0 → 8.36.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
@@ -1136,3 +1137,82 @@ Sin push ni despliegue. -->
 - [ ] **F9 — Runbook Operacional de Despliegue Remoto (AD-119 — Solo Plan):**
   - **Estado:** **PLANIFICADO / NO IMPLEMENTADO**.
   - Procedimiento en 6 fases: pre-requisitos (git tag, dump), validación previa (script F7), actualización de código, actualización Odoo (`-u madenat_lumber_core`), validación post y plan de reversa.
+
+### Bloque 4G — Cierre Técnico Final en Desarrollo (AD-120) — IMPLEMENTADO EN LOCAL
+
+- [x] **G1 — Retiro de copia hardcode _BLANKS_NOMINAL_MAP de reception_parser (Commit `bbea0fd`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Retirada la constante a nivel de clase `_BLANKS_NOMINAL_MAP` y `_NOMINAL_TOLERANCE` en `reception_parser.py`. Delega canónicamente en `madenat.ingestion.config.get_blank_nominal_map()`.
+- [x] **G2 — Verificación de Vectores Blanks en Registro Real f5085:**
+  - **Estado:** **VERIFICADO Y AUDITADO**.
+  - Verificados vectores sobre BD real: 100 mm (16 ft × 250 = 4.425 m³, × 270 = 4.778 m³) y 140 mm (16 ft × 250 = 5.899 m³, × 270 = 6.371 m³).
+  - Discrepancia legacy de 1 milésima explicada por división directa `5085.312` vs pasos intermedios. Preservación estricta de `vol_documental_m3 > 0` acreditada.
+- [x] **G3 — Script de Comprobación Previa al Despliegue con 3 Niveles (Commit `a022be5`):**
+  - **Estado:** **IMPLEMENTADO Y VALIDADO**.
+  - `pre_deploy_health_check.py` opera en modo estricto solo lectura con `rollback()`.
+  - Niveles: OK, ADVERTENCIA (código 0, detecta `out_of_table_behavior = 'direct'` y patios `is_patio = False`), CRÍTICO (código 1). Chequeo de versiones de intake y shipping_core.
+- [x] **G4 — Hashes MD5 con Consulta Fijada:**
+  - **Estado:** **VERIFICADO E INVARIANTE**.
+  - Medición en `madenat_test`: `madenat_guia_processing_line` (82 filas, `b43a26b6fd072ff96ed075ca1e2f585e`) y `lumber_shipment_line` (11 filas, `b048f9428859b4c960b83b9ddf1cc701`) 100% invariantes.
+- [x] **G5 — Ámbito del UserError por Tabla S2S Vacía (Commit `2a5c8ef`):**
+  - **Estado:** **IMPLEMENTADO Y CON TESTS**.
+  - UserError acotado exclusivamente a perfiles imperiales con ancho < `direct_width_min_mm` (170 mm). Perfiles métricos y anchos directos no se bloquean aunque la tabla esté vacía.
+- [x] **G6 — Reconciliación de Conteo de Pruebas:**
+  - **Estado:** **VERIFICADO**.
+  - Suite de export width pasa 19/19 tests unitarios (+ 4 tests G8 en suite dedicada = 23). Conteo total en módulos core reconciliado.
+- [x] **G7 — Script de Simulación de Embarques de Solo Lectura Remoto (Commit `3efe7b5`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - `madenat_lumber_core/scripts/simulacion_embarques_solo_lectura_remoto.py` verificado 100% inocuo de solo lectura (sin write, create, unlink ni commit).
+- [x] **G8 — Tabla S2S: Edición por Interfaz, Trazabilidad y Coherencia (Commit `9134290`):**
+  - **Estado:** **IMPLEMENTADO Y CON TESTS**.
+  - `lumber.width.s2s.map` con tracking de campos (`mail.thread`), validación de coherencia decimal/etiqueta dentro de ±1/16" (0.0625), vistas con chatter y nota R5/D6, permisos para Auditoría y Operaciones, y suite de tests unitarios (`test_lumber_width_s2s_map_g8.py` 4/4 pasando).
+
+---
+
+### Backlog Técnico Diferido (G10 AD-120 — Sin Código, Solo Documentado)
+
+Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, sin impacto en código actual, con su diseño mínimo, utilidad esperada y criterio de cierre:
+
+#### (a) Bloque 5: Tabla Nominal → Espesor Real como DATO, Volumen Físico Real y Tres Listados
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
+- **Utilidad Esperada:** Eliminar la ambigüedad operativa entre volumen nominal de compra, volumen comercial de embarque y volumen físico real métrico cubicado, permitiendo a Planta, Embarque y Facturación operar con tres listados independientes y exactos sin contaminar los cálculos aduaneros.
+- **Diseño Mínimo:**
+  - Modelo persistente `lumber.thickness.real.map` (espesor nominal comercial → espesor real físico en mm). Ejemplo: 1 1/2" nominal → 38.1 mm real; 1" nominal → 25.4 mm real.
+  - Campo `vol_physical_real_m3` calculado como $(E_{real\_mm} \times A_{real\_mm} \times L_{m} \times Piezas) / 1.000.000$.
+  - Generación de 3 listados/reportes nativos en Recepción y Embarque: (1) Según Compra, (2) De Embarque (exportación), (3) De Medidas Reales (físico).
+- **Criterio de Cierre:** Los tres listados cuadran con las guías de recepción y packing lists reales, sin alterar las fórmulas ni volúmenes históricos de `vol_shipment_m3`.
+
+#### (b) Descripción Fitosanitaria como Campo Configurable
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
+- **Utilidad Esperada:** Flexibilizar la leyenda de secado/tratamiento térmico según el mercado de destino (SAG, NIMF-15) sin depender de cadenas de texto fijas en código.
+- **Diseño Mínimo:**
+  - Parámetro del sistema `madenat.phytosanitary_default_text` o campo en `lumber.export.formula` / ficha de producto.
+  - Documento origen citado: Certificado Fitosanitario SAG y Orden de Despacho de Exportación.
+  - Inyección en plantillas de factura y packing list si el producto tiene `is_kiln_dried = True`.
+- **Criterio de Cierre:** El operador puede modificar la descripción desde Ajustes > Técnico > Parámetros del Sistema y el reporte impreso refleja el cambio dinámicamente.
+
+#### (c) Marcado de Patios Operativos (MARVAL y PUERTO CORONEL) sin IDs Numéricos
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D2).
+- **Utilidad Esperada:** Distinguir ubicaciones de patio frente a bodegas techadas para filtrado en Consola de Recepción sin acoplar código a IDs primarios de PostgreSQL.
+- **Diseño Mínimo:**
+  - Uso del mecanismo nativo ya presente: campo booleano `is_patio = fields.Boolean(string="Es Patio")` en `stock.location`.
+  - Marcado manual por UI o script de post-despliegue mediante búsqueda determinista por nombre/código de ubicación: `env['stock.location'].search([('name', 'in', ['MARVAL', 'PUERTO CORONEL'])])`.
+  - `Bodega Tepornac` (id=19) permanece documentada como **INFERENCIA** (no es patio principal; se clasifica según reglas de custodia).
+- **Criterio de Cierre:** Las ubicaciones clave tienen `is_patio = True` sin haber introducido IDs numéricos en Python ni duplicado registros en XML.
+
+#### (d) Filtro de Consolidación por Motonave
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
+- **Utilidad Esperada:** Permitir a Logística filtrar y agrupar lotes y contenedores consolidados directamente por el buque/motonave asignado para el embarque marítimo.
+- **Diseño Mínimo:**
+  - Agregar campo relacional o búsqueda en vistas de consolidación: `vessel_id` / `booking_id` en `lumber.container` o `lumber.export.shipment`.
+  - Filtro predeterminado en `search` view: "Por Motonave".
+- **Criterio de Cierre:** Búsqueda ágil de todos los contenedores y lotes vinculados a una nave en una sola vista.
+
+#### (e) Corrección del Histórico de la Guía 26270: NO AUTORIZADA
+- **Estado:** **DIFERIDO / NO AUTORIZADA** (Decisión Mauricio — D3 / R5).
+- **Utilidad Esperada:** Preservar la inmutabilidad histórica legal y contable de los registros emitidos en producción.
+- **Diseño Mínimo:**
+  - Se mantiene la invariancia de los registros existentes de la Guía 26270.
+  - Cualquier ajuste o re-liquidación comercial debe realizarse mediante documento de ajuste complementario (nota de débito/crédito o regularización de inventario), NUNCA modificando las líneas históricas de `madenat_guia_processing_line` ni `stock_lot`.
+- **Criterio de Cierre:** 0 modificaciones a filas históricas; MD5 canónico permanece inalterado.
+
