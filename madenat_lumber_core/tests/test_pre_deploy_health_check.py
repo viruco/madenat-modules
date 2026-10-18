@@ -12,6 +12,7 @@ script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scri
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
+from odoo.tests.common import TransactionCase
 from pre_deploy_health_check import (
     normalize_module_version,
     CANONICAL_HASH_B,
@@ -20,7 +21,7 @@ from pre_deploy_health_check import (
 )
 
 
-class TestPreDeployHealthCheck(unittest.TestCase):
+class TestPreDeployHealthCheck(TransactionCase):
     """Pruebas unitarias para el script de comprobación pre-deploy."""
 
     def test_01_version_normalization(self):
