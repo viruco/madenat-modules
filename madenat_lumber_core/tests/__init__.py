@@ -78,3 +78,5 @@ from . import test_lumber_width_s2s_map_g8
 from . import test_pre_deploy_health_check
 # 🎯 FASE 12 (Bloque 4J / J2 / AD-122): Prevención de doble redondeo de volúmenes y MBF.
 from . import test_double_rounding_j2
+# 📐 FASE 12 (Bloque 4L / L3 / AD-124): Resolución visual de anchos basada en datos.
+from . import test_visual_dimension_l3

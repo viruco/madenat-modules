@@ -3820,11 +3820,11 @@ class MadenatGuiaProcessing(models.Model):
         if method == 'pure_metric':
             return f"{int(round(physical_mm, 0))}mm"
 
-        # 3. EXCEPCIÓN DE SEGURIDAD: Consultar si es una medida métrica pura conocida
-        if dim_type == 'width' and float(get_s2s_adjustment(self.env, physical_mm)) == 0.0:
-            return f"{int(round(physical_mm, 0))}mm"
+        # 3. Resolución basada en datos para anchos (L3 / AD-124)
+        if dim_type == 'width':
+            return self._calculate_fractional_approximation(physical_mm, 'width')
 
-        # 4. LÓGICA ORIGINAL (Solo para Exportación Imperial)
+        # 4. LÓGICA ORIGINAL (Solo para Espesor Imperial)
         dimension_table = LUMBER_DIMENSION_MAP.get(dim_type, {})
         if not dimension_table:
             return self._calculate_fractional_approximation(physical_mm, dim_type)
@@ -3834,8 +3834,12 @@ class MadenatGuiaProcessing(models.Model):
             if abs(physical_mm - standard_mm) <= tolerance:
                 return nominal_value
         
-        # Si no hay match en tabla, usamos la aproximación por octavos
+        # Si no hay match en tabla, usamos la aproximación por cuartos
         return self._calculate_fractional_approximation(physical_mm, dim_type)
+
+    def _compute_visual_dimension(self, mm_value, dim_type='width'):
+        """Resolución canónica de dimensión visual (L3 / AD-124)."""
+        return self._calculate_fractional_approximation(mm_value, dim_type=dim_type)
 
     # TD-007: v1 de _validar_y_enriquecer_lineas eliminada (2026-06-04).
     # La v2 (línea ~2405) es la activa — agrega validación e_mm/a_mm/l_m <= 0
@@ -3844,50 +3848,33 @@ class MadenatGuiaProcessing(models.Model):
         """
         🚀 APROXIMACIÓN INTELIGENTE:
         - Detecta si debe retornar MM o Fracción Imperial.
-        - Blindaje contra pérdida de precisión en medidas métricas (ej: 195mm).
+        - L3 (AD-124): Si el ancho rough existe en lumber.width.s2s.map activo,
+          retorna su fracción S2S (s2s_label); si no, retorna el valor directo en mm.
         """
         if not mm_value:
             return ""
 
-        # 1. Recuperar contexto de excepciones y método
-        # (Sin hardcoding, consultamos la 'neurona' central)
-        
         method = getattr(self, 'calculation_method', 'madenat_gold')
-        # Fase 3: Delegar al helper centralizado — fuente única de verdad
-        exceptions = self.env['madenat.ingestion.config'].get_s2s_exclusion_widths()
 
-        # 2. INTELIGENCIA: ¿Es una medida métrica pura o estamos en modo métrico?
-        # Si la medida está en excepciones (180, 200) o el método es métrico, devolvemos MM.
-        if method == 'pure_metric' or round(mm_value, 1) in exceptions:
+        # 1. Modo métrico puro
+        if method == 'pure_metric':
             return f"{int(round(mm_value, 0))}mm"
 
-        # 3. LÓGICA IMPERIAL (Solo si no es métrico)
+        # 2. Resolución de anchos (width) basada en datos vía lumber.width.s2s.map activo (L3 / AD-124)
+        if dim_type == 'width':
+            rough_key = int(round(mm_value))
+            s2s_rec = self.env['lumber.width.s2s.map'].search([
+                ('rough_mm', '=', rough_key),
+                ('active', '=', True)
+            ], limit=1)
+            if s2s_rec and s2s_rec.s2s_label:
+                return s2s_rec.s2s_label
+            return f"{int(round(mm_value, 0))}mm"
+
+        # 3. LÓGICA IMPERIAL para espesor (thickness)
         inches = mm_value / float(MM_PER_INCH)
-        
-        if dim_type == 'thickness':
-            quarters = round(inches * 4)
-            return f"{quarters}/4" if quarters > 0 else ""
-        
-        else:  # width
-            whole = int(inches)
-            fraction_decimal = inches - whole
-            eighths = round(fraction_decimal * 8)
-            
-            fraction_map = {
-                0: "", 1: "1/8", 2: "1/4", 3: "3/8", 4: "1/2", 5: "5/8", 6: "3/4", 7: "7/8", 8: ""
-            }
-            
-            if eighths == 8:
-                whole += 1
-                frac_text = ""
-            else:
-                frac_text = fraction_map.get(eighths, "")
-            
-            if frac_text:
-                return f"{whole} {frac_text}".strip() if whole > 0 else frac_text
-            
-            # Si es un entero exacto en pulgadas (como 4", 6", 8")
-            return f"{whole}\""
+        quarters = round(inches * 4)
+        return f"{quarters}/4" if quarters > 0 else ""
 
    
 

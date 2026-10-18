@@ -319,34 +319,7 @@ class MadenatIngestionConfig(models.AbstractModel):
         return legacy.get(profile, {}).get(rule_type, [])
 
     # =====================================================================
-    # 6. EXCLUSIONES S2S — DEPRECADO (AD-116 / AD-117)
-    # =====================================================================
-    @api.model
-    def get_s2s_exclusion_widths(self):
-        """DEPRECADO por AD-116 y AD-117.
-        
-        Reemplazado por resolve_export_width() y la tabla persistente lumber.width.s2s.map.
-        Se conserva exclusivamente para compatibilidad con llamadas legacy no migradas.
-        """
-        _logger.warning("DEPRECADO AD-116/AD-117: get_s2s_exclusion_widths fue reemplazado por resolve_export_width()")
-        # Fuente 1: ir.config_parameter (mantiene compatibilidad Fase 1)
-        try:
-            param_obj = self.env['ir.config_parameter'].sudo()
-            raw = param_obj.get_param('madenat.s2s_exclusion_widths', '')
-            if raw:
-                exceptions = [float(x.strip()) for x in raw.split(',') if x.strip()]
-                if exceptions:
-                    _logger.debug("IngestionConfig: s2s_exclusion_widths desde Fase1 (%d anchos)", len(exceptions))
-                    return exceptions
-        except Exception as e:
-            _logger.warning("IngestionConfig: fallo al leer s2s_exclusion_widths: %s", e)
-
-        # Fuente 2: Hardcode legacy
-        _logger.warning("IngestionConfig: usando hardcode legacy s2s_exclusion_widths")
-        return [150.0, 160.0, 170.0, 180.0, 200.0]
-
-    # =====================================================================
-    # 7. PRODUCTO MAESTRO POR TIPO DE INGRESO (Fase 1)
+    # 6. PRODUCTO MAESTRO POR TIPO DE INGRESO (Fase 1)
     # =====================================================================
     @api.model
     def get_default_product(self, tipo_ingreso, profile=None):
