@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.37.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4G (AD-120): decisiones Mauricio D1 a D6; retiro de _BLANKS_NOMINAL_MAP (G1); verificación de vectores f5085 y vol_documental (G2); pre_deploy_health_check.py reescrito con niveles OK/ADVERTENCIA/CRITICO y chequeo de intake/shipping_core (G3); consultas fijadas MD5 invariantes y redondeadas (G4); UserError de tabla S2S acotado a perfil imperial (G5); conteo de 1.533 tests (G6); simulacion_embarques_solo_lectura_remoto.py inocuo (G7); tabla S2S editable por interfaz con tracking, coherencia y sin recálculo histórico (G8); runbook borrador en CANON/02 (G9); backlog técnico diferido a-e (G10). Versión 04 12.36.0 → 12.37.0. | Cierre Bloque 4F (AD-119). -->
+**Versión documental:** 12.38.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Real y Verificación Bloque 4H (AD-121): auditoría y fijación de línea base stock_lot (H1); regresión baseline 1.536 tests con 10 fallas conocidas (6 en core, 4 en logistics, 0 nuevas) (H2); coherencia exacta S2S <= 0.001" con TDD (H3); corrección de decisiones D4/D5 y naturaleza Consulta B (H4); evidencias G1/G2/G3 (H5); verificación estricta de regla 3 decimales en volúmenes en BD y código (H6). Versión 04 12.37.0 → 12.38.0. | Cierre Bloque 4G (AD-120). -->
 **Estado:** Canonical / activo
 
 ---
@@ -3733,4 +3733,38 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
    - Regla de negocio documentada en vista y código: editar un ancho solo afecta cálculos nuevos; no recalcula registros históricos almacenados (R5/D6). Suite unitaria `test_lumber_width_s2s_map_g8.py` (4/4 pasando).
 9. **G9 — Runbook de Despliegue Remoto (Commit `6682b58`):** Documentado en `CANON/02` §18 con estado formal "Borrador, no ejecutado", detallando método de entrega sin git pull, actualización quirúrgica sin `-u all`, respaldo triple, ejecución del script G3 y criterios de reversa.
 10. **G10 — Backlog Técnico Diferido (Commit `cc348f3`):** Registradas formalmente en `CANON/05` con estado DIFERIDO y utilidad esperada las iniciativas (a) Bloque 5, (b) fitosanitario configurable, (c) marcado de patios sin IDs numéricos, (d) filtro de motonave, y (e) no autorización de corrección histórica de la guía 26270.
+
+---
+
+### AD-121 — Cierre Real y Verificación de Evidencias Bloque 4H (2026-10-18)
+
+#### 1. Definición Exacta y Estado de las Decisiones D1 a D6 de Mauricio
+- **D1 (Configuración y Datos):** Sin cambios de configuración ni de datos en ninguna base. El parámetro `madenat.out_of_table_behavior` permanece en `'direct'`. CERO modificaciones.
+- **D2 (Marcado de Patios):** Sin marcar `is_patio` en ninguna ubicación (MARVAL, PUERTO CORONEL, Tepornac). Queda como pendiente documentado en backlog (§G10c).
+- **D3 (Guía 26270):** La guía 26270 permanece intacta; su volumen histórico almacenado no se recalcula ni se toca.
+- **D4 (Despliegue y Entrega a Remoto):** No se ejecuta ni se define el método de entrega al TEST remoto; el runbook §18 en `CANON/02` tiene estado de "borrador, no ejecutado".
+- **D5 (Bloque 5 Diferido):** El Bloque 5 (volumen físico real, tabla nominal -> espesor real como dato, 3 listados independientes y fitosanitario configurable) no se implementa; queda diferido a backlog (§G10a, b, d).
+- **D6 (Tabla S2S de Cristhian):** La tabla S2S es la definida por Cristhian Elgueta: solo editable por interfaz, con trazabilidad completa y sin hardcode en código.
+
+#### 2. Resoluciones de los Puntos H1 a H6
+1. **H1 — Diagnóstico y Fijación de Línea Base en `stock_lot`:**
+   - La consulta fijada sobre `stock_lot` previa al cierre del Bloque 4 arrojaba `3871c02145712833e3ad9eea526405c5`. Dicho hash cambió a `6667a4bd9f3aeff24a8588d32da23ed2` el 2026-10-18 03:40:54 UTC debido a la actualización exclusiva del timestamp `write_date` en la fila `id=15892` (`SV00000001175`) por el usuario Administrator (`write_uid=2`).
+   - Se demostró matemáticamente que ningún dato de negocio cambió: Consulta B (`5c2152...`), A.1 (`9e9196...`) y A.2 (`6b1ec7...`) permanecen 100% idénticas e invariantes. Se fija `6667a4bd9f3aeff24a8588d32da23ed2` como la única línea base canónica oficial al 2026-10-18.
+2. **H2 — Regresión Baseline Completa (1.536 pruebas, 0 fallas nuevas):**
+   - Ejecutada sobre `madenat_test` sin cambios de datos: `regresion_baseline_bloque4h_20261018_144934.log`.
+   - Total pruebas: **1.536 pruebas** (543 en `core`, 646 en `logistics`, 509 en `intake`, 102 en `ingestion_engine`, 38 en `costing`, 21 en `purchasing`, 11 en `billing`).
+   - Exactamente las **10 fallas históricas conocidas** (6 en `madenat_lumber_core` y 4 en `madenat_lumber_logistics`; 0 en `intake`/`shipping_core`). **0 fallas nuevas**.
+3. **H3 — Coherencia Exacta entre Decimal y Etiqueta S2S (Commit `53d9aac`):**
+   - Se ajusta la tolerancia del constraint `_check_decimal_label_coherence` de $\pm 1/16"$ ($0.0625$) a $\le 0.001"$ en `lumber.width.s2s.map`.
+   - Validación TDD: decimal 4.125 con etiqueta "4 3/8" falla; 4.4375 con "4 3/8" falla; 4.375 con "4 3/8" pasa.
+4. **H4 — Correcciones Documentales y Naturaleza Real de Consulta B:**
+   - La Consulta B es formalmente el hash MD5 de los volúmenes redondeados a 4 decimales (`md5_vol_shipment`: `stock_lot`: `5c2152...`, `processing_line`: `356e70...`, `shipment_line`: `bb5863...`), dejando las sumas métricas (`531.2920`, `295.8210`, `53.6030` m³) como dato complementario al 2026-10-18.
+   - Sincronización monótona de documentos canónicos existentes: CANON/02 v12.42.0, CANON/04 v12.38.0, CANON/05 v8.38.0, CANON/17 v1.9.0 e INDICE v12.43.0.
+5. **H5 — Evidencias Auditadas G1, G2 y G3:**
+   - G1: Grep en código Python productivo (`madenat_*` sin tests) arrojó 115 coincidencias justificadas de literales (constantes físicas canónicas en `utils_uom.py`, parámetros en `madenat_ingestion_config.py` y validaciones numéricas generales). Cero literales espurios de negocio.
+   - G2: Tabla de vectores de Blanks F4 verificada matemáticamente sobre el registro real `f5085` (100 mm: 4.425 / 4.778 m³; 140 mm: 5.899 / 6.371 m³); preservación de `vol_documental_m3 > 0` demostrada.
+   - G3: Listado y origen de las 6 advertencias no bloqueantes del script de salud pre-deploy.
+6. **H6 — Verificación de la Regla de 3 Decimales en Volúmenes:**
+   - Verificado mediante SELECT en PostgreSQL que el 100% de los registros de volumen en `stock_lot`, `madenat_guia_processing_line`, `lumber_shipment_line` y `lumber_reception_line` tienen exactamente $\le 3$ decimales (`valor == round(valor, 3)`). 0 valores con más de 3 decimales.
+   - Definición de campos auditada: `digits=(16, 3)` en modelos y vistas; redondeo suizo `r3()` con `ROUND_HALF_UP` en todos los cálculos de negocio.
 

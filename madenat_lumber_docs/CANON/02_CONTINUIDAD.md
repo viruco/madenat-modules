@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.41.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
+**Versión documental:** 12.42.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): verificación de D4 (método de entrega sin git pull documentado pero no ejecutado), línea base fijada stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 volúmenes redondeados a 4 decimales: 5c2152...) y sumas complementarias. Versión 02 12.41.0 → 12.42.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
 <!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.10 relación de conciliación envío–retorno (Bloque A/B/C): modelo `madenat.processor.return.link`, estados draft/linked/reversed, permisos por rol, append-only, auditoría aditiva, asistente de imputación reutilizado, pestañas y menú. Cierra la brecha (a) de CANON/19 §19.10. Bloque D (cuantitativo) NO implementado. Versión 02 12.17.0 → 12.18.0; 19 1.8.0 → 1.9.0. Sin commit/push. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.11 ajuste de integridad del vínculo envío–retorno (reversa vs. procedencia, reimputación, compañía+regla de registro, elegibilidad dura, volúmenes N:M referenciales). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Regresión: 275 pruebas, 4 fallas (3 preexistentes + 1 ambiental por evidencia V3 7973), 0 errores. Versión 02 12.18.0 → 12.19.0. Sin commit/push. -->
@@ -2187,7 +2188,7 @@ Antes de tocar cualquier archivo en el servidor remoto:
    - Registra advertencias conocidas (D1: `out_of_table_behavior = 'direct'`, D2: `is_patio = False`).
 2. **Ejecución Posterior:** Tras el `-u madenat_lumber_core`, se reejecuta el script G3. Si el script arroja código de salida 1 (CRÍTICO), se detiene el proceso y se inicia reversa.
 
-### 18.5 Medición Dual de Integridad MD5 (Consulta Fijada G4)
+### 18.5 Medición Dual de Integridad MD5 (Consulta Fijada G4 / H1 / H4 AD-121)
 En el propio servidor remoto, ejecutar la consulta canónica fijada antes y después del despliegue:
 ```sql
 SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
@@ -2202,7 +2203,16 @@ SELECT 'lumber_shipment_line', COUNT(*),
   md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
 FROM lumber_shipment_line;
 ```
-- **Criterio de Invarianza:** Los hashes de `madenat_guia_processing_line` (`b43a26b6fd072ff96ed075ca1e2f585e`) y `lumber_shipment_line` (`b048f9428859b4c960b83b9ddf1cc701`) deben permanecer **estrictamente idénticos**. Cualquier cambio en estas tablas aborta el despliegue.
+- **Línea Base Canónica Fijada:**
+  - `stock_lot` (152 filas): `6667a4bd9f3aeff24a8588d32da23ed2` (Línea base auditada y fijada al 2026-10-18; referencia previa Bloque 4: `3871c02145712833e3ad9eea526405c5`).
+  - `madenat_guia_processing_line` (82 filas): `b43a26b6fd072ff96ed075ca1e2f585e` (100% Invariante).
+  - `lumber_shipment_line` (11 filas): `b048f9428859b4c960b83b9ddf1cc701` (100% Invariante).
+- **Consulta B (Hash MD5 de Volúmenes Redondeados a 4 decimales):**
+  - `stock_lot`: `5c2152193194066e5585b383ffe3673a` (100% Invariante).
+  - `madenat_guia_processing_line`: `356e70066083febd59645c1212e11ece` (100% Invariante).
+  - `lumber_shipment_line`: `bb5863f5850244b06b9235c2c595709b` (100% Invariante).
+  - Suma de volúmenes complementaria al 2026-10-18: 531.2920 m³ (lotes), 295.8210 m³ (guías) y 53.6030 m³ (embarques).
+- **Criterio de Parada:** Cualquier discrepancia en los hashes de `madenat_guia_processing_line` o `lumber_shipment_line`, o en los hashes de volúmenes de la Consulta B aborta inmediatamente el despliegue.
 
 ### 18.6 Efecto de `noupdate="1"` sobre Datos y Parámetros
 - Los 15 anchos de la tabla S2S y los parámetros del sistema declarados en `data/lumber_width_s2s_data.xml` y `data/ir_config_parameter_data.xml` están marcados con `noupdate="1"`.

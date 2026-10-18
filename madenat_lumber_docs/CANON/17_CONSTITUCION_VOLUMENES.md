@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.8.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4G (AD-120): registro canónico de la consulta fijada MD5 (G4), delimitación del UserError S2S a perfil imperial (G5) y gobernanza de edición por interfaz sin recálculo histórico (G8/D6). Versión 1.7.0 → 1.8.0. | 2026-10-18: Cierre Bloque 4F (AD-119). -->
+**Versión documental:** 1.9.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4H (AD-121): fijación de línea base única para stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 de volúmenes redondeados a 4 decimales: 5c2152...), sumas complementarias (531.2920 m³) y coherencia exacta decimal/etiqueta <= 0.001" en gobernanza S2S (H3). Versión 1.8.0 → 1.9.0. | 2026-10-18: Cierre Bloque 4G (AD-120). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -275,30 +275,51 @@ SELECT 'lumber_shipment_line', COUNT(*),
 FROM lumber_shipment_line;
 ```
 
-**Valores canónicos de referencia:**
+**Valores canónicos de referencia (Línea Base Única Fijada):**
 | Tabla | Filas | Hash MD5 Canónico | Estado de Invarianza |
 |---|---|---|---|
-| `stock_lot` | 152 | `3871c02145712833e3ad9eea526405c5` / `6667a4bd9f3aeff24a8588d32da23ed2`* | Auditado |
+| `stock_lot` | 152 | `6667a4bd9f3aeff24a8588d32da23ed2`* | ✅ Línea Base Fijada (Auditada al 2026-10-18) |
 | `madenat_guia_processing_line` | 82 | `b43a26b6fd072ff96ed075ca1e2f585e` | ✅ 100% Invariante |
 | `lumber_shipment_line` | 11 | `b048f9428859b4c960b83b9ddf1cc701` | ✅ 100% Invariante |
 
-*\*Nota: en `stock_lot`, el hash varía si algún registro actualizó su marca temporal `write_date` en sesiones anteriores sin alterar los volúmenes.*
+*\*Nota de auditoría H1 (AD-121): La línea base previa al cierre del Bloque 4 era `3871c02145712833e3ad9eea526405c5`. Dicho hash varió a `6667a4bd9f3aeff24a8588d32da23ed2` el 2026-10-18 03:40:54 UTC debido a la actualización exclusiva del campo `write_date` en la fila `id=15892` (`SV00000001175`) por el usuario Administrator (`write_uid=2`). Ningún valor de negocio (nombre, piezas ni volúmenes) sufrió alteraciones, según demuestran la Consulta B (`5c2152...`), A.1 (`9e9196...`) y A.2 (`6b1ec7...`) que permanecen 100% idénticas e invariantes. Se fija `6667a4bd9f3aeff24a8588d32da23ed2` como la única línea base oficial a partir del 2026-10-18.*
 
-### 10.2 Consulta B — Volúmenes Numéricos Redondeados (Informe 4E)
+### 10.2 Consulta B — Hash MD5 de Volúmenes Numéricos Redondeados (Integridad de Negocio)
+
+La Consulta B es formalmente una verificación de integridad criptográfica basada en los volúmenes de exportación redondeados a 4 decimales:
 ```sql
-SELECT 'stock_lot' as tbl, count(*) as cnt, sum(round(coalesce(vol_shipment_m3, 0)::numeric, 4)) as vol_sum FROM stock_lot
+SELECT 
+    'stock_lot' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || round(coalesce(vol_shipment_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as md5_vol_shipment
+FROM stock_lot
 UNION ALL
-SELECT 'madenat_guia_processing_line', count(*), sum(round(coalesce(vol_shipment_m3, 0)::numeric, 4)) FROM madenat_guia_processing_line
+SELECT 
+    'madenat_guia_processing_line' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || round(coalesce(vol_shipment_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as md5_vol_shipment
+FROM madenat_guia_processing_line
 UNION ALL
-SELECT 'lumber_shipment_line', count(*), sum(round(coalesce(export_volume_m3, 0)::numeric, 4)) FROM lumber_shipment_line;
+SELECT 
+    'lumber_shipment_line' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || round(coalesce(export_volume_m3, 0)::numeric, 4)::text, ',' ORDER BY id)) as md5_vol_shipment
+FROM lumber_shipment_line;
 ```
+
+**Hashes canónicos de Consulta B (100% Invariantes):**
+- `stock_lot`: 152 filas · Hash = `5c2152193194066e5585b383ffe3673a` (MATCH EXACTO)
+- `madenat_guia_processing_line`: 82 filas · Hash = `356e70066083febd59645c1212e11ece` (MATCH EXACTO)
+- `lumber_shipment_line`: 11 filas · Hash = `bb5863f5850244b06b9235c2c595709b` (MATCH EXACTO)
+
+**Dato complementario — Suma de volúmenes (Medición al 2026-10-18):**
 - `stock_lot`: 152 filas · Suma = 531.2920 m³
 - `madenat_guia_processing_line`: 82 filas · Suma = 295.8210 m³
 - `lumber_shipment_line`: 11 filas · Suma = 53.6030 m³
 
-### 10.3 Gobernanza de Edición de la Tabla S2S (D6 / G8)
+### 10.3 Gobernanza de Edición de la Tabla S2S (D6 / G8 / H3 — AD-121)
 1. **Edición Segura:** La tabla `lumber.width.s2s.map` es editable por usuarios de los grupos `group_lumber_config_manager` y `group_madenat_auditoria`.
 2. **Trazabilidad en Chatter:** Toda modificación de `rough_mm`, `s2s_decimal`, `s2s_label` o `active` genera una entrada en el chatter con usuario, fecha y valores anteriores.
-3. **Validación de Coherencia:** Constraint `_check_decimal_label_coherence` impide discrepancias entre el valor decimal y la fracción (tolerancia máxima de $\pm 1/16" = 0.0625$).
+3. **Validación de Coherencia Exacta (H3):** Constraint `_check_decimal_label_coherence` exige coincidencia numérica estricta entre el valor decimal y la fracción (tolerancia máxima de $\pm 0.001"$).
 4. **Preservación Histórica:** Modificar un registro en esta tabla **únicamente afecta a cálculos nuevos**. Los valores almacenados históricamente en `vol_shipment_m3` y `vol_purchase_m3` permanecen inalterados.
 

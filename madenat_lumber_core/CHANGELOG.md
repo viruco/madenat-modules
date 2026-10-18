@@ -1,3 +1,17 @@
+## [18.0.6.17.0] - 2026-10-18
+
+### Changed
+- **Bloque 4H (AD-121) — Coherencia Exacta S2S y Verificación de Línea Base (H1–H6)**:
+  - **H3 (Coherencia exacta decimal/etiqueta S2S con TDD)**:
+    - Ajustada la tolerancia máxima de divergencia entre `s2s_decimal` y `s2s_label` en `lumber.width.s2s.map` de $\pm 1/16"$ ($0.0625$) a $\le 0.001"$ (coherencia exacta).
+    - Suite de pruebas unitarias actualizada con casos TDD: 4.125 falla, 4.4375 falla, 4.375 pasa.
+  - **H1 (Línea base stock_lot fijada)**:
+    - Fijación de la línea base canónica única de `stock_lot` en `6667a4bd9f3aeff24a8588d32da23ed2` auditada al 2026-10-18, respaldada por la invariancia 100% de Consulta B (`5c2152...`), A.1 (`9e9196...`) y A.2 (`6b1ec7...`).
+  - **H2 (Regresión baseline 1.536 pruebas)**:
+    - Conservación estricta de las 10 fallas históricas conocidas (6 en core, 4 en logistics; 0 en intake/shipping_core). Cero fallas nuevas.
+  - **H6 (Regla de 3 decimales verificada)**:
+    - Verificado por SQL que 100% de los registros almacenados tienen exactamente $\le 3$ decimales en volúmenes.
+
 ## [18.0.6.16.0] - 2026-10-18
 
 ### Added

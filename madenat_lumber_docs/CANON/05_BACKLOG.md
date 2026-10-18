@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.37.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
+**Versión documental:** 8.38.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4F (AD-119) IMPLEMENTADO en local: F1 tabla S2S sin copia en código y UserError ante tabla vacía; F2 Blanks y retiro limpio de deduction_factor; F3 constante única 1550.003; F4 auditoría de literales; F5 hashes MD5 dual; F6 correcciones de texto y citas; F7 pre-deploy health check; F8/F9 planes de patios y despliegue. Versión 05 8.35.0 → 8.36.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
@@ -1169,21 +1170,22 @@ Sin push ni despliegue. -->
 
 ---
 
-### Backlog Técnico Diferido (G10 AD-120 — Sin Código, Solo Documentado)
+### Backlog Técnico Diferido (G10 AD-120 / H4 AD-121 — Sin Código, Solo Documentado)
 
 Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, sin impacto en código actual, con su diseño mínimo, utilidad esperada y criterio de cierre:
 
-#### (a) Bloque 5: Tabla Nominal → Espesor Real como DATO, Volumen Físico Real y Tres Listados
-- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
-- **Utilidad Esperada:** Eliminar la ambigüedad operativa entre volumen nominal de compra, volumen comercial de embarque y volumen físico real métrico cubicado, permitiendo a Planta, Embarque y Facturación operar con tres listados independientes y exactos sin contaminar los cálculos aduaneros.
+#### (a) Bloque 5: Tabla Nominal → Espesor Real como DATO, Volumen Físico Real, Tres Listados y Fitosanitario Configurable
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D5).
+- **Utilidad Esperada:** Eliminar la ambigüedad operativa entre volumen nominal de compra, volumen comercial de embarque y volumen físico real métrico cubicado, permitiendo a Planta, Embarque y Facturación operar con tres listados independientes y exactos sin contaminar los cálculos aduaneros, integrando además la descripción fitosanitaria como texto configurable.
 - **Diseño Mínimo:**
   - Modelo persistente `lumber.thickness.real.map` (espesor nominal comercial → espesor real físico en mm). Ejemplo: 1 1/2" nominal → 38.1 mm real; 1" nominal → 25.4 mm real.
   - Campo `vol_physical_real_m3` calculado como $(E_{real\_mm} \times A_{real\_mm} \times L_{m} \times Piezas) / 1.000.000$.
   - Generación de 3 listados/reportes nativos en Recepción y Embarque: (1) Según Compra, (2) De Embarque (exportación), (3) De Medidas Reales (físico).
+  - Parámetro de texto fitosanitario configurable (`madenat.phytosanitary_default_text`) para leyendas de secado/tratamiento térmico sin texto fijo en código.
 - **Criterio de Cierre:** Los tres listados cuadran con las guías de recepción y packing lists reales, sin alterar las fórmulas ni volúmenes históricos de `vol_shipment_m3`.
 
 #### (b) Descripción Fitosanitaria como Campo Configurable
-- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D5 — Componente de Bloque 5).
 - **Utilidad Esperada:** Flexibilizar la leyenda de secado/tratamiento térmico según el mercado de destino (SAG, NIMF-15) sin depender de cadenas de texto fijas en código.
 - **Diseño Mínimo:**
   - Parámetro del sistema `madenat.phytosanitary_default_text` o campo en `lumber.export.formula` / ficha de producto.
@@ -1201,7 +1203,7 @@ Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, si
 - **Criterio de Cierre:** Las ubicaciones clave tienen `is_patio = True` sin haber introducido IDs numéricos en Python ni duplicado registros en XML.
 
 #### (d) Filtro de Consolidación por Motonave
-- **Estado:** **DIFERIDO** (Decisión Mauricio — D4).
+- **Estado:** **DIFERIDO** (Decisión Mauricio — D5).
 - **Utilidad Esperada:** Permitir a Logística filtrar y agrupar lotes y contenedores consolidados directamente por el buque/motonave asignado para el embarque marítimo.
 - **Diseño Mínimo:**
   - Agregar campo relacional o búsqueda en vistas de consolidación: `vessel_id` / `booking_id` en `lumber.container` o `lumber.export.shipment`.
