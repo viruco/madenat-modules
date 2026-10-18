@@ -883,38 +883,38 @@ def validate_imperial_factor():
     return all_passed
 
 
-def get_s2s_adjustment(env, width_mm):
+def get_s2s_adjustment(env, width_mm, is_s2s_inches=False):
     """
     Retorna el ajuste S2S en pulgadas para un ancho dado en mm.
 
-    Delega en el helper centralizado madenat.ingestion.config (AD-116/AD-117).
-    - Si width_mm está en la tabla lumber.width.s2s.map (como ancho rough en mm
-      o como equivalente de ancho S2S en pulgadas normalizado a mm):
-      retorna el sobreancho configurado.
-    - Si width_mm no está en la tabla (ej: >= 170 mm directo): retorna Decimal('0.0').
+    Delega en el helper centralizado madenat.ingestion.config (AD-116/AD-117/AD-118).
+    - Si is_s2s_inches=True (señal explícita del normalizador documental indicando que
+      el ancho documental ya está expresado en pulgadas S2S, ej: 5 3/8" = 136.525 mm):
+      retorna el sobreancho configurado (+0.125") sin heurística numérica con tolerancia.
+    - Si width_mm está en la tabla lumber.width.s2s.map activa (como ancho rough en mm):
+      retorna el sobreancho configurado (+0.125").
+    - En caso contrario: retorna Decimal('0.0').
 
     Args:
-        env:      Odoo environment (self.env)
-        width_mm: Ancho nominal en milímetros
+        env:           Odoo environment (self.env)
+        width_mm:      Ancho nominal en milímetros
+        is_s2s_inches: Señal explícita del normalizador indicando ancho en pulgadas S2S
 
     Returns:
-        Decimal: Sobreancho configurado si el ancho pertenece a la tabla S2S,
+        Decimal: Sobreancho configurado si el ancho pertenece a la tabla S2S o viene en pulgadas S2S,
                  Decimal('0.0') en caso contrario.
     """
     if not env or not width_mm or width_mm <= 0:
         return Decimal('0.0')
     try:
         config = env['madenat.ingestion.config']
+        overwidth = Decimal(str(config.get_s2s_overwidth_inches()))
+        if is_s2s_inches:
+            return overwidth
         mapping = config.get_width_s2s_map()
         w_key = int(round(width_mm))
         if w_key in mapping:
-            return Decimal(str(config.get_s2s_overwidth_inches()))
-        # Reconocimiento de dimensiones documentales expresadas en pulgadas S2S normalizadas a mm
-        w_in = round(float(width_mm) / 25.4, 3)
-        for s2s_val in mapping.values():
-            s2s_in = s2s_val[0] if isinstance(s2s_val, (tuple, list)) else float(s2s_val)
-            if abs(s2s_in - w_in) < 0.01:
-                return Decimal(str(config.get_s2s_overwidth_inches()))
+            return overwidth
     except Exception:
         pass
     return Decimal('0.0')

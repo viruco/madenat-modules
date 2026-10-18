@@ -513,8 +513,9 @@ class MadenatGuiaProcessingLine(models.Model):
                         w_blank = line.export_width_manual_inches
                     else:
                         config = self.env['madenat.ingestion.config']
+                        is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
                         if line.ancho_mm and line.ancho_mm > 0:
-                            w_blank = config.resolve_export_width(line.ancho_mm, record=line)
+                            w_blank = config.resolve_export_width(line.ancho_mm, record=line, is_s2s_inches=is_s2s)
                         else:
                             w_blank = a_in + config.get_s2s_overwidth_inches()
                     vol = (e_in * w_blank * line.length_ft * line.pieces) / FACTOR_PIES
@@ -526,10 +527,11 @@ class MadenatGuiaProcessingLine(models.Model):
                         width_calc = line.export_width_manual_inches
                     else:
                         config = self.env['madenat.ingestion.config']
+                        is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
                         if line.ancho_mm and line.ancho_mm > 0:
-                            width_calc = config.resolve_export_width(line.ancho_mm, record=line)
+                            width_calc = config.resolve_export_width(line.ancho_mm, record=line, is_s2s_inches=is_s2s)
                         else:
-                            recargo = get_s2s_adjustment(self.env, a_in * 25.4)
+                            recargo = get_s2s_adjustment(self.env, a_in * 25.4, is_s2s_inches=is_s2s)
                             width_calc = a_in + float(recargo)
 
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
@@ -4031,6 +4033,7 @@ class MadenatGuiaProcessing(models.Model):
                             'Espesor': e_mm, 'Ancho': a_mm, 'Largo': l_m,
                             'dimensions_normalized_from':
                                 l.get('dimensions_raw'),
+                            'is_s2s_inches': True,
                         })
                     else:
                         # BT-03: línea descartada por dimensiones físicas <= 0.
@@ -4063,7 +4066,7 @@ class MadenatGuiaProcessing(models.Model):
                 
                 else:
                     # 🏆 Caso Exportación: Regla de Oro Madenat
-                    ajuste_s2s = get_s2s_adjustment(self.env, a_mm)
+                    ajuste_s2s = get_s2s_adjustment(self.env, a_mm, is_s2s_inches=bool(l.get('is_s2s_inches')))
                     
                     e_pulg = e_mm / float(MM_PER_INCH)
                     a_pulg = (a_mm / float(MM_PER_INCH)) + float(ajuste_s2s)

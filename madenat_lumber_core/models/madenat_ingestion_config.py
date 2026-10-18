@@ -161,27 +161,34 @@ class MadenatIngestionConfig(models.AbstractModel):
         return 170.0
 
     @api.model
-    def resolve_export_width(self, rough_mm, record=None):
+    def resolve_export_width(self, rough_mm, record=None, is_s2s_inches=False):
         """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117/AD-118).
         
-        Reglas:
-        - Si rough_mm está en lumber.width.s2s.map activo -> s2s_decimal + overwidth.
-        - Si está ausente y rough_mm < direct_width_min_mm:
-            * behavior == 'block' -> ValidationError.
-            * behavior == 'warning' -> _logger.warning y mensaje en chatter (si hay record/guía). Conversión directa mm/25.4.
-            * behavior == 'direct' -> Conversión directa mm/25.4 sin advertencia.
-        - Si está ausente y rough_mm >= direct_width_min_mm -> mm/25.4 directo sin advertencia.
+        Orden canónico de resolución del ancho:
+        1. Manual: si se define en la línea (export_width_manual_inches).
+        2. Tabla S2S activa: si rough_mm está en lumber.width.s2s.map -> s2s_decimal + overwidth.
+        3. Documental en pulgadas S2S: si is_s2s_inches=True (señal explícita del normalizador documental) -> (rough_mm / 25.4) + overwidth.
+        4. Directo: conversión mm / 25.4 (con política configurable si rough_mm < direct_width_min_mm).
         """
         if not rough_mm or rough_mm <= 0:
             return 0.0
 
+        overwidth = self.get_s2s_overwidth_inches()
+        from .utils_uom import MM_PER_INCH
+
+        # Rama 2: Tabla S2S activa
         mapping = self.get_width_s2s_map()
         rough_key = int(round(rough_mm))
         if rough_key in mapping:
             s2s_decimal = mapping[rough_key][0]
-            overwidth = self.get_s2s_overwidth_inches()
             return s2s_decimal + overwidth
 
+        # Rama 3: Documental en pulgadas S2S (señal explícita del normalizador de documentos)
+        signal_s2s = is_s2s_inches or (record and getattr(record, 'is_s2s_inches', False))
+        if signal_s2s:
+            return (float(rough_mm) / float(MM_PER_INCH)) + overwidth
+
+        # Rama 4: Directo con umbral
         behavior = self.get_out_of_table_behavior()
         min_direct = self.get_direct_width_min_mm()
 

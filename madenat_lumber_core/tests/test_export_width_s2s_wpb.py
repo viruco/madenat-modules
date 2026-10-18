@@ -56,6 +56,7 @@ class TestExportWidthS2SWpB(TransactionCase):
 
     def _make_line(self, guia, ancho_mm, thickness_visual='6/4', width_visual='3 5/8',
                    largo_m=3.2, pieces=10, vol_purchase=0.144, **kwargs):
+        is_s2s = kwargs.pop('is_s2s_inches', False)
         vals = {
             'processing_id': guia.id,
             'product_id': self.product.id,
@@ -68,7 +69,7 @@ class TestExportWidthS2SWpB(TransactionCase):
             'vol_purchase_m3': vol_purchase,
         }
         vals.update(kwargs)
-        return self.Line.create(vals)
+        return self.Line.with_context(is_s2s_inches=is_s2s).create(vals)
 
     def test_01_ancho_100mm_uses_s2s_table(self):
         """100 mm rough con visual '3 5/8' aplica cálculo por datos: 3.625" + recargo 0.125" = 3.750"."""
@@ -364,3 +365,59 @@ class TestExportWidthS2SWpB(TransactionCase):
                          f"Faltan parámetros en <data noupdate='1'>. Esperados: {expected_records.keys()}, encontrados: {found_records.keys()}")
         for r_id, exp_key in expected_records.items():
             self.assertEqual(found_records.get(r_id), exp_key)
+
+    def test_13_branch_resolution_order_all_four_branches(self):
+        """E4: Demuestra las 4 ramas canónicas de resolución de ancho y su orden de prelación.
+        
+        Rama 1: Manual (export_width_manual_inches)
+        Rama 2: Tabla S2S activa (lumber.width.s2s.map)
+        Rama 3: Documental en pulgadas S2S (is_s2s_inches=True)
+        Rama 4: Directo mm / 25.4
+        """
+        guia = self._make_guia('GUIA-4-RAMAS')
+
+        # ── RAMA 1: MANUAL (Prevalece sobre tabla, documental y directo) ─────────
+        # Ancho 150 mm en tabla daría 5.750", pero forzado manual a 5.625" (5 5/8)
+        line_manual = self._make_line(
+            guia, ancho_mm=150.0, thickness_visual='5/4', width_visual='150mm',
+            largo_m=4.05, pieces=203,
+            export_width_manual_inches=5.625,
+            export_width_manual_reason='Ajuste manual comercial',
+            is_s2s_inches=True,  # Incluso si tiene señal documental, prevalece manual
+        )
+        line_manual.flush_recordset()
+        # (1.25 * 5.625 * 4.05 * 203) / 1550.0031 = 3.730 m3
+        self.assertAlmostEqual(line_manual.vol_shipment_m3, 3.730, places=3)
+
+        # ── RAMA 2: TABLA S2S ACTIVA (Prevalece sobre documental y directo) ──────
+        # Ancho 150 mm sin manual: tabla S2S (5.625") + 0.125" = 5.750"
+        line_table = self._make_line(
+            guia, ancho_mm=150.0, thickness_visual='5/4', width_visual='150mm',
+            largo_m=4.05, pieces=203,
+        )
+        line_table.flush_recordset()
+        # (1.25 * 5.750 * 4.05 * 203) / 1550.0031 = 3.812 m3
+        self.assertAlmostEqual(line_table.vol_shipment_m3, 3.812, places=3)
+
+        # ── RAMA 3: DOCUMENTAL EN PULGADAS S2S (JCE 5/4x5.3/8x16) ───────────────
+        # 5 3/8" = 136.525 mm (ausente de tabla como rough mm), con señal is_s2s_inches=True:
+        # Aplica S2S overwidth una vez: 5.375" + 0.125" = 5.500"
+        line_jce = self._make_line(
+            guia, ancho_mm=136.525, thickness_visual='5/4', width_visual='5 3/8',
+            largo_m=4.8768, pieces=231,
+            is_s2s_inches=True,
+        )
+        line_jce.flush_recordset()
+        # (1.25 * 5.500 * 4.8768 * 231) / 1550.0031 = 4.9969 -> 4.997 m3
+        self.assertAlmostEqual(line_jce.vol_shipment_m3, 4.997, places=3)
+
+        # ── RAMA 4: DIRECTO (Ausente de tabla y sin señal documental) ───────────
+        # 135 mm ausente de tabla y sin is_s2s_inches -> 135 / 25.4 = 5.31496"
+        line_direct = self._make_line(
+            guia, ancho_mm=135.0, thickness_visual='7/4', width_visual='5 1/4',
+            largo_m=3.2, pieces=10,
+            is_s2s_inches=False,
+        )
+        line_direct.flush_recordset()
+        # (1.75 * (135/25.4) * 3.2 * 10) / 1550.0031 = 0.19202 -> 0.192 m3
+        self.assertAlmostEqual(line_direct.vol_shipment_m3, 0.192, places=3)
