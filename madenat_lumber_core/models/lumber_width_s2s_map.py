@@ -27,8 +27,8 @@ from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
-# Tolerancia de coherencia decimal<->etiqueta: 1/16" = 0.0625
-_S2S_LABEL_DECIMAL_TOLERANCE = 0.0625
+# Tolerancia de coherencia decimal<->etiqueta: max 0.001" (coherencia exacta, H3)
+_S2S_LABEL_DECIMAL_TOLERANCE = 0.001
 
 
 def _parse_s2s_label(label):
@@ -106,7 +106,7 @@ class LumberWidthS2SMap(models.Model):
         tracking=True,
         help=(
             'Ancho S2S en pulgadas decimales (ej: 2.625 = 2 5/8). '
-            'Debe ser coherente con s2s_label dentro de +/-1/16" (0.0625). '
+            'Debe ser coherente con s2s_label dentro de tolerancia exacta <= 0.001". '
             'G8: cambios quedan registrados en el chatter con usuario y fecha.'
         )
     )
@@ -144,11 +144,11 @@ class LumberWidthS2SMap(models.Model):
 
     @api.constrains('s2s_decimal', 's2s_label')
     def _check_decimal_label_coherence(self):
-        """G8 (AD-120): valida que s2s_label y s2s_decimal sean coherentes.
+        """G8/H3 (AD-120/AD-121): valida que s2s_label y s2s_decimal sean coherentes.
 
         Un registro con s2s_label='4 3/8' (= 4.375) y s2s_decimal=4.125 ('4 1/8')
-        seria incoherente (caso historico del 115 mm). Esta validacion lo previene.
-        Tolerancia: +/-1/16" = 0.0625 pulgadas.
+        o 4.4375 serian incoherentes. Esta validacion exige coherencia exacta.
+        Tolerancia: +/-0.001 pulgadas (coherencia exacta).
         """
         for rec in self:
             parsed = _parse_s2s_label(rec.s2s_label)
@@ -164,8 +164,8 @@ class LumberWidthS2SMap(models.Model):
                     "Incoherencia entre etiqueta y decimal S2S para %(mm)d mm:\n"
                     "  Etiqueta '%(label)s' = %(parsed).4f\"\n"
                     "  Decimal almacenado  = %(decimal).4f\"\n"
-                    "  Diferencia          = %(diff).4f\" (max. permitido: %(tol).4f\" = 1/16\")\n\n"
-                    "Corrija la etiqueta o el decimal para que correspondan."
+                    "  Diferencia          = %(diff).4f\" (max. permitido: %(tol).4f\")\n\n"
+                    "Corrija la etiqueta o el decimal para que correspondan exactamente."
                 ) % {
                     'mm': rec.rough_mm or 0,
                     'label': rec.s2s_label,

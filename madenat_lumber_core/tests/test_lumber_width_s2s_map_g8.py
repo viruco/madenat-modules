@@ -27,16 +27,30 @@ class TestLumberWidthS2SMapG8(TransactionCase):
         rec._check_decimal_label_coherence()
 
     def test_02_g8_coherence_validation_divergence_fails(self):
-        """G8: etiqueta '4 3/8' (4.375) con decimal 4.125 (4 1/8) levanta ValidationError."""
-        rec = self.map_model.new({
+        """G8/H3: divergencias de etiqueta y decimal levantan ValidationError.
+        TDD H3: decimal 4.125 con '4 3/8' falla; 4.4375 con '4 3/8' falla; 4.375 con '4 3/8' pasa.
+        """
+        # Caso 1: decimal 4.125 (4 1/8) con etiqueta '4 3/8' falla
+        rec1 = self.map_model.new({
             'rough_mm': 999,
             's2s_decimal': 4.125,
             's2s_label': '4 3/8',
             'active': True,
         })
-        with self.assertRaises(ValidationError) as cm:
-            rec._check_decimal_label_coherence()
-        self.assertIn("Incoherencia entre etiqueta y decimal S2S", str(cm.exception))
+        with self.assertRaises(ValidationError) as cm1:
+            rec1._check_decimal_label_coherence()
+        self.assertIn("Incoherencia entre etiqueta y decimal S2S", str(cm1.exception))
+
+        # Caso 2 (TDD H3): decimal 4.4375 (4 7/16, diff 1/16" = 0.0625) con etiqueta '4 3/8' (4.375) debe fallar
+        rec2 = self.map_model.new({
+            'rough_mm': 998,
+            's2s_decimal': 4.4375,
+            's2s_label': '4 3/8',
+            'active': True,
+        })
+        with self.assertRaises(ValidationError) as cm2:
+            rec2._check_decimal_label_coherence()
+        self.assertIn("Incoherencia entre etiqueta y decimal S2S", str(cm2.exception))
 
     def test_03_g8_archive_instead_of_delete(self):
         """G8: archivar entrada (active=False) la retira de la resolución activa."""
