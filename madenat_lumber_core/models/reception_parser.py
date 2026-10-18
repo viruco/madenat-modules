@@ -13,18 +13,9 @@ _logger = logging.getLogger(__name__)
 class MadenatReceptionParser(models.AbstractModel):
     _name = 'madenat.reception.parser'
     _description = 'Dispatcher Multi-Formato para Recepción de Madera'
-
-    _BLANKS_NOMINAL_MAP = [
-        (1.0,    1.0),
-        (1.25,   1.25),
-        (1.5,    1.5),
-        (1.5625, 1.5),
-        (2.0,    2.0),
-        (2.0625, 2.0),
-        (2.5,    2.5),
-        (3.0,    3.0),
-    ]
-    _NOMINAL_TOLERANCE = 0.08
+    # G1 (AD-120): _BLANKS_NOMINAL_MAP y _NOMINAL_TOLERANCE retirados del nivel de clase.
+    # El fallback canónico vive en madenat.ingestion.config.get_blank_nominal_map() (Fuente 3).
+    # Los métodos _get_blanks_nominal_map() y _get_nominal_tolerance() delegan a ese helper.
 
     # ──────────────────────────────────────────────────────────────────────
     # 🛡️ VALIDACIÓN TEMPRANA DE DUPLICADOS (2026-06-11)
