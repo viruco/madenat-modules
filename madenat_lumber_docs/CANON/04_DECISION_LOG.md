@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.39.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
+**Versión documental:** 12.40.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4J (AD-122): anti-copia absoluta de tabla S2S en todo el código madenat_* con eliminación de S2S_WIDTH_LOOKUP y S2S_WIDTH_MAP (J1); eliminación de doble redondeo de volúmenes y MBF con r3() ROUND_HALF_UP único y TDD (J2); suite y reconciliación final (J3); precisión de IDs reales de stock.location 17, 18, 19 (J4); diffs de desacople sin aplicar (J5); correcciones documentales y ratificación D4 (J6). Versión 04 12.39.0 → 12.40.0. | Cierre Bloque 4I (AD-121). -->
+<!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
 **Estado:** Canonical / activo
 
 ---
@@ -3802,4 +3803,33 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 6. **I6 — Verificación de Método de Entrega en CANON/02 §18:**
    - Verificado mediante git log/blame que la referencia a `rsync/empaquetado` fue agregada en el borrador técnico de 4G (G9, commit `6682b58`).
    - Se actualizó CANON/02 §18.1 para ratificar que, conforme a la decisión **D4**, **no se define un método de entrega activo** en esta etapa, quedando las referencias técnicas como diseño referencial documentado previamente.
+
+---
+
+### AD-122 — Cierre Definitivo del Bloque 4: Anti-copia Absoluta S2S, Corrección de Doble Redondeo y Cierre Técnico (2026-10-18)
+
+**Contexto:** Bloque 4J — Pasada de cierre final del Bloque 4.  
+**Decisiones Adoptadas:**
+1. **J1 — Anti-Copia Absoluta de la Tabla S2S en Código Productivo (Regla D6):**
+   - Se eliminó la copia residual `S2S_WIDTH_LOOKUP` en `utils_uom.py` y sus validaciones hardcodeadas de arranque.
+   - Se eliminaron los imports huérfanos de `S2S_WIDTH_LOOKUP` en `madenat_guia_processing.py`, `lumber_reception.py` y `lumber_reception_mass_update.py`.
+   - Se eliminó el diccionario estático `S2S_WIDTH_MAP` en `simulacion_solo_lectura_remoto.py`, reemplazándolo por lectura dinámica desde `lumber.width.s2s.map` vía ORM.
+   - Se amplió la prueba unitaria anti-copia (`test_16_no_static_fallback_dictionary_in_code`) en `test_export_width_s2s_wpb.py` para escanear recursivamente todo el código productivo de los módulos `madenat_*`, garantizando cero diccionarios o listas estáticas con anchos S2S mapeados.
+2. **J2 — Eliminación del Doble Redondeo de Volúmenes y MBF:**
+   - En `madenat_guia_processing.py:4088`: sustituido `round(vol_m3, 4)` por `r3(vol_m3)`.
+   - En `madenat_guia_processing.py:1285`: sustituido `round(packing, 3)` por `r3(packing)`.
+   - En `stock_lot.py:1243, 1262`: eliminados los redondeos intermedios prematuros `round(mbf, 4)` en `_calculate_mbf_from_fractions` y `_calculate_mbf_from_metrics`, delegando el redondeo a 3 decimales exclusivamente a `_compute_volumen_mbf` con `r3()`.
+   - En `lumber_reception.py:827`: eliminada asignación redundante con `round(..., 3)`, consolidando `r3()`.
+   - Suite TDD dedicada en `test_double_rounding_j2.py`: demostración de límite `3.7424999` (3.742 con r3 único vs 3.743 erróneo con doble redondeo) y vectores de planilla y Blanks intactos.
+3. **J3 — Registro de Pruebas y Regresión Final:**
+   - Registrados `test_pre_deploy_health_check` y `test_double_rounding_j2` en `madenat_lumber_core/tests/__init__.py`.
+4. **J4 — Precisión de IDs Reales de Ubicaciones en `madenat_test`:**
+   - Auditados mediante SELECT los IDs reales de `stock.location`: PUERTO CORONEL (`id=17`), MARVAL (`id=18`), Bodega Tepornac (`id=19`).
+   - Rectificada la confusión documental de informes previos. Ratificación de regla R3: prohibido hardcodear IDs numéricos en código.
+5. **J5 — Diffs Reales de Desacople sin Aplicar:**
+   - Verificada la existencia en BD de los modelos `lumber.blank.nominal.map`, `lumber.thickness.visual.rule` y los parámetros `madenat.blanks_nominal_map` y `madenat.thickness_visual_ranges`.
+   - Cero eliminación de `LUMBER_DIMENSION_MAP` ni `get_s2s_exclusion_widths` al constatarse que ambos tienen llamadas productivas activas en `madenat_guia_processing.py`.
+6. **J6 — Ratificación D4 en CANON/02 §18.1:**
+   - El texto sobre empaquetado/rsync se clasifica formalmente como ejemplo ilustrativo preliminar sin decisión de método de entrega.
+
 

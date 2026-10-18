@@ -1,3 +1,14 @@
+## [18.0.6.18.0] - 2026-10-18
+
+### Changed
+- **Bloque 4J (AD-122) — Cierre Definitivo del Bloque 4**:
+  - **J1 (Eliminación de copia estática S2S)**: Retirada de `S2S_WIDTH_LOOKUP` de `utils_uom.py:658-675` y `S2S_WIDTH_MAP` de `simulacion_solo_lectura_remoto.py:22-38`. Consulta delegada al modelo ORM `lumber.width.s2s.map`. Ampliada prueba anti-copia `test_16` para escanear todo el código productivo `madenat_*`.
+  - **J2 (Prevención de doble redondeo en volúmenes y MBF)**: Unificación a redondeo único `r3()` sobre el valor final sin truncamientos intermedios a 4 decimales en `madenat_guia_processing.py:4088`, `stock_lot.py:1243, 1262` y `lumber_reception.py:827`. Nueva suite TDD `test_double_rounding_j2.py` (4 tests PASS).
+  - **J3 (Regresión final completa)**: 1.544 pruebas (1.540 base + 2 health check + 4 double rounding), 0 fallas nuevas, 10 fallas históricas conocidas estables.
+  - **J4 (Auditoría de ubicaciones de patio)**: Ratificación de IDs reales en `madenat_test` (17 PUERTO CORONEL, 18 MARVAL, 19 Bodega Tepornac), regla R3 sin IDs en código.
+  - **J5 (Verificación de modelos y reglas)**: Verificada existencia en BD de `lumber.blank.nominal.map`, `lumber.thickness.visual.rule` y parámetros. Ratificada vigencia de `LUMBER_DIMENSION_MAP` y `get_s2s_exclusion_widths` en código productivo.
+  - **J6 (Documentación canónica)**: CANON/02 (§18.1 como ejemplo ilustrativo D4), CANON/04 (AD-122), CANON/05 (TD-122), CANON/17 (§9.4), e INDICE_DOCUMENTACION sincronizados monótonamente.
+
 ## [18.0.6.17.0] - 2026-10-18
 
 ### Changed

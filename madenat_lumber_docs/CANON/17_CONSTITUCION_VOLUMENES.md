@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.10.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
+**Versión documental:** 1.11.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4J (AD-122): precisión de IDs reales de stock.location en madenat_test (PUERTO CORONEL: 17, MARVAL: 18, Bodega Tepornac: 19), sin IDs numéricos en código (R3); regla de 3 decimales con r3() ROUND_HALF_UP sin doble redondeo en MBF y volúmenes. Versión 1.10.0 → 1.11.0. | 2026-10-18: Cierre Bloque 4I (AD-121). -->
+<!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -251,7 +252,11 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
 
 - **Precisión Numérica:** Todos los volúmenes en el sistema se calculan y presentan con **3 decimales**.
 - **Editabilidad Operativa:** El volumen y el metraje MBF calculados deben permitir modificación manual justificada por el usuario.
-- **Patios Creables:** Soporte explícito en Odoo para que Operaciones cree y gestione recintos como ubicaciones internas (`stock.location`): Patio MARVAL (acopio), Patio Ferramenta (servicio de cepillado), Patio Puerto Coronel (embarque portuario).
+- **Patios Creables:** Soporte explícito en Odoo para que Operaciones cree y gestione recintos como ubicaciones internas (`stock.location`):
+  - Patio Puerto Coronel (`WH/Stock/PUERTO CORONEL`, `id=17` real en `madenat_test`).
+  - Patio MARVAL (`WH/Stock/MARVAL`, `id=18` real en `madenat_test`).
+  - Bodega Tepornac (`WH/Stock/Bodega Tepornac`, `id=19` real en `madenat_test`).
+  - *Regla R3:* Prohibido hardcodear IDs numéricos en código. Toda resolución se realiza por búsqueda de nombre o parámetros en `ir.config_parameter`. En virtud de **D2**, permanecen con `is_patio=False`/null en base de datos.
 - **Consolidación por Motonave:** Consolidación por tarja y contenedor con listados agrupados por buque/motonave (`shipping.vessel`).
 
 ---

@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.43.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): verificación de método de entrega no definido (D4), rsync/empaquetado como método previamente documentado en borradores técnicos, y normalización de versiones en script de salud. Versión 02 12.42.0 → 12.43.0. Sin push ni despliegue. -->
+**Versión documental:** 12.44.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4J (AD-122): §18.1 clarificación de empaquetado/rsync como ejemplo ilustrativo preliminar sin decisión de método (D4), eliminación definitiva de copias S2S en código productivo y corrección de doble redondeo. Versión 02 12.43.0 → 12.44.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): verificación de método de entrega no definido (D4), rsync/empaquetado como método previamente documentado en borradores técnicos, y normalización de versiones en script de salud. Versión 02 12.42.0 → 12.43.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): verificación de D4 (método de entrega sin git pull documentado pero no ejecutado), línea base fijada stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 volúmenes redondeados a 4 decimales: 5c2152...) y sumas complementarias. Versión 02 12.41.0 → 12.42.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
 <!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
@@ -2150,11 +2151,12 @@ balanceados. Versión 02 12.39.0 → **12.40.0**; **índice 12.29.0 → 12.30.0*
 ### 18.1 Método de Entrega y Transferencia (Sin Método Definido — Decisión D4)
 - **Decisión Vigente D4:** En cumplimiento de **D4**, **no se ejecuta ni se define un método de entrega activo** al TEST remoto en esta etapa. Se prohíbe asumir `git pull`.
 - **Constatación de Entorno Previa (§17.14):** En el servidor TEST remoto (`144.22.50.236`), la carpeta `/opt/odoo18-test/custom_addons` **no es un repositorio Git clonado** conectado a la rama de desarrollo `feat/guia-correccion-documental-preservada-20261002`, y el repositorio `/opt/odoo18-test` presenta restricciones de propiedad (`dubious ownership` en git 2.25.1).
-- **Procedimiento Técnico Documentado Previamente (Referencial, No Definido):**
-  Como procedimiento de referencia técnica documentado previamente en borradores de trabajo (§17.14), en caso de autorizarse una entrega futura por la Gerencia, las opciones documentadas son:
-  1. Transferencia por empaquetado de artefactos o sincronización dirigida vía `rsync` sobre SSH (`rsync -avz --exclude '__pycache__' --exclude '.git' ./custom_addons/madenat_lumber_core/ usuario@144.22.50.236:/opt/odoo18-test/custom_addons/madenat_lumber_core/`).
-  2. O aplicación de un paquete de cambios `.tar.gz` o `git archive` generado localmente desde el commit de cierre de la rama.
-  3. No se tocan carpetas legadas (`.bak/`, `views.backup/`) existentes en el remoto.
+- **Ejemplo Ilustrativo sin Decisión de Método (D4 / Commit `6682b58`):**
+  El texto sobre empaquetado/rsync formulado preliminarmente por el asistente en el commit `6682b58` (G9) **no constituye un método acordado ni una decisión tomada**. Se conserva únicamente a título de **ejemplo técnico ilustrativo** de cómo podría estructurarse una transferencia si la Gerencia lo autorizara a futuro:
+  1. *Ejemplo ilustrativo A:* Sincronización dirigida vía `rsync` sobre SSH (`rsync -avz --exclude '__pycache__' --exclude '.git' ./custom_addons/madenat_lumber_core/ usuario@144.22.50.236:/opt/odoo18-test/custom_addons/madenat_lumber_core/`).
+  2. *Ejemplo ilustrativo B:* Aplicación de un archivo comprimido `.tar.gz` o generado con `git archive` desde el commit local aprobado.
+  3. En cualquier caso, no se tocan carpetas legadas (`.bak/`, `views.backup/`) existentes en el remoto.
+  4. **Ratificación D4:** No se define ningún método activo; la determinación del canal de entrega queda reservada a la definición formal de Mauricio y la Gerencia.
 
 ### 18.2 Módulos a Actualizar (Determinación Quirúrgica, Nunca `-u all`)
 - **Regla Estricta:** Queda terminantemente prohibido ejecutar `-u all` (violación de R6).
