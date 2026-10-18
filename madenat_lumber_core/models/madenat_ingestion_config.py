@@ -83,12 +83,16 @@ class MadenatIngestionConfig(models.AbstractModel):
     # 3. TABLA ROUGH->S2S
     # =====================================================================
     @api.model
-    def get_width_s2s_map(self):
+    def get_width_s2s_map(self, raise_if_empty=True):
         """Retorna dict {rough_mm: (s2s_decimal, s2s_label)} desde lumber.width.s2s.map.
 
         Única fuente de verdad: lumber.width.s2s.map.
-        Si no hay registros activos, falla con UserError y log estructurado.
-        Sin diccionario estático de respaldo en código.
+        Si no hay registros activos y raise_if_empty=True (default), lanza UserError.
+        Con raise_if_empty=False retorna dict vacío (para comprobaciones no bloqueantes).
+
+        G5 (AD-120): El UserError solo se propaga cuando el perfil depende de la tabla
+        S2S (perfiles imperiales f1550/f5085 con ancho < direct_width_min_mm).
+        Los perfiles métricos y anchos directos llaman con raise_if_empty=False.
         """
         records = self.env['lumber.width.s2s.map'].sudo().search([
             ('active', '=', True),
@@ -98,10 +102,12 @@ class MadenatIngestionConfig(models.AbstractModel):
                 "IngestionConfig: tabla S2S vacia o sin registros activos. "
                 "El modelo lumber.width.s2s.map no contiene anchos activos."
             )
-            raise UserError(
-                _("No existen registros activos en la tabla de mapeo S2S (lumber.width.s2s.map). "
-                  "Configure y active los anchos S2S antes de procesar maderas S2S.")
-            )
+            if raise_if_empty:
+                raise UserError(
+                    _("No existen registros activos en la tabla de mapeo S2S (lumber.width.s2s.map). "
+                      "Configure y active los anchos S2S antes de procesar maderas S2S.")
+                )
+            return {}
         _logger.debug("IngestionConfig: width_s2s_map desde modelo lumber.width.s2s.map (%d regs)", len(records))
         return {rec.rough_mm: (rec.s2s_decimal, rec.s2s_label) for rec in records}
 
@@ -143,13 +149,14 @@ class MadenatIngestionConfig(models.AbstractModel):
 
     @api.model
     def resolve_export_width(self, rough_mm, record=None, is_s2s_inches=False):
-        """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117/AD-118).
-        
-        Orden canónico de resolución del ancho:
-        1. Manual: si se define en la línea (export_width_manual_inches).
-        2. Tabla S2S activa: si rough_mm está en lumber.width.s2s.map -> s2s_decimal + overwidth.
-        3. Documental en pulgadas S2S: si is_s2s_inches=True (señal explícita del normalizador documental) -> (rough_mm / 25.4) + overwidth.
-        4. Directo: conversión mm / 25.4 (con política configurable si rough_mm < direct_width_min_mm).
+        """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117/AD-118/AD-120).
+
+        Orden canónico de resolución del ancho (G5 AD-120 — tabla S2S acotada a perfiles imperiales):
+        3. Documental en pulgadas S2S: is_s2s_inches=True → (rough_mm / 25.4) + overwidth (no usa tabla).
+        4a. Ancho directo anticipado: rough_mm >= direct_width_min_mm → conversión directa (no usa tabla).
+        2. Tabla S2S activa: solo si rough_mm < direct_width_min_mm → s2s_decimal + overwidth.
+           Si la tabla está vacía, lanza UserError (solo alcanzable desde perfil imperial).
+        4b. Fuera de tabla con política: 'block' → ValidationError; 'warning'/'direct' → mm/25.4.
         """
         if not rough_mm or rough_mm <= 0:
             return 0.0
@@ -157,49 +164,59 @@ class MadenatIngestionConfig(models.AbstractModel):
         overwidth = self.get_s2s_overwidth_inches()
         from .utils_uom import MM_PER_INCH
 
-        # Rama 2: Tabla S2S activa
-        mapping = self.get_width_s2s_map()
+        # Rama 3: Documental en pulgadas S2S (señal explícita del normalizador de documentos).
+        # G5: no depende de la tabla S2S → nunca dispara UserError de tabla vacía.
+        signal_s2s = is_s2s_inches or (record and getattr(record, 'is_s2s_inches', False))
+        if signal_s2s:
+            return (float(rough_mm) / float(MM_PER_INCH)) + overwidth
+
+        # Rama 4a anticipada: ancho >= umbral directo → conversión directa sin tabla S2S.
+        # G5: anchos >= 170 mm y perfiles métricos no dependen de la tabla → sin UserError.
+        min_direct = self.get_direct_width_min_mm()
+        if rough_mm >= min_direct:
+            _logger.debug(
+                "resolve_export_width: %.1f mm >= umbral directo %.1f mm → conversión directa (sin tabla S2S).",
+                rough_mm, min_direct,
+            )
+            return float(rough_mm) / float(MM_PER_INCH)
+
+        # Rama 2: Tabla S2S activa — solo alcanzada por perfiles imperiales (f1550/f5085)
+        # con ancho < min_direct. raise_if_empty=True: tabla vacía dispara UserError.
+        # G5: perfiles métricos y anchos >= min_direct NUNCA llegan aquí.
+        mapping = self.get_width_s2s_map(raise_if_empty=True)
         rough_key = int(round(rough_mm))
         if rough_key in mapping:
             s2s_decimal = mapping[rough_key][0]
             return s2s_decimal + overwidth
 
-        # Rama 3: Documental en pulgadas S2S (señal explícita del normalizador de documentos)
-        signal_s2s = is_s2s_inches or (record and getattr(record, 'is_s2s_inches', False))
-        if signal_s2s:
-            return (float(rough_mm) / float(MM_PER_INCH)) + overwidth
-
-        # Rama 4: Directo con umbral
+        # Rama 4b: ancho no encontrado en tabla y < min_direct.
         behavior = self.get_out_of_table_behavior()
-        min_direct = self.get_direct_width_min_mm()
 
-        if rough_mm < min_direct:
-            if behavior == 'block':
-                raise ValidationError(
-                    _("Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm configurado como 'block').")
-                    % (rough_mm, min_direct)
-                )
-            elif behavior == 'warning':
-                _logger.warning(
-                    "Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm). Se aplica conversión directa mm/25.4.",
-                    rough_mm, min_direct
-                )
-                if record:
-                    target = getattr(record, 'processing_id', record)
-                    if hasattr(target, 'message_post') and hasattr(target, 'id') and target.id:
-                        try:
-                            if not self.env.is_computing():
-                                target.message_post(
-                                    body=_(
-                                        "⚠️ <b>Advertencia Ancho S2S</b>: El ancho rough %.1f mm en línea/lote <i>%s</i> "
-                                        "está ausente de la tabla S2S (menor al umbral directo %.1f mm). "
-                                        "Se aplica conversión directa milimétrica."
-                                    ) % (rough_mm, getattr(record, 'lot_name', None) or f"ID {record.id}", min_direct)
-                                )
-                        except Exception:
-                            pass
+        if behavior == 'block':
+            raise ValidationError(
+                _("Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm configurado como 'block').")
+                % (rough_mm, min_direct)
+            )
+        elif behavior == 'warning':
+            _logger.warning(
+                "Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm). Se aplica conversión directa mm/25.4.",
+                rough_mm, min_direct
+            )
+            if record:
+                target = getattr(record, 'processing_id', record)
+                if hasattr(target, 'message_post') and hasattr(target, 'id') and target.id:
+                    try:
+                        if not self.env.is_computing():
+                            target.message_post(
+                                body=_(
+                                    "⚠️ <b>Advertencia Ancho S2S</b>: El ancho rough %.1f mm en línea/lote <i>%s</i> "
+                                    "está ausente de la tabla S2S (menor al umbral directo %.1f mm). "
+                                    "Se aplica conversión directa milimétrica."
+                                ) % (rough_mm, getattr(record, 'lot_name', None) or f"ID {record.id}", min_direct)
+                            )
+                    except Exception:
+                        pass
 
-        from .utils_uom import MM_PER_INCH
         return float(rough_mm) / float(MM_PER_INCH)
 
     @api.model

@@ -261,14 +261,15 @@ class TestExportWidthS2SWpB(TransactionCase):
         # 1. Modificar un registro en lumber.width.s2s.map (100 mm pasa de 3.625 a 3.750)
         rec_100 = self.env['lumber.width.s2s.map'].search([('rough_mm', '=', 100)], limit=1)
         original_s2s = rec_100.s2s_decimal
+        original_label = rec_100.s2s_label
         try:
-            rec_100.write({'s2s_decimal': 3.750})
+            rec_100.write({'s2s_decimal': 3.750, 's2s_label': '3 3/4'})
             line = self._make_line(guia, ancho_mm=100.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
             line.flush_recordset()
             # (1.5 * (3.750 + 0.125) * 4.0 * 100) / 1550.0031 = 2325 / 1550.0031 = 1.49999 -> 1.500 m3
             self.assertAlmostEqual(line.vol_shipment_m3, 1.500, places=3)
         finally:
-            rec_100.write({'s2s_decimal': original_s2s})
+            rec_100.write({'s2s_decimal': original_s2s, 's2s_label': original_label})
 
         # 2. Modificar el parámetro sobreancho madenat.s2s_overwidth_inches a 0.250"
         param_obj = self.env['ir.config_parameter'].sudo()
@@ -473,3 +474,53 @@ class TestExportWidthS2SWpB(TransactionCase):
         self.assertNotIn("2.625", method_source, "No debe existir diccionario estático con 2.625 en get_width_s2s_map")
         self.assertNotIn("hardcode legacy", method_source.lower(), "No debe existir mención de hardcode legacy")
 
+
+    # -------------------------------------------------------------------------
+    # G5 (AD-120): UserError de tabla S2S acotado a perfiles imperiales
+    # -------------------------------------------------------------------------
+
+    def test_17_g5_empty_table_blocks_imperial_width(self):
+        """G5: tabla S2S vacia + ancho < direct_width_min_mm (imperial) -> UserError."""
+        config = self.env['madenat.ingestion.config']
+        s2s_records = self.env['lumber.width.s2s.map'].search([])
+        orig_states = {rec.id: rec.active for rec in s2s_records}
+        try:
+            s2s_records.write({'active': False})
+            # Ancho 100 mm < 170 mm (umbral directo): llega a Rama 2 -> tabla vacia -> UserError
+            with self.assertRaises(UserError) as cm:
+                config.resolve_export_width(100.0)
+            self.assertIn("No existen registros activos", str(cm.exception))
+        finally:
+            for rec in s2s_records:
+                rec.write({'active': orig_states[rec.id]})
+
+    def test_18_g5_empty_table_no_error_for_direct_width(self):
+        """G5: tabla S2S vacia + ancho >= direct_width_min_mm -> conversion directa SIN UserError."""
+        config = self.env['madenat.ingestion.config']
+        s2s_records = self.env['lumber.width.s2s.map'].search([])
+        orig_states = {rec.id: rec.active for rec in s2s_records}
+        try:
+            s2s_records.write({'active': False})
+            # Ancho 170 mm >= 170 mm (umbral directo): Rama 4a anticipada -> conversion directa
+            result = config.resolve_export_width(170.0)
+            self.assertAlmostEqual(result, 170.0 / 25.4, places=4,
+                                   msg="Ancho 170 mm debe convertirse directamente sin UserError aunque tabla vacia.")
+        finally:
+            for rec in s2s_records:
+                rec.write({'active': orig_states[rec.id]})
+
+    def test_19_g5_is_s2s_inches_signal_bypasses_table_check(self):
+        """G5: senal is_s2s_inches=True -> Rama 3 (documental) SIN UserError aunque tabla vacia."""
+        config = self.env['madenat.ingestion.config']
+        s2s_records = self.env['lumber.width.s2s.map'].search([])
+        orig_states = {rec.id: rec.active for rec in s2s_records}
+        try:
+            s2s_records.write({'active': False})
+            # is_s2s_inches=True y ancho 100 mm: Rama 3 -> conversion directa + overwidth
+            result = config.resolve_export_width(100.0, is_s2s_inches=True)
+            expected = 100.0 / 25.4 + 0.125
+            self.assertAlmostEqual(result, expected, places=4,
+                                   msg="is_s2s_inches=True debe bypassear la tabla S2S y devolver conversion directa + sobreancho.")
+        finally:
+            for rec in s2s_records:
+                rec.write({'active': orig_states[rec.id]})
