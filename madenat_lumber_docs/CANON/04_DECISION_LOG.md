@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.43.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre de Arnés de Pruebas y Rectificación de D1 (AD-125 / Bloque 4M): rectificación de D1 demostrando sobreescritura colateral de 'direct' a 'warning' por arnés con flag -i (M3); regla canónica de prohibición estricta de -i frente a -u en regresión según Odoo loading.py / convert.py (M1); diagnóstico del flag noupdate en ir_model_data y limitación estructural de _update_xmlids en actualizaciones de módulos (M2); reemplazo de literal 2.36 por MBF_TO_M3 en test_visual_dimension_l3 (M4). Versión 04 12.42.0 → 12.43.0. | Cierre Definitivo Bloque 4L (AD-124). -->
+**Versión documental:** 12.44.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Alcance Real de Ejecuciones con -i y Corrección Forense de Atribución (AD-125 / Bloque 4N): corrección forense de atribución de sobreescritura de D1 al primer -i en 4J (20:28:18 UTC) y no 4K; aclaración de que write_date 21:17:05 reflejaba la última escritura en 4K; corrección de afirmación de 4J de que D1 estaba vigente; documentación de 89 registros reescritos en tablas destino (N1); verificación estructural pura de noupdate en XML para test_12 (N3); prohibición explícita de -i en despliegue (N4). Versión 04 12.43.0 → 12.44.0. | Cierre Arnés 4M (AD-125). -->
+<!-- actualizado: 2026-10-18 — Cierre de Arnés de Pruebas y Rectificación de D1 (AD-125 / Bloque 4M): rectificación de D1 demostrando sobreescritura colateral de 'direct' a 'warning' por arnés con flag -i (M3); regla canónica de prohibición estricta de -i frente a -u en regresión según Odoo loading.py / convert.py (M1); diagnóstico del flag noupdate en ir_model_data y limitación estructural de _update_xmlids en actualizaciones de módulos (M2); reemplazo de literal 2.36 por MBF_TO_M3 en test_visual_dimension_l3 (M4). Versión 04 12.42.0 → 12.43.0. | Cierre Definitivo Bloque 4L (AD-124). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): diagnóstico mecanismo cambio parámetro out_of_table_behavior por carga XML -i (L1); corrección tabla dimensional K1 con condiciones canónicas 100 pzas, 1.5", 4.0 m explicando factor 0.8 (L2); aplicación de K1 mediante resolución visual basada en datos en lumber.width.s2s.map activo y erradicación de get_s2s_exclusion_widths y lista residual (L3); corrección de diferencia relativa de 1550 a 6.19e-8 (L4). Versión 04 12.41.0 → 12.42.0. | Cierre Bloque 4K (AD-123). -->
 <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
@@ -3909,11 +3910,32 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
      - En contraste, los parámetros introducidos por primera vez dentro de `<data noupdate="1">` (como `param_direct_width_min_mm`) sí poseen `noupdate = True`.
    - **Acción:** La sintaxis XML es correcta; no procede alteración de XML. Se mejoró `test_12` en `test_export_width_s2s_wpb.py` para auditar la presencia en `ir_model_data` de todos los parámetros esperados y verificar el flag en BD.
 
-3. **M3 — Rectificación Oficial de Decisión D1:**
-   - Se rectifica formalmente el estado de D1: **D1 NO quedó intacta**. El valor `'direct'` fue sobreescrito colateralmente a `'warning'` en la regresión 4K ejecutada con `-i`.
+3. **M3 — Rectificación Oficial de Decisión D1 y Corrección Forense de Atribución (Bloque 4N / N1):**
+   - **Corrección de Atribución:** El primer comando con flag `-i` fue ejecutado en el **Bloque 4J** (`2026-10-18 20:28:18 UTC`) y NO en el Bloque 4K.
+   - En ese instante exacto (`20:28:18 UTC`), el parámetro `madenat.out_of_table_behavior` fue sobreescrito colateralmente de `'direct'` a `'warning'` en la base de datos `madenat_test` al recargar el XML `ingestion_config.xml`.
+   - **Corrección de Afirmación de 4J:** Por lo tanto, la afirmación contenida en el informe de cierre del Bloque 4J asegurando que "D1 permanecía intacta con valor 'direct'" fue técnicamente incorrecta en su momento; D1 ya había sido modificada por el `-i` de 4J.
+   - **Naturaleza del Timestamp de 4K:** La marca `write_date = 2026-10-18 21:17:05.327809` observada posteriormente en el parámetro correspondía únicamente a la **última escritura** producida por la segunda corrida de regresión con `-i` en el Bloque 4K, la cual volvió a sobreescribir con `'warning'`.
+   - **Ventanas UTC Oficiales de Ejecución:**
+     - Bloque 4J: `2026-10-18 20:28:18` a `2026-10-18 20:46:35` UTC (abarcando las corridas de las 17:28, 17:35 y 17:41 local).
+     - Bloque 4K: `2026-10-18 21:07:50` a `2026-10-18 21:21:57` UTC (abarcando las corridas de las 18:07 y 18:17 local).
+   - **Alcance Real en Tablas Destino (Auditoría Forense N1):**
+     - Odoo 18 CE `_update_xmlids` (`ir_model.py:1920`) no actualiza `write_date` en `ir_model_data` en inits/updates si `res_id` y `model` no cambiaron (`WHERE ir_model_data.res_id != EXCLUDED.res_id OR ir_model_data.model != EXCLUDED.model`).
+     - Sin embargo, en las tablas de destino de los modelos cargados, exactamente **89 registros** vinculados a `ir_model_data` fueron reescritos por la carga XML en cada una de esas ejecuciones con `-i`:
+       - `ir.config_parameter`: 13 registros (`out_of_table_behavior` sobreescrito de 'direct' a 'warning'; el resto de parámetros numéricos/JSON coincidían con su valor semilla XML).
+       - `lumber.width.s2s.map`: 15 registros (75 a 155 mm; valores numéricos idénticos al XML, sin alteración de datos de negocio; 0 entradas en `mail_tracking_value` y `mail_message`).
+       - `lumber.export.formula`: 3 registros (`f5085`, `f1550`, `metric`; factores idénticos). Nota: `deduction_factor` no existe como columna desde su retiro en Bloque 4F (AD-119).
+       - `lumber.profile.subproduct.rule`: 7 registros.
+       - `lumber.thickness.visual.rule`: 5 registros.
+       - `lumber.blank.nominal.map`: 8 registros.
+       - `lumber.ingestion.format`: 4 registros.
+       - `lumber.document.checklist`: 6 registros.
+       - `stock.location`: 1 registro (`patio_ferramenta`, id=12564, `is_patio=False` preservado).
+       - `madenat.subproducto`: 2 registros (`subprod_rough`, `subprod_s2s`).
+       - `res.groups`: 10 registros.
+       - `ir.ui.menu`: 15 registros.
    - **Valor Vigente:** `'warning'` es el valor actual en `madenat_test`. En apego estricto a D1 (prohibición de cambios manuales de datos/configuración en BD), **el valor NO se restaura**.
    - **Efecto Operativo:** Ante anchos fuera de tabla S2S y menores a 170 mm, el sistema opera con advertencia (`warning`), emitiendo alertas en el chatter y registro de log sin bloquear la ingesta.
-   - **Riesgo de Repetición:** Mitigado definitivamente al erradicar el uso del flag `-i` en los scripts de prueba.
+   - **Riesgo de Repetición:** Mitigado definitivamente al erradicar el uso del flag `-i` tanto en los scripts de prueba (M1) como en el runbook de despliegue en CANON/02 §18.2 (N4).
 
 4. **M4 — Erradicación de Literal en Test:**
    - En `test_visual_dimension_l3.py` (método `test_05`), se reemplazó el literal `Decimal('2.36')` por la constante canónica del sistema `MBF_TO_M3` importada desde `models.utils_uom`. Cero literales de negocio hardcodeados.

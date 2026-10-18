@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.42.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): item (e) RESUELTO mediante resolución visual basada en lumber.width.s2s.map activo y erradicación definitiva de get_s2s_exclusion_widths y lista residual en código. Versión 05 8.41.0 → 8.42.0. Sin push ni despliegue. -->
+**Versión documental:** 8.43.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4N (AD-125 / N2): registro como DIFERIDO de deuda técnica (f) parámetros redundantes u obsoletos en ir.config_parameter (madenat.width_s2s_map con 16 entradas frente a 15 de la tabla activa D6, madenat.blanks_nominal_map y madenat.thickness_visual_ranges como fallbacks residuales de Fase 1). Versión 05 8.42.0 → 8.43.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): item (e) RESUELTO mediante resolución visual basada en lumber.width.s2s.map activo y erradicación definitiva de get_s2s_exclusion_widths y lista residual en código. Versión 05 8.41.0 → 8.42.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-122): registro formal como DIFERIDO de deuda técnica (a) LUMBER_DIMENSION_MAP, (b) mapa Blanks de respaldo, (c) rangos espesor visual, (d) TD-122 largo métrico en intake_wizard, (e) get_s2s_exclusion_widths y lista de exclusiones (K1). Versión 05 8.40.0 → 8.41.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): registro de deuda técnica TD-122 para rangos heurísticos en intake_wizard.py:314, normalización de script de salud y pruebas oficiales de integridad. Versión 05 8.38.0 → 8.39.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
@@ -1258,4 +1259,16 @@ Las siguientes piezas de deuda técnica han sido identificadas, clasificadas y d
 - **Evidencia de Cierre:** `madenat_guia_processing.py:3823, 3843` actualizado para resolver visualmente el ancho rough contra el modelo `lumber.width.s2s.map` activo. Si existe, retorna `s2s_label` (`5 5/8` para 150 mm); si está ausente, retorna formato métrico `{mm}mm`.
 - **Erradicación:** Retirada la función deprecada `get_s2s_exclusion_widths()` y su lista estática `[150.0, 160.0, 170.0, 180.0, 200.0]` en `madenat_ingestion_config.py` al verificarse 0 referencias activas en todo el sistema.
 - **Pruebas:** Suite TDD `TestVisualDimensionL3` (5 tests PASS). Cero recálculo ni alteración de registros históricos (Consultas B y A.2 100% invariantes).
+
+#### (f) Parámetros Redundantes u Obsoletos en ir.config_parameter (Bloque 4N / N2)
+- **Estado:** **DIFERIDO**.
+- **Evidencia de Auditoría (Grep Cross-Módulo N2):**
+  - `madenat.width_s2s_map` (`ingestion_config.xml:23-26`): Contiene un JSON con 16 entradas (incluyendo `"170": 170.0`), mientras que la tabla activa persistente `lumber.width.s2s.map` posee 15 registros canónicos (75 a 155 mm). Grep exhaustivo confirma que **cero módulos ni líneas de código en Python leen este parámetro en runtime**. Toda la ruta activa consulta directamente el modelo persistente `lumber.width.s2s.map` (única fuente de verdad D6). No existe riesgo operativo de segunda fuente, pero el parámetro permanece como residuo técnico en base de datos y XML semilla.
+  - `madenat.blanks_nominal_map` (`ingestion_config.xml:10-13`): Solo es consultado en `madenat_ingestion_config.py:50` (`get_blank_nominal_map()`) como fallback secundario (Fuente 2) si el modelo `lumber.blank.nominal.map` estuviese vacío.
+  - `madenat.thickness_visual_ranges` (`ingestion_config.xml:30-33`): Solo es consultado en `madenat_ingestion_config.py:263` (`get_thickness_visual_ranges()`) como fallback secundario (Fuente 2) si el modelo `lumber.thickness.visual.rule` estuviese vacío.
+- **Utilidad Esperada:** Eliminar duplicidad de configuración entre parámetros JSON y tablas ORM maestras (`lumber.width.s2s.map`, `lumber.blank.nominal.map`, `lumber.thickness.visual.rule`), simplificando el mantenimiento y evitando divergencias conceptuales (como la discrepancia de 16 vs 15 entradas).
+- **Diseño Mínimo:**
+  - Deprecar y retirar del archivo semilla `ingestion_config.xml` el parámetro `param_width_s2s_map` y unificar los getters de Blanks y Espesores Visuales bajo el patrón adoptado para S2S (AD-119 / UserError si la tabla maestra está vacía, sin fallback a JSON ni a tuplas en código).
+  - Prohibir en el modelo que `madenat.width_s2s_map` sea considerado fallback o fuente de verdad.
+- **Criterio de Cierre:** Retiro de los tres parámetros en `ingestion_config.xml` y getters simplificados que deleguen 100% en sus respectivos modelos ORM.
 
