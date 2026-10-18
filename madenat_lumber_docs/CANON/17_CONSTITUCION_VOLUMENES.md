@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.2.0
-**Fecha de actualización:** 2026-10-01  <!-- 2026-10-01 (2): §2.8 reescrita (el SV nunca se exporta; la salida del SV ocurre por la imputación, AD-87); §7 alinea AD-82/AD-84 (aprobadas) y AD-83 (reemplazada por AD-87). Resuelve CR-19-01. -->
+**Versión documental:** 1.3.0
+**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §9 incorporación de fórmulas canónicas F1 a F7 (AD-116), rango S2S 75–155 mm (+1/8"), transición directa en mm desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, y patios creables. Versión 1.2.0 → 1.3.0. -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -188,3 +188,44 @@ Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, 
 - Informe de auditoría de volúmenes del 2026-10-01 (verificaciones de código con archivo:línea y consultas de solo lectura sobre `madenat_test`).
 - Auditoría asociada: `16_AUDITORIA_20261001.md`.
 - Nomenclatura en español con términos técnicos en inglés entre paréntesis, conforme a las convenciones del vault.
+
+---
+
+## 9. Especificación Operativa de Fórmulas y Cubicaciones (Cristhian Elgueta — 2026-10-17 / AD-116)
+
+> Fuente de verdad primaria: Instrucciones de Operaciones (Cristhian Elgueta) y biblioteca de muestras en `muestras_documentos_ingreso/` (subcarpeta `Ejercicio Completo Cristhian Elgueta/`, `LISTADO TARJAS MN MSC ELENOIRE FA543R.xlsx`, `1° SELLOS MSC ELENOIRE FA543R RESERVA 29020535.xlsx`, `FACTURACION PACKING LIST...`, Guías 19820, 19826, 19827, 19846, 39485..39522).
+
+### 9.1 Fórmulas Canónicas de Negocio (F1 a F4)
+
+| Fórmula | Denominación | Expresión Matemática | Propósito y Ámbito |
+|---|---|---|---|
+| **F1** | **Compra (Métrica)** | $\frac{\text{Esp}_{mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Compra y recepción en verde/bruto. Base del volumen nominal (`vol_purchase_m3`). |
+| **F2** | **Embarque (S2S Imperial)** | $\frac{\text{Esp}_{in} \times (\text{Ancho}_{S2S} + 0,125") \times \text{Largo}_{m} \times \text{Piezas}}{1550}$ | Exportación de madera seca cepillada S2S. En escuadría 6/4, $\text{Esp}_{in} = 1,5"$; en 5/4, $\text{Esp}_{in} = 1,25"$. Sobreancho $+1/8"$ ($0,125"$) obligatorio en todo el rango S2S. |
+| **F3** | **Real Físico** | $\frac{38,1 \text{ mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Geometría física neta ($38,1\text{ mm} = 1,5"$). Matemáticamente equivalente a $\frac{1,5" \times (\text{Ancho}_{mm}/25,4) \times \text{Largo}_{m} \times \text{Piezas}}{1550}$. |
+| **F4** | **Blanks (Exportación)** | $\frac{1,5" \times (\text{Ancho}_{in} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas}}{5085,312}$ | Exportación en pies. Sin deducción de $1/16"$ en el espesor (espesor neto nominal $1,5"$). |
+
+### 9.2 Regla de Transición de Anchos S2S (F5)
+
+- **Rango Rough 75 a 155 mm:** Utilizan obligatoriamente la tabla S2S contractual más el sobreancho de $1/8"$ ($0,125"$).
+  - Ejemplo 100 mm: $3\text{ }5/8" (3,625") + 1/8" (0,125") = 3,750"$.
+  - Ejemplo 125 mm: $4\text{ }5/8" (4,625") + 1/8" (0,125") = 4,750"$.
+  - Ejemplo 150 mm: $5\text{ }5/8" (5,625") + 1/8" (0,125") = 5,750"$.
+  - Ejemplo 155 mm: $5\text{ }7/8" (5,875") + 1/8" (0,125") = 6,000"$.
+- **Rango desde 170 mm (170, 175, 180, 195, 200 mm):** El ancho es directo en milímetros convertidos a pulgadas ($\text{Ancho}_{mm} / 25,4$), sin adición de sobreancho de $1/8"$.
+- **Extinción de la lista fija de exclusiones:** Queda formalmente derogada la lista estática `[150, 160, 170, 180, 200]`. El corte se rige por la regla de transición en 170 mm.
+
+### 9.3 Blanks en Stock y Declaración Fitosanitaria (F6)
+
+- **Pase Directo a Stock:** Los paquetes de Blanks Clear pasan directo a stock físico y documental cuando se envían; no están sujetos a recálculos dimensionales en el ingreso.
+- **Declaración Fitosanitaria:** En todo documento oficial y certificado fitosanitario, los Blanks se declaran y describen taxativamente como **"Madera Aserrada Seca"**.
+- **Parámetros de Secado en Horno (Kiln Drying):** Se deben almacenar y certificar:
+  - Temperatura de secado: 50–90 °C.
+  - Duración del secado: 50–80 horas.
+  - Fecha de secado.
+
+### 9.4 Patios y Reglas Generales (F7)
+
+- **Precisión Numérica:** Todos los volúmenes en el sistema se calculan y presentan con **3 decimales**.
+- **Editabilidad Operativa:** El volumen y el metraje MBF calculados deben permitir modificación manual justificada por el usuario.
+- **Patios Creables:** Soporte explícito en Odoo para que Operaciones cree y gestione recintos como ubicaciones internas (`stock.location`): Patio MARVAL (acopio), Patio Ferramenta (servicio de cepillado), Patio Puerto Coronel (embarque portuario).
+- **Consolidación por Motonave:** Consolidación por tarja y contenedor con listados agrupados por buque/motonave (`shipping.vessel`).

@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.32.0
-**Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
+**Versión documental:** 8.33.0
+**Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-10 (2) — nueva sección «Conciliación envío–retorno (Bloque A/B/C) — IMPLEMENTADO (2026-10-10)»: modelo `madenat.processor.return.link`, cierra la brecha (a) de CANON/19 §19.10; Bloque D cuantitativo PENDIENTE. Versión 05 8.16.0 → 8.17.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (3) — sección «Conciliación envío–retorno (Bloque A/B/C)»: **ajuste de integridad** (`19` §19.13): reversa vs. procedencia, reimputación con historia, consistencia de compañía + regla de registro, elegibilidad dura (done/tipo interno), volúmenes N:M referenciales (`aggregator=False`). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Versión 05 8.17.0 → 8.18.0. Bloque D fuera de alcance. Sin commit/push. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
@@ -1044,4 +1045,23 @@ Sin push ni despliegue. -->
 - **WP-B ancho de exportación:** Uso de la tabla existente en `width_mapping.py` y `lumber.width.s2s.map`, simulación de solo lectura sobre embarques existentes sin recalcular valores almacenados, opción manual con usuario y fecha.
 - **WP-A comparación guía vs packing:** A la precisión declarada de la guía con tope de 3 decimales, estado `ok_rounded`, parametrizable.
 - **WP-D (patios):** Sigue EN ESPERA. No existe "conciliación documental" ni "imputación diferida" aprobadas.
+
+### Bloque 4 — Alineación con Instrucciones de Cristhian (AD-116) — EN ESPERA DE APROBACIÓN
+- [ ] **BK-F12-S2S (Rango S2S 75–155 mm y Transición Milimétrica desde 170 mm):**
+  - Implementar regla de corte dinámico de S2S: rough 75 a 155 mm $\to$ tabla S2S contractual + sobreancho de 1/8" (0,125").
+  - Anchos rough $\ge 170$ mm (170, 175, 180, 195, 200 mm) $\to$ ancho directo en mm ($w_{mm} / 25,4$) sin adición de sobreancho.
+  - Derogar formalmente en código la lista estática `s2s_exclusion_widths` (`[150, 160, 170, 180, 200]`).
+  - Preservar inalterados los datos almacenados preexistentes en `madenat_test`.
+- [ ] **BK-F12-BLANKS-STOCK (Pase Directo a Stock para Blanks Clear):**
+  - Configurar en el wizard y en la ingesta que los Blanks no ejecuten recálculo dimensional al recibirse; pasan directo a stock.
+- [ ] **BK-F12-BLANKS-FORMULA (Fórmula Exportación F4 sin Deducción de Espesor):**
+  - En la rama de exportación para Blanks, aplicar $1,5" \times (\text{Ancho} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas} / 5085,312$ suprimiendo la deducción de cara de 1/16" ($0,0625"$) al espesor.
+- [ ] **BK-F12-PATIOS-UI (Gestión de Patios en Recepción y Consola):**
+  - Habilitar atajo y gestión de Patios como ubicaciones internas (`stock.location`), incluyendo Patio MARVAL, Patio Ferramenta y Patio Puerto Coronel.
+  - Añadir filtro y agrupador por Ubicación/Patio (`group_by_location`) en vistas de recepción de core e intake.
+- [ ] **BK-F12-SECADO (Datos de Secado en Horno y Fitosanitario):**
+  - Incorporar campos en modelo de lote/embarque para capturar parámetros de secado en horno (temperatura 50–90 °C, duración 50–80 h, fecha de proceso).
+  - Asegurar la descripción oficial de Blanks como "Madera Aserrada Seca" en la emisión de certificados fitosanitarios.
+- [ ] **BK-F12-MBF-EDIT (Edición Manual Justificada de Volumen y MBF):**
+  - Habilitar campo de sobreescritura manual auditada para metraje MBF y volumen en líneas de recepción y procesado.
 
