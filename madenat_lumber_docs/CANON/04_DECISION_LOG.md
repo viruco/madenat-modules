@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.38.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Real y Verificación Bloque 4H (AD-121): auditoría y fijación de línea base stock_lot (H1); regresión baseline 1.536 tests con 10 fallas conocidas (6 en core, 4 en logistics, 0 nuevas) (H2); coherencia exacta S2S <= 0.001" con TDD (H3); corrección de decisiones D4/D5 y naturaleza Consulta B (H4); evidencias G1/G2/G3 (H5); verificación estricta de regla 3 decimales en volúmenes en BD y código (H6). Versión 04 12.37.0 → 12.38.0. | Cierre Bloque 4G (AD-120). -->
+**Versión documental:** 12.39.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
 **Estado:** Canonical / activo
 
 ---
@@ -3767,4 +3767,39 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 6. **H6 — Verificación de la Regla de 3 Decimales en Volúmenes:**
    - Verificado mediante SELECT en PostgreSQL que el 100% de los registros de volumen en `stock_lot`, `madenat_guia_processing_line`, `lumber_shipment_line` y `lumber_reception_line` tienen exactamente $\le 3$ decimales (`valor == round(valor, 3)`). 0 valores con más de 3 decimales.
    - Definición de campos auditada: `digits=(16, 3)` en modelos y vistas; redondeo suizo `r3()` con `ROUND_HALF_UP` en todos los cálculos de negocio.
+
+---
+
+## 2026-10-18 — FASE 12 / AD-121 (Bloque 4I): Última Pasada de Cierre Técnico del Bloque 4
+
+**Decisión:** Formalizar el cierre definitivo del Bloque 4 mediante la incorporación de las pruebas de G8 a la suite oficial (1.540 pruebas totales), reconciliación matemática exacta de estadísticas de pruebas en Odoo 18, clasificación integral de datos de negocio dentro del código con registro de la deuda técnica TD-122 en CANON/05, normalización de versiones y adopción de Consultas B y A.2 como pruebas oficiales de integridad en `pre_deploy_health_check.py`, documentación del residuo `TEST-LOT-EX` y ratificación de la decisión D4 en CANON/02 §18.
+
+### Criterios y Resoluciones de la Intervención 4I:
+1. **I1 — Incorporación de Pruebas G8 a la Suite Oficial (`tests/__init__.py` — Commit `ad506e1`):**
+   - Se registró `test_lumber_width_s2s_map_g8` en `madenat_lumber_core/tests/__init__.py`.
+   - La suite completa de regresión ejecutó **1.540 pruebas** (1.536 anteriores + 4 nuevas de G8), con exactamente las 10 fallas históricas conocidas (6 en `core`, 4 en `logistics`; 0 nuevas).
+   - **Reconciliación Matemática de Estadísticas:** Se demostró mediante análisis de `odoo/tests/suite.py:174,189` y `odoo/tests/result.py:249-272` que la diferencia entre las 1.540 pruebas unitarias ejecutadas y las 1.876 entradas reportadas en `odoo.tests.stats` corresponde exactamente a los 336 fixtures de clase (`setUpClass` y `tearDownClass` de las 168 clases de prueba evaluadas): $1.540 + (2 \times 168) = 1.876$.
+2. **I2 — Clasificación de Datos de Negocio en Código y Deuda Técnica TD-122:**
+   - Clasificación de literales y tablas hardcodeadas en 3 categorías:
+     - `madenat_ingestion_config.py:61` (mapa de respaldo de Blanks): Categoría (a) (existe modelo `lumber.blank.nominal.map` y parámetro `madenat.blanks_nominal_map`).
+     - `madenat_ingestion_config.py:275` (rangos de espesor visual): Categoría (a) (existe modelo `lumber.thickness.visual.rule` y parámetro `madenat.thickness_visual_ranges`).
+     - `intake_wizard.py:314` (rango heurístico 1.5 a 6.5 m para detección de perfiles f5085): Categoría (b) (deuda técnica sin equivalente; registrada en CANON/05 como TD-122 con diseño mínimo).
+     - `utils_uom.py:658` (`S2S_WIDTH_LOOKUP`) y `utils_uom.py:950` (`LUMBER_DIMENSION_MAP`): Categoría (a) / (c) (tablas heredadas con modelos equivalentes `lumber.width.s2s.map` y `lumber.thickness.visual.rule`).
+     - `lumber_shipping_rule.py:24` (default 0.125) y `madenat_ingestion_config.py:346` (`get_s2s_exclusion_widths`): Categoría (a) y (c) (parámetro equivalente `madenat.s2s_overwidth_inches` y método formalmente deprecado).
+   - **Citas Verificadas de Constantes Físicas en `utils_uom.py`:** `CONST_M3_TO_IN2_M = Decimal('1550.003')` (línea 609), `BLANK_CLEAR_FACTOR = Decimal('5085.312')` (línea 636) y `S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')` (línea 643).
+3. **I3 — Script de Comprobación Normalizado y Pruebas Oficiales de Integridad:**
+   - Se implementó `normalize_module_version()` para eliminar la falsa advertencia de versión en `madenat_lumber_billing` (`18.0.1.0.0` vs `1.0.0`).
+   - Se definieron como **pruebas oficiales definitivas de integridad** la Consulta B (volúmenes de exportación redondeados a 4 decimales: `5c2152...`, `356e70...`, `bb5863...`) y la Consulta A.2 (identificador y volumen estructural sin marcas temporales: `6b1ec7...`, `e78e02...`, `b13357...`).
+   - La consulta con `write_date` pasa a ser exclusivamente informativa (`[INFO]`) para detección de marcas de tiempo tocadas, sin generar alertas bloqueantes.
+   - Suite TDD implementada y validada en `madenat_lumber_core/tests/test_pre_deploy_health_check.py`.
+4. **I4 — Documentación de Fila Residuo `TEST-LOT-EX` (id 49837):**
+   - Documentada en CANON/17 §10.1 como residuo de exploración con commit en `madenat_test` el 2026-10-17. No se elimina (preservación R5). Regla permanente: toda exploración debe operar con rollback garantizado.
+5. **I5 — Auditoría de 3 Decimales en Vistas, Reportes y Excel:**
+   - 100% de las vistas XML de volumen auditadas contienen `digits="[16, 3]"` o `[12, 3]`.
+   - Plantillas QWeb (`madenat_guia_report_templates.xml`) usan `precision: 3`.
+   - Exportaciones a Excel (`lumber_container.py`, `lumber_export_shipment.py`, `report_helpers.py`) emplean `num_format: '#,##0.000'`.
+   - Detectadas discrepancias menores en código Python interno (`_parse_excel_data` en `madenat_guia_processing.py:4088` con `round(vol, 4)` y `_calculate_mbf_from_fractions` en `stock_lot.py:1243` con `round(mbf, 4)`), con propuesta de diff sin aplicar.
+6. **I6 — Verificación de Método de Entrega en CANON/02 §18:**
+   - Verificado mediante git log/blame que la referencia a `rsync/empaquetado` fue agregada en el borrador técnico de 4G (G9, commit `6682b58`).
+   - Se actualizó CANON/02 §18.1 para ratificar que, conforme a la decisión **D4**, **no se define un método de entrega activo** en esta etapa, quedando las referencias técnicas como diseño referencial documentado previamente.
 

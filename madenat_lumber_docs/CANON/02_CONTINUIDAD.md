@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.42.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): verificación de D4 (método de entrega sin git pull documentado pero no ejecutado), línea base fijada stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 volúmenes redondeados a 4 decimales: 5c2152...) y sumas complementarias. Versión 02 12.41.0 → 12.42.0. Sin push ni despliegue. -->
+**Versión documental:** 12.43.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): verificación de método de entrega no definido (D4), rsync/empaquetado como método previamente documentado en borradores técnicos, y normalización de versiones en script de salud. Versión 02 12.42.0 → 12.43.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): verificación de D4 (método de entrega sin git pull documentado pero no ejecutado), línea base fijada stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 volúmenes redondeados a 4 decimales: 5c2152...) y sumas complementarias. Versión 02 12.41.0 → 12.42.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — §18 **PROCEDIMIENTO OPERACIONAL DE DESPLIEGUE A TEST REMOTO (G9 AD-120 — BORRADOR, NO EJECUTADO)**: método de entrega sin git pull (transferencia por rsync/empaquetado según §17.14), actualización quirúrgica sin -u all según comparación de manifiestos, respaldo triple (BD, filestore, código), validación dual con pre_deploy_health_check.py (G3), hashes MD5 con consulta fijada (G4), impacto de noupdate="1", vectores planilla/blanks y checklist para Cristhian Elgueta. Versión 02 12.40.0 → 12.41.0. Sin push ni despliegue. | 2026-10-10 (1) — §17.16 **CIERRE FUNCIONAL DE PENDIENTES (P0–P4)** en el desarrollo existente `madenat_test` -->
 <!-- actualizado: 2026-10-10 (2) — §17.16.8 aceptación visual (guía 19827, confirmada por Mauricio 2026-10-10) y §17.16.9 flujo de imputación SV confirmado en código (detalle en CANON/19 §19.10). Solo documentación; sin cambios de código, base ni servicios. -->
 <!-- actualizado: 2026-10-10 (3) — §17.16.10 relación de conciliación envío–retorno (Bloque A/B/C): modelo `madenat.processor.return.link`, estados draft/linked/reversed, permisos por rol, append-only, auditoría aditiva, asistente de imputación reutilizado, pestañas y menú. Cierra la brecha (a) de CANON/19 §19.10. Bloque D (cuantitativo) NO implementado. Versión 02 12.17.0 → 12.18.0; 19 1.8.0 → 1.9.0. Sin commit/push. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
@@ -2146,19 +2147,21 @@ balanceados. Versión 02 12.39.0 → **12.40.0**; **índice 12.29.0 → 12.30.0*
 > Este procedimiento define los pasos exactos para una futura entrega y despliegue hacia el servidor TEST remoto (`144.22.50.236` / `/opt/odoo18-test`).
 > En cumplimiento estricto de **D4 / R6**, este procedimiento **NO ha sido ejecutado** en esta intervención y permanece como diseño canónico aprobado para cuando se autorice formalmente la ventana de despliegue.
 
-### 18.1 Método de Entrega y Transferencia (Sin Git Pull)
-- **Constatación de Entorno (§17.14):** En el servidor TEST remoto (`144.22.50.236`), la carpeta `/opt/odoo18-test/custom_addons` **no es un repositorio Git clonado** conectado a la rama de desarrollo `feat/guia-correccion-documental-preservada-20261002`, y el repositorio `/opt/odoo18-test` presenta restricciones de propiedad (`dubious ownership` en git 2.25.1).
-- **Método Canónico de Entrega:** Se prohíbe asumir `git pull`. La entrega de código debe realizarse exclusivamente mediante:
-  1. Empaquetado de artefactos o sincronización dirigida vía `rsync` sobre SSH (`rsync -avz --exclude '__pycache__' --exclude '.git' ./custom_addons/madenat_lumber_core/ usuario@144.22.50.236:/opt/odoo18-test/custom_addons/madenat_lumber_core/`).
-  2. O aplicación de un paquete de cambios `.tar.gz` o `git archive` generado localmente desde el commit de cierre 4G.
+### 18.1 Método de Entrega y Transferencia (Sin Método Definido — Decisión D4)
+- **Decisión Vigente D4:** En cumplimiento de **D4**, **no se ejecuta ni se define un método de entrega activo** al TEST remoto en esta etapa. Se prohíbe asumir `git pull`.
+- **Constatación de Entorno Previa (§17.14):** En el servidor TEST remoto (`144.22.50.236`), la carpeta `/opt/odoo18-test/custom_addons` **no es un repositorio Git clonado** conectado a la rama de desarrollo `feat/guia-correccion-documental-preservada-20261002`, y el repositorio `/opt/odoo18-test` presenta restricciones de propiedad (`dubious ownership` en git 2.25.1).
+- **Procedimiento Técnico Documentado Previamente (Referencial, No Definido):**
+  Como procedimiento de referencia técnica documentado previamente en borradores de trabajo (§17.14), en caso de autorizarse una entrega futura por la Gerencia, las opciones documentadas son:
+  1. Transferencia por empaquetado de artefactos o sincronización dirigida vía `rsync` sobre SSH (`rsync -avz --exclude '__pycache__' --exclude '.git' ./custom_addons/madenat_lumber_core/ usuario@144.22.50.236:/opt/odoo18-test/custom_addons/madenat_lumber_core/`).
+  2. O aplicación de un paquete de cambios `.tar.gz` o `git archive` generado localmente desde el commit de cierre de la rama.
   3. No se tocan carpetas legadas (`.bak/`, `views.backup/`) existentes en el remoto.
 
 ### 18.2 Módulos a Actualizar (Determinación Quirúrgica, Nunca `-u all`)
 - **Regla Estricta:** Queda terminantemente prohibido ejecutar `-u all` (violación de R6).
 - **Comparación de Manifiestos:**
-  - `madenat_lumber_core`: Versión local 18.0.6.16.0 frente a 18.0.6.15.0 instalada. **REFIERE ACTUALIZACIÓN OBLIGATORIA** (`-u madenat_lumber_core`).
+  - `madenat_lumber_core`: Versión local 18.0.6.17.0 frente a 18.0.6.15.0 instalada. **REFIERE ACTUALIZACIÓN OBLIGATORIA** (`-u madenat_lumber_core`).
   - `madenat_lumber_intake`: 18.0.0.18.0 (idéntica en manifiesto y BD remota). No requiere `-u` a menos que se hayan modificado vistas.
-  - `madenat_lumber_billing`: En caso de que la salud previa (G3) reporte discrepancia de versión (instalada `18.0.1.0.0` vs manifiesto `1.0.0`), se puede incluir `-u madenat_lumber_billing`.
+  - `madenat_lumber_billing`: Normalizada la comparación de versión en `pre_deploy_health_check.py` (AD-121), `18.0.1.0.0` coincide con `1.0.0`, descartando falsas alarmas.
   - Comando canónico previsto:
     ```bash
     odoo -c /etc/odoo/odoo.conf -d madenat_test --no-http --stop-after-init -u madenat_lumber_core

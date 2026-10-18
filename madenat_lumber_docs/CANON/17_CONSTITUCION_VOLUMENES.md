@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.9.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4H (AD-121): fijación de línea base única para stock_lot (6667a4bd...), naturaleza real de Consulta B (hash MD5 de volúmenes redondeados a 4 decimales: 5c2152...), sumas complementarias (531.2920 m³) y coherencia exacta decimal/etiqueta <= 0.001" en gobernanza S2S (H3). Versión 1.8.0 → 1.9.0. | 2026-10-18: Cierre Bloque 4G (AD-120). -->
+**Versión documental:** 1.10.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -258,33 +258,15 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
 
 ## 10. Consulta Canónica Fijada de Integridad MD5 (AD-120 G4 / R5)
 
-Para garantizar la inmutabilidad histórica estricta requerida por **R5** y verificar la no-regresión de datos ante intervenciones técnicas y despliegues, se fija la siguiente consulta canónica de verificación dual:
+Para garantizar la inmutabilidad histórica estricta requerida por **R5** y verificar la no-regresión de datos ante intervenciones técnicas y despliegues, se fija la siguiente política canónica de integridad:
 
-### 10.1 Consulta A — Texto Crudo Fijado (Integridad Estructural de Filas y Volúmenes)
-```sql
-SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
-  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(name::text,''), ',' ORDER BY id)) AS hash
-FROM stock_lot
-UNION ALL
-SELECT 'madenat_guia_processing_line', COUNT(*),
-  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(vol_shipment_m3::text,''), ',' ORDER BY id))
-FROM madenat_guia_processing_line
-UNION ALL
-SELECT 'lumber_shipment_line', COUNT(*),
-  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
-FROM lumber_shipment_line;
-```
+### 10.1 Política de Integridad y Pruebas Oficiales (AD-121 / Bloque 4I)
+1. **Pruebas Oficiales de Integridad:** Se definen formalmente la **Consulta B** (volúmenes de negocio redondeados a 4 decimales) y la **Consulta A.2** (identificador, volumen y nombre sin marcas temporales) como las **únicas pruebas determinantes de integridad de negocio**.
+2. **Rol Informativo de la Consulta con `write_date`:** La consulta histórica que incluye `write_date` pasa a ser una herramienta de auditoría **exclusivamente informativa** (aviso de fila tocada). Cualquier divergencia por actualización de marcas temporales (ej. ejecución de pruebas, recálculo interno o sesiones administrativas) no invalida la integridad del sistema mientras las Consultas B y A.2 permanezcan 100% invariantes.
+3. **Regla de Inocuidad en Exploración:** Ningún script exploratorio puede invocar `registry.cursor()` ni ejecutar transacciones con `commit()`. Toda exploración debe ejecutarse obligatoriamente bajo transacción aislada con `rollback()` garantizado.
+4. **Registro de Residuos en Pruebas (`TEST-LOT-EX`):** Se documenta la fila `id=49837` (`name='TEST-LOT-EX'`, `create_date='2026-10-17 18:47:05'`, `create_uid=1`, `vol_shipment_m3=NULL`) en la tabla `stock_lot` como residuo histórico de una exploración previa que ejecutó commit en `madenat_test`. En cumplimiento estricto de **R5**, esta fila **NO se elimina** y queda registrada formalmente en esta línea base.
 
-**Valores canónicos de referencia (Línea Base Única Fijada):**
-| Tabla | Filas | Hash MD5 Canónico | Estado de Invarianza |
-|---|---|---|---|
-| `stock_lot` | 152 | `6667a4bd9f3aeff24a8588d32da23ed2`* | ✅ Línea Base Fijada (Auditada al 2026-10-18) |
-| `madenat_guia_processing_line` | 82 | `b43a26b6fd072ff96ed075ca1e2f585e` | ✅ 100% Invariante |
-| `lumber_shipment_line` | 11 | `b048f9428859b4c960b83b9ddf1cc701` | ✅ 100% Invariante |
-
-*\*Nota de auditoría H1 (AD-121): La línea base previa al cierre del Bloque 4 era `3871c02145712833e3ad9eea526405c5`. Dicho hash varió a `6667a4bd9f3aeff24a8588d32da23ed2` el 2026-10-18 03:40:54 UTC debido a la actualización exclusiva del campo `write_date` en la fila `id=15892` (`SV00000001175`) por el usuario Administrator (`write_uid=2`). Ningún valor de negocio (nombre, piezas ni volúmenes) sufrió alteraciones, según demuestran la Consulta B (`5c2152...`), A.1 (`9e9196...`) y A.2 (`6b1ec7...`) que permanecen 100% idénticas e invariantes. Se fija `6667a4bd9f3aeff24a8588d32da23ed2` como la única línea base oficial a partir del 2026-10-18.*
-
-### 10.2 Consulta B — Hash MD5 de Volúmenes Numéricos Redondeados (Integridad de Negocio)
+### 10.2 Consulta B — Hash MD5 de Volúmenes Numéricos Redondeados (OFICIAL DE NEGOCIO)
 
 La Consulta B es formalmente una verificación de integridad criptográfica basada en los volúmenes de exportación redondeados a 4 decimales:
 ```sql
@@ -307,7 +289,7 @@ SELECT
 FROM lumber_shipment_line;
 ```
 
-**Hashes canónicos de Consulta B (100% Invariantes):**
+**Hashes canónicos oficiales de Consulta B (100% Invariantes):**
 - `stock_lot`: 152 filas · Hash = `5c2152193194066e5585b383ffe3673a` (MATCH EXACTO)
 - `madenat_guia_processing_line`: 82 filas · Hash = `356e70066083febd59645c1212e11ece` (MATCH EXACTO)
 - `lumber_shipment_line`: 11 filas · Hash = `bb5863f5850244b06b9235c2c595709b` (MATCH EXACTO)
@@ -317,7 +299,55 @@ FROM lumber_shipment_line;
 - `madenat_guia_processing_line`: 82 filas · Suma = 295.8210 m³
 - `lumber_shipment_line`: 11 filas · Suma = 53.6030 m³
 
-### 10.3 Gobernanza de Edición de la Tabla S2S (D6 / G8 / H3 — AD-121)
+### 10.3 Consulta A.2 — Hash MD5 Estructural sin Marcas Temporales (OFICIAL ESTRUCTURAL)
+```sql
+SELECT 
+    'stock_lot' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || coalesce(vol_shipment_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+FROM stock_lot
+UNION ALL
+SELECT 
+    'madenat_guia_processing_line' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || coalesce(vol_shipment_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+FROM madenat_guia_processing_line
+UNION ALL
+SELECT 
+    'lumber_shipment_line' as table_name,
+    count(*) as row_count,
+    md5(string_agg(id::text || ':' || coalesce(export_volume_m3::text, 'NULL'), ',' ORDER BY id)) as hash
+FROM lumber_shipment_line;
+```
+
+**Hashes canónicos oficiales de Consulta A.2 (100% Invariantes):**
+- `stock_lot`: 152 filas · Hash = `6b1ec7d8dcd91cc6bd7ff90772759500` (MATCH EXACTO)
+- `madenat_guia_processing_line`: 82 filas · Hash = `e78e0265210add0676b240bed091921f` (MATCH EXACTO)
+- `lumber_shipment_line`: 11 filas · Hash = `b13357af2864a6cbeb3a386dff188a8e` (MATCH EXACTO)
+
+### 10.4 Consulta con `write_date` — Auditoría de Marcas Temporales (INFORMATIVA)
+```sql
+SELECT 'stock_lot' AS tbl, COUNT(*) AS cnt,
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(name::text,''), ',' ORDER BY id)) AS hash
+FROM stock_lot
+UNION ALL
+SELECT 'madenat_guia_processing_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(vol_shipment_m3::text,''), ',' ORDER BY id))
+FROM madenat_guia_processing_line
+UNION ALL
+SELECT 'lumber_shipment_line', COUNT(*),
+  md5(string_agg(id::text || COALESCE(write_date::text,'') || COALESCE(export_volume_m3::text,''), ',' ORDER BY id))
+FROM lumber_shipment_line;
+```
+
+**Línea base fijada informativa:**
+| Tabla | Filas | Hash MD5 Fijado | Estado Informativo |
+|---|---|---|---|
+| `stock_lot` | 152 | `6667a4bd9f3aeff24a8588d32da23ed2`* | Auditado al 2026-10-18 (marca temporal actualizada en id 15892) |
+| `madenat_guia_processing_line` | 82 | `b43a26b6fd072ff96ed075ca1e2f585e` | Coincidente con línea base |
+| `lumber_shipment_line` | 11 | `b048f9428859b4c960b83b9ddf1cc701` | Coincidente con línea base |
+
+### 10.5 Gobernanza de Edición de la Tabla S2S (D6 / G8 / H3 — AD-121)
 1. **Edición Segura:** La tabla `lumber.width.s2s.map` es editable por usuarios de los grupos `group_lumber_config_manager` y `group_madenat_auditoria`.
 2. **Trazabilidad en Chatter:** Toda modificación de `rough_mm`, `s2s_decimal`, `s2s_label` o `active` genera una entrada en el chatter con usuario, fecha y valores anteriores.
 3. **Validación de Coherencia Exacta (H3):** Constraint `_check_decimal_label_coherence` exige coincidencia numérica estricta entre el valor decimal y la fracción (tolerancia máxima de $\pm 0.001"$).

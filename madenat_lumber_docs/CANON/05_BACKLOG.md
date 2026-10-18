@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.38.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
+**Versión documental:** 8.39.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): registro de deuda técnica TD-122 para rangos heurísticos en intake_wizard.py:314, normalización de script de salud y pruebas oficiales de integridad. Versión 05 8.38.0 → 8.39.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4F (AD-119) IMPLEMENTADO en local: F1 tabla S2S sin copia en código y UserError ante tabla vacía; F2 Blanks y retiro limpio de deduction_factor; F3 constante única 1550.003; F4 auditoría de literales; F5 hashes MD5 dual; F6 correcciones de texto y citas; F7 pre-deploy health check; F8/F9 planes de patios y despliegue. Versión 05 8.35.0 → 8.36.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
@@ -1217,4 +1218,12 @@ Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, si
   - Se mantiene la invariancia de los registros existentes de la Guía 26270.
   - Cualquier ajuste o re-liquidación comercial debe realizarse mediante documento de ajuste complementario (nota de débito/crédito o regularización de inventario), NUNCA modificando las líneas históricas de `madenat_guia_processing_line` ni `stock_lot`.
 - **Criterio de Cierre:** 0 modificaciones a filas históricas; MD5 canónico permanece inalterado.
+
+#### (f) Deuda Técnica I2 (TD-122): Rangos Heurísticos de Detección en intake_wizard.py:314
+- **Estado:** **DEUDA TÉCNICA REGISTRADA (AD-121)**.
+- **Utilidad Esperada:** Eliminar rangos numéricos hardcodeados `(1.5 <= val <= 6.5)` en la heurística de detección de discordancia de unidades (perfil `f5085` con largos métricos en `intake_wizard.py:314`).
+- **Diseño Mínimo:**
+  - Crear parámetro del sistema en `ir.config_parameter`: `madenat.metric_length_heuristic_range` (default: `'1.5-6.5'`).
+  - Crear lector en `madenat.ingestion.config` o método helper en `intake_wizard.py` que lea los límites mínimo y máximo desde configuración con fallback seguro.
+- **Criterio de Cierre:** Los límites de detección de largos métricos en el asistente de ingesta son configurables sin modificar código Python.
 
