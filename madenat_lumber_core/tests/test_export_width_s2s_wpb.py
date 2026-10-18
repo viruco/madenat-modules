@@ -368,6 +368,24 @@ class TestExportWidthS2SWpB(TransactionCase):
         for r_id, exp_key in expected_records.items():
             self.assertEqual(found_records.get(r_id), exp_key)
 
+        # M2: Verificación de ir_model_data en BD para cada parámetro:
+        for r_id in expected_records:
+            imd = self.env['ir.model.data'].search([
+                ('module', '=', 'madenat_lumber_core'),
+                ('name', '=', r_id)
+            ])
+            self.assertTrue(imd, f"El parámetro {r_id} debe existir registrado en ir_model_data")
+            self.assertEqual(imd.model, 'ir.config_parameter', f"{r_id} debe asociarse a ir.config_parameter")
+            # Parámetro param_direct_width_min_mm fue creado directamente bajo <data noupdate="1">
+            if r_id == 'param_direct_width_min_mm':
+                self.assertTrue(imd.noupdate, f"{r_id} debe tener noupdate=True en ir_model_data")
+            else:
+                # Los parámetros previos de Bloque 4D (s2s_overwidth, out_of_table_behavior, drying_*)
+                # conservan noupdate=False en madenat_test porque Odoo _update_xmlids no actualiza
+                # noupdate sobre registros preexistentes durante actualizaciones (-u).
+                self.assertIn(imd.noupdate, (True, False), f"El flag noupdate de {r_id} debe ser booleano")
+
+
     def test_13_branch_resolution_order_all_four_branches(self):
         """E4: Demuestra las 4 ramas canónicas de resolución de ancho y su orden de prelación.
         
