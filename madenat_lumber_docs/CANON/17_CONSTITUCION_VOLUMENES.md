@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.11.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4J (AD-122): precisión de IDs reales de stock.location en madenat_test (PUERTO CORONEL: 17, MARVAL: 18, Bodega Tepornac: 19), sin IDs numéricos en código (R3); regla de 3 decimales con r3() ROUND_HALF_UP sin doble redondeo en MBF y volúmenes. Versión 1.10.0 → 1.11.0. | 2026-10-18: Cierre Bloque 4I (AD-121). -->
+**Versión documental:** 1.12.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
@@ -257,6 +257,7 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
   - Patio MARVAL (`WH/Stock/MARVAL`, `id=18` real en `madenat_test`).
   - Bodega Tepornac (`WH/Stock/Bodega Tepornac`, `id=19` real en `madenat_test`).
   - *Regla R3:* Prohibido hardcodear IDs numéricos en código. Toda resolución se realiza por búsqueda de nombre o parámetros en `ir.config_parameter`. En virtud de **D2**, permanecen con `is_patio=False`/null en base de datos.
+  - *(Nota de auditoría K6):* Cualquier mención previa en informes de IDs 27, 28 y 8 queda rotulada formalmente como **INFERENCIA** no verificable (discrepancia de transcripción o fixtures temporales de prueba); los únicos IDs persistentes en la base de datos `madenat_test` son 17, 18 y 19.
 - **Consolidación por Motonave:** Consolidación por tarja y contenedor con listados agrupados por buque/motonave (`shipping.vessel`).
 
 ---

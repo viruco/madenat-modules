@@ -1,7 +1,7 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.40.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4J (AD-122): anti-copia absoluta de tabla S2S en todo el código productivo madenat_*, eliminación de doble redondeo de volúmenes y MBF con r3(), y suite final. Versión 05 8.39.0 → 8.40.0. Sin push ni despliegue. -->
+**Versión documental:** 8.41.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-122): registro formal como DIFERIDO de deuda técnica (a) LUMBER_DIMENSION_MAP, (b) mapa Blanks de respaldo, (c) rangos espesor visual, (d) TD-122 largo métrico en intake_wizard, (e) get_s2s_exclusion_widths y lista de exclusiones (K1). Versión 05 8.40.0 → 8.41.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): registro de deuda técnica TD-122 para rangos heurísticos en intake_wizard.py:314, normalización de script de salud y pruebas oficiales de integridad. Versión 05 8.38.0 → 8.39.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
@@ -1220,11 +1220,42 @@ Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, si
   - Cualquier ajuste o re-liquidación comercial debe realizarse mediante documento de ajuste complementario (nota de débito/crédito o regularización de inventario), NUNCA modificando las líneas históricas de `madenat_guia_processing_line` ni `stock_lot`.
 - **Criterio de Cierre:** 0 modificaciones a filas históricas; MD5 canónico permanece inalterado.
 
-#### (f) Deuda Técnica I2 (TD-122): Rangos Heurísticos de Detección en intake_wizard.py:314
-- **Estado:** **DEUDA TÉCNICA REGISTRADA (AD-121)**.
-- **Utilidad Esperada:** Eliminar rangos numéricos hardcodeados `(1.5 <= val <= 6.5)` en la heurística de detección de discordancia de unidades (perfil `f5085` con largos métricos en `intake_wizard.py:314`).
-- **Diseño Mínimo:**
-  - Crear parámetro del sistema en `ir.config_parameter`: `madenat.metric_length_heuristic_range` (default: `'1.5-6.5'`).
-  - Crear lector en `madenat.ingestion.config` o método helper en `intake_wizard.py` que lea los límites mínimo y máximo desde configuración con fallback seguro.
-- **Criterio de Cierre:** Los límites de detección de largos métricos en el asistente de ingesta son configurables sin modificar código Python.
+### Deuda Técnica Diferida del Bloque 4 (AD-122 / Bloque 4K)
+
+Las siguientes piezas de deuda técnica han sido identificadas, clasificadas y diferidas formalmente para su resolución futura con diseño mínimo y criterio de cierre:
+
+#### (a) LUMBER_DIMENSION_MAP (Uso Activo en _find_closest_standard)
+- **Estado:** **DIFERIDO**.
+- **Evidencia:** `madenat_guia_processing.py:34, 314, 332, 388, 3829` (invocado por `_find_closest_standard` para sugerir dimensiones estándar).
+- **Utilidad Esperada:** Desacoplar el mapeo de dimensiones estándar de madera del código Python estático hacia modelos configurables en base de datos.
+- **Diseño Mínimo:** Delegar la resolución de estándares al modelo ORM `lumber.thickness.visual.rule` o a una tabla de maestros estándar de la compañía.
+- **Criterio de Cierre:** `_find_closest_standard` resuelve dimensiones estándar desde BD sin requerir `LUMBER_DIMENSION_MAP` en `utils_uom.py`.
+
+#### (b) Mapa de Respaldo de Blanks en Código (DEFAULT_BLANKS_NOMINAL_MAP)
+- **Estado:** **DIFERIDO**.
+- **Evidencia:** `madenat_ingestion_config.py:61-91` (`DEFAULT_BLANKS_NOMINAL_MAP` como fallback de arranque).
+- **Utilidad Esperada:** Erradicar la copia estática de espesores/anchos nominales de Blanks, consolidando como única fuente de verdad el modelo `lumber.blank.nominal.map` existente en BD.
+- **Diseño Mínimo:** Si la tabla `lumber.blank.nominal.map` no contiene registros, lanzar `UserError` accionable (mismo patrón adoptado para S2S en AD-119) o leer parámetro del sistema sin mantener copia en código.
+- **Criterio de Cierre:** Retiro de `DEFAULT_BLANKS_NOMINAL_MAP` en `madenat_ingestion_config.py`.
+
+#### (c) Rangos de Espesor Visual en Código (DEFAULT_THICKNESS_VISUAL_RANGES)
+- **Estado:** **DIFERIDO**.
+- **Evidencia:** `madenat_ingestion_config.py:275-296` (`DEFAULT_THICKNESS_VISUAL_RANGES` como fallback).
+- **Utilidad Esperada:** Consolidar el modelo `lumber.thickness.visual.rule` como fuente exclusiva de reglas de asignación de cuartos comerciales (4/4, 5/4, 6/4, 8/4).
+- **Diseño Mínimo:** Delegar `get_thickness_visual_ranges()` exclusivamente a `lumber.thickness.visual.rule` con fallback a conversión fraccional matemática pura (`round(mm/25.4 * 4)/4`), sin tupla de rangos hardcodeados en código.
+- **Criterio de Cierre:** Retiro total de `DEFAULT_THICKNESS_VISUAL_RANGES` en Python.
+
+#### (d) Rango Heurístico de Detección de Largos Métricos (TD-122)
+- **Estado:** **DIFERIDO**.
+- **Evidencia:** `intake_wizard.py:314` (`1.5 <= val <= 6.5` en heurística de perfil `f5085`).
+- **Utilidad Esperada:** Parametrizar la heurística de detección de discordancia de unidades en el asistente de ingesta.
+- **Diseño Mínimo:** Crear parámetro del sistema `madenat.metric_length_heuristic_range` en `ir.config_parameter` (default: `'1.5-6.5'`), leído dinámicamente por el wizard.
+- **Criterio de Cierre:** Los límites de detección de largos métricos son configurables por el usuario administrador sin editar código fuente.
+
+#### (e) get_s2s_exclusion_widths y Lista de Exclusiones Residual (K1)
+- **Estado:** **DIFERIDO** (Decisión de Mauricio).
+- **Evidencia:** `madenat_ingestion_config.py:346-373` (lista residual `[150, 160, 170, 180, 200]`) y llamada activa en `madenat_guia_processing.py:3858` (`_compute_visual_dimension`).
+- **Utilidad Esperada:** Corregir la asimetría donde 150 mm se presenta visualmente como `'150mm'` pero se cubica como exportación S2S (`5.750"` = 5 5/8" + 1/8"), eliminando discrepancias entre etiqueta visual, cálculo de MBF y volumen en m³.
+- **Diseño Mínimo:** Si el ancho rough está en `lumber.width.s2s.map`, el visual adopta la etiqueta de fracción S2S (`s2s_label`); si está ausente de la tabla, adopta formato métrico (`{mm}mm`). Retirar la función deprecada `get_s2s_exclusion_widths()`.
+- **Criterio de Cierre:** Cero divergencias entre ancho visual y fórmula de exportación; erradicación definitiva de la lista de exclusión en código.
 

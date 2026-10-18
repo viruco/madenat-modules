@@ -530,7 +530,7 @@ def run_health_check(env):
         print("\nRESULTADO: FALLO — codigo de salida 1.")
         return 1
 
-    print("\nRESULTADO: EXITOSO — sistema integro para despliegue (codigo de salida 0).")
+    print("\nRESULTADO: EXITOSO — comprobación completada (codigo de salida 0).")
     return 0
 
 

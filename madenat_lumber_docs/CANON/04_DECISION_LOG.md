@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.40.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4J (AD-122): anti-copia absoluta de tabla S2S en todo el código madenat_* con eliminación de S2S_WIDTH_LOOKUP y S2S_WIDTH_MAP (J1); eliminación de doble redondeo de volúmenes y MBF con r3() ROUND_HALF_UP único y TDD (J2); suite y reconciliación final (J3); precisión de IDs reales de stock.location 17, 18, 19 (J4); diffs de desacople sin aplicar (J5); correcciones documentales y ratificación D4 (J6). Versión 04 12.39.0 → 12.40.0. | Cierre Bloque 4I (AD-121). -->
+**Versión documental:** 12.41.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
 **Estado:** Canonical / activo
 
@@ -3831,5 +3831,31 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
    - Cero eliminación de `LUMBER_DIMENSION_MAP` ni `get_s2s_exclusion_widths` al constatarse que ambos tienen llamadas productivas activas en `madenat_guia_processing.py`.
 6. **J6 — Ratificación D4 en CANON/02 §18.1:**
    - El texto sobre empaquetado/rsync se clasifica formalmente como ejemplo ilustrativo preliminar sin decisión de método de entrega.
+
+---
+
+### AD-123 — Cierre Técnico Bloque 4K: Habilitación de Pruebas Pre-Deploy, Concordancia de Vectores Guía 26270 y Diagnóstico Dimensional (2026-10-18)
+
+**Contexto:** Bloque 4K — Pasada final de cierre del Bloque 4.  
+**Decisiones Adoptadas:**
+1. **K1 — Diagnóstico de `get_s2s_exclusion_widths` y Propuesta de Desacople:**
+   - Se constató que `get_s2s_exclusion_widths()` se invoca activamente en `madenat_guia_processing.py:3858` (`_compute_visual_dimension`), utilizando la lista por defecto `[150.0, 160.0, 170.0, 180.0, 200.0]` definida en `madenat_ingestion_config.py:346-373`.
+   - Se documentó que para 150 mm el ancho visual se genera como `'150mm'`, mientras que el volumen de exportación se cubica con la tabla S2S (5 5/8" + 1/8" = 5.750"), provocando asimetría con el cálculo de MBF fraccional.
+   - Se diseñó la propuesta de diff basada en datos (si el ancho rough está en `lumber.width.s2s.map`, el visual adopta la etiqueta de fracción S2S; si no, directo en mm; sin listas hardcodeadas en código), manteniéndola sin aplicar a la espera de la decisión de negocio de Mauricio.
+2. **K2 — Clarificación de Vector Guía 26270 (Almacenado vs. Recalculado):**
+   - Se rotuló explícitamente en `test_double_rounding_j2.py` la distinción técnica:
+     - **Valor Almacenado:** 17 líneas históricas suman exactamente `48.009 m³` (conforme a Consulta B / A.2 y preservación D3).
+     - **Valor Recalculado:** Bajo la regla vigente F2 (AD-116), las dos líneas de 150 mm dan 3.812 m³ y 0.480 m³ (total 4.292 m³ vs 4.408 m³ almacenados), totalizando `47.893 m³` para las 17 líneas (idéntico a `test_07` en `test_export_width_s2s_wpb.py`).
+3. **K3 — Habilitación de `test_pre_deploy_health_check.py` con `TransactionCase`:**
+   - Se diagnosticó que el test runner de Odoo filtraba `TestPreDeployHealthCheck` porque heredaba de `unittest.TestCase` y carecía del tag `post_install` que provee `odoo.tests.common.TransactionCase`.
+   - Modificada la herencia a `TransactionCase`, permitiendo que las 2 pruebas corran dentro de la suite oficial.
+4. **K4 — Verificación Matemática de Invarianza de la Constante 1550:**
+   - Se comprobó mediante script de sólo lectura con rollback que la variación de `1550.003096` a `1550.003` produce **cero diferencias a 3 decimales** en el 100% de los registros almacenados en `madenat.guia.processing.line`, `stock.lot`, `lumber.reception.line` y `lumber.shipment.line`. Se ratifica la vigencia de `CONST_M3_TO_IN2_M = Decimal('1550.003')`.
+5. **K5 — Registro Formal de Deuda Técnica Diferida:**
+   - Registradas como **DIFERIDO** en CANON/05 las deudas: (a) `LUMBER_DIMENSION_MAP`, (b) mapa de Blanks de respaldo, (c) rangos de espesor visual, (d) TD-122 largos métricos en intake, (e) `get_s2s_exclusion_widths`.
+6. **K6 — Normalización de Reporte y Redacción:**
+   - Se ajustó el mensaje final del script de comprobación a `"comprobación completada"` eliminando la referencia a despliegue para honrar D4.
+   - Se catalogó formalmente como **INFERENCIA** cualquier cita previa de IDs 27, 28 y 8 para las ubicaciones de patio, ratificando los IDs persistentes 17, 18 y 19.
+
 
 
