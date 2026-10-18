@@ -5,7 +5,7 @@ Pruebas de Resolución Visual de Anchos Basada en Datos (Bloque 4L / L3 / AD-124
 
 from decimal import Decimal
 from odoo.tests.common import TransactionCase
-from odoo.addons.madenat_lumber_core.models.utils_uom import r3
+from odoo.addons.madenat_lumber_core.models.utils_uom import r3, MBF_TO_M3
 
 
 class TestVisualDimensionL3(TransactionCase):
@@ -64,7 +64,7 @@ class TestVisualDimensionL3(TransactionCase):
         thick_in = Decimal('1.5')
         length_m = Decimal('4.0')
         const_1550 = Decimal('1550.003')
-        factor_mbf_m3 = Decimal('2.36')
+        factor_mbf_m3 = MBF_TO_M3
         length_ft = length_m / Decimal('0.3048')
 
         for r in active_recs:
