@@ -196,7 +196,7 @@ class LumberExportFormula(models.Model):
                 'formula_kind': 'blank_clear',
                 'unit_mode': 'imperial_feet',
                 'principal_factor': float(utils_uom.BLANK_CLEAR_FACTOR),
-                'deduction_factor': float(utils_uom.FACE_DEDUCTION_INCH),
+                'deduction_factor': 0.0,
                 's2s_adjustment_mode': 'none',
                 'mbf_divisor': float(utils_uom.MBF_DIVISOR),
                 'source': 'fallback_utils_uom',

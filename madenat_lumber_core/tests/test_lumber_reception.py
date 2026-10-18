@@ -393,26 +393,25 @@ class TestLumberReception(TransactionCase):
           - A: 1.5625" × 2.625" × 16 ft × 416 = 5.399 m³
           - B: 1.5625" × 3.625" × 16 ft × 286 = 5.062 m³
         """
-        def _make_case(recepcion, idx, width_document_value, pieces):
-            # El guard de `_compute_export_values` exige largo en metros > 0
-            # (l_m = length_nominal si > 0, sino length). Se usa length_nominal
-            # (16 ft = 4.8768 m) para satisfacerlo sin disparar la validación
-            # dimensional del create (que exige thickness/width válidos en mm).
-            return self.LumberReceptionLine.create({
+        def _make_case(recepcion, idx, width_document_value, pieces, thickness='1.5', vol_doc=None):
+            vals = {
                 'reception_id': recepcion.id,
                 'lot_name': f'MSC-{idx}',
                 'product_id': self.product.id,
                 'subproduct_id': self.subproduct.id,
-                'thickness_document_value': '1.5625',
+                'thickness_document_value': thickness,
                 'width_document_value': width_document_value,
                 'length_nominal': 4.8768,
                 'length_input_raw': 16.0,
                 'lengthuom': 'ft',
                 'pieces': pieces,
                 'export_calculation_rule': 'f5085',
-            })
+            }
+            if vol_doc is not None:
+                vals['vol_documental_m3'] = vol_doc
+            return self.LumberReceptionLine.create(vals)
 
-        # Caso MSC VIRGO A
+        # Caso MSC VIRGO A (espesor 1.5" nominal limpio según F4/F6 AD-116)
         recepcion_a = self.LumberReception.create({
             'name': 'TEST-T13B-MSCA',
             'supplier_id': self.supplier.id,
@@ -423,7 +422,7 @@ class TestLumberReception(TransactionCase):
         self.assertAlmostEqual(linea_a.vol_shipment_m3, 5.399, places=3,
             msg='T13b: MSC VIRGO A debe dar 5.399 m³')
 
-        # Caso MSC VIRGO B
+        # Caso MSC VIRGO B (espesor 1.5" nominal limpio según F4/F6 AD-116)
         recepcion_b = self.LumberReception.create({
             'name': 'TEST-T13B-MSCB',
             'supplier_id': self.supplier.id,
@@ -433,6 +432,73 @@ class TestLumberReception(TransactionCase):
         self.env.flush_all()
         self.assertAlmostEqual(linea_b.vol_shipment_m3, 5.062, places=3,
             msg='T13b: MSC VIRGO B debe dar 5.062 m³')
+
+    def test_13c_blanks_vectors_f4_and_direct_to_stock(self):
+        """T13c (AD-116 Bloque 4B): Vectores F4 Blanks y pase directo a stock.
+        Vectores especificados en F4/F6:
+          - 16 ft x 250 pcs (espesor 6/4=1.5", ancho 3 5/8 + 1/8 = 3.75") = 4.425 m³
+          - 16 ft x 270 pcs (espesor 6/4=1.5", ancho 3 5/8 + 1/8 = 3.75") = 4.778 m³
+        Pase directo a stock: conserva el volumen declarado en el documento sin recálculo.
+        """
+        recepcion = self.LumberReception.create({
+            'name': 'TEST-T13C-BLANKS',
+            'supplier_id': self.supplier.id,
+            'ingestion_profile': 'f5085',
+        })
+
+        # Vector 1: 16 ft x 250 pcs -> 4.425 m³ (ancho 3 5/8 = 3.625")
+        l1 = self.LumberReceptionLine.create({
+            'reception_id': recepcion.id,
+            'lot_name': 'BLK-VEC-250',
+            'product_id': self.product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness_document_value': '1.5',
+            'width_document_value': '3.625',
+            'length_nominal': 4.8768,
+            'length_input_raw': 16.0,
+            'lengthuom': 'ft',
+            'pieces': 250,
+            'export_calculation_rule': 'f5085',
+        })
+
+        # Vector 2: 16 ft x 270 pcs -> 4.778 m³ (ancho 3 5/8 = 3.625")
+        l2 = self.LumberReceptionLine.create({
+            'reception_id': recepcion.id,
+            'lot_name': 'BLK-VEC-270',
+            'product_id': self.product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness_document_value': '1.5',
+            'width_document_value': '3.625',
+            'length_nominal': 4.8768,
+            'length_input_raw': 16.0,
+            'lengthuom': 'ft',
+            'pieces': 270,
+            'export_calculation_rule': 'f5085',
+        })
+
+        # Vector 3: Pase directo a stock con volumen documental declarado (ej: 4.500 m³)
+        l3 = self.LumberReceptionLine.create({
+            'reception_id': recepcion.id,
+            'lot_name': 'BLK-DIRECT-STOCK',
+            'product_id': self.product.id,
+            'subproduct_id': self.subproduct.id,
+            'thickness_document_value': '1.5',
+            'width_document_value': '3.625',
+            'length_nominal': 4.8768,
+            'length_input_raw': 16.0,
+            'lengthuom': 'ft',
+            'pieces': 250,
+            'vol_documental_m3': 4.500,
+            'export_calculation_rule': 'f5085',
+        })
+
+        self.env.flush_all()
+        self.assertAlmostEqual(l1.vol_shipment_m3, 4.425, places=3,
+            msg='T13c: Vector 1 (250 pcs) debe dar 4.425 m³')
+        self.assertAlmostEqual(l2.vol_shipment_m3, 4.778, places=3,
+            msg='T13c: Vector 2 (270 pcs) debe dar 4.778 m³')
+        self.assertEqual(l3.vol_shipment_m3, 4.500,
+            msg='T13c: Pase directo debe preservar vol_documental_m3 (4.500 m³)')
 
     def test_14_edge_cases_volumen_nulo_bloquea(self):
         """T14: Edge cases volumen nulo - bloquea confirmación"""

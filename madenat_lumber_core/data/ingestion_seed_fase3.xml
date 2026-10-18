@@ -15,12 +15,12 @@
             <field name="formula_kind">blank_clear</field>
             <field name="unit_mode">imperial_feet</field>
             <field name="principal_factor" eval="5085.312"/>
-            <field name="deduction_factor" eval="0.0625"/>
+            <field name="deduction_factor" eval="0.0"/>
             <field name="s2s_adjustment_mode">none</field>
             <field name="mbf_divisor" eval="12000.0"/>
             <field name="threshold_note">Aplica solo cuando largo está en pies (length_input_raw &gt; 0)</field>
-            <field name="notes">Fórmula canónica Blank Clear según Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx.
-Deducción de cara: -1/16" (0.0625). Sin ajuste S2S adicional.
+            <field name="notes">Fórmula canónica Blank Clear F4 (AD-116).
+Sin deducción de cara: 0.0 (1.5" nominal limpio).
 El largo se toma de length_input_raw (pies).</field>
         </record>
 

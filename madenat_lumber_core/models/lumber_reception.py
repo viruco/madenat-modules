@@ -28,6 +28,7 @@ from .utils_uom import (
     r4,
     decimal_inch_to_fraction_simple,
     normalize_oc_key,
+    m3_to_mbf,
 )
 import base64
 import io
@@ -724,15 +725,18 @@ class LumberReceptionLine(models.Model):
                 # 3. MATRIZ DE INGENIERÍA (genérica, derivada de formula dict)
                 if t_in > 0 and w_in > 0 and l_m > 0 and qty > 0:
                     if formula['formula_kind'] == 'blank_clear':
-                        # FIX 2026-06-11 v2: Fórmula Excel canónica para blank_clear
-                        # = (t - 1/16) × (w + 1/8) × L_ft × pzas / 5085.312
-                        # +1/8 en ancho es SIEMPRE obligatorio para blank_clear
-                        # Causa raíz: s2s_adjustment_mode='none' bloqueaba el +1/8
-                        t_calc = t_in - formula['deduction_factor']
-                        w_calc = w_in + float(S2S_WIDTH_ADJUSTMENT_INCH)
-                        l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
-                        vol_exp = (t_calc * w_calc * l_ft * qty) / formula['principal_factor']
-                        val_mbf = (t_calc * w_calc * l_ft * qty) / formula['mbf_divisor']
+                        # F4 / F6 (AD-116):
+                        # Blanks que van directo a stock conservan volumen documental declarado sin recálculo.
+                        if line.vol_documental_m3 and line.vol_documental_m3 > 0:
+                            vol_exp = line.vol_documental_m3
+                            val_mbf = m3_to_mbf(vol_exp)
+                        else:
+                            # F4: 1.5" x (Ancho + 1/8") x L_ft x pzas / 5085.312 (sin deducción de 1/16")
+                            t_calc = t_in
+                            w_calc = w_in + float(S2S_WIDTH_ADJUSTMENT_INCH)
+                            l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
+                            vol_exp = (t_calc * w_calc * l_ft * qty) / formula['principal_factor']
+                            val_mbf = (t_calc * w_calc * l_ft * qty) / formula['mbf_divisor']
 
                     elif formula['formula_kind'] == 's2s_imperial':
                         w_calc = w_in + _s2s if formula['s2s_adjustment_mode'] != 'none' else w_in
@@ -834,8 +838,10 @@ class LumberReceptionLine(models.Model):
                 w_in_p = line._parse_smart_dimension(line.width_visual) if line.width_visual else 0.0
                 l_ft_p = line.length_input_raw if line.length_input_raw \
                          else (line.length_nominal or line.length) / float(FT_TO_M)
-                if t_in_p > 0 and w_in_p > 0 and l_ft_p > 0:
-                    t_calc_p = t_in_p - float(FACE_DEDUCTION_INCH)
+                if line.vol_documental_m3 and line.vol_documental_m3 > 0:
+                    line.vol_purchase_m3 = line.vol_documental_m3
+                elif t_in_p > 0 and w_in_p > 0 and l_ft_p > 0:
+                    t_calc_p = t_in_p  # F4: sin deducción de 1/16"
                     w_calc_p = w_in_p + float(S2S_WIDTH_ADJUSTMENT_INCH)
                     line.vol_purchase_m3 = r3(
                         (t_calc_p * w_calc_p * l_ft_p * (line.pieces or 0))
