@@ -101,11 +101,21 @@
                                 <field name="active"/>
                             </group>
                         </group>
-                        <p class="text-muted">Conversión de ancho bruto (rough mm) a S2S pulgadas. Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx</p>
+                        <p class="text-muted">
+                            Conversión de ancho bruto (rough mm) a S2S pulgadas. Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx<br/>
+                            <strong>G8 AD-120:</strong> Editar este registro solo afecta cálculos NUEVOS — no recalcula filas históricas almacenadas (R5/D6).
+                        </p>
                     </sheet>
+                    <!-- G8: Chatter para trazabilidad de cambios (usuario, fecha, campo modificado) -->
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
                 </form>
             </field>
         </record>
+
 
         <record id="view_lumber_width_s2s_map_search" model="ir.ui.view">
             <field name="name">lumber.width.s2s.map.search</field>
