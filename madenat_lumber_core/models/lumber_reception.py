@@ -18,7 +18,7 @@ from .utils_uom import (
     INCH_SQ_METERS_TO_M3,
     S2S_WIDTH_LOOKUP,
     MM_PER_INCH, FT_TO_M,
-    M3_DIVISOR, MBF_DIVISOR, FACE_DEDUCTION_INCH,
+    M3_DIVISOR, MBF_DIVISOR,
     S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
     calculate_volume_imperial_to_m3,
     calculate_volume_metric_m3,

@@ -15,7 +15,6 @@
             <field name="formula_kind">blank_clear</field>
             <field name="unit_mode">imperial_feet</field>
             <field name="principal_factor" eval="5085.312"/>
-            <field name="deduction_factor" eval="0.0"/>
             <field name="s2s_adjustment_mode">none</field>
             <field name="mbf_divisor" eval="12000.0"/>
             <field name="threshold_note">Aplica solo cuando largo está en pies (length_input_raw &gt; 0)</field>
@@ -33,7 +32,6 @@ El largo se toma de length_input_raw (pies).</field>
             <field name="formula_kind">s2s_imperial</field>
             <field name="unit_mode">imperial_meters</field>
             <field name="principal_factor" eval="1550.003096"/>
-            <field name="deduction_factor" eval="0.0"/>
             <field name="s2s_adjustment_mode">per_width</field>
             <field name="mbf_divisor" eval="12000.0"/>
             <field name="threshold_note">Ajuste S2S por ancho: consulta exclusiones en madenat.s2s_exclusion_widths</field>
@@ -51,7 +49,6 @@ Factor 1550.003096 = in²×m → m³.</field>
             <field name="formula_kind">metric_direct</field>
             <field name="unit_mode">metric_mm</field>
             <field name="principal_factor" eval="1000000.0"/>
-            <field name="deduction_factor" eval="0.0"/>
             <field name="s2s_adjustment_mode">none</field>
             <field name="mbf_divisor" eval="12000.0"/>
             <field name="threshold_note">Sin deducciones ni ajustes. Cálculo volumétrico puro.</field>

@@ -301,7 +301,6 @@
                     <field name="profile"/>
                     <field name="formula_kind"/>
                     <field name="principal_factor"/>
-                    <field name="deduction_factor"/>
                     <field name="s2s_adjustment_mode"/>
                     <field name="description"/>
                     <field name="active" widget="boolean_toggle"/>
@@ -328,7 +327,6 @@
                             <field name="formula_kind"/>
                             <field name="unit_mode"/>
                             <field name="principal_factor"/>
-                            <field name="deduction_factor"/>
                             <field name="s2s_adjustment_mode"/>
                             <field name="mbf_divisor"/>
                         </group>

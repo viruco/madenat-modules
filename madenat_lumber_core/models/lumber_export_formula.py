@@ -95,12 +95,6 @@ class LumberExportFormula(models.Model):
         default=5085.312,
         help="Factor volumétrico principal. f5085→5085.312, f1550→1550.003, metric→1000000."
     )
-    deduction_factor = fields.Float(
-        string='Deducción de Cara (pulg)',
-        digits=(16, 6),
-        default=0.0,
-        help="Deducción aplicada al espesor en pulgadas. Blank Clear: 0.0625 (-1/16\"). Otros: 0.0."
-    )
     s2s_adjustment_mode = fields.Selection(
         selection=[
             ('none', 'Sin ajuste S2S'),
@@ -138,13 +132,6 @@ class LumberExportFormula(models.Model):
             if rec.principal_factor <= 0:
                 raise ValidationError(_("El Factor Principal debe ser mayor que cero."))
 
-    @api.constrains('deduction_factor')
-    def _check_deduction_factor_range(self):
-        for rec in self:
-            if rec.deduction_factor < 0:
-                raise ValidationError(_("La Deducción de Cara no puede ser negativa."))
-            if rec.deduction_factor > 1.0:
-                raise ValidationError(_("La Deducción de Cara no puede superar 1 pulgada."))
 
     # ── Helper de resolución centralizado ──────────────────────────────
     @api.model
@@ -165,7 +152,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': str,
                 'unit_mode': str,
                 'principal_factor': float,
-                'deduction_factor': float,
                 's2s_adjustment_mode': str,
                 'mbf_divisor': float,
                 'source': str  # trazabilidad de dónde se resolvió
@@ -182,7 +168,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': record.formula_kind,
                 'unit_mode': record.unit_mode,
                 'principal_factor': record.principal_factor,
-                'deduction_factor': record.deduction_factor,
                 's2s_adjustment_mode': record.s2s_adjustment_mode,
                 'mbf_divisor': record.mbf_divisor,
                 'source': 'fase3_model',
@@ -196,7 +181,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': 'blank_clear',
                 'unit_mode': 'imperial_feet',
                 'principal_factor': float(utils_uom.BLANK_CLEAR_FACTOR),
-                'deduction_factor': 0.0,
                 's2s_adjustment_mode': 'none',
                 'mbf_divisor': float(utils_uom.MBF_DIVISOR),
                 'source': 'fallback_utils_uom',
@@ -205,7 +189,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': 's2s_imperial',
                 'unit_mode': 'imperial_meters',
                 'principal_factor': float(utils_uom.INCH_SQ_METERS_TO_M3),
-                'deduction_factor': 0.0,
                 's2s_adjustment_mode': 'per_width',
                 'mbf_divisor': float(utils_uom.MBF_DIVISOR),
                 'source': 'fallback_utils_uom',
@@ -220,7 +203,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': 's2s_imperial',
                 'unit_mode': 'imperial_meters',
                 'principal_factor': float(utils_uom.INCH_SQ_METERS_TO_M3),
-                'deduction_factor': 0.0,
                 's2s_adjustment_mode': 'per_width',
                 'mbf_divisor': float(utils_uom.MBF_DIVISOR),
                 'source': 'fallback_utils_uom',
@@ -229,7 +211,6 @@ class LumberExportFormula(models.Model):
                 'formula_kind': 'metric_direct',
                 'unit_mode': 'metric_mm',
                 'principal_factor': float(utils_uom.M3_DIVISOR),
-                'deduction_factor': 0.0,
                 's2s_adjustment_mode': 'none',
                 'mbf_divisor': float(utils_uom.MBF_DIVISOR),
                 'source': 'fallback_utils_uom',
