@@ -328,3 +328,39 @@ class TestExportWidthS2SWpB(TransactionCase):
                 line.vol_shipment_m3, expected, places=3,
                 msg=f"Barrido falló en {w_mm} mm: obtenido {line.vol_shipment_m3}, esperado {expected}"
             )
+
+    def test_12_parameters_declared_in_data_xml_with_noupdate(self):
+        """E2: Los parámetros (s2s_overwidth, out_of_table_behavior, direct_width_min_mm, drying) existen en XML con noupdate=1."""
+        import os
+        from xml.etree import ElementTree as ET
+        xml_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'ingestion_config.xml')
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Encontrar bloques data con noupdate="1"
+        data_noupdate_nodes = [d for d in root.findall('data') if d.get('noupdate') == '1']
+        self.assertTrue(data_noupdate_nodes, "Debe existir al menos un bloque <data noupdate='1'> en ingestion_config.xml")
+
+        expected_records = {
+            'param_s2s_overwidth_inches': 'madenat.s2s_overwidth_inches',
+            'param_out_of_table_behavior': 'madenat.out_of_table_behavior',
+            'param_direct_width_min_mm': 'madenat.direct_width_min_mm',
+            'param_drying_temp_min_c': 'madenat.drying_temp_min_c',
+            'param_drying_temp_max_c': 'madenat.drying_temp_max_c',
+            'param_drying_duration_min_hours': 'madenat.drying_duration_min_hours',
+            'param_drying_duration_max_hours': 'madenat.drying_duration_max_hours',
+        }
+
+        found_records = {}
+        for d in data_noupdate_nodes:
+            for rec in d.findall('record'):
+                r_id = rec.get('id')
+                if r_id in expected_records:
+                    key_field = rec.find("./field[@name='key']")
+                    if key_field is not None:
+                        found_records[r_id] = key_field.text.strip()
+
+        self.assertEqual(len(found_records), len(expected_records),
+                         f"Faltan parámetros en <data noupdate='1'>. Esperados: {expected_records.keys()}, encontrados: {found_records.keys()}")
+        for r_id, exp_key in expected_records.items():
+            self.assertEqual(found_records.get(r_id), exp_key)
