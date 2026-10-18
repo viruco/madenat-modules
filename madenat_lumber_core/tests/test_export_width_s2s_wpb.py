@@ -20,10 +20,10 @@ Verifica:
 
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 
-@tagged('post_install', '-at_install')
+@tagged('post_install', '-at_install', 'madenat_lumber_core')
 class TestExportWidthS2SWpB(TransactionCase):
 
     @classmethod
@@ -421,3 +421,54 @@ class TestExportWidthS2SWpB(TransactionCase):
         line_direct.flush_recordset()
         # (1.75 * (135/25.4) * 3.2 * 10) / 1550.0031 = 0.19202 -> 0.192 m3
         self.assertAlmostEqual(line_direct.vol_shipment_m3, 0.192, places=3)
+
+    def test_14_s2s_empty_table_raises_user_error(self):
+        """F1: Si no hay registros activos en lumber.width.s2s.map, falla con UserError y log estructurado."""
+        config = self.env['madenat.ingestion.config']
+        s2s_records = self.env['lumber.width.s2s.map'].search([])
+        orig_states = {rec.id: rec.active for rec in s2s_records}
+        try:
+            # Desactivar todos los registros
+            s2s_records.write({'active': False})
+            with self.assertRaises(UserError) as cm:
+                config.get_width_s2s_map()
+            self.assertIn("No existen registros activos", str(cm.exception))
+
+            # Verificar que resolve_export_width también falla al no encontrar tabla
+            with self.assertRaises(UserError):
+                config.resolve_export_width(100.0)
+        finally:
+            for rec in s2s_records:
+                rec.write({'active': orig_states[rec.id]})
+
+    def test_15_s2s_width_115mm_resolution(self):
+        """F1: 115 mm en lumber.width.s2s.map es 4.375 (4 3/8) + sobreancho 0.125 = 4.500 pulgadas."""
+        config = self.env['madenat.ingestion.config']
+        mapping = config.get_width_s2s_map()
+        self.assertIn(115, mapping, "115 mm debe existir en lumber.width.s2s.map")
+        dec, label = mapping[115]
+        self.assertEqual(dec, 4.375, f"115 mm debe ser 4.375 (4 3/8), no 4.125. Obtenido {dec}")
+        self.assertEqual(label, "4 3/8")
+
+        resolved_w = config.resolve_export_width(115.0)
+        self.assertAlmostEqual(resolved_w, 4.500, places=3,
+                               msg=f"115 mm resuelto debe ser 4.375 + 0.125 = 4.500. Obtenido {resolved_w}")
+
+        guia = self._make_guia('GUIA-115MM-TEST')
+        line = self._make_line(
+            guia, ancho_mm=115.0, thickness_visual='6/4', width_visual='115mm',
+            largo_m=4.0, pieces=100
+        )
+        line.flush_recordset()
+        # (1.5 * 4.500 * 4.0 * 100) / 1550.0031 = 1.7419... -> 1.742 m3
+        self.assertAlmostEqual(line.vol_shipment_m3, 1.742, places=3)
+
+    def test_16_no_static_fallback_dictionary_in_code(self):
+        """F1: No existe diccionario estático de respaldo en madenat_ingestion_config.py."""
+        import inspect
+        config = self.env['madenat.ingestion.config']
+        method_source = inspect.getsource(type(config).get_width_s2s_map)
+        self.assertNotIn("4.125", method_source, "No debe existir valor erróneo 4.125 en get_width_s2s_map")
+        self.assertNotIn("2.625", method_source, "No debe existir diccionario estático con 2.625 en get_width_s2s_map")
+        self.assertNotIn("hardcode legacy", method_source.lower(), "No debe existir mención de hardcode legacy")
+

@@ -84,45 +84,26 @@ class MadenatIngestionConfig(models.AbstractModel):
     # =====================================================================
     @api.model
     def get_width_s2s_map(self):
-        """Retorna dict {rough_mm: (s2s_decimal, s2s_label)}."""
-        # Fuente 1: Modelo persistente Fase 2
+        """Retorna dict {rough_mm: (s2s_decimal, s2s_label)} desde lumber.width.s2s.map.
+
+        Única fuente de verdad: lumber.width.s2s.map.
+        Si no hay registros activos, falla con UserError y log estructurado.
+        Sin diccionario estático de respaldo en código.
+        """
         records = self.env['lumber.width.s2s.map'].sudo().search([
             ('active', '=', True),
         ], order='sequence, rough_mm')
-        if records:
-            _logger.debug("IngestionConfig: width_s2s_map desde modelo Fase2 (%d regs)", len(records))
-            return {rec.rough_mm: (rec.s2s_decimal, rec.s2s_label) for rec in records}
-
-        # Fuente 2: ir.config_parameter Fase 1
-        try:
-            param_obj = self.env['ir.config_parameter'].sudo()
-            raw = param_obj.get_param('madenat.width_s2s_map', '')
-            if raw:
-                parsed = json.loads(raw)
-                if isinstance(parsed, dict) and parsed:
-                    from fractions import Fraction
-                    mapping = {}
-                    for k, v in parsed.items():
-                        mm = int(k); dec = float(v)
-                        if dec >= 160: txt = str(int(round(dec)))
-                        else:
-                            frac = Fraction(dec).limit_denominator(8)
-                            w = frac.numerator // frac.denominator
-                            r = frac.numerator % frac.denominator
-                            txt = str(w) if r == 0 else f"{w} {r}/{frac.denominator}" if w else f"{r}/{frac.denominator}"
-                        mapping[mm] = (dec, txt)
-                    if mapping:
-                        _logger.info("IngestionConfig: width_s2s_map desde Fase1")
-                        return mapping
-        except Exception as e:
-            _logger.warning("IngestionConfig: fallo Fase1 width_s2s_map: %s", e)
-
-        # Fuente 3: Hardcode legacy (15 anchos canónicos con 115 mm activo)
-        _logger.warning("IngestionConfig: usando hardcode legacy width_s2s_map")
-        return {75:(2.625,"2 5/8"), 85:(2.875,"2 7/8"), 90:(3.125,"3 1/8"), 95:(3.375,"3 3/8"),
-                100:(3.625,"3 5/8"), 105:(3.875,"3 7/8"), 110:(3.875,"3 7/8"), 115:(4.375,"4 3/8"),
-                120:(4.375,"4 3/8"), 125:(4.625,"4 5/8"), 130:(4.875,"4 7/8"), 140:(4.875,"4 7/8"),
-                145:(5.375,"5 3/8"), 150:(5.625,"5 5/8"), 155:(5.875,"5 7/8")}
+        if not records:
+            _logger.error(
+                "IngestionConfig: tabla S2S vacia o sin registros activos. "
+                "El modelo lumber.width.s2s.map no contiene anchos activos."
+            )
+            raise UserError(
+                _("No existen registros activos en la tabla de mapeo S2S (lumber.width.s2s.map). "
+                  "Configure y active los anchos S2S antes de procesar maderas S2S.")
+            )
+        _logger.debug("IngestionConfig: width_s2s_map desde modelo lumber.width.s2s.map (%d regs)", len(records))
+        return {rec.rough_mm: (rec.s2s_decimal, rec.s2s_label) for rec in records}
 
     @api.model
     def get_s2s_overwidth_inches(self):
