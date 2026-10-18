@@ -213,8 +213,18 @@
             <field name="name">Patios de Recepción</field>
             <field name="res_model">stock.location</field>
             <field name="view_mode">list,form</field>
-            <field name="domain">[('usage', '=', 'internal')]</field>
-            <field name="context">{'default_usage': 'internal'}</field>
+            <field name="view_id" ref="madenat_lumber_core.view_location_patio_tree"/>
+            <field name="search_view_id" ref="madenat_lumber_core.view_location_search_madenat_patio"/>
+            <field name="domain">[('is_patio', '=', True)]</field>
+            <field name="context">{'default_usage': 'internal', 'default_is_patio': True, 'search_default_filter_is_patio': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crear un nuevo patio de recepción o almacenamiento de madera
+                </p>
+                <p>
+                    Configure los patios asignables a recepciones de compra y procesamiento.
+                </p>
+            </field>
         </record>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->

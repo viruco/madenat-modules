@@ -141,5 +141,12 @@
         <record id="seed_sub_f1550_lock_blank" model="lumber.profile.subproduct.rule" forcecreate="False">
             <field name="profile">f1550</field><field name="rule_type">forbidden_in_lock</field><field name="keyword">BLANK</field>
         </record>
+
+        <!-- 3e. Patios operativos iniciales (Bloque 4C / AD-116 / F7) -->
+        <record id="patio_ferramenta" model="stock.location" forcecreate="False">
+            <field name="name">Patio Ferramenta</field>
+            <field name="usage">internal</field>
+            <field name="is_patio" eval="True"/>
+        </record>
     </data>
 </odoo>

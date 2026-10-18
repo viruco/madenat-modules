@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Heredar vista form de stock.location para exponer el marcador is_patio -->
+        <record id="view_location_form_madenat_patio" model="ir.ui.view">
+            <field name="name">stock.location.form.madenat.patio</field>
+            <field name="model">stock.location</field>
+            <field name="inherit_id" ref="stock.view_location_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='usage']" position="after">
+                    <field name="is_patio"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Heredar vista search de stock.location para filtrar por patios -->
+        <record id="view_location_search_madenat_patio" model="ir.ui.view">
+            <field name="name">stock.location.search.madenat.patio</field>
+            <field name="model">stock.location</field>
+            <field name="inherit_id" ref="stock.view_location_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='inactive']" position="before">
+                    <filter string="Patios de Madera" name="filter_is_patio" domain="[('is_patio', '=', True)]"/>
+                    <separator/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Vista lista específica para Patios de Madera -->
+        <record id="view_location_patio_tree" model="ir.ui.view">
+            <field name="name">stock.location.patio.list</field>
+            <field name="model">stock.location</field>
+            <field name="arch" type="xml">
+                <list string="Patios de Recepción">
+                    <field name="display_name" string="Patio"/>
+                    <field name="location_id" string="Ubicación Padre"/>
+                    <field name="usage"/>
+                    <field name="is_patio"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+    </data>
+</odoo>

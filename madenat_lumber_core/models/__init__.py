@@ -44,6 +44,9 @@ from . import madenat_sv_operation
 # AD-88 (2026-10-01): mixin transversal «advertir, motivar, auditar».
 from . import madenat_deviation
 
+# Bloque 4C (AD-116 / F7): Marcador de patio en ubicaciones de inventario
+from . import stock_location
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🔥 VALIDACIONES AUTOMÁTICAS DE STARTUP
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

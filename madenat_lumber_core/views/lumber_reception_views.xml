@@ -549,6 +549,7 @@
                        filter_domain="['|', '|', ('name','ilike',self), ('purchase_order','ilike',self), ('purchase_order','ilike',self)]"/>
                 <field name="supplier_id" string="Proveedor"/>
                 <field name="reception_date" string="Fecha"/>
+                <field name="location_id" string="Patio de Asignación"/>
                 <!-- purchase_id se retira como campo de búsqueda visible porque
                      está vacío en los registros actuales. La búsqueda por OC se
                      canaliza a través de purchase_order en el campo unificado. -->
@@ -571,6 +572,15 @@
                         domain="[('state','=','done')]"/>
                 <separator/>
 
+                <!-- ═══ FILTROS POR PATIO Y OC (Bloque 4C / F7) ═══ -->
+                <filter name="filter_has_patio" string="🏗️ Con Patio Asignado"
+                        domain="[('location_id', '!=', False)]"/>
+                <filter name="filter_without_patio" string="Sin Patio Asignado"
+                        domain="[('location_id', '=', False)]"/>
+                <filter name="filter_has_po" string="📋 Con Orden de Compra"
+                        domain="['|', ('purchase_order', '!=', False), ('purchase_id', '!=', False)]"/>
+                <separator/>
+
                 <!-- ═══ FILTROS POR TOLERANCIA ═══ -->
                 <filter name="tolerance_ok" string="✅ Dentro de Tolerancia"
                         domain="[('tolerance_status','=','ok')]"/>
@@ -586,6 +596,9 @@
                 <filter name="group_by_purchase_order" string="Agrupar por OC"
                         domain="[]"
                         context="{'group_by':'purchase_order'}"/>
+                <filter name="group_by_patio" string="Agrupar por Patio"
+                        domain="[]"
+                        context="{'group_by':'location_id'}"/>
                 <filter name="group_by_state" string="Agrupar por Estado"
                         domain="[]"
                         context="{'group_by':'state'}"/>

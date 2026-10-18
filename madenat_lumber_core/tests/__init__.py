@@ -68,3 +68,6 @@ from . import test_audit_log_immutability
 from . import test_export_width_s2s_wpb
 # ⚖️ FASE 12 (WP-A): Regla de Equivalencia Guía vs Packing ('ok_rounded').
 from . import test_guia_packing_equivalence_wpa
+# 🏗️ FASE 12 (Bloque 4C / F7 / AD-116): Gestión y Filtros de Patios en Recepción.
+from . import test_patios_f7
+

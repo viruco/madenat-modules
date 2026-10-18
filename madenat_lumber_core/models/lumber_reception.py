@@ -1367,8 +1367,12 @@ class LumberReception(models.Model):
     lot_ids = fields.One2many('stock.lot', 'reception_id', 'Lotes Importados', readonly=True)
     
     # ==================== ASIGNACIÓN DE PATIO (LOCATION) ====================
-   # ASÍ DEBE QUEDAR (Blindado)
-    location_id = fields.Many2one('stock.location', string='Patio de Asignación') # Sin required=True # Sin required=True
+    location_id = fields.Many2one(
+        'stock.location',
+        string='Patio de Asignación',
+        domain="[('is_patio', '=', True)]",
+        help="Ubicación operativa de inventario clasificada como Patio para recepción de madera.",
+    )
     
     # ==================== TOTALES ====================
     total_packages = fields.Integer('Total Paquetes', compute='_compute_totals', store=True)
