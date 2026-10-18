@@ -1,6 +1,11 @@
 ## [18.0.6.18.0] - 2026-10-18
 
 ### Changed
+- **Bloque 4L (AD-124) — Cierre Definitivo del Bloque 4**:
+  - **L1 (Diagnóstico de parámetro XML)**: Identificada sobreescritura de `madenat.out_of_table_behavior` por recarga XML en ejecución previa con `-i` debido a `noupdate=False` en `ir_model_data`. Parámetro mantenido en `'warning'` sin alteración manual (D1).
+  - **L2 (Verificación dimensional canónica)**: Rectificadas condiciones de cálculo de anchos a 100 pzas, 1.5", 4.0 m. Esclarecido factor 0.8 como largo de paquete exploratorio previo de 3.20 m (10.5 ft). Coincidencia exacta con volúmenes de exportación esperados.
+  - **L3 (Resolución visual basada en datos)**: Modificado `madenat_guia_processing.py` para resolver dimensión visual directamente contra `lumber.width.s2s.map` activo. 150 mm resuelve a `'5 5/8'` (eliminando asimetría de exportación); anchos fuera de tabla resuelven a formato métrico `{mm}mm`. Erradicada la función deprecada `get_s2s_exclusion_widths()` y lista residual de `madenat_ingestion_config.py`. Nueva suite TDD `TestVisualDimensionL3` (5 tests PASS).
+  - **L4 (Precisión de constante 1550)**: Corrección de la diferencia relativa entre 1550.003096 y 1550.003 a $6.19 \times 10^{-8}$ ($0.0000062\%$).
 - **Bloque 4J (AD-122) — Cierre Definitivo del Bloque 4**:
   - **J1 (Eliminación de copia estática S2S)**: Retirada de `S2S_WIDTH_LOOKUP` de `utils_uom.py:658-675` y `S2S_WIDTH_MAP` de `simulacion_solo_lectura_remoto.py:22-38`. Consulta delegada al modelo ORM `lumber.width.s2s.map`. Ampliada prueba anti-copia `test_16` para escanear todo el código productivo `madenat_*`.
   - **J2 (Prevención de doble redondeo en volúmenes y MBF)**: Unificación a redondeo único `r3()` sobre el valor final sin truncamientos intermedios a 4 decimales en `madenat_guia_processing.py:4088`, `stock_lot.py:1243, 1262` y `lumber_reception.py:827`. Nueva suite TDD `test_double_rounding_j2.py` (4 tests PASS).

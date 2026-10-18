@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.41.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
+**Versión documental:** 12.42.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): diagnóstico mecanismo cambio parámetro out_of_table_behavior por carga XML -i (L1); corrección tabla dimensional K1 con condiciones canónicas 100 pzas, 1.5", 4.0 m explicando factor 0.8 (L2); aplicación de K1 mediante resolución visual basada en datos en lumber.width.s2s.map activo y erradicación de get_s2s_exclusion_widths y lista residual (L3); corrección de diferencia relativa de 1550 a 6.19e-8 (L4). Versión 04 12.41.0 → 12.42.0. | Cierre Bloque 4K (AD-123). -->
+<!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
 **Estado:** Canonical / activo
 
@@ -3850,12 +3851,37 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
    - Se diagnosticó que el test runner de Odoo filtraba `TestPreDeployHealthCheck` porque heredaba de `unittest.TestCase` y carecía del tag `post_install` que provee `odoo.tests.common.TransactionCase`.
    - Modificada la herencia a `TransactionCase`, permitiendo que las 2 pruebas corran dentro de la suite oficial.
 4. **K4 — Verificación Matemática de Invarianza de la Constante 1550:**
-   - Se comprobó mediante script de sólo lectura con rollback que la variación de `1550.003096` a `1550.003` produce **cero diferencias a 3 decimales** en el 100% de los registros almacenados en `madenat.guia.processing.line`, `stock.lot`, `lumber.reception.line` y `lumber.shipment.line`. Se ratifica la vigencia de `CONST_M3_TO_IN2_M = Decimal('1550.003')`.
+   - Se comprobó mediante script de sólo lectura con rollback que la variación de `1550.003096` a `1550.003` produce **cero diferencias a 3 decimales** en el 100% de los registros almacenados en `madenat.guia.processing.line`, `stock.lot`, `lumber.reception.line` y `lumber.shipment.line`. La diferencia relativa entre ambas constantes es de aproximadamente $6.19 \times 10^{-8}$ ($0.0000062\%$). Se ratifica la vigencia de `CONST_M3_TO_IN2_M = Decimal('1550.003')`.
 5. **K5 — Registro Formal de Deuda Técnica Diferida:**
    - Registradas como **DIFERIDO** en CANON/05 las deudas: (a) `LUMBER_DIMENSION_MAP`, (b) mapa de Blanks de respaldo, (c) rangos de espesor visual, (d) TD-122 largos métricos en intake, (e) `get_s2s_exclusion_widths`.
 6. **K6 — Normalización de Reporte y Redacción:**
    - Se ajustó el mensaje final del script de comprobación a `"comprobación completada"` eliminando la referencia a despliegue para honrar D4.
    - Se catalogó formalmente como **INFERENCIA** cualquier cita previa de IDs 27, 28 y 8 para las ubicaciones de patio, ratificando los IDs persistentes 17, 18 y 19.
+
+---
+
+### AD-124 — Cierre Definitivo Bloque 4L: Mecanismo de Parámetro XML, Resolución Visual de Anchos Basada en Datos (K1 Aplicado) y Erradicación de Lista Residual (2026-10-18)
+
+**Contexto:** Bloque 4L — Cierre definitivo del Bloque 4 tras la pasada final de auditoría.  
+**Decisiones Adoptadas:**
+1. **L1 — Diagnóstico de `madenat.out_of_table_behavior` (Mecanismo de Carga XML):**
+   - **SELECT de Auditoría:** `id=571`, `key='madenat.out_of_table_behavior'`, `value='warning'`, `create_date='2026-10-18 01:27:29.951906'`, `write_date='2026-10-18 21:17:05.327809'`, `write_uid=1`. En `ir_model_data`: `module='madenat_lumber_core'`, `name='param_out_of_table_behavior'`, `res_id=571`, `noupdate=False`.
+   - **Mecanismo:** La marca temporal `2026-10-18 21:17:05` coincide con el inicio de la regresión 4K ejecutada mediante `odoo -i madenat_lumber_core,...`. Al utilizar `-i` (reinstalación / inicialización), Odoo ignora banderas de protección y recarga los registros declarados en `data/ingestion_config.xml`. Dado que el registro en `ir_model_data` tenía `noupdate=False` desde su creación original, Odoo sobreescribió el valor preexistente `'direct'` con el valor canónico del archivo XML (`'warning'`).
+   - **Riesgo y Propuesta sin Aplicar:** En despliegues productivos con `-u`, Odoo respeta `noupdate=True`, pero si `ir_model_data` tiene `noupdate=False`, la sobreescritura se repetirá. Se propone para etapas futuras asegurar que los parámetros en XML se declaren en bloques con `noupdate="1"` efectivo o se inicialicen mediante métodos post-init que verifiquen si la clave ya existe antes de asignarla.
+   - **Invarianza:** En estricto apego a D1, el valor en la base de datos `madenat_test` permanece en `'warning'` sin alteración manual.
+2. **L2 — Corrección de Condiciones de Evaluación Dimensional (K1):**
+   - Se rectificaron las condiciones de cálculo para la tabla de 11 anchos: 100 piezas, espesor 1.5", largo 4.0 m (13.123 ft).
+   - Se esclareció el origen del factor 0.8 en el informe 4K: la prueba exploratoria previa utilizó inadvertidamente largo de paquete estándar de 3.20 m (10.5 ft) en lugar de 4.0 m ($3.2 / 4.0 = 0.8000$).
+   - Con largo canónico de 4.0 m, los volúmenes m³ y MBF coinciden exactamente con los valores de negocio esperados (100 mm = 1.452 m³ / 0.615 MBF; 150 mm = 2.226 m³ / 0.943 MBF; 200 mm = 3.048 m³ / 1.292 MBF).
+3. **L3 — Aplicación de K1 (Resolución Visual Basada en Datos):**
+   - Autorizado formalmente por la jefatura del proyecto, se modificó `madenat_guia_processing.py` (`_calculate_fractional_approximation` y `_compute_visual_dimension`):
+     - Si el ancho rough existe en `lumber.width.s2s.map` activo, adopta su etiqueta fraccionaria `s2s_label` (150 mm da `'5 5/8'`, eliminando la discordancia con el cálculo de exportación).
+     - Si está fuera de tabla, adopta formato métrico directo `{mm}mm` (160, 170, 175, 180, 195, 200 mm dan `'Nmm'`).
+     - Al quedar con cero referencias en todo el código, vistas y datos, se eliminó la función deprecada `get_s2s_exclusion_widths()` y su lista por defecto `[150.0, 160.0, 170.0, 180.0, 200.0]` en `madenat_ingestion_config.py`.
+   - Se incorporó la suite TDD `TestVisualDimensionL3` (5 métodos PASS). Cero recálculo ni alteración de filas históricas (Consultas B y A.2 permanecen 100% invariantes).
+4. **L4 — Corrección de Precisión de la Constante 1550:**
+   - Se rectifica la diferencia relativa entre `1550.003096` y `1550.003`: es de $6.19 \times 10^{-8}$ ($0.0000062\%$), no $2.0 \times 10^{-7}$.
+
 
 
 

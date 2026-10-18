@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.41.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-122): registro formal como DIFERIDO de deuda técnica (a) LUMBER_DIMENSION_MAP, (b) mapa Blanks de respaldo, (c) rangos espesor visual, (d) TD-122 largo métrico en intake_wizard, (e) get_s2s_exclusion_widths y lista de exclusiones (K1). Versión 05 8.40.0 → 8.41.0. Sin push ni despliegue. -->
+**Versión documental:** 8.42.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): item (e) RESUELTO mediante resolución visual basada en lumber.width.s2s.map activo y erradicación definitiva de get_s2s_exclusion_widths y lista residual en código. Versión 05 8.41.0 → 8.42.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-122): registro formal como DIFERIDO de deuda técnica (a) LUMBER_DIMENSION_MAP, (b) mapa Blanks de respaldo, (c) rangos espesor visual, (d) TD-122 largo métrico en intake_wizard, (e) get_s2s_exclusion_widths y lista de exclusiones (K1). Versión 05 8.40.0 → 8.41.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): registro de deuda técnica TD-122 para rangos heurísticos en intake_wizard.py:314, normalización de script de salud y pruebas oficiales de integridad. Versión 05 8.38.0 → 8.39.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4H (AD-121): corrección de citas de decisiones diferidas (D5 para Bloque 5 y fitosanitario/motonave), descripción formal del Bloque 5 real (volumen físico real, tabla nominal->espesor real, tres listados y fitosanitario configurable), coherencia exacta S2S <= 0.001" (H3). Versión 05 8.37.0 → 8.38.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4G (AD-120) CERRADO EN LOCAL: G1 retiro copia hardcode _BLANKS_NOMINAL_MAP; G2 vectores f5085 y vol_documental; G3 health check OK/ADVERTENCIA/CRITICO; G4 hashes MD5 fijados y redondeados; G5 UserError S2S acotado a imperial; G6 1.533 tests reconciliados; G7 simulacion solo lectura; G8 edicion S2S por UI con trazabilidad y coherencia; G9 runbook borrador en CANON/02; G10 backlog diferido (Bloque 5, fitosanitario, patios, motonave, 26270). Versión 05 8.36.0 → 8.37.0. Sin push ni despliegue. -->
@@ -1252,10 +1253,9 @@ Las siguientes piezas de deuda técnica han sido identificadas, clasificadas y d
 - **Diseño Mínimo:** Crear parámetro del sistema `madenat.metric_length_heuristic_range` en `ir.config_parameter` (default: `'1.5-6.5'`), leído dinámicamente por el wizard.
 - **Criterio de Cierre:** Los límites de detección de largos métricos son configurables por el usuario administrador sin editar código fuente.
 
-#### (e) get_s2s_exclusion_widths y Lista de Exclusiones Residual (K1)
-- **Estado:** **DIFERIDO** (Decisión de Mauricio).
-- **Evidencia:** `madenat_ingestion_config.py:346-373` (lista residual `[150, 160, 170, 180, 200]`) y llamada activa en `madenat_guia_processing.py:3858` (`_compute_visual_dimension`).
-- **Utilidad Esperada:** Corregir la asimetría donde 150 mm se presenta visualmente como `'150mm'` pero se cubica como exportación S2S (`5.750"` = 5 5/8" + 1/8"), eliminando discrepancias entre etiqueta visual, cálculo de MBF y volumen en m³.
-- **Diseño Mínimo:** Si el ancho rough está en `lumber.width.s2s.map`, el visual adopta la etiqueta de fracción S2S (`s2s_label`); si está ausente de la tabla, adopta formato métrico (`{mm}mm`). Retirar la función deprecada `get_s2s_exclusion_widths()`.
-- **Criterio de Cierre:** Cero divergencias entre ancho visual y fórmula de exportación; erradicación definitiva de la lista de exclusión en código.
+#### (e) get_s2s_exclusion_widths y Lista de Exclusiones Residual (K1 / L3)
+- **Estado:** **RESUELTO (AD-124 / Bloque 4L)**.
+- **Evidencia de Cierre:** `madenat_guia_processing.py:3823, 3843` actualizado para resolver visualmente el ancho rough contra el modelo `lumber.width.s2s.map` activo. Si existe, retorna `s2s_label` (`5 5/8` para 150 mm); si está ausente, retorna formato métrico `{mm}mm`.
+- **Erradicación:** Retirada la función deprecada `get_s2s_exclusion_widths()` y su lista estática `[150.0, 160.0, 170.0, 180.0, 200.0]` en `madenat_ingestion_config.py` al verificarse 0 referencias activas en todo el sistema.
+- **Pruebas:** Suite TDD `TestVisualDimensionL3` (5 tests PASS). Cero recálculo ni alteración de registros históricos (Consultas B y A.2 100% invariantes).
 
