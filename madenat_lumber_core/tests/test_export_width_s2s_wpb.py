@@ -466,13 +466,59 @@ class TestExportWidthS2SWpB(TransactionCase):
         self.assertAlmostEqual(line.vol_shipment_m3, 1.742, places=3)
 
     def test_16_no_static_fallback_dictionary_in_code(self):
-        """F1: No existe diccionario estático de respaldo en madenat_ingestion_config.py."""
+        """F1 / J1 (AD-120/AD-122): Anti-copia absoluta en TODO el código productivo madenat_*.
+        Verifica que no existe S2S_WIDTH_LOOKUP ni diccionarios/listas hardcodeadas con anchos S2S.
+        Toda lectura debe consumir exclusivamente lumber.width.s2s.map.
+        """
+        import os
         import inspect
+        import re
+
+        # 1. Verificación específica en madenat.ingestion.config
         config = self.env['madenat.ingestion.config']
         method_source = inspect.getsource(type(config).get_width_s2s_map)
         self.assertNotIn("4.125", method_source, "No debe existir valor erróneo 4.125 en get_width_s2s_map")
         self.assertNotIn("2.625", method_source, "No debe existir diccionario estático con 2.625 en get_width_s2s_map")
         self.assertNotIn("hardcode legacy", method_source.lower(), "No debe existir mención de hardcode legacy")
+
+        # 2. Escaneo exhaustivo en TODO el código productivo madenat_*
+        # Encontrar el directorio raíz de custom_addons
+        core_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        addons_dir = os.path.dirname(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+        root_dir = os.path.dirname(addons_dir)
+
+        s2s_dict_patterns = [
+            re.compile(r'145\s*:\s*5\.375'),
+            re.compile(r'115\s*:\s*4\.375'),
+            re.compile(r'100\s*:\s*3\.625'),
+            re.compile(r'75\s*:\s*2\.625'),
+        ]
+
+        productive_py_files = []
+        for root, dirs, files in os.walk(root_dir):
+            # Excluir directorios no productivos
+            dirs[:] = [d for d in dirs if d not in ('tests', '_archive', 'docs', 'LEGADO', 'CANON', '.git', '__pycache__')]
+            if any(mod in root for mod in ('madenat_lumber_core', 'madenat_lumber_intake', 'madenat_lumber_logistics',
+                                           'madenat_ingestion_engine', 'madenat_lumber_purchasing', 'madenat_lumber_billing')):
+                for f in files:
+                    if f.endswith('.py') and not f.startswith('test_'):
+                        productive_py_files.append(os.path.join(root, f))
+
+        self.assertTrue(len(productive_py_files) > 10, "Debe inspeccionar archivos productivos de madenat_*.")
+
+        for py_path in productive_py_files:
+            rel_path = os.path.relpath(py_path, root_dir)
+            with open(py_path, 'r', encoding='utf-8') as fh:
+                content = fh.read()
+
+            # A. Ningún archivo productivo puede definir o importar S2S_WIDTH_LOOKUP
+            self.assertNotIn("S2S_WIDTH_LOOKUP", content,
+                             f"Anti-copia J1: S2S_WIDTH_LOOKUP encontrado en {rel_path}")
+
+            # B. Ningún archivo productivo puede tener diccionarios estáticos con mapeos S2S
+            for pat in s2s_dict_patterns:
+                self.assertFalse(pat.search(content),
+                                 f"Anti-copia J1: Diccionario/mapeo S2S estático encontrado en {rel_path}")
 
 
     # -------------------------------------------------------------------------

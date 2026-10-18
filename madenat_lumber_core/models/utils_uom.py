@@ -5,7 +5,7 @@ UTILIDADES UoM - REGLA DE ORO: Factor MBF_TO_M3 = 2.36
 
 
 
-Versión: 3.2.0 (2026-04-09) - FUENTE ÚNICA: S2S_WIDTH_LOOKUP + calculate_volume_metric_m3
+Versión: 3.3.0 (2026-10-18) - FUENTE ÚNICA ORM: lumber.width.s2s.map + calculate_volume_metric_m3
 ==========================================================
 
 
@@ -50,9 +50,9 @@ INYECCIÓN TÉCNICA (2026-04-05):
 
 
 
-FUENTE ÚNICA (2026-04-09):
-- S2S_WIDTH_LOOKUP: tabla canónica de 16 anchos mm→pulgadas decimales.
-  NO duplicar en lumber_reception.py ni en madenat_guia_processing.py.
+FUENTE ÚNICA (2026-10-18):
+- Mapeo S2S gestionado exclusivamente vía ORM en el modelo lumber.width.s2s.map.
+  Sin copias hardcodeadas en código (AD-120/AD-122).
 - calculate_volume_metric_m3(): única función para volumen métrico mm×mm×m/1_000_000.
   NO hardcodear 1_000_000 fuera de esta función.
 - calculate_volume_imperial_to_m3: ahora usa r3() internamente (ROUND_HALF_UP).
@@ -645,34 +645,12 @@ S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')       # +1/8" ajuste rough → cepi
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# TABLA CANÓNICA S2S: mm nominal → pulgadas decimales
+# RESOLUCIÓN S2S: mm nominal → pulgadas decimales
 # ──────────────────────────────────────────────────────────────────────────────
-# Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx
-# ÚNICA fuente de verdad. NO duplicar en lumber_reception.py
-# ni en madenat_guia_processing.py.
-#
-# Uso:
-#   w_inch = S2S_WIDTH_LOOKUP.get(int(width_mm), width_mm / 25.4)
-#   El fallback (width_mm / 25.4) es explícito y auditado.
-#
-S2S_WIDTH_LOOKUP: dict = {
-    75:  2.625,   # 2 5/8
-    85:  2.875,   # 2 7/8
-    90:  3.125,   # 3 1/8
-    95:  3.375,   # 3 3/8
-    100: 3.625,   # 3 5/8
-    105: 3.875,   # 3 7/8
-    110: 3.875,   # 3 7/8  ← mismo que 105mm (stair step)
-    115: 4.375,   # 4 3/8
-    120: 4.375,   # 4 3/8  ← mismo que 115mm (stair step)
-    125: 4.625,   # 4 5/8
-    130: 4.875,   # 4 7/8
-    140: 4.875,   # 4 7/8  ← mismo que 130mm (stair step)
-    145: 5.375,   # 5 3/8  ← VALOR CRÍTICO Excel
-    150: 5.625,   # 5 5/8
-    155: 5.875,   # 5 7/8
-    170: 170,     # entero (>160mm proveedor reporta como decimal, no fracción)
-}
+# AD-120 / AD-122 / Regla D6: NO existe copia estática de la tabla S2S en código.
+# Toda lectura y conversión dimensional S2S consume el modelo lumber.width.s2s.map
+# a través del helper madenat.ingestion.config.resolve_export_width() o get_s2s_adjustment().
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 
@@ -851,21 +829,6 @@ def validate_imperial_factor():
             )
             all_passed = False
 
-    # ✅ Validar S2S_WIDTH_LOOKUP: entradas críticas
-    s2s_checks = {
-        145: 5.375,  # VALOR CRÍTICO Excel
-        110: 3.875,  # stair step (faltaba en Tabla 2)
-        120: 4.375,  # stair step (faltaba en Tabla 2)
-        130: 4.875,  # stair step (faltaba en Tabla 2)
-    }
-    for mm, expected_inch in s2s_checks.items():
-        got = S2S_WIDTH_LOOKUP.get(mm)
-        if got != expected_inch:
-            _logger.error(
-                f"❌ S2S_WIDTH_LOOKUP[{mm}mm] = {got}, esperado {expected_inch}"
-            )
-            all_passed = False
-
     # ✅ Validar calculate_volume_metric_m3
     metric_result = calculate_volume_metric_m3(45, 100, 4.0, 200)
     if abs(metric_result - 3.6) > 1e-9:
@@ -878,8 +841,8 @@ def validate_imperial_factor():
         _logger.info("✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente")
         _logger.info(f"   Ajuste S2S: +{S2S_WIDTH_ADJUSTMENT_INCH}\" (1/8 pulgada)")
         _logger.info(f"   Redondeo: r3() ROUND_HALF_UP a 3 decimales")
-        _logger.info(f"   S2S_WIDTH_LOOKUP: {len(S2S_WIDTH_LOOKUP)} entradas validadas")
-        _logger.info(f"   Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx")
+        _logger.info("   Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122)")
+        _logger.info("   Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx")
 
     return all_passed
 

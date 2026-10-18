@@ -2,7 +2,7 @@
 import json
 import logging
 from odoo import models, fields, api, _
-from ..models.utils_uom import S2S_WIDTH_LOOKUP, MM_PER_INCH
+from ..models.utils_uom import MM_PER_INCH
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
