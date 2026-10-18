@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.38.0
-**Fecha de actualización:** 2026-10-10  <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
+**Versión documental:** 6.39.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: uso exclusivo de -u (nunca -i) sobre módulos requeridos (M1 / AD-125). Análisis Odoo loading.py / convert.py; erradicación de -i en scripts. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
+<!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
 <!-- actualizado: 2026-10-10 (2) — §15 relación de conciliación envío–retorno (Bloque A/B/C): suite nueva T1–T12 = 12/12; regresión `madenat_lumber_logistics` = 3 failed, 0 error of 265 (3 fallas PRE-EXISTENTES por aserción global de `deviation`; 0 fallas nuevas). Bloque D no implementado. Versión 03 6.17.0 → 6.18.0. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 <!-- actualizado: 2026-10-10 (3) — §15.5 controles A/B/C **acreditados** (reversa/procedencia, reimputación, compañía+regla, elegibilidad dura, N:M presentación) y §15.6 ajuste de integridad (T13–T22 = 22/22; regresión 275 pruebas, 4 fallas: 3 preexistentes + 1 ambiental por evidencia V3 7973, 0 errores). Versión 03 6.18.0 → 6.19.0. -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
@@ -1535,4 +1536,53 @@ evaluación en Owl.
 core+intake+logistics 6/4 de 1284 (0 nuevas). Versión 03 6.37.0 → **6.38.0** (cabecera alineada: estaba
 6.33.0, por debajo de 6.37.0 ya registrado por entregas previas). §30 es consecutiva (§29 → §30, sin
 duplicado). Sin commit/push. -->
+
+## 31. REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: USO EXCLUSIVO DE -u (NUNCA -i) (AD-125 / M1)
+
+**Regla de Oro de Ejecución de Regresiones:**
+Todo arnés de pruebas automatizadas o regresión completa sobre bases de datos persistentes (`madenat_test`) debe ejecutarse exclusivamente con el flag `-u` (o `--update`) sobre la nómina explícita de módulos requeridos, o alternativamente con `--test-tags`. Queda **estrictamente prohibido el uso del flag `-i` (o `--init`)**.
+
+### 31.1 Causa Técnica y Mecánica en el Core de Odoo 18 CE
+El comportamiento de `-i` frente a `-u` está determinado en dos puntos críticos del cargador de Odoo:
+1. `odoo/modules/loading.py:199-200`:
+   ```python
+   mode = 'update'
+   if hasattr(package, 'init') or package.state == 'to install':
+       mode = 'init'
+   ```
+   Cuando se pasa `-i`, el paquete entra en modo `init`. Cuando se pasa `-u`, permanece en modo `update`.
+2. `odoo/tools/convert.py:347` y `447`:
+   ```python
+   if self.noupdate and self.mode != 'init':
+       if record := env['ir.model.data']._load_xmlid(xid):
+           self.idref[rec_id] = record.id
+           return None
+   ...
+   record = model._load_records([data], self.mode == 'update')
+   ```
+   En modo `init` (`-i`), la condición `self.mode != 'init'` se evalúa como `False`, de modo que Odoo **ignora por diseño la directiva `noupdate="1"`** de los archivos XML de datos y procede a sobreescribir todos los registros (`ir.config_parameter`, configuraciones, semillas) con los valores literales del XML.
+3. Consecuencia en Bloque 4K: La invocación de `run_reg_4k.sh` con `-i` forzó la recarga de `data/ingestion_config.xml`, sobreescribiendo el parámetro `madenat.out_of_table_behavior` de `'direct'` a `'warning'`.
+
+### 31.2 Comando Canónico Oficial de Regresión
+La suite completa de módulos para regresión comprende:
+- `madenat_lumber_core`
+- `madenat_lumber_intake`
+- `madenat_lumber_logistics`
+- `madenat_ingestion_engine`
+- `madenat_lumber_purchasing`
+- `madenat_lumber_costing`
+- `madenat_lumber_billing`
+
+**Comando canónico:**
+```bash
+docker exec odoo18_app odoo \
+    -d madenat_test \
+    -u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics,madenat_ingestion_engine,madenat_lumber_purchasing,madenat_lumber_costing,madenat_lumber_billing \
+    --test-enable \
+    --stop-after-init \
+    --http-port=8079 > "$LOG_FILE" 2>&1
+```
+
+<!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS: prohibición estricta de -i; justificación técnica Odoo loading.py:199 y convert.py:347; fijación de comando oficial con -u y 7 módulos. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
+
 
