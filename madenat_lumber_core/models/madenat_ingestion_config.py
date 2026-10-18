@@ -112,6 +112,41 @@ class MadenatIngestionConfig(models.AbstractModel):
         return {rec.rough_mm: (rec.s2s_decimal, rec.s2s_label) for rec in records}
 
     @api.model
+    def get_thickness_real_mm(self, thickness_visual=None, thickness_inches=None, raise_if_empty=False):
+        """Retorna espesor real físico en mm desde lumber.thickness.real.map (Bloque 5A / AD-126).
+
+        Única fuente de verdad: lumber.thickness.real.map.
+        Sin copias en código ni en parámetros (D6 / AD-126).
+        Busca primero por thickness_visual (ej: '6/4', '5/4'). Si no encuentra y se provee
+        thickness_inches, busca por coincidencia numérica con thickness_nominal_in.
+        Retorna float (mm) o None si no encuentra coincidencia.
+        """
+        if not thickness_visual and not thickness_inches:
+            return None
+
+        RealMap = self.env['lumber.thickness.real.map'].sudo()
+        if thickness_visual:
+            clean_vis = str(thickness_visual).strip()
+            rec = RealMap.search([
+                ('active', '=', True),
+                ('thickness_visual', '=', clean_vis)
+            ], limit=1)
+            if rec:
+                return rec.thickness_real_mm
+
+        if thickness_inches and float(thickness_inches) > 0:
+            recs = RealMap.search([('active', '=', True)])
+            for rec in recs:
+                if abs(rec.thickness_nominal_in - float(thickness_inches)) <= 0.001:
+                    return rec.thickness_real_mm
+
+        _logger.debug("IngestionConfig: espesor real no encontrado en lumber.thickness.real.map para visual='%s', in=%s",
+                      thickness_visual, thickness_inches)
+        if raise_if_empty:
+            raise UserError(_("No se encontró el espesor real en lumber.thickness.real.map para '%s'.") % (thickness_visual or thickness_inches))
+        return None
+
+    @api.model
     def get_s2s_overwidth_inches(self):
         """Retorna sobreancho S2S en pulgadas (parámetro madenat.s2s_overwidth_inches, default 0.125)."""
         try:

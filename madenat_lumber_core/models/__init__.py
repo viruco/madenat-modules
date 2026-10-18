@@ -25,6 +25,7 @@ from . import lumber_thickness_visual_rule
 from . import lumber_profile_subproduct_rule
 from . import madenat_lumber_product_default
 from . import madenat_ingestion_config
+from . import lumber_thickness_real_map
 # Fase 3 — Modelos de fórmulas de exportación (H8) y formatos de ingesta (H9)
 from . import lumber_export_formula
 from . import lumber_ingestion_format

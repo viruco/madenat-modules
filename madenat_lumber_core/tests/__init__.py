@@ -80,3 +80,6 @@ from . import test_pre_deploy_health_check
 from . import test_double_rounding_j2
 # 📐 FASE 12 (Bloque 4L / L3 / AD-124): Resolución visual de anchos basada en datos.
 from . import test_visual_dimension_l3
+# 📏 FASE 12 (Bloque 5A / AD-126): Tabla de Espesores Reales Físicos.
+from . import test_lumber_thickness_real_map_5a
+

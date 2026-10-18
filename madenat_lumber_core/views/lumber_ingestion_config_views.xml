@@ -137,6 +137,80 @@
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
+        <!-- 2b. BLOQUE 5A — TABLA DE ESPESORES REALES FÍSICOS (AD-126) -->
+        <record id="view_lumber_thickness_real_map_tree" model="ir.ui.view">
+            <field name="name">lumber.thickness.real.map.tree</field>
+            <field name="model">lumber.thickness.real.map</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" decoration-muted="not active">
+                    <field name="sequence" widget="handle"/>
+                    <field name="thickness_visual"/>
+                    <field name="thickness_nominal_in"/>
+                    <field name="thickness_real_mm"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_lumber_thickness_real_map_form" model="ir.ui.view">
+            <field name="name">lumber.thickness.real.map.form</field>
+            <field name="model">lumber.thickness.real.map</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="thickness_visual"/>
+                                <field name="thickness_nominal_in"/>
+                            </group>
+                            <group>
+                                <field name="thickness_real_mm"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Notas y Justificación" name="notes">
+                                <field name="notes" placeholder="Observaciones contractuales o técnicas..."/>
+                            </page>
+                        </notebook>
+                        <p class="text-muted">
+                            Mapeo de espesor nominal a espesor real físico en milímetros para cálculo F3 (Fórmula Real Física).<br/>
+                            <strong>Regla R5/D6:</strong> Editar este registro solo afecta cálculos NUEVOS — no recalcula filas históricas almacenadas.
+                        </p>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_lumber_thickness_real_map_search" model="ir.ui.view">
+            <field name="name">lumber.thickness.real.map.search</field>
+            <field name="model">lumber.thickness.real.map</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="thickness_visual"/>
+                    <field name="name"/>
+                    <filter name="active" string="Activos" domain="[('active','=',True)]"/>
+                    <filter name="inactive" string="Todos" domain="[]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_lumber_thickness_real_map" model="ir.actions.act_window">
+            <field name="name">Tabla de Espesores Reales</field>
+            <field name="res_model">lumber.thickness.real.map</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
         <!-- 3. RANGOS ESPESOR→VISUAL -->
         <record id="view_lumber_thickness_visual_rule_tree" model="ir.ui.view">
             <field name="name">lumber.thickness.visual.rule.tree</field>
@@ -285,6 +359,12 @@
                   parent="menu_lumber_ingestion_config_root"
                   action="action_lumber_width_s2s_map"
                   sequence="20"/>
+
+        <menuitem id="menu_lumber_thickness_real_map"
+                  name="Espesores Reales Físicos"
+                  parent="menu_lumber_ingestion_config_root"
+                  action="action_lumber_thickness_real_map"
+                  sequence="25"/>
 
         <menuitem id="menu_lumber_thickness_visual_rule"
                   name="Rangos Espesor→Visual"

@@ -44,6 +44,9 @@ access_lumber_blank_nominal_map_user,lumber.blank.nominal.map.user,model_lumber_
 access_lumber_width_s2s_map_config,lumber.width.s2s.map.config,model_lumber_width_s2s_map,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
 access_lumber_width_s2s_map_auditoria,lumber.width.s2s.map.auditoria,model_lumber_width_s2s_map,madenat_lumber_core.group_madenat_auditoria,1,1,0,0
 access_lumber_width_s2s_map_user,lumber.width.s2s.map.user,model_lumber_width_s2s_map,base.group_user,1,0,0,0
+access_lumber_thickness_real_map_config,lumber.thickness.real.map.config,model_lumber_thickness_real_map,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
+access_lumber_thickness_real_map_auditoria,lumber.thickness.real.map.auditoria,model_lumber_thickness_real_map,madenat_lumber_core.group_madenat_auditoria,1,1,0,0
+access_lumber_thickness_real_map_user,lumber.thickness.real.map.user,model_lumber_thickness_real_map,base.group_user,1,0,0,0
 access_lumber_thickness_visual_rule_config,lumber.thickness.visual.rule.config,model_lumber_thickness_visual_rule,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
 access_lumber_thickness_visual_rule_user,lumber.thickness.visual.rule.user,model_lumber_thickness_visual_rule,base.group_user,1,0,0,0
 access_lumber_profile_subproduct_rule_config,lumber.profile.subproduct.rule.config,model_lumber_profile_subproduct_rule,madenat_lumber_core.group_lumber_config_manager,1,1,1,1
