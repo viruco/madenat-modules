@@ -21,6 +21,7 @@ Verifica:
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError, UserError
+from ..models.utils_uom import CONST_M3_TO_IN2_M
 
 
 @tagged('post_install', '-at_install', 'madenat_lumber_core')
@@ -324,7 +325,7 @@ class TestExportWidthS2SWpB(TransactionCase):
                 s2s_in = mapping[w_key][0] + overwidth
             else:
                 s2s_in = float(w_mm) / 25.4
-            expected = round((1.5 * s2s_in * 4.0 * 100) / 1550.0031, 3)
+            expected = round((1.5 * s2s_in * 4.0 * 100) / float(CONST_M3_TO_IN2_M), 3)
             self.assertAlmostEqual(
                 line.vol_shipment_m3, expected, places=3,
                 msg=f"Barrido falló en {w_mm} mm: obtenido {line.vol_shipment_m3}, esperado {expected}"

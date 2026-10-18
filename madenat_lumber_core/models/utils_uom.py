@@ -605,8 +605,9 @@ def format_volume_display(m3_value, show_mbf=True):
 # Referencia: NIST (National Institute of Standards and Technology)
 #             — 1 pulgada = 25.4 mm exacto.
 # ⚠️ NO modificar este valor sin revisar impacto en todas las fórmulas de cubicación.
-# ──────────────────────────────────────────────────────────────────────────
-INCH_SQ_METERS_TO_M3 = Decimal('1550.003096')
+# Unificación canónica AD-119: constante única 1550.003
+CONST_M3_TO_IN2_M = Decimal('1550.003')
+INCH_SQ_METERS_TO_M3 = CONST_M3_TO_IN2_M
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 📐 CONSTANTES CANÓNICAS DE CONVERSIÓN (TD-003.2 — 2026-05-31)
