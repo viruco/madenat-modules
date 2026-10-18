@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.42.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): diagnóstico mecanismo cambio parámetro out_of_table_behavior por carga XML -i (L1); corrección tabla dimensional K1 con condiciones canónicas 100 pzas, 1.5", 4.0 m explicando factor 0.8 (L2); aplicación de K1 mediante resolución visual basada en datos en lumber.width.s2s.map activo y erradicación de get_s2s_exclusion_widths y lista residual (L3); corrección de diferencia relativa de 1550 a 6.19e-8 (L4). Versión 04 12.41.0 → 12.42.0. | Cierre Bloque 4K (AD-123). -->
+**Versión documental:** 12.43.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre de Arnés de Pruebas y Rectificación de D1 (AD-125 / Bloque 4M): rectificación de D1 demostrando sobreescritura colateral de 'direct' a 'warning' por arnés con flag -i (M3); regla canónica de prohibición estricta de -i frente a -u en regresión según Odoo loading.py / convert.py (M1); diagnóstico del flag noupdate en ir_model_data y limitación estructural de _update_xmlids en actualizaciones de módulos (M2); reemplazo de literal 2.36 por MBF_TO_M3 en test_visual_dimension_l3 (M4). Versión 04 12.42.0 → 12.43.0. | Cierre Definitivo Bloque 4L (AD-124). -->
+<!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): diagnóstico mecanismo cambio parámetro out_of_table_behavior por carga XML -i (L1); corrección tabla dimensional K1 con condiciones canónicas 100 pzas, 1.5", 4.0 m explicando factor 0.8 (L2); aplicación de K1 mediante resolución visual basada en datos en lumber.width.s2s.map activo y erradicación de get_s2s_exclusion_widths y lista residual (L3); corrección de diferencia relativa de 1550 a 6.19e-8 (L4). Versión 04 12.41.0 → 12.42.0. | Cierre Bloque 4K (AD-123). -->
 <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4I (AD-121): suite oficial en 1.540 pruebas (+4 de G8) y reconciliación de 1.876 stats (I1); clasificación de datos en código y TD-122 (I2); script pre_deploy normalizado con consultas oficiales B y A.2 e informativa write_date con TDD (I3); fila residuo TEST-LOT-EX (I4); auditoría 3 decimales en vistas, reportes y Excel (I5); método de entrega no definido D4 en CANON/02 §18 (I6). Versión 04 12.38.0 → 12.39.0. | Cierre Bloque 4H (AD-121). -->
 **Estado:** Canonical / activo
@@ -3881,6 +3882,42 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
    - Se incorporó la suite TDD `TestVisualDimensionL3` (5 métodos PASS). Cero recálculo ni alteración de filas históricas (Consultas B y A.2 permanecen 100% invariantes).
 4. **L4 — Corrección de Precisión de la Constante 1550:**
    - Se rectifica la diferencia relativa entre `1550.003096` y `1550.003`: es de $6.19 \times 10^{-8}$ ($0.0000062\%$), no $2.0 \times 10^{-7}$.
+
+---
+
+### AD-125 — Cierre de Arnés de Pruebas: Prohibición Estricta de Flag -i frente a -u, Rectificación Oficial de Decisión D1, y Diagnóstico de noupdate (Bloque 4M) (2026-10-18)
+
+**Contexto:** Bloque 4M — Formalización canónica de los puntos M1 a M4 tras auditoría del arnés de regresión y diagnóstico de configuración de datos maestros.
+
+**Decisiones y Resoluciones Vinculantes:**
+1. **M1 — Prohibición Canónica del Flag `-i` y Fijación del Arnés Oficial con `-u`:**
+   - **Causa Técnica:** En el core de Odoo 18 CE (`odoo/modules/loading.py:199-200` y `odoo/tools/convert.py:347, 447`), el uso de `-i` (`--init`) fuerza la ejecución en modo `init` (`self.mode == 'init'`). Bajo dicho modo, Odoo ignora intencionalmente la directiva XML `noupdate="1"` y sobreescribe cualquier registro existente con el valor del XML.
+   - **Historial de Flags:**
+     - 4F (`regresion_baseline_bloque3_...` / `regresion_baseline_opcion_a_...`): utilizó `-u`.
+     - 4H (`regresion_baseline_bloque4h_...`): utilizó `-u`.
+     - 4I (`regresion_baseline_bloque4i_...`): utilizó `-u`.
+     - 4J (`regresion_final_bloque4j_...`): utilizó inadvertidamente `-i`.
+     - 4K (`regresion_final_bloque4k_cierre_...`): utilizó `-i`, sobreescribiendo `madenat.out_of_table_behavior` de `'direct'` a `'warning'`.
+     - 4L (`regresion_final_bloque4l_cierre_...`): utilizó `--test-tags` (sin `-i` ni `-u`, preservando el valor sin reescribir).
+   - **Regla:** Queda terminantemente prohibido el uso de `-i` en regresiones. Se fija el script canónico con `-u` sobre los 7 módulos del sistema (`core, intake, logistics, engine, purchasing, costing, billing`). Documentado en `CANON/03_TESTS.md` §31.
+
+2. **M2 — Diagnóstico Estructural del Flag `noupdate` en `ir_model_data`:**
+   - Se diagnostica por qué `param_out_of_table_behavior` presentaba `noupdate = False` en `ir_model_data` a pesar de estar envuelto en `<data noupdate="1">` en `data/ingestion_config.xml`:
+     - El registro fue creado originalmente en Bloque 4D (commit `6bd9a69`) directamente bajo `<odoo>` (con `noupdate=False`).
+     - Al ser movido a `<data noupdate="1">` en Bloque 4E (commit `6221a60`), Odoo no alteró la columna `noupdate` de `ir_model_data` durante la actualización con `-u`. Esto se debe a que `_build_update_xmlids_query` (`odoo/addons/base/models/ir_model.py:1920`) ejecuta:
+       `ON CONFLICT (module, name) DO UPDATE SET (model, res_id, write_date) = ...`, omitiendo por diseño el campo `noupdate` para registros existentes.
+     - En contraste, los parámetros introducidos por primera vez dentro de `<data noupdate="1">` (como `param_direct_width_min_mm`) sí poseen `noupdate = True`.
+   - **Acción:** La sintaxis XML es correcta; no procede alteración de XML. Se mejoró `test_12` en `test_export_width_s2s_wpb.py` para auditar la presencia en `ir_model_data` de todos los parámetros esperados y verificar el flag en BD.
+
+3. **M3 — Rectificación Oficial de Decisión D1:**
+   - Se rectifica formalmente el estado de D1: **D1 NO quedó intacta**. El valor `'direct'` fue sobreescrito colateralmente a `'warning'` en la regresión 4K ejecutada con `-i`.
+   - **Valor Vigente:** `'warning'` es el valor actual en `madenat_test`. En apego estricto a D1 (prohibición de cambios manuales de datos/configuración en BD), **el valor NO se restaura**.
+   - **Efecto Operativo:** Ante anchos fuera de tabla S2S y menores a 170 mm, el sistema opera con advertencia (`warning`), emitiendo alertas en el chatter y registro de log sin bloquear la ingesta.
+   - **Riesgo de Repetición:** Mitigado definitivamente al erradicar el uso del flag `-i` en los scripts de prueba.
+
+4. **M4 — Erradicación de Literal en Test:**
+   - En `test_visual_dimension_l3.py` (método `test_05`), se reemplazó el literal `Decimal('2.36')` por la constante canónica del sistema `MBF_TO_M3` importada desde `models.utils_uom`. Cero literales de negocio hardcodeados.
+
 
 
 

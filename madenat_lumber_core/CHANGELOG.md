@@ -1,3 +1,12 @@
+## [18.0.6.19.0] - 2026-10-18
+
+### Changed
+- **Bloque 4M (AD-125) — Cierre de Arnés de Pruebas y Diagnóstico de Configuración**:
+  - **M1 (Regla canónica de regresión con -u)**: Prohibición estricta de flag `-i` en arnés de pruebas sobre bases existentes según `loading.py:199` y `convert.py:347`. Nuevo script canónico con `-u` y registro en `CANON/03_TESTS.md` §31.
+  - **M2 (Diagnóstico noupdate y mejora de test_12)**: Análisis del flag `noupdate` en `ir_model_data` y limitación estructural en Odoo `_update_xmlids`. Mejora de `test_12` en `test_export_width_s2s_wpb.py` auditando presencia en BD y flags.
+  - **M3 (Rectificación oficial de decisión D1)**: Registro de sobreescritura de `madenat.out_of_table_behavior` de `'direct'` a `'warning'` en regresión 4K con `-i`. Mantenido en `'warning'` sin alteración manual (D1).
+  - **M4 (Erradicación de literal 2.36)**: Reemplazo de `Decimal('2.36')` por constante del sistema `MBF_TO_M3` en `test_visual_dimension_l3.py:test_05`.
+
 ## [18.0.6.18.0] - 2026-10-18
 
 ### Changed
