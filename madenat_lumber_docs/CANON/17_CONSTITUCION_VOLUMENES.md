@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.5.0
-**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: Cierre Bloque 4: corrección de impacto real en Guía 26270 (-0.116 m³), muestra REMATE 195 mm reatribuida a MSC Victoria, commit 0a89536 documentado para dimensiones normalizadas JCE. Versión 1.4.0 → 1.5.0. -->
+**Versión documental:** 1.6.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4E (AD-118): 15 anchos activos sincronizados (115 mm), corrección aritmética total Guía 26270 con manual 5 5/8" (47,801 m³), resolución en 4 ramas sin heurística (is_s2s_inches), parametrización de ancho directo (170 mm). Versión 1.5.0 → 1.6.0. | 2026-10-17: Cierre Bloque 4: corrección de impacto real en Guía 26270 (-0.116 m³), muestra REMATE 195 mm reatribuida a MSC Victoria, commit 0a89536 documentado para dimensiones normalizadas JCE. Versión 1.4.0 → 1.5.0. -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -206,7 +206,7 @@ Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, 
 
 ### 9.2 Tabla S2S Canónica y Regla de Transición (Cristhian Elgueta — Planilla de Cubicación)
 
-La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Rough mm → S2S en pulgadas) comprende exactamente **14 anchos** activos en el modelo `lumber.width.s2s.map`:
+La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Rough mm → S2S en pulgadas) comprende exactamente **15 anchos** activos en el modelo `lumber.width.s2s.map` (incluyendo 115 mm tras revertir `active=False` en `seed_s2s_115`):
 
 | Rough (mm) | S2S Planilla (pulg) | S2S Decimal | + 1/8" (pulg) | Vol. Esperado (m³) 100 pzas, 1.5", 4.0 m | Vol/pza (m³) | Coincidencia Planilla |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -217,6 +217,7 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
 | 100 | 3 5/8 | 3.625 | 3.750 | 1,452 | 0,015 | COINCIDE |
 | 105 | 3 7/8 | 3.875 | 4.000 | 1,548 | 0,015 | COINCIDE |
 | 110 | 3 7/8 | 3.875 | 4.000 | 1,548 | 0,015 | COINCIDE |
+| 115 | 4 1/8 | 4.125 | 4.250 | 1,645 | 0,016 | COINCIDE |
 | 120 | 4 3/8 | 4.375 | 4.500 | 1,742 | 0,017 | COINCIDE |
 | 125 | 4 5/8 | 4.625 | 4.750 | 1,839 | 0,018 | COINCIDE |
 | 130 | 4 7/8 | 4.875 | 5.000 | 1,935 | 0,019 | COINCIDE |
@@ -227,11 +228,14 @@ La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Ro
 
 *Nota metodológica sobre redondeo:* La verificación de volumen por pieza a 3 decimales oculta diferencias significativas en paquetes reales (por ejemplo, para 140 mm, 1 pieza da 0,01935 m³ que en la planilla figura como 0,019 m³, mientras que para 100 piezas da 1,935 m³ exactos). El criterio formal de validación es el cálculo sobre 100 piezas.
 
-- **Anchos ausentes de la tabla S2S (170, 175, 180, 195, 200 mm):** Se calculan mediante conversión métrica directa ($\text{Ancho}_{mm} / 25,4$) sin sobreancho.
+- **Anchos ausentes de la tabla S2S:** Todo ancho fuera de la tabla activa y menor al parámetro `madenat.direct_width_min_mm` (170 mm por defecto) aplica la política `madenat.out_of_table_behavior` (`'warning'` por defecto, emitiendo log y advertencia en chatter de la guía y aplicando `mm / 25.4`; `'block'`; o `'direct'`). Los anchos mayores o iguales a 170 mm (170, 175, 180, 195, 200 mm) se calculan mediante conversión métrica directa ($\text{Ancho}_{mm} / 25,4$) sin sobreancho y sin advertencia.
 - **Caso REMATE 195 mm (INFERENCIA):** La muestra de línea REMATE que declara 195 mm y 4,043 m³ proviene de un documento de embarque de exportación (muestra MSC Victoria), NO de la Guía 26270 (cuyas 17 líneas corresponden exclusivamente a anchos 100, 125 y 150 mm con espesor nominal 5/4 = 1,25"). Con 194 mm el cálculo daría 4,041 m³ y directo a 195 mm daría 4,062 m³. La causa atribuida a dicha línea queda formalmente rotulada como **INFERENCIA**.
-- **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (ancho 150 mm, espesor 5/4", largo 4,05 y 3,70 m) almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados mediante conversión directa $150 / 25,4 = 5,9055"$. Bajo la nueva regla F2 (ancho S2S de tabla 5 5/8" + 0,125" = 5,750"), su volumen recalculado es 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen los datos históricos, el total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$). El informe previo que estimó un aumento a 48,571 m³ erró al sumar la diferencia respecto a la opción manual (3,730 m³) en lugar de comparar contra los valores almacenados en base de datos. Con ancho manual de 5 5/8", el volumen de esas líneas es 3,730 m³ y 0,470 m³ (total 4,200 m³).
-- **Dimensiones Normalizadas en Pulgadas S2S (Commit 0a89536):** Documentos como las Notas de Venta JCE (`GDE 95806.xls` / `NVTA881333`) traen dimensiones combinadas en pulgadas (ej. `5/4x5.3/8x16`) que el parser normaliza a milímetros ($5,375 \times 25,4 = 136,525\text{ mm}$). `get_s2s_adjustment()` reconoce este ancho como coincidente con el valor S2S de la tabla ($5\text{ }3/8\text{"}$) y aplica el sobreancho de $+0,125\text{"}$ exactamente una vez ($5,500\text{"}$), garantizando el volumen documental exacto de $4,997\text{ m}^3$ para 231 piezas.
-- **Zona de transición (155 a 170 mm):** Se gobierna por el parámetro configurable `madenat.out_of_table_behavior` (`'direct'` por defecto, `'warning'` o `'block'`).
+- **Impacto Real en Guía 26270 (Corrección Aritmética Canónica):** Las líneas 5140 y 5141 (ancho 150 mm, espesor 5/4", largo 4,05 y 3,70 m) almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados mediante conversión directa $150 / 25,4 = 5,9055"$. Bajo la nueva regla F2 (ancho S2S de tabla 5 5/8" + 0,125" = 5,750"), su volumen recalculado es 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen los datos históricos, el total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$). El informe previo que estimó un aumento a 48,571 m³ erró al sumar la diferencia respecto a la opción manual (3,730 m³) en lugar de comparar contra los valores almacenados en base de datos. Con ancho manual de 5 5/8" (5,625" netos), el volumen de esas líneas es 3,730 m³ y 0,470 m³ (total 4,200 m³). Sumado a las 15 líneas restantes de 100 y 125 mm (43,601 m³), el total de la Guía 26270 con ancho manual es exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2; el valor previo de 47,417 m³ era un cálculo erróneo que omitía la línea 5141 de 0,470 m³).
+- **Dimensiones Normalizadas en Pulgadas S2S y Orden Canónico de Resolución (AD-118):** Se elimina la tolerancia numérica heurística y se establece una señal explícita `is_s2s_inches` provista por el normalizador documental para dimensiones combinadas comerciales (ej. JCE `5/4x5.3/8x16`). Se fija el orden de resolución en 4 ramas canónicas:
+  1. *Manual:* `export_width_manual_inches` prevalece si es $> 0$ y posee motivo registrado.
+  2. *Tabla S2S:* Si `rough_mm` está en tabla activa, retorna S2S + sobreancho.
+  3. *Documental en pulgadas S2S (`is_s2s_inches=True`):* Retorna el sobreancho exacto una sola vez, logrando $4,997\text{ m}^3$ para 231 piezas en Notas de Venta JCE.
+  4. *Directo:* Aplica $\text{mm} / 25,4$ considerando el umbral `madenat.direct_width_min_mm` (170 mm) y la política `madenat.out_of_table_behavior`.
 - **Extinción de la lista fija de exclusiones:** Queda formalmente extinguida y deprecada la lista `[150, 160, 170, 180, 200]` (`madenat.s2s_exclusion_widths`). La regla se decide por la presencia o ausencia en datos del modelo `lumber.width.s2s.map`.
 
 ### 9.3 Blanks en Stock y Declaración Fitosanitaria (F6)

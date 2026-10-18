@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.34.0
-**Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
+**Versión documental:** 8.35.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-10 (2) — nueva sección «Conciliación envío–retorno (Bloque A/B/C) — IMPLEMENTADO (2026-10-10)»: modelo `madenat.processor.return.link`, cierra la brecha (a) de CANON/19 §19.10; Bloque D cuantitativo PENDIENTE. Versión 05 8.16.0 → 8.17.0. Sin commit/push. -->
@@ -1075,5 +1076,27 @@ Sin push ni despliegue. -->
   - **Estado:** **FALTA** en código (no existe campo ni función que la calcule).
 - [ ] **BK-F12-MBF-EDIT (Edición Manual Justificada de Volumen y MBF):**
   - **Estado:** **EN ESPERA** (no autorizado en este bloque).
+
+### Bloque 4E — Ajustes Finales (AD-118) — IMPLEMENTADO EN LOCAL (Commits ec4f968, 6221a60, d65089a, 9be38c8)
+- [x] **E1 — Parametrización Umbral Ancho Directo (AD-118 / Commit `ec4f968`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Eliminado literal `155 < rough_mm < 170` de `madenat_ingestion_config.py`. Definidos `madenat.direct_width_min_mm` (170.0) y `madenat.out_of_table_behavior` ('warning').
+  - Regla: ancho en tabla S2S activa $\to$ S2S + sobreancho; ausente y $< 170$ mm $\to$ comportamiento configurado ('warning' con log y chatter de guía, 'block', 'direct'); ausente $\ge 170$ mm $\to$ directo $\text{mm}/25,4$ sin advertencia.
+- [x] **E2 — Valores por Defecto en DATA XML (AD-118 / Commit `6221a60`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Declarados en `data/ingestion_config.xml` con `noupdate="1"`: `param_s2s_overwidth_inches`, `param_out_of_table_behavior`, `param_direct_width_min_mm` y parámetros de secado.
+- [x] **E3 — Sincronización Ancho 115 mm (AD-118 / Commit `d65089a`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Revertido `active=False` de `seed_s2s_115` en `data/ingestion_seed_fase2.xml` (15 anchos activos sincronizados en base limpia y `madenat_test`).
+- [x] **E4 — get_s2s_adjustment sin Heurística (AD-118 / Commit `9be38c8`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Tolerancia numérica eliminada. Parámetro y señal explícita `is_s2s_inches` desde el normalizador de documentos. Orden de resolución canónico en 4 ramas validado.
+- [x] **E5 — Corrección Aritmética Canónica Guía 26270 (AD-118):**
+  - **Estado:** **DOCUMENTADO**.
+  - Total Guía 26270 con ancho manual 5 5/8": **47,801 m³** (impacto de **-0,208 m³** vs almacenado 48,009 m³ y **-0,092 m³** vs F2 47,893 m³).
+- [x] **E6 — Auditoría de Literales de Negocio (AD-118):**
+  - **Estado:** **AUDITADO**.
+  - Verificadas ocurrencias de 1550, 1.5 y 155 como constantes físicas nombradas, identificadores o datos de prueba. Cero literales de negocio hardcodeados.
+
 
 

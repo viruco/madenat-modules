@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.34.0
-**Última actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — Cierre Bloque 4: incorporación de commit 0a89536 en AD-117, corrección del impacto en Guía 26270 (-0.116 m³) y reatribución de muestra REMATE 195 mm a MSC Victoria. Versión 04 12.33.0 → 12.34.0. | alta AD-117 (Bloque 4: regla de anchos por datos H1-H5, Blanks F4/F6, gestión de patios F7, secado F6, deprecación de s2s_exclusion_widths y reglas anti-hardcode). Versión 04 12.32.0 → 12.33.0. -->
+**Versión documental:** 12.35.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4E (AD-118): parametrización de ancho directo (170 mm), out_of_table_behavior ('warning'), parámetros con noupdate="1" en XML, 15 anchos activos sincronizados (115 mm), resolución de ancho no-heurística (is_s2s_inches), corrección aritmética de Guía 26270 (47,801 m³ con manual 5 5/8") y auditoría de literales. Versión 04 12.34.0 → 12.35.0. | Cierre Bloque 4: incorporación de commit 0a89536 en AD-117, corrección del impacto en Guía 26270 (-0.116 m³) y reatribución de muestra REMATE 195 mm a MSC Victoria. Versión 04 12.33.0 → 12.34.0. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3607,8 +3607,55 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
      - Documentos como las Notas de Venta JCE (`NVTA881333` / `GDE 95806`) presentan dimensiones en pulgadas (ej. `5/4x5.3/8x16`) normalizadas a milímetros en staging ($5,375 \times 25,4 = 136,525\text{ mm}$).
      - `get_s2s_adjustment()` reconoce la coincidencia en pulgadas S2S con la tabla y retorna el sobreancho configurado ($0,125"$) exactamente UNA sola vez ($5,375 + 0,125 = 5,500"$), produciendo el volumen documental exacto de $4,997\text{ m}^3$ para 231 piezas.
   8. **Correcciones Documentales y Aclaración de Línea Base:**
-     - **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (150 mm, espesor 5/4") almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados por conversión métrica directa ($150 / 25,4 = 5,9055"$). Bajo la regla F2 (S2S 5 5/8" + 0,125" = 5,750"), el recálculo da 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen, el volumen total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$), y NO aumentaría a 48,571 m³.
+     - **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (150 mm, espesor 5/4") almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados por conversión métrica directa ($150 / 25,4 = 5,9055"$). Bajo la regla F2 (S2S 5 5/8" + 0,125" = 5,750"), el recálculo da 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen, el volumen total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$), y NO aumentaría a 48,571 m³. Con ancho manual de 5 5/8" (5,625"), las líneas 5140 y 5141 dan 3,730 m³ y 0,470 m³ (total 4,200 m³), lo que sumado a las 15 líneas restantes de 100 y 125 mm (43,601 m³) arroja un volumen total para la guía de exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2; el valor previo de 47,417 m³ era un cálculo erróneo por omisión de la línea 5141).
      - **Origen Muestra REMATE 195 mm:** Proviene de un expediente de embarque de exportación (muestra MSC Victoria), no de la Guía 26270. Su análisis como discrepancia nominal queda catalogado como INFERENCIA.
+
+---
+
+### AD-118 — Ajustes Finales Bloque 4E: Parametrización de Ancho Directo, Valores por Defecto en Data XML, Sincronización de 15 Anchos Activos, Resolución Documental No-Heurística y Correcciones Aritméticas
+- **Fecha:** 2026-10-18
+- **Módulos:** `madenat_lumber_core` (18.0.6.13.0 → 18.0.6.14.0)
+- **Commits:** `ec4f968`, `6221a60`, `d65089a`, `9be38c8`
+- **Contexto:** Cierre final del Bloque 4 previo a la gestión de datos históricos y despliegue. Se eliminan heurísticas numéricas, se parametrizan los umbrales de negocio y se sincroniza la coherencia entre bases limpias y la base de prueba `madenat_test`.
+- **Decisiones Técnicas:**
+  1. **Parametrización del Umbral de Ancho Directo (E1):**
+     - Se elimina de `madenat_ingestion_config.py:171` el literal `155 < rough_mm < 170`.
+     - Se define el parámetro `madenat.direct_width_min_mm` (por defecto `170.0`) y `madenat.out_of_table_behavior` (por defecto `'warning'`).
+     - Regla de negocio unificada:
+       - Si el ancho rough existe en la tabla activa `lumber.width.s2s.map`: se utiliza el ancho S2S mapeado + sobreancho (`madenat.s2s_overwidth_inches`, por defecto `0.125"`).
+       - Si el ancho rough está ausente de la tabla y es inferior a `direct_width_min_mm` (< 170 mm): aplica el comportamiento configurado en `out_of_table_behavior`:
+         - `'warning'`: aplica conversión directa métrica (`mm / 25.4`), registra un log estructurado y emite un mensaje de advertencia en el chatter del procesamiento de guía.
+         - `'block'`: interrumpe la ingesta levantando `ValidationError`.
+         - `'direct'`: aplica conversión directa métrica (`mm / 25.4`) sin advertencia.
+       - Si el ancho rough está ausente de la tabla y es mayor o igual a `direct_width_min_mm` (>= 170 mm): aplica conversión directa métrica (`mm / 25.4`) sin advertencia (ancho directo contractual).
+       - Cubre de forma general todos los huecos y anchos ausentes (< 75 mm, y huecos como 80, 115, 135 y 165 mm).
+  2. **Valores por Defecto en DATA XML con noupdate="1" (E2):**
+     - Todos los parámetros de ingesta se declaran como registros `ir.config_parameter` en `data/ingestion_config.xml` con `<data noupdate="1">`:
+       - `madenat.s2s_overwidth_inches` (`0.125`)
+       - `madenat.out_of_table_behavior` (`warning`)
+       - `madenat.direct_width_min_mm` (`170.0`)
+       - `madenat.drying_temp_min_c` (`50.0`), `madenat.drying_temp_max_c` (`90.0`)
+       - `madenat.drying_duration_min_hours` (`50.0`), `madenat.drying_duration_max_hours` (`80.0`)
+     - Los métodos getter en `madenat.ingestion.config` actúan estrictamente como respaldo en código ante ausencias accidentales.
+  3. **Sincronización de 15 Anchos Activos S2S (E3):**
+     - Se revierte `active="False"` en `seed_s2s_115` dentro de `data/ingestion_seed_fase2.xml` (quedando 15 anchos activos: 75, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 140, 145, 150, 155 mm).
+     - Se incluye 115 mm en el fallback estático de `madenat_ingestion_config.py:122`.
+     - Se garantiza paridad absoluta entre una base de datos limpia y `madenat_test`: en ambas el barrido de 50 a 220 mm produce exactamente los mismos anchos exportados y recargos.
+  4. **Resolución de Ancho sin Heurística Numérica (E4):**
+     - Se elimina de `utils_uom.py:get_s2s_adjustment()` la tolerancia numérica `abs(s2s_in - w_in) < 0.01`.
+     - Se reemplaza por un parámetro explícito `is_s2s_inches=False` que viaja desde el normalizador de documentos (`_validar_y_enriquecer_lineas()`) cuando se detecta notación combinada explícita de pulgadas S2S (ej. `5/4x5.3/8x16`).
+     - Se fija el Orden Canónico de Resolución en 4 ramas:
+       - **Rama 1 — Manual (`export_width_manual_inches`):** Prevalece sobre cualquier cálculo si es mayor a cero y tiene motivo registrado (`madenat_guia_processing_line.py:270` y `stock_lot.py:90`).
+       - **Rama 2 — Tabla S2S activa:** Si `rough_mm` está en `lumber.width.s2s.map` activo, retorna `ancho_S2S_tabla + sobreancho` (`madenat_ingestion_config.py:171`).
+       - **Rama 3 — Documental en pulgadas S2S:** Si la señal `is_s2s_inches=True` está activa, no duplica el ancho base y retorna exactamente el sobreancho (`utils_uom.py:95`). Para JCE `5/4x5.3/8x16` (231 piezas, 16 ft) produce $4,997\text{ m}^3$.
+       - **Rama 4 — Directo métrico:** Si no está en tabla, aplica `rough_mm / 25.4` evaluando el umbral `madenat.direct_width_min_mm` (170 mm) y la política `madenat.out_of_table_behavior` (`madenat_ingestion_config.py:179-195`). Caso `150mm` en tabla toma S2S ($5\text{ }5/8" + 1/8" = 5,750"$).
+  5. **Corrección Aritmética Canónica Guía 26270 (E5):**
+     - El volumen almacenado original de las 17 líneas de la Guía 26270 es **48,009 m³** (subtotal 15 líneas de 100 y 125 mm: 43,601 m³; líneas 5140 y 5141 de 150 mm: 3,915 m³ + 0,493 m³ = 4,408 m³ con conversión directa 5,9055").
+     - Con regla F2 (S2S 5 5/8" + 1/8" = 5,750"), el recálculo de las líneas 5140 y 5141 da 3,812 m³ + 0,480 m³ = 4,292 m³. El total de la guía es **47,893 m³** (impacto neto de **-0,116 m³**).
+     - Con asignación manual de ancho 5 5/8" neto (5,625" sin sobreancho), las líneas 5140 y 5141 dan 3,730 m³ + 0,470 m³ = 4,200 m³. El total de la guía es exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2). La cifra anterior de 47,417 m³ era un error aritmético por omisión de la línea 5141 (0,470 m³).
+  6. **Auditoría de Literales de Negocio (E6):**
+     - Se auditan las ocurrencias de cadenas numéricas en código (`1550`, `1.5`, `155`). Se verifica que corresponden a identificadores de perfiles (`'f1550'`), constante física nombrada (`CONST_M3_TO_IN2_M = 1550.003`), espesor nominal en pruebas (`6/4 = 1.5"`), o claves de semilla XML (`155 mm`).
+     - Se confirma que NO existen literales de negocio hardcodeados en la lógica ejecutable.
 
 
 

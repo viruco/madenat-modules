@@ -1,3 +1,19 @@
+## [18.0.6.14.0] - 2026-10-18
+
+### Added
+- **Bloque 4E (AD-118) — Ajustes Finales de Ingesta, Parámetros y Resolución Documental**:
+  - **E1 (Parametrización umbral ancho directo y comportamiento fuera de tabla)**:
+    - Eliminado literal `155 < rough_mm < 170` en `madenat_ingestion_config.py`.
+    - Parámetro `madenat.direct_width_min_mm` (170.0) y `madenat.out_of_table_behavior` ('warning').
+    - Regla unificada: ancho en tabla S2S activa -> S2S + sobreancho; ancho ausente y menor a 170 mm -> comportamiento configurado ('warning' emite advertencia en log y chatter de guía y aplica mm/25.4; 'block' lanza `ValidationError`; 'direct' aplica mm/25.4 directo); ancho ausente >= 170 mm -> mm/25.4 directo sin advertencia. Cubre todos los huecos (<75, 80, 115, 135, 165).
+  - **E2 (Valores por defecto en DATA con noupdate="1")**:
+    - Declarados en `data/ingestion_config.xml`: `param_s2s_overwidth_inches` (0.125), `param_out_of_table_behavior` ('warning'), `param_direct_width_min_mm` (170.0), rangos de secado (`param_drying_temp_min_c`, `param_drying_temp_max_c`, `param_drying_duration_min_hours`, `param_drying_duration_max_hours`).
+  - **E3 (Sincronización 15 anchos activos S2S)**:
+    - Revertido `active=False` de `seed_s2s_115` en `data/ingestion_seed_fase2.xml` e incluido 115 mm en fallback de python. Tanto base limpia como `madenat_test` poseen exactamente 15 anchos activos (75 a 155 mm).
+  - **E4 (Resolución de ancho sin heurística con señal explícita is_s2s_inches)**:
+    - Reemplazada la tolerancia numérica por parámetro explícito `is_s2s_inches` en `get_s2s_adjustment()` y `resolve_export_width()`.
+    - Orden canónico de 4 ramas: 1) Manual (`export_width_manual_inches`), 2) Tabla S2S activa, 3) Documental en pulgadas S2S (`is_s2s_inches=True`, ej. JCE 5 3/8" x 16' = 4,997 m³), 4) Directo (mm/25.4) con umbral paramétrico 170 mm.
+
 ## [18.0.6.13.0] - 2026-10-17
 
 ### Added

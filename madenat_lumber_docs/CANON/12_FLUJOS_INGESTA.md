@@ -1,8 +1,8 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.11.0\
-**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §12.3 reconocimiento de dimensiones documentales en pulgadas normalizadas S2S (commit 0a89536). Versión 1.10.0 → 1.11.0. -->\
+**Versión documental:** 1.12.0\
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.3 señal explícita is_s2s_inches sin heurística numérica y orden canónico de resolución de 4 ramas (AD-118). Versión 1.11.0 → 1.12.0. | 2026-10-17: §12.3 reconocimiento de dimensiones documentales en pulgadas normalizadas S2S (commit 0a89536). Versión 1.10.0 → 1.11.0. -->\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
@@ -525,6 +525,13 @@ Procesado de servicio **es un retorno de servicio** mediante `service_return_con
   - Filtros directos: "Con Patio Asignado", "Sin Patio Asignado" y "Con Orden de Compra".
   - Agrupadores por Patio (`location_id`) y por Orden de Compra (`purchase_order`).
 
-### 12.3 Reconocimiento de Dimensiones Documentales en Pulgadas S2S (AD-116/AD-117 — Commit 0a89536)
-- **Normalización sin Duplicación de Sobreancho:** En documentos de proveedores como JCE (`NVTA881333` / `GDE 95806`) donde la notación combinada expresa dimensiones comerciales en pulgadas (ej. `5/4x5.3/8x16`), el parser normaliza las dimensiones a milímetros en las líneas de staging ($5,375 \times 25,4 = 136,525\text{ mm}$).
-- **Resolución de Ancho en Ingesta:** La función `get_s2s_adjustment()` detecta que $136,525\text{ mm}$ equivale en pulgadas a $5\text{ }3/8"$, correspondiente al valor S2S del nominal rough de 145 mm. En consecuencia, retorna el sobreancho de $+0,125"$ exactamente una sola vez ($5,375 + 0,125 = 5,500"$), garantizando que el volumen documental de la Nota de Venta ($4,997\text{ m}^3$ para 231 piezas) coincida estrictamente con la cubicación del sistema.
+### 12.3 Señal Explícita `is_s2s_inches` y Orden Canónico de Resolución de Ancho (AD-118)
+- **Eliminación de heurística numérica:** Se suprime la comparación de punto flotante con tolerancia (`abs(s2s_in - w_in) < 0.01`) de `get_s2s_adjustment()`.
+- **Señal explícita en normalización:** En documentos de proveedores como JCE (`NVTA881333` / `GDE 95806`) donde la notación combinada expresa dimensiones comerciales en pulgadas (ej. `5/4x5.3/8x16`), el normalizador documental (`_validar_y_enriquecer_lineas()`) detecta la presencia de ancho en pulgadas comerciales, normaliza a milímetros en staging ($5,375 \times 25,4 = 136,525\text{ mm}$) y emite la señal explícita `is_s2s_inches=True`.
+- **Orden canónico de resolución de ancho:**
+  1. **Rama 1 — Manual (`export_width_manual_inches`):** Si el operador asignó un valor manual mayor a cero con motivo obligatorio, prevalece sobre cualquier cálculo (`madenat_guia_processing_line.py:270` y `stock_lot.py:90`).
+  2. **Rama 2 — Tabla S2S activa:** Si `rough_mm` existe en el modelo `lumber.width.s2s.map` con `active=True`, se asigna el ancho S2S mapeado más el sobreancho (`madenat.s2s_overwidth_inches`, por defecto $0,125"$) (`madenat_ingestion_config.py:171`).
+  3. **Rama 3 — Documental en pulgadas S2S (`is_s2s_inches=True`):** Si la señal viene activa desde el parser, se reconoce que el ancho documental ya representa la escuadría S2S, retornando exactamente el sobreancho sin duplicar la base (`utils_uom.py:95`), logrando el volumen documental exacto de $4,997\text{ m}^3$ para 231 piezas de 16 ft en JCE.
+  4. **Rama 4 — Directo métrico:** Si el ancho no existe en tabla y no es documental S2S:
+     - Si $\text{rough\_mm} < \text{madenat.direct_width_min_mm}$ ($170\text{ mm}$): aplica la política `madenat.out_of_table_behavior` (`'warning'` emite advertencia en logs y chatter de guía aplicando $\text{mm} / 25,4$; `'block'` interrumpe con `ValidationError`; `'direct'` aplica $\text{mm} / 25,4$ sin advertencia) (`madenat_ingestion_config.py:179-195`).
+     - Si $\text{rough\_mm} \ge \text{madenat.direct_width_min_mm}$ ($170\text{ mm}$): aplica conversión métrica directa $\text{mm} / 25,4$ sin advertencia (`madenat_ingestion_config.py:194`). Para el caso especial de $150\text{ mm}$, por encontrarse en la tabla S2S activa, toma siempre la Rama 2 ($5\text{ }5/8" + 1/8" = 5,750"$).
