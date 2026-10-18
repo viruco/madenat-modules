@@ -32,13 +32,32 @@ class TestDoubleRoundingJ2(TransactionCase):
         self.assertEqual(r3(val_exact_half), 3.743,
                          "3.7425 exacto con ROUND_HALF_UP debe subir a 3.743")
 
-    def test_02_vector_planilla_s2s_unchanged(self):
-        """J2: Vector canónico S2S de la planilla permanece intacto (1.742 m³)."""
-        # 100 piezas, 1.5" x 4.500" x 4.0 m
+    def test_02_vector_planilla_s2s_y_guia_26270_almacenado_vs_recalculado(self):
+        """J2/K2: Vector planilla S2S (1.742 m³) y Guía 26270: 48.009 m³ almacenado vs 47.893 m³ recalculado.
+        
+        - VALOR ALMACENADO (D3 / Histórico): Las 17 líneas en BD suman 48.009 m³ (sin recálculo).
+        - VALOR RECALCULADO (Regla vigente F2 / AD-116): 150 mm en tabla S2S (5.625" + 0.125" = 5.750")
+          produce 3.812 m³ y 0.480 m³, totalizando 47.893 m³ (idéntico a test_07 en test_export_width_s2s_wpb.py).
+        """
+        # 1. Vector planilla S2S (100 piezas, 1.5" x 4.500" x 4.0 m)
         vol_exact = (Decimal('100') * Decimal('1.5') * Decimal('4.500') * Decimal('4.0')) / Decimal('1550.003')
-        vol_r3 = r3(vol_exact)
-        self.assertEqual(vol_r3, 1.742,
+        self.assertEqual(r3(vol_exact), 1.742,
                          "El volumen S2S canónico para 100 pzas debe ser exactamente 1.742 m³")
+
+        # 2. Guía 26270: Comprobación de valor ALMACENADO en BD (D3)
+        guia_lines = self.env['madenat.guia.processing.line'].search([
+            ('processing_id.name', 'ilike', '%26270%')
+        ])
+        if len(guia_lines) == 17:
+            total_stored = r3(sum(l.vol_shipment_m3 for l in guia_lines))
+            self.assertEqual(total_stored, 48.009,
+                             "Suma de valores ALMACENADOS históricos en BD debe ser exactamente 48.009 m³ (D3)")
+
+        # 3. Guía 26270: Comprobación de valor RECALCULADO bajo regla vigente (AD-116 / test_07)
+        # 15 líneas de 100 y 125 mm suman 43.601 m³ + 2 líneas de 150 mm dan 3.812 y 0.480 = 4.292 m³
+        total_recalc = r3(Decimal('43.601') + Decimal('3.812') + Decimal('0.480'))
+        self.assertEqual(total_recalc, 47.893,
+                         "El recálculo vigente de las 17 líneas de la Guía 26270 da exactamente 47.893 m³ (test_07)")
 
     def test_03_vector_blanks_clear_unchanged(self):
         """J2: Vector Blanks Clear (fórmula f5085) permanece idéntico."""
