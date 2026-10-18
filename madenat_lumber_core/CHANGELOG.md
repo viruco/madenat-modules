@@ -1,3 +1,12 @@
+## [18.0.6.13.0] - 2026-10-17
+
+### Added
+- **Bloque 4 (AD-116 / AD-117) — Regla de Ancho por Datos, Blanks F4/F6, Gestión de Patios y Secado en Horno**:
+  - **Bloque 4A (F2/F5 — Regla de ancho por datos)**: Regla de ancho decidida exclusivamente por datos en `lumber.width.s2s.map` (14 anchos activos de la planilla de Cristhian, 75 a 155 mm) + sobreancho configurable (`madenat.s2s_overwidth_inches`, 0,125" por defecto). Anchos ausentes de tabla utilizan `mm / 25.4` directo. Parámetro `madenat.out_of_table_behavior` ('direct', 'warning', 'block') para el rango de transición 155-170 mm. Parámetro obsoleto `madenat.s2s_exclusion_widths` deprecado. Prevalencia de ancho manual (`export_width_manual_inches` con motivo obligatorio y chatter) preservada.
+  - **Bloque 4B (F4/F6 — Blanks)**: Eliminada deducción de 1/16" en `lumber.export.formula` (`deduction_factor = 0.0`) y en `lumber.reception`. En Blanks que pasan directo a stock se conserva el volumen documental declarado (`vol_documental_m3`) sin recálculo. Vectores canónicos F4 validados: 16 ft × 250 = 4,425 m³; 16 ft × 270 = 4,778 m³ (espesor 6/4 = 1,5", ancho 3 5/8 + 1/8 = 3,75").
+  - **Bloque 4C (F7 — Patios)**: Marcador `is_patio` en `stock.location` indexado. Acción y menú para gestión de patios en inventario. Filtros y agrupadores por patio y por orden de compra en la consola de recepción. Seed con `noupdate="1"` para Patio Ferramenta. Separación estricta entre patio (`stock.location`) y procesador (`res.partner`). Cero IDs o nombres hardcodeados (regla H2).
+  - **Bloque 4D-1 (F6 — Secado en Horno)**: Campos opcionales en `stock.lot`: `drying_temp_c`, `drying_duration_hours`, `drying_date`. Constraint de validación que lee rangos dinámicamente desde `madenat.ingestion.config` (`get_drying_temp_range()` [50-90 °C] y `get_drying_duration_range()` [50-80 h]), sin literales en el código. Vista y pestaña de secado en form de lote. Cero recálculo sobre lotes históricos.
+
 ## [18.0.6.12.0] - 2026-10-17
 
 ### Fixed

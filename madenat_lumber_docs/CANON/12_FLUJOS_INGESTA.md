@@ -1,9 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.9.0\
-**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §12 incorporación de reglas de Blanks directo a stock (F6) y patios creables (F7, AD-116). Versión 1.8.0 → 1.9.0. -->\
-**Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116).
+**Versión documental:** 1.10.0\
+**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §12 alineación con AD-117 (Bloque 4: campos is_patio en stock.location, secado en stock.lot, Blanks directo con vol_documental_m3 preservado). Versión 1.9.0 → 1.10.0. -->\
+**Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
 **Responsable de actualización:** Arquitecto / Tech Lead
@@ -507,17 +507,20 @@ Procesado de servicio **es un retorno de servicio** mediante `service_return_con
 
 ---
 
-## 12. Reglas Operativas de Ingreso Directo, Blanks y Patios (AD-116)
+## 12. Reglas Operativas de Ingreso Directo, Blanks y Patios (AD-116 / AD-117)
 
-> Alineación con las especificaciones de Operaciones (Cristhian Elgueta, 2026-10-17 / AD-116).
+> Alineación con las especificaciones de Operaciones (Cristhian Elgueta, 2026-10-17 / AD-116 y AD-117).
 
-### 12.1 Flujo Directo de Blanks Clear (F6)
-- **Ingreso sin recálculo:** Los paquetes de Blanks pasan directo a stock físico y documental cuando se envían (`intake_direct_stock=True`), sin ejecución de fórmulas de conversión dimensional en el asistente de ingreso.
-- **Identidad de producto:** Los Blanks se ingresan y registran documentalmente como **"Madera Aserrada Seca"**, preservando los datos de proceso de secado en horno (temperatura 50–90 °C, duración 50–80 h, fecha de proceso) requeridos para el certificado fitosanitario de exportación.
+### 12.1 Flujo Directo de Blanks Clear (F4/F6)
+- **Ingreso sin recálculo:** Los paquetes de Blanks pasan directo a stock físico y documental cuando se envían; si el registro posee volumen documental declarado (`vol_documental_m3 > 0`), este valor se conserva intacto en `vol_shipment_m3` y `vol_purchase_m3`, sin ejecución de recálculos dimensionales.
+- **Fórmula F4 limpia:** Cuando aplica el cálculo de exportación en pies, no se descuenta $1/16"$ al espesor ($6/4 = 1,5"$ nominal limpio), aplicando $(1,5 \times (\text{Ancho} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas}) / 5085,312$.
+- **Identidad de producto y certificación de secado:** Los Blanks se describen documentalmente como **"Madera Aserrada Seca"**, almacenando en `stock.lot` los parámetros de secado en horno (`drying_temp_c`, `drying_duration_hours`, `drying_date`), validados dinámicamente según la configuración de la empresa.
 
-### 12.2 Política de Patios Creables y Listados de Recepción (F7)
-- **Patios como Ubicaciones Operativas:** Los patios son recintos de acopio y faena creables por Operaciones como ubicaciones internas (`stock.location` de uso interno):
-  - **Patio MARVAL:** Patio principal de recepción y acopio verde/seco.
-  - **Patio Ferramenta:** Recinto externo de servicio de maquila/cepillado. Reconocido operativamente como patio de tránsito de material.
-  - **Patio Puerto Coronel:** Recinto portuario para consolidación y embarque marítimo.
-- **Agrupación y Listados:** La Consola de Ingresos y las vistas de recepción deben permitir agrupación y filtrado por Patio (`location_id`), Proveedor (`partner_id`) y Orden de Compra (`purchase_order_id`).
+### 12.2 Política de Patios Operativos y Consola de Recepción (F7)
+- **Patios como Ubicaciones de Inventario:** Los patios son ubicaciones internas de stock (`stock.location`) identificadas mediante el marcador booleano `is_patio = True`:
+  - Creables y editables por Operaciones desde el menú *MADENAT Lumber > Configuración > Patios de Recepción*.
+  - Desacoplados de cualquier ID hardcodeado (H2): no existen parámetros fijos de ubicación en código ni acoplamiento forzado con el procesador (ID 676).
+- **Consola de Recepción:** Las vistas de lista y búsqueda de `lumber.reception` incorporan:
+  - Selector de Patio restringido a ubicaciones con `is_patio = True`.
+  - Filtros directos: "Con Patio Asignado", "Sin Patio Asignado" y "Con Orden de Compra".
+  - Agrupadores por Patio (`location_id`) y por Orden de Compra (`purchase_order`).

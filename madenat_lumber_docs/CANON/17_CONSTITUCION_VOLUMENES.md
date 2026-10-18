@@ -1,7 +1,7 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.3.0
-**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §9 incorporación de fórmulas canónicas F1 a F7 (AD-116), rango S2S 75–155 mm (+1/8"), transición directa en mm desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, y patios creables. Versión 1.2.0 → 1.3.0. -->
+**Versión documental:** 1.4.0
+**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: Bloque 4 (AD-116/AD-117) tabla canónica S2S de 14 anchos de Cristhian con prueba de 100 piezas, F3 como FALTA en código, REMATE 195 mm rotulado como INFERENCIA, Blanks F4 sin 1/16" y pase directo F6, Patios F7. Versión 1.3.0 → 1.4.0. -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
 > Este documento **fija nomenclatura y reglas de uso**. Las definiciones de §1 corresponden a lo **acordado con el usuario el 2026-10-01**. Las reglas de §2 describen el comportamiento **vigente verificado en código** (informe de auditoría de volúmenes del 2026-10-01). Las de §3 están **ACORDADAS y pendientes de implementación** (no vigentes hasta su ejecución). Las decisiones de §7 son **PROPUESTAS — NO APROBADAS**.
@@ -197,22 +197,40 @@ Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, 
 
 ### 9.1 Fórmulas Canónicas de Negocio (F1 a F4)
 
-| Fórmula | Denominación | Expresión Matemática | Propósito y Ámbito |
+| Fórmula | Denominación | Expresión Matemática | Propósito, Ámbito y Estado en Código |
 |---|---|---|---|
-| **F1** | **Compra (Métrica)** | $\frac{\text{Esp}_{mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Compra y recepción en verde/bruto. Base del volumen nominal (`vol_purchase_m3`). |
-| **F2** | **Embarque (S2S Imperial)** | $\frac{\text{Esp}_{in} \times (\text{Ancho}_{S2S} + 0,125") \times \text{Largo}_{m} \times \text{Piezas}}{1550}$ | Exportación de madera seca cepillada S2S. En escuadría 6/4, $\text{Esp}_{in} = 1,5"$; en 5/4, $\text{Esp}_{in} = 1,25"$. Sobreancho $+1/8"$ ($0,125"$) obligatorio en todo el rango S2S. |
-| **F3** | **Real Físico** | $\frac{38,1 \text{ mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Geometría física neta ($38,1\text{ mm} = 1,5"$). Matemáticamente equivalente a $\frac{1,5" \times (\text{Ancho}_{mm}/25,4) \times \text{Largo}_{m} \times \text{Piezas}}{1550}$. |
-| **F4** | **Blanks (Exportación)** | $\frac{1,5" \times (\text{Ancho}_{in} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas}}{5085,312}$ | Exportación en pies. Sin deducción de $1/16"$ en el espesor (espesor neto nominal $1,5"$). |
+| **F1** | **Compra (Métrica)** | $\frac{\text{Esp}_{mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Compra y recepción en verde/bruto. Base del volumen nominal (`vol_purchase_m3`). Estado: **IMPLEMENTADO**. |
+| **F2** | **Embarque (S2S Imperial)** | $\frac{\text{Esp}_{in} \times (\text{Ancho}_{S2S} + 0,125") \times \text{Largo}_{m} \times \text{Piezas}}{1550}$ | Exportación de madera seca cepillada S2S. En escuadría 6/4, $\text{Esp}_{in} = 1,5"$; en 5/4, $\text{Esp}_{in} = 1,25"$. Sobreancho $+1/8"$ ($0,125"$) obligatorio en todo el rango S2S activo en datos. Estado: **IMPLEMENTADO**. |
+| **F3** | **Real Físico** | $\frac{38,1 \text{ mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Geometría física neta ($38,1\text{ mm} = 1,5"$). Estado en código: **FALTA** (no existe campo ni función que compute volumen físico a partir de 38,1 mm para escuadría 6/4). |
+| **F4** | **Blanks (Exportación)** | $\frac{1,5" \times (\text{Ancho}_{in} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas}}{5085,312}$ | Exportación en pies. Sin deducción de $1/16"$ en el espesor (espesor neto nominal $1,5"$). Vectores canónicos: $16\text{ ft} \times 250 = 4,425\text{ m³}$; $16\text{ ft} \times 270 = 4,778\text{ m³}$. Estado: **IMPLEMENTADO**. |
 
-### 9.2 Regla de Transición de Anchos S2S (F5)
+### 9.2 Tabla S2S Canónica y Regla de Transición (Cristhian Elgueta — Planilla de Cubicación)
 
-- **Rango Rough 75 a 155 mm:** Utilizan obligatoriamente la tabla S2S contractual más el sobreancho de $1/8"$ ($0,125"$).
-  - Ejemplo 100 mm: $3\text{ }5/8" (3,625") + 1/8" (0,125") = 3,750"$.
-  - Ejemplo 125 mm: $4\text{ }5/8" (4,625") + 1/8" (0,125") = 4,750"$.
-  - Ejemplo 150 mm: $5\text{ }5/8" (5,625") + 1/8" (0,125") = 5,750"$.
-  - Ejemplo 155 mm: $5\text{ }7/8" (5,875") + 1/8" (0,125") = 6,000"$.
-- **Rango desde 170 mm (170, 175, 180, 195, 200 mm):** El ancho es directo en milímetros convertidos a pulgadas ($\text{Ancho}_{mm} / 25,4$), sin adición de sobreancho de $1/8"$.
-- **Extinción de la lista fija de exclusiones:** Queda formalmente derogada la lista estática `[150, 160, 170, 180, 200]`. El corte se rige por la regla de transición en 170 mm.
+La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Rough mm → S2S en pulgadas) comprende exactamente **14 anchos** activos en el modelo `lumber.width.s2s.map`:
+
+| Rough (mm) | S2S Planilla (pulg) | S2S Decimal | + 1/8" (pulg) | Vol. Esperado (m³) 100 pzas, 1.5", 4.0 m | Vol/pza (m³) | Coincidencia Planilla |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 75 | 2 5/8 | 2.625 | 2.750 | 1,065 | 0,011 | COINCIDE |
+| 85 | 2 7/8 | 2.875 | 3.000 | 1,161 | 0,012 | COINCIDE |
+| 90 | 3 1/8 | 3.125 | 3.250 | 1,258 | 0,013 | COINCIDE |
+| 95 | 3 3/8 | 3.375 | 3.500 | 1,355 | 0,014 | COINCIDE |
+| 100 | 3 5/8 | 3.625 | 3.750 | 1,452 | 0,015 | COINCIDE |
+| 105 | 3 7/8 | 3.875 | 4.000 | 1,548 | 0,015 | COINCIDE |
+| 110 | 3 7/8 | 3.875 | 4.000 | 1,548 | 0,015 | COINCIDE |
+| 120 | 4 3/8 | 4.375 | 4.500 | 1,742 | 0,017 | COINCIDE |
+| 125 | 4 5/8 | 4.625 | 4.750 | 1,839 | 0,018 | COINCIDE |
+| 130 | 4 7/8 | 4.875 | 5.000 | 1,935 | 0,019 | COINCIDE |
+| 140 | 4 7/8 | 4.875 | 5.000 | 1,935 | 0,019 | COINCIDE (0,01935 → 0,019) |
+| 145 | 5 3/8 | 5.375 | 5.500 | 2,129 | 0,021 | COINCIDE |
+| 150 | 5 5/8 | 5.625 | 5.750 | 2,226 | 0,022 | COINCIDE |
+| 155 | 5 7/8 | 5.875 | 6.000 | 2,323 | 0,023 | COINCIDE |
+
+*Nota metodológica sobre redondeo:* La verificación de volumen por pieza a 3 decimales oculta diferencias significativas en paquetes reales (por ejemplo, para 140 mm, 1 pieza da 0,01935 m³ que en la planilla figura como 0,019 m³, mientras que para 100 piezas da 1,935 m³ exactos). El criterio formal de validación es el cálculo sobre 100 piezas.
+
+- **Anchos ausentes de la tabla S2S (170, 175, 180, 195, 200 mm):** Se calculan mediante conversión métrica directa ($\text{Ancho}_{mm} / 25,4$) sin sobreancho.
+- **Caso REMATE 195 mm (INFERENCIA):** En la Guía 26270, la línea de REMATE declara 195 mm y 4,043 m³. Con 194 mm da 4,041 m³ y directo a 195 mm da 4,062 m³. La causa atribuida a dicha línea queda formalmente rotulada como **INFERENCIA**.
+- **Zona de transición (155 a 170 mm):** Se gobierna por el parámetro configurable `madenat.out_of_table_behavior` (`'direct'` por defecto, `'warning'` o `'block'`).
+- **Extinción de la lista fija de exclusiones:** Queda formalmente extinguida y deprecada la lista `[150, 160, 170, 180, 200]` (`madenat.s2s_exclusion_widths`). La regla se decide por la presencia o ausencia en datos del modelo `lumber.width.s2s.map`.
 
 ### 9.3 Blanks en Stock y Declaración Fitosanitaria (F6)
 

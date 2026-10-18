@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.32.0
-**Última actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — alta AD-116 (alineación de fórmulas F1 a F7 con Cristhian Elgueta, rango S2S 75–155 mm con sobreancho 1/8", transición milimétrica desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, patios creables). Versión 04 12.31.0 → 12.32.0. | alta AD-115 (FASE 12 / WP-B Opción a): restablecimiento de cálculo automático de volumen de embarque en procesados y lotes, preservación de opción manual prevalente, trazabilidad y suite de regresión 26270. Core 18.0.6.11.0 → 18.0.6.12.0. Versión 04 12.30.0 → 12.31.0. | alta AD-114 (FASE 12 / Perfiles Fase A): transferencia de ingestion_profile a procesados, guarda de coherencia asistida con confirmación explícita no bloqueante en wizard, y preservación de defaults y cálculos. Intake 18.0.0.17.0 → 18.0.0.18.0. Versión 04 12.29.0 → 12.30.0. -->
+**Versión documental:** 12.33.0
+**Última actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — alta AD-117 (Bloque 4: regla de anchos por datos H1-H5, Blanks F4/F6, gestión de patios F7, secado F6, deprecación de s2s_exclusion_widths y reglas anti-hardcode). Versión 04 12.32.0 → 12.33.0. | alta AD-116 (alineación de fórmulas F1 a F7 con Cristhian Elgueta, rango S2S 75–155 mm con sobreancho 1/8", transición milimétrica desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, patios creables). Versión 04 12.31.0 → 12.32.0. | alta AD-115 (FASE 12 / WP-B Opción a): restablecimiento de cálculo automático de volumen de embarque en procesados y lotes, preservación de opción manual prevalente, trazabilidad y suite de regresión 26270. Core 18.0.6.11.0 → 18.0.6.12.0. Versión 04 12.30.0 → 12.31.0. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3571,6 +3571,39 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 - Se identifica como errata tipográfica ("24 x 100 x 4.0") el espesor 24 mm en el correo de Cristhian, correspondiendo a 45 mm.
 
 <!-- actualizado: 2026-10-17 — alta AD-116 (instrucciones de Cristhian Elgueta F1 a F7, rango S2S 75–155 mm con sobreancho 1/8", transición directa desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, patios creables y consolidación). Versión 04 12.31.0 → 12.32.0. -->
+
+---
+
+### AD-117 — Implementación Bloque 4: Regla de Anchos guiada por Datos (H1–H5), Blanks F4/F6, Gestión de Patios F7, Secado en Horno y Reglas Anti-Hardcode
+- **Fecha:** 2026-10-17
+- **Módulos:** `madenat_lumber_core` (18.0.6.12.0 → 18.0.6.13.0)
+- **Contexto:** En el marco de la especificación operativa de Cristhian Elgueta (F1–F7) y las directrices anti-hardcode (H1 a H5), se implementan las correcciones del Bloque 4 asegurando no-recálculo sobre registros históricos y modularidad completa en base de datos.
+- **Decisiones Técnicas:**
+  1. **Regla Anti-Hardcode H1 y H2 (Constantes Físicas vs Parámetros de Negocio):**
+     - Las constantes físicas (`25.4` mm/pulg, `1550.003` pulg²·m/m³, `1000000`, `5085.312` pulg²·pie/m³) se declaran una sola vez, de forma nombrada, en `models/utils_uom.py`.
+     - La tabla S2S (`rough_mm` → ancho S2S en pulgadas) es dato del modelo `lumber.width.s2s.map`, cargada con `noupdate="1"` y editable por Operaciones y Auditoría. Los 14 anchos de la planilla de Cristhian (75 a 155 mm) quedan activos. El registro seed `115 mm` queda inactivo (`active=False`).
+     - El sobreancho (`+1/8"` por defecto) y los rangos de secado se leen exclusivamente a través de getters de `madenat.ingestion.config` (`get_s2s_overwidth_inches()`, `get_drying_temp_range()`, `get_drying_duration_range()`), con respaldo en `ir.config_parameter`.
+  2. **Regla de Ancho por Datos (H3 / Bloque 4A):**
+     - Si el ancho rough existe en la tabla activa `lumber.width.s2s.map`, se utiliza `ancho_tabla + sobreancho_paramétrico`.
+     - Si el ancho rough no existe en la tabla, se calcula mediante conversión métrica directa `rough_mm / 25.4` (sin sobreancho ni recargo). No existen umbrales numéricos de 155 ni de 170 mm fijos en código.
+     - Para la zona de transición entre 155 y 170 mm fuera de tabla, rige el parámetro `madenat.out_of_table_behavior` (`'direct'` por defecto, `'warning'` o `'block'`).
+     - Se mantiene la prevalencia estricta del ancho manual (`export_width_manual_inches`), con motivo obligatorio y trazabilidad en el chatter (`AD-115`).
+     - El parámetro histórico `madenat.s2s_exclusion_widths` queda formalmente **DEPRECADO** (H5) y no debe utilizarse en código nuevo.
+  3. **Blanks F4 / F6 (Bloque 4B):**
+     - Se elimina la deducción histórica de $1/16"$ ($0,0625"$) al espesor en `lumber.export.formula` (`deduction_factor = 0.0`) y en `lumber.reception`. El espesor se deriva del visual en cuartos ($6/4 = 1,5"$).
+     - Los Blanks que pasan directo a stock físico y documental conservan su volumen declarado en el documento (`vol_documental_m3`) y no se recalculan.
+     - F4 aplica con los vectores exactos certificados: $16\text{ ft} \times 250 = 4,425\text{ m³}$; $16\text{ ft} \times 270 = 4,778\text{ m³}$ ($1,5 \times (3\text{ }5/8 + 1/8) \times 16 \times \text{piezas} / 5085,312$).
+  4. **Patios Operativos F7 (Bloque 4C):**
+     - Se incorpora el marcador booleano `is_patio` en `stock.location` con indexación para discriminar ubicaciones asignables como patios de madera.
+     - Se dota a la consola de recepción de filtros y agrupadores por Patio (`location_id`) y por Orden de Compra (`manual_po_name` / `purchase_order`).
+     - Se crea mediante datos con `noupdate="1"` el registro inicial para Patio Ferramenta.
+     - Se preserva la regla H2: prohibido el uso de nombres, IDs fijos o parámetros como `location_marval_id` en el código. El partner procesador (ID 676) permanece estrictamente desacoplado del patio (`stock.location`).
+  5. **Secado en Horno (Bloque 4D-1):**
+     - Se incorporan en `stock.lot` los campos opcionales: `drying_temp_c`, `drying_duration_hours` y `drying_date`.
+     - Constraint `@api.constrains` que valida rangos dinámicamente contra los parámetros de configuración (`madenat.drying_temp_min_c/max_c` [50–90 °C] y `madenat.drying_duration_min_hours/max_hours` [50–80 h]), con cero literales en el código.
+  6. **Garantía de No-Recálculo:**
+     - Ningún dato histórico existente en base de datos (`stock_lot`, `madenat_guia_processing_line`, `lumber_shipment_line`) sufre recálculo automático ni alteración de checksum MD5.
+
 
 
 

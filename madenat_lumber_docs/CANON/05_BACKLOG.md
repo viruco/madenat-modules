@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.33.0
-**Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
+**Versión documental:** 8.34.0
+**Fecha de actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-10 (2) — nueva sección «Conciliación envío–retorno (Bloque A/B/C) — IMPLEMENTADO (2026-10-10)»: modelo `madenat.processor.return.link`, cierra la brecha (a) de CANON/19 §19.10; Bloque D cuantitativo PENDIENTE. Versión 05 8.16.0 → 8.17.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (3) — sección «Conciliación envío–retorno (Bloque A/B/C)»: **ajuste de integridad** (`19` §19.13): reversa vs. procedencia, reimputación con historia, consistencia de compañía + regla de registro, elegibilidad dura (done/tipo interno), volúmenes N:M referenciales (`aggregator=False`). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Versión 05 8.17.0 → 8.18.0. Bloque D fuera de alcance. Sin commit/push. -->
@@ -1046,22 +1047,33 @@ Sin push ni despliegue. -->
 - **WP-A comparación guía vs packing:** A la precisión declarada de la guía con tope de 3 decimales, estado `ok_rounded`, parametrizable.
 - **WP-D (patios):** Sigue EN ESPERA. No existe "conciliación documental" ni "imputación diferida" aprobadas.
 
-### Bloque 4 — Alineación con Instrucciones de Cristhian (AD-116) — EN ESPERA DE APROBACIÓN
-- [ ] **BK-F12-S2S (Rango S2S 75–155 mm y Transición Milimétrica desde 170 mm):**
-  - Implementar regla de corte dinámico de S2S: rough 75 a 155 mm $\to$ tabla S2S contractual + sobreancho de 1/8" (0,125").
-  - Anchos rough $\ge 170$ mm (170, 175, 180, 195, 200 mm) $\to$ ancho directo en mm ($w_{mm} / 25,4$) sin adición de sobreancho.
-  - Derogar formalmente en código la lista estática `s2s_exclusion_widths` (`[150, 160, 170, 180, 200]`).
-  - Preservar inalterados los datos almacenados preexistentes en `madenat_test`.
-- [ ] **BK-F12-BLANKS-STOCK (Pase Directo a Stock para Blanks Clear):**
-  - Configurar en el wizard y en la ingesta que los Blanks no ejecuten recálculo dimensional al recibirse; pasan directo a stock.
-- [ ] **BK-F12-BLANKS-FORMULA (Fórmula Exportación F4 sin Deducción de Espesor):**
-  - En la rama de exportación para Blanks, aplicar $1,5" \times (\text{Ancho} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas} / 5085,312$ suprimiendo la deducción de cara de 1/16" ($0,0625"$) al espesor.
-- [ ] **BK-F12-PATIOS-UI (Gestión de Patios en Recepción y Consola):**
-  - Habilitar atajo y gestión de Patios como ubicaciones internas (`stock.location`), incluyendo Patio MARVAL, Patio Ferramenta y Patio Puerto Coronel.
-  - Añadir filtro y agrupador por Ubicación/Patio (`group_by_location`) en vistas de recepción de core e intake.
-- [ ] **BK-F12-SECADO (Datos de Secado en Horno y Fitosanitario):**
-  - Incorporar campos en modelo de lote/embarque para capturar parámetros de secado en horno (temperatura 50–90 °C, duración 50–80 h, fecha de proceso).
-  - Asegurar la descripción oficial de Blanks como "Madera Aserrada Seca" en la emisión de certificados fitosanitarios.
+### Bloque 4 — Alineación con Instrucciones de Cristhian (AD-116 / AD-117) — IMPLEMENTADO EN LOCAL (Commits 73439ed, 8d18d49, ef39ef2, 6676d6f)
+- [x] **BK-F12-S2S (Rango S2S 75–155 mm y Regla por Datos H1–H5):**
+  - **Estado:** **IMPLEMENTADO** (Commit `73439ed`).
+  - Tabla S2S guiada exclusivamente por datos en `lumber.width.s2s.map` (14 anchos activos según planilla de Cristhian).
+  - Sobreancho configurable vía `madenat.s2s_overwidth_inches` (0,125" por defecto). Anchos ausentes aplican `mm / 25.4` directo.
+  - Parámetro de comportamiento fuera de tabla `madenat.out_of_table_behavior` ('direct', 'warning', 'block') para zona 155–170 mm.
+  - Parámetro `s2s_exclusion_widths` deprecado formalmente. Prevalencia de ancho manual (`AD-115`) y chatter preservados.
+  - Suite `test_export_width_s2s_wpb.py` (10 tests PASS, incluyendo verificación sobre 100 piezas y anti-hardcode).
+- [x] **BK-F12-BLANKS-STOCK (Pase Directo a Stock para Blanks Clear):**
+  - **Estado:** **IMPLEMENTADO** (Commit `8d18d49`).
+  - Blanks que pasan directo a stock conservan volumen documental declarado (`vol_documental_m3`) sin recálculo.
+- [x] **BK-F12-BLANKS-FORMULA (Fórmula Exportación F4 sin Deducción de Espesor):**
+  - **Estado:** **IMPLEMENTADO** (Commit `8d18d49`).
+  - Deducción de $1/16"$ eliminada en `lumber.export.formula` (`deduction_factor = 0.0`) y `lumber.reception`.
+  - Vectores F4 certificados: $16\text{ ft} \times 250 = 4,425\text{ m³}$; $16\text{ ft} \times 270 = 4,778\text{ m³}$ ($1,5" \times (3\text{ }5/8 + 1/8) \times 16 \times \text{pzas} / 5085,312$).
+- [x] **BK-F12-PATIOS-UI (Gestión de Patios en Recepción y Consola):**
+  - **Estado:** **IMPLEMENTADO** (Commit `ef39ef2`).
+  - Marcador `is_patio` en `stock.location`, acción, menú, filtros y agrupadores por Patio y OC en `lumber.reception`.
+  - Seed con `noupdate="1"` para Patio Ferramenta. Sin IDs ni nombres hardcodeados (regla H2).
+- [x] **BK-F12-SECADO-LOT (Campos y Validación de Secado en Horno):**
+  - **Estado:** **IMPLEMENTADO** (Commit `6676d6f`).
+  - Campos opcionales `drying_temp_c`, `drying_duration_hours`, `drying_date` en `stock.lot`. Constraint dinámico validado contra parámetros de configuración (`madenat.drying_temp_min_c/max_c` [50–90 °C] y `madenat.drying_duration_min_hours/max_hours` [50–80 h]).
+- [ ] **BK-F12-SECADO-FITOSANITARIO (Descripción Fitosanitaria de Blanks):**
+  - **Estado:** **EN ESPERA** (no autorizado en este bloque hasta identificar qué documento o campo del sistema la genera).
+- [ ] **BK-F12-F3-FISICO (Fórmula F3 Real Físico 38,1 mm):**
+  - **Estado:** **FALTA** en código (no existe campo ni función que la calcule).
 - [ ] **BK-F12-MBF-EDIT (Edición Manual Justificada de Volumen y MBF):**
-  - Habilitar campo de sobreescritura manual auditada para metraje MBF y volumen en líneas de recepción y procesado.
+  - **Estado:** **EN ESPERA** (no autorizado en este bloque).
+
 
