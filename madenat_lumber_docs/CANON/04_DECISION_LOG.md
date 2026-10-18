@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.33.0
-**Última actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — alta AD-117 (Bloque 4: regla de anchos por datos H1-H5, Blanks F4/F6, gestión de patios F7, secado F6, deprecación de s2s_exclusion_widths y reglas anti-hardcode). Versión 04 12.32.0 → 12.33.0. | alta AD-116 (alineación de fórmulas F1 a F7 con Cristhian Elgueta, rango S2S 75–155 mm con sobreancho 1/8", transición milimétrica desde 170 mm, Blanks sin deducción 1/16" y pase directo a stock, patios creables). Versión 04 12.31.0 → 12.32.0. | alta AD-115 (FASE 12 / WP-B Opción a): restablecimiento de cálculo automático de volumen de embarque en procesados y lotes, preservación de opción manual prevalente, trazabilidad y suite de regresión 26270. Core 18.0.6.11.0 → 18.0.6.12.0. Versión 04 12.30.0 → 12.31.0. -->
+**Versión documental:** 12.34.0
+**Última actualización:** 2026-10-17  <!-- actualizado: 2026-10-17 — Cierre Bloque 4: incorporación de commit 0a89536 en AD-117, corrección del impacto en Guía 26270 (-0.116 m³) y reatribución de muestra REMATE 195 mm a MSC Victoria. Versión 04 12.33.0 → 12.34.0. | alta AD-117 (Bloque 4: regla de anchos por datos H1-H5, Blanks F4/F6, gestión de patios F7, secado F6, deprecación de s2s_exclusion_widths y reglas anti-hardcode). Versión 04 12.32.0 → 12.33.0. -->
 **Estado:** Canonical / activo
 
 ---
@@ -3603,6 +3603,12 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
      - Constraint `@api.constrains` que valida rangos dinámicamente contra los parámetros de configuración (`madenat.drying_temp_min_c/max_c` [50–90 °C] y `madenat.drying_duration_min_hours/max_hours` [50–80 h]), con cero literales en el código.
   6. **Garantía de No-Recálculo:**
      - Ningún dato histórico existente en base de datos (`stock_lot`, `madenat_guia_processing_line`, `lumber_shipment_line`) sufre recálculo automático ni alteración de checksum MD5.
+  7. **Reconocimiento de Dimensiones Normalizadas en Pulgadas S2S (Commit 0a89536):**
+     - Documentos como las Notas de Venta JCE (`NVTA881333` / `GDE 95806`) presentan dimensiones en pulgadas (ej. `5/4x5.3/8x16`) normalizadas a milímetros en staging ($5,375 \times 25,4 = 136,525\text{ mm}$).
+     - `get_s2s_adjustment()` reconoce la coincidencia en pulgadas S2S con la tabla y retorna el sobreancho configurado ($0,125"$) exactamente UNA sola vez ($5,375 + 0,125 = 5,500"$), produciendo el volumen documental exacto de $4,997\text{ m}^3$ para 231 piezas.
+  8. **Correcciones Documentales y Aclaración de Línea Base:**
+     - **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (150 mm, espesor 5/4") almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados por conversión métrica directa ($150 / 25,4 = 5,9055"$). Bajo la regla F2 (S2S 5 5/8" + 0,125" = 5,750"), el recálculo da 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen, el volumen total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$), y NO aumentaría a 48,571 m³.
+     - **Origen Muestra REMATE 195 mm:** Proviene de un expediente de embarque de exportación (muestra MSC Victoria), no de la Guía 26270. Su análisis como discrepancia nominal queda catalogado como INFERENCIA.
 
 
 

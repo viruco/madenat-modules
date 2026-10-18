@@ -1,8 +1,8 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.10.0\
-**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §12 alineación con AD-117 (Bloque 4: campos is_patio en stock.location, secado en stock.lot, Blanks directo con vol_documental_m3 preservado). Versión 1.9.0 → 1.10.0. -->\
+**Versión documental:** 1.11.0\
+**Fecha de actualización:** 2026-10-17  <!-- 2026-10-17: §12.3 reconocimiento de dimensiones documentales en pulgadas normalizadas S2S (commit 0a89536). Versión 1.10.0 → 1.11.0. -->\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
@@ -524,3 +524,7 @@ Procesado de servicio **es un retorno de servicio** mediante `service_return_con
   - Selector de Patio restringido a ubicaciones con `is_patio = True`.
   - Filtros directos: "Con Patio Asignado", "Sin Patio Asignado" y "Con Orden de Compra".
   - Agrupadores por Patio (`location_id`) y por Orden de Compra (`purchase_order`).
+
+### 12.3 Reconocimiento de Dimensiones Documentales en Pulgadas S2S (AD-116/AD-117 — Commit 0a89536)
+- **Normalización sin Duplicación de Sobreancho:** En documentos de proveedores como JCE (`NVTA881333` / `GDE 95806`) donde la notación combinada expresa dimensiones comerciales en pulgadas (ej. `5/4x5.3/8x16`), el parser normaliza las dimensiones a milímetros en las líneas de staging ($5,375 \times 25,4 = 136,525\text{ mm}$).
+- **Resolución de Ancho en Ingesta:** La función `get_s2s_adjustment()` detecta que $136,525\text{ mm}$ equivale en pulgadas a $5\text{ }3/8"$, correspondiente al valor S2S del nominal rough de 145 mm. En consecuencia, retorna el sobreancho de $+0,125"$ exactamente una sola vez ($5,375 + 0,125 = 5,500"$), garantizando que el volumen documental de la Nota de Venta ($4,997\text{ m}^3$ para 231 piezas) coincida estrictamente con la cubicación del sistema.
