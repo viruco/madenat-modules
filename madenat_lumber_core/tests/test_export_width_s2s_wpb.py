@@ -333,16 +333,18 @@ class TestExportWidthS2SWpB(TransactionCase):
             )
 
     def test_12_parameters_declared_in_data_xml_with_noupdate(self):
-        """E2: Los parámetros (s2s_overwidth, out_of_table_behavior, direct_width_min_mm, drying) existen en XML con noupdate=1."""
+        """E2 / N3: Invariante estructural: cada parámetro madenat.* del Bloque 4D está dentro de <data noupdate='1'> en XML.
+
+        No depende del valor persistido en ir_model_data de la BD (donde _update_xmlids de Odoo CE
+        no migra noupdate en actualizaciones -u), garantizando la protección declarativa en código.
+        """
         import os
         from xml.etree import ElementTree as ET
         xml_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'ingestion_config.xml')
         tree = ET.parse(xml_path)
         root = tree.getroot()
 
-        # Encontrar bloques data con noupdate="1"
-        data_noupdate_nodes = [d for d in root.findall('data') if d.get('noupdate') == '1']
-        self.assertTrue(data_noupdate_nodes, "Debe existir al menos un bloque <data noupdate='1'> en ingestion_config.xml")
+        parent_map = {c: p for p in root.iter() for c in p}
 
         expected_records = {
             'param_s2s_overwidth_inches': 'madenat.s2s_overwidth_inches',
@@ -352,38 +354,33 @@ class TestExportWidthS2SWpB(TransactionCase):
             'param_drying_temp_max_c': 'madenat.drying_temp_max_c',
             'param_drying_duration_min_hours': 'madenat.drying_duration_min_hours',
             'param_drying_duration_max_hours': 'madenat.drying_duration_max_hours',
+            'param_tipo_ingreso_keywords': 'madenat.tipo_ingreso_keywords',
         }
 
-        found_records = {}
-        for d in data_noupdate_nodes:
-            for rec in d.findall('record'):
+        found_in_noupdate = {}
+        for rec in root.iter('record'):
+            if rec.get('model') == 'ir.config_parameter':
                 r_id = rec.get('id')
                 if r_id in expected_records:
                     key_field = rec.find("./field[@name='key']")
-                    if key_field is not None:
-                        found_records[r_id] = key_field.text.strip()
+                    self.assertIsNotNone(key_field, f"El registro {r_id} debe declarar el campo 'key'")
+                    key_val = key_field.text.strip() if key_field.text else ''
+                    self.assertEqual(key_val, expected_records[r_id],
+                                     f"Clave de {r_id} discordante: obtenida '{key_val}', esperada '{expected_records[r_id]}'")
 
-        self.assertEqual(len(found_records), len(expected_records),
-                         f"Faltan parámetros en <data noupdate='1'>. Esperados: {expected_records.keys()}, encontrados: {found_records.keys()}")
-        for r_id, exp_key in expected_records.items():
-            self.assertEqual(found_records.get(r_id), exp_key)
+                    # Invariante estructural pura: el nodo padre directo en el XML debe ser <data noupdate="1">
+                    parent = parent_map.get(rec)
+                    self.assertIsNotNone(parent, f"El registro {r_id} debe tener un elemento contenedor en el XML")
+                    self.assertEqual(parent.tag, 'data',
+                                     f"El contenedor inmediato de {r_id} debe ser una etiqueta <data>, obtenido <{parent.tag}>")
+                    self.assertEqual(parent.get('noupdate'), '1',
+                                     f"El bloque contenedor <data> de {r_id} ({key_val}) debe declarar noupdate='1'")
+                    found_in_noupdate[r_id] = key_val
 
-        # M2: Verificación de ir_model_data en BD para cada parámetro:
-        for r_id in expected_records:
-            imd = self.env['ir.model.data'].search([
-                ('module', '=', 'madenat_lumber_core'),
-                ('name', '=', r_id)
-            ])
-            self.assertTrue(imd, f"El parámetro {r_id} debe existir registrado en ir_model_data")
-            self.assertEqual(imd.model, 'ir.config_parameter', f"{r_id} debe asociarse a ir.config_parameter")
-            # Parámetro param_direct_width_min_mm fue creado directamente bajo <data noupdate="1">
-            if r_id == 'param_direct_width_min_mm':
-                self.assertTrue(imd.noupdate, f"{r_id} debe tener noupdate=True en ir_model_data")
-            else:
-                # Los parámetros previos de Bloque 4D (s2s_overwidth, out_of_table_behavior, drying_*)
-                # conservan noupdate=False en madenat_test porque Odoo _update_xmlids no actualiza
-                # noupdate sobre registros preexistentes durante actualizaciones (-u).
-                self.assertIn(imd.noupdate, (True, False), f"El flag noupdate de {r_id} debe ser booleano")
+        # Verificar que TODOS los parámetros del Bloque 4D fueron encontrados y validados en el XML
+        self.assertEqual(len(found_in_noupdate), len(expected_records),
+                         f"Faltan parámetros de Bloque 4D en <data noupdate='1'>. "
+                         f"Esperados: {list(expected_records.keys())}, encontrados: {list(found_in_noupdate.keys())}")
 
 
     def test_13_branch_resolution_order_all_four_branches(self):
