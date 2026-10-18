@@ -508,19 +508,29 @@ class MadenatGuiaProcessingLine(models.Model):
                 # Prioridad 1: length_ft | Prioridad 2: largo_m | Prioridad 3: largo_nominal_m
                 # MADENAT-FIX-BLANK-2026-06-02
                 if line.length_ft > 0.1:
-                    # FÓRMULA PIES — BLANK: sin recargo de cepillado (+1/8")
-                    # Regla de negocio: blank se ingesta y se embarca con dimensiones exactas
-                    vol = (e_in * a_in * line.length_ft * line.pieces) / FACTOR_PIES
+                    # FÓRMULA PIES — BLANK (F4): 1.5" x (Ancho + 1/8") x Largo en pies x Piezas / 5085.312
+                    if line.export_width_manual_inches and line.export_width_manual_inches > 0:
+                        w_blank = line.export_width_manual_inches
+                    else:
+                        config = self.env['madenat.ingestion.config']
+                        if line.ancho_mm and line.ancho_mm > 0:
+                            w_blank = config.resolve_export_width(line.ancho_mm)
+                        else:
+                            w_blank = a_in + config.get_s2s_overwidth_inches()
+                    vol = (e_in * w_blank * line.length_ft * line.pieces) / FACTOR_PIES
                 else:
                     # FÓRMULA METROS — S2S/RIP:
-                    # Opción (a) / AD-115: El ancho manual de exportación prevalece si existe.
-                    # Si no, se restablece el cálculo automático preexistente a 036cc9b:
-                    # a_in (parse_fraction_to_decimal_inch de width_visual) + get_s2s_adjustment(ancho_mm).
+                    # AD-115 / AD-116: El ancho manual prevalece si existe.
+                    # De lo contrario, cálculo guiado por datos vía resolve_export_width (lumber.width.s2s.map).
                     if line.export_width_manual_inches and line.export_width_manual_inches > 0:
                         width_calc = line.export_width_manual_inches
                     else:
-                        recargo = get_s2s_adjustment(self.env, line.ancho_mm)
-                        width_calc = a_in + float(recargo)
+                        config = self.env['madenat.ingestion.config']
+                        if line.ancho_mm and line.ancho_mm > 0:
+                            width_calc = config.resolve_export_width(line.ancho_mm)
+                        else:
+                            recargo = get_s2s_adjustment(self.env, a_in * 25.4)
+                            width_calc = a_in + float(recargo)
 
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
@@ -534,6 +544,8 @@ class MadenatGuiaProcessingLine(models.Model):
                 # Blindaje final: Si por algún error de redondeo da 0, usamos fallback
                 line.vol_shipment_m3 = calculated_vol if calculated_vol > 0 else fallback_vol
 
+            except ValidationError:
+                raise
             except Exception as e:
                 # Si algo explota en el cálculo, el sistema no se detiene: usa el nominal.
                 _logger.error(f"⚠️ Error en cálculo real para ID {line.id}, usando nominal: {e}")

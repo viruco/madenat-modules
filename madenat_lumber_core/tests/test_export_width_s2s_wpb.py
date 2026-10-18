@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Pruebas unitarias para WP-B: Ancho de Exportación S2S canónico y opción manual.
+"""Pruebas unitarias para WP-B / Bloque 4A (AD-116 / AD-117): Ancho de Exportación S2S por Datos y Opción Manual.
 
 Verifica:
-1. Uso de la tabla canónica Rough -> S2S (width_mapping.py / lumber.width.s2s.map).
-   - Ancho 100 mm -> 3.625" (3 5/8")
-   - Ancho 145 mm -> 5.375" (5 3/8", valor crítico)
-2. Exclusiones canónicas (división directa por 25.4):
-   - Ancho 135 mm -> 135 / 25.4 (sin inventar escalón)
-   - Anchos fuera de rango (< 75 mm o > 155 mm) -> mm / 25.4
-3. Opción manual de ancho de exportación:
-   - export_width_manual_inches fijado con motivo obligatorio
-   - Si no hay motivo -> ValidationError
-   - Registro automático de usuario, fecha y anotación en bitácora (chatter)
-4. Inmutabilidad de registros almacenados: no altera valores históricos sin edición.
+1. Regla de ancho por datos (H2/H3):
+   - 14 anchos de la planilla de cubicación (75 a 155 mm) en lumber.width.s2s.map con sobreancho +1/8".
+   - Anchos ausentes de tabla (170, 175, 180, 195, 200 mm, y 135 mm) usan mm / 25.4 directo.
+2. Comprobación exacta para 100 piezas (evita enmascaramiento de redondeo de 1 pieza).
+3. Prueba anti-hardcode (H4):
+   - Modificar un registro en lumber.width.s2s.map altera el cálculo.
+   - Modificar el parámetro madenat.s2s_overwidth_inches altera el cálculo.
+   - Parámetro madenat.out_of_table_behavior ('direct', 'warning', 'block').
+4. Opción manual de exportación (AD-115):
+   - export_width_manual_inches fijado prevalece sobre el cálculo automático.
+   - Motivo obligatorio (ValidationError si vacío) y registro en chatter.
+5. Regresión Guía 26270:
+   - Líneas de 150 mm dan 3.812 y 0.480 m³ (total 4.292 m³).
+   - Con ancho manual forzado a 5 5/8" (5.625") da 3.730 m³.
 """
 
 from odoo.tests import tagged
@@ -68,50 +71,48 @@ class TestExportWidthS2SWpB(TransactionCase):
         return self.Line.create(vals)
 
     def test_01_ancho_100mm_uses_s2s_table(self):
-        """100 mm rough con visual '3 5/8' aplica cálculo automático: 3.625" + recargo 0.125" = 3.750"."""
+        """100 mm rough con visual '3 5/8' aplica cálculo por datos: 3.625" + recargo 0.125" = 3.750"."""
         guia = self._make_guia('GUIA-S2S-100')
         line = self._make_line(guia, ancho_mm=100.0, thickness_visual='6/4',
                                width_visual='3 5/8', largo_m=3.2, pieces=10)
         line.flush_recordset()
-        # Fórmula: (1.5" * (3.625 + 0.125)" * 3.2m * 10) / 1550.003 = 0.11612... -> 0.116 m3
+        # Fórmula: (1.5" * (3.625 + 0.125)" * 3.2m * 10) / 1550.0031 = 0.11612... -> 0.116 m3
         self.assertAlmostEqual(line.vol_shipment_m3, 0.116, places=3)
 
     def test_02_ancho_145mm_uses_critical_s2s_value(self):
-        """145 mm rough con visual '5 3/8' aplica cálculo automático: 5.375" + recargo 0.125" = 5.500"."""
+        """145 mm rough con visual '5 3/8' aplica cálculo por datos: 5.375" + recargo 0.125" = 5.500"."""
         guia = self._make_guia('GUIA-S2S-145')
         line = self._make_line(guia, ancho_mm=145.0, thickness_visual='7/4',
                                width_visual='5 3/8', largo_m=3.2, pieces=10)
         line.flush_recordset()
-        # Fórmula: (1.75" * (5.375 + 0.125)" * 3.2m * 10) / 1550.003 = 0.1987... -> 0.199 m3
+        # Fórmula: (1.75" * (5.375 + 0.125)" * 3.2m * 10) / 1550.0031 = 0.1987... -> 0.199 m3
         self.assertAlmostEqual(line.vol_shipment_m3, 0.199, places=3)
 
-    def test_03_ancho_135mm_uses_direct_division_fallback(self):
-        """135 mm con visual '5 1/4' aplica cálculo automático: 5.250" + recargo 0.125" = 5.375"."""
+    def test_03_ancho_135mm_absent_from_s2s_uses_direct_division(self):
+        """135 mm ausente de tabla S2S: usa 135 / 25.4 = 5.31496" directo."""
         guia = self._make_guia('GUIA-S2S-135')
         line = self._make_line(guia, ancho_mm=135.0, thickness_visual='7/4',
                                width_visual='5 1/4', largo_m=3.2, pieces=10)
         line.flush_recordset()
-        # Fórmula: (1.75 * (5.250 + 0.125) * 3.2 * 10) / 1550.003 = 0.19419... -> 0.194 m3
-        self.assertAlmostEqual(line.vol_shipment_m3, 0.194, places=3)
+        # Fórmula: (1.75 * (135/25.4) * 3.2 * 10) / 1550.0031 = 0.19202 -> 0.192 m3
+        self.assertAlmostEqual(line.vol_shipment_m3, 0.192, places=3)
 
-    def test_04_ancho_out_of_range_uses_direct_division(self):
-        """Ancho menor aplica recargo estándar; ancho >= 150 mm en exclusiones tiene recargo 0.0."""
+    def test_04_ancho_absent_from_s2s_table_uses_direct_division(self):
+        """Anchos ausentes de tabla S2S aplican conversión directa mm / 25.4."""
         guia = self._make_guia('GUIA-S2S-OUT')
-        # Menor a 75 mm (60 mm): recargo 0.125"
+        # Menor a 75 mm (60 mm): ausente de tabla -> 60 / 25.4 = 2.3622"
         line_low = self._make_line(guia, ancho_mm=60.0, thickness_visual='6/4',
                                    width_visual='2 3/8', largo_m=3.2, pieces=10)
         line_low.flush_recordset()
-        # width_calc = 2.375 + 0.125 = 2.500"
-        # (1.5 * 2.500 * 3.2 * 10) / 1550.003 = 0.0774 -> 0.077 m3
-        self.assertAlmostEqual(line_low.vol_shipment_m3, 0.077, places=3)
+        # (1.5 * (60/25.4) * 3.2 * 10) / 1550.0031 = 0.07315 -> 0.073 m3
+        self.assertAlmostEqual(line_low.vol_shipment_m3, 0.073, places=3)
 
-        # Mayor o igual a 150 mm (170 mm): lista de exclusiones -> recargo 0.0
+        # 170 mm: ausente de tabla -> 170 / 25.4 = 6.6929" directo
         line_high = self._make_line(guia, ancho_mm=170.0, thickness_visual='7/4',
                                     width_visual='6 5/8', largo_m=3.2, pieces=10)
         line_high.flush_recordset()
-        # width_calc = 6.625 + 0.0 = 6.625"
-        # (1.75 * 6.625 * 3.2 * 10) / 1550.003 = 0.2393 -> 0.239 m3
-        self.assertAlmostEqual(line_high.vol_shipment_m3, 0.239, places=3)
+        # (1.75 * (170/25.4) * 3.2 * 10) / 1550.0031 = 0.2418 -> 0.242 m3
+        self.assertAlmostEqual(line_high.vol_shipment_m3, 0.242, places=3)
 
     def test_05_manual_export_width_override_and_bitacora(self):
         """Fijar ancho manual prevalece sobre el cálculo automático, exige motivo y registra en el chatter."""
@@ -124,7 +125,7 @@ class TestExportWidthS2SWpB(TransactionCase):
         )
         line.flush_recordset()
         # width_calc = 4.0 manual (prevalece sobre 3.625 + 0.125 = 3.750)
-        # (1.5 * 4.0 * 3.2 * 10) / 1550.003 = 0.12387 -> 0.124 m3
+        # (1.5 * 4.0 * 3.2 * 10) / 1550.0031 = 0.12387 -> 0.124 m3
         self.assertAlmostEqual(line.vol_shipment_m3, 0.124, places=3)
         self.assertEqual(line.export_width_manual_user_id, self.env.user)
         self.assertTrue(line.export_width_manual_date)
@@ -150,11 +151,7 @@ class TestExportWidthS2SWpB(TransactionCase):
             )
 
     def test_07_regression_guia_26270_synthetic_lines(self):
-        """Regresión AD-115: Reproduce exactamente los valores históricos de la Guía 26270.
-
-        Líneas sintéticas de 100, 125 y 150 mm (con '150mm') reproduciendo los vol_shipment_m3
-        almacenados en BD (2.450, 4.096, 3.915 m³), más el caso donde el ancho manual prevalece.
-        """
+        """Regresión AD-116: Líneas de 150 mm dan 3.812 y 0.480 m³ (total 4.292), manual 5 5/8 da 3.730 m³."""
         guia = self._make_guia('GUIA-26270-SINTETICA')
 
         # Línea A: 100 mm, visual '3 5/8' (ID 5137 en BD)
@@ -163,7 +160,7 @@ class TestExportWidthS2SWpB(TransactionCase):
             largo_m=4.05, pieces=200, vol_purchase=2.997
         )
         line_100.flush_recordset()
-        # (1.25 * (3.625 + 0.125) * 4.05 * 200) / 1550.003 = 2.44999 -> 2.450 m3
+        # (1.25 * (3.625 + 0.125) * 4.05 * 200) / 1550.0031 = 2.44999 -> 2.450 m3
         self.assertAlmostEqual(line_100.vol_shipment_m3, 2.450, places=3)
 
         # Línea B: 125 mm, visual '4 5/8' (ID 5128 en BD)
@@ -172,20 +169,30 @@ class TestExportWidthS2SWpB(TransactionCase):
             largo_m=4.05, pieces=264, vol_purchase=4.945
         )
         line_125.flush_recordset()
-        # (1.25 * (4.625 + 0.125) * 4.05 * 264) / 1550.003 = 4.09596 -> 4.096 m3
+        # (1.25 * (4.625 + 0.125) * 4.05 * 264) / 1550.0031 = 4.09596 -> 4.096 m3
         self.assertAlmostEqual(line_125.vol_shipment_m3, 4.096, places=3)
 
-        # Línea C: 150 mm, visual '150mm' (ID 5140 en BD)
-        # 150mm -> parseado a 150/25.4 = 5.90551", recargo 0.0 (en lista de exclusiones)
-        line_150 = self._make_line(
+        # Línea C1: 150 mm, visual '150mm' (ID 5140 en BD)
+        # 150 mm en tabla S2S (5.625") + 0.125" = 5.750"
+        line_150_1 = self._make_line(
             guia, ancho_mm=150.0, thickness_visual='5/4', width_visual='150mm',
             largo_m=4.05, pieces=203, vol_purchase=4.563
         )
-        line_150.flush_recordset()
-        # (1.25 * (150/25.4 + 0.0) * 4.05 * 203) / 1550.003 = 3.91549 -> 3.915 m3
-        self.assertAlmostEqual(line_150.vol_shipment_m3, 3.915, places=3)
+        line_150_1.flush_recordset()
+        # (1.25 * 5.750 * 4.05 * 203) / 1550.0031 = 3.8123 -> 3.812 m3
+        self.assertAlmostEqual(line_150_1.vol_shipment_m3, 3.812, places=3)
 
-        # Línea D: 150 mm con ancho manual que prevalece (ej. forzar 5 5/8" = 5.625")
+        # Línea C2: 150 mm, visual '150mm' (ID 5141 en BD, 28 pzas, 3.70 m)
+        line_150_2 = self._make_line(
+            guia, ancho_mm=150.0, thickness_visual='5/4', width_visual='150mm',
+            largo_m=3.70, pieces=28, vol_purchase=0.575
+        )
+        line_150_2.flush_recordset()
+        # (1.25 * 5.750 * 3.70 * 28) / 1550.0031 = 0.48023 -> 0.480 m3
+        self.assertAlmostEqual(line_150_2.vol_shipment_m3, 0.480, places=3)
+        self.assertAlmostEqual(line_150_1.vol_shipment_m3 + line_150_2.vol_shipment_m3, 4.292, places=3)
+
+        # Línea D: 150 mm con ancho manual forzado a 5 5/8" (5.625")
         line_150_manual = self._make_line(
             guia, ancho_mm=150.0, thickness_visual='5/4', width_visual='150mm',
             largo_m=4.05, pieces=203, vol_purchase=4.563,
@@ -193,5 +200,80 @@ class TestExportWidthS2SWpB(TransactionCase):
             export_width_manual_reason='Forzado manual S2S neto 5 5/8"'
         )
         line_150_manual.flush_recordset()
-        # (1.25 * 5.625 * 4.05 * 203) / 1550.003 = 3.7295 -> 3.730 m3 (prevalece el manual)
+        # (1.25 * 5.625 * 4.05 * 203) / 1550.0031 = 3.7295 -> 3.730 m3
         self.assertAlmostEqual(line_150_manual.vol_shipment_m3, 3.730, places=3)
+
+    def test_08_canonical_14_widths_s2s_spreadsheet_100_pieces(self):
+        """Los 14 anchos de la planilla de Cristhian con espesor 6/4 (1.5\"), 4.0 m y 100 piezas."""
+        guia = self._make_guia('GUIA-14-ANCHOS')
+        # Datos: (rough_mm, esperado_m3)
+        vectores = [
+            (75, 1.065), (85, 1.161), (90, 1.258), (95, 1.355),
+            (100, 1.452), (105, 1.548), (110, 1.548), (120, 1.742),
+            (125, 1.839), (130, 1.935), (140, 1.935), (145, 2.129),
+            (150, 2.226), (155, 2.323),
+        ]
+        for rough_mm, expected_m3 in vectores:
+            line = self._make_line(
+                guia, ancho_mm=float(rough_mm), thickness_visual='6/4',
+                width_visual=f"{rough_mm}mm", largo_m=4.0, pieces=100
+            )
+            line.flush_recordset()
+            self.assertAlmostEqual(
+                line.vol_shipment_m3, expected_m3, places=3,
+                msg=f"Fallo en ancho {rough_mm} mm: obtenido {line.vol_shipment_m3}, esperado {expected_m3}"
+            )
+
+    def test_09_direct_5_widths_spreadsheet_100_pieces(self):
+        """Los 5 anchos directos milimétricos (>= 170 mm) con 1.5\", 4.0 m y 100 piezas."""
+        guia = self._make_guia('GUIA-5-DIRECTOS')
+        vectores_directos = [
+            (170, 2.591), (175, 2.667), (180, 2.743),
+            (195, 2.972), (200, 3.048),
+        ]
+        for rough_mm, expected_m3 in vectores_directos:
+            line = self._make_line(
+                guia, ancho_mm=float(rough_mm), thickness_visual='6/4',
+                width_visual=f"{rough_mm}mm", largo_m=4.0, pieces=100
+            )
+            line.flush_recordset()
+            self.assertAlmostEqual(
+                line.vol_shipment_m3, expected_m3, places=3,
+                msg=f"Fallo en ancho directo {rough_mm} mm: obtenido {line.vol_shipment_m3}, esperado {expected_m3}"
+            )
+
+    def test_10_anti_hardcode_dynamic_s2s_record_and_parameter_changes(self):
+        """Regla Anti-Hardcode (H4): Modificar registros o parámetros altera el resultado dinámicamente."""
+        guia = self._make_guia('GUIA-ANTI-HARDCODE')
+
+        # 1. Modificar un registro en lumber.width.s2s.map (100 mm pasa de 3.625 a 3.750)
+        rec_100 = self.env['lumber.width.s2s.map'].search([('rough_mm', '=', 100)], limit=1)
+        original_s2s = rec_100.s2s_decimal
+        try:
+            rec_100.write({'s2s_decimal': 3.750})
+            line = self._make_line(guia, ancho_mm=100.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
+            line.flush_recordset()
+            # (1.5 * (3.750 + 0.125) * 4.0 * 100) / 1550.0031 = 2325 / 1550.0031 = 1.49999 -> 1.500 m3
+            self.assertAlmostEqual(line.vol_shipment_m3, 1.500, places=3)
+        finally:
+            rec_100.write({'s2s_decimal': original_s2s})
+
+        # 2. Modificar el parámetro sobreancho madenat.s2s_overwidth_inches a 0.250"
+        param_obj = self.env['ir.config_parameter'].sudo()
+        param_obj.set_param('madenat.s2s_overwidth_inches', '0.250')
+        try:
+            line2 = self._make_line(guia, ancho_mm=100.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
+            line2.flush_recordset()
+            # (1.5 * (3.625 + 0.250) * 4.0 * 100) / 1550.0031 = 2325 / 1550.0031 = 1.500 m3
+            self.assertAlmostEqual(line2.vol_shipment_m3, 1.500, places=3)
+        finally:
+            param_obj.set_param('madenat.s2s_overwidth_inches', '0.125')
+
+        # 3. Comportamiento 'block' para ancho fuera de tabla en zona de transición (160 mm)
+        param_obj.set_param('madenat.out_of_table_behavior', 'block')
+        try:
+            with self.assertRaises(ValidationError):
+                line3 = self._make_line(guia, ancho_mm=160.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
+                line3.flush_recordset()
+        finally:
+            param_obj.set_param('madenat.out_of_table_behavior', 'direct')

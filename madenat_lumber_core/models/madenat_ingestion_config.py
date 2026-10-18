@@ -18,7 +18,7 @@ USO:
 import json
 import logging
 from odoo import models, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 _logger = logging.getLogger(__name__)
 
 class MadenatIngestionConfig(models.AbstractModel):
@@ -117,12 +117,65 @@ class MadenatIngestionConfig(models.AbstractModel):
         except Exception as e:
             _logger.warning("IngestionConfig: fallo Fase1 width_s2s_map: %s", e)
 
-        # Fuente 3: Hardcode legacy
+        # Fuente 3: Hardcode legacy (14 anchos canónicos de planilla de cubicación)
         _logger.warning("IngestionConfig: usando hardcode legacy width_s2s_map")
-        return {75:(2.625,"2 5/8"),85:(2.875,"2 7/8"),90:(3.125,"3 1/8"),95:(3.375,"3 3/8"),
-                100:(3.625,"3 5/8"),105:(3.875,"3 7/8"),110:(3.875,"3 7/8"),115:(4.375,"4 3/8"),
-                120:(4.375,"4 3/8"),125:(4.625,"4 5/8"),130:(4.875,"4 7/8"),140:(4.875,"4 7/8"),
-                145:(5.375,"5 3/8"),150:(5.625,"5 5/8"),155:(5.875,"5 7/8")}
+        return {75:(2.625,"2 5/8"), 85:(2.875,"2 7/8"), 90:(3.125,"3 1/8"), 95:(3.375,"3 3/8"),
+                100:(3.625,"3 5/8"), 105:(3.875,"3 7/8"), 110:(3.875,"3 7/8"), 120:(4.375,"4 3/8"),
+                125:(4.625,"4 5/8"), 130:(4.875,"4 7/8"), 140:(4.875,"4 7/8"), 145:(5.375,"5 3/8"),
+                150:(5.625,"5 5/8"), 155:(5.875,"5 7/8")}
+
+    @api.model
+    def get_s2s_overwidth_inches(self):
+        """Retorna sobreancho S2S en pulgadas (parámetro madenat.s2s_overwidth_inches, default 0.125)."""
+        try:
+            param_obj = self.env['ir.config_parameter'].sudo()
+            raw = param_obj.get_param('madenat.s2s_overwidth_inches', '0.125')
+            if raw:
+                return float(raw.strip())
+        except Exception as e:
+            _logger.warning("IngestionConfig: error al leer madenat.s2s_overwidth_inches: %s", e)
+        return 0.125
+
+    @api.model
+    def get_out_of_table_behavior(self):
+        """Retorna comportamiento para anchos fuera de tabla S2S (default 'direct')."""
+        try:
+            param_obj = self.env['ir.config_parameter'].sudo()
+            val = param_obj.get_param('madenat.out_of_table_behavior', 'direct')
+            if val in ('direct', 'warning', 'block'):
+                return val
+        except Exception as e:
+            _logger.warning("IngestionConfig: error al leer madenat.out_of_table_behavior: %s", e)
+        return 'direct'
+
+    @api.model
+    def resolve_export_width(self, rough_mm):
+        """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117).
+        
+        Regla H3:
+        - Si rough_mm está en lumber.width.s2s.map activo -> s2s_decimal + overwidth.
+        - Si no está -> rough_mm / 25.4 (directo).
+        - Si está entre 155 y 170 mm fuera de tabla -> rige madenat.out_of_table_behavior.
+        """
+        if not rough_mm or rough_mm <= 0:
+            return 0.0
+
+        mapping = self.get_width_s2s_map()
+        rough_key = int(round(rough_mm))
+        if rough_key in mapping:
+            s2s_decimal = mapping[rough_key][0]
+            overwidth = self.get_s2s_overwidth_inches()
+            return s2s_decimal + overwidth
+
+        behavior = self.get_out_of_table_behavior()
+        if 155 < rough_mm < 170:
+            if behavior == 'block':
+                raise ValidationError(_("Ancho rough %.1f mm fuera de tabla S2S (rango 155-170 mm bloqueado).") % rough_mm)
+            elif behavior == 'warning':
+                _logger.warning("Ancho rough %.1f mm fuera de tabla S2S en zona de transición.", rough_mm)
+
+        from .utils_uom import MM_PER_INCH
+        return float(rough_mm) / float(MM_PER_INCH)
 
     # =====================================================================
     # 4. RANGOS ESPESOR->VISUAL
@@ -200,20 +253,16 @@ class MadenatIngestionConfig(models.AbstractModel):
         return legacy.get(profile, {}).get(rule_type, [])
 
     # =====================================================================
-    # 6. EXCLUSIONES S2S (Fase 3) — cierra brecha de lectura directa
+    # 6. EXCLUSIONES S2S — DEPRECADO (AD-116 / AD-117)
     # =====================================================================
     @api.model
     def get_s2s_exclusion_widths(self):
+        """DEPRECADO por AD-116 y AD-117.
+        
+        Reemplazado por resolve_export_width() y la tabla persistente lumber.width.s2s.map.
+        Se conserva exclusivamente para compatibilidad con llamadas legacy no migradas.
         """
-        Retorna lista de anchos (float, en mm) excluidos del ajuste S2S +1/8".
-
-        Prioridad de fuentes:
-          1. ir.config_parameter 'madenat.s2s_exclusion_widths' (Fase 1)
-          2. Hardcode legacy: [150, 160, 170, 180, 200]
-
-        Returns:
-            list[float]: Lista de anchos en mm excluidos del recargo S2S.
-        """
+        _logger.warning("DEPRECADO AD-116/AD-117: get_s2s_exclusion_widths fue reemplazado por resolve_export_width()")
         # Fuente 1: ir.config_parameter (mantiene compatibilidad Fase 1)
         try:
             param_obj = self.env['ir.config_parameter'].sudo()

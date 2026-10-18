@@ -93,7 +93,7 @@
             <field name="rough_mm">110</field><field name="s2s_decimal">3.875</field><field name="s2s_label">3 7/8</field><field name="sequence">70</field>
         </record>
         <record id="seed_s2s_115" model="lumber.width.s2s.map" forcecreate="False">
-            <field name="rough_mm">115</field><field name="s2s_decimal">4.375</field><field name="s2s_label">4 3/8</field><field name="sequence">80</field>
+            <field name="rough_mm">115</field><field name="s2s_decimal">4.375</field><field name="s2s_label">4 3/8</field><field name="sequence">80</field><field name="active" eval="False"/>
         </record>
         <record id="seed_s2s_120" model="lumber.width.s2s.map" forcecreate="False">
             <field name="rough_mm">120</field><field name="s2s_decimal">4.375</field><field name="s2s_label">4 3/8</field><field name="sequence">90</field>

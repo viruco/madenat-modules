@@ -39,6 +39,36 @@
         <field name="value">{"profiles": {"f5085": {"allowed_keywords": [], "forbidden_keywords": ["S2S", "RIP"], "forbidden_in_lock": ["S2S", "RIP"]}, "f1550": {"allowed_keywords": ["S2S"], "forbidden_keywords": [], "forbidden_in_lock": ["ROUGH", "BLANK"]}, "metric": {"allowed_keywords": [], "forbidden_keywords": [], "forbidden_in_lock": []}}}</field>
     </record>
 
+    <!-- AD-116/AD-117: Sobreancho S2S (pulgadas) -->
+    <record id="param_s2s_overwidth_inches" model="ir.config_parameter">
+        <field name="key">madenat.s2s_overwidth_inches</field>
+        <field name="value">0.125</field>
+    </record>
+
+    <!-- AD-116/AD-117: Comportamiento para anchos fuera de tabla S2S (direct, warning, block) -->
+    <record id="param_out_of_table_behavior" model="ir.config_parameter">
+        <field name="key">madenat.out_of_table_behavior</field>
+        <field name="value">direct</field>
+    </record>
+
+    <!-- AD-116/AD-117: Parámetros de secado en horno (temperatura °C y duración h) -->
+    <record id="param_drying_temp_min_c" model="ir.config_parameter">
+        <field name="key">madenat.drying_temp_min_c</field>
+        <field name="value">50.0</field>
+    </record>
+    <record id="param_drying_temp_max_c" model="ir.config_parameter">
+        <field name="key">madenat.drying_temp_max_c</field>
+        <field name="value">90.0</field>
+    </record>
+    <record id="param_drying_duration_min_hours" model="ir.config_parameter">
+        <field name="key">madenat.drying_duration_min_hours</field>
+        <field name="value">50.0</field>
+    </record>
+    <record id="param_drying_duration_max_hours" model="ir.config_parameter">
+        <field name="key">madenat.drying_duration_max_hours</field>
+        <field name="value">80.0</field>
+    </record>
+
     <!-- ================================================================== -->
     <!-- FASE 1 — SEMILLA EDITABLE DE KEYWORDS DE TIPO DE INGRESO (noupdate=1)-->
     <!-- Equivalente EXACTO al fallback Python histórico de                 -->

@@ -887,26 +887,29 @@ def get_s2s_adjustment(env, width_mm):
     """
     Retorna el ajuste S2S en pulgadas para un ancho dado en mm.
 
-    Delega en el helper centralizado madenat.ingestion.config (Fase 3)
-    para la lectura de exclusiones. Fuente única de verdad.
+    Delega en el helper centralizado madenat.ingestion.config (AD-116/AD-117).
+    - Si width_mm está en la tabla lumber.width.s2s.map: retorna el sobreancho configurado.
+    - Si width_mm no está en la tabla (ej: >= 170 mm directo): retorna Decimal('0.0').
 
     Args:
         env:      Odoo environment (self.env)
         width_mm: Ancho nominal en milímetros
 
     Returns:
-        Decimal: 0.0 si el ancho está en la lista de exclusiones,
-                 Decimal('0.125') en caso contrario.
+        Decimal: Sobreancho configurado si el ancho pertenece a la tabla S2S,
+                 Decimal('0.0') en caso contrario.
     """
-    # Delegar al helper centralizado (Fase 3 — cierra brecha de lectura directa)
-    config = env['madenat.ingestion.config']
-    exceptions = config.get_s2s_exclusion_widths()
-
-    # Si el ancho está en la lista negra → sin recargo
-    if round(width_mm, 1) in exceptions:
+    if not env or not width_mm or width_mm <= 0:
         return Decimal('0.0')
-
-    return Decimal('0.125')
+    try:
+        config = env['madenat.ingestion.config']
+        mapping = config.get_width_s2s_map()
+        w_key = int(round(width_mm))
+        if w_key in mapping:
+            return Decimal(str(config.get_s2s_overwidth_inches()))
+    except Exception:
+        pass
+    return Decimal('0.0')
 
 
 # ============================================================================
