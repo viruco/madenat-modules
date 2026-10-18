@@ -888,7 +888,9 @@ def get_s2s_adjustment(env, width_mm):
     Retorna el ajuste S2S en pulgadas para un ancho dado en mm.
 
     Delega en el helper centralizado madenat.ingestion.config (AD-116/AD-117).
-    - Si width_mm está en la tabla lumber.width.s2s.map: retorna el sobreancho configurado.
+    - Si width_mm está en la tabla lumber.width.s2s.map (como ancho rough en mm
+      o como equivalente de ancho S2S en pulgadas normalizado a mm):
+      retorna el sobreancho configurado.
     - Si width_mm no está en la tabla (ej: >= 170 mm directo): retorna Decimal('0.0').
 
     Args:
@@ -907,6 +909,12 @@ def get_s2s_adjustment(env, width_mm):
         w_key = int(round(width_mm))
         if w_key in mapping:
             return Decimal(str(config.get_s2s_overwidth_inches()))
+        # Reconocimiento de dimensiones documentales expresadas en pulgadas S2S normalizadas a mm
+        w_in = round(float(width_mm) / 25.4, 3)
+        for s2s_val in mapping.values():
+            s2s_in = s2s_val[0] if isinstance(s2s_val, (tuple, list)) else float(s2s_val)
+            if abs(s2s_in - w_in) < 0.01:
+                return Decimal(str(config.get_s2s_overwidth_inches()))
     except Exception:
         pass
     return Decimal('0.0')
