@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.35.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
+**Versión documental:** 8.36.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4F (AD-119) IMPLEMENTADO en local: F1 tabla S2S sin copia en código y UserError ante tabla vacía; F2 Blanks y retiro limpio de deduction_factor; F3 constante única 1550.003; F4 auditoría de literales; F5 hashes MD5 dual; F6 correcciones de texto y citas; F7 pre-deploy health check; F8/F9 planes de patios y despliegue. Versión 05 8.35.0 → 8.36.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4E (AD-118) IMPLEMENTADO en local: E1 direct_width_min_mm y out_of_table_behavior; E2 parámetros en data XML con noupdate="1"; E3 sincronización 15 anchos activos (115 mm); E4 señal explícita is_s2s_inches sin heurística; E5 corrección total Guía 26270 con manual 5 5/8" (47,801 m³); E6 auditoría de literales. E7-E10 en análisis/propuesta. Versión 05 8.34.0 → 8.35.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (3) — Bloque 4 (AD-116/AD-117) IMPLEMENTADO en local: BK-F12-S2S regla por datos, BK-F12-BLANKS-STOCK y FORMULA sin 1/16", BK-F12-PATIOS-UI marcador y filtros, BK-F12-SECADO campos y constraint dinámico. F3 rotulado como FALTA en código. Fitosanitario y datos históricos NO autorizados. Versión 05 8.33.0 → 8.34.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 (2) — alta Bloque 4 (AD-116): alineación de especificaciones con Cristhian Elgueta (BK-F12-S2S rango 75–155 mm, BK-F12-BLANKS directo a stock y sin deducción 1/16", BK-F12-PATIOS-UI, BK-F12-SECADO fitosanitario y BK-F12-MBF-EDIT). Versión 05 8.32.0 → 8.33.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-17 — FASE 12: Bloque 1 (AD-111: WP-C, WP-B rótulos, D-E0-3) y Bloque 2 (AD-112: WP-F P1–P5, WP-E plantilla métrica, WP-G alineación) CERRADOS en LOCAL. FASE 11 (AD-110) cerrada. Versión 05 8.30.0 → 8.31.0. Sin push ni despliegue. -->
@@ -1098,5 +1099,40 @@ Sin push ni despliegue. -->
   - **Estado:** **AUDITADO**.
   - Verificadas ocurrencias de 1550, 1.5 y 155 como constantes físicas nombradas, identificadores o datos de prueba. Cero literales de negocio hardcodeados.
 
-
-
+### Bloque 4F — Cierre Técnico Previo al Despliegue (AD-119) — IMPLEMENTADO EN LOCAL (Commits 067d01c, 7cc5305, 7c2c07c, fefda73)
+- [x] **F1 — Tabla S2S sin copia en código y UserError ante tabla vacía (AD-119 / Commit `067d01c`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Eliminado el diccionario estático de respaldo de `madenat_ingestion_config.py` (incluyendo la entrada errónea `115: (4.125, "4 1/8")`).
+  - `lumber.width.s2s.map` es la fuente única de verdad. Si la tabla no contiene registros activos, se interrumpe el procesamiento con `UserError` y log estructurado `[MADENAT-S2S-EMPTY]`.
+  - Pruebas unitarias añadidas y validadas: tabla vacía levanta `UserError`, 115 mm mapea a 4.375 + 0.125 = 4.500" (1.742 m³), y ausencia de fallback en código.
+- [x] **F2 — Retiro de deduction_factor del modelo sin alterar base de datos (AD-119 / Commit `7cc5305`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Eliminado el campo `deduction_factor` de `lumber.export.formula` y de las vistas XML sin alterar las columnas ni filas en PostgreSQL.
+  - En `lumber_reception.py` se dejó de leer `deduction_factor`, aplicando directamente la fórmula F4 limpia $(1,5 \times (\text{Ancho} + 0,125) \times \text{Largo}_{ft} \times \text{Piezas}) / 5085,312$.
+  - Validación con registro real de BD `f5085` (id=1, que conserva su factor en BD): vectores 16 ft × 250 = 4.425 m³ y 16 ft × 270 = 4.778 m³ coinciden con precisión milimétrica.
+- [x] **F3 — Constante única 1550.003 en utils_uom (AD-119 / Commit `7c2c07c`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - Unificada `CONST_M3_TO_IN2_M = Decimal('1550.003')` e `INCH_SQ_METERS_TO_M3 = CONST_M3_TO_IN2_M` en `utils_uom.py`.
+  - Se evaluó el impacto de la unificación entre `1550.003`, `1550.0031` y `1550.003096`: altera 0 volúmenes (0.000 m³ de diferencia en los 15 anchos, Guía 26270 y muestras JCE).
+- [x] **F4 — Auditoría Exhaustiva de Literales en Código Python (AD-119):**
+  - **Estado:** **AUDITADO**.
+  - Auditoría sistemática archivo:línea en `madenat_*` (excluyendo `tests/` y docs) para `0.125`, `1550`, `1.5`, `38.1`, `5085.312`, `150`, `155`, `170`, `160`, `175`, `195`.
+  - Justificadas nuevas apariciones: `1550.003` en `utils_uom.py:27`, `1.5` en `lumber_reception.py:821`. Cero literales de negocio espurios.
+- [x] **F5 — Hashes MD5 con Doble Consulta (AD-119):**
+  - **Estado:** **AUDITADO E INVARIANTE**.
+  - Documentadas las dos consultas y sus hashes: Consulta A (texto crudo Parte 0) y Consulta B (numérica redondeada a 4 decimales Informe 4E). Ambas consultas conservan 100% de invariancia histórica en `stock_lot`, `madenat_guia_processing_line` y `lumber_shipment_line`.
+- [x] **F6 — Precisiones Terminológicas y Citas de Código (AD-119):**
+  - **Estado:** **DOCUMENTADO**.
+  - Origen de 47,417 m³ clasificado como "no reconstruido" (aritméticamente inconsistente con 43,601 + 3,730 = 47,331 m³).
+  - Citas de líneas de las 4 ramas en `madenat_ingestion_config.py` actualizadas: Rama 2 (160-165), Rama 3 (167-170), Rama 4 (172-203).
+- [x] **F7 — Script de Comprobación Previa al Despliegue (AD-119 / Commit `fefda73`):**
+  - **Estado:** **IMPLEMENTADO**.
+  - `madenat_lumber_core/scripts/pre_deploy_health_check.py` ejecutable en `odoo shell`.
+  - Modo estricto de solo lectura (`rollback()`), valida 15 anchos S2S, parámetros `madenat.*`, módulos instalados y perfil F4 (`f5085`).
+- [ ] **F8 — Análisis y Plan Arquitectónico para Patios Operativos (AD-119 — Solo Análisis):**
+  - **Estado:** **PLANIFICADO / NO IMPLEMENTADO**.
+  - Identificación de IDs reales en BD: PUERTO CORONEL (id=17), MARVAL (id=18), Bodega Tepornac (id=19).
+  - Propuesta: configuración mediante parámetros `madenat.location_marval_id` y `madenat.location_puerto_coronel_id` sin crear registros duplicados vía XML. Bodega Tepornac permanece como INFERENCIA.
+- [ ] **F9 — Runbook Operacional de Despliegue Remoto (AD-119 — Solo Plan):**
+  - **Estado:** **PLANIFICADO / NO IMPLEMENTADO**.
+  - Procedimiento en 6 fases: pre-requisitos (git tag, dump), validación previa (script F7), actualización de código, actualización Odoo (`-u madenat_lumber_core`), validación post y plan de reversa.

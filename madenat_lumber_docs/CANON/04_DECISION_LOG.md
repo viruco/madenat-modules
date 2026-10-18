@@ -1,8 +1,8 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.35.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4E (AD-118): parametrización de ancho directo (170 mm), out_of_table_behavior ('warning'), parámetros con noupdate="1" en XML, 15 anchos activos sincronizados (115 mm), resolución de ancho no-heurística (is_s2s_inches), corrección aritmética de Guía 26270 (47,801 m³ con manual 5 5/8") y auditoría de literales. Versión 04 12.34.0 → 12.35.0. | Cierre Bloque 4: incorporación de commit 0a89536 en AD-117, corrección del impacto en Guía 26270 (-0.116 m³) y reatribución de muestra REMATE 195 mm a MSC Victoria. Versión 04 12.33.0 → 12.34.0. -->
+**Versión documental:** 12.36.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre Bloque 4F (AD-119): tabla S2S sin copia en código y UserError en tabla vacía (F1), blanks y retiro limpio de deduction_factor del modelo sin drop column (F2), constante única 1550.003 (F3), auditoría exhaustiva de literales con archivo:línea (F4), verificación dual de hashes MD5 (F5), corrección de origen de 47,417 m³ a "no reconstruido" y citas de líneas de ramas (F6), script de comprobación pre-deploy de solo lectura (F7), propuesta de parametrización de patios sin duplicados (F8), runbook de despliegue a TEST remoto (F9). Versión 04 12.35.0 → 12.36.0. | Cierre Bloque 4E (AD-118). -->
 **Estado:** Canonical / activo
 
 ---
@@ -3607,7 +3607,7 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
      - Documentos como las Notas de Venta JCE (`NVTA881333` / `GDE 95806`) presentan dimensiones en pulgadas (ej. `5/4x5.3/8x16`) normalizadas a milímetros en staging ($5,375 \times 25,4 = 136,525\text{ mm}$).
      - `get_s2s_adjustment()` reconoce la coincidencia en pulgadas S2S con la tabla y retorna el sobreancho configurado ($0,125"$) exactamente UNA sola vez ($5,375 + 0,125 = 5,500"$), produciendo el volumen documental exacto de $4,997\text{ m}^3$ para 231 piezas.
   8. **Correcciones Documentales y Aclaración de Línea Base:**
-     - **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (150 mm, espesor 5/4") almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados por conversión métrica directa ($150 / 25,4 = 5,9055"$). Bajo la regla F2 (S2S 5 5/8" + 0,125" = 5,750"), el recálculo da 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen, el volumen total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$), y NO aumentaría a 48,571 m³. Con ancho manual de 5 5/8" (5,625"), las líneas 5140 y 5141 dan 3,730 m³ y 0,470 m³ (total 4,200 m³), lo que sumado a las 15 líneas restantes de 100 y 125 mm (43,601 m³) arroja un volumen total para la guía de exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2; el valor previo de 47,417 m³ era un cálculo erróneo por omisión de la línea 5141).
+     - **Impacto Real en Guía 26270:** Las líneas 5140 y 5141 (150 mm, espesor 5/4") almacenan actualmente 3,915 m³ y 0,493 m³ (total 4,408 m³), calculados por conversión métrica directa ($150 / 25,4 = 5,9055"$). Bajo la regla F2 (S2S 5 5/8" + 0,125" = 5,750"), el recálculo da 3,812 m³ y 0,480 m³ (total 4,292 m³). Si se recalculasen, el volumen total de la guía se reduciría en **-0,116 m³** ($48,009 \to 47,893\text{ m}^3$), y NO aumentaría a 48,571 m³. Con ancho manual de 5 5/8" (5,625"), las líneas 5140 y 5141 dan 3,730 m³ y 0,470 m³ (total 4,200 m³), lo que sumado a las 15 líneas restantes de 100 y 125 mm (43,601 m³) arroja un volumen total para la guía de exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2; el origen del valor previo de 47,417 m³ queda formalmente catalogado como "no reconstruido", al ser aritméticamente inconsistente con 43,601 + 3,730 = 47,331 m³).
      - **Origen Muestra REMATE 195 mm:** Proviene de un expediente de embarque de exportación (muestra MSC Victoria), no de la Guía 26270. Su análisis como discrepancia nominal queda catalogado como INFERENCIA.
 
 ---
@@ -3652,10 +3652,49 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
   5. **Corrección Aritmética Canónica Guía 26270 (E5):**
      - El volumen almacenado original de las 17 líneas de la Guía 26270 es **48,009 m³** (subtotal 15 líneas de 100 y 125 mm: 43,601 m³; líneas 5140 y 5141 de 150 mm: 3,915 m³ + 0,493 m³ = 4,408 m³ con conversión directa 5,9055").
      - Con regla F2 (S2S 5 5/8" + 1/8" = 5,750"), el recálculo de las líneas 5140 y 5141 da 3,812 m³ + 0,480 m³ = 4,292 m³. El total de la guía es **47,893 m³** (impacto neto de **-0,116 m³**).
-     - Con asignación manual de ancho 5 5/8" neto (5,625" sin sobreancho), las líneas 5140 y 5141 dan 3,730 m³ + 0,470 m³ = 4,200 m³. El total de la guía es exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2). La cifra anterior de 47,417 m³ era un error aritmético por omisión de la línea 5141 (0,470 m³).
+     - Con asignación manual de ancho 5 5/8" neto (5,625" sin sobreancho), las líneas 5140 y 5141 dan 3,730 m³ + 0,470 m³ = 4,200 m³. El total de la guía es exactamente **47,801 m³** (impacto de **-0,208 m³** frente al almacenado y **-0,092 m³** frente a F2). El origen de la cifra previa de 47,417 m³ queda formalmente catalogado como "no reconstruido" (inconsistente con 43,601 + 3,730 = 47,331 m³).
   6. **Auditoría de Literales de Negocio (E6):**
      - Se auditan las ocurrencias de cadenas numéricas en código (`1550`, `1.5`, `155`). Se verifica que corresponden a identificadores de perfiles (`'f1550'`), constante física nombrada (`CONST_M3_TO_IN2_M = 1550.003`), espesor nominal en pruebas (`6/4 = 1.5"`), o claves de semilla XML (`155 mm`).
      - Se confirma que NO existen literales de negocio hardcodeados en la lógica ejecutable.
+
+---
+
+### AD-119 — Cierre Técnico Bloque 4F: Fuente Única S2S por Datos (F1), Blanks f5085 contra Datos Reales y Retiro de deduction_factor (F2), Constante Única 1550.003 (F3), Script de Comprobación Previa (F7) y Plan de Despliegue (F8/F9)
+- **Fecha:** 2026-10-18
+- **Módulos:** `madenat_lumber_core` (18.0.6.14.0 → 18.0.6.15.0)
+- **Commits:** `067d01c` (F1), `7cc5305` (F2), `7c2c07c` (F3), `fefda73` (F7)
+- **Contexto:** Cierre técnico riguroso previo a la entrega y despliegue a TEST remoto, sin modificar datos históricos preexistentes ni alterar la estructura de columnas de PostgreSQL.
+- **Decisiones Técnicas:**
+  1. **Tabla S2S sin Copia en Código (F1):**
+     - Se elimina de `madenat_ingestion_config.py` todo diccionario estático de respaldo (incluyendo la entrada errónea legacy `115: (4.125, "4 1/8")`).
+     - La única fuente de verdad es el modelo persistente `lumber.width.s2s.map`. Si no existen registros activos, `get_width_s2s_map()` y `resolve_export_width()` fallan con `UserError` y log estructurado (`_logger.error`).
+     - Se valida por pruebas unitarias (`TestExportWidthS2SWpB`): tabla vacía genera `UserError`, 115 mm resuelve canónicamente a 4.375" (4 3/8) + sobreancho 0.125" = 4.500" ($1.742\text{ m}^3$ en 100 pzas), y verificación por introspección de código que confirma la inexistencia de diccionario estático.
+  2. **Blanks contra Datos Reales y Retiro de deduction_factor (F2):**
+     - Se comprueban los vectores canónicos 16 ft × 250 = 4,425 m³ y 16 ft × 270 = 4,778 m³ contra el registro real `f5085` (id=1) de la base de datos `madenat_test` (que conservaba `deduction_factor = 0.0625`).
+     - Se retira el campo `deduction_factor` del modelo Python `lumber.export.formula` y de las vistas XML de configuración, sin ejecutar `DROP COLUMN` en PostgreSQL ni alterar los datos almacenados en tabla.
+     - Se confirma que los lotes con volumen documental declarado (`vol_documental_m3`) conservan su valor sin recálculo.
+  3. **Constante Única de 1550 (F3):**
+     - Se unifica la constante física en `utils_uom.py` a `CONST_M3_TO_IN2_M = Decimal('1550.003')`, manteniendo `INCH_SQ_METERS_TO_M3 = CONST_M3_TO_IN2_M` como alias para garantizar compatibilidad transversal.
+     - Se sustituyen los literales numéricos dispersos (ej. `1550.0031` en pruebas) por la constante nombrada.
+     - Se demuestra matemáticamente que la unificación no produce desviación alguna en los volúmenes redondeados a 3 decimales en los 15 anchos, Guía 26270 ni casos JCE.
+  4. **Auditoría Exhaustiva de Literales (F4):**
+     - Se audita el código ejecutable Python (`madenat_*`, excluyendo pruebas y documentación) reportando archivo:línea para `0.125`, `1550`, `1.5`, `38.1`, `5085.312`, `150`, `155`, `170`, `160`, `175`, `195`.
+     - Se documenta el origen de las nuevas ocurrencias respecto al commit `c970ea1` (umbrales en configuración, validación de pre-deploy, constantes unificadas).
+  5. **Verificación Dual de Checksums MD5 (F5):**
+     - Se ejecutan y documentan las dos consultas de integridad sobre datos históricos: Consulta A (texto crudo según Parte 0) y Consulta B (volúmenes redondeados según Informe 4E).
+     - Ambas consultas arrojan 100% de invarianza antes y después de los cambios.
+  6. **Correcciones de Redacción y Trazabilidad (F6):**
+     - El origen de la cifra 47,417 m³ queda formalmente catalogado como "no reconstruido" (aritméticamente inconsistente con 43,601 + 3,730 = 47,331 m³).
+     - Se corrigen las citas de línea del orden de resolución de 4 ramas en `madenat_ingestion_config.py` (Rama 2: 160-165, Rama 3: 167-170, Rama 4: 172-203).
+  7. **Script de Comprobación Previa al Despliegue (F7):**
+     - Se implementa `madenat_lumber_core/scripts/pre_deploy_health_check.py` para ejecución en `odoo shell`.
+     - Script estrictamente de solo lectura: ejecuta `env.cr.rollback()` y retorna código de salida 1 ante cualquier inconsistencia crítica en los 15 anchos, parámetros `madenat.*`, módulos o fórmulas.
+  8. **Propuesta Arquitectónica para Patios (F8 — Solo Análisis):**
+     - Identificación en BD de IDs reales: MARVAL (id=18), PUERTO CORONEL (id=17), Bodega Tepornac (id=19).
+     - Propuesta de resolución mediante parámetros `madenat.location_marval_id` y `madenat.location_puerto_coronel_id` sin crear registros duplicados vía XML. Bodega Tepornac permanece como INFERENCIA.
+  9. **Runbook de Despliegue Remoto (F9 — Solo Plan):**
+     - Se diseña el procedimiento operacional seguro: respaldo previo de BD (`pg_dump`) y código (`git tag`), actualización quirúrgica (`-u madenat_lumber_core`), validación con script F7 pre y post despliegue, y criterios de reversa.
+
 
 
 

@@ -1,3 +1,22 @@
+## [18.0.6.15.0] - 2026-10-18
+
+### Added
+- **Bloque 4F (AD-119) — Cierre Técnico Previo al Despliegue (Sin Datos Históricos)**:
+  - **F1 (Tabla S2S sin copia en código)**:
+    - Eliminado el diccionario estático de respaldo en `madenat_ingestion_config.py` (incluyendo la entrada errónea legacy `115: (4.125, "4 1/8")`).
+    - Única fuente de verdad: `lumber.width.s2s.map`. Si no existen registros activos, falla controladamente con `UserError` y log estructurado.
+    - Pruebas unitarias: tabla vacía lanza `UserError`, 115 mm resuelve a 4.375 + sobreancho = 4.500", y verificación por introspección de ausencia de diccionario estático en código.
+  - **F2 (Blanks y retiro limpio de deduction_factor)**:
+    - Probado vector canónico 16 ft × 250 = 4,425 m³ y 16 ft × 270 = 4,778 m³ con registro real `f5085` de BD (`madenat_test`).
+    - Retirado el campo `deduction_factor` del modelo `lumber.export.formula` y de las vistas XML sin alterar ni eliminar la columna en la base de datos PostgreSQL.
+    - Casos con volumen documental declarado (`vol_documental_m3`) conservados íntegros sin recálculo.
+  - **F3 (Constante única de 1550)**:
+    - Unificada la constante física a `CONST_M3_TO_IN2_M = Decimal('1550.003')` en `utils_uom.py`, manteniendo `INCH_SQ_METERS_TO_M3` como alias directo para compatibilidad integral.
+    - Comprobación matemática: cero diferencias de volumen a 3 decimales en los 15 anchos, Guía 26270 y casos JCE.
+  - **F7 (Script de comprobación previa al despliegue)**:
+    - Implementado `madenat_lumber_core/scripts/pre_deploy_health_check.py` (solo lectura, rollback garantizado, código de salida 1 ante discrepancias).
+    - Valida 15 anchos activos, parámetros `madenat.*`, módulos instalados, ausencia de recálculo histórico, y consistencia de patios/ubicaciones.
+
 ## [18.0.6.14.0] - 2026-10-18
 
 ### Added
