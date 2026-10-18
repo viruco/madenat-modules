@@ -514,7 +514,7 @@ class MadenatGuiaProcessingLine(models.Model):
                     else:
                         config = self.env['madenat.ingestion.config']
                         if line.ancho_mm and line.ancho_mm > 0:
-                            w_blank = config.resolve_export_width(line.ancho_mm)
+                            w_blank = config.resolve_export_width(line.ancho_mm, record=line)
                         else:
                             w_blank = a_in + config.get_s2s_overwidth_inches()
                     vol = (e_in * w_blank * line.length_ft * line.pieces) / FACTOR_PIES
@@ -527,7 +527,7 @@ class MadenatGuiaProcessingLine(models.Model):
                     else:
                         config = self.env['madenat.ingestion.config']
                         if line.ancho_mm and line.ancho_mm > 0:
-                            width_calc = config.resolve_export_width(line.ancho_mm)
+                            width_calc = config.resolve_export_width(line.ancho_mm, record=line)
                         else:
                             recargo = get_s2s_adjustment(self.env, a_in * 25.4)
                             width_calc = a_in + float(recargo)
@@ -657,6 +657,18 @@ class MadenatGuiaProcessingLine(models.Model):
                     fields.Datetime.to_string(fields.Datetime.now())
                 )
                 line.processing_id.message_post(body=msg)
+            if line.ancho_mm and line.processing_id:
+                config = self.env['madenat.ingestion.config']
+                if config.get_out_of_table_behavior() == 'warning':
+                    mapping = config.get_width_s2s_map()
+                    min_direct = config.get_direct_width_min_mm()
+                    if int(round(line.ancho_mm)) not in mapping and line.ancho_mm < min_direct:
+                        msg_w = _(
+                            "⚠️ <b>Advertencia Ancho S2S</b>: El ancho rough %.1f mm en línea/lote <i>%s</i> "
+                            "está ausente de la tabla S2S (menor al umbral directo %.1f mm). "
+                            "Se aplica conversión directa milimétrica."
+                        ) % (line.ancho_mm, line.lot_name or f"ID {line.id}", min_direct)
+                        line.processing_id.message_post(body=msg_w)
         return records
 
     def write(self, vals):
@@ -683,6 +695,20 @@ class MadenatGuiaProcessingLine(models.Model):
                         fields.Datetime.to_string(fields.Datetime.now())
                     )
                     line.processing_id.message_post(body=msg)
+        if 'ancho_mm' in vals and vals.get('ancho_mm'):
+            for line in self:
+                if line.ancho_mm and line.processing_id:
+                    config = self.env['madenat.ingestion.config']
+                    if config.get_out_of_table_behavior() == 'warning':
+                        mapping = config.get_width_s2s_map()
+                        min_direct = config.get_direct_width_min_mm()
+                        if int(round(line.ancho_mm)) not in mapping and line.ancho_mm < min_direct:
+                            msg_w = _(
+                                "⚠️ <b>Advertencia Ancho S2S</b>: El ancho rough %.1f mm en línea/lote <i>%s</i> "
+                                "está ausente de la tabla S2S (menor al umbral directo %.1f mm). "
+                                "Se aplica conversión directa milimétrica."
+                            ) % (line.ancho_mm, line.lot_name or f"ID {line.id}", min_direct)
+                            line.processing_id.message_post(body=msg_w)
         return res
     
 # ============================================================================

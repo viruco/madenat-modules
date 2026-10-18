@@ -98,21 +98,31 @@ class TestExportWidthS2SWpB(TransactionCase):
         self.assertAlmostEqual(line.vol_shipment_m3, 0.192, places=3)
 
     def test_04_ancho_absent_from_s2s_table_uses_direct_division(self):
-        """Anchos ausentes de tabla S2S aplican conversión directa mm / 25.4."""
+        """Anchos ausentes de tabla S2S aplican conversión directa mm / 25.4 y advierten en chatter si son < direct_width_min_mm."""
+        self.env['ir.config_parameter'].sudo().set_param('madenat.out_of_table_behavior', 'warning')
         guia = self._make_guia('GUIA-S2S-OUT')
-        # Menor a 75 mm (60 mm): ausente de tabla -> 60 / 25.4 = 2.3622"
+        # Menor a 75 mm (60 mm): ausente de tabla y < 170 mm -> conversión directa + advertencia en chatter
         line_low = self._make_line(guia, ancho_mm=60.0, thickness_visual='6/4',
                                    width_visual='2 3/8', largo_m=3.2, pieces=10)
         line_low.flush_recordset()
         # (1.5 * (60/25.4) * 3.2 * 10) / 1550.0031 = 0.07315 -> 0.073 m3
         self.assertAlmostEqual(line_low.vol_shipment_m3, 0.073, places=3)
 
-        # 170 mm: ausente de tabla -> 170 / 25.4 = 6.6929" directo
+        # 170 mm: ausente de tabla pero >= 170 mm -> directo sin advertencia
         line_high = self._make_line(guia, ancho_mm=170.0, thickness_visual='7/4',
                                     width_visual='6 5/8', largo_m=3.2, pieces=10)
         line_high.flush_recordset()
         # (1.75 * (170/25.4) * 3.2 * 10) / 1550.0031 = 0.2418 -> 0.242 m3
         self.assertAlmostEqual(line_high.vol_shipment_m3, 0.242, places=3)
+
+        messages = self.env['mail.message'].search([
+            ('model', '=', 'madenat.guia.processing'),
+            ('res_id', '=', guia.id),
+        ])
+        body_texts = ' '.join(m.body or '' for m in messages)
+        self.assertIn('Advertencia Ancho S2S', body_texts)
+        self.assertIn('60.0 mm', body_texts)
+        self.assertNotIn('rough 170.0 mm', body_texts)
 
     def test_05_manual_export_width_override_and_bitacora(self):
         """Fijar ancho manual prevalece sobre el cálculo automático, exige motivo y registra en el chatter."""
@@ -269,11 +279,52 @@ class TestExportWidthS2SWpB(TransactionCase):
         finally:
             param_obj.set_param('madenat.s2s_overwidth_inches', '0.125')
 
-        # 3. Comportamiento 'block' para ancho fuera de tabla en zona de transición (160 mm)
+        # 3. Comportamiento 'block' para ancho fuera de tabla menor a direct_width_min_mm (160 mm < 170 mm)
         param_obj.set_param('madenat.out_of_table_behavior', 'block')
         try:
             with self.assertRaises(ValidationError):
                 line3 = self._make_line(guia, ancho_mm=160.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
                 line3.flush_recordset()
         finally:
-            param_obj.set_param('madenat.out_of_table_behavior', 'direct')
+            param_obj.set_param('madenat.out_of_table_behavior', 'warning')
+
+        # 4. Anti-hardcode: Modificar direct_width_min_mm altera el límite donde rige el comportamiento bloqueante
+        param_obj.set_param('madenat.out_of_table_behavior', 'block')
+        param_obj.set_param('madenat.direct_width_min_mm', '150.0')
+        try:
+            # 160 mm es >= 150.0 mm -> pasa directo sin error incluso con behavior='block'
+            line4 = self._make_line(guia, ancho_mm=160.0, thickness_visual='6/4', largo_m=4.0, pieces=100)
+            line4.flush_recordset()
+            # (1.5 * (160 / 25.4) * 4.0 * 100) / 1550.0031 = 2.43839 -> 2.438 m3
+            self.assertAlmostEqual(line4.vol_shipment_m3, 2.438, places=3)
+        finally:
+            param_obj.set_param('madenat.direct_width_min_mm', '170.0')
+            param_obj.set_param('madenat.out_of_table_behavior', 'warning')
+
+    def test_11_sweep_50_to_220mm_all_widths(self):
+        """Barrido de anchos 50 a 220 mm en pasos de 5 mm más 115, 135, 160 y 165 mm con 1.5\", 4.0 m y 100 pzas."""
+        guia = self._make_guia('GUIA-BARRIDO-50-220')
+        config = self.env['madenat.ingestion.config']
+        mapping = config.get_width_s2s_map()
+        overwidth = config.get_s2s_overwidth_inches()
+
+        # Lista completa ordenada sin duplicados
+        anchos_set = set(range(50, 225, 5)).union({115, 135, 160, 165})
+        anchos_lista = sorted(list(anchos_set))
+
+        for w_mm in anchos_lista:
+            line = self._make_line(
+                guia, ancho_mm=float(w_mm), thickness_visual='6/4',
+                width_visual=f"{w_mm}mm", largo_m=4.0, pieces=100
+            )
+            line.flush_recordset()
+            w_key = int(round(w_mm))
+            if w_key in mapping:
+                s2s_in = mapping[w_key][0] + overwidth
+            else:
+                s2s_in = float(w_mm) / 25.4
+            expected = round((1.5 * s2s_in * 4.0 * 100) / 1550.0031, 3)
+            self.assertAlmostEqual(
+                line.vol_shipment_m3, expected, places=3,
+                msg=f"Barrido falló en {w_mm} mm: obtenido {line.vol_shipment_m3}, esperado {expected}"
+            )

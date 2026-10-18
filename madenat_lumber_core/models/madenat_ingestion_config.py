@@ -138,24 +138,39 @@ class MadenatIngestionConfig(models.AbstractModel):
 
     @api.model
     def get_out_of_table_behavior(self):
-        """Retorna comportamiento para anchos fuera de tabla S2S (default 'direct')."""
+        """Retorna comportamiento para anchos fuera de tabla S2S (default 'warning')."""
         try:
             param_obj = self.env['ir.config_parameter'].sudo()
-            val = param_obj.get_param('madenat.out_of_table_behavior', 'direct')
+            val = param_obj.get_param('madenat.out_of_table_behavior', 'warning')
             if val in ('direct', 'warning', 'block'):
                 return val
         except Exception as e:
             _logger.warning("IngestionConfig: error al leer madenat.out_of_table_behavior: %s", e)
-        return 'direct'
+        return 'warning'
 
     @api.model
-    def resolve_export_width(self, rough_mm):
-        """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117).
+    def get_direct_width_min_mm(self):
+        """Retorna el umbral mínimo en mm para conversión directa sin advertencia (default 170.0)."""
+        try:
+            param_obj = self.env['ir.config_parameter'].sudo()
+            raw = param_obj.get_param('madenat.direct_width_min_mm', '170.0')
+            if raw:
+                return float(str(raw).strip())
+        except Exception as e:
+            _logger.warning("IngestionConfig: error al leer madenat.direct_width_min_mm: %s", e)
+        return 170.0
+
+    @api.model
+    def resolve_export_width(self, rough_mm, record=None):
+        """Resuelve el ancho de exportación en pulgadas de forma guiada por datos (AD-116/AD-117/AD-118).
         
-        Regla H3:
+        Reglas:
         - Si rough_mm está en lumber.width.s2s.map activo -> s2s_decimal + overwidth.
-        - Si no está -> rough_mm / 25.4 (directo).
-        - Si está entre 155 y 170 mm fuera de tabla -> rige madenat.out_of_table_behavior.
+        - Si está ausente y rough_mm < direct_width_min_mm:
+            * behavior == 'block' -> ValidationError.
+            * behavior == 'warning' -> _logger.warning y mensaje en chatter (si hay record/guía). Conversión directa mm/25.4.
+            * behavior == 'direct' -> Conversión directa mm/25.4 sin advertencia.
+        - Si está ausente y rough_mm >= direct_width_min_mm -> mm/25.4 directo sin advertencia.
         """
         if not rough_mm or rough_mm <= 0:
             return 0.0
@@ -168,11 +183,33 @@ class MadenatIngestionConfig(models.AbstractModel):
             return s2s_decimal + overwidth
 
         behavior = self.get_out_of_table_behavior()
-        if 155 < rough_mm < 170:
+        min_direct = self.get_direct_width_min_mm()
+
+        if rough_mm < min_direct:
             if behavior == 'block':
-                raise ValidationError(_("Ancho rough %.1f mm fuera de tabla S2S (rango 155-170 mm bloqueado).") % rough_mm)
+                raise ValidationError(
+                    _("Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm configurado como 'block').")
+                    % (rough_mm, min_direct)
+                )
             elif behavior == 'warning':
-                _logger.warning("Ancho rough %.1f mm fuera de tabla S2S en zona de transición.", rough_mm)
+                _logger.warning(
+                    "Ancho rough %.1f mm fuera de tabla S2S (menor al umbral directo %.1f mm). Se aplica conversión directa mm/25.4.",
+                    rough_mm, min_direct
+                )
+                if record:
+                    target = getattr(record, 'processing_id', record)
+                    if hasattr(target, 'message_post') and hasattr(target, 'id') and target.id:
+                        try:
+                            if not self.env.is_computing():
+                                target.message_post(
+                                    body=_(
+                                        "⚠️ <b>Advertencia Ancho S2S</b>: El ancho rough %.1f mm en línea/lote <i>%s</i> "
+                                        "está ausente de la tabla S2S (menor al umbral directo %.1f mm). "
+                                        "Se aplica conversión directa milimétrica."
+                                    ) % (rough_mm, getattr(record, 'lot_name', None) or f"ID {record.id}", min_direct)
+                                )
+                        except Exception:
+                            pass
 
         from .utils_uom import MM_PER_INCH
         return float(rough_mm) / float(MM_PER_INCH)
