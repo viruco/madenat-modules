@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.43.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 4N (AD-125 / N2): registro como DIFERIDO de deuda técnica (f) parámetros redundantes u obsoletos en ir.config_parameter (madenat.width_s2s_map con 16 entradas frente a 15 de la tabla activa D6, madenat.blanks_nominal_map y madenat.thickness_visual_ranges como fallbacks residuales de Fase 1). Versión 05 8.42.0 → 8.43.0. Sin push ni despliegue. -->
+**Versión documental:** 8.44.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126) IMPLEMENTADO en 5A (modelo persistente lumber.thickness.real.map y catálogo semilla noupdate="1"), 5B (campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3) y 5C (vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol y alerta exportación > compra). Fitosanitario configurable, marcado de patios y filtro de motonave formalmente DIFERIDOS. Versión 05 8.43.0 → 8.44.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 4N (AD-125 / N2): registro como DIFERIDO de deuda técnica (f) parámetros redundantes u obsoletos en ir.config_parameter (madenat.width_s2s_map con 16 entradas frente a 15 de la tabla activa D6, madenat.blanks_nominal_map y madenat.thickness_visual_ranges como fallbacks residuales de Fase 1). Versión 05 8.42.0 → 8.43.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): item (e) RESUELTO mediante resolución visual basada en lumber.width.s2s.map activo y erradicación definitiva de get_s2s_exclusion_widths y lista residual en código. Versión 05 8.41.0 → 8.42.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-122): registro formal como DIFERIDO de deuda técnica (a) LUMBER_DIMENSION_MAP, (b) mapa Blanks de respaldo, (c) rangos espesor visual, (d) TD-122 largo métrico en intake_wizard, (e) get_s2s_exclusion_widths y lista de exclusiones (K1). Versión 05 8.40.0 → 8.41.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): registro de deuda técnica TD-122 para rangos heurísticos en intake_wizard.py:314, normalización de script de salud y pruebas oficiales de integridad. Versión 05 8.38.0 → 8.39.0. Sin push ni despliegue. -->
@@ -1178,15 +1179,12 @@ Sin push ni despliegue. -->
 
 Las siguientes iniciativas quedan formalmente registradas como **DIFERIDAS**, sin impacto en código actual, con su diseño mínimo, utilidad esperada y criterio de cierre:
 
-#### (a) Bloque 5: Tabla Nominal → Espesor Real como DATO, Volumen Físico Real, Tres Listados y Fitosanitario Configurable
-- **Estado:** **DIFERIDO** (Decisión Mauricio — D5).
-- **Utilidad Esperada:** Eliminar la ambigüedad operativa entre volumen nominal de compra, volumen comercial de embarque y volumen físico real métrico cubicado, permitiendo a Planta, Embarque y Facturación operar con tres listados independientes y exactos sin contaminar los cálculos aduaneros, integrando además la descripción fitosanitaria como texto configurable.
-- **Diseño Mínimo:**
-  - Modelo persistente `lumber.thickness.real.map` (espesor nominal comercial → espesor real físico en mm). Ejemplo: 1 1/2" nominal → 38.1 mm real; 1" nominal → 25.4 mm real.
-  - Campo `vol_physical_real_m3` calculado como $(E_{real\_mm} \times A_{real\_mm} \times L_{m} \times Piezas) / 1.000.000$.
-  - Generación de 3 listados/reportes nativos en Recepción y Embarque: (1) Según Compra, (2) De Embarque (exportación), (3) De Medidas Reales (físico).
-  - Parámetro de texto fitosanitario configurable (`madenat.phytosanitary_default_text`) para leyendas de secado/tratamiento térmico sin texto fijo en código.
-- **Criterio de Cierre:** Los tres listados cuadran con las guías de recepción y packing lists reales, sin alterar las fórmulas ni volúmenes históricos de `vol_shipment_m3`.
+#### (a) Bloque 5: Tabla Nominal → Espesor Real como DATO, Volumen Físico Real y Comparativo de los Tres Volúmenes
+- **Estado:** ✅ **IMPLEMENTADO (2026-10-18 — AD-126)** en subbloques 5A, 5B y 5C.
+- **Implementación Acreditada:**
+  - **5A:** Modelo persistente `lumber.thickness.real.map` con catálogo semilla `noupdate="1"`, tracking, chatter, constrains de coherencia y unicidad, y getter en `madenat.ingestion.config` sin copias en código (D6). Commit `8fdddae`.
+  - **5B:** Campo `vol_physical_real_m3` (F3) calculado con `r3()` una sola vez: espesor real (de tabla 5A) $\times$ ancho nominal (mm) $\times$ largo (m) $\times$ piezas / 1.000.000. Blanks directo a stock y perfiles no aplicables en 0.0. Histórico intacto. Commit `d19f314`.
+  - **5C:** Vistas de lista y pivote readonly comparativas de los tres volúmenes con columna `% Dif.Vol`, agrupable por patio, proveedor, OC y motonave; filtros guardados; menú operativo bajo Control de Lotes con permisos para Operaciones, Auditoría y Contabilidad; alerta y resaltado de anomalías (exportación > compra). Commit `9f9e8b5`.
 
 #### (b) Descripción Fitosanitaria como Campo Configurable
 - **Estado:** **DIFERIDO** (Decisión Mauricio — D5 — Componente de Bloque 5).

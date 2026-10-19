@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.39.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: uso exclusivo de -u (nunca -i) sobre módulos requeridos (M1 / AD-125). Análisis Odoo loading.py / convert.py; erradicación de -i en scripts. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
+**Versión documental:** 6.40.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 13 pruebas unitarias nuevas en madenat_lumber_core (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 4 en test_volume_comparison_5c). Total acumulado esperado en suite: 1.551 + 13 = 1.564 pruebas. Versión 03 6.39.0 → 6.40.0. Sin commit/push. -->
+<!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: uso exclusivo de -u (nunca -i) sobre módulos requeridos (M1 / AD-125). Análisis Odoo loading.py / convert.py; erradicación de -i en scripts. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
 <!-- actualizado: 2026-10-10 (2) — §15 relación de conciliación envío–retorno (Bloque A/B/C): suite nueva T1–T12 = 12/12; regresión `madenat_lumber_logistics` = 3 failed, 0 error of 265 (3 fallas PRE-EXISTENTES por aserción global de `deviation`; 0 fallas nuevas). Bloque D no implementado. Versión 03 6.17.0 → 6.18.0. Evidencia: CONCILIACION_ENVIO_RETORNO_20261010/. -->
 <!-- actualizado: 2026-10-10 (3) — §15.5 controles A/B/C **acreditados** (reversa/procedencia, reimputación, compañía+regla, elegibilidad dura, N:M presentación) y §15.6 ajuste de integridad (T13–T22 = 22/22; regresión 275 pruebas, 4 fallas: 3 preexistentes + 1 ambiental por evidencia V3 7973, 0 errores). Versión 03 6.18.0 → 6.19.0. -->
@@ -1584,5 +1585,32 @@ docker exec odoo18_app odoo \
 ```
 
 <!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS: prohibición estricta de -i; justificación técnica Odoo loading.py:199 y convert.py:347; fijación de comando oficial con -u y 7 módulos. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
+
+---
+
+## 32. PRUEBAS DEL BLOQUE 5 — VOLUMEN REAL FÍSICO Y COMPARATIVO (AD-126)
+
+Se incorporan 13 pruebas unitarias nuevas distribuidas en 3 suites especializadas en `madenat_lumber_core`, registradas en `tests/__init__.py`:
+
+### 32.1 Suite 5A: `test_lumber_thickness_real_map_5a.py` (4 pruebas)
+- `test_01_seed_records_exist_and_match_canonical`: Verifica que los registros semilla canónicos (4/4, 5/4, 6/4, 7/4, 8/4) existen con sus valores exactos en mm y `noupdate="1"`.
+- `test_02_coherence_validation_success_and_failure`: Valida que el constraint de coherencia nominal $\le 0.001"$ acepte valores correctos y rechace discrepancias.
+- `test_03_getter_resolution_and_anti_hardcode`: Verifica que `get_thickness_real_mm` resuelva desde BD dinámicamente y no desde constantes en código (D6).
+- `test_04_security_access_rights`: Comprueba que usuarios de auditoría y base lean pero no editen, y que config manager mantenga CRUD.
+
+### 32.2 Suite 5B: `test_vol_physical_real_5b.py` (5 pruebas)
+- `test_01_canonical_vector_250_pieces`: Vector $38.1 \times 100 \times 4.05 \times 250 / 1.000.000 = 3.858\text{ m}^3$ con redondeo `r3()`.
+- `test_02_canonical_vector_single_piece_comparison`: Vector de planilla ($45\text{ mm}$ rough, $4.0\text{ m}$, 1 pza, 6/4): Real físico $0.015\text{ m}^3$ frente a exportación $0.015\text{ m}^3$ y compra $0.018\text{ m}^3$.
+- `test_03_blanks_direct_to_stock_no_physical_real`: Comprueba que Blanks directo a stock (`f5085`) asigna `vol_physical_real_m3 = 0.0`.
+- `test_04_anti_hardcode_table_modification_changes_new_calculation`: Modificar la tabla en BD altera el cálculo de un registro nuevo.
+- `test_05_stock_lot_vol_physical_real_computation`: Cálculo automático de `vol_physical_real_m3` en `stock.lot`.
+
+### 32.3 Suite 5C: `test_volume_comparison_5c.py` (4 pruebas)
+- `test_01_metrics_computation_and_percentages`: Cálculo de `% Dif.Vol` $((\text{Export} - \text{Compra}) / \text{Compra}) \times 100$.
+- `test_02_resaltado_excepcion_exportacion_mayor_que_nominal`: Señal `is_export_greater_nominal = True` cuando exportación $>$ compra.
+- `test_03_view_definitions_and_actions_load`: Carga exitosa de vistas lista (`list`), pivote (`pivot`), búsqueda (`search`) y acción readonly.
+- `test_04_menu_permissions_and_hierarchy`: Comprueba existencia del menú bajo Control de Lotes y grupos de Operaciones, Auditoría y Contabilidad.
+
+**Total pruebas acumuladas esperadas:** 1.551 (previas) + 13 = **1.564 pruebas**.
 
 

@@ -1,3 +1,11 @@
+## [18.0.6.20.0] - 2026-10-18
+
+### Added
+- **Bloque 5 (AD-126) — Volumen Real Físico y Comparativo de los Tres Volúmenes**:
+  - **5A (Modelo lumber.thickness.real.map)**: Nuevo modelo persistente con seguimiento chatter (`mail.thread`), validación de coherencia ($\le 0.001"$), unicidad por espesor visual activo, datos semilla con `noupdate="1"` (4/4 a 8/4) y getter `get_thickness_real_mm` en `madenat.ingestion.config` sin copias en código (D6). Test suite: `TestLumberThicknessRealMap5A` (4 tests PASS).
+  - **5B (Campo vol_physical_real_m3 F3)**: Campo nuevo `vol_physical_real_m3` (digits 16, 3) en `madenat_guia_processing_line` y `stock.lot`. Cálculo canónico F3: espesor real (mm de 5A) $\times$ ancho nominal (mm) $\times$ largo (m) $\times$ piezas / 1.000.000 con redondeo único `r3()`. Blanks directo a stock y perfiles métricos no aplicables quedan en 0.000. Invarianza total de históricos. Test suite: `TestVolPhysicalReal5B` (5 tests PASS).
+  - **5C (Comparativo de los Tres Volúmenes)**: Vitas de lista (`list`) y pivote (`pivot`) de solo lectura (`create="false" edit="false" delete="false"`) comparativas de Compra Nominal, Real Físico, Exportación Embarque y columna `% Dif.Vol` (`vol_diff_pct`), con alerta condicional en rojo (`decoration-danger="is_export_greater_nominal"`) ante anomalías donde exportación supera al nominal de compra. Menú operativo bajo Control de Lotes con permisos para Operaciones, Auditoría y Contabilidad. Test suite: `TestVolumeComparison5C` (4 tests PASS).
+
 ## [18.0.6.19.0] - 2026-10-18
 
 ### Changed

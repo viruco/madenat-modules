@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.44.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Alcance Real de Ejecuciones con -i y Corrección Forense de Atribución (AD-125 / Bloque 4N): corrección forense de atribución de sobreescritura de D1 al primer -i en 4J (20:28:18 UTC) y no 4K; aclaración de que write_date 21:17:05 reflejaba la última escritura en 4K; corrección de afirmación de 4J de que D1 estaba vigente; documentación de 89 registros reescritos en tablas destino (N1); verificación estructural pura de noupdate en XML para test_12 (N3); prohibición explícita de -i en despliegue (N4). Versión 04 12.43.0 → 12.44.0. | Cierre Arnés 4M (AD-125). -->
+**Versión documental:** 12.45.0
+**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo nuevo lumber.thickness.real.map con catálogo semilla noupdate="1", chatter, tracking, coherencia <= 0.001" y getter en madenat.ingestion.config sin copia en código (D6). 5B: campo vol_physical_real_m3 (F3) calculado con r3() una sola vez (espesor real x ancho nominal mm x largo m x piezas / 1.000.000) en líneas de guía y stock.lot; Blanks directo a stock y perfiles no aplicables en 0.0; histórico intacto. 5C: vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol, agrupable por patio, proveedor, OC y motonave; filtros guardados; menú operativo con permisos para Operaciones, Auditoría y Contabilidad; alerta y resaltado de anomalías (exportación > compra). Versión 04 12.44.0 → 12.45.0. | Bloque 4N (AD-125). -->
+<!-- actualizado: 2026-10-18 — Alcance Real de Ejecuciones con -i y Corrección Forense de Atribución (AD-125 / Bloque 4N): corrección forense de atribución de sobreescritura de D1 al primer -i en 4J (20:28:18 UTC) y no 4K; aclaración de que write_date 21:17:05 reflejaba la última escritura en 4K; corrección de afirmación de 4J de que D1 estaba vigente; documentación de 89 registros reescritos en tablas destino (N1); verificación estructural pura de noupdate en XML para test_12 (N3); prohibición explícita de -i en despliegue (N4). Versión 04 12.43.0 → 12.44.0. | Cierre Arnés 4M (AD-125). -->
 <!-- actualizado: 2026-10-18 — Cierre de Arnés de Pruebas y Rectificación de D1 (AD-125 / Bloque 4M): rectificación de D1 demostrando sobreescritura colateral de 'direct' a 'warning' por arnés con flag -i (M3); regla canónica de prohibición estricta de -i frente a -u en regresión según Odoo loading.py / convert.py (M1); diagnóstico del flag noupdate en ir_model_data y limitación estructural de _update_xmlids en actualizaciones de módulos (M2); reemplazo de literal 2.36 por MBF_TO_M3 en test_visual_dimension_l3 (M4). Versión 04 12.42.0 → 12.43.0. | Cierre Definitivo Bloque 4L (AD-124). -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): diagnóstico mecanismo cambio parámetro out_of_table_behavior por carga XML -i (L1); corrección tabla dimensional K1 con condiciones canónicas 100 pzas, 1.5", 4.0 m explicando factor 0.8 (L2); aplicación de K1 mediante resolución visual basada en datos en lumber.width.s2s.map activo y erradicación de get_s2s_exclusion_widths y lista residual (L3); corrección de diferencia relativa de 1550 a 6.19e-8 (L4). Versión 04 12.41.0 → 12.42.0. | Cierre Bloque 4K (AD-123). -->
 <!-- actualizado: 2026-10-18 — Cierre Bloque 4K (AD-123): análisis de lista de exclusiones S2S activa en _compute_visual_dimension (K1); aclaración Guía 26270 48.009 m³ almacenado vs 47.893 m³ recalculado (K2); habilitación de test_pre_deploy_health_check con TransactionCase (K3); verificación de constante 1550 con cero diferencias en BD (K4); registro de deuda técnica diferida (a)-(e) en CANON/05 (K5); ajuste de redacción y recuento de advertencias (K6). Versión 04 12.40.0 → 12.41.0. | Cierre Definitivo Bloque 4J (AD-122). -->
@@ -3940,7 +3941,59 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
 4. **M4 — Erradicación de Literal en Test:**
    - En `test_visual_dimension_l3.py` (método `test_05`), se reemplazó el literal `Decimal('2.36')` por la constante canónica del sistema `MBF_TO_M3` importada desde `models.utils_uom`. Cero literales de negocio hardcodeados.
 
+---
 
+## AD-126 — Bloque 5: Modelo lumber.thickness.real.map, Volumen Real Físico (F3) y Comparativo de los Tres Volúmenes
 
+**Fecha:** 2026-10-18  
+**Estado:** ✅ APROBADO E IMPLEMENTADO (Subbloques 5A, 5B y 5C)  
+**Alcance:** Modelos `lumber.thickness.real.map`, `stock.lot`, `madenat.guia.processing.line`, vistas de comparativo y menú en `madenat_lumber_core`.
+
+### 1. Contexto y Decisión
+Aprobación formal del Bloque 5 según directrices de operaciones (Cristhian Elgueta) bajo el marco de las decisiones vigentes D1 a D6:
+- **D1:** Sin cambios de configuración ni datos existentes en la base de datos `madenat_test`. Adición de esquema y datos semilla de modelos nuevos mediante actualización de módulo con `-u` (prohibición estricta de `-i` y `-u all`).
+- **D2:** Prohibición de marcar `is_patio` en ubicaciones.
+- **D3:** Guía 26270 sin tocar; no recalcular registros históricos.
+- **D4:** Sin despliegue, sin push.
+- **D6:** La tabla S2S se mantiene como está (solo editable).
+
+### 2. Subbloques Implementados
+1. **5A — Espesor Real como Dato Editable (`lumber.thickness.real.map`):**
+   - Modelo nuevo persistente `lumber.thickness.real.map` con herencia de `mail.thread` y `mail.activity.mixin` (chatter y tracking de cambios).
+   - Campos: `thickness_visual` (escuadría visual, ej: `6/4`), `thickness_inches` (espesor en pulgadas), `thickness_real_mm` (espesor real en mm), `active` (booleano).
+   - Restricciones: unicidad SQL por espesor visual activo (`unique_active_thickness_visual`), validación Python de coherencia nominal pulgadas vs etiqueta (tolerancia $\le 0.001"$), y valores estrictamente positivos.
+   - Datos semilla con `noupdate="1"` en `data/thickness_real_map_data.xml`: 4/4 (25.4 mm), 5/4 (31.75 mm), 6/4 (38.1 mm), 7/4 (44.45 mm), 8/4 (50.8 mm).
+   - Permisos: `group_lumber_config_manager` (CRUD), `group_madenat_auditoria` (lectura), `base.group_user` (lectura).
+   - Getter canónico en `madenat.ingestion.config`: `get_thickness_real_mm()` que consulta directamente el modelo persistente en BD sin réplicas hardcodeadas en código (D6).
+   - Commit: `8fdddae`.
+
+2. **5B — Volumen Real Físico (Fórmula F3):**
+   - Campo nuevo `vol_physical_real_m3` (digits 16, 3) en `madenat.guia.processing.line` y `stock.lot`.
+   - Fórmula F3: $\text{espesor\_real\_mm} \times \text{ancho\_nominal\_mm} \times \text{largo\_m} \times \text{piezas} / 1.000.000$, redondeado una sola vez con `r3()` (ROUND_HALF_UP).
+   - Regla de negocio Blanks: Blanks directo a stock (`f5085` con largo en pies) no calculan real físico (`vol_physical_real_m3 = 0.0`), pasando directo a stock con el volumen declarado sin recálculos (F6).
+   - Perfiles sin escuadría visual mapeada en la tabla 5A quedan en 0.0.
+   - Histórico intacto: los valores preexistentes de `vol_shipment_m3`, `vol_purchase_m3`, `volume_purchase_m3` y `volumen_m3` permanecen byte-idénticos (Hashes B y A.2 invariantes).
+   - Vectores verificados:
+     - Vector 1: $38.1 \times 100 \times 4.05 \times 250 / 1.000.000 = 3.858\text{ m}^3$.
+     - Vector 2 (Planilla 45 mm rough, 4.0 m, 1 pza, 6/4): Real físico F3 = $0.015\text{ m}^3$ (0.01524 exacto), Exportación F2 = $0.015\text{ m}^3$ (0.014516 exacto), Compra F1 = $0.018\text{ m}^3$.
+   - Commit: `d19f314`.
+
+3. **5C — Comparativo de los Tres Volúmenes:**
+   - Métricas en lote y línea:
+     - `vol_diff_pct` (% Dif. Vol, digits 16, 2): $((\text{Exportación} - \text{Compra}) / \text{Compra}) \times 100$.
+     - `is_export_greater_nominal`: señal booleana de alerta cuando exportación $>$ compra (tolerancia 0.0005 m³).
+     - `motonave_name`: campo informativo para consolidación documental de buque.
+   - Vista de Lista (`list`): `view_stock_lot_volume_comparison_tree` (solo lectura: `create="false" edit="false" delete="false"`), columnas de Compra Nominal, Real Físico, Exportación Embarque, % Dif.Vol y sumas totales. Resaltado condicional en rojo (`decoration-danger="is_export_greater_nominal"`) ante anomalías donde exportación supera al nominal de compra.
+   - Vista Pivote (`pivot`): `view_stock_lot_volume_comparison_pivot` con agrupación por proveedor y patio/ubicación.
+   - Vista Búsqueda (`search`): `view_stock_lot_volume_comparison_search` con filtros guardados de alerta (Exportación > Compra), con variación de volumen, y agrupadores por Patio, Proveedor, Orden de Compra y Motonave.
+   - Menú Operativo: `menu_stock_lot_volume_comparison` bajo Control de Lotes (`menu_ops_inventory`), permisos de lectura para Operaciones, Auditoría y Contabilidad (`groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_auditoria,madenat_lumber_core.group_madenat_contabilidad,madenat_lumber_core.group_madenat_gerencia"`).
+   - Commit: `9f9e8b5`.
+
+### 3. Diferidos Registrados Formalmente
+Permanecen como diferidos en `CANON/05`:
+- Fitosanitario configurable por proveedor/producto.
+- Marcado masivo de patios en ubicaciones de inventario (`is_patio`).
+- Consolidación de filtro marítimo por motonave (`shipping.vessel`).
+- Corrección histórica de guía 26270.
 
 

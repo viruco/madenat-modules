@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.12.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
+**Versión documental:** 1.13.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->
+<!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
 
@@ -358,4 +359,33 @@ FROM lumber_shipment_line;
 2. **Trazabilidad en Chatter:** Toda modificación de `rough_mm`, `s2s_decimal`, `s2s_label` o `active` genera una entrada en el chatter con usuario, fecha y valores anteriores.
 3. **Validación de Coherencia Exacta (H3):** Constraint `_check_decimal_label_coherence` exige coincidencia numérica estricta entre el valor decimal y la fracción (tolerancia máxima de $\pm 0.001"$).
 4. **Preservación Histórica:** Modificar un registro en esta tabla **únicamente afecta a cálculos nuevos**. Los valores almacenados históricamente en `vol_shipment_m3` y `vol_purchase_m3` permanecen inalterados.
+
+### 10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5)
+
+En cumplimiento de las instrucciones de Cristhian Elgueta y las reglas del Bloque 5, se formalizan técnicamente los tres volúmenes del flujo operativo de MADENAT:
+
+1. **VOLUMEN NOMINAL (Compra — Fórmula F1):**
+   - **Definición:** Volumen calculado con el espesor y ancho nominales en milímetros contratados con el proveedor de aserradero según orden de compra.
+   - **Destino Operativo:** Es el volumen que **ingresa a stock físico** (`vol_purchase_m3` en líneas de guía y `volume_purchase_m3` / `volumen_m3` en lotes).
+   - **Fórmula:** $(\text{Espesor Nominal}_{mm} \times \text{Ancho Nominal}_{mm} \times \text{Largo}_{m} \times \text{Piezas}) / 1.000.000$.
+
+2. **VOLUMEN DE EXPORTACIÓN (Embarque — Fórmula F2):**
+   - **Definición:** Volumen comercial internacional para facturación y aduanas, calculado a partir de escuadría imperial equivalente: $1,5"$ de espesor $\times$ (ancho S2S de tabla $+ 1/8"$ de sobreancho) o conversión directa métrica para anchos $\ge 170\text{ mm}$.
+   - **Relación de Magnitud:** Es **estrictamente menor** que el volumen nominal de compra ($F2 < F1$), debido al cepillado y sobreancho industrial.
+   - **Fórmula:** $(1,5 \times (\text{Ancho S2S}_{in} + 0,125) \times \text{Largo}_{m} \times \text{Piezas}) / 1550,003$ redondeado con `r3()`.
+
+3. **VOLUMEN REAL FÍSICO (Medidas Reales — Fórmula F3):**
+   - **Definición:** Volumen real cubicado basado en el espesor real en milímetros (extraído del modelo persistente en base de datos `lumber.thickness.real.map` según la escuadría visual comercial, ej: $6/4 \to 38,1\text{ mm}$, $5/4 \to 31,75\text{ mm}$, $4/4 \to 25,4\text{ mm}$) $\times$ el ancho nominal en milímetros.
+   - **Relación de Magnitud:** Queda posicionado **entre ambos** ($F2 < F3 < F1$).
+   - **Fórmula:** $(\text{Espesor Real}_{mm} \times \text{Ancho Nominal}_{mm} \times \text{Largo}_{m} \times \text{Piezas}) / 1.000.000$ redondeado una sola vez con `r3()` (ROUND_HALF_UP).
+   - **Vector de Prueba Canónico:** $38,1 \times 100 \times 4,05 \times 250 / 1.000.000 = 3,858\text{ m}^3$.
+   - **Vector de Planilla (45 mm rough, 4,0 m, 1 pieza, 6/4):** Exportación F2 = $0,015\text{ m}^3$ (0,014516 exacto) frente a Real Físico F3 = $0,015\text{ m}^3$ (0,01524 exacto) y Compra F1 = $0,018\text{ m}^3$.
+
+4. **EXCEPCIÓN BLANKS (Fórmula F6 — Directo a Stock):**
+   - Los paquetes de Blanks pasan directo a stock físico y documental con su volumen declarado sin recálculos (`vol_physical_real_m3 = 0.000`).
+
+5. **VISTA COMPARATIVA Y CONTROL DE ANOMALÍAS (Subbloque 5C):**
+   - **Vistas Readonly:** Lista y pivote en `madenat_lumber_core` (`view_stock_lot_volume_comparison_tree` y `view_stock_lot_volume_comparison_pivot`) con permisos exclusivos de solo lectura para Operaciones, Auditoría y Contabilidad (`create="false" edit="false" delete="false"`).
+   - **Columna "% Dif.Vol":** Métrica `vol_diff_pct` calculada como $((\text{Exportación} - \text{Compra}) / \text{Compra}) \times 100$.
+   - **Regla de Resaltado:** Como el nominal es el que va a stock y la exportación es menor, la vista resalta automáticamente en color de peligro (`decoration-danger="is_export_greater_nominal"`) cualquier lote o línea donde la exportación supere al nominal de compra (excepto perfiles métricos donde coinciden exactamente), alertando a los operadores sin modificar ningún dato.
 

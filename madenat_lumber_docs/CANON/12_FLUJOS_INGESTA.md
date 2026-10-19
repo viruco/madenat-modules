@@ -1,8 +1,8 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.14.0\
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.5 Cierre Técnico Final (AD-120) — UserError S2S acotado a perfil imperial (G5), tabla S2S editable por interfaz con tracking y coherencia decimal/etiqueta (G8), preservación histórica sin recálculo (R5/D6). Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 4F (AD-119). -->\
+**Versión documental:** 1.15.0\
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.6 Matriz de Tipos de Ingesta por Regla de Cálculo de F3 (AD-126 / Bloque 5) — discriminación de volumen real físico (F3) para Producto/Aserradero vs Blanks directo a stock vs perfiles métricos vs retornos SV. Versión 1.14.0 → 1.15.0. | 2026-10-18: Cierre Técnico Final (AD-120). -->\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
@@ -546,5 +546,18 @@ Procesado de servicio **es un retorno de servicio** mediante `service_return_con
 - **Ámbito del UserError por tabla S2S vacía (G5):** El error de interrupción `UserError` se limita estrictamente a las ramas que dependen de la tabla S2S (perfiles imperiales $f1550$ / $f5085$ con ancho rough $< 170\text{ mm}$). Los perfiles métricos y anchos directos ($\ge 170\text{ mm}$) o con señal explícita documental (`is_s2s_inches=True`) no dependen de la tabla S2S y no se bloquean aunque la tabla se encuentre vacía.
 - **Edición por interfaz con trazabilidad y coherencia (G8 / D6):** El modelo `lumber.width.s2s.map` habilita trazabilidad completa en chatter (`mail.thread`) para auditoría de modificaciones (usuario, fecha y valores anteriores). Se implementa constraint de coherencia `_check_decimal_label_coherence` que impide divergencias entre la etiqueta fraccionaria y el decimal almacenado dentro de una tolerancia de $\pm 1/16"$ ($0,0625$).
 - **Invarianza de registros históricos (R5/D6):** Editar un registro en `lumber.width.s2s.map` solo afecta cálculos NUEVOS; no recalcula registros históricos almacenados en `madenat_guia_processing_line` ni `stock_lot`. Para deshabilitar un ancho se utiliza el archivado (`active=False`) preservando la historia.
+
+### 12.6 Matriz de Tipos de Ingesta por Regla de Cálculo de Volumen Real Físico F3 (AD-126 / Bloque 5B)
+
+Tras la armonización canónica con las directrices de Cristhian Elgueta y la arquitectura de ingesta (AD-65, AD-79, AD-80, AD-87 y AD-126), la siguiente matriz define formalmente qué tipos de ingesta y perfiles calculan el **Volumen Real Físico ($F3$)** frente a $F1$ (Compra / Nominal) y $F2$ (Exportación / Embarque):
+
+| Tipo de Ingesta / Flujo | Perfil Canónico | ¿Calcula F3 (Real Físico)? | Fórmula Aplicada / Justificación Operativa |
+| :--- | :--- | :---: | :--- |
+| **Compra Aserradero (Producto)** | `f1550` (Imperial estándar) | **SÍ** | $\text{Espesor Real (mm de 5A)} \times \text{Ancho Nominal (mm)} \times \text{Largo (m)} \times \text{Piezas} / 1.000.000$. Requiere escuadría visual mapeada en `lumber.thickness.real.map`. |
+| **Blanks Directo a Stock** | `f5085` (Blanks en pies) | **NO** (`0.000`) | **Regla F6 (Cristhian):** Pasan directo a stock con el volumen declarado sin recálculos. No sufren cepillado S2S ni merma de espesor físico en Madenat. `vol_physical_real_m3 = 0.0`. |
+| **Métrico / Perfiles Métricos** | `metric` (Pino / Eucalipto) | **NO** (`0.000`) | En perfiles puramente métricos, el espesor de compra coincide con la dimensión física nominal. No aplica tabla imperial 5A salvo que exista escuadría comercial en cuartos. |
+| **Recepción por Volumen (Lotes SV)** | `granel` / `volume` (AD-79) | **NO** (`0.000`) | Ingreso por metros cúbicos globales medidos en camión (báscula/metro cúbico). No posee desglose pieza a pieza ni escuadría nominal. |
+| **Retorno de Servicio / Procesado** | `service` (Cepillado / Imputación) | **SÍ** (cuando aplica) | Si el producto retornado mantiene escuadría visual comercial estándar (ej: 6/4), aplica F3 sobre la escuadría resultante imputada a la etiqueta SV (AD-87). |
+| **Blanks con Largo Métrico** | `f1550` / `metric` mixto | **SÍ** (si no es directo a stock) | Aplica F3 si se trata de madera aserrada estándar con largo métrico y espesor nominal visual mapeable. |
 
 
