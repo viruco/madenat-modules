@@ -1647,16 +1647,24 @@ class StockQuant(models.Model):
     subproducto_id = fields.Many2one(related='lot_id.subproducto_id', string='Subproducto', readonly=True)
     etiqueta_limpia = fields.Char(related='lot_id.ref', string='Etiqueta Lote', readonly=True)
 
-    # 🌲 BLOQUE 6B — INVENTARIO POR PATIO
+    # 🌲 BLOQUE 6B & 6E — INVENTARIO POR PATIO
+    patio_group = fields.Char(
+        string='Patio',
+        compute='_compute_patio_group',
+        store=True,
+        index=True,
+    )
     lot_piezas = fields.Integer(
         string='Piezas',
-        related='lot_id.piezas',
+        compute='_compute_lot_piezas',
+        store=True,
         readonly=True,
     )
     vol_nominal_m3 = fields.Float(
         string='Vol. Compra (m³)',
-        related='lot_id.volume_purchase_m3',
+        compute='_compute_vol_nominal_m3',
         digits=(16, 3),
+        store=True,
         readonly=True,
     )
     guia_number = fields.Char(
@@ -1674,3 +1682,22 @@ class StockQuant(models.Model):
         string='Tipo de Patio',
         readonly=True,
     )
+
+    @api.depends('location_id', 'location_id.is_patio', 'location_id.name')
+    def _compute_patio_group(self):
+        for quant in self:
+            if quant.location_id and quant.location_id.is_patio:
+                quant.patio_group = quant.location_id.name
+            else:
+                quant.patio_group = 'Sin patio'
+
+    @api.depends('lot_id', 'lot_id.piezas')
+    def _compute_lot_piezas(self):
+        for quant in self:
+            quant.lot_piezas = quant.lot_id.piezas if quant.lot_id else 0
+
+    @api.depends('lot_id', 'lot_id.volume_purchase_m3', 'lot_id.volumen_m3')
+    def _compute_vol_nominal_m3(self):
+        for quant in self:
+            lot = quant.lot_id
+            quant.vol_nominal_m3 = (lot.volume_purchase_m3 or lot.volumen_m3 or 0.0) if lot else 0.0

@@ -214,7 +214,8 @@ class TestPatiosF7(TransactionCase):
         self.assertEqual(action.res_model, 'stock.quant')
         self.assertIn('list', action.view_mode)
         self.assertIn('pivot', action.view_mode)
-        self.assertIn("'location_id.is_patio', '=', True", action.domain or '')
+        self.assertIn("'location_id.usage', '=', 'internal'", action.domain or '')
+        self.assertIn("search_default_group_by_patio", str(action.context))
 
         # 2. Vista lista (solo lectura, sin edición)
         list_view = self.env.ref('madenat_lumber_core.view_stock_quant_patio_list')
@@ -240,9 +241,55 @@ class TestPatiosF7(TransactionCase):
 
     def test_11_historical_records_zero_write(self):
         """6B: Verificación de cero escritura en históricos al consultar inventario y consola."""
-        # Verificar guía 26270 no tocada
         guia_hist = self.env['madenat.guia.processing'].search([('name', '=', '26270')], limit=1)
         if guia_hist:
-            # Debe mantener su estado e integridad sin rellenar patios retroactivamente
             self.assertTrue(guia_hist.id)
+
+    def test_12_inventario_por_patio_default_all_internal_e1(self):
+        """E1: Inventario por Patio muestra todas las ubicaciones internas con existencias,
+        agrupadas por Patio con agrupación explícita 'Sin patio', y muestra totales.
+        """
+        Quant = self.env['stock.quant']
+        Location = self.env['stock.location']
+
+        # 1. Comprobación del cómputo de patio_group
+        loc_patio = Location.search([('is_patio', '=', True)], limit=1)
+        loc_no_patio = Location.search([('usage', '=', 'internal'), ('is_patio', '=', False)], limit=1)
+
+        if loc_patio:
+            q_patio = Quant.search([('location_id', '=', loc_patio.id), ('quantity', '>', 0)], limit=1)
+            if q_patio:
+                self.assertEqual(q_patio.patio_group, loc_patio.name)
+
+        if loc_no_patio:
+            q_no_patio = Quant.search([('location_id', '=', loc_no_patio.id), ('quantity', '>', 0)], limit=1)
+            if q_no_patio:
+                self.assertEqual(q_no_patio.patio_group, 'Sin patio')
+
+        # 2. Comprobación de existencias en madenat_test
+        quants_internal = Quant.search([('location_id.usage', '=', 'internal'), ('quantity', '>', 0)])
+        # Deben existir al menos 100 registros en el entorno de pruebas
+        self.assertGreaterEqual(len(quants_internal), 100)
+
+        # Totales por ubicación específica
+        marval_quants = quants_internal.filtered(lambda q: q.location_id.name == 'MARVAL')
+        coronel_quants = quants_internal.filtered(lambda q: q.location_id.name == 'PUERTO CORONEL')
+        stock_quants = quants_internal.filtered(lambda q: q.location_id.name == 'Stock')
+        v3_quants = quants_internal.filtered(lambda q: q.location_id.name == 'V3 Planta (temp)')
+
+        self.assertEqual(len(marval_quants), 48)
+        self.assertEqual(round(sum(marval_quants.mapped('vol_nominal_m3')), 3), 155.855)
+
+        self.assertEqual(len(coronel_quants), 31)
+        self.assertEqual(round(sum(coronel_quants.mapped('vol_nominal_m3')), 3), 105.710)
+
+        self.assertEqual(len(stock_quants), 20)
+        self.assertEqual(round(sum(stock_quants.mapped('vol_nominal_m3')), 3), 102.949)
+
+        self.assertEqual(len(v3_quants), 1)
+        self.assertEqual(round(sum(v3_quants.mapped('vol_nominal_m3')), 3), 5.000)
+
+        total_vol = sum(quants_internal.mapped('vol_nominal_m3'))
+        self.assertEqual(round(total_vol, 3), 369.514)
+
 

@@ -1,3 +1,12 @@
+## [18.0.6.23.0] - 2026-10-19
+
+### Changed
+- **Bloque 6E (E1) — Ajuste de Inventario por Patio (TDD)**:
+  - Dominio por defecto ampliado a todas las ubicaciones internas con existencias: `[('location_id.usage', '=', 'internal'), ('quantity', '>', 0)]`.
+  - Campo `patio_group` en `stock.quant` para agrupar explícitamente por patio (`location_id.name`) y asignar 'Sin patio' a ubicaciones no catalogadas como patio.
+  - Filtros 'Solo patios' y 'Sin patio' agregados a la búsqueda; columnas Patio y Ubicación desplegadas en la lista.
+  - Totalización de volumen nominal de compra `vol_nominal_m3` y piezas `lot_piezas` como métricas del pivote.
+
 ## [18.0.6.22.0] - 2026-10-19
 
 ### Added

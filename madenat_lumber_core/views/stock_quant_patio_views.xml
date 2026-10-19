@@ -10,18 +10,23 @@
             <field name="model">stock.quant</field>
             <field name="arch" type="xml">
                 <search string="Inventario por Patio">
-                    <field name="location_id" string="Patio"/>
+                    <field name="patio_group" string="Patio"/>
+                    <field name="location_id" string="Ubicación"/>
                     <field name="supplier_id" string="Proveedor"/>
                     <field name="product_id" string="Producto"/>
                     <field name="lot_id" string="Lote / Etiqueta"/>
                     <field name="guia_number" string="N° Guía"/>
 
+                    <filter string="Solo patios" name="filter_solo_patios" domain="[('location_id.is_patio', '=', True)]"/>
+                    <filter string="Sin patio" name="filter_sin_patio" domain="['|', ('location_id.is_patio', '=', False), ('location_id.is_patio', '=', None)]"/>
+                    <separator/>
                     <filter string="Patio de Servicio" name="filter_service" domain="[('location_id.patio_type', '=', 'service')]"/>
                     <filter string="Patio de Puerto" name="filter_port" domain="[('location_id.patio_type', '=', 'port')]"/>
                     <separator/>
 
                     <group expand="1" string="Agrupar por">
-                        <filter string="Patio" name="group_by_location" context="{'group_by': 'location_id'}"/>
+                        <filter string="Patio" name="group_by_patio" context="{'group_by': 'patio_group'}"/>
+                        <filter string="Ubicación" name="group_by_location" context="{'group_by': 'location_id'}"/>
                         <filter string="Proveedor" name="group_by_supplier" context="{'group_by': 'supplier_id'}"/>
                         <filter string="Producto" name="group_by_product" context="{'group_by': 'product_id'}"/>
                         <filter string="Tipo de Patio" name="group_by_patio_type" context="{'group_by': 'patio_type'}"/>
@@ -38,15 +43,16 @@
             <field name="model">stock.quant</field>
             <field name="arch" type="xml">
                 <list string="Inventario por Patio" create="0" delete="0" edit="0">
-                    <field name="location_id" string="Patio"/>
-                    <field name="patio_type" string="Tipo de Patio"/>
+                    <field name="patio_group" string="Patio"/>
+                    <field name="location_id" string="Ubicación"/>
+                    <field name="patio_type" string="Tipo de Patio" optional="show"/>
                     <field name="supplier_id" string="Proveedor"/>
                     <field name="product_id" string="Producto"/>
                     <field name="lot_id" string="Etiqueta / Lote"/>
-                    <field name="guia_number" string="N° Guía"/>
+                    <field name="guia_number" string="N° Guía" optional="show"/>
                     <field name="lot_piezas" string="Piezas" sum="Total Piezas"/>
-                    <field name="quantity" string="Volumen Stock (m³)" sum="Total Volumen Stock m³"/>
-                    <field name="vol_nominal_m3" string="Vol. Compra (m³)" sum="Total Vol. Compra m³" optional="show"/>
+                    <field name="vol_nominal_m3" string="Vol. Compra (m³)" sum="Total Vol. Compra (m³)"/>
+                    <field name="quantity" string="Volumen Stock (m³)" sum="Total Volumen Stock (m³)" optional="hide"/>
                 </list>
             </field>
         </record>
@@ -59,11 +65,12 @@
             <field name="model">stock.quant</field>
             <field name="arch" type="xml">
                 <pivot string="Inventario por Patio" display_quantity="0">
+                    <field name="patio_group" type="row"/>
                     <field name="location_id" type="row"/>
                     <field name="supplier_id" type="row"/>
                     <field name="product_id" type="row"/>
                     <field name="lot_piezas" type="measure" string="Piezas"/>
-                    <field name="quantity" type="measure" string="Volumen Stock (m³)"/>
+                    <field name="vol_nominal_m3" type="measure" string="Vol. Compra (m³)"/>
                 </pivot>
             </field>
         </record>
@@ -77,15 +84,15 @@
             <field name="view_mode">list,pivot</field>
             <field name="view_id" ref="view_stock_quant_patio_list"/>
             <field name="search_view_id" ref="view_stock_quant_patio_search"/>
-            <field name="domain">[('location_id.is_patio', '=', True), ('quantity', '>', 0)]</field>
-            <field name="context">{'search_default_group_by_location': 1, 'search_default_group_by_supplier': 1, 'search_default_group_by_product': 1}</field>
+            <field name="domain">[('location_id.usage', '=', 'internal'), ('quantity', '&gt;', 0)]</field>
+            <field name="context">{'search_default_group_by_patio': 1, 'search_default_group_by_location': 1, 'search_default_group_by_supplier': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Inventario de Madera por Patio
                 </p>
                 <p>
-                    Visualice el inventario físico en patios clasificados (Servicio y Puerto),
-                    agrupado por patio, proveedor y producto, con piezas y volumen nominal de compra.
+                    Visualice el inventario físico en patios clasificados y ubicaciones internas,
+                    agrupado por patio ("Sin patio" para ubicaciones no patio), ubicación, proveedor y producto.
                 </p>
             </field>
         </record>
