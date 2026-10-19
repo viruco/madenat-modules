@@ -46,6 +46,7 @@
                        decoration-warning="guide_date_kind == 'reception'"/>
                 <field name="partner_id" string="Proveedor"/>
                 <field name="processor_id" string="Procesador"/>
+                <field name="location_id" string="Patio"/>
 
                 <!-- OC documental: referencia extraída del documento
                      (oc_reference_raw). NO se sustituye por la OC vinculada;
@@ -1049,6 +1050,7 @@
             <search string="Buscar Ingresos">
                 <field name="guide_name" string="Guía"/>
                 <field name="partner_id" string="Proveedor"/>
+                <field name="location_id" string="Patio"/>
                 <field name="state" string="Estado"/>
                 <field name="processor_id" string="Procesador"/>
                 <field name="product_filter_id" string="Producto (contiene)"/>
@@ -1074,6 +1076,11 @@
                 <filter name="type_volume" string="Ingresos por Volúmenes" domain="[('ingestion_type', '=', 'volume')]"/>
                 <separator/>
 
+                <!-- Filtros de Patio (6B) -->
+                <filter name="filter_con_patio" string="Con Patio" domain="[('is_patio', '=', True)]"/>
+                <filter name="filter_sin_patio" string="Sin Patio" domain="['|', ('location_id', '=', False), ('is_patio', '=', False)]"/>
+                <separator/>
+
                 <!-- OC: vinculada / pendiente / no indicada (predicados puros
                      sobre columnas reales; coherentes con «Estado OC»). -->
                 <filter name="filter_oc_linked" string="OC vinculada" domain="[('purchase_id', '!=', False)]"/>
@@ -1095,6 +1102,7 @@
                 <separator/>
 
                 <group expand="0" string="Agrupar por">
+                    <filter name="group_patio" string="Patio" context="{'group_by': 'location_id'}"/>
                     <filter name="group_oc_documental" string="OC documental" context="{'group_by': 'oc_documental'}"/>
                     <filter name="group_oc_link" string="OC vinculada" context="{'group_by': 'purchase_id'}"/>
                     <filter name="group_partner" string="Proveedor" context="{'group_by': 'partner_id'}"/>

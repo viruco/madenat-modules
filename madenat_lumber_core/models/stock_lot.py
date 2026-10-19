@@ -1646,3 +1646,31 @@ class StockQuant(models.Model):
 
     subproducto_id = fields.Many2one(related='lot_id.subproducto_id', string='Subproducto', readonly=True)
     etiqueta_limpia = fields.Char(related='lot_id.ref', string='Etiqueta Lote', readonly=True)
+
+    # 🌲 BLOQUE 6B — INVENTARIO POR PATIO
+    lot_piezas = fields.Integer(
+        string='Piezas',
+        related='lot_id.piezas',
+        readonly=True,
+    )
+    vol_nominal_m3 = fields.Float(
+        string='Vol. Compra (m³)',
+        related='lot_id.volume_purchase_m3',
+        digits=(16, 3),
+        readonly=True,
+    )
+    guia_number = fields.Char(
+        string='N° Guía',
+        related='lot_id.guia_number',
+        readonly=True,
+    )
+    is_patio = fields.Boolean(
+        string='Es Patio',
+        related='location_id.is_patio',
+        readonly=True,
+    )
+    patio_type = fields.Selection(
+        related='location_id.patio_type',
+        string='Tipo de Patio',
+        readonly=True,
+    )

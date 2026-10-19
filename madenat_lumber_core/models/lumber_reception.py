@@ -917,7 +917,7 @@ class LumberReception(models.Model):
         vals_seq = [vals] if isinstance(vals, dict) else list(vals)
         warn_map = {}
         for idx, v in enumerate(vals_seq):
-            if not v.get('location_id'):
+            if 'location_id' not in v:
                 patio, warn = self.env['stock.location'].resolve_patio_by_type('port')
                 if patio:
                     v['location_id'] = patio.id

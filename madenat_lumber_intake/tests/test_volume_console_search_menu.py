@@ -101,3 +101,35 @@ class TestVolumeConsoleSearchMenu(TransactionCase):
             # Búsqueda por estado
             by_state = self.Console.search([('state', '=', rec.state)])
             self.assertIn(rec, by_state)
+
+    def test_6b_console_search_by_patio_and_filter_sin_patio(self):
+        """6B: Búsqueda por patio, filtro sin patio y localización de guías Arauco y JCE."""
+        arch = self.search_view.arch
+        tree = etree.fromstring(arch)
+
+        # 1. Campo location_id en búsqueda
+        fields_in_search = {f.attrib.get('name') for f in tree.xpath('//search/field')}
+        self.assertIn('location_id', fields_in_search, "Debe existir búsqueda por Patio (location_id)")
+
+        # 2. Filtro sin patio
+        sin_patio_filters = tree.xpath("//search/filter[@name='filter_sin_patio']")
+        self.assertTrue(sin_patio_filters, "Debe existir el filtro filter_sin_patio")
+        self.assertIn('Sin Patio', sin_patio_filters[0].attrib.get('string', ''))
+
+        # 3. Localización de guías históricas Arauco (4495589) y JCE (95806)
+        guia_arauco = self.Console.search([('guide_name', '=', '4495589')])
+        self.assertTrue(guia_arauco, "Guía 4495589 debe ser localizable por número de guía")
+        self.assertEqual(guia_arauco.ingestion_type, 'volume')
+
+        guia_jce = self.Console.search([('guide_name', '=', '95806')])
+        self.assertTrue(guia_jce, "Guía 95806 debe ser localizable por número de guía")
+        self.assertEqual(guia_jce.ingestion_type, 'volume')
+
+        # 4. Ambas guías deben aparecer bajo el filtro Sin Patio (is_patio=False)
+        sin_patio_records = self.Console.search([
+            ('ingestion_type', '=', 'volume'),
+            '|', ('location_id', '=', False), ('is_patio', '=', False)
+        ])
+        self.assertIn(guia_arauco, sin_patio_records, "Guía 4495589 debe ser encontrada con filtro sin patio")
+        self.assertIn(guia_jce, sin_patio_records, "Guía 95806 debe ser encontrada con filtro sin patio")
+

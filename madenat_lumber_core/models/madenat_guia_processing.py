@@ -3776,7 +3776,7 @@ class MadenatGuiaProcessing(models.Model):
         warn_map = {}
         for idx, v in enumerate(vals_seq):
             tipo = v.get('tipo_recepcion')
-            if not v.get('assignment_location_id') and tipo in ('granel', 'service'):
+            if 'assignment_location_id' not in v and tipo in ('granel', 'service'):
                 patio, warn = self.env['stock.location'].resolve_patio_by_type('service')
                 if patio:
                     v['assignment_location_id'] = patio.id

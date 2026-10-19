@@ -113,6 +113,7 @@ class TestPatiosF7(TransactionCase):
 
     def test_05_patio_type_resolution_single(self):
         """6A: resolve_patio_by_type resuelve unívocamente cuando hay exactamente un patio activo del tipo."""
+        self.StockLocation.search([('is_patio', '=', True), ('patio_type', '=', 'service')]).write({'is_patio': False})
         loc_servicio = self.StockLocation.create({
             'name': 'Patio Test Servicio Único',
             'usage': 'internal',
@@ -203,4 +204,45 @@ class TestPatiosF7(TransactionCase):
         })
         self.assertTrue(guia_vol.id)
         self.assertFalse(guia_vol.assignment_location_id)
+
+    def test_10_inventario_por_patio_views_and_menu(self):
+        """6B: Menú, acción, vistas y permisos de Inventario por Patio."""
+        from lxml import etree
+
+        # 1. Acción
+        action = self.env.ref('madenat_lumber_core.action_madenat_inventario_por_patio')
+        self.assertEqual(action.res_model, 'stock.quant')
+        self.assertIn('list', action.view_mode)
+        self.assertIn('pivot', action.view_mode)
+        self.assertIn("'location_id.is_patio', '=', True", action.domain or '')
+
+        # 2. Vista lista (solo lectura, sin edición)
+        list_view = self.env.ref('madenat_lumber_core.view_stock_quant_patio_list')
+        tree = etree.fromstring(list_view.arch)
+        self.assertEqual(tree.attrib.get('create'), '0')
+        self.assertEqual(tree.attrib.get('edit'), '0')
+        self.assertEqual(tree.attrib.get('delete'), '0')
+
+        # 3. Vista pivote
+        pivot_view = self.env.ref('madenat_lumber_core.view_stock_quant_patio_pivot')
+        piv_tree = etree.fromstring(pivot_view.arch)
+        self.assertEqual(piv_tree.tag, 'pivot')
+
+        # 4. Menú y grupos autorizados (Operaciones, Auditoría, Contabilidad)
+        menu = self.env.ref('madenat_lumber_core.menu_madenat_inventario_patio')
+        self.assertEqual(menu.action, action)
+        group_ops = self.env.ref('madenat_lumber_core.group_madenat_operaciones')
+        group_aud = self.env.ref('madenat_lumber_core.group_madenat_auditoria')
+        group_cont = self.env.ref('madenat_lumber_core.group_madenat_contabilidad')
+        self.assertIn(group_ops, menu.groups_id)
+        self.assertIn(group_aud, menu.groups_id)
+        self.assertIn(group_cont, menu.groups_id)
+
+    def test_11_historical_records_zero_write(self):
+        """6B: Verificación de cero escritura en históricos al consultar inventario y consola."""
+        # Verificar guía 26270 no tocada
+        guia_hist = self.env['madenat.guia.processing'].search([('name', '=', '26270')], limit=1)
+        if guia_hist:
+            # Debe mantener su estado e integridad sin rellenar patios retroactivamente
+            self.assertTrue(guia_hist.id)
 

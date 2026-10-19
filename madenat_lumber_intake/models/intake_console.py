@@ -84,6 +84,14 @@ class MadenatLumberIntakeConsole(models.Model):
              'de Procesamiento (toll_order_id.processor_id). Nunca se usa el '
              'proveedor como procesador.',
     )
+    location_id = fields.Many2one(
+        'stock.location', string='Patio / Ubicación', readonly=True,
+        help='Patio o ubicación de asignación física de la recepción o guía.',
+    )
+    is_patio = fields.Boolean(
+        string='Es Patio', readonly=True,
+        help='Indica si la ubicación de asignación es un patio operativo clasificado.',
+    )
 
     # Estado legible de la OC (fuente de verdad: purchase_id). Se usa Selection
     # en lugar de Boolean para renderizar como badge real y evitar el HTML crudo
@@ -610,8 +618,11 @@ class MadenatLumberIntakeConsole(models.Model):
                 NULLIF(lr.oc_reference_raw, '') AS oc_documental,
                 lr.state AS state,
                 ('Recepción ' || COALESCE(lr.name, '')) AS display_reference,
-                NULL::integer AS processor_id
+                NULL::integer AS processor_id,
+                lr.location_id AS location_id,
+                COALESCE(loc_lr.is_patio, false) AS is_patio
             FROM lumber_reception lr
+            LEFT JOIN stock_location loc_lr ON loc_lr.id = lr.location_id
 
             UNION ALL
 
@@ -630,10 +641,13 @@ class MadenatLumberIntakeConsole(models.Model):
                 NULLIF(gp.oc_reference_raw, '') AS oc_documental,
                 (CASE WHEN gp.state = 'cancelled' THEN 'cancel' ELSE gp.state END) AS state,
                 ('Procesada ' || COALESCE(gp.name, '')) AS display_reference,
-                tpo.processor_id AS processor_id
+                tpo.processor_id AS processor_id,
+                gp.assignment_location_id AS location_id,
+                COALESCE(loc_gp.is_patio, false) AS is_patio
             FROM madenat_guia_processing gp
             LEFT JOIN purchase_order po ON po.id = gp.order_id
             LEFT JOIN toll_processing_order tpo ON tpo.id = gp.toll_order_id
+            LEFT JOIN stock_location loc_gp ON loc_gp.id = gp.assignment_location_id
             """
         )
 

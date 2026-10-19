@@ -45,6 +45,7 @@
         'views/lumber_reception_views.xml',
         'views/lumber_reception_kanban_views.xml',
         'views/stock_location_views.xml',
+        'views/stock_quant_patio_views.xml',
 
         # 🏗️ 5. MENÚS
         'views/lumber_core_menu.xml',
