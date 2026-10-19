@@ -593,7 +593,7 @@
 
                                         <field name="vol_shipment_m3"
                                                column_invisible="1"
-                                               string="Vol. embarque (m³)"
+                                               string="Vol. Export (m³)"
                                                sum="Total Embarque"
                                                decoration-bf="1"
                                                readonly="1"/>
@@ -643,7 +643,7 @@
 
                                 <field name="pieces" string="Piezas" sum="Total Piezas" class="text-end" width="80px" readonly="1"/>
 
-                                <field name="vol_purchase_m3" string="Vol. compra (m³)" sum="Total Compra m³" class="text-end" width="100px" decoration-bf="1" readonly="1" force_save="1" digits="[16, 3]"/>
+                                <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total Compra m³" class="text-end" width="100px" decoration-bf="1" readonly="1" force_save="1" digits="[16, 3]"/>
 
                               <field name="vol_mbf" column_invisible="1" force_save="1"/>
 
@@ -747,7 +747,7 @@
                                             digits="[16, 3]"/>
 
                                         <field name="vol_shipment_m3"
-                                            string="Vol. embarque (m³)"
+                                            string="Vol. Export (m³)"
                                             sum="Total Embarque m³"
                                             width="100px"
                                             class="text-end"
@@ -766,7 +766,7 @@
                                 <group class="oe_subtotal_footer oe_right">
                                     <field name="vol_total_mbf" string="Total Volumen (MBF)" readonly="1" decoration-bf="1"/>
 
-                                    <field name="vol_shipment_m3" string="Vol. embarque (m³)" readonly="1" class="fw-bold"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)" readonly="1" class="fw-bold"/>
 
                                     <field name="total_paquetes" string="Total Paquetes" readonly="1"/>
                                 </group>

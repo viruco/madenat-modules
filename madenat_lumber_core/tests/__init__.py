@@ -86,4 +86,5 @@ from . import test_lumber_thickness_real_map_5a
 from . import test_vol_physical_real_5b
 # 📊 FASE 12 (Bloque 5C / AD-126): Comparativo de los Tres Volúmenes.
 from . import test_volume_comparison_5c
-
+# 🏷️ FASE 12 (Bloque 6C): Etiquetas de Volumen (Vol. Compra vs Vol. Export).
+from . import test_volume_labels_6c

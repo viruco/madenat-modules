@@ -27,10 +27,11 @@
                 <field name="largo_m" string="L (m)" optional="show"/>
                 <field name="piezas" string="Pzas" sum="Total Piezas"/>
 
-                <field name="volumen_m3" string="Vol Físico" sum="Total Físico" digits="[12,3]"/>
+                <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total Compra" digits="[12,3]"/>
+                <field name="volumen_m3" string="Vol Físico" sum="Total Físico" digits="[12,3]" optional="hide"/>
                 <field name="vol_shipment_m3" 
-                       string="Vol Embarque" 
-                       sum="Total Embarque" 
+                       string="Vol. Export (m³)" 
+                       sum="Total Export" 
                        decoration-success="1" 
                        decoration-bf="1" 
                        digits="[12,3]"/>
@@ -119,11 +120,11 @@
 
             <group string="📊 Volumen Dual (Compra vs Embarque)" col="4">
               <group string="Origen (Compra)">
-                <field name="volume_purchase_m3" string="Volumen Compra (m³)" class="text-primary"/>
+                <field name="volume_purchase_m3" string="Vol. Compra (m³)" class="text-primary"/>
                 <field name="thickness_final_inch" string="Esp. Final (pulg)"/>
               </group>
               <group string="Final (Embarque)">
-                <field name="vol_shipment_m3" string="Volumen Embarque (m³)" class="text-success" style="font-weight: bold;"/>
+                <field name="vol_shipment_m3" string="Vol. Export (m³)" class="text-success" style="font-weight: bold;"/>
                 <field name="width_final_inch" string="Ancho Final (pulg)"/>
               </group>
             </group>
@@ -194,7 +195,8 @@
                         <list create="0" delete="0">
                             <field name="name" string="Lote Hijo"/>
                             <field name="external_labels" string="Etiqueta"/>
-                            <field name="vol_shipment_m3" string="Vol. (m³)" sum="Total"/>
+                            <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total Compra"/>
+                            <field name="vol_shipment_m3" string="Vol. Export (m³)" sum="Total Export"/>
                             <field name="processing_loss_pct" string="% Pérdida" widget="percentage"/>
                             <field name="estado_trazabilidad" string="Estado" widget="badge"/>
                         </list>

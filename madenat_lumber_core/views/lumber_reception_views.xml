@@ -476,7 +476,7 @@
                                                column_invisible="parent.ingestion_profile == 'f5085'"/>
                                         <field name="pieces" string="Pzas" readonly="1" sum="Total Pzas"/>
                                         <field name="vol_mbf" string="Vol. MBF" sum="Total MBF" decoration-bf="1" digits="[16, 3]"/>
-                                        <field name="vol_shipment_m3" string="Vol. Exportación (m³)" sum="Total Exp" decoration-bf="1" decoration-primary="1" digits="[16, 3]"/>
+                                        <field name="vol_shipment_m3" string="Vol. Export (m³)" sum="Total Exp" decoration-bf="1" decoration-primary="1" digits="[16, 3]"/>
                                     </list>
                                 </field>
                             </page>
@@ -492,8 +492,8 @@
                                         <field name="length_ft" string="L (ft)" optional="show"/>
                                         <field name="largo_m" string="L (m)" optional="show"/>
                                         <field name="piezas" string="Pzas" sum="Total Pzas"/>
-                                        <field name="volumen_m3" string="Stock (m³)" sum="Total Stock" digits="[16, 3]"/>
-                                        <field name="vol_shipment_m3" string="Vol. Exp" optional="show" sum="Total Exp" digits="[16, 3]"/>
+                                        <field name="volume_purchase_m3" string="Vol. Compra (m³)" sum="Total Compra" digits="[16, 3]"/>
+                                        <field name="vol_shipment_m3" string="Vol. Export (m³)" optional="show" sum="Total Exp" digits="[16, 3]"/>
                                         <field name="volumen_mbf" string="MBF" optional="show" sum="Total MBF" digits="[16, 3]"/>
                                         <field name="espesor_mm" string="E (mm)" optional="hide"/>
                                         <field name="ancho_mm" string="A (mm)" optional="hide"/>

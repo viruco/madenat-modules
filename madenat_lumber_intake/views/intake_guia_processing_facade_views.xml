@@ -148,7 +148,7 @@
                                 </group>
                                 <group>
                                     <field name="vol_comercial" string="Vol. Comercial (m³)"/>
-                                    <field name="vol_shipment_m3" string="Vol. Embarque (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)"/>
                                 </group>
                             </group>
 
@@ -228,7 +228,7 @@
                                     <field name="ancho_nominal_mm" string="Ancho Nom (mm)"/>
                                     <field name="largo_nominal_m" string="Largo Nom (m)"/>
                                     <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
-                                    <field name="vol_shipment_m3" string="Vol. Embarque (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)"/>
                                 </list>
                             </field>
 

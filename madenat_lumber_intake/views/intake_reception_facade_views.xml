@@ -167,7 +167,7 @@
                                     <field name="width_visual" string="Ancho Comercial" readonly="1"/>
                                     <field name="length" string="Largo (m)" readonly="1"/>
                                     <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1"/>
-                                    <field name="vol_shipment_m3" string="Vol. Exp (m³)" readonly="1"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)" readonly="1"/>
                                     <field name="vol_mbf" string="Vol. MBF" readonly="1"/>
                                     <field name="cost_clp_unit" string="Costo (CLP)" readonly="1"
                                            widget="monetary"/>
@@ -220,7 +220,7 @@
 
                     <group string="Resultados">
                         <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1"/>
-                        <field name="vol_shipment_m3" string="Vol. Exp (m³)" readonly="1"/>
+                        <field name="vol_shipment_m3" string="Vol. Export (m³)" readonly="1"/>
                         <field name="vol_mbf" string="Vol. MBF" readonly="1"/>
                     </group>
                 </sheet>

@@ -289,8 +289,8 @@
                             <field name="vol_comercial_pdf" string="Vol. PDF/Guía (m³)" readonly="1" digits="[16, 3]"/>
                             <field name="sum_vol_documental_m3" string="Suma líneas Packing (m³)" readonly="1" digits="[16, 3]"/>
                             <field name="packing_volume_declared_m3" string="Vol. Packing (m³)" readonly="1" digits="[16, 3]"/>
-                            <field name="vol_compra_m3" string="Vol. compra (m³)" readonly="1" digits="[16, 3]"/>
-                            <field name="vol_embarque_m3" string="Vol. embarque (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="vol_compra_m3" string="Vol. Compra (m³)" readonly="1" digits="[16, 3]"/>
+                            <field name="vol_embarque_m3" string="Vol. Export (m³)" readonly="1" digits="[16, 3]"/>
                             <field name="diff_packing_lineas_m3" string="Δ Packing vs Líneas (m³)" readonly="1" digits="[16, 3]"/>
                             <field name="diff_pdf_packing_m3" string="Δ PDF vs Packing (m³)" readonly="1" digits="[16, 3]"/>
                         </group>
@@ -983,7 +983,7 @@
                                 <field name="length_input_raw" string="Largo declarado"/>
                                 <field name="lengthuom" string="Unidad"/>
                                 <field name="pieces" string="Piezas"/>
-                                <field name="vol_purchase_m3" string="Vol. Stock (m³)"/>
+                                <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
                             </list>
                         </field>
 
@@ -1003,7 +1003,8 @@
                                 <field name="length_ft" string="Largo declarado (ft)"/>
                                 <field name="pieces" string="Piezas"/>
                                 <field name="vol_documental_m3" string="Vol. Doc. (m³)"/>
-                                <field name="vol_shipment_m3" string="Vol. (m³)"/>
+                                <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
+                                <field name="vol_shipment_m3" string="Vol. Export (m³)"/>
                             </list>
                         </field>
 

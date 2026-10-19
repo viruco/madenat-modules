@@ -28,7 +28,8 @@
                             <th class="text-center">Esp. Nom.</th>
                             <th class="text-center">Dim. Visual (Inch)</th>
                             <th class="text-end">Piezas</th>
-                            <th class="text-end">M3</th>
+                            <th class="text-end">Vol. Compra (m³)</th>
+                            <th class="text-end">Vol. Export (m³)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -47,6 +48,7 @@
                                     <span t-field="line.thickness_visual"/> x <span t-field="line.width_visual"/>
                                 </td>
                                 <td class="text-end"><span t-field="line.pieces"/></td>
+                                <td class="text-end"><span t-field="line.vol_purchase_m3" t-options='{"widget": "float", "precision": 3}'/></td>
                                 <td class="text-end"><span t-field="line.vol_shipment_m3" t-options='{"widget": "float", "precision": 3}'/></td>
                             </tr>
                         </t>
