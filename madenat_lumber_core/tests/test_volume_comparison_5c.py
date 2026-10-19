@@ -41,12 +41,15 @@ class TestVolumeComparison5C(TransactionCase):
             'supplier_id': self.partner.id,
             'location_id': self.location.id,
             'piezas': 1,
+            'thickness_visual': '6/4',
+            'ancho_nominal_mm': 100,
+            'largo_m': 4.0,
             'vol_purchase_m3': 0.018,
             'vol_shipment_m3': 0.015,
-            'vol_physical_real_m3': 0.015,
         })
         lot.flush_recordset()
 
+        self.assertEqual(lot.physical_status, 'calculado')
         # (0.015 - 0.018) / 0.018 * 100 = -16.6666... -> -16.67
         self.assertAlmostEqual(lot.vol_diff_pct, -16.67, places=2)
         self.assertFalse(lot.is_export_greater_nominal, "Exportación es menor que nominal, no debe alertar")
@@ -60,11 +63,14 @@ class TestVolumeComparison5C(TransactionCase):
             'supplier_id': self.partner.id,
             'location_id': self.location.id,
             'piezas': 100,
+            'thickness_visual': '6/4',
+            'ancho_nominal_mm': 100,
+            'largo_m': 4.0,
             'vol_purchase_m3': 1.000,
             'vol_shipment_m3': 1.200,
-            'vol_physical_real_m3': 1.100,
         })
         lot_anomalo.flush_recordset()
+        self.assertEqual(lot_anomalo.physical_status, 'calculado')
         self.assertTrue(lot_anomalo.is_export_greater_nominal, "Debe activar bandera de alerta cuando export > nominal")
         self.assertEqual(lot_anomalo.vol_diff_pct, 20.0)
 
@@ -75,11 +81,14 @@ class TestVolumeComparison5C(TransactionCase):
             'supplier_id': self.partner.id,
             'location_id': self.location.id,
             'piezas': 100,
+            'thickness_visual': '6/4',
+            'ancho_nominal_mm': 100,
+            'largo_m': 4.0,
             'vol_purchase_m3': 1.000,
             'vol_shipment_m3': 1.000,
-            'vol_physical_real_m3': 1.000,
         })
         lot_metrico.flush_recordset()
+        self.assertEqual(lot_metrico.physical_status, 'calculado')
         self.assertFalse(lot_metrico.is_export_greater_nominal, "Exportación igual a nominal no debe alertar")
         self.assertEqual(lot_metrico.vol_diff_pct, 0.0)
 
@@ -118,3 +127,125 @@ class TestVolumeComparison5C(TransactionCase):
         self.assertIn(group_ops, menu_groups, "Operaciones debe tener acceso al menú")
         self.assertIn(group_audit, menu_groups, "Auditoría debe tener acceso al menú")
         self.assertIn(group_contab, menu_groups, "Contabilidad debe tener acceso al menú")
+
+    def test_05_physical_status_and_empty_percentage_when_not_calculated(self):
+        """R3 (AD-126): physical_status y porcentaje vacío cuando no es calculado.
+
+        1. Línea con mapeo: status 'calculado', F3 calculado, vol_diff_pct no vacío.
+        2. Línea sin mapeo: status 'sin_mapeo', F3 = 0.0, vol_diff_pct vacío (False).
+        3. Blanks directo a stock: status 'no_aplica', F3 = 0.0, vol_diff_pct vacío (False).
+        4. Vectores previos intactos (38.1 × 100 × 4.05 × 250 / 1.000.000 = 3.858 m3).
+        """
+        # 1. Línea con mapeo: 6/4 (38.1 mm) × 100 mm × 4.05 m × 250 piezas = 3.858 m3
+        lot_calculado = self.Lot.create({
+            'name': 'LOT-5D-CALCULADO',
+            'product_id': self.product.id,
+            'supplier_id': self.partner.id,
+            'location_id': self.location.id,
+            'piezas': 250,
+            'thickness_visual': '6/4',
+            'ancho_nominal_mm': 100.0,
+            'largo_m': 4.05,
+            'vol_purchase_m3': 4.556,
+            'vol_shipment_m3': 3.800,
+        })
+        lot_calculado.flush_recordset()
+        self.assertEqual(lot_calculado.physical_status, 'calculado')
+        self.assertAlmostEqual(lot_calculado.vol_physical_real_m3, 3.858, places=3)
+        self.assertTrue(lot_calculado.vol_diff_pct)
+        self.assertNotEqual(lot_calculado.vol_diff_pct, False)
+
+        # 2. Línea sin mapeo: escuadría inexistente
+        lot_sin_mapeo = self.Lot.create({
+            'name': 'LOT-5D-SIN-MAPEO',
+            'product_id': self.product.id,
+            'supplier_id': self.partner.id,
+            'location_id': self.location.id,
+            'piezas': 250,
+            'thickness_visual': '99/99',
+            'ancho_nominal_mm': 100.0,
+            'largo_m': 4.05,
+            'vol_purchase_m3': 4.556,
+            'vol_shipment_m3': 3.800,
+        })
+        lot_sin_mapeo.flush_recordset()
+        self.assertEqual(lot_sin_mapeo.physical_status, 'sin_mapeo')
+        self.assertEqual(lot_sin_mapeo.vol_physical_real_m3, 0.0)
+        self.assertFalse(lot_sin_mapeo.vol_diff_pct, "% debe quedar vacío (False) cuando no hay mapeo")
+
+        # 3. Blanks directo a stock (largo_ft_frac presente)
+        lot_blanks = self.Lot.create({
+            'name': 'LOT-5D-BLANKS',
+            'product_id': self.product.id,
+            'supplier_id': self.partner.id,
+            'location_id': self.location.id,
+            'piezas': 250,
+            'thickness_visual': '6/4',
+            'ancho_nominal_mm': 100.0,
+            'largo_ft_frac': '16',
+            'vol_purchase_m3': 4.778,
+            'vol_shipment_m3': 4.778,
+        })
+        lot_blanks.flush_recordset()
+        self.assertEqual(lot_blanks.physical_status, 'no_aplica')
+        self.assertEqual(lot_blanks.vol_physical_real_m3, 0.0)
+        self.assertFalse(lot_blanks.vol_diff_pct, "% debe quedar vacío (False) para Blanks directo a stock")
+
+        # Verificación equivalente en madenat.guia.processing.line
+        guia = self.env['madenat.guia.processing'].create({
+            'name': 'GUIA-5D-TEST',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'ingestion_profile': 'f1550',
+        })
+        line_calc = self.env['madenat.guia.processing.line'].create({
+            'processing_id': guia.id,
+            'lot_name': 'LINE-5D-CALC',
+            'product_id': self.product.id,
+            'thickness_visual': '6/4',
+            'espesor_nominal_mm': 45.0,
+            'ancho_nominal_mm': 100.0,
+            'largo_m': 4.05,
+            'pieces': 250,
+        })
+        line_calc.flush_recordset()
+        self.assertEqual(line_calc.physical_status, 'calculado')
+        self.assertAlmostEqual(line_calc.vol_physical_real_m3, 3.858, places=3)
+        self.assertTrue(line_calc.vol_diff_pct is not False)
+
+        line_no_map = self.env['madenat.guia.processing.line'].create({
+            'processing_id': guia.id,
+            'lot_name': 'LINE-5D-NOMAP',
+            'product_id': self.product.id,
+            'thickness_visual': '88/88',
+            'espesor_nominal_mm': 45.0,
+            'ancho_nominal_mm': 100.0,
+            'largo_m': 4.05,
+            'pieces': 250,
+        })
+        line_no_map.flush_recordset()
+        self.assertEqual(line_no_map.physical_status, 'sin_mapeo')
+        self.assertEqual(line_no_map.vol_physical_real_m3, 0.0)
+        self.assertFalse(line_no_map.vol_diff_pct)
+
+        guia_blanks = self.env['madenat.guia.processing'].create({
+            'name': 'GUIA-5D-BLANKS',
+            'partner_id': self.partner.id,
+            'assignment_location_id': self.location.id,
+            'ingestion_profile': 'f5085',
+        })
+        line_blanks = self.env['madenat.guia.processing.line'].create({
+            'processing_id': guia_blanks.id,
+            'lot_name': 'LINE-5D-BLANKS',
+            'product_id': self.product.id,
+            'thickness_visual': '6/4',
+            'espesor_nominal_mm': 45.0,
+            'ancho_nominal_mm': 100.0,
+            'length_ft': 16.0,
+            'pieces': 250,
+        })
+        line_blanks.flush_recordset()
+        self.assertEqual(line_blanks.physical_status, 'no_aplica')
+        self.assertEqual(line_blanks.vol_physical_real_m3, 0.0)
+        self.assertFalse(line_blanks.vol_diff_pct)
+

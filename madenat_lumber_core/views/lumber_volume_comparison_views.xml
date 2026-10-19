@@ -27,6 +27,10 @@
                     <field name="piezas" string="Piezas" sum="Total Piezas"/>
                     <field name="vol_purchase_m3" string="Compra Nominal (m³)" sum="Total Compra" digits="[16, 3]"/>
                     <field name="vol_physical_real_m3" string="Real Físico (m³)" sum="Total Real Físico" digits="[16, 3]"/>
+                    <field name="physical_status" string="Estado Físico" widget="badge"
+                           decoration-success="physical_status == 'calculado'"
+                           decoration-warning="physical_status == 'sin_mapeo'"
+                           decoration-muted="physical_status == 'no_aplica'"/>
                     <field name="vol_shipment_m3" string="Embarque Export. (m³)" sum="Total Exportación" digits="[16, 3]"/>
                     <field name="vol_diff_pct" string="% Dif. Vol" avg="Promedio Dif %" widget="percentage" digits="[16, 2]"/>
                     <field name="company_id" column_invisible="1"/>
@@ -65,13 +69,25 @@
                     <field name="purchase_order_id" string="Orden de Compra"/>
                     <field name="motonave_name" string="Motonave"/>
 
+                    <!-- Filtros por Estado de Real Físico (5D) -->
+                    <filter name="filter_physical_calculado"
+                            string="Físico Calculado (F3)"
+                            domain="[('physical_status', '=', 'calculado')]"/>
+                    <filter name="filter_physical_sin_mapeo"
+                            string="Físico Sin Mapeo"
+                            domain="[('physical_status', '=', 'sin_mapeo')]"/>
+                    <filter name="filter_physical_no_aplica"
+                            string="Físico No Aplica (Blanks/Directo)"
+                            domain="[('physical_status', '=', 'no_aplica')]"/>
+                    <separator/>
+
                     <!-- Filtros de Alerta y Análisis -->
                     <filter name="filter_anomalia_export_greater"
                             string="⚠️ Alerta: Exportación > Compra"
                             domain="[('is_export_greater_nominal', '=', True)]"/>
                     <filter name="filter_has_diff"
                             string="Con Variación de Volumen"
-                            domain="[('vol_diff_pct', '!=', 0)]"/>
+                            domain="[('vol_diff_pct', '!=', False), ('vol_diff_pct', '!=', 0)]"/>
                     <separator/>
                     <filter name="filter_has_stock"
                             string="Con Stock Disponible"
@@ -83,6 +99,7 @@
                         <filter name="group_supplier" string="Proveedor" context="{'group_by': 'supplier_id'}"/>
                         <filter name="group_purchase_order" string="Orden de Compra" context="{'group_by': 'purchase_order_id'}"/>
                         <filter name="group_motonave" string="Motonave" context="{'group_by': 'motonave_name'}"/>
+                        <filter name="group_physical_status" string="Estado Real Físico" context="{'group_by': 'physical_status'}"/>
                         <filter name="group_product" string="Producto" context="{'group_by': 'product_id'}"/>
                     </group>
                 </search>

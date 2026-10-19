@@ -233,6 +233,19 @@ class MadenatGuiaProcessingLine(models.Model):
         digits=(16, 3),
         help="Volumen físico real (F3): Espesor real (mm) × Ancho nominal (mm) × Largo (m) × Piezas / 1.000.000"
     )
+    # Bloque 5D (AD-126): Estado del cálculo de Real Físico
+    physical_status = fields.Selection(
+        selection=[
+            ('calculado', 'Calculado (F3)'),
+            ('sin_mapeo', 'Sin Mapeo'),
+            ('no_aplica', 'No Aplica'),
+        ],
+        string="Estado Real Físico",
+        compute='_compute_vol_physical_real_m3',
+        store=True,
+        default='no_aplica',
+        help="Estado del cálculo de volumen real físico (F3): 'calculado' cuando existe mapeo, 'sin_mapeo' cuando falta espesor real, 'no_aplica' en blanks o perfiles sin F3."
+    )
 
     # Bloque 5C (AD-126): Métricas Comparativas de Tres Volúmenes
     vol_diff_pct = fields.Float(
@@ -583,20 +596,32 @@ class MadenatGuiaProcessingLine(models.Model):
     @api.depends('thickness_visual', 'espesor_nominal_mm', 'ancho_nominal_mm', 'ancho_mm',
                  'largo_m', 'largo_nominal_m', 'pieces', 'processing_id.ingestion_profile')
     def _compute_vol_physical_real_m3(self):
-        """Calcula el Volumen Real Físico (m³) según Fórmula F3 (AD-126 / Bloque 5B).
+        """Calcula el Volumen Real Físico (m³) según Fórmula F3 (AD-126 / Bloque 5B/5D).
 
         F3: espesor_real_mm × ancho_nominal_mm × largo_m × piezas / 1.000.000
         No se calcula para Blanks directo a stock ni para perfiles donde no aplique.
         Redondeado una sola vez con r3() (ROUND_HALF_UP).
+        Registra physical_status: 'calculado', 'sin_mapeo', 'no_aplica'.
         """
         for line in self:
             profile = line.processing_id.ingestion_profile if line.processing_id else False
             if profile == 'f5085' and getattr(line, 'length_ft', 0) > 0.1:
                 line.vol_physical_real_m3 = 0.0
+                line.physical_status = 'no_aplica'
                 continue
 
             if not line.pieces or line.pieces <= 0:
                 line.vol_physical_real_m3 = 0.0
+                line.physical_status = 'no_aplica'
+                continue
+
+            # Ancho nominal en mm: prioridad ancho_nominal_mm > ancho_mm
+            w_mm = line.ancho_nominal_mm if line.ancho_nominal_mm > 0 else line.ancho_mm
+            # Largo en m: prioridad largo_m > largo_nominal_m
+            l_m = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
+            if not w_mm or w_mm <= 0 or not l_m or l_m <= 0:
+                line.vol_physical_real_m3 = 0.0
+                line.physical_status = 'no_aplica'
                 continue
 
             # Obtener espesor real en mm desde lumber.thickness.real.map
@@ -606,40 +631,31 @@ class MadenatGuiaProcessingLine(models.Model):
                     thickness_visual=line.thickness_visual
                 )
 
-            # Si no hay mapeo de espesor real para la escuadría visual, no aplica F3
+            # Si no hay mapeo de espesor real para la escuadría visual, estado 'sin_mapeo'
             if not e_real_mm or e_real_mm <= 0:
                 line.vol_physical_real_m3 = 0.0
-                continue
-
-            # Ancho nominal en mm: prioridad ancho_nominal_mm > ancho_mm
-            w_mm = line.ancho_nominal_mm if line.ancho_nominal_mm > 0 else line.ancho_mm
-            if not w_mm or w_mm <= 0:
-                line.vol_physical_real_m3 = 0.0
-                continue
-
-            # Largo en m: prioridad largo_m > largo_nominal_m
-            l_m = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
-            if not l_m or l_m <= 0:
-                line.vol_physical_real_m3 = 0.0
+                line.physical_status = 'sin_mapeo'
                 continue
 
             vol_f3 = (e_real_mm * w_mm * l_m * line.pieces) / 1000000.0
             line.vol_physical_real_m3 = r3(vol_f3)
+            line.physical_status = 'calculado'
 
-    @api.depends('vol_purchase_m3', 'vol_shipment_m3')
+    @api.depends('vol_purchase_m3', 'vol_shipment_m3', 'physical_status')
     def _compute_vol_comparison_metrics(self):
-        """Calcula métricas de comparación (Bloque 5C):
+        """Calcula métricas de comparación (Bloque 5C / 5D):
 
-        - vol_diff_pct: ((Exportación - Compra) / Compra) * 100
+        - vol_diff_pct: ((Exportación - Compra) / Compra) * 100 si physical_status == 'calculado',
+          de lo contrario False (vacía, sin calcular % con ceros).
         - is_export_greater_nominal: Exportación > Compra (con tolerancia 0.0005 m3)
         """
         for line in self:
             nom = line.vol_purchase_m3 or 0.0
             exp = line.vol_shipment_m3 or 0.0
-            if nom > 0:
+            if getattr(line, 'physical_status', 'no_aplica') == 'calculado' and nom > 0:
                 line.vol_diff_pct = round(((exp - nom) / nom) * 100.0, 2)
             else:
-                line.vol_diff_pct = 0.0
+                line.vol_diff_pct = False
             line.is_export_greater_nominal = bool(exp > (nom + 0.0005))
 
     # ==========================================================================
