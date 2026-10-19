@@ -64,6 +64,7 @@
         'data/ingestion_seed_fase2.xml',
         'data/ingestion_seed_fase3.xml',
         'data/thickness_real_map_data.xml',
+        'data/packing_estandar_madenat_data.xml',
 
         # 🌱 8. DATOS SEMILLA
         'data/madenat_subproducto_data.xml',

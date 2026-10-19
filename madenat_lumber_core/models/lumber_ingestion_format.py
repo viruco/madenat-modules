@@ -35,6 +35,7 @@ class LumberIngestionFormat(models.Model):
             ('f1550', 'Madera Aserrada S2S'),
             ('blanks', 'Blanks — Legado (métrico/imperial híbrido)'),
             ('metric', 'Madera Bruta — Sistema Métrico'),
+            ('standard_madenat', 'Packing estándar MADENAT (Forestal Andes)'),
         ],
         string='Perfil de Ingesta',
         required=True,
@@ -192,6 +193,9 @@ class LumberIngestionFormat(models.Model):
                 'source': str
             }
         """
+        if profile == 'packing_metrico_aserrada':
+            profile = 'standard_madenat'
+
         # Fuente 1: Modelo persistente Fase 3
         try:
             record = self.sudo().search([
@@ -258,6 +262,17 @@ class LumberIngestionFormat(models.Model):
                 'source': 'fallback_legacy',
             },
             'metric': {
+                'thickness_unit_heuristic': 'always_mm',
+                'width_unit_heuristic': 'always_mm',
+                'length_unit_heuristic': 'always_m',
+                'conversion_mode': 'identity',
+                'export_rule_outcome': 'metric',
+                'thickness_threshold': 10.0,
+                'length_threshold': 10.0,
+                'column_mapping': {},
+                'source': 'fallback_legacy',
+            },
+            'standard_madenat': {
                 'thickness_unit_heuristic': 'always_mm',
                 'width_unit_heuristic': 'always_mm',
                 'length_unit_heuristic': 'always_m',

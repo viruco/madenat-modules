@@ -34,6 +34,11 @@
                             string="Nuevo Ingreso"
                             class="btn-primary"
                             display="always"/>
+                    <button name="action_download_packing_template"
+                            type="object"
+                            string="Descargar plantilla de packing estándar"
+                            class="btn-secondary"
+                            display="always"/>
                 </header>
 
                 <field name="guide_name" string="Guía"/>
@@ -139,6 +144,12 @@
                             class="btn-secondary"
                             icon="fa-recycle"
                             invisible="ingestion_type not in ('processed', 'volume')"/>
+
+                    <button name="action_download_packing_template"
+                            type="object"
+                            string="Descargar plantilla de packing estándar"
+                            class="btn-secondary"
+                            icon="fa-download"/>
 
                     <div class="oe_header_indicators"
                          style="margin-left:auto; display:flex; gap:16px; align-items:center; margin-right:15px; flex-wrap:wrap;">

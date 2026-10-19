@@ -2099,3 +2099,41 @@ class MadenatLumberIntakeConsole(models.Model):
         if src is None:
             raise UserError(_('El registro origen ya no existe.'))
         return src.action_reclassify()
+
+    def action_download_packing_template(self):
+        """Descargar plantilla Excel Packing estándar MADENAT (Forestal Andes) - Bloque 6D."""
+        import base64
+        import os
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '..', '..', 'madenat_ingestion_engine', 'data', 'templates',
+            'PLANTILLA_PACKING_ESTANDAR_MADENAT.xlsx'
+        )
+        if not os.path.exists(template_path):
+            from madenat_ingestion_engine.data.templates.generate_packing_template import generate_standard_madenat_template
+            generate_standard_madenat_template(template_path)
+
+        with open(template_path, 'rb') as f:
+            file_data = f.read()
+
+        attachment = self.env['ir.attachment'].search([
+            ('name', '=', 'PLANTILLA_PACKING_ESTANDAR_MADENAT.xlsx'),
+            ('res_model', '=', self._name),
+        ], limit=1)
+        vals = {
+            'name': 'PLANTILLA_PACKING_ESTANDAR_MADENAT.xlsx',
+            'type': 'binary',
+            'datas': base64.b64encode(file_data),
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'res_model': self._name,
+        }
+        if attachment:
+            attachment.write(vals)
+        else:
+            attachment = self.env['ir.attachment'].create(vals)
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'self',
+        }

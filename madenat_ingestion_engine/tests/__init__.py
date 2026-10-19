@@ -7,3 +7,4 @@ from . import test_pdf_parties
 from . import test_document_format
 from . import test_document_extractor_pieces
 from . import test_packing_metrico_template
+from . import test_packing_estandar_madenat_6d
