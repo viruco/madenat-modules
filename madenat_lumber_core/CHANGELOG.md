@@ -1,3 +1,12 @@
+## [18.0.6.22.0] - 2026-10-19
+
+### Added
+- **Bloque 6 (AD-127) — Patios por Tipo, Inventario por Patio, Etiquetas y Packing Estándar**:
+  - **6A (Patios por tipo)**: Campo `patio_type` (`service`, `port`) en `stock.location` con resolución por datos y asignación automática por origen sin bloqueo. Aplicación autorizada en `madenat_test` (MARVAL como puerto, Ferramenta como servicio). Bodega Tepornac y Puerto Coronel sin tocar.
+  - **6B (Visibilidad e inventario por patio)**: Filtros y búsqueda por patio en Consola de Ingresos; menú "Inventario por Patio" con lista y pivote readonly sobre `stock.quant` usando volumen nominal de compra.
+  - **6C (Etiquetas de volumen)**: Normalización de etiquetas a "Vol. Compra (m³)" y "Vol. Export (m³)" en pantallas de ingreso, packing y lotes, con volumen de compra visible por etiqueta.
+  - **6D (Packing estándar)**: Formato registrado en `lumber.ingestion.format` con `noupdate="1"`.
+
 ## [18.0.6.21.0] - 2026-10-18
 
 ### Added

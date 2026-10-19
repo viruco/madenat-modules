@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.41.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 14 pruebas unitarias (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 5 en test_volume_comparison_5c); desglose nominal de las 10 fallas preexistentes de regresión (6 en core, 4 en logistics); corrección de atribución errónea "de costing". Total esperado en suite: 1.551 + 14 = 1.565 pruebas. Versión 03 6.40.0 → 6.41.0. Sin commit/push. -->
+**Versión documental:** 6.42.0
+**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
+<!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 14 pruebas unitarias (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 5 en test_volume_comparison_5c); desglose nominal de las 10 fallas preexistentes de regresión (6 en core, 4 en logistics); corrección de atribución errónea "de costing". Total esperado en suite: 1.551 + 14 = 1.565 pruebas. Versión 03 6.40.0 → 6.41.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 13 pruebas unitarias nuevas en madenat_lumber_core (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 4 en test_volume_comparison_5c). Total acumulado esperado en suite: 1.551 + 13 = 1.564 pruebas. Versión 03 6.39.0 → 6.40.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: uso exclusivo de -u (nunca -i) sobre módulos requeridos (M1 / AD-125). Análisis Odoo loading.py / convert.py; erradicación de -i en scripts. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-10 (1) — §14 **cierre funcional 2026-10-10**: corridas nuevas (no históricas) — dirigidas `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` = **0 failed, 0 error(s) of 34 tests**; regresión de módulo `madenat_lumber_intake` = **2 failed of 380** (ambas por el encabezado consolidado «📄 Evidencia documental»; constantes de prueba adaptadas → verde) + verificación con documento REAL de la Nota de Venta JCE (12/12 líneas, `4,9967` ≈ `VOL.` 4,997) y de la Consola (Ferramenta 57,840 / 48,009). Ver `02_CONTINUIDAD.md` §17.16. | 2026-10-08 (5) — §13.5–13.6 **reconstrucción de las pruebas con la biblioteca externa de muestras** (`muestras_documentos_ingreso`): relación **prueba ↔ etapa (A–F) ↔ resultado**, con **correspondencia declarada A–F ↔ V0–V3** (los niveles V0–V3 siguen vigentes y no se renombran); casos con evidencia localizada: Ferramenta **26270** (adjuntos + 17 lotes + picking + réplica en TEST remoto), Ferramenta **19846/19827/19826**, Arauco **4495589** (fixture byte-idéntico + motor real + registro + lote), JCE **95806** guía (Volúmenes) y su packing Nota de Venta (rechazo por diseño), Fátima **41994** y Byc **95083** (fixture derivado / formato equivalente a `39519`, sí ingresado); **fuerza de la evidencia** y **ausencias declaradas** (dónde se buscó y qué artefacto falta); **no** se ejecutó ninguna prueba en esta intervención. | 2026-10-08 (4) — §13 RELACIÓN REQUISITO → EVIDENCIA → RESULTADO de las solicitudes de Cristhian (R01–R16, 2026-09-02/07). §13.2 pasa revista a las pruebas **existentes** y su relación con cada requisito; **no se ejecutó ninguna prueba nueva** en esta intervención (el servicio local 8069 no es operativo desde esta distro y el TEST remoto se inspeccionó solo lectura). Se declaran explícitamente las ausencias de evidencia: los **10 adjuntos del correo del 7-sep** no aparecen como tales en ningún expediente; sí existen copias identificables en `muestras_documentos_ingreso/07-09-2026/` (15 archivos, 3 pares duplicados por hash). **5 de 5 proveedores** se identificaron documentalmente (Fátima/Ferramenta/Byc=Blocks & Cutstock/JCE/Arauco) pero **solo 2 tienen fixture automatizado** (`HLZF75_4495589.pdf` Arauco; `tests/fixtures/26270.txt` Ferramenta) y **ninguno** tiene evidencia de ingesta real en el TEST remoto (la tabla `madenat_guia_processing` del remoto contiene **1** registro: guía **26270**, Ferramenta, `validated`). Ver §13.3. | 2026-10-08 (3) — §12.6 A/B **aplicado en el desarrollo existente** (`madenat_test` / 8069) + reorganización de la UI de Ingreso de Madera; **88/88 dirigidas en verde sobre `madenat_test`** (misma nómina del gate, incl. Cristhian uid 8 `su=False`); aislamiento temporal **retirado**; **V3 (navegador) sigue pendiente**. | 2026-10-08 (2) — §12.5: entorno aislado **recreado** (autorizado; workcopy `:ro`, sin diffs) y filestore repoblado; **V3 sigue pendiente de evidencia manual**. | 2026-10-08 (1) — §12.5 retoma de SOLO LECTURA (2026-10-08): **V3 sigue sin ejecutarse** (entorno aislado no conservado tras el reinicio del host); integridad de A/B reverificada (SHA-256 = checkpoint; `patch --dry-run` limpio; A/B ausente del código activo y de `madenat_test`). Ver `02_CONTINUIDAD.md` §17.12. | 2026-10-07 (3) — §12.4: gate previo A/B sobre COPIA del árbol activo con cambios locales (byte a byte = workcopy; diffs sin docs), 88/88 dirigidas en verde incl. usuario real Cristhian (su=False), servidor aislado de navegador (pendiente V3). | 2026-10-07 (2) — §12: cobertura retorno de servicio / imputación posterior (AD-102). -->
@@ -1628,5 +1629,46 @@ Se rectifica la atribución errónea "de costing": las 10 fallas preexistentes p
 9. `madenat_lumber_logistics`: `TestProcessorShipmentAD89.test_t5_desviacion_real_no_aplica_en_i1` (FAIL)
 10. `madenat_lumber_logistics`: `TestProcessorShipmentAD89.test_t6_idempotencia` (FAIL)
 
+---
 
+## 33. PRUEBAS DEL BLOQUE 6 — PATIOS, VISIBILIDAD, ETIQUETAS Y PACKING ESTÁNDAR (AD-127)
 
+Se incorporan 26 pruebas unitarias nuevas distribuidas en `madenat_lumber_core`, `madenat_lumber_intake` y `madenat_ingestion_engine`, registradas en sus respectivos `tests/__init__.py`:
+
+### 33.1 Script Canónico de Regresión de los 7 Módulos (A4 / AD-127)
+- **Ruta Oficial:** `madenat_lumber_core/scripts/run_regression.sh`
+- **Comportamiento:** Ejecuta `odoo` exclusivamente con el flag `-u` sobre los 7 módulos del núcleo (`madenat_lumber_core`, `madenat_lumber_intake`, `madenat_lumber_logistics`, `madenat_ingestion_engine`, `madenat_lumber_purchasing`, `madenat_lumber_costing`, `madenat_lumber_billing`), con `--test-enable`, `--stop-after-init` y `--http-port=8079`.
+- **Registro:** Salida redirigida a archivo de log fechado con timestamp en `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs/regresion_7_modulos_<TIMESTAMP>.log` y código de salida en archivo `.exit`.
+
+### 33.2 Suite 6A / 6B (Patios e Inventario): `test_patios_f7.py` (10 pruebas en `madenat_lumber_core`)
+- `test_01_patio_type_field_and_selection`: Campo `patio_type` (`service`, `port`) en `stock.location`.
+- `test_02_resolve_patio_by_type_exact`: Resolución unívoca de patio por tipo sin nombres hardcodeados.
+- `test_03_resolve_patio_by_type_warning_when_multiple`: Advertencia en log cuando existen múltiples patios activos del mismo tipo.
+- `test_04_resolve_patio_by_type_none_when_empty`: Retorno None sin excepción cuando no hay patios configurados del tipo.
+- `test_05_reception_port_auto_assignment`: Asignación automática a patio tipo `port` en recepciones marítimas/puerto.
+- `test_06_guia_processing_service_auto_assignment`: Asignación automática a patio tipo `service` en guías de procesamiento y volumen.
+- `test_07_manual_override_respected`: Respeto estricto de patio explícito o asignación manual.
+- `test_08_no_blocking_without_patio`: Creación y procesamiento no bloqueante cuando no hay patio disponible (advertencia en log y chatter).
+- `test_09_quant_patio_fields_and_read_access`: Proyección de campos en `stock.quant` (`lot_piezas`, `vol_nominal_m3`, `is_patio`, `patio_type`) y lectura para Operaciones, Auditoría y Contabilidad.
+- `test_10_historical_records_untouched`: Garantía de cero escritura o recálculo sobre lotes históricos (D3).
+
+### 33.3 Suite 6B (Consola de Ingresos): `test_volume_console_search_menu.py` (5 pruebas en `madenat_lumber_intake`)
+- Búsqueda y filtrado por patio en la Consola Global de Ingresos.
+- Filtro "Sin patio asignado" (`filter_sin_patio`) y localización de guías Arauco 4495589 y JCE 95806 sin alterar su registro histórico.
+
+### 33.4 Suite 6C (Etiquetas de Volumen): `test_volume_labels_6c.py` (4 pruebas en `madenat_lumber_core`)
+- `test_01_stock_lot_views_labels`: Rótulos "Vol. Compra (m³)" y "Vol. Export (m³)" en lista y formulario de `stock.lot`.
+- `test_02_guia_processing_views_labels`: Rótulos en análisis comercial y de exportación de guías.
+- `test_03_lumber_reception_views_labels`: Rótulos en recepción y stock generado.
+- `test_04_lot_volume_purchase_and_export_accessible`: Accesibilidad y coherencia analítica de ambos volúmenes por etiqueta.
+
+### 33.5 Suite 6D (Packing Estándar MADENAT): `test_packing_estandar_madenat_6d.py` (7 pruebas en `madenat_ingestion_engine`)
+- `test_01_template_generation_and_validation`: Generación de `PLANTILLA_PACKING_ESTANDAR_MADENAT.xlsx` con listas desplegables (DataValidation) de producto, subproducto y perfil.
+- `test_02_roundtrip_arauco_synthetic`: Ingesta de datos sintéticos normalizados de Arauco (guía 4495589).
+- `test_03_roundtrip_jce_synthetic_separate_dimensions`: Ingesta de datos sintéticos de JCE (guía 95806 con espesor, ancho y largo en columnas separadas).
+- `test_04_roundtrip_byc_fatima_synthetic`: Ingesta de datos sintéticos de BYC y Fátima.
+- `test_05_three_decimal_rounding`: Redondeo estricto a 3 decimales (ej: 57,839556 m³ → 57,840 m³).
+- `test_06_format_registration_noupdate`: Verificación del formato `standard_madenat` registrado en `lumber.ingestion.format` con `noupdate="1"`.
+- `test_07_console_download_action`: Verificación de la acción de descarga y adjunto desde la Consola de Ingreso.
+
+**Total pruebas acumuladas esperadas en suite:** 1.565 + 26 = **1.591 pruebas**.

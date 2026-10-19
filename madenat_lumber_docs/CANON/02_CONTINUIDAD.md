@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.47.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): §19.1 Subbloque 5D con campo physical_status (calculado, sin_mapeo, no_aplica) y porcentaje % Dif.Vol vacío sin mapeo ni ceros (commit 51e0325); total 14 tests nuevos del Bloque 5 pasando; §19.2 confirmación canónica 100% de consultas oficiales B y A.2 en las 3 tablas. Versión 02 12.46.0 → 12.47.0. Sin push ni despliegue. -->
+**Versión documental:** 12.48.0
+**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): §19.1 Subbloque 5D con campo physical_status (calculado, sin_mapeo, no_aplica) y porcentaje % Dif.Vol vacío sin mapeo ni ceros (commit 51e0325); total 14 tests nuevos del Bloque 5 pasando; §19.2 confirmación canónica 100% de consultas oficiales B y A.2 en las 3 tablas. Versión 02 12.46.0 → 12.47.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): §19 Implementación formal de Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo lumber.thickness.real.map editable con chatter y noupdate="1" (commit 8fdddae). 5B: campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3() (commit d19f314). 5C: vistas comparativas readonly con % Dif.Vol y alerta exportación > compra (commit 9f9e8b5). Hashes históricos B y A.2 invariantes. Versión 02 12.45.0 → 12.46.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4N: §18.2 incorporación de prohibición absoluta de -i (--init) en despliegue y pruebas (recarga forzada de XML ignorando noupdate="1"), uso exclusivo de -u quirúrgico sobre módulos requeridos, y ratificación de prohibición de -u all. Versión 02 12.44.0 → 12.45.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4J (AD-122): §18.1 clarificación de empaquetado/rsync como ejemplo ilustrativo preliminar sin decisión de método (D4), eliminación definitiva de copias S2S en código productivo y corrección de doble redondeo. Versión 02 12.43.0 → 12.44.0. Sin push ni despliegue. -->
@@ -2286,6 +2287,66 @@ Consultas oficiales B y A.2 ejecutadas en las tres tablas con coincidencia 100% 
   - `stock_lot` (152 filas): `6b1ec7d8dcd91cc6bd7ff90772759500` (MATCH EXACTO)
   - `madenat_guia_processing_line` (82 filas): `e78e0265210add0676b240bed091921f` (MATCH EXACTO)
   - `lumber_shipment_line` (11 filas): `b13357af2864a6cbeb3a386dff188a8e` (MATCH EXACTO)
+
+---
+
+## 20. ESTADO AL CIERRE DE LA JORNADA 2026-10-19 Y PLAN DE CONTINUACIÓN (BLOQUE 6 Y ARNÉS)
+
+**Fecha:** 2026-10-19  
+**Estado:** ✅ Acreditado en `madenat_test` (Bloque 6 completo, Ajustes A3, Documentación y Arnés de Regresión).  
+**Rama activa:** `feat/guia-correccion-documental-preservada-20261002`  
+**Tag de cierre de jornada:** `cierre-jornada-20261019` (anotado, sin push).
+
+### 20.1 Resumen de Commits de la Jornada
+1. `a673f60`: `fix(volume): A3.a — independizar % Dif.Vol y agregar % Dif. Real Físico condicional`
+2. `e63dd6b`: `fix(security): A3.b — alinear permisos de lumber.thickness.real.map con lumber.width.s2s.map`
+3. `0f428ae`: `fix(config): A3.c — proteger parámetros madenat.* con noupdate="1" y extender test_12`
+4. `b587e2f`: `feat(patio): 6A — clasificar patios por tipo (servicio vs puerto) y auto-asignar por origen`
+5. `c1befda`: `feat(inventory): 6B — visibilidad de ingresos en consola e inventario por patio en stock.quant`
+6. `7cf13bc`: `feat(volume): 6C — unificar etiquetas Vol. Compra/Export y visibilizar compra en lote`
+7. `486cd1f`: `feat(packing): 6D — plantilla estándar MADENAT con dropdowns, botón en consola y roundtrip`
+8. *(En curso)*: `docs(continuidad): C1-C3 — actualización documental de cierre de jornada 2026-10-19 (AD-127, CANON 02, 03, 04, 05, 12, 17 e INDICE)`
+
+### 20.2 Versiones de Módulos al Cierre
+- `madenat_lumber_core`: **18.0.6.22.0**
+- `madenat_lumber_intake`: **18.0.0.19.0**
+- `madenat_ingestion_engine`: **18.0.1.3.0**
+- `madenat_lumber_shipping`: 18.0.1.7.0 (sin cambios)
+- `madenat_lumber_logistics`: 18.0.1.8.0 (sin cambios)
+- `madenat_toll_processing`: 18.0.1.1.0 (sin cambios)
+- `madenat_lumber_docs`: Canon v12 (sin cambios de código)
+
+### 20.3 Resultados de Pruebas y Acreditación de Regresión
+- **Suite Oficial:** 1.591 pruebas ejecutadas a través del script canónico `madenat_lumber_core/scripts/run_regression.sh`.
+- **Resultado:** **1.581 PASS**, **10 FAIL** (las 10 fallas históricas conocidas y documentadas en `CANON/03_TESTS.md` §27 y §33), **0 ERRORS**.
+- **Fallas Nuevas:** 0 fallas nuevas introducidas.
+- **Hashes Oficiales B y A.2:** 100% de coincidencia exacta en las 3 tablas históricas (`stock_lot`, `madenat_guia_processing_line`, `lumber_shipment_line`).
+
+### 20.4 Estado de las Decisiones Vigentes (D1 a D6)
+- **D1 (Vigente):** No se alteraron configuraciones ni datos existentes en ninguna base, excepto lo autorizado expresamente en 6A.
+- **D2 (Revisada y aplicada):** Únicamente MARVAL (puerto) y Ferramenta (servicio) fueron marcados con `is_patio=True` y `patio_type` en `madenat_test`. Bodega Tepornac y Puerto Coronel permanecen intactos.
+- **D3 (Vigente):** Registros históricos intactos (guías 26270, 4495589, 95806 sin modificaciones).
+- **D4 (Vigente):** Sin push a repositorios remotos. Sin despliegue no autorizado.
+- **D5 (Vigente):** Fitosanitario diferido a fase posterior.
+- **D6 (Vigente):** Tablas maestras S2S y configuraciones mantenidas como fuentes de verdad en base de datos.
+
+### 20.5 Comandos Operacionales Autorizados
+- **Actualización de Módulos:** EXCLUSIVAMENTE mediante `-u` quirúrgico:
+  ```bash
+  docker exec odoo18_app odoo -d madenat_test -u madenat_lumber_core,madenat_lumber_intake,madenat_ingestion_engine --stop-after-init --http-port=8079
+  ```
+  *(Prohibición estricta de `-i` y de `-u all`).*
+- **Ejecución de Regresión:**
+  ```bash
+  bash madenat_lumber_core/scripts/run_regression.sh
+  ```
+  *(El script ejecuta la suite sobre los 7 módulos en el puerto 8079 y guarda logs fechados en `madenat_lumber_core/logs/regresion_YYYYMMDD_HHMMSS.log`).*
+
+### 20.6 Advertencias y Riesgos para Continuidad de Agente (IDE Memory)
+- En sesiones nuevas o compactadas, verificar siempre con `git status` y no intentar resetear o revertir cambios existentes.
+- Los módulos `madenat_lumber_costing` y `madenat_lumber_reports` contienen trabajo en progreso previo no relacionado que NUNCA debe ser incluido en commits ni modificado.
+- Para validación de integridad previa a despliegue o cierre, ejecutar siempre `pre_deploy_health_check.py` verificando estado OK en Hashes B y A.2.
+
 
 
 

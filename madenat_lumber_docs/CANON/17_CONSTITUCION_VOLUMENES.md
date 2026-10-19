@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.14.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §10.6.6 Claridad y Reconciliación del Real Físico (AD-126 / Bloque 5D) — campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado sin ceros ni distorsiones; badge y filtros por estado. Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 5 (AD-126). -->
+**Versión documental:** 1.15.0
+**Fecha de actualización:** 2026-10-19  <!-- 2026-10-19: §10.6.3 Rotulación formal: solo 6/4 = 38,1 mm figura en instrucciones de Cristhian; 4/4, 5/4, 7/4 y 8/4 son derivados (n/4 x 25,4 mm). Versión 1.14.0 → 1.15.0. | Bloque 6. -->
+<!-- 2026-10-18: §10.6.6 Claridad y Reconciliación del Real Físico (AD-126 / Bloque 5D) — campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado sin ceros ni distorsiones; badge y filtros por estado. Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 5 (AD-126). -->
 <!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
@@ -381,6 +382,7 @@ En cumplimiento de las instrucciones de Cristhian Elgueta y las reglas del Bloqu
    - **Fórmula:** $(\text{Espesor Real}_{mm} \times \text{Ancho Nominal}_{mm} \times \text{Largo}_{m} \times \text{Piezas}) / 1.000.000$ redondeado una sola vez con `r3()` (ROUND_HALF_UP).
    - **Vector de Prueba Canónico:** $38,1 \times 100 \times 4,05 \times 250 / 1.000.000 = 3,858\text{ m}^3$.
    - **Vector de Planilla (45 mm rough, 4,0 m, 1 pieza, 6/4):** Exportación F2 = $0,015\text{ m}^3$ (0,014516 exacto) frente a Real Físico F3 = $0,015\text{ m}^3$ (0,01524 exacto) y Compra F1 = $0,018\text{ m}^3$.
+   - **Origen de Datos (Instrucciones de Cristhian Elgueta):** En las instrucciones operativas de Cristhian, **únicamente el espesor 6/4 = 38,1 mm ($1,5"$) fue proporcionado explícitamente**. Los restantes espesores de la tabla (`lumber.thickness.real.map`), a saber: 4/4 = 25,4 mm, 5/4 = 31,75 mm, 7/4 = 44,45 mm y 8/4 = 50,8 mm, son **valores derivados** de la relación física canónica ($n/4 \times 25,4\text{ mm}$), formalizados como datos configurables y no hardcodeados para integridad del sistema.
 
 4. **EXCEPCIÓN BLANKS (Fórmula F6 — Directo a Stock):**
    - Los paquetes de Blanks pasan directo a stock físico y documental con su volumen declarado sin recálculos (`vol_physical_real_m3 = 0.000`).

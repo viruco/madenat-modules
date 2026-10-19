@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.45.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D) IMPLEMENTADO en 5A, 5B, 5C y 5D: campo physical_status (calculado, sin_mapeo, no_aplica) en líneas de guía y stock.lot; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa en CANON/12 §3.3; confirmación canónica 100% de hashes B y A.2; lista nominal de 10 fallas históricas de regresión. Fitosanitario configurable, marcado de patios y motonave formalmente DIFERIDOS. Versión 05 8.44.0 → 8.45.0. Sin push ni despliegue. -->
+**Versión documental:** 8.46.0
+**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127) IMPLEMENTADO: 6A Patios por tipo (service vs port) y auto-asignación por origen; aplicación en madenat_test de MARVAL y Ferramenta; 6B visibilidad consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio (stock.quant lista/pivot readonly con piezas y vol. nominal); 6C etiquetas Vol. Compra (m³) y Vol. Export (m³); 6D packing estándar Forestal Andes con desplegables, botón en consola y formato standard_madenat. No continuar con lectores individuales de Arauco, JCE, BYC, Fátima. Bloque 7 incorporado al backlog con análisis B0.6 de rebaja y tarja. Deuda diferida consolidada. Versión 05 8.45.0 → 8.46.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D) IMPLEMENTADO en 5A, 5B, 5C y 5D: campo physical_status (calculado, sin_mapeo, no_aplica) en líneas de guía y stock.lot; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa en CANON/12 §3.3; confirmación canónica 100% de hashes B y A.2; lista nominal de 10 fallas históricas de regresión. Fitosanitario configurable, marcado de patios y motonave formalmente DIFERIDOS. Versión 05 8.44.0 → 8.45.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126) IMPLEMENTADO en 5A (modelo persistente lumber.thickness.real.map y catálogo semilla noupdate="1"), 5B (campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3) y 5C (vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol y alerta exportación > compra). Fitosanitario configurable, marcado de patios y filtro de motonave formalmente DIFERIDOS. Versión 05 8.43.0 → 8.44.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4N (AD-125 / N2): registro como DIFERIDO de deuda técnica (f) parámetros redundantes u obsoletos en ir.config_parameter (madenat.width_s2s_map con 16 entradas frente a 15 de la tabla activa D6, madenat.blanks_nominal_map y madenat.thickness_visual_ranges como fallbacks residuales de Fase 1). Versión 05 8.42.0 → 8.43.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre Definitivo Bloque 4L (AD-124): item (e) RESUELTO mediante resolución visual basada en lumber.width.s2s.map activo y erradicación definitiva de get_s2s_exclusion_widths y lista residual en código. Versión 05 8.41.0 → 8.42.0. Sin push ni despliegue. -->
@@ -1271,4 +1272,51 @@ Las siguientes piezas de deuda técnica han sido identificadas, clasificadas y d
   - Deprecar y retirar del archivo semilla `ingestion_config.xml` el parámetro `param_width_s2s_map` y unificar los getters de Blanks y Espesores Visuales bajo el patrón adoptado para S2S (AD-119 / UserError si la tabla maestra está vacía, sin fallback a JSON ni a tuplas en código).
   - Prohibir en el modelo que `madenat.width_s2s_map` sea considerado fallback o fuente de verdad.
 - **Criterio de Cierre:** Retiro de los tres parámetros en `ingestion_config.xml` y getters simplificados que deleguen 100% en sus respectivos modelos ORM.
+
+---
+
+## Bloque 6 (AD-127 / Jornada 2026-10-19) — Estado de Entrega
+
+### Implementado en el Sistema
+1. **6A — Patios por Tipo:** Campo `patio_type` Selection en `stock.location` (`service` vs `port`); resolución automática por origen sin IDs ni nombres en código; asignación quirúrgica en `madenat_test` para MARVAL (puerto) y Ferramenta (servicio con nombre "PATIO SERVICIO CEPILLADO FERRAMENTA"). Tepornac y Coronel intactos.
+2. **6B — Visibilidad de Ingresos e Inventario:** Campos `location_id` e `is_patio` en vista SQL de `intake.console` con filtros "Sin patio", "Con patio" y agrupación; guías históricas Arauco (4495589) y JCE (95806) localizables inmediatamente sin alteraciones de BD. Nuevo menú "Inventario por Patio" sobre `stock.quant` (lista y pivote solo lectura) con piezas y volumen nominal de compra.
+3. **6C — Claridad de Etiquetas:** Unificación de "Vol. Compra (m³)" y "Vol. Export (m³)" en todas las pantallas de ingreso, empaque, listas de lotes y reportes PDF oficiales; volumen de compra visible por lote.
+4. **6D — Packing Estándar MADENAT:** Función generadora openpyxl con listas desplegables (Producto, Subproducto, Perfil) basada en Forestal Andes; botón operativo en la Consola; formato `standard_madenat` registrado en BD (`noupdate="1"`); pruebas de ida y vuelta con Arauco, JCE, BYC y Fátima.
+
+### Decisión Operativa Formal: No Continuar con Lectores Nativos Individuales
+- **Decisión de Cristhian Elgueta (Operaciones):** Se detiene definitivamente la adaptación de lectores nativos propietarios para Arauco, JCE, BYC y Fátima.
+- **Regla:** Todos los proveedores externos deberán enviar sus packings en el formato estándar MADENAT (o el equipo operativo trasladará los datos a dicha plantilla estándar descargable desde la Consola).
+- **Estado:** **NO CONTINUAR** (cerrado sin desarrollo adicional de lectores nativos).
+
+---
+
+## Bloque 7 — Tarjas por Contenedor, REMATE y Rebaja de Volumen (Backlog Activo)
+
+### Contexto y Análisis Preliminar (B0.6)
+Cristhian requiere avanzar en la consolidación física de contenedores mediante Tarjas, la confección del informe de REMATE y el mecanismo contable y operativo de rebaja de inventario al embarcar.
+
+#### 1. Rebaja de Volumen en Stock (Nominal vs Exportación)
+- **Principio:** El volumen ingresado y custodiado en el inventario físico (`stock.quant` y `stock.lot`) es el **Volumen NOMINAL (de compra)**.
+- **Embarque:** Al consolidar y despachar en buque, el volumen facturado o declarado comercialmente para exportación es el **Volumen de EXPORTACIÓN (embarque)**, el cual es sistemáticamente menor o igual al nominal.
+- **Mecanismo de Descuento:** La rebaja de inventario en `stock.move` debe descontar la totalidad del volumen nominal consumido (para extinguir las piezas físicas del stock), reconociendo la merma/diferencia dimensional (`vol_purchase_m3 - vol_shipment_m3`) en una cuenta o dimensión analítica de merma dimensional por exportación, sin dejar lotes residuales "fantasmas" con saldos de metros cúbicos.
+
+#### 2. Brecha Columna por Columna frente a Documentos de Muestra
+Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_documentos_ingreso/`
+- **Muestra 1 — Tarja por Contenedor (`Tarja_BEAU-497711-8-2.xlsx`):**
+  - Estructura: Contenedor, Booking, Sello, Tara, VGM, Fecha de Consolidación, Tabla de Bultos/Paquetes (N° Paquete, Escuadría Visual, Ancho x Espesor x Largo, Piezas, M³ Exportación, Peso Neto).
+  - Brecha en Odoo actual: El modelo `lumber.container` actual registra lotes (`stock.lot`) y calcula totales, pero carece de campos directos para Tara, VGM, N° de Sello y generación de reporte de Tarja idéntico al formato Excel de la muestra para entrega al terminal portuario.
+- **Muestra 2 — REMATE de Embarque (`REMATE-MADENAT-M.ASER.SECA-MN-MSC-VICTORIA-ROLEO-DESDE-MN-MSC-JULIETTE.xlsx`):**
+  - Estructura: Planilla resumen por Buque/Motonave, Booking, Puerto de Embarque, Puerto de Destino, Consignatario, Detalle de Contenedores con desglose por especificación y consolidado de paquetes roll over (roleo de naves previas).
+  - Brecha en Odoo actual: No existe actualmente un asistente o reporte de REMATE que agrupe múltiples contenedores de una misma reserva/booking y exporte el libro Excel multidimensional con historial de roleos.
+
+---
+
+## Deuda Técnica Consolidada (Diferida)
+1. **Fitosanitario configurable:** Regla por proveedor y producto (diferido según D5/CANON/05).
+2. **Marcado masivo de patios:** El resto de ubicaciones de `madenat_test` permanece sin marcar `is_patio` (solo MARVAL y Ferramenta autorizados).
+3. **Parámetros redundantes en `ir.config_parameter`:** `madenat.width_s2s_map` (16 entradas), `madenat.blanks_nominal_map`, `madenat.thickness_visual_ranges`.
+4. **`LUMBER_DIMENSION_MAP`:** Desacoplar diccionario estático en `utils_uom.py` hacia modelos configurables en BD.
+5. **Rango heurístico de largo métrico:** `intake_wizard.py:314` (`1.5 <= val <= 6.5`) parametrizable.
+6. **Guía histórica 26270:** Corrección de registros históricos preservada intacta (D3).
+
 

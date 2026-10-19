@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.46.0
-**Última actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
+**Versión documental:** 12.47.0
+**Última actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
+<!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo nuevo lumber.thickness.real.map con catálogo semilla noupdate="1", chatter, tracking, coherencia <= 0.001" y getter en madenat.ingestion.config sin copia en código (D6). 5B: campo vol_physical_real_m3 (F3) calculado con r3() una sola vez (espesor real x ancho nominal mm x largo m x piezas / 1.000.000) en líneas de guía y stock.lot; Blanks directo a stock y perfiles no aplicables en 0.0; histórico intacto. 5C: vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol, agrupable por patio, proveedor, OC y motonave; filtros guardados; menú operativo con permisos para Operaciones, Auditoría y Contabilidad; alerta y resaltado de anomalías (exportación > compra). Versión 04 12.44.0 → 12.45.0. | Bloque 4N (AD-125). -->
 <!-- actualizado: 2026-10-18 — Alcance Real de Ejecuciones con -i y Corrección Forense de Atribución (AD-125 / Bloque 4N): corrección forense de atribución de sobreescritura de D1 al primer -i en 4J (20:28:18 UTC) y no 4K; aclaración de que write_date 21:17:05 reflejaba la última escritura en 4K; corrección de afirmación de 4J de que D1 estaba vigente; documentación de 89 registros reescritos en tablas destino (N1); verificación estructural pura de noupdate en XML para test_12 (N3); prohibición explícita de -i en despliegue (N4). Versión 04 12.43.0 → 12.44.0. | Cierre Arnés 4M (AD-125). -->
 <!-- actualizado: 2026-10-18 — Cierre de Arnés de Pruebas y Rectificación de D1 (AD-125 / Bloque 4M): rectificación de D1 demostrando sobreescritura colateral de 'direct' a 'warning' por arnés con flag -i (M3); regla canónica de prohibición estricta de -i frente a -u en regresión según Odoo loading.py / convert.py (M1); diagnóstico del flag noupdate en ir_model_data y limitación estructural de _update_xmlids en actualizaciones de módulos (M2); reemplazo de literal 2.36 por MBF_TO_M3 en test_visual_dimension_l3 (M4). Versión 04 12.42.0 → 12.43.0. | Cierre Definitivo Bloque 4L (AD-124). -->
@@ -4004,5 +4005,63 @@ Permanecen como diferidos en `CANON/05`:
 - Marcado masivo de patios en ubicaciones de inventario (`is_patio`).
 - Consolidación de filtro marítimo por motonave (`shipping.vessel`).
 - Corrección histórica de guía 26270.
+
+---
+
+## 2026-10-19 — Bloque 6: Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas y Packing Estándar
+
+### AD-127 (2026-10-19) — FASE 12 (Bloque 6): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT
+
+**Estado:** ✅ APROBADO E IMPLEMENTADO (Subbloques 6A, 6B, 6C, 6D y Ajustes A3)  
+**Alcance:** Modelos `stock.location`, `stock.quant`, `stock.lot`, `intake.console`, `madenat.guia.processing`, `lumber.reception`, `generate_packing_template.py`, vistas y menús en `madenat_lumber_core`, `madenat_lumber_intake`, `madenat_ingestion_engine`.
+
+#### 1. Contexto y Decisión
+Operaciones (Cristhian Elgueta) solicitó formalmente separar los patios operativos: lo que entra por Recepción por Volumen (servicio de cepillado) de lo que entra por recepción en puerto para embarque directo. Asimismo, se requería visibilidad inmediata de los ingresos de guías históricas (como Arauco 4495589 y JCE 95806) sin alterar sus registros, un menú de inventario por patio con volumen nominal de compra, unificación de etiquetas de volumen en pantallas y reportes, y la creación de una plantilla estándar de packing basada en Forestal Andes para descontinuar el desarrollo de lectores propietarios individuales de Arauco, JCE, BYC y Fátima.
+
+Marco normativo aplicado:
+- **D1 (Vigente):** Sin cambios de configuración ni datos existentes en ninguna base, salvo la aplicación quirúrgica autorizada en 6A.
+- **D2 (Revisada y aprobada por Mauricio el 2026-10-19):** Autorización expresa para marcar `is_patio=True` y asignar `patio_type` EXCLUSIVAMENTE a dos patios en `madenat_test`: MARVAL como patio de tipo puerto (`port`) y Ferramenta como patio de tipo servicio (`service`) con el nombre "PATIO SERVICIO CEPILLADO FERRAMENTA". Prohibición estricta de tocar Bodega Tepornac y Puerto Coronel.
+- **D3 (Vigente):** Guía 26270 y datos históricos sin tocar (cero recálculo o backfill de patios en históricos).
+- **D4 (Vigente):** Sin despliegue, sin push.
+- **D6 (Vigente):** La tabla S2S y configuraciones maestras se mantienen intactas salvo por interfaz autorizada.
+
+#### 2. Subbloques Implementados
+
+1. **Ajustes Previos A3:**
+   - **A3.a:** En `madenat.guia.processing.line` y `stock.lot`, desacople de `% Dif.Vol` (compra vs exportación) para que esté siempre disponible independientemente del estado físico, y adición de la columna `% Dif. Real Físico` (`vol_diff_physical_pct`) que se vacía (`False`) si `physical_status != 'calculado'`. Commit `a673f60`.
+   - **A3.b:** Permisos de acceso en `lumber.thickness.real.map` alineados exactamente con `lumber.width.s2s.map` (edición para Operaciones y Auditoría, lectura para el resto). Commit `e63dd6b`.
+   - **A3.c:** Protección de los 13 parámetros `madenat.*` en `madenat_lumber_core/data/ir_config_parameter_data.xml` bajo bloque `<data noupdate="1">` y extensión de `test_12`. Commit `0f428ae`.
+   - **A3.d:** Citaciones formales de ADRs (AD-65, AD-79, AD-80, AD-87) en cada equivalencia de la matriz operativa de CANON/12 §3.3.
+   - **A3.e:** Rotulación en CANON/17 de que los espesores 4/4, 5/4, 7/4 y 8/4 son derivados ($n/4 \times 25.4$ mm) y que solo 6/4 = 38.1 mm proviene directamente de Cristhian.
+
+2. **6A — Patios por Tipo (`stock.location` y asignación automática por origen):**
+   - Campo nuevo `patio_type` Selection (`[('service', 'Servicio de Cepillado'), ('port', 'Recepción en Puerto')]`) en `stock.location`, editable en el formulario de Patios.
+   - Resolución automática por origen sin IDs ni nombres hardcodeados:
+     - Recepción por Volumen (`madenat.guia.processing`): busca patio activo con `is_patio=True` y `patio_type='service'`.
+     - Recepción en Puerto (`lumber.reception`): busca patio activo con `is_patio=True` y `patio_type='port'`.
+     - Si hay 0 o más de 1 patio activo del tipo, emite advertencia clara en log/chatter y continúa sin bloquear la operación.
+   - Aplicación autorizada en `madenat_test`: MARVAL marcado con `is_patio=True, patio_type='port'`; Ferramenta marcado con `is_patio=True, patio_type='service'` y renombrado a "PATIO SERVICIO CEPILLADO FERRAMENTA". Tepornac y Puerto Coronel intactos. Históricos intactos.
+   - Commit: `b587e2f`.
+
+3. **6B — Visibilidad de Ingresos e Inventario por Patio:**
+   - **Consola de Ingresos (`intake.console`):** Adición de campos `location_id` e `is_patio` a la vista SQL y búsqueda/filtros (`filter_sin_patio`, `filter_con_patio`, agrupador `group_patio`). Permite localizar de inmediato las guías 4495589 (Arauco) y 95806 (JCE) filtrando por guía o patio sin modificar sus registros preexistentes.
+   - **Inventario por Patio:** Extensión de `stock.quant` con campos calculados `lot_piezas`, `vol_nominal_m3`, `is_patio` y `patio_type`. Vistas de Lista y Pivote en modo solo lectura (`create="false" edit="false" delete="false"`), agrupables por Patio, Proveedor y Producto, mostrando piezas y volumen nominal (de compra) como métrica oficial de inventario. Filtros por tipo de patio y búsqueda por número de guía.
+   - Permisos de acceso: Operaciones, Auditoría y Contabilidad. Menú bajo Control de Lotes.
+   - Commit: `c1befda`.
+
+4. **6C — Etiquetas de Volumen en Pantallas y Reportes:**
+   - Unificación de etiquetas: "Vol. Compra (m³)" para volumen nominal de compra y "Vol. Export (m³)" para volumen de exportación/embarque.
+   - Pantallas de ingreso (`madenat_guia_processing_views.xml`, `intake_console_views.xml`, `lumber_reception_views.xml`), empaque y tarjas (`lumber_container_views.xml`), listas de lotes (`stock_lot_views.xml`) y reportes PDF (`madenat_guia_report_templates.xml`, `lumber_container_packing_list_template.xml`).
+   - Muestra explícita del volumen nominal de compra por etiqueta/lote sin alterar fórmulas ni datos.
+   - Commit: `7cf13bc`.
+
+5. **6D — Packing Estándar MADENAT y Descontinuación de Lectores Nativos:**
+   - Generador `generate_packing_template.py` ampliado con la función `generate_standard_madenat_template()`, generando un libro Excel con estructura de Forestal Andes, validaciones de datos desplegables (`DataValidation` de openpyxl) para PRODUCTO, SUBPRODUCTO y PERFIL, y hoja de instrucciones operativas.
+   - Botón operativo en la Consola de Ingresos ("Descargar plantilla de packing estándar") que permite descargar el Excel directamente desde la interfaz web de Odoo.
+   - Formato registrado en BD `lumber.ingestion.format` con XML ID `madenat_lumber_core.ingestion_format_standard_madenat` (`noupdate="1"`), perfil `standard_madenat`.
+   - Pruebas de ida y vuelta (roundtrip) exitosas con datos sintéticos de Arauco, JCE (dimensiones en columnas separadas), BYC y Fátima.
+   - Decisión de Operaciones: descontinuar la adaptación individual de lectores nativos para Arauco, JCE, BYC y Fátima; exigir el uso de la plantilla estándar MADENAT.
+   - Commit: `486cd1f`.
+
 
 

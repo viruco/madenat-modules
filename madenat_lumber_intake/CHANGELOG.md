@@ -4,6 +4,15 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.0.19.0] - 2026-10-19
+
+### Added
+- **Bloque 6B/6C/6D (AD-127) — Visibilidad de Patios, Etiquetas y Descarga de Packing**:
+  - Filtro "Sin patio asignado" y agrupación por patio en la Consola de Ingresos.
+  - Proyección de patio (`location_id`) en la vista SQL `madenat_lumber_intake_console`.
+  - Normalización de etiquetas a "Vol. Compra (m³)" y "Vol. Export (m³)".
+  - Botón "Descargar plantilla de packing estándar" en lista y formulario de la consola.
+
 ## [18.0.0.17.0] - 2026-10-17
 
 ### Added

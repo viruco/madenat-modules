@@ -4,6 +4,14 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.3.0] - 2026-10-19
+
+### Added
+- **Bloque 6D (FASE 12 / AD-127) — Packing estándar MADENAT (Forestal Andes)**:
+  - Generación de plantilla Excel estándar `PLANTILLA_PACKING_ESTANDAR_MADENAT.xlsx` con listas desplegables (DataValidation) para producto, subproducto y perfil.
+  - Soporte de ingesta de proveedores normalizados (Arauco, JCE en dimensiones separadas, BYC, Fátima).
+  - Pruebas de ida y vuelta y verificación de redondeo a 3 decimales en `tests/test_packing_estandar_madenat_6d.py`.
+
 ## [18.0.1.2.0] - 2026-10-17
 
 ### Added
