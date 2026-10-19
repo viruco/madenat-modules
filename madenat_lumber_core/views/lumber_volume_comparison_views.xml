@@ -31,6 +31,7 @@
                            decoration-success="physical_status == 'calculado'"
                            decoration-warning="physical_status == 'sin_mapeo'"
                            decoration-muted="physical_status == 'no_aplica'"/>
+                    <field name="vol_physical_diff_pct" string="% Dif. Real Físico" avg="Promedio Dif Físico %" widget="percentage" digits="[16, 2]"/>
                     <field name="vol_shipment_m3" string="Embarque Export. (m³)" sum="Total Exportación" digits="[16, 3]"/>
                     <field name="vol_diff_pct" string="% Dif. Vol" avg="Promedio Dif %" widget="percentage" digits="[16, 2]"/>
                     <field name="company_id" column_invisible="1"/>

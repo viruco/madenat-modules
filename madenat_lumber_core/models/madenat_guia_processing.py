@@ -255,6 +255,13 @@ class MadenatGuiaProcessingLine(models.Model):
         digits=(16, 2),
         help="Diferencia porcentual entre Exportación y Compra Nominal: ((Exportación - Compra) / Compra) * 100"
     )
+    vol_physical_diff_pct = fields.Float(
+        string="% Dif. Real Físico",
+        compute='_compute_vol_comparison_metrics',
+        store=True,
+        digits=(16, 2),
+        help="Diferencia porcentual del volumen real físico respecto al nominal de compra: ((Real Físico - Compra) / Compra) * 100 si physical_status == 'calculado', de lo contrario False."
+    )
     is_export_greater_nominal = fields.Boolean(
         string="Alerta: Exportación > Compra",
         compute='_compute_vol_comparison_metrics',
@@ -641,21 +648,32 @@ class MadenatGuiaProcessingLine(models.Model):
             line.vol_physical_real_m3 = r3(vol_f3)
             line.physical_status = 'calculado'
 
-    @api.depends('vol_purchase_m3', 'vol_shipment_m3', 'physical_status')
+    @api.depends('vol_purchase_m3', 'vol_shipment_m3', 'vol_physical_real_m3', 'physical_status')
     def _compute_vol_comparison_metrics(self):
         """Calcula métricas de comparación (Bloque 5C / 5D):
 
-        - vol_diff_pct: ((Exportación - Compra) / Compra) * 100 si physical_status == 'calculado',
-          de lo contrario False (vacía, sin calcular % con ceros).
+        - vol_diff_pct: ((Exportación - Compra) / Compra) * 100 si nom > 0, disponible
+          aunque el real físico no esté calculado (como en la planilla).
+        - vol_physical_diff_pct: ((Real Físico - Compra) / Compra) * 100 si physical_status == 'calculado',
+          de lo contrario False (vacía).
         - is_export_greater_nominal: Exportación > Compra (con tolerancia 0.0005 m3)
         """
         for line in self:
             nom = line.vol_purchase_m3 or 0.0
             exp = line.vol_shipment_m3 or 0.0
-            if getattr(line, 'physical_status', 'no_aplica') == 'calculado' and nom > 0:
+            real = line.vol_physical_real_m3 or 0.0
+            status = getattr(line, 'physical_status', 'no_aplica')
+
+            if nom > 0:
                 line.vol_diff_pct = round(((exp - nom) / nom) * 100.0, 2)
             else:
                 line.vol_diff_pct = False
+
+            if status == 'calculado' and nom > 0:
+                line.vol_physical_diff_pct = round(((real - nom) / nom) * 100.0, 2)
+            else:
+                line.vol_physical_diff_pct = False
+
             line.is_export_greater_nominal = bool(exp > (nom + 0.0005))
 
     # ==========================================================================

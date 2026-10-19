@@ -152,8 +152,8 @@ class TestVolumeComparison5C(TransactionCase):
         lot_calculado.flush_recordset()
         self.assertEqual(lot_calculado.physical_status, 'calculado')
         self.assertAlmostEqual(lot_calculado.vol_physical_real_m3, 3.858, places=3)
-        self.assertTrue(lot_calculado.vol_diff_pct)
-        self.assertNotEqual(lot_calculado.vol_diff_pct, False)
+        self.assertTrue(lot_calculado.vol_diff_pct is not False)
+        self.assertAlmostEqual(lot_calculado.vol_physical_diff_pct, -15.32, places=2)
 
         # 2. Línea sin mapeo: escuadría inexistente
         lot_sin_mapeo = self.Lot.create({
@@ -171,7 +171,10 @@ class TestVolumeComparison5C(TransactionCase):
         lot_sin_mapeo.flush_recordset()
         self.assertEqual(lot_sin_mapeo.physical_status, 'sin_mapeo')
         self.assertEqual(lot_sin_mapeo.vol_physical_real_m3, 0.0)
-        self.assertFalse(lot_sin_mapeo.vol_diff_pct, "% debe quedar vacío (False) cuando no hay mapeo")
+        # % Dif.Vol (compra frente a embarque) disponible aunque real físico no esté calculado
+        self.assertAlmostEqual(lot_sin_mapeo.vol_diff_pct, -16.59, places=2)
+        # % contra el real físico debe quedar vacío (False) cuando no hay mapeo
+        self.assertFalse(lot_sin_mapeo.vol_physical_diff_pct, "% real físico debe quedar vacío (False) cuando no hay mapeo")
 
         # 3. Blanks directo a stock (largo_ft_frac presente)
         lot_blanks = self.Lot.create({
@@ -189,7 +192,8 @@ class TestVolumeComparison5C(TransactionCase):
         lot_blanks.flush_recordset()
         self.assertEqual(lot_blanks.physical_status, 'no_aplica')
         self.assertEqual(lot_blanks.vol_physical_real_m3, 0.0)
-        self.assertFalse(lot_blanks.vol_diff_pct, "% debe quedar vacío (False) para Blanks directo a stock")
+        self.assertEqual(lot_blanks.vol_diff_pct, 0.0)
+        self.assertFalse(lot_blanks.vol_physical_diff_pct, "% real físico debe quedar vacío (False) para Blanks directo a stock")
 
         # Verificación equivalente en madenat.guia.processing.line
         guia = self.env['madenat.guia.processing'].create({
@@ -212,6 +216,7 @@ class TestVolumeComparison5C(TransactionCase):
         self.assertEqual(line_calc.physical_status, 'calculado')
         self.assertAlmostEqual(line_calc.vol_physical_real_m3, 3.858, places=3)
         self.assertTrue(line_calc.vol_diff_pct is not False)
+        self.assertTrue(line_calc.vol_physical_diff_pct is not False)
 
         line_no_map = self.env['madenat.guia.processing.line'].create({
             'processing_id': guia.id,
@@ -226,7 +231,8 @@ class TestVolumeComparison5C(TransactionCase):
         line_no_map.flush_recordset()
         self.assertEqual(line_no_map.physical_status, 'sin_mapeo')
         self.assertEqual(line_no_map.vol_physical_real_m3, 0.0)
-        self.assertFalse(line_no_map.vol_diff_pct)
+        self.assertTrue(line_no_map.vol_diff_pct is not False)
+        self.assertFalse(line_no_map.vol_physical_diff_pct)
 
         guia_blanks = self.env['madenat.guia.processing'].create({
             'name': 'GUIA-5D-BLANKS',
@@ -247,5 +253,6 @@ class TestVolumeComparison5C(TransactionCase):
         line_blanks.flush_recordset()
         self.assertEqual(line_blanks.physical_status, 'no_aplica')
         self.assertEqual(line_blanks.vol_physical_real_m3, 0.0)
-        self.assertFalse(line_blanks.vol_diff_pct)
+        self.assertTrue(line_blanks.vol_diff_pct is not False)
+        self.assertFalse(line_blanks.vol_physical_diff_pct)
 
