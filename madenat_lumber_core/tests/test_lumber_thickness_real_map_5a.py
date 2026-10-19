@@ -26,6 +26,7 @@ class TestLumberThicknessRealMap5A(TransactionCase):
 
         # Grupos de seguridad
         cls.group_config = cls.env.ref('madenat_lumber_core.group_lumber_config_manager')
+        cls.group_operaciones = cls.env.ref('madenat_lumber_core.group_madenat_operaciones')
         cls.group_auditoria = cls.env.ref('madenat_lumber_core.group_madenat_auditoria')
         cls.group_user = cls.env.ref('base.group_user')
 
@@ -35,6 +36,12 @@ class TestLumberThicknessRealMap5A(TransactionCase):
             'login': 'user_config_5a@madenat.test',
             'email': 'user_config_5a@madenat.test',
             'groups_id': [(6, 0, [cls.group_user.id, cls.group_config.id])],
+        })
+        cls.user_operaciones = cls.env['res.users'].create({
+            'name': 'Usuario Operaciones Test 5A',
+            'login': 'user_operaciones_5a@madenat.test',
+            'email': 'user_operaciones_5a@madenat.test',
+            'groups_id': [(6, 0, [cls.group_user.id, cls.group_operaciones.id])],
         })
         cls.user_auditoria = cls.env['res.users'].create({
             'name': 'Usuario Auditoria Test 5A',
@@ -116,10 +123,22 @@ class TestLumberThicknessRealMap5A(TransactionCase):
             rec_6_4.write({'thickness_real_mm': original_mm})
 
     def test_04_security_access_rights(self):
-        """Permisos: Config y Auditoría pueden escribir/leer; usuario base solo leer."""
+        """Permisos: Config, Operaciones y Auditoría pueden escribir/leer; usuario base solo leer."""
         # Config Manager puede crear/editar
         rec = self.ThicknessMap.with_user(self.user_config).search([('thickness_visual', '=', '6/4')], limit=1)
         self.assertTrue(rec)
+
+        # Operaciones puede leer y editar
+        rec_op = self.ThicknessMap.with_user(self.user_operaciones).search([('thickness_visual', '=', '6/4')], limit=1)
+        self.assertTrue(rec_op)
+        rec_op.write({'notes': 'Nota de Operaciones'})
+        self.assertEqual(rec_op.notes, 'Nota de Operaciones')
+
+        # Auditoría puede leer y editar
+        rec_aud = self.ThicknessMap.with_user(self.user_auditoria).search([('thickness_visual', '=', '6/4')], limit=1)
+        self.assertTrue(rec_aud)
+        rec_aud.write({'notes': 'Nota de Auditoría'})
+        self.assertEqual(rec_aud.notes, 'Nota de Auditoría')
 
         # Usuario base puede leer
         rec_user = self.ThicknessMap.with_user(self.user_readonly).search([('thickness_visual', '=', '6/4')], limit=1)
