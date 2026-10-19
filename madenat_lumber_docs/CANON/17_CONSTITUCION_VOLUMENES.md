@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.13.0
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->
+**Versión documental:** 1.14.0
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §10.6.6 Claridad y Reconciliación del Real Físico (AD-126 / Bloque 5D) — campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado sin ceros ni distorsiones; badge y filtros por estado. Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 5 (AD-126). -->
+<!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4I (AD-121): definición de pruebas oficiales de integridad (Consulta B volúmenes y Consulta A.2 estructural sin write_date), consulta con write_date como informativa (aviso de fila tocada), documentación de fila residuo TEST-LOT-EX (id 49837) y regla de rollback estricto sin registry.cursor(). Versión 1.9.0 → 1.10.0. | 2026-10-18: Cierre Bloque 4H (AD-121). -->
 **Estado:** ✅ Vigente — Documento canónico de la **constitución de volúmenes** de MADENAT. Fija qué significa cada volumen, qué proceso usa cuál, y las reglas acordadas para el diseño futuro. No sustituye a `00_ARQUITECTURA.md`, `04_DECISION_LOG.md`, `08_COSTEO.md`, `12_FLUJOS_INGESTA.md` ni `13_CONSOLIDACION_OPERATIVA.md`; los referencia.
@@ -388,4 +389,10 @@ En cumplimiento de las instrucciones de Cristhian Elgueta y las reglas del Bloqu
    - **Vistas Readonly:** Lista y pivote en `madenat_lumber_core` (`view_stock_lot_volume_comparison_tree` y `view_stock_lot_volume_comparison_pivot`) con permisos exclusivos de solo lectura para Operaciones, Auditoría y Contabilidad (`create="false" edit="false" delete="false"`).
    - **Columna "% Dif.Vol":** Métrica `vol_diff_pct` calculada como $((\text{Exportación} - \text{Compra}) / \text{Compra}) \times 100$.
    - **Regla de Resaltado:** Como el nominal es el que va a stock y la exportación es menor, la vista resalta automáticamente en color de peligro (`decoration-danger="is_export_greater_nominal"`) cualquier lote o línea donde la exportación supere al nominal de compra (excepto perfiles métricos donde coinciden exactamente), alertando a los operadores sin modificar ningún dato.
+
+6. **CLARIDAD Y RECONCILIACIÓN DEL REAL FÍSICO (Subbloque 5D):**
+   - **Estado `physical_status`:** Clasifica formalmente cada registro en `calculado` (F3 aplicado con éxito), `sin_mapeo` (falta espesor real en tabla 5A) o `no_aplica` (Blanks directo a stock F6 o perfiles métricos/granel).
+   - **Prevención de % con Ceros:** Cuando el estado no es `calculado`, la métrica `% Dif.Vol` queda vacía (`False`), evitando distorsiones visuales o porcentajes engañosos (ej: falsos -100%).
+   - **Badge y Filtros:** La vista de lista presenta un badge cromático según estado y la vista de búsqueda incorpora filtros guardados por estado de real físico.
+
 

@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.46.0
-**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): §19 Implementación formal de Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo lumber.thickness.real.map editable con chatter y noupdate="1" (commit 8fdddae). 5B: campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3() (commit d19f314). 5C: vistas comparativas readonly con % Dif.Vol y alerta exportación > compra (commit 9f9e8b5). Hashes históricos B y A.2 invariantes. Versión 02 12.45.0 → 12.46.0. Sin push ni despliegue. -->
+**Versión documental:** 12.47.0
+**Fecha de actualización:** 2026-10-18  <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): §19.1 Subbloque 5D con campo physical_status (calculado, sin_mapeo, no_aplica) y porcentaje % Dif.Vol vacío sin mapeo ni ceros (commit 51e0325); total 14 tests nuevos del Bloque 5 pasando; §19.2 confirmación canónica 100% de consultas oficiales B y A.2 en las 3 tablas. Versión 02 12.46.0 → 12.47.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): §19 Implementación formal de Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo lumber.thickness.real.map editable con chatter y noupdate="1" (commit 8fdddae). 5B: campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3() (commit d19f314). 5C: vistas comparativas readonly con % Dif.Vol y alerta exportación > compra (commit 9f9e8b5). Hashes históricos B y A.2 invariantes. Versión 02 12.45.0 → 12.46.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4N: §18.2 incorporación de prohibición absoluta de -i (--init) en despliegue y pruebas (recarga forzada de XML ignorando noupdate="1"), uso exclusivo de -u quirúrgico sobre módulos requeridos, y ratificación de prohibición de -u all. Versión 02 12.44.0 → 12.45.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4J (AD-122): §18.1 clarificación de empaquetado/rsync como ejemplo ilustrativo preliminar sin decisión de método (D4), eliminación definitiva de copias S2S en código productivo y corrección de doble redondeo. Versión 02 12.43.0 → 12.44.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4I (AD-121): verificación de método de entrega no definido (D4), rsync/empaquetado como método previamente documentado en borradores técnicos, y normalización de versiones en script de salud. Versión 02 12.42.0 → 12.43.0. Sin push ni despliegue. -->
@@ -2267,15 +2268,24 @@ Una vez actualizado Odoo, se verifican en `odoo shell`:
 ## 19. BLOQUE 5 — VOLUMEN REAL FÍSICO Y COMPARATIVO DE LOS TRES VOLÚMENES (AD-126)
 
 **Fecha:** 2026-10-18  
-**Estado:** ✅ Acreditado en `madenat_test` (5A, 5B y 5C).
+**Estado:** ✅ Acreditado en `madenat_test` (5A, 5B, 5C y 5D).
 
 ### 19.1 Resumen de Entregas y Commits
 1. **Subbloque 5A (Commit `8fdddae`):** Modelo persistente `lumber.thickness.real.map` (espesor visual, nominal en pulgadas, real en mm) con tracking en chatter, validación de coherencia ($\le 0.001"$), unicidad por espesor visual activo, datos semilla con `noupdate="1"`, vistas/menú de configuración y getter en `madenat.ingestion.config` sin copias en código (D6). Test suite: `test_lumber_thickness_real_map_5a.py` (4 tests pasando).
 2. **Subbloque 5B (Commit `d19f314`):** Campo `vol_physical_real_m3` (digits 16, 3) en `madenat_guia_processing_line` y `stock.lot` calculado con `r3()` una sola vez: espesor real (de tabla 5A) $\times$ ancho nominal (mm) $\times$ largo (m) $\times$ piezas / 1.000.000. Blanks directo a stock y perfiles métricos sin cuartos quedan en 0.000. Histórico intacto. Test suite: `test_vol_physical_real_5b.py` (5 tests pasando).
-3. **Subbloque 5C (Commit `9f9e8b5`):** Vistas comparativas de los tres volúmenes (`view_stock_lot_volume_comparison_tree` y `pivot`) con métrica `vol_diff_pct` (% Dif.Vol), resaltado condicional de anomalías (`decoration-danger="is_export_greater_nominal"`), filtros guardados y agrupadores (Patio, Proveedor, OC, Motonave) y menú operativo bajo Control de Lotes con permisos de solo lectura para Operaciones, Auditoría y Contabilidad. Test suite: `test_volume_comparison_5c.py` (4 tests pasando).
+3. **Subbloque 5C (Commit `9f9e8b5`):** Vistas comparativas de los tres volúmenes (`view_stock_lot_volume_comparison_tree` y `pivot`) con métrica `vol_diff_pct` (% Dif.Vol), resaltado condicional de anomalías (`decoration-danger="is_export_greater_nominal"`), filtros guardados y agrupadores (Patio, Proveedor, OC, Motonave) y menú operativo bajo Control de Lotes con permisos de solo lectura para Operaciones, Auditoría y Contabilidad.
+4. **Subbloque 5D (Commit `51e0325`):** Campo calculado `physical_status` (`calculado`, `sin_mapeo`, `no_aplica`) en líneas y lotes; columna `% Dif.Vol` vacía cuando el estado no es calculado para evitar cálculo de % con ceros; badge y filtros en vistas; matriz operativa en CANON/12 §3.3. Test suite: `test_volume_comparison_5c.py` (5 tests pasando). Total 14 tests de Bloque 5 pasando.
 
-### 19.2 Invarianza Histórica Verificada (Hashes MD5)
-- **Hash B (`stock_lot.vol_shipment_m3`):** `83117f32d4c8f576f2eb3e6885391d13` (MATCH EXACTO).
-- **Hash A.2 (`madenat_guia_processing_line.vol_shipment_m3`):** `fed0a01115e86738b87f692af7eb3921` (MATCH EXACTO).
+### 19.2 Invarianza Histórica Verificada (Hashes MD5 Canónicos Oficiales)
+Consultas oficiales B y A.2 ejecutadas en las tres tablas con coincidencia 100% exacta:
+- **Consulta B (Redondeado a 4 decimales):**
+  - `stock_lot` (152 filas): `5c2152193194066e5585b383ffe3673a` (MATCH EXACTO)
+  - `madenat_guia_processing_line` (82 filas): `356e70066083febd59645c1212e11ece` (MATCH EXACTO)
+  - `lumber_shipment_line` (11 filas): `bb5863f5850244b06b9235c2c595709b` (MATCH EXACTO)
+- **Consulta A.2 (Estructural Puro):**
+  - `stock_lot` (152 filas): `6b1ec7d8dcd91cc6bd7ff90772759500` (MATCH EXACTO)
+  - `madenat_guia_processing_line` (82 filas): `e78e0265210add0676b240bed091921f` (MATCH EXACTO)
+  - `lumber_shipment_line` (11 filas): `b13357af2864a6cbeb3a386dff188a8e` (MATCH EXACTO)
+
 
 

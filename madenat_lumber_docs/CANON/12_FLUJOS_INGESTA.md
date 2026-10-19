@@ -1,8 +1,8 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.15.0\
-**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §12.6 Matriz de Tipos de Ingesta por Regla de Cálculo de F3 (AD-126 / Bloque 5) — discriminación de volumen real físico (F3) para Producto/Aserradero vs Blanks directo a stock vs perfiles métricos vs retornos SV. Versión 1.14.0 → 1.15.0. | 2026-10-18: Cierre Técnico Final (AD-120). -->\
+**Versión documental:** 1.16.0\
+**Fecha de actualización:** 2026-10-18  <!-- 2026-10-18: §3.3 y §12.6 Matriz Completa de Tipos de Ingesta Operativos y Regla de Cálculo de F3 (AD-126 / Bloque 5D) — inclusión explícita de modos de guías (A-D), Recepción por Volumen, consolidación administrativa, procesados/maquila, Blanks directo a stock y perfiles métricos con estado physical_status. Versión 1.15.0 → 1.16.0. | 2026-10-18: Bloque 5. -->\
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\
@@ -66,13 +66,27 @@ Flujo de ingesta de madera que ya ha pasado por un proceso de maquila, transform
 | Origen (líneas) | `madenat.guia.processing.line` | Líneas de detalle de la guía |
 | Destino | `stock.lot` | Lote de inventario |
 
-### 3.3 Campo discriminador
+### 3.3 Campo discriminador y Matriz Operativa de Ingesta (AD-126 / Bloque 5D)
 
 ```sql
 guia_processing_id IS NOT NULL
 ```
 
 El lote queda vinculado a la guía de procesamiento que lo generó mediante `guia_processing_id`. El método `_compute_reception_type` asigna `reception_type = 'processed'` a estos lotes.
+
+#### 3.3.1 Matriz de Tipos de Ingesta Operativos y Aplicación de Real Físico ($F3$)
+
+Conforme a las reglas de negocio formalizadas (instrucciones de Cristhian Elgueta y AD-65, AD-79, AD-80, AD-87 y AD-126), la siguiente matriz clasifica **todos los tipos de ingesta operativos documentados en CANON/12** y define dónde aplica el **Volumen Real Físico ($F3$)** con su respectivo estado (`physical_status`):
+
+| Tipo de Ingesta Operativo | Modo / Flujo Documentado | Perfil Canónico | ¿Calcula Real Físico ($F3$)? | `physical_status` | Justificación Operativa y Fórmula |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **Guías de Compra / Aserradero** | Modos A y B (Guía con Detalle / Staging) | `f1550` / `std` | **SÍ** | `calculado` | Aplica Fórmula F3 ($E_{\text{real}} \times A_{\text{nom}} \times L_{\text{nom}} \times Pz / 10^6$) utilizando el espesor real de la tabla semilla 5A (`lumber.thickness.real.map`). Métrica comparativa `% Dif.Vol` activa. |
+| **Recepción por Volumen (Lotes SV)** | Modo C / Flujo Granel (Báscula camión) | `granel` / `volume` (AD-79) | **NO** (`0.000`) | `no_aplica` | Ingreso por metros cúbicos globales medidos en camión. No existe desglose pieza a pieza ni escuadría nominal para aplicar F3. Columna `% Dif.Vol` queda vacía. |
+| **Consolidación Administrativa** | Modo D / Múltiplos de Tarjas (AD-65 / AD-80) | Consolidación | **SÍ** (cuando aplica) | `calculado` / `no_aplica` | Aplica F3 si la consolidación mantiene escuadría visual homogénea y conteo de piezas. Si agrupa paquetes heterogéneos o sin desglose pieza a pieza, clasifica `no_aplica`. |
+| **Procesados o Maquila / Retorno de Servicio** | Imputación SV (Etiqueta $\rightarrow$ SV, AD-87) | `service` (Cepillado / Imputación) | **SÍ** (cuando aplica) | `calculado` / `sin_mapeo` | Si el producto retornado mantiene escuadría visual comercial estándar (ej: 6/4 o 5/4), aplica F3 sobre la escuadría resultante imputada a la tarja SV. Si no cuenta con mapeo, clasifica `sin_mapeo`. |
+| **Blanks Directo a Stock** | Flujo 2 / Recepción Directa (Regla F6) | `f5085` (Blanks pies) | **NO** (`0.000`) | `no_aplica` | **Regla F6 de Cristhian:** Pasan directo a stock con volumen declarado sin sufrir recálculo ni merma de espesor en Madenat. `vol_physical_real_m3 = 0.000`, `% Dif.Vol` vacía. |
+| **Productos Métricos / Perfiles Métricos** | Flujo 1 y 2 (Pino / Eucalipto métrico) | `metric` | **NO** (`0.000`) | `no_aplica` | El espesor nominal coincide con el real físico milimétrico ($E_{\text{nom}} = E_{\text{real}}$). No aplica tabla imperial de cuartos, evitando distorsiones volumétricas. |
+| **Ingreso Manual / Escuadrías Especiales** | Registro directo manual | Manual | **SÍ** (si mapea) | `calculado` / `sin_mapeo` | Si la escuadría visual existe en la tabla de espesores reales calcula F3; si no existe mapeo clasifica `sin_mapeo` con `% Dif.Vol` vacía sin calcular con ceros. |
 
 ### 3.4 Relación con contenedor
 

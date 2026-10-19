@@ -1,3 +1,12 @@
+## [18.0.6.21.0] - 2026-10-18
+
+### Added
+- **Bloque 5D (AD-126) — Reconciliación y Claridad del Real Físico**:
+  - **Campo physical_status**: Campo calculado de estado (`calculado`, `sin_mapeo`, `no_aplica`) en `madenat_guia_processing_line` y `stock.lot`.
+  - **Prevención de % con Ceros**: Métrica `% Dif.Vol` (`vol_diff_pct`) queda vacía (`False`) cuando `physical_status != 'calculado'`, evitando divisiones anómalas o falsas alertas del -100%.
+  - **Vistas comparativas 5D**: Incorporación de badge de estado y filtros guardados dedicados por estado físico (`filter_physical_calculado`, `filter_physical_sin_mapeo`, `filter_physical_no_aplica`).
+  - **Matriz de Ingesta CANON/12 §3.3**: Formalización documental de todos los flujos de ingesta (guías A-D, recepción volumen, consolidación administrativa, procesados/maquila, blanks F6 y métrico). Test suite: `TestVolumeComparison5C.test_05` (5 tests PASS, total 14 tests Bloque 5).
+
 ## [18.0.6.20.0] - 2026-10-18
 
 ### Added
