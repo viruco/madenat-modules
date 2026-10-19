@@ -347,6 +347,11 @@ class TestExportWidthS2SWpB(TransactionCase):
         parent_map = {c: p for p in root.iter() for c in p}
 
         expected_records = {
+            'param_blanks_nominal_map': 'madenat.blanks_nominal_map',
+            'param_nominal_tolerance': 'madenat.nominal_tolerance',
+            'param_width_s2s_map': 'madenat.width_s2s_map',
+            'param_thickness_visual_ranges': 'madenat.thickness_visual_ranges',
+            'param_profile_subproduct_filters': 'madenat.profile_subproduct_filters',
             'param_s2s_overwidth_inches': 'madenat.s2s_overwidth_inches',
             'param_out_of_table_behavior': 'madenat.out_of_table_behavior',
             'param_direct_width_min_mm': 'madenat.direct_width_min_mm',
@@ -377,10 +382,11 @@ class TestExportWidthS2SWpB(TransactionCase):
                                      f"El bloque contenedor <data> de {r_id} ({key_val}) debe declarar noupdate='1'")
                     found_in_noupdate[r_id] = key_val
 
-        # Verificar que TODOS los parámetros del Bloque 4D fueron encontrados y validados en el XML
+        # Verificar que los 13 parámetros de madenat.* fueron encontrados y validados en el XML
         self.assertEqual(len(found_in_noupdate), len(expected_records),
-                         f"Faltan parámetros de Bloque 4D en <data noupdate='1'>. "
+                         f"Faltan parámetros de madenat.* en <data noupdate='1'>. "
                          f"Esperados: {list(expected_records.keys())}, encontrados: {list(found_in_noupdate.keys())}")
+        self.assertEqual(len(found_in_noupdate), 13, "Deben validarse exactamente 13 parámetros madenat.* en noupdate='1'")
 
 
     def test_13_branch_resolution_order_all_four_branches(self):
