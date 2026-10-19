@@ -234,6 +234,22 @@ class MadenatGuiaProcessingLine(models.Model):
         help="Volumen físico real (F3): Espesor real (mm) × Ancho nominal (mm) × Largo (m) × Piezas / 1.000.000"
     )
 
+    # Bloque 5C (AD-126): Métricas Comparativas de Tres Volúmenes
+    vol_diff_pct = fields.Float(
+        string="% Dif. Vol",
+        compute='_compute_vol_comparison_metrics',
+        store=True,
+        digits=(16, 2),
+        help="Diferencia porcentual entre Exportación y Compra Nominal: ((Exportación - Compra) / Compra) * 100"
+    )
+    is_export_greater_nominal = fields.Boolean(
+        string="Alerta: Exportación > Compra",
+        compute='_compute_vol_comparison_metrics',
+        store=True,
+        index=True,
+        help="Indica si el volumen de exportación supera al nominal de compra (inconsistencia potencial)"
+    )
+
     # ---- WP-B: Opción manual de ancho de exportación ----
     export_width_manual_inches = fields.Float(
         string='Ancho manual export (in)',
@@ -609,6 +625,22 @@ class MadenatGuiaProcessingLine(models.Model):
 
             vol_f3 = (e_real_mm * w_mm * l_m * line.pieces) / 1000000.0
             line.vol_physical_real_m3 = r3(vol_f3)
+
+    @api.depends('vol_purchase_m3', 'vol_shipment_m3')
+    def _compute_vol_comparison_metrics(self):
+        """Calcula métricas de comparación (Bloque 5C):
+
+        - vol_diff_pct: ((Exportación - Compra) / Compra) * 100
+        - is_export_greater_nominal: Exportación > Compra (con tolerancia 0.0005 m3)
+        """
+        for line in self:
+            nom = line.vol_purchase_m3 or 0.0
+            exp = line.vol_shipment_m3 or 0.0
+            if nom > 0:
+                line.vol_diff_pct = round(((exp - nom) / nom) * 100.0, 2)
+            else:
+                line.vol_diff_pct = 0.0
+            line.is_export_greater_nominal = bool(exp > (nom + 0.0005))
 
     # ==========================================================================
     # MÉTODOS AUXILIARES: Conversión de Fracciones

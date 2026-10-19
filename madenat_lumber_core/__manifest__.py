@@ -52,6 +52,7 @@
         'views/madenat_sv_operation_views.xml',
         'views/lumber_ingestion_config_views.xml',
         'views/madenat_lumber_product_default_views.xml',
+        'views/lumber_volume_comparison_views.xml',
 
         # 📊 6. REPORTES
         'reports/madenat_guia_report.xml',

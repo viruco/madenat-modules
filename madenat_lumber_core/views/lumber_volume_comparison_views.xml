@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- 5C: VISTA COMPARATIVA DE LOS TRES VOLÚMENES (AD-126)            -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- 1. VISTA DE LISTA (SOLO LECTURA, EXPORTABLE, RESALTADO DE ANOMALÍAS) -->
+        <record id="view_stock_lot_volume_comparison_tree" model="ir.ui.view">
+            <field name="name">stock.lot.volume.comparison.tree</field>
+            <field name="model">stock.lot</field>
+            <field name="priority">50</field>
+            <field name="arch" type="xml">
+                <list string="Comparativo de Tres Volúmenes"
+                      create="false"
+                      edit="false"
+                      delete="false"
+                      decoration-danger="is_export_greater_nominal">
+                    <field name="is_export_greater_nominal" column_invisible="1"/>
+                    <field name="name" string="Lote / Tarja"/>
+                    <field name="product_id" string="Producto"/>
+                    <field name="supplier_id" string="Proveedor"/>
+                    <field name="location_id" string="Patio / Ubicación"/>
+                    <field name="purchase_order_id" string="Orden de Compra" optional="show"/>
+                    <field name="motonave_name" string="Motonave" optional="hide"/>
+                    <field name="piezas" string="Piezas" sum="Total Piezas"/>
+                    <field name="vol_purchase_m3" string="Compra Nominal (m³)" sum="Total Compra" digits="[16, 3]"/>
+                    <field name="vol_physical_real_m3" string="Real Físico (m³)" sum="Total Real Físico" digits="[16, 3]"/>
+                    <field name="vol_shipment_m3" string="Embarque Export. (m³)" sum="Total Exportación" digits="[16, 3]"/>
+                    <field name="vol_diff_pct" string="% Dif. Vol" avg="Promedio Dif %" widget="percentage" digits="[16, 2]"/>
+                    <field name="company_id" column_invisible="1"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- 2. VISTA PIVOTE PARA ANÁLISIS MULTIDIMENSIONAL -->
+        <record id="view_stock_lot_volume_comparison_pivot" model="ir.ui.view">
+            <field name="name">stock.lot.volume.comparison.pivot</field>
+            <field name="model">stock.lot</field>
+            <field name="priority">50</field>
+            <field name="arch" type="xml">
+                <pivot string="Análisis Comparativo de Volúmenes">
+                    <field name="supplier_id" type="row"/>
+                    <field name="location_id" type="row"/>
+                    <field name="vol_purchase_m3" type="measure" string="Compra Nominal (m³)"/>
+                    <field name="vol_physical_real_m3" type="measure" string="Real Físico (m³)"/>
+                    <field name="vol_shipment_m3" type="measure" string="Embarque Export. (m³)"/>
+                    <field name="piezas" type="measure" string="Piezas"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- 3. VISTA DE BÚSQUEDA, FILTROS Y AGRUPACIONES GUARDADAS -->
+        <record id="view_stock_lot_volume_comparison_search" model="ir.ui.view">
+            <field name="name">stock.lot.volume.comparison.search</field>
+            <field name="model">stock.lot</field>
+            <field name="priority">50</field>
+            <field name="arch" type="xml">
+                <search string="Búsqueda Comparativa de Volúmenes">
+                    <field name="name" string="Lote / Tarja"/>
+                    <field name="product_id" string="Producto"/>
+                    <field name="supplier_id" string="Proveedor"/>
+                    <field name="location_id" string="Patio / Ubicación"/>
+                    <field name="purchase_order_id" string="Orden de Compra"/>
+                    <field name="motonave_name" string="Motonave"/>
+
+                    <!-- Filtros de Alerta y Análisis -->
+                    <filter name="filter_anomalia_export_greater"
+                            string="⚠️ Alerta: Exportación > Compra"
+                            domain="[('is_export_greater_nominal', '=', True)]"/>
+                    <filter name="filter_has_diff"
+                            string="Con Variación de Volumen"
+                            domain="[('vol_diff_pct', '!=', 0)]"/>
+                    <separator/>
+                    <filter name="filter_has_stock"
+                            string="Con Stock Disponible"
+                            domain="[('volumen_m3', '>', 0)]"/>
+
+                    <!-- Agrupaciones por Dimensiones Clave -->
+                    <group expand="0" string="Agrupar Por">
+                        <filter name="group_location" string="Patio / Ubicación" context="{'group_by': 'location_id'}"/>
+                        <filter name="group_supplier" string="Proveedor" context="{'group_by': 'supplier_id'}"/>
+                        <filter name="group_purchase_order" string="Orden de Compra" context="{'group_by': 'purchase_order_id'}"/>
+                        <filter name="group_motonave" string="Motonave" context="{'group_by': 'motonave_name'}"/>
+                        <filter name="group_product" string="Producto" context="{'group_by': 'product_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- 4. ACCIÓN DE VENTANA -->
+        <record id="action_stock_lot_volume_comparison" model="ir.actions.act_window">
+            <field name="name">Comparativo de Tres Volúmenes</field>
+            <field name="res_model">stock.lot</field>
+            <field name="view_mode">list,pivot,form</field>
+            <field name="view_id" ref="view_stock_lot_volume_comparison_tree"/>
+            <field name="search_view_id" ref="view_stock_lot_volume_comparison_search"/>
+            <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Comparativo de Tres Volúmenes</p>
+                <p>Análisis comparativo de los tres volúmenes de MADENAT: Compra (Nominal F1), Exportación (Embarque F2) y Real Físico (F3).</p>
+            </field>
+        </record>
+
+        <!-- Vinculación explícita de vistas en el act_window -->
+        <record id="action_stock_lot_volume_comparison_view_tree" model="ir.actions.act_window.view">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_stock_lot_volume_comparison_tree"/>
+            <field name="act_window_id" ref="action_stock_lot_volume_comparison"/>
+        </record>
+
+        <record id="action_stock_lot_volume_comparison_view_pivot" model="ir.actions.act_window.view">
+            <field name="sequence" eval="2"/>
+            <field name="view_mode">pivot</field>
+            <field name="view_id" ref="view_stock_lot_volume_comparison_pivot"/>
+            <field name="act_window_id" ref="action_stock_lot_volume_comparison"/>
+        </record>
+
+        <!-- 5. MENÚ OPERATIVO (UBICACIÓN: Control de Lotes / Operaciones) -->
+        <!-- Permisos: Operaciones, Auditoría y Contabilidad; Solo Lectura -->
+        <menuitem id="menu_stock_lot_volume_comparison"
+                  name="📊 Comparativo de Volúmenes"
+                  parent="menu_ops_inventory"
+                  action="action_stock_lot_volume_comparison"
+                  sequence="35"
+                  groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_auditoria,madenat_lumber_core.group_madenat_contabilidad,madenat_lumber_core.group_madenat_gerencia"/>
+
+    </data>
+</odoo>

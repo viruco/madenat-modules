@@ -84,4 +84,6 @@ from . import test_visual_dimension_l3
 from . import test_lumber_thickness_real_map_5a
 # 🌲 FASE 12 (Bloque 5B / AD-126): Volumen Real Físico F3.
 from . import test_vol_physical_real_5b
+# 📊 FASE 12 (Bloque 5C / AD-126): Comparativo de los Tres Volúmenes.
+from . import test_volume_comparison_5c
 
