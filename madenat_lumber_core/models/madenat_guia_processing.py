@@ -1024,7 +1024,7 @@ class MadenatGuiaProcessing(models.Model):
         'stock.location', 
         string="Patio de Asignación", 
         domain=[('usage', '=', 'internal')], 
-        required=True, 
+        required=False, 
         tracking=True
     )
     
@@ -3773,7 +3773,24 @@ class MadenatGuiaProcessing(models.Model):
         # Se ejecuta ANTES de crear: no deja cabecera duplicada ni parcial.
         vals_seq = [vals] if isinstance(vals, dict) else list(vals)
         self._check_guide_identity_duplicate_on_create(vals_seq)
-        return super().create(vals)
+        warn_map = {}
+        for idx, v in enumerate(vals_seq):
+            tipo = v.get('tipo_recepcion')
+            if not v.get('assignment_location_id') and tipo in ('granel', 'service'):
+                patio, warn = self.env['stock.location'].resolve_patio_by_type('service')
+                if patio:
+                    v['assignment_location_id'] = patio.id
+                elif warn:
+                    _logger.warning(warn)
+                    warn_map[idx] = warn
+        recs = super().create(vals)
+        for idx, rec in enumerate(recs):
+            if idx in warn_map and hasattr(rec, 'message_post'):
+                try:
+                    rec.message_post(body=warn_map[idx], message_type='comment')
+                except Exception:
+                    pass
+        return recs
 
     def write(self, vals):
         # 🔐 GUARD (Fase C.1): solo roles operativos pueden alterar realidad

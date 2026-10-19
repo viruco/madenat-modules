@@ -10,6 +10,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='usage']" position="after">
                     <field name="is_patio"/>
+                    <field name="patio_type" invisible="not is_patio"/>
                 </xpath>
             </field>
         </record>
@@ -22,7 +23,14 @@
             <field name="arch" type="xml">
                 <xpath expr="//filter[@name='inactive']" position="before">
                     <filter string="Patios de Madera" name="filter_is_patio" domain="[('is_patio', '=', True)]"/>
+                    <filter string="Patios de Servicio" name="filter_patio_service" domain="[('is_patio', '=', True), ('patio_type', '=', 'service')]"/>
+                    <filter string="Patios de Puerto" name="filter_patio_port" domain="[('is_patio', '=', True), ('patio_type', '=', 'port')]"/>
                     <separator/>
+                </xpath>
+                <xpath expr="//search" position="inside">
+                    <group expand="0" string="Agrupar por">
+                        <filter string="Tipo de Patio" name="group_by_patio_type" domain="[]" context="{'group_by': 'patio_type'}"/>
+                    </group>
                 </xpath>
             </field>
         </record>
@@ -37,6 +45,7 @@
                     <field name="location_id" string="Ubicación Padre"/>
                     <field name="usage"/>
                     <field name="is_patio"/>
+                    <field name="patio_type"/>
                     <field name="company_id" groups="base.group_multi_company"/>
                 </list>
             </field>

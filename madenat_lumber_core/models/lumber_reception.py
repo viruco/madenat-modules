@@ -914,7 +914,24 @@ class LumberReception(models.Model):
     def create(self, vals):
         """Solo Operaciones/Jefatura/Gerencia pueden crear recepciones."""
         self._require_intake_operational_group()
-        return super().create(vals)
+        vals_seq = [vals] if isinstance(vals, dict) else list(vals)
+        warn_map = {}
+        for idx, v in enumerate(vals_seq):
+            if not v.get('location_id'):
+                patio, warn = self.env['stock.location'].resolve_patio_by_type('port')
+                if patio:
+                    v['location_id'] = patio.id
+                elif warn:
+                    _logger.warning(warn)
+                    warn_map[idx] = warn
+        recs = super().create(vals)
+        for idx, rec in enumerate(recs):
+            if idx in warn_map and hasattr(rec, 'message_post'):
+                try:
+                    rec.message_post(body=warn_map[idx], message_type='comment')
+                except Exception:
+                    pass
+        return recs
 
     def write(self, vals):
         """Bloquea cambios operativos a usuarios sin rol operativo."""

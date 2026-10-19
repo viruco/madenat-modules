@@ -121,6 +121,25 @@ class MadenatLumberIntakeWizard(models.Model):
         compute='_compute_requirements_info',
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'assignment_location_id' in fields_list and not res.get('assignment_location_id'):
+            modality = res.get('intake_modality') or self._context.get('default_intake_modality', 'product')
+            target_type = 'service' if modality in ('volume', 'service') else 'port'
+            patio, warn = self.env['stock.location'].resolve_patio_by_type(target_type)
+            if patio:
+                res['assignment_location_id'] = patio.id
+        return res
+
+    @api.onchange('intake_modality')
+    def _onchange_intake_modality_patio(self):
+        if not self.assignment_location_id or (self.assignment_location_id.is_patio and self.assignment_location_id.patio_type):
+            target_type = 'service' if self.intake_modality in ('volume', 'service') else 'port'
+            patio, warn = self.env['stock.location'].resolve_patio_by_type(target_type)
+            if patio:
+                self.assignment_location_id = patio
+
     @api.depends('intake_modality')
     def _compute_requirements_info(self):
         for rec in self:

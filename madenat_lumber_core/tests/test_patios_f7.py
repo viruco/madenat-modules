@@ -110,3 +110,97 @@ class TestPatiosF7(TransactionCase):
         self.assertNotEqual(partner_procesador._name, self.patio_almacen._name)
         self.assertEqual(partner_procesador._name, 'res.partner')
         self.assertEqual(self.patio_almacen._name, 'stock.location')
+
+    def test_05_patio_type_resolution_single(self):
+        """6A: resolve_patio_by_type resuelve unívocamente cuando hay exactamente un patio activo del tipo."""
+        loc_servicio = self.StockLocation.create({
+            'name': 'Patio Test Servicio Único',
+            'usage': 'internal',
+            'is_patio': True,
+            'patio_type': 'service',
+        })
+        patio, warn = self.StockLocation.resolve_patio_by_type('service')
+        self.assertEqual(patio, loc_servicio)
+        self.assertIsNone(warn)
+
+    def test_06_patio_type_resolution_zero_and_multiple(self):
+        """6A: resolve_patio_by_type retorna advertencia y False cuando hay 0 o >1 patios del tipo."""
+        # Caso 0 patios: buscar un tipo sin registros (o limpiar temporalmente)
+        self.StockLocation.search([('is_patio', '=', True), ('patio_type', '=', 'port')]).write({'is_patio': False})
+        patio, warn = self.StockLocation.resolve_patio_by_type('port')
+        self.assertFalse(patio)
+        self.assertIn("No existe ningún patio activo clasificado como tipo 'port'", warn)
+
+        # Caso múltiples patios: crear dos del mismo tipo
+        p1 = self.StockLocation.create({
+            'name': 'Patio Puerto A',
+            'usage': 'internal',
+            'is_patio': True,
+            'patio_type': 'port',
+        })
+        p2 = self.StockLocation.create({
+            'name': 'Patio Puerto B',
+            'usage': 'internal',
+            'is_patio': True,
+            'patio_type': 'port',
+        })
+        patio_mult, warn_mult = self.StockLocation.resolve_patio_by_type('port')
+        self.assertFalse(patio_mult)
+        self.assertIn("Existen múltiples patios activos clasificados como tipo 'port'", warn_mult)
+
+    def test_07_auto_assignment_by_origin(self):
+        """6A: Asignación automática por origen:
+        - Volumen (granel) y Procesados (service) -> patio de tipo servicio
+        - Recepción en puerto -> patio de tipo puerto
+        """
+        # Asegurar exactamente un patio de servicio y uno de puerto
+        self.StockLocation.search([('is_patio', '=', True), ('patio_type', 'in', ['service', 'port'])]).write({'is_patio': False})
+        patio_srv = self.StockLocation.create({
+            'name': 'PATIO SERVICIO CEPILLADO FERRAMENTA TEST',
+            'usage': 'internal',
+            'is_patio': True,
+            'patio_type': 'service',
+        })
+        patio_prt = self.StockLocation.create({
+            'name': 'PATIO MARVAL TEST',
+            'usage': 'internal',
+            'is_patio': True,
+            'patio_type': 'port',
+        })
+
+        # 1. Guía de Volumen (granel)
+        guia_vol = self.env['madenat.guia.processing'].create({
+            'name': 'GUIA-VOL-TEST-6A-01',
+            'partner_id': self.supplier.id,
+            'tipo_recepcion': 'granel',
+        })
+        self.assertEqual(guia_vol.assignment_location_id, patio_srv)
+
+        # 2. Guía de Servicio / Maquila (service)
+        guia_srv = self.env['madenat.guia.processing'].create({
+            'name': 'GUIA-SRV-TEST-6A-02',
+            'partner_id': self.supplier.id,
+            'tipo_recepcion': 'service',
+        })
+        self.assertEqual(guia_srv.assignment_location_id, patio_srv)
+
+        # 3. Recepción en puerto para embarque (lumber.reception)
+        rec = self.LumberReception.create({
+            'name': 'REC-PUERTO-TEST-6A-03',
+            'supplier_id': self.supplier.id,
+        })
+        self.assertEqual(rec.location_id, patio_prt)
+
+    def test_08_auto_assignment_no_patio_no_blocking(self):
+        """6A: Si no hay patio configurado, la creación se realiza con advertencia y sin bloqueo."""
+        self.StockLocation.search([('is_patio', '=', True), ('patio_type', '=', 'service')]).write({'is_patio': False})
+
+        # Crear guía de volumen sin patio existente en BD -> no debe lanzar UserError/ValidationError
+        guia_vol = self.env['madenat.guia.processing'].create({
+            'name': 'GUIA-VOL-TEST-NO-PATIO',
+            'partner_id': self.supplier.id,
+            'tipo_recepcion': 'granel',
+        })
+        self.assertTrue(guia_vol.id)
+        self.assertFalse(guia_vol.assignment_location_id)
+
