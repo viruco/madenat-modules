@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.46.0
-**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127) IMPLEMENTADO: 6A Patios por tipo (service vs port) y auto-asignación por origen; aplicación en madenat_test de MARVAL y Ferramenta; 6B visibilidad consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio (stock.quant lista/pivot readonly con piezas y vol. nominal); 6C etiquetas Vol. Compra (m³) y Vol. Export (m³); 6D packing estándar Forestal Andes con desplegables, botón en consola y formato standard_madenat. No continuar con lectores individuales de Arauco, JCE, BYC, Fátima. Bloque 7 incorporado al backlog con análisis B0.6 de rebaja y tarja. Deuda diferida consolidada. Versión 05 8.45.0 → 8.46.0. Sin push ni despliegue. -->
+**Versión documental:** 8.47.0
+**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Bloque 6E (AD-127/E1-E4): Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio'; filtros Solo patios y Sin patio; TDD test_12); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3; brecha acotada a reporte Excel de Tarja, planilla multidimensional de REMATE y rebaja contable de merma). Versión 05 8.46.0 → 8.47.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-19 — Bloque 6 (AD-127) IMPLEMENTADO: 6A Patios por tipo (service vs port) y auto-asignación por origen; aplicación en madenat_test de MARVAL y Ferramenta; 6B visibilidad consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio (stock.quant lista/pivot readonly con piezas y vol. nominal); 6C etiquetas Vol. Compra (m³) y Vol. Export (m³); 6D packing estándar Forestal Andes con desplegables, botón en consola y formato standard_madenat. No continuar con lectores individuales de Arauco, JCE, BYC, Fátima. Bloque 7 incorporado al backlog con análisis B0.6 de rebaja y tarja. Deuda diferida consolidada. Versión 05 8.45.0 → 8.46.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D) IMPLEMENTADO en 5A, 5B, 5C y 5D: campo physical_status (calculado, sin_mapeo, no_aplica) en líneas de guía y stock.lot; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa en CANON/12 §3.3; confirmación canónica 100% de hashes B y A.2; lista nominal de 10 fallas históricas de regresión. Fitosanitario configurable, marcado de patios y motonave formalmente DIFERIDOS. Versión 05 8.44.0 → 8.45.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126) IMPLEMENTADO en 5A (modelo persistente lumber.thickness.real.map y catálogo semilla noupdate="1"), 5B (campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3) y 5C (vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol y alerta exportación > compra). Fitosanitario configurable, marcado de patios y filtro de motonave formalmente DIFERIDOS. Versión 05 8.43.0 → 8.44.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4N (AD-125 / N2): registro como DIFERIDO de deuda técnica (f) parámetros redundantes u obsoletos en ir.config_parameter (madenat.width_s2s_map con 16 entradas frente a 15 de la tabla activa D6, madenat.blanks_nominal_map y madenat.thickness_visual_ranges como fallbacks residuales de Fase 1). Versión 05 8.42.0 → 8.43.0. Sin push ni despliegue. -->
@@ -1292,22 +1293,46 @@ Las siguientes piezas de deuda técnica han sido identificadas, clasificadas y d
 
 ## Bloque 7 — Tarjas por Contenedor, REMATE y Rebaja de Volumen (Backlog Activo)
 
-### Contexto y Análisis Preliminar (B0.6)
+### Contexto y Análisis de Brecha Rectificado (E3)
 Cristhian requiere avanzar en la consolidación física de contenedores mediante Tarjas, la confección del informe de REMATE y el mecanismo contable y operativo de rebaja de inventario al embarcar.
 
-#### 1. Rebaja de Volumen en Stock (Nominal vs Exportación)
-- **Principio:** El volumen ingresado y custodiado en el inventario físico (`stock.quant` y `stock.lot`) es el **Volumen NOMINAL (de compra)**.
-- **Embarque:** Al consolidar y despachar en buque, el volumen facturado o declarado comercialmente para exportación es el **Volumen de EXPORTACIÓN (embarque)**, el cual es sistemáticamente menor o igual al nominal.
-- **Mecanismo de Descuento:** La rebaja de inventario en `stock.move` debe descontar la totalidad del volumen nominal consumido (para extinguir las piezas físicas del stock), reconociendo la merma/diferencia dimensional (`vol_purchase_m3 - vol_shipment_m3`) en una cuenta o dimensión analítica de merma dimensional por exportación, sin dejar lotes residuales "fantasmas" con saldos de metros cúbicos.
+#### 1. Mapeo Estructural Real en Código (Fase 3 Existente)
+La arquitectura de la Fase 3 (`madenat_lumber_logistics`) **YA IMPLEMENTA** los campos y relaciones estructurales requeridos para la consolidación de exportación:
+- **Contenedor (`lumber.container` en `madenat_lumber_logistics/models/lumber_container.py`):**
+  - Número de Contenedor: `name` (:33)
+  - Tipo ISO: `container_type` (`20`, `40`, `40HC`, `45`) (:51)
+  - Sello de Seguridad: `seal_number` (:63) y Sello SAG: `sag_seal` (:70)
+  - Tara: `tare_weight_kg` (:96, computado por estándar ISO)
+  - Peso Neto: `weight_kg` (:104)
+  - Peso Bruto Total Verificado SOLAS (VGM): `gross_weight_kg` (:110, computado tara + peso neto)
+  - Capacidades Técnicas: `max_weight_kg` (:179), `max_gross_weight_kg` (:187), `max_volume_m3` (:195)
+  - Volúmenes Duales: `total_vol_shipment_m3` (exportación facturable, :121), `total_volume_purchase_m3` (nominal costo, :130)
+  - Conteos: `packages` (paquetes/tarjas, :164), `total_pieces` (piezas, :171)
+  - Embarque: `shipment_id` (:40)
+  - Rolleo de Contenedor: `action_manage_rollover` (:1649) y `lumber.container.rollover.wizard` (`wizards/lumber_container_rollover_wizard.py:18`)
+- **Embarque y Buque (`lumber.export.shipment` en `madenat_lumber_logistics/models/lumber_export_shipment.py`):**
+  - Reserva / Booking: `booking_reference` (:259), `booking_confirmed` (:327), `booking_date` (:328)
+  - Motonave: `vessel_id` (`shipping.vessel`, :260)
+  - Viaje / Trayecto: `voyage_id` (`shipping.voyage`, :272)
+  - Puertos: `loading_port_id` (:285), `discharge_port_id` (:291)
+  - Consignatario: `consignee_id` (:306)
+  - Rolleo de Embarque/Nave: `action_open_shipment_rollover_wizard` (:1296) y `lumber.vessel.rollover.wizard` (`wizards/lumber_vessel_rollover_wizard.py:81`)
 
-#### 2. Brecha Columna por Columna frente a Documentos de Muestra
+#### 2. Brecha Real Columna por Columna frente a Muestras Operativas
 Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_documentos_ingreso/`
 - **Muestra 1 — Tarja por Contenedor (`Tarja_BEAU-497711-8-2.xlsx`):**
-  - Estructura: Contenedor, Booking, Sello, Tara, VGM, Fecha de Consolidación, Tabla de Bultos/Paquetes (N° Paquete, Escuadría Visual, Ancho x Espesor x Largo, Piezas, M³ Exportación, Peso Neto).
-  - Brecha en Odoo actual: El modelo `lumber.container` actual registra lotes (`stock.lot`) y calcula totales, pero carece de campos directos para Tara, VGM, N° de Sello y generación de reporte de Tarja idéntico al formato Excel de la muestra para entrega al terminal portuario.
+  - Estructura: Encabezado con Contenedor, Booking, Sello, Tara, VGM, Fecha Consolidación; y tabla de bultos con N° Paquete, Escuadría Visual, Dimensiones (Ancho x Espesor x Largo), Piezas, M³ Exportación, Peso Neto.
+  - Brecha Real en Odoo: Dado que los datos ya existen en `lumber.container` y sus líneas (`lumber.shipment.line`), la brecha consiste exclusivamente en un **asistente / botón para generar y exportar el libro Excel de Tarja** con la maquetación y diseño exacto que exige el terminal portuario.
 - **Muestra 2 — REMATE de Embarque (`REMATE-MADENAT-M.ASER.SECA-MN-MSC-VICTORIA-ROLEO-DESDE-MN-MSC-JULIETTE.xlsx`):**
-  - Estructura: Planilla resumen por Buque/Motonave, Booking, Puerto de Embarque, Puerto de Destino, Consignatario, Detalle de Contenedores con desglose por especificación y consolidado de paquetes roll over (roleo de naves previas).
-  - Brecha en Odoo actual: No existe actualmente un asistente o reporte de REMATE que agrupe múltiples contenedores de una misma reserva/booking y exporte el libro Excel multidimensional con historial de roleos.
+  - Estructura: Planilla resumen multi-contenedor agrupada por Nave, Booking, Puertos y Consignatario, desglosando especificaciones y trazabilidad de roll over (roleos de naves previas).
+  - Brecha Real en Odoo: Falta el **asistente / reporte de REMATE** que consolide todos los contenedores de un embarque y genere el Excel multidimensional aprovechando los vínculos de roleo ya existentes en los wizards `lumber.vessel.rollover.wizard` y `lumber.container.rollover.wizard`.
+
+#### 3. Mecanismo de Rebaja de Volumen en Stock (E2)
+- **Unidad de Medida:** `stock.quant.quantity` se expresa en **`m³`** (metro cúbico).
+- **Entrada vs Salida:** El lote ingresa a stock custodiando su **Volumen Nominal de Compra** (`volume_purchase_m3`, ej. 2.495 m³ en lote D8833 de guía 26270).
+- **Brecha Contable:** Si al consolidar o embarcar se rebaja solo el **Volumen de Exportación** (`vol_shipment_m3`, ej. 2.067 m³), queda un remanente fantasma de 0.428 m³ en patio con 0 piezas físicas.
+- **Solución Canónica Requerida:** La rebaja en `stock.move` debe extinguir la totalidad del quant físico (`volume_purchase_m3 = 2.495 m³`), reconociendo la diferencia dimensional (`2.495 - 2.067 = 0.428 m³`, -17.15%) en una cuenta o dimensión analítica de merma dimensional por exportación. En costeo (`lumber.shipment.costing`), los costos logísticos se distribuyen sobre el volumen de exportación (`vol_shipment_m3`).
+
 
 ---
 
