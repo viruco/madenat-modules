@@ -13,3 +13,5 @@ from . import madenat_sv_imputation_wizard
 from . import lumber_vessel_rollover_wizard
 # Sub-bloque 4A (2026-10-04): regularización B-01 (R1 rebaja extemporánea).
 from . import lumber_b01_regularization_wizard
+# Asistente de importación de consolidación desde Excel.
+from . import lumber_consolidation_import_wizard

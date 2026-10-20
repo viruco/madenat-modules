@@ -10,3 +10,5 @@ from . import madenat_guia_processing_reopen_wizard
 from . import madenat_guia_processing_historical_reverse_wizard
 # ✏️ CDP-V1: corrección documental preservada (solo documental).
 from . import madenat_guia_processing_documental_correction_wizard
+# 🏁 GB-6: Wizard de Cierre de Período.
+from . import madenat_period_close

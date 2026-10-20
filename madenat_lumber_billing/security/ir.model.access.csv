@@ -6,3 +6,6 @@ access_lumber_billing_invoice_wizard,lumber.billing.invoice.wizard,model_lumber_
 access_lumber_billing_invoice_wizard_line,lumber.billing.invoice.wizard.line,model_lumber_billing_invoice_wizard_line,base.group_user,1,1,1,1
 access_account_move_auditoria,account.move.auditoria,account.model_account_move,madenat_lumber_core.group_madenat_auditoria,1,0,0,0
 access_account_move_line_auditoria,account.move.line.auditoria,account.model_account_move_line,madenat_lumber_core.group_madenat_auditoria,1,0,0,0
+access_madenat_billing_common_user,madenat.billing.common.user,model_madenat_billing_common,base.group_user,1,0,0,0
+access_madenat_billing_common_mgr,madenat.billing.common.mgr,model_madenat_billing_common,account.group_account_manager,1,1,1,1
+access_madenat_billing_common_aud,madenat.billing.common.aud,model_madenat_billing_common,madenat_lumber_core.group_madenat_auditoria,1,0,0,0

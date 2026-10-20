@@ -88,3 +88,5 @@ from . import test_vol_physical_real_5b
 from . import test_volume_comparison_5c
 # 🏷️ FASE 12 (Bloque 6C): Etiquetas de Volumen (Vol. Compra vs Vol. Export).
 from . import test_volume_labels_6c
+# 🔐 H0-A (Auditoría Higiene 2026-10-20): Permisos de modelos y asistentes sin ACL.
+from . import test_h0_security_permissions

@@ -89,5 +89,7 @@ from . import test_sv_imputation_lifecycle_integrity
 from . import test_volume_labels_unification
 # FASE 12 (Bloque 2 / WP-F P1-P5, 2026-10-17): disponibilidad de etiquetas en imputación SV.
 from . import test_sv_imputation_availability_p1_p5
+# 🔐 H0-A (Auditoría Higiene 2026-10-20): Permisos de modelos y asistentes sin ACL.
+from . import test_h0_security_permissions
 
 
