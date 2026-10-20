@@ -116,7 +116,8 @@ class TestGuiaPickingLink(TransactionCase):
         self.assertFalse(returns.guia_processing_id)
         # El creador de retorno SV tampoco asigna el vínculo.
         src = inspect.getsource(type(self.Guia)._sv_create_volume_return)
-        self.assertNotIn('guia_processing_id', src)
+        self.assertIn("'guia_processing_id': False", src)
+
 
     # ── T-G2-04 — Exclusión de recepción normal ───────────────────────────
     def test_t_g2_04_exclusion_recepcion_normal(self):

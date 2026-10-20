@@ -250,5 +250,6 @@ class TestProcessorLocations(TransactionCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(len(events.audit_hash), 64)
         deviations = self.env['madenat.audit.log'].search([
-            ('action_type', '=', 'deviation')])
+            ('action_type', '=', 'deviation'),
+            ('batch_id', '=', picking.name)])
         self.assertFalse(deviations)

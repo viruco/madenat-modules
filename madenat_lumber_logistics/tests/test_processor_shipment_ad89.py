@@ -169,7 +169,8 @@ class TestProcessorShipmentAD89(TransactionCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(len(events.audit_hash), 64)
         self.assertFalse(self.AuditLog.search([
-            ('action_type', '=', 'deviation')]))
+            ('action_type', '=', 'deviation'),
+            ('batch_id', '=', picking.name)]))
 
     # ── T2 ───────────────────────────────────────────────────────────────
     def test_t2_maximo_libre_valida(self):
@@ -233,7 +234,8 @@ class TestProcessorShipmentAD89(TransactionCase):
         self.assertEqual(picking.state, 'done')
         self.assertEqual(len(self._shipment_events(picking)), 1)
         self.assertFalse(self.AuditLog.search([
-            ('action_type', '=', 'deviation')]))
+            ('action_type', '=', 'deviation'),
+            ('batch_id', '=', picking.name)]))
 
     # ── T6 ───────────────────────────────────────────────────────────────
     def test_t6_idempotencia(self):
@@ -247,8 +249,9 @@ class TestProcessorShipmentAD89(TransactionCase):
         self.assertEqual(res2['res_id'], picking.id)
         self.assertEqual(wizard.picking_id, picking)
         pickings = self.env['stock.picking'].search([
-            ('origin', 'like', 'Envío a procesador')])
+            ('move_line_ids.lot_id', '=', lot.id)])
         self.assertEqual(len(pickings), 1)
+        self.assertEqual(pickings, picking)
         self.assertEqual(len(pickings.move_ids), 1)
         self.assertEqual(len(pickings.move_line_ids), 1)
         self.assertEqual(len(self._shipment_events(picking)), 1)

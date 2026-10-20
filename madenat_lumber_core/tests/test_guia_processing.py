@@ -806,9 +806,17 @@ class TestOrphanMoveCleanupSavepoint(TransactionCase):
         move_3 = self.MoveModel.create({**common_vals, 'name': 'Orphan-Protected'})
 
         # 3. Asignar move_line con quantity > 0 a move_3 → sera protegido
+        lot = False
+        if self.product.tracking != 'none':
+            lot = self.env['stock.lot'].create({
+                'name': 'TEST-LOT-ORPHAN-01',
+                'product_id': self.product.id,
+                'company_id': self.env.company.id,
+            })
         self.MoveLineModel.create({
             'move_id': move_3.id,
             'product_id': self.product.id,
+            'lot_id': lot.id if lot else False,
             'location_id': self.location_supplier.id,
             'location_dest_id': self.location.id,
             'quantity': 5.0,
