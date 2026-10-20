@@ -1,8 +1,8 @@
 ## MADENAT — Protocolo Canónico de Trabajo con IA
 
-**Versión documental:** 7.3.0
-**Fecha de actualización:** 2026-07-01
-**Estado:** ACTIVO — Actualizado post-auditoría documental y limpieza CANON
+**Versión documental:** 7.4.0
+**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Reglas de interacción y gobernanza de IA: citar por sección/símbolo, prohibición absoluta de -i y -u all, no abrir logs completos, informes cortos (máx 80 líneas) y Definición de Terminado (DoD). Versión 7.3.0 → 7.4.0. Sin push ni despliegue. | Bloque H0. -->
+**Estado:** ACTIVO — Protocolo de gobernanza técnica y ejecución asistida por IA
 **Propósito:** permitir que cualquier IA entienda el proyecto, el estado real y las reglas de trabajo sin reconstruir contexto desde cero en cada sesión.
 
 ---
@@ -69,6 +69,27 @@ madenat_lumber_logistics / madenat_lumber_billing
 - Conversión: `mm → * 0.001`, `ft → * 0.3048`, `m → * 1.0`.
 - El naming debe ser coherente entre Python, XML, tests y documentación. Cualquier discrepancia es bug crítico (AD-17).
 - El módulo debe actualizar sin fallar registry antes de cualquier deploy.
+
+### 3.1 Reglas Operacionales de Interacción y Gobernanza IA (AD-128 / H0)
+1. **Citas Canónicas por Símbolo o Sección:**
+   - Citar siempre por sección canónica (ej: `CANON/02 §18.2`) o símbolo técnico (`Modelo.metodo`, `Clase.atributo`).
+   - **Prohibido terminantemente** citar por número de línea volátil (las líneas cambian con cada edición y vuelven obsoletas las referencias).
+2. **Prohibición de `-i` y `-u all`:**
+   - NUNCA usar `-i` (`--init`) en despliegues ni pruebas; fuerza la recarga de XML sobreescribiendo registros con `noupdate="1"` y alterando configuraciones de base de datos (AD-125).
+   - NUNCA usar `-u all`; usar únicamente `-u` quirúrgico sobre los módulos afectados o el script oficial `run_regression.sh`.
+3. **Manejo de Logs y Ejecución:**
+   - Prohibido volcar logs completos o abrir archivos infinitos en el contexto de trabajo.
+   - Usar filtros acotados (`grep`, `tail -n 25`) para inspeccionar salidas específicas.
+   - Respetar timeout de 300 segundos por comando.
+4. **Informes Ejecutivos Cortos:**
+   - Todo informe de cierre o estado técnico debe ser conciso, estructurado y tener un **máximo estricto de 80 líneas**.
+5. **Definición de Terminado (DoD):**
+   - Una tarea o bloque se considera terminado únicamente cuando:
+     - El código cuenta con pruebas automatizadas (TDD) que pasan limpiamente.
+     - No genera regresión en la suite oficial ni introduce advertencias en el registro de Odoo.
+     - Se registra un commit local atómico y descriptivo por punto resuelto (sin `git push` no autorizado).
+     - La documentación canónica se actualiza de manera monótona y consistente.
+     - Se valida la invariancia de la base de datos mediante las consultas fijadas (Consulta B y A.2).
 
 ---
 

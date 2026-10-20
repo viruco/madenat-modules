@@ -1,8 +1,21 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.17.0\
-**Fecha de actualización:** 2026-10-19  <!-- 2026-10-19: §3.3 Cita explícita de ADRs (AD-65, AD-79, AD-80, AD-87) en matriz de ingesta y formalización de Bloque 6 (AD-127). Versión 1.16.0 → 1.17.0. | Bloque 6. -->\
+**Versión documental:** 1.18.0\
+**Fecha de actualización:** 2026-10-20  <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
+<!-- 2026-10-19: §3.3 Cita explícita de ADRs (AD-65, AD-79, AD-80, AD-87) en matriz de ingesta y formalización de Bloque 6 (AD-127). Versión 1.16.0 → 1.17.0. | Bloque 6. -->\
+
+### Resumen Ejecutivo de Flujos de Ingesta (Tabla Sinóptica)
+
+| Tipo de Ingesta | Discriminador (`stock.lot`) | Vía / Modelo de Entrada | Destino Inventario | Volumen Oficial |
+| :--- | :--- | :--- | :--- | :--- |
+| **Producto (Compra Directa)** | `reception_id` poblado | `lumber.reception` (Gate0/Gate1) | Patio de almacenamiento | F1 Nominal Compra (`volume_purchase_m3`) |
+| **Procesado (Maquila / Servicio)** | `volume_source_guia_id` poblado | `madenat.guia.processing` (Excel crudo) | Patio de servicio / Procesador | F1 Nominal Compra |
+| **Consolidación Administrativa** | `consolidation_id` / SV | `lumber.consolidation` (tercera vía) | Balance de masa / Consumo | F1 Nominal Compra |
+| **Blanks (F6)** | Directo a stock sin Gate dim. | `lumber.reception` | Ubicación interna directa | F1 Nominal Compra (sin 1/16") |
+| **Retorno de Procesador** | Imputación etiqueta → SV | `madenat.processor.return.link` | Patio asignado | F1 / F2 según despacho |
+
+---
 **Estado:** ACTIVO — Documenta la jerarquía del volumen oficial y el bloque SV visible de la Consola, el ciclo de vida controlado de guías (Modos A–D) de la Fase 2 (AD-80), la **imputación SV (etiqueta→SV)** como vía oficial del retorno procesado (§11.8, AD-87) y las reglas operativas de Blanks y Patios (§12, AD-116/AD-117).
 **Fecha:** 2026-09-26\
 **Estado:** ✅ Vigente — Documento canónico de flujos de ingesta (corregido: `reception_id` como discriminador operativo; §11 consolidación administrativa como tercera vía complementaria — AD-65; §11.5 política de volumen oficial de Recepción por Volumen — AD-79; §11.6 alcance del gate dimensional del core en flujos de Volumen — cierre T2 2026-09-26)\

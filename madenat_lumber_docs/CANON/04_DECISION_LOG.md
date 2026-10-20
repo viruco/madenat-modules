@@ -1,8 +1,25 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.47.0
-**Última actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
+**Versión documental:** 12.48.0
+**Última actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
+<!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
+
+### Resumen Ejecutivo de Decisiones Arquitecturales (Tabla Sinóptica)
+
+| Decisión (ADR) | Fecha | Título / Alcance | Estado |
+| :--- | :--- | :--- | :--- |
+| **AD-51** | 2026-09-10 | Puerta única de ingreso (`madenat_lumber_intake`) | Vigente |
+| **AD-65 / AD-79 / AD-80** | 2026-09-26 | Flujo de Volúmenes, imputación SV y ciclo de vida de guías | Vigente |
+| **AD-87 / AD-89 / AD-90** | 2026-10-02 | Retorno procesado, asistente de envío a procesador y backorder | Vigente |
+| **AD-116 / AD-117** | 2026-10-17 | Reglas de Patios, Blanks a stock y eliminación de recálculo | Vigente |
+| **AD-120 / AD-121 / AD-122**| 2026-10-18 | Decisiones D1–D6 Mauricio, anti-copia de tablas, redondeo único r3() | Vigente |
+| **AD-125** | 2026-10-18 | Prohibición absoluta de `-i` en despliegues y pruebas (uso de `-u` quirúrgico) | Vigente |
+| **AD-126** | 2026-10-18 | Volumen Real Físico F3 (`lumber.thickness.real.map`) y comparativo | Vigente |
+| **AD-127** | 2026-10-19 | Patios por Tipo, visibilidad de inventario y packing estándar Forestal Andes | Vigente |
+| **AD-128** | 2026-10-20 | Higiene Mínima Segura H0: permisos ACL, saneamiento pruebas y reglas de IA | Vigente |
+
+---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo nuevo lumber.thickness.real.map con catálogo semilla noupdate="1", chatter, tracking, coherencia <= 0.001" y getter en madenat.ingestion.config sin copia en código (D6). 5B: campo vol_physical_real_m3 (F3) calculado con r3() una sola vez (espesor real x ancho nominal mm x largo m x piezas / 1.000.000) en líneas de guía y stock.lot; Blanks directo a stock y perfiles no aplicables en 0.0; histórico intacto. 5C: vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol, agrupable por patio, proveedor, OC y motonave; filtros guardados; menú operativo con permisos para Operaciones, Auditoría y Contabilidad; alerta y resaltado de anomalías (exportación > compra). Versión 04 12.44.0 → 12.45.0. | Bloque 4N (AD-125). -->
 <!-- actualizado: 2026-10-18 — Alcance Real de Ejecuciones con -i y Corrección Forense de Atribución (AD-125 / Bloque 4N): corrección forense de atribución de sobreescritura de D1 al primer -i en 4J (20:28:18 UTC) y no 4K; aclaración de que write_date 21:17:05 reflejaba la última escritura en 4K; corrección de afirmación de 4J de que D1 estaba vigente; documentación de 89 registros reescritos en tablas destino (N1); verificación estructural pura de noupdate en XML para test_12 (N3); prohibición explícita de -i en despliegue (N4). Versión 04 12.43.0 → 12.44.0. | Cierre Arnés 4M (AD-125). -->
@@ -4062,6 +4079,37 @@ Marco normativo aplicado:
    - Pruebas de ida y vuelta (roundtrip) exitosas con datos sintéticos de Arauco, JCE (dimensiones en columnas separadas), BYC y Fátima.
    - Decisión de Operaciones: descontinuar la adaptación individual de lectores nativos para Arauco, JCE, BYC y Fátima; exigir el uso de la plantilla estándar MADENAT.
    - Commit: `486cd1f`.
+
+---
+
+## 2026-10-20 — Higiene Mínima Segura H0 (AD-128)
+
+### Contexto
+Auditoría y saneamiento del arnés de pruebas, seguridad de modelos huérfanos sin reglas de acceso (`ir.model.access.csv`), erradicación de advertencias en la carga del registro de Odoo 18 CE, y saneamiento de pruebas unitarias mal diseñadas sin debilitar aserciones ni tocar el código de negocio.
+
+### Decisiones Aprobadas (AD-128)
+
+1. **H0-A — Permisos ir.model.access.csv en Modelos y Asistentes Huérfanos:**
+   - Todo modelo o asistente transitorio (`models.TransientModel`) o persistente (`models.Model`) debe contar con su correspondiente entrada en `ir.model.access.csv` con principio de mínimo privilegio.
+   - En `madenat_lumber_core`: asignación de permisos a `madenat.period.close` (gerentes de configuración/contabilidad), `madenat.reception.parser`, `madenat.sv.internal.capability`, `madenat.sv.internal.marker`, y mixins/reportes abstractos.
+   - En `madenat_lumber_logistics`: permisos a `lumber.b01.regularization.wizard` y `lumber.consolidation.import.wizard` (Operaciones y Auditoría).
+   - En `madenat_lumber_purchasing` y `madenat_lumber_billing`: permisos a `madenat.purchase.intake` y `madenat.billing.common`.
+   - Pruebas TDD añadidas en `test_h0_security_permissions.py` (acceso concedido al rol correspondiente y denegado al usuario sin rol).
+   - Desaparición completa de la advertencia `have no access rules` durante la carga de módulos.
+
+2. **H0-B — Saneamiento de Pruebas Unitarias Mal Diseñadas:**
+   - Corrección de 6 pruebas cuya causa de falla era el diseño de la prueba o de sus fixtures en bases de datos con histórico:
+     - `TestGuiaPickingLink.test_t_g2_03_exclusion_retornos`: Aserción actualizada para verificar explícitamente `'guia_processing_id': False` en el creador de retorno SV.
+     - `TestOrphanMoveCleanupSavepoint.test_partial_batch_failure_protected_moves_survive`: Asignación de lote de prueba al crear líneas de movimiento en estado `done` para productos con trazabilidad.
+     - `TestProcessorLocations.test_09_auditoria_envio_normal`: Delimitación de búsqueda de desviaciones en la auditoría al albarán específico (`batch_id = picking.name`).
+     - `TestProcessorShipmentAD89` (`test_t1`, `test_t5`, `test_t6`): Delimitación de auditoría a `batch_id = picking.name` e idempotencia verificada por lote individual (`move_line_ids.lot_id = lot.id`).
+   - Las 4 pruebas restantes no atribuibles a fixtures simples (`TestSvConcurrency` y `TestSvEscalationSecurity` 02, 03, 04) quedan diagnosticadas y documentadas en `CANON/05`.
+
+3. **Reglas Operativas de Higiene y Gobernanza IA (CANON/07):**
+   - Prohibición irrestricta de `-i` (--init) y `-u all`. Solo `-u` quirúrgico con el script canónico `run_regression.sh`.
+   - Citar siempre por sección o símbolo (`NombreClase.metodo`), nunca por número de línea volátil.
+   - Prohibido volcar o abrir logs completos en el contexto; uso estricto de filtros o extractos específicos.
+
 
 
 

@@ -1,7 +1,23 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.48.0
-**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
+**Versión documental:** 12.49.0
+**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL (H0-A) y saneamiento de pruebas (H0-B); versión 02 12.48.0 → 12.49.0. Sin push ni despliegue. -->
+<!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
+
+### Resumen Ejecutivo de Continuidad (Tabla Sinóptica)
+
+| Dimensión | Estado / Valor Canónico | Referencia Canónica |
+| :--- | :--- | :--- |
+| **Ambiente & Plataforma** | Odoo 18 CE en Docker WSL (`odoo18_app`, `odoo18_db`), base `madenat_test` | CANON/00 §2, CANON/02 §2 |
+| **Puerta Única de Entrada** | `madenat_lumber_intake` («Ingreso de Madera»): Producto vs Procesado | CANON/02 §2, CANON/12 §3 |
+| **Volúmenes Canónicos** | F1 Nominal Compra (`volume_purchase_m3`), F2 Exportación (`vol_shipment_m3`), F3 Real Físico (`vol_physical_real_m3`) | CANON/17 §1, CANON/04 AD-126 |
+| **Patios y Ubicaciones** | Patios por tipo (`service` vs `port`), auto-asignación por origen | CANON/04 AD-127, CANON/02 §20 |
+| **Línea Base Hashes** | Consulta B (MD5 4 decimales: `5c2152...`), Consulta A.2 estructural (`6667a4...`) | CANON/02 §18, CANON/04 AD-121 |
+| **Higiene & Seguridad H0** | ACLs completas para 19 modelos/wizards huérfanos; arnés sin advertencias de permisos | CANON/04 AD-128, CANON/05 HG-02 |
+| **Estado de Regresión** | Script `run_regression.sh` (-u quirúrgico); 4 fallas complejas registradas, 0 errores | CANON/03 §30, CANON/05 HG-06 |
+| **Reglas de Operación IA** | Prohibido `-i` y `-u all`; citas por sección/símbolo; logs acotados; commits atómicos | CANON/07 §3 |
+
+---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): §19.1 Subbloque 5D con campo physical_status (calculado, sin_mapeo, no_aplica) y porcentaje % Dif.Vol vacío sin mapeo ni ceros (commit 51e0325); total 14 tests nuevos del Bloque 5 pasando; §19.2 confirmación canónica 100% de consultas oficiales B y A.2 en las 3 tablas. Versión 02 12.46.0 → 12.47.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): §19 Implementación formal de Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo lumber.thickness.real.map editable con chatter y noupdate="1" (commit 8fdddae). 5B: campo vol_physical_real_m3 F3 en líneas de guía y lotes con r3() (commit d19f314). 5C: vistas comparativas readonly con % Dif.Vol y alerta exportación > compra (commit 9f9e8b5). Hashes históricos B y A.2 invariantes. Versión 02 12.45.0 → 12.46.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Bloque 4N: §18.2 incorporación de prohibición absoluta de -i (--init) en despliegue y pruebas (recarga forzada de XML ignorando noupdate="1"), uso exclusivo de -u quirúrgico sobre módulos requeridos, y ratificación de prohibición de -u all. Versión 02 12.44.0 → 12.45.0. Sin push ni despliegue. -->

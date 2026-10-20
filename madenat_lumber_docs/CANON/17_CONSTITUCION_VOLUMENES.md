@@ -1,7 +1,19 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.16.0
-**Fecha de actualización:** 2026-10-19  <!-- 2026-10-19: §10.6.7 Rebaja de inventario y merma dimensional por exportación (E2 / Bloque 6E) — extinción completa de volumen nominal en stock y distribución de costo logístico sobre volumen de exportación. Versión 1.15.0 → 1.16.0. | Bloque 6E. -->
+**Versión documental:** 1.17.0
+**Fecha de actualización:** 2026-10-20  <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.16.0 → 1.17.0. | Bloque H0. -->
+<!-- 2026-10-19: §10.6.7 Rebaja de inventario y merma dimensional por exportación (E2 / Bloque 6E) — extinción completa de volumen nominal en stock y distribución de costo logístico sobre volumen de exportación. Versión 1.15.0 → 1.16.0. | Bloque 6E. -->
+
+### Resumen Ejecutivo de Volúmenes (Tabla Sinóptica)
+
+| Volumen | Nombre / Código | Campo en `stock.lot` | Propósito / Ámbito | Fórmula / Fuente |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nominal Compra** | F1 / Compra | `volume_purchase_m3` / `volumen_m3` | Base de stock, valorización contable y quants | Espesor nom. × ancho nom. × largo × pzas |
+| **Exportación** | F2 / Embarque | `vol_shipment_m3` | Despacho marítimo, consolidación contenedores | Tabla de empaque exportador / packing |
+| **Real Físico** | F3 / Físico | `vol_physical_real_m3` | Cubicaje industrial y análisis de merma | Espesor real (`lumber.thickness.real.map`) × ancho × largo × pzas |
+| **Oficial Recepción** | F4 / Oficial | `volumen_oficial` | Auditoría de ingreso y verificación documental | Volumen declarado o validado en Gate 1 |
+
+---
 <!-- 2026-10-19: §10.6.3 Rotulación formal: solo 6/4 = 38,1 mm figura en instrucciones de Cristhian; 4/4, 5/4, 7/4 y 8/4 son derivados (n/4 x 25,4 mm). Versión 1.14.0 → 1.15.0. | Bloque 6. -->
 <!-- 2026-10-18: §10.6.6 Claridad y Reconciliación del Real Físico (AD-126 / Bloque 5D) — campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado sin ceros ni distorsiones; badge y filtros por estado. Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 5 (AD-126). -->
 <!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->

@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.48.0
-**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — Auditoría de Higiene de Código y Documentación: incorporación formal del Backlog Priorizado de Higiene de Código y Arquitectura (HG-01 a HG-08: descomposición modular de archivos >1.500L, seguridad ir.model.access.csv, vistas no declaradas, consultas .search() en bucles, pre-commit propuesto, saneamiento de 10 pruebas y racionalización CANON). Versión 05 8.47.0 → 8.48.0. Sin push ni despliegue. -->
+**Versión documental:** 8.49.0
+**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
+<!-- actualizado: 2026-10-19 — Auditoría de Higiene de Código y Documentación: incorporación formal del Backlog Priorizado de Higiene de Código y Arquitectura (HG-01 a HG-08: descomposición modular de archivos >1.500L, seguridad ir.model.access.csv, vistas no declaradas, consultas .search() en bucles, pre-commit propuesto, saneamiento de 10 pruebas y racionalización CANON). Versión 05 8.47.0 → 8.48.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Bloque 6E (AD-127/E1-E4): Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio'; filtros Solo patios y Sin patio; TDD test_12); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3; brecha acotada a reporte Excel de Tarja, planilla multidimensional de REMATE y rebaja contable de merma). Versión 05 8.46.0 → 8.47.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127) IMPLEMENTADO: 6A Patios por tipo (service vs port) y auto-asignación por origen; aplicación en madenat_test de MARVAL y Ferramenta; 6B visibilidad consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio (stock.quant lista/pivot readonly con piezas y vol. nominal); 6C etiquetas Vol. Compra (m³) y Vol. Export (m³); 6D packing estándar Forestal Andes con desplegables, botón en consola y formato standard_madenat. No continuar con lectores individuales de Arauco, JCE, BYC, Fátima. Bloque 7 incorporado al backlog con análisis B0.6 de rebaja y tarja. Deuda diferida consolidada. Versión 05 8.45.0 → 8.46.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D) IMPLEMENTADO en 5A, 5B, 5C y 5D: campo physical_status (calculado, sin_mapeo, no_aplica) en líneas de guía y stock.lot; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa en CANON/12 §3.3; confirmación canónica 100% de hashes B y A.2; lista nominal de 10 fallas históricas de regresión. Fitosanitario configurable, marcado de patios y motonave formalmente DIFERIDOS. Versión 05 8.44.0 → 8.45.0. Sin push ni despliegue. -->
@@ -1347,18 +1348,62 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 
 ---
 
-## Backlog Priorizado de Higiene de Código y Arquitectura (Auditoría 2026-10-19)
+## Backlog Priorizado de Higiene de Código y Arquitectura (Auditoría 2026-10-19 / Actualizado H0 2026-10-20)
 
-| ID | Dimensión | Alcance / Evidencia | Impacto | Esfuerzo | Riesgo | Criterio de Cierre |
-|---|---|---|---|---|---|---|
-| **HG-01** | Modularización | Descomposición de 5 archivos gigantes: `madenat_guia_processing.py` (6.766L), `lumber_reception.py` (3.256L), `lumber_export_shipment.py` (2.218L), `intake_console.py` (2.139L), `lumber_container.py` (1.971L) en mixins por dominio funcional. | Alto | L | Medio | Ningún archivo individual supera las 800 líneas. Regresión canónica 100% preservada. |
-| **HG-02** | Seguridad | Registro de modelos/wizards huérfanos sin entrada en `ir.model.access.csv` (`lumber.b01.regularization.wizard`, `lumber.consolidation.import.wizard`, `madenat.period.close`, `madenat.reception.parser`, etc.). | Alto | S | Bajo | 0 advertencias de acceso en Odoo shell / logs; permisos de grupo asignados formalmente. |
-| **HG-03** | Estructura | Declarar o limpiar 24 archivos XML huérfanos en disco no incluidos en `__manifest__.py` (14 en core, 5 en logistics, 2 en shipping_core, 2 en purchasing, 1 en costing). | Medio | S | Bajo | Todos los XMLs activos están en `data` de manifiestos; XMLs deprecados movidos a LEGADO o eliminados. |
-| **HG-04** | Rendimiento | Erradicar 49 patrones de `.search()` dentro de bucles `for/while` (ej. `reception_parser.py:646-755`, `pre_deploy_health_check.py`, `lumber_stock_report.py:182`). | Alto | M | Bajo | Búsquedas agrupadas pre-bucle con `search([('id', 'in', ...)])` o diccionarios indexados en memoria. |
-| **HG-05** | Mantenibilidad | Desacoplar literales de negocio harcodeados (`LUMBER_DIMENSION_MAP` en `utils_uom.py:913`, fallback de Blanks en `reception_parser.py:16`, rangos visuales). | Medio | M | Medio | Tablas configurables en BD (como se hizo con `lumber.width.s2s.map` en AD-120). |
-| **HG-06** | Calidad / CI | Configurar framework de pre-commit local con `pylint-odoo`, `check-xml`, `debug-statements` y `end-of-file-fixer`. | Alto | S | Bajo | Archivo `.pre-commit-config.yaml` versionado en raíz; ejecución en pre-commit sin falsos positivos. |
-| **HG-07** | Pruebas | Saneamiento y reconciliación de las 10 fallas históricas conocidas de la suite (6 FAIL, 4 ERROR) en `madenat_lumber_core` y `madenat_lumber_logistics`. | Alto | M | Medio | 0 FAIL / 0 ERROR en los 1.584 tests de regresión canónica. |
-| **HG-08** | Documentación | Racionalizar CANON (16.554L totales en 17 docs): agregar resúmenes ejecutivos de 1 pantalla en documentos >2.000L (`04`, `02`, `19`) y archivar secciones obsoletas a LEGADO. | Medio | M | Bajo | Encabezado ejecutivo de 1 página en cada CANON largo; reducción del tiempo de inducción técnica. |
+| ID | Dimensión | Alcance / Evidencia | Estado post H0 | Criterio de Cierre / Seguimiento |
+|---|---|---|---|---|
+| **HG-01** | Modularización | Descomposición de 5 archivos gigantes: `madenat_guia_processing.py` (6.766L), `lumber_reception.py` (3.256L), `lumber_export_shipment.py` (2.218L), `intake_console.py` (2.139L), `lumber_container.py` (1.971L). | 🟡 **DIFERIDO** (No autorizado en H0) | Ningún archivo individual supera las 800 líneas. Regresión canónica 100% preservada. |
+| **HG-02** | Seguridad | Registro de permisos en `ir.model.access.csv` para 19 modelos/wizards huérfanos. | 🟢 **CERRADO (H0-A)** | ACLs completadas en core, logistics, purchasing y billing. 0 advertencias de acceso en Odoo logs. Tests TDD pasando. |
+| **HG-03** | Estructura | Clasificación y acción para 24 archivos XML huérfanos no declarados en manifiestos (incluido `shipping_menus.xml`). | 🟡 **DIFERIDO** (Clasificados en H0-C; no mover ni declarar) | Declarar activos olvidados tras revisión de vistas y menús; depurar obsoletos. |
+| **HG-04** | Rendimiento | Erradicar 49 patrones de `.search()` dentro de bucles `for/while` (ej. `reception_parser.py`, `lumber_stock_report.py`). | 🟡 **DIFERIDO** (No autorizado en H0) | Búsquedas agrupadas pre-bucle con `search([('id', 'in', ...)])`. |
+| **HG-05** | Mantenibilidad | Código muerto, duplicado y literales harcodeados (`LUMBER_DIMENSION_MAP`, fallbacks). | 🟡 **DIFERIDO** (No autorizado en H0) | Tablas configurables en BD o limpieza de código inactivo. |
+| **HG-06** | Calidad / CI | Configuración de pre-commit incremental (solo hooks sobre archivos modificados, sin pylint-odoo global). | 🟡 **PROPUESTO** (No autorizado instalar en H0) | Definición formal en backlog; sin `--all-files`. |
+| **HG-07** | Pruebas | Saneamiento de las 10 pruebas fallidas conocidas. | 🟢 **PARCIAL (H0-B)** | 6 pruebas de fixtures/alcance corregidas y validadas; 4 complejas diagnosticadas y diferidas. |
+| **HG-08** | Documentación | Tablas sinópticas en documentos largos (`02`, `04`, `12`, `17`) y mapa de 15 preguntas en INDICE. | 🟢 **CERRADO (H0-D)** | Resúmenes ejecutivos de 1 pantalla y mapa temático formalizados en CANON. |
+
+---
+
+### Diagnóstico Técnico de Pruebas Fallidas Pendientes (Diferidas)
+
+1. **`TestSvConcurrency.test_01_dos_transacciones_no_sobreconsumen` (`madenat_lumber_core`):**
+   - **Clasificación:** Prueba mal diseñada para el framework de pruebas de Odoo.
+   - **Causa Raíz:** Intenta validar concurrencia multihilo ejecutando hilos con cursores de base de datos raw independientes dentro de un `TransactionCase`. En Odoo, `TransactionCase` corre dentro de una transacción unificada con rollback; los hilos secundarios no tienen visibilidad de los datos creados en el hilo principal no commiteado, y el aislamiento genera conflictos de bloqueo y savepoint.
+   - **Traza Resumida:** `AssertionError: Se esperaba que una de las transacciones fallara por sobreconsumo`.
+   - **Esfuerzo:** **L**.
+   - **Propuesta de Rediseño:** Convertir la verificación de concurrencia en una suite fuera de `TransactionCase` (ejecutable mediante runner independiente con commits reales en base de datos temporal) o validar la integridad de concurrencia mediante pruebas de bloqueo determinístico a nivel de ORM (`with_for_update()`).
+
+2. **`TestSvEscalationSecurity` (`test_02`, `test_03`, `test_04` en `madenat_lumber_logistics`):**
+   - **Clasificación:** Regresión real en delegación de seguridad entre modelos de negocio.
+   - **Causa Raíz:** Al ejecutar la acción `action_apply()` de rebaja como usuario de `contabilidad` o `auditoria`, el flujo invoca internamente `_sv_post_chatter()`, el cual intenta escribir una nota en el chatter del albarán y de la guía procesada asociada (`madenat.guia.processing`). Los usuarios con perfil exclusivamente contable/auditor no tienen privilegios de escritura en `madenat.guia.processing`.
+   - **Traza Resumida:** `odoo.exceptions.AccessError: You are not allowed to modify 'Recepción de Madera Procesada' (madenat.guia.processing)`.
+   - **Esfuerzo:** **M**.
+   - **Propuesta de Rediseño:** Utilizar elevación segura `sudo()` dentro del helper `_sv_post_chatter()` para la bitácora de mensajes de auditoría, o conceder permiso de escritura en la bitácora cruzada a los roles correspondientes.
+
+---
+
+### Propuesta de Pre-commit Incremental (Especificación Técnica)
+
+- **Principio:** Cero impacto sobre el tiempo de desarrollo; ejecución estrictamente acotada a archivos en staging (`git diff --cached`).
+- **Hooks autorizados:**
+  - `check-xml`: Validador de sintaxis XML (previene tags sin cerrar o XML malformado).
+  - `check-yaml`: Validador sintáctico para manifiestos o archivos de configuración.
+  - `end-of-file-fixer` & `trailing-whitespace`: Higiene básica de texto.
+  - `flake8` / `black` con flags acotados únicamente sobre los archivos Python modificados.
+- **Prohibiciones explícitas:**
+  - **SIN `pylint-odoo` global** (tiempos de análisis inviables de >5 minutos y miles de falsos positivos en código heredado).
+  - **PROHIBIDO ejecutar `pre-commit run --all-files`** (generaría un churn incontrolable de miles de archivos no relacionados con el cambio activo).
+
+---
+
+### Alcance de Higiene No Autorizado en H0 (Registrado como Diferido)
+
+1. **Refactorización de Archivos Gigantes (HG-01):** Modificación de monolitos >1.500L prohibida en H0 para evitar desestabilizar flujos activos.
+2. **Declaración y Movimiento de 24 XML Huérfanos (HG-03):** Solo clasificados en H0-C; no declarados ni movidos para preservar invariantes.
+3. **Optimización de `.search()` en Bucles (HG-04):** Requiere análisis caso por caso y pruebas de regresión funcionales.
+4. **Código Muerto y Duplicado (HG-05):** Erradicación diferida a fase de mantenimiento mayor.
+5. **Citas de Línea Obsoletas en Documentación y `.gitignore` (HG-07):** Migración gradual a citas por símbolo.
+6. **Antigüedad del WIP en Costing y Reports (HG-08) y Política de Respaldos:** Área protegida por restricciones D1–D6 sin tocar en H0.
+
 
 
 

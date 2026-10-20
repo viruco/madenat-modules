@@ -1,7 +1,8 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 12.50.0
-**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — **Bloque 6E (AD-127/E1-E4)**: Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio', filtros Solo patios y Sin patio, TDD); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3); formalización de rebaja de volumen nominal en stock y merma por exportación. Versiones `05` 8.46.0 → 8.47.0, `17` 1.15.0 → 1.16.0; índice 12.49.0 → 12.50.0. Sin push ni despliegue. | Bloque 6E. -->
+**Versión documental:** 12.51.0
+**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación del Mapa Rápido «Pregunta → Documento y Sección Canónica» (15 temas más consultados); sincronización de versiones monótonas en CANON/02, 04, 05, 07, 12 y 17; índice 12.50.0 → 12.51.0. Sin push ni despliegue. | Bloque H0. -->
+<!-- actualizado: 2026-10-19 — **Bloque 6E (AD-127/E1-E4)**: Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio', filtros Solo patios y Sin patio, TDD); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3); formalización de rebaja de volumen nominal en stock y merma por exportación. Versiones `05` 8.46.0 → 8.47.0, `17` 1.15.0 → 1.16.0; índice 12.49.0 → 12.50.0. Sin push ni despliegue. | Bloque 6E. -->
 <!-- actualizado: 2026-10-19 — **Bloque 6 (AD-127)**: Patios por tipo (service vs port) y auto-asignación por origen con MARVAL y Ferramenta en test (6A); visibilidad de ingresos en Consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio en stock.quant (6B); unificación de etiquetas Vol. Compra (m³) y Vol. Export (m³) y compra visible en lote (6C); plantilla estándar MADENAT con listas desplegables, botón en consola y descontinuación definitiva de lectores nativos de Arauco, JCE, BYC, Fátima (6D). Arnés oficial run_regression.sh con 1.591 tests (10 fallas históricas, 0 errores). Hashes B y A.2 100% exactos. Versiones `02` 12.47.0 → 12.48.0, `03` 6.41.0 → 6.42.0, `04` 12.46.0 → 12.47.0, `05` 8.45.0 → 8.46.0, `12` 1.16.0 → 1.17.0, `17` 1.14.0 → 1.15.0; índice 12.48.0 → 12.49.0. Sin push ni despliegue. | Bloque 6. -->
 <!-- actualizado: 2026-10-18 — **Bloque 5D (AD-126)**: Reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de regresión; total 14 pruebas de Bloque 5 pasando. Versiones `02` 12.46.0 → 12.47.0, `04` 12.45.0 → 12.46.0, `05` 8.44.0 → 8.45.0, `03` 6.40.0 → 6.41.0, `12` 1.15.0 → 1.16.0, `17` 1.13.0 → 1.14.0; índice 12.47.0 → 12.48.0. Sin push ni despliegue. | Bloque 5. -->
 <!-- actualizado: 2026-10-18 — **Bloque 5 (AD-126)**: Modelo lumber.thickness.real.map editable con chatter y noupdate="1" (5A); volumen real físico vol_physical_real_m3 F3 en líneas y lotes con r3() (5B); vistas comparativas de lista y pivote readonly con columna % Dif.Vol y alerta exportación > compra (5C). Hashes MD5 históricos B y A.2 invariantes. Versiones `02` 12.45.0 → 12.46.0, `04` 12.44.0 → 12.45.0, `05` 8.43.0 → 8.44.0, `03` 6.39.0 → 6.40.0, `12` 1.14.0 → 1.15.0, `17` 1.12.0 → 1.13.0; índice 12.46.0 → 12.47.0. Sin push ni despliegue. | Bloque 4N. -->
@@ -85,34 +86,56 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 
 ---
 
+## 1.1 Mapa Rápido: Pregunta → Documento y Sección Canónica (15 Temas Principales)
+
+| # | Pregunta Frecuente / Tema | Documento Canónico | Sección Canónica |
+| :- | :--- | :--- | :--- |
+| 1 | ¿Cómo ingresa una guía de compra vs procesado? | `CANON/12_FLUJOS_INGESTA.md` | §2 Modelo de discriminación, §3 Matriz operativa |
+| 2 | ¿Cuál es la diferencia entre los 3 volúmenes (Nominal, Export, Físico)? | `CANON/17_CONSTITUCION_VOLUMENES.md` | §1 Definiciones acordadas, §10.6 Formalización |
+| 3 | ¿Por qué está prohibido el flag `-i` (--init) y `-u all`? | `CANON/04_DECISION_LOG.md` | AD-125, CANON/02 §18.2, CANON/07 §3 |
+| 4 | ¿Cómo se concilia el retorno desde un procesador externo? | `CANON/19_IMPUTACION_SV_Y_PROCESADORES.md`| §16 Asistente de Envío, §19.10 Conciliación |
+| 5 | ¿Cómo verificar la integridad de la base sin alterarla? | `CANON/02_CONTINUIDAD.md` | §18.3 Hashes canónicos Consulta B y Consulta A.2 |
+| 6 | ¿Dónde se consultan las decisiones arquitecturales aprobadas? | `CANON/04_DECISION_LOG.md` | AD-01 a AD-128 |
+| 7 | ¿Cuál es el catálogo oficial de espesores reales? | `CANON/04_DECISION_LOG.md` | AD-126 (`lumber.thickness.real.map`) |
+| 8 | ¿Cómo se ejecutan las pruebas y la regresión oficial? | `CANON/03_TESTS.md` | §30 Arnés oficial `run_regression.sh` |
+| 9 | ¿Qué modelos requieren permisos y cómo se auditan? | `CANON/04_DECISION_LOG.md` | AD-128, CANON/05 HG-02 |
+| 10 | ¿Cómo funcionan las reglas de Patios por tipo y autoasignación? | `CANON/04_DECISION_LOG.md` | AD-127, CANON/02 §20 |
+| 11 | ¿Cuáles son los pendientes técnicos no resueltos y diferidos? | `CANON/05_BACKLOG.md` | §Deuda Técnica Diferida, HG-01..HG-08 |
+| 12 | ¿Cuáles son las reglas de interacción con IA y control de cambios? | `CANON/07_TRABAJO_CON_IA.md` | §3 Reglas no negociables, §4 Protocolo |
+| 13 | ¿Cómo opera la consola única de ingreso `madenat_lumber_intake`? | `CANON/02_CONTINUIDAD.md` | §2 Puerta única, CANON/04 AD-51 |
+| 14 | ¿Cómo se gestionan las mermas y rebajas de inventario por exportación?| `CANON/17_CONSTITUCION_VOLUMENES.md` | §10.6.7 Rebaja y merma dimensional |
+| 15 | ¿Cuál es la regla de redondeo único en cálculos volumétricos? | `CANON/04_DECISION_LOG.md` | AD-122 (r3 ROUND_HALF_UP sin recálculos) |
+
+---
+
 ## 2. Documentos canónicos activos
 
 | Archivo | Propósito | Versión | Fecha | Estado |
 |---|---|---|---|---|
 | `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones (incluye §4.8 Gestión Operativa de Etiquetas SV, §4.9 Modo A autoservicio y §4.10 Búsqueda/filtros/agrupaciones de la Consola de Intake) | 7.18.0 | 2026-10-07 | ✅ Vigente |
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
-| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, y **§20 Estado al cierre de la jornada 2026-10-19 y plan de continuación — AD-127**) | 12.48.0 | 2026-10-19 | ✅ Vigente |
+| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, y **H0 Higiene Mínima Segura — AD-128**) | 12.49.0 | 2026-10-20 | ✅ Vigente |
 | `03_TESTS.md` | Catálogo maestro de suites, tests unitarios e integración (§33 Bloque 6 suites y script canónico `run_regression.sh`) | 6.42.0 | 2026-10-19 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-127; **AD-127 (2026-10-19): Bloque 6 — Patios por Tipo (6A), Visibilidad de Ingresos e Inventario (6B), Etiquetas de Volumen (6C), Packing Estándar MADENAT y Descontinuación de Lectores Nativos (6D)**) | 12.47.0 | 2026-10-19 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda T1–T7, rebaja, auditorías; Bloque 4; Bloque 5; Bloque 6; **Bloque 6E: Inventario por patio generalizado, rectificación de brecha de Bloque 7 con arquitectura de Fase 3 y formalización de rebaja de volumen — AD-127**) | 8.47.0 | 2026-10-19 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-128; **AD-128 (2026-10-20): Higiene Mínima Segura H0 — Permisos ACL, Saneamiento de Pruebas Unitarias y Reglas IA**) | 12.48.0 | 2026-10-20 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (incluye deuda T1–T7, rebaja, auditorías; Bloque 4; Bloque 5; Bloque 6; Bloque 6E; **H0 Backlog de Higiene Diferida HG-01..HG-08 y Pre-commit incremental — AD-128**) | 8.49.0 | 2026-10-20 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
-| `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA | 7.3.0 | 2026-07-01 | ✅ Vigente |
+| `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA (incluye prohibición de -i y -u all, citas por sección/símbolo, reportes $\le$ 80 líneas y DoD) | 7.4.0 | 2026-10-20 | ✅ Vigente |
 | `08_COSTEO.md` | Flujo canónico de costeo end-to-end (§7 corregido 2026-10-01: `account_id` no existe) | 1.7.0 | 2026-10-01 | ✅ Vigente |
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado — ARCHIVADO, checklist migrado a este índice | 1.1.0 | 2026-06-16 | 🏷️ ARCHIVADO — checklist A-F consolidado en Anexo A |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — ARCHIVADO en LEGADO/auditorias | — | 2026-06-04 | 🏷️ ARCHIVADO — Fase A completada, evidencia histórica |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Derivado vigente |
-| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §12.4 Fuente única S2S sin copia en código — AD-119; §12.5 Cierre Técnico Final — AD-120; **§3.3 Matriz Operativa con citas explícitas de ADRs (AD-65, AD-79, AD-80, AD-87) — AD-127**) | 1.17.0 | 2026-10-19 | ✅ Vigente |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §3.3 Matriz Operativa ADRs, y **Tabla Sinóptica H0 — AD-128**) | 1.18.0 | 2026-10-20 | ✅ Vigente |
 | `12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — plan no ejecutado |
 | `15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual | 1.1.0 | 2026-06-06 | ✅ Derivado vigente |
 | `13_CONSOLIDACION_OPERATIVA.md` | Consolidación operativa: ingesta (Producto/Procesados), reglas, trazabilidad, matriz de hallazgos, contradicciones, matriz operativa de Etiquetas SV (§13) e imputación SV / merma documental (§11) | 2.0.0 | 2026-10-01 | ✅ Vigente |
-| `16_AUDITORIA_20261001.md` | **NUEVO** — Auditoría 2026-10-01: hallazgos H-01..H-16 y N-01..N-10, clasificados por área (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6); resueltos, pendientes, parámetro `dev_cleanup_enabled` y mapeo de grupos huérfanos | 1.0.0 | 2026-10-01 | ✅ Vigente |
-| `17_CONSTITUCION_VOLUMENES.md` | Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL; §9 Especificación Canónica de Operaciones (F1 a F7); §10 Consulta Canónica Fijada de Integridad MD5; **§10.6.7 Rebaja de inventario nominal y merma por exportación — AD-127**) | 1.16.0 | 2026-10-19 | ✅ Vigente |
-| `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves: alcance y glosario (tres usos de «consolidación»), puntos acordados (2026-10-01), modelo/estados, reglas de rebaja, vía SV e invariantes, pantallas (incl. §7.5 imputación SV fuera de la exportación), permisos, plan de pruebas, migración, preguntas abiertas, riesgos y §14 Estado de implementación + §14.6 clasificación de bloqueos (AD-88) | 1.2.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
-| `19_IMPUTACION_SV_Y_PROCESADORES.md` | **NUEVO** — Imputación declarada etiqueta→SV y saldo por procesador | 1.33.0 | 2026-10-15 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro | 12.50.0 | 2026-10-19 | ✅ Vigente |
+| `16_AUDITORIA_20261001.md` | Auditoría 2026-10-01: hallazgos H-01..H-16 y N-01..N-10, clasificados por área | 1.0.0 | 2026-10-01 | ✅ Vigente |
+| `17_CONSTITUCION_VOLUMENES.md` | Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL; §9 Especificación Canónica de Operaciones (F1 a F7); §10 Consulta Canónica Fijada de Integridad MD5; §10.6.7 Rebaja y merma; **Tabla Sinóptica H0 — AD-128**) | 1.17.0 | 2026-10-20 | ✅ Vigente |
+| `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves | 1.2.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
+| `19_IMPUTACION_SV_Y_PROCESADORES.md` | Imputación declarada etiqueta→SV y saldo por procesador | 1.33.0 | 2026-10-15 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro y mapa rápido de 15 preguntas canónicas | 12.51.0 | 2026-10-20 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 
