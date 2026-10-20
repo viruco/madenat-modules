@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.15.0
-**Fecha de actualización:** 2026-10-19  <!-- 2026-10-19: §10.6.3 Rotulación formal: solo 6/4 = 38,1 mm figura en instrucciones de Cristhian; 4/4, 5/4, 7/4 y 8/4 son derivados (n/4 x 25,4 mm). Versión 1.14.0 → 1.15.0. | Bloque 6. -->
+**Versión documental:** 1.16.0
+**Fecha de actualización:** 2026-10-19  <!-- 2026-10-19: §10.6.7 Rebaja de inventario y merma dimensional por exportación (E2 / Bloque 6E) — extinción completa de volumen nominal en stock y distribución de costo logístico sobre volumen de exportación. Versión 1.15.0 → 1.16.0. | Bloque 6E. -->
+<!-- 2026-10-19: §10.6.3 Rotulación formal: solo 6/4 = 38,1 mm figura en instrucciones de Cristhian; 4/4, 5/4, 7/4 y 8/4 son derivados (n/4 x 25,4 mm). Versión 1.14.0 → 1.15.0. | Bloque 6. -->
 <!-- 2026-10-18: §10.6.6 Claridad y Reconciliación del Real Físico (AD-126 / Bloque 5D) — campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado sin ceros ni distorsiones; badge y filtros por estado. Versión 1.13.0 → 1.14.0. | 2026-10-18: Bloque 5 (AD-126). -->
 <!-- 2026-10-18: §10.6 Formalización Canónica de los Tres Volúmenes y Comparativo Analítico (AD-126 / Bloque 5) — definición técnica de F1 (Nominal Compra), F2 (Exportación Embarque) y F3 (Real Físico con lumber.thickness.real.map); Blanks F6 directo a stock; vistas de lista y pivote readonly comparativas con % Dif.Vol y alerta de anomalías. Versión 1.12.0 → 1.13.0. | 2026-10-18: Cierre Bloque 4K (AD-122). -->
 <!-- 2026-10-18: Cierre Bloque 4K (AD-122): rotulación formal como INFERENCIA de citas previas de IDs 27, 28 y 8; confirmación de IDs reales 17, 18 y 19 en madenat_test; ratificación de regla R3 y comprobación de constante 1550. Versión 1.11.0 → 1.12.0. | 2026-10-18: Cierre Bloque 4J (AD-122). -->
@@ -396,5 +397,13 @@ En cumplimiento de las instrucciones de Cristhian Elgueta y las reglas del Bloqu
    - **Estado `physical_status`:** Clasifica formalmente cada registro en `calculado` (F3 aplicado con éxito), `sin_mapeo` (falta espesor real en tabla 5A) o `no_aplica` (Blanks directo a stock F6 o perfiles métricos/granel).
    - **Prevención de % con Ceros:** Cuando el estado no es `calculado`, la métrica `% Dif.Vol` queda vacía (`False`), evitando distorsiones visuales o porcentajes engañosos (ej: falsos -100%).
    - **Badge y Filtros:** La vista de lista presenta un badge cromático según estado y la vista de búsqueda incorpora filtros guardados por estado de real físico.
+
+7. **REBAJA DE INVENTARIO Y MERMA DIMENSIONAL POR EXPORTACIÓN (E2 / Bloque 6E):**
+   - **Unidad de Medida del Stock:** En el modelo estándar de Odoo, la cantidad de existencias (`stock.quant.quantity`) se mide en metros cúbicos (`m³`).
+   - **Custodia en Patio:** El lote ingresa al inventario custodiando su **Volumen Nominal de Compra** ($F1$, ej. 2,495 m³ en lote D8833 de guía 26270).
+   - **Facturación y Despacho:** Al consolidar o embarcar, el documento comercial y facturación refleja el **Volumen de Exportación** ($F2$, ej. 2,067 m³).
+   - **Extinción del Quant Físico:** Para evitar saldos residuales "fantasmas" en patio (lotes con 0 piezas pero con saldo positivo en metros cúbicos), la rebaja de inventario en `stock.move` debe extinguir la totalidad del quant en stock ($F1$), reconociendo la merma dimensional ($F1 - F2$, ej. 0,428 m³, -17,15%) como ajuste o merma de exportación.
+   - **Costeo Logístico (`lumber.shipment.costing`):** Los costos del embarque se distribuyen sobre la base del volumen de exportación ($F2$), concentrando el costo en los metros cúbicos facturados.
+
 
 
