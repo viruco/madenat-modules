@@ -90,3 +90,6 @@ from . import test_volume_comparison_5c
 from . import test_volume_labels_6c
 # 🔐 H0-A (Auditoría Higiene 2026-10-20): Permisos de modelos y asistentes sin ACL.
 from . import test_h0_security_permissions
+# 📐 H4 (AD-130): API única de resolución de exportación y metadatos.
+from . import test_resolve_export_width_api
+

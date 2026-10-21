@@ -642,6 +642,13 @@ FACE_DEDUCTION_INCH      = Decimal('0.0625')       # -1/16" deducción por cara
 # Ajustes S2S
 S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')       # +1/8" ajuste rough → cepillado
 
+# Espesores canónicos nominales 6/4 (Bloque H4 / AD-130)
+ROUGH_THICKNESS_6_4_MM   = Decimal('45.0')        # 45 mm espesor compra nominal 6/4
+NOMINAL_EXPORT_THICKNESS_6_4_INCHES = Decimal('1.5')  # 1.5" espesor exportación nominal 6/4
+
+# Tolerancia de mapeo para Blanks métricos (1/32")
+BLANK_DEFAULT_METRIC_TOLERANCE_INCHES = Decimal('0.03125')
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -694,7 +701,7 @@ def calculate_volume_metric_m3(
             f"largo={length_m}m, piezas={pieces}"
         )
         return 0.0
-    return (thickness_mm * width_mm * length_m * float(pieces)) / 1_000_000.0
+    return (thickness_mm * width_mm * length_m * float(pieces)) / float(M3_DIVISOR)
 
 
 

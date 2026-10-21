@@ -76,6 +76,7 @@
                     <field name="rough_mm"/>
                     <field name="s2s_decimal"/>
                     <field name="s2s_label"/>
+                    <field name="overwidth_inches" optional="show"/>
                     <field name="active" widget="boolean_toggle"/>
                 </list>
             </field>
@@ -94,6 +95,7 @@
                             <group>
                                 <field name="rough_mm"/>
                                 <field name="s2s_decimal"/>
+                                <field name="overwidth_inches"/>
                             </group>
                             <group>
                                 <field name="s2s_label"/>

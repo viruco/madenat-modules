@@ -122,6 +122,17 @@ class LumberWidthS2SMap(models.Model):
         )
     )
 
+    overwidth_inches = fields.Float(
+        string='Sobreancho S2S (pulgadas)',
+        digits=(16, 4),
+        default=0.0,
+        tracking=True,
+        help=(
+            'Sobreancho opcional para esta fila en pulgadas decimales (ej: 0.125 = +1/8"). '
+            'Si es 0.0 o no está definido, se utiliza el parámetro global madenat.s2s_overwidth_inches.'
+        )
+    )
+
     sequence = fields.Integer(
         string='Secuencia',
         default=10,
