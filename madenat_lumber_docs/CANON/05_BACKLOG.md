@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.49.0
-**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
+**Versión documental:** 8.50.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
+<!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
 <!-- actualizado: 2026-10-19 — Auditoría de Higiene de Código y Documentación: incorporación formal del Backlog Priorizado de Higiene de Código y Arquitectura (HG-01 a HG-08: descomposición modular de archivos >1.500L, seguridad ir.model.access.csv, vistas no declaradas, consultas .search() en bucles, pre-commit propuesto, saneamiento de 10 pruebas y racionalización CANON). Versión 05 8.47.0 → 8.48.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Bloque 6E (AD-127/E1-E4): Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio'; filtros Solo patios y Sin patio; TDD test_12); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3; brecha acotada a reporte Excel de Tarja, planilla multidimensional de REMATE y rebaja contable de merma). Versión 05 8.46.0 → 8.47.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127) IMPLEMENTADO: 6A Patios por tipo (service vs port) y auto-asignación por origen; aplicación en madenat_test de MARVAL y Ferramenta; 6B visibilidad consola (guías 4495589 y 95806 localizables) y nuevo menú Inventario por Patio (stock.quant lista/pivot readonly con piezas y vol. nominal); 6C etiquetas Vol. Compra (m³) y Vol. Export (m³); 6D packing estándar Forestal Andes con desplegables, botón en consola y formato standard_madenat. No continuar con lectores individuales de Arauco, JCE, BYC, Fátima. Bloque 7 incorporado al backlog con análisis B0.6 de rebaja y tarja. Deuda diferida consolidada. Versión 05 8.45.0 → 8.46.0. Sin push ni despliegue. -->
@@ -1400,9 +1401,11 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 1. **Refactorización de Archivos Gigantes (HG-01):** Modificación de monolitos >1.500L prohibida en H0 para evitar desestabilizar flujos activos.
 2. **Declaración y Movimiento de 24 XML Huérfanos (HG-03):** Solo clasificados en H0-C; no declarados ni movidos para preservar invariantes.
 3. **Optimización de `.search()` en Bucles (HG-04):** Requiere análisis caso por caso y pruebas de regresión funcionales.
-4. **Código Muerto y Duplicado (HG-05):** Erradicación diferida a fase de mantenimiento mayor.
-5. **Citas de Línea Obsoletas en Documentación y `.gitignore` (HG-07):** Migración gradual a citas por símbolo.
-6. **Antigüedad del WIP en Costing y Reports (HG-08) y Política de Respaldos:** Área protegida por restricciones D1–D6 sin tocar en H0.
+4. **Código Muerto, Duplicado y `.gitignore` (HG-05):** Erradicación de código inactivo y adición de exclusiones en `.gitignore` para archivos de respaldo diferidas a fase de mantenimiento mayor.
+5. **Instalación de Pre-commit (HG-06):** No autorizado instalar en H0 sin consenso de equipo; especificación técnica registrada como propuesta incremental.
+6. **Resolución de Pruebas Complejas (HG-07):** Corrección de las 4 pruebas complejas diagnosticadas (`TestSvConcurrency` y `TestSvEscalationSecurity` en logistics) diferida para evitar modificaciones estructurales no acotadas.
+7. **Migración de Citas de Línea Obsoletas en Documentación (HG-08):** Migración gradual a citas por símbolo/sección; encabezados y tablas sinópticas formalizadas.
+8. **Preservación de WIP en Costing y Reports (Restricción D1–D6):** Área protegida por restricciones D1–D6 sin tocar en H0 (no forma parte de la taxonomía HG-01..HG-08).
 
 
 
