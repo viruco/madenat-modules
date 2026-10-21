@@ -646,8 +646,62 @@ S2S_WIDTH_ADJUSTMENT_INCH = Decimal('0.125')       # +1/8" ajuste rough → cepi
 ROUGH_THICKNESS_6_4_MM   = Decimal('45.0')        # 45 mm espesor compra nominal 6/4
 NOMINAL_EXPORT_THICKNESS_6_4_INCHES = Decimal('1.5')  # 1.5" espesor exportación nominal 6/4
 
-# Tolerancia de mapeo para Blanks métricos (1/32")
+# Tolerancia de mapeo para Blanks métricos (1/32" ≈ 0.794 mm)
 BLANK_DEFAULT_METRIC_TOLERANCE_INCHES = Decimal('0.03125')
+
+
+def map_metric_to_blank_fraction(value_mm, env=None, tolerance_inches=None):
+    """
+    Convierte una dimensión en mm de una guía métrica de Blanks a su fracción maderera estándar (H4 / AD-130).
+
+    Parámetro: madenat.blank_metric_mapping_tolerance_inches (default: 0.03125" = 1/32").
+    Justificación técnica: 1/32" (~0.794 mm) es la mitad exacta de la resolución nominal maderera
+    de 1/16" (0.0625" ≈ 1.5875 mm). Si la dimensión milimétrica de la guía difiere en <= 1/32" de una fracción
+    estándar nominal de Blanks, corresponde con certeza física a dicha fracción. Si la diferencia excede
+    la tolerancia respecto al estándar más cercano, se marca como 'needs_review=True' para revisión humana
+    obligatoria sin adivinar.
+
+    Returns:
+        tuple: (fraction_in_decimal: float, fraction_str: str, needs_review: bool)
+    """
+    if not value_mm or float(value_mm) <= 0:
+        return (0.0, "", False)
+
+    val_in = float(value_mm) / float(MM_PER_INCH)
+
+    if tolerance_inches is None:
+        if env and 'ir.config_parameter' in env:
+            try:
+                param = env['ir.config_parameter'].sudo().get_param('madenat.blank_metric_mapping_tolerance_inches')
+                tolerance_inches = float(param) if param else float(BLANK_DEFAULT_METRIC_TOLERANCE_INCHES)
+            except Exception:
+                tolerance_inches = float(BLANK_DEFAULT_METRIC_TOLERANCE_INCHES)
+        else:
+            tolerance_inches = float(BLANK_DEFAULT_METRIC_TOLERANCE_INCHES)
+
+    # Catálogo de fracciones estándar nominales para Blanks (AD-130 / Golden vectors)
+    standards = [
+        1.0, 1.25, 1.5, 1.5625, 2.0, 2.0625, 2.5, 2.625, 3.0, 3.625, 4.625, 5.625
+    ]
+    if env and 'lumber.blank.nominal.map' in env:
+        try:
+            records = env['lumber.blank.nominal.map'].sudo().search([('active', '=', True)])
+            if records:
+                db_nominals = set(records.mapped('nominal'))
+                db_nominals.update(standards)
+                standards = sorted(list(db_nominals))
+        except Exception:
+            pass
+
+    closest_std = min(standards, key=lambda s: abs(val_in - s))
+    diff = abs(val_in - closest_std)
+
+    frac_str = decimal_inch_to_fraction_simple(closest_std, denominator=16)
+
+    if diff <= tolerance_inches:
+        return (closest_std, frac_str, False)
+    else:
+        return (val_in, f"{val_in:.3f}\"", True)
 
 
 

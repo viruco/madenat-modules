@@ -8,6 +8,7 @@
                 <field name="sequence" widget="handle"/>
                 <field name="code" string="Código" optional="show"/>
                 <field name="name" string="Clasificación (Nombre)"/>
+                <field name="calculation_family" string="Familia"/>
                 <field name="allowed_formula_ids" string="Perfiles Permitidos" widget="many2many_tags" optional="hide"/>
                 <field name="description" string="Descripción Técnica" optional="show"/>
                 <field name="active" widget="boolean_toggle"/>
@@ -31,6 +32,7 @@
                     <group>
                         <group>
                             <field name="code" placeholder="Ej: RGH"/>
+                            <field name="calculation_family"/>
                             <field name="active" invisible="1"/>
                         </group>
                         <group>

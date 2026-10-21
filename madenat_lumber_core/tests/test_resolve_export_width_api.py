@@ -161,3 +161,55 @@ class TestResolveExportWidthAPI(TransactionCase):
         # Config Manager: puede leer y escribir
         rec_100.with_user(user_config).write({'s2s_label': '3 5/8'})
 
+    def test_10_blanks_subproducto_family_invariants(self):
+        """Punto 2.4: Blanks por configuración en madenat.subproducto; compra = exportación."""
+        Subproducto = self.env['madenat.subproducto']
+        Subproducto._init_calculation_families()
+
+        sub_blank = Subproducto.search([('code', '=', 'BLANK-CLEAR')], limit=1)
+        if not sub_blank:
+            sub_blank = Subproducto.create({
+                'name': 'BLANK CLEAR TEST',
+                'code': 'BLANK-CLEAR-TEST',
+                'calculation_family': 'blank',
+            })
+        self.assertEqual(sub_blank.calculation_family, 'blank')
+
+        # Verificación en StockLot
+        product = self.env['product.product'].search([], limit=1)
+        lot = self.env['stock.lot'].create({
+            'name': 'LOT-TEST-BLANK-H4',
+            'product_id': product.id,
+            'subproducto_id': sub_blank.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 92.075,
+            'largo_m': 4.8768,
+            'largo_ft_frac': "16'",
+            'piezas': 250,
+        })
+        lot._compute_vol_shipment_m3()
+        # En Blanks: compra = exportación con una sola fuente (f5085 con +1/8")
+        # 1.5" x 3.750" x 16' x 250 / 5085.312 = 4.4245... -> 4.425 m³
+        self.assertAlmostEqual(lot.vol_shipment_m3, 4.425, places=3)
+
+    def test_11_blanks_metric_mapping_with_tolerance(self):
+        """Punto 2.4: Mapeo de Blanks en métrico a fracción estándar con tolerancia paramétrica."""
+        from ..models.utils_uom import map_metric_to_blank_fraction
+
+        # Caso exacto: 92.075 mm = 3.625" (3 5/8)
+        std_in, frac_str, needs_review = map_metric_to_blank_fraction(92.075, env=self.env)
+        self.assertAlmostEqual(std_in, 3.625, places=4)
+        self.assertEqual(frac_str, "3 5/8")
+        self.assertFalse(needs_review)
+
+        # Caso dentro de tolerancia (92.5 mm ≈ 3.6417", diff = 0.0167" <= 0.03125")
+        std_in, frac_str, needs_review = map_metric_to_blank_fraction(92.5, env=self.env)
+        self.assertAlmostEqual(std_in, 3.625, places=4)
+        self.assertEqual(frac_str, "3 5/8")
+        self.assertFalse(needs_review)
+
+        # Caso fuera de tolerancia (94.0 mm ≈ 3.7008", diff = 0.0758" > 0.03125")
+        std_in, frac_str, needs_review = map_metric_to_blank_fraction(94.0, env=self.env)
+        self.assertTrue(needs_review, "Dimensión métrica fuera de 1/32\" debe marcarse para revisión humana.")
+
+

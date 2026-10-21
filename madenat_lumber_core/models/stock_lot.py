@@ -25,7 +25,11 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from psycopg2 import errors as psycopg2_errors
 import logging
-from .utils_uom import INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR, MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch
+from .utils_uom import (
+    INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR,
+    MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch,
+    ROUGH_THICKNESS_6_4_MM, NOMINAL_EXPORT_THICKNESS_6_4_INCHES, M3_DIVISOR,
+)
 from .width_mapping import WidthMappingTable
 
 
@@ -594,16 +598,18 @@ class StockLotExtended(models.Model):
             # ====================================================================
             # 2. ⚙️ OBTENCIÓN Y NORMALIZACIÓN DE DIMENSIONES BASE
             # ====================================================================
-            is_std = lot.product_id.use_commercial_standard
+            is_std = getattr(lot.product_id, 'use_commercial_standard', False)
+            comm_t = getattr(lot.product_id, 'commercial_thickness_mm', 0.0) if is_std else 0.0
+            comm_w = getattr(lot.product_id, 'commercial_width_mm', 0.0) if is_std else 0.0
             
             # PRIORIDAD: nominal (wizard) > comercial estándar > físico
             e_mm = (
                 lot.espesor_nominal_mm if lot.espesor_nominal_mm > 0
-                else (lot.product_id.commercial_thickness_mm if is_std else lot.espesor_mm)
+                else (comm_t if comm_t > 0 else lot.espesor_mm)
             )
             a_mm = (
                 lot.ancho_nominal_mm if lot.ancho_nominal_mm > 0
-                else (lot.product_id.commercial_width_mm if is_std else lot.ancho_mm)
+                else (comm_w if comm_w > 0 else lot.ancho_mm)
             )
             
             if not e_mm or not a_mm or not lot.piezas:
@@ -611,11 +617,24 @@ class StockLotExtended(models.Model):
                 continue
 
             # ====================================================================
-            # 3. 📐 RESOLUCIÓN DE ANCHO VÍA API ÚNICA (H4 / AD-130)
+            # 3. 📐 RESOLUCIÓN DE ANCHO Y ESPESOR VÍA API ÚNICA (H4 / AD-130)
             # ====================================================================
-            espesor_in = e_mm / float(MM_PER_INCH)
+            subprod = lot.subproducto_id
+            family = getattr(subprod, 'calculation_family', False)
+            is_blank = (family == 'blank' or bool(lot.largo_ft_frac))
+
+            # Espesor de exportación en pulgadas (nominal 1.5" para 6/4 salvo especificación)
+            if lot.thickness_visual:
+                t_exp_in = parse_fraction_to_decimal_inch(lot.thickness_visual)
+            elif lot.reception_thickness_in > 0:
+                t_exp_in = lot.reception_thickness_in
+            elif abs(e_mm - float(ROUGH_THICKNESS_6_4_MM)) < 1.0:
+                t_exp_in = float(NOMINAL_EXPORT_THICKNESS_6_4_INCHES)
+            else:
+                t_exp_in = e_mm / float(MM_PER_INCH)
+
             config = self.env['madenat.ingestion.config']
-            is_s2s = getattr(lot, 'is_s2s_inches', False)
+            is_s2s = getattr(lot, 'is_s2s_inches', False) or is_blank
             details = config.resolve_export_width_details(
                 rough_mm=a_mm,
                 record=lot,
@@ -627,18 +646,15 @@ class StockLotExtended(models.Model):
             # 4. 🚀 BIFURCACIÓN DE LÓGICA DE NEGOCIO POR FAMILIA (H4)
             # ====================================================================
             try:
-                subprod = lot.subproducto_id
-                family = getattr(subprod, 'calculation_family', False)
-
                 # 🎯 CASO A: BLANKS (F5085 con +1/8", compra = exportación)
-                if family == 'blank' or lot.largo_ft_frac:
+                if is_blank:
                     if lot.largo_ft_frac:
                         largo_ft = float(str(lot.largo_ft_frac).replace("'", "").strip())
                     else:
                         l_m = lot.product_id.commercial_length_m if is_std else lot.largo_m
                         largo_ft = l_m / float(FT_TO_M) if l_m else 0.0
 
-                    vol_gold = (espesor_in * ancho_calculo * largo_ft * lot.piezas) / FACTOR_BLANK_5085
+                    vol_gold = (t_exp_in * ancho_calculo * largo_ft * lot.piezas) / FACTOR_BLANK_5085
 
                 # 🎯 CASO B: RUGOSO / ASERRADA JCE (Métrico puro, compra = exportación)
                 elif family == 'rough':
@@ -654,7 +670,7 @@ class StockLotExtended(models.Model):
                     if not l_m:
                         lot.vol_shipment_m3 = nominal
                         continue
-                    vol_gold = (espesor_in * ancho_calculo * l_m * lot.piezas) / float(INCH_SQ_METERS_TO_M3)
+                    vol_gold = (t_exp_in * ancho_calculo * l_m * lot.piezas) / float(INCH_SQ_METERS_TO_M3)
 
                 # ====================================================================
                 # 5. ✅ CIERRE Y REDONDEO (3 DECIMALES ESTÁNDAR)

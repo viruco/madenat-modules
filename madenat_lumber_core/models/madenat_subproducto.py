@@ -14,6 +14,14 @@ class MadenatSubproducto(models.Model):
     sequence = fields.Integer('Secuencia', default=10)
     active = fields.Boolean('Activo', default=True)
 
+    # ── Familia de Cálculo (H4 / AD-130) ─────────────────────────────────
+    calculation_family = fields.Selection([
+        ('blank', 'Blanks (Compra = Exportación, F5085 con +1/8")'),
+        ('s2s', 'Cepillado RIP S2S (F1550 con +1/8", Compra mm)'),
+        ('rough', 'Rugoso / Aserrada (Métrico Puro, Compra = Exportación)'),
+    ], string='Familia de Cálculo', default='s2s', required=True,
+    help="Define la familia de cubicación y reglas volumétricas según H4 / AD-130.")
+
     # ── Asociación estructural a caminos de ingesta ──────────────────────
     allowed_formula_ids = fields.Many2many(
         'lumber.export.formula',
@@ -24,6 +32,20 @@ class MadenatSubproducto(models.Model):
         help="Caminos de ingesta donde este subproducto/grado puede usarse.\n"
              "Sin selección = visible en todos los perfiles (comportamiento legacy)."
     )
+
+    @api.model
+    def _init_calculation_families(self):
+        """Inicializa calculation_family según el nombre/código de registros existentes."""
+        for rec in self.search([]):
+            s = f"{rec.name or ''} {rec.code or ''}".upper()
+            if 'BLANK' in s or 'BLANCK' in s:
+                target = 'blank'
+            elif 'ROUGH' in s or 'ASERRADA' in s:
+                target = 'rough'
+            else:
+                target = 's2s'
+            if rec.calculation_family != target:
+                rec.calculation_family = target
 
     _sql_constraints = [
         ('code_unique', 'UNIQUE(code)', 'El código del sub-producto debe ser único'),

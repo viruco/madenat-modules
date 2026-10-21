@@ -831,34 +831,19 @@ class LumberReceptionLine(models.Model):
         for line in self:
             profile = line.reception_id.ingestion_profile
             
-            if profile != 'f5085':
-                # S2S: Matemática métrica pura redondeada a 3 decimales
+            is_blank = (
+                (line.subproduct_id and getattr(line.subproduct_id, 'calculation_family', False) == 'blank')
+                or profile == 'f5085'
+            )
+            if is_blank:
+                # H4: Blanks tiene compra = exportación (una sola fuente de verdad)
+                line.vol_purchase_m3 = line.vol_shipment_m3
+            else:
+                # S2S / Aserrada: Matemática métrica pura redondeada a 3 decimales
                 t = line.thickness_nominal or line.thickness
                 w = line.width_nominal or line.width
                 l = line.length_nominal or line.length
-                # Usar r3() para consistencia con Regla de Oro (ROUND_HALF_UP)
                 line.vol_purchase_m3 = r3((t * w * l * line.pieces) / float(M3_DIVISOR))
-            
-            else:
-                # FIX 2026-06-11 v2: Fórmula Excel canónica para blank_clear
-                # = (t - 1/16) × (w + 1/8) × L_ft × pzas / 5085.312
-                # _parse_smart_dimension parsea "1 9/16" → 1.5625 EXACTO (fracciones)
-                # NO usar thickness_nominal/mm_per_inch: 92.07mm → 3.6248" ≠ 3.625"
-                t_in_p = line._parse_smart_dimension(line.thickness_visual) if line.thickness_visual else 0.0
-                w_in_p = line._parse_smart_dimension(line.width_visual) if line.width_visual else 0.0
-                l_ft_p = line.length_input_raw if line.length_input_raw \
-                         else (line.length_nominal or line.length) / float(FT_TO_M)
-                if line.vol_documental_m3 and line.vol_documental_m3 > 0:
-                    line.vol_purchase_m3 = line.vol_documental_m3
-                elif t_in_p > 0 and w_in_p > 0 and l_ft_p > 0:
-                    t_calc_p = t_in_p  # F4: sin deducción de 1/16"
-                    w_calc_p = w_in_p + float(S2S_WIDTH_ADJUSTMENT_INCH)
-                    line.vol_purchase_m3 = r3(
-                        (t_calc_p * w_calc_p * l_ft_p * (line.pieces or 0))
-                        / float(BLANK_CLEAR_FACTOR)
-                    )
-                else:
-                    line.vol_purchase_m3 = line.vol_shipment_m3
 
 
             if not self._is_valid_volume(line.vol_purchase_m3):

@@ -5,6 +5,7 @@
             <field name="name">Rough</field>
             <field name="code">ROUGH</field>
             <field name="description">Madera aserrada</field>
+            <field name="calculation_family">rough</field>
             <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f1550')])]"/>
         </record>
 
@@ -12,7 +13,24 @@
             <field name="name">RIP s2s</field>
             <field name="code">S2S</field>
             <field name="description">Cepillado 2 caras</field>
+            <field name="calculation_family">s2s</field>
             <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f1550')])]"/>
+        </record>
+
+        <record id="subprod_blank_clear" model="madenat.subproducto">
+            <field name="name">BLANK CLEAR</field>
+            <field name="code">BLANK-CLEAR</field>
+            <field name="description">Blanks Clear Exportación</field>
+            <field name="calculation_family">blank</field>
+            <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f5085')])]"/>
+        </record>
+
+        <record id="subprod_blank_b" model="madenat.subproducto">
+            <field name="name">BLANK B</field>
+            <field name="code">BLANK-B</field>
+            <field name="description">Blanks B Exportación</field>
+            <field name="calculation_family">blank</field>
+            <field name="allowed_formula_ids" eval="[(6, 0, [ref('export_formula_f5085')])]"/>
         </record>
     </data>
 </odoo>

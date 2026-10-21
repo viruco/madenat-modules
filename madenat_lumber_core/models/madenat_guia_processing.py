@@ -402,14 +402,18 @@ class MadenatGuiaProcessingLine(models.Model):
     # 3. FÓRMULA COMERCIAL (Pestaña 2): mm_nominal * mm_real * m / 1.000.000
     @api.depends('espesor_nominal_mm', 'espesor_mm', 
                  'ancho_nominal_mm', 'ancho_mm', 
-                 'largo_nominal_m', 'largo_m', 'pieces')  # Agregado largo_nominal_m
+                 'largo_nominal_m', 'largo_m', 'pieces',
+                 'subproducto_id.calculation_family', 'vol_shipment_m3')
     def _compute_vol_purchase_m3(self):
         for rec in self:
+            # H4: Blanks tiene compra = exportación (una sola fuente oficial)
+            if rec.subproducto_id and getattr(rec.subproducto_id, 'calculation_family', False) == 'blank':
+                rec.vol_purchase_m3 = rec.vol_shipment_m3
+                continue
+
             # Prioridad: Nominal (Manual/Wizard) > Físico
             esp = rec.espesor_nominal_mm if rec.espesor_nominal_mm > 0 else rec.espesor_mm
             anc = rec.ancho_nominal_mm if rec.ancho_nominal_mm > 0 else rec.ancho_mm
-            
-            # NUEVO: Usamos Largo Nominal
             larg = rec.largo_nominal_m if rec.largo_nominal_m > 0 else rec.largo_m
 
             rec.vol_purchase_m3 = calculate_volume_metric_m3(esp, anc, larg, rec.pieces)
