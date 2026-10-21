@@ -423,11 +423,34 @@ class LumberIngestLineMixin(models.AbstractModel):
     
     vol_documental_m3 = fields.Float(
         'Volumen documental (m³)',
-        digits=(16, 3),
+        digits=(16, 6),
         help='Volumen declarado por línea en el Packing de origen. '
              'Evidencia documental: no es volumen geométrico, nominal, de '
              'embarque ni operativo.'
     )
+    reconciliation_status = fields.Selection([
+        ('none', 'Sin Dato Documental'),
+        ('match', 'Coincide'),
+        ('tolerance', 'Diferencia dentro de Tolerancia'),
+        ('review', 'Revisar'),
+    ], string='Conciliación Packing', compute='_compute_reconciliation_status', store=True,
+       help='Estado de conciliación entre el volumen documental declarado en el packing y el volumen de embarque')
+
+    @api.depends('vol_documental_m3', 'vol_shipment_m3')
+    def _compute_reconciliation_status(self):
+        for rec in self:
+            v_doc = rec.vol_documental_m3 or 0.0
+            v_calc = rec.vol_shipment_m3 or 0.0
+            if v_doc <= 0.0001 or v_calc <= 0.0001:
+                rec.reconciliation_status = 'none'
+            else:
+                diff = abs(v_doc - v_calc)
+                if diff < 0.001:
+                    rec.reconciliation_status = 'match'
+                elif diff <= 0.010:
+                    rec.reconciliation_status = 'tolerance'
+                else:
+                    rec.reconciliation_status = 'review'
 
     pieces = fields.Integer('Piezas')
     

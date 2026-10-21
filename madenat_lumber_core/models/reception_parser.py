@@ -520,6 +520,7 @@ class MadenatReceptionParser(models.AbstractModel):
                         'product_name': product_name_raw,
                         'pieces': pieces,
                         'volume_m3': vol_m3,
+                        'vol_documental_m3': vol_m3,
                         'unit_price_usd': 0.0,
                         'thickness_mm': thickness_mm,
                         'width_mm': width_mm,

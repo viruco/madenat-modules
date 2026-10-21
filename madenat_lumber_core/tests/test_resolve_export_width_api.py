@@ -211,5 +211,53 @@ class TestResolveExportWidthAPI(TransactionCase):
         # Caso fuera de tolerancia (94.0 mm ≈ 3.7008", diff = 0.0758" > 0.03125")
         std_in, frac_str, needs_review = map_metric_to_blank_fraction(94.0, env=self.env)
         self.assertTrue(needs_review, "Dimensión métrica fuera de 1/32\" debe marcarse para revisión humana.")
+    def test_12_packing_control_vol_documental_and_reconciliation(self):
+        """Punto 2.5: Control del packing con vol_documental_m3 por fila y estado de conciliación."""
+        product = self.env['product.product'].search([], limit=1)
 
+        # Lote representativo GD 97183 paquete A1M2602499 (5 5/8" x 16 ft x 182 pcs = 4.939 m³ calculado)
+        # En el packing viene declarado con 6 decimales: 4.938930 m³
+        lot_match = self.env['stock.lot'].create({
+            'name': 'A1M2602499',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 142.875,  # 5.625"
+            'largo_ft_frac': "16'",
+            'piezas': 182,
+            'vol_documental_m3': 4.938930,
+        })
+        lot_match._compute_vol_shipment_m3()
+        lot_match._compute_reconciliation_status()
 
+        # El valor calculado oficial es 4.939 m³ (no es reemplazado por el documental)
+        self.assertAlmostEqual(lot_match.vol_shipment_m3, 4.939, places=3)
+        self.assertEqual(lot_match.vol_documental_m3, 4.938930)
+        self.assertEqual(lot_match.reconciliation_status, 'match', "Diferencia < 0.001 m³ debe clasificar como 'match'")
+
+        # Caso diferencia dentro de tolerancia (ej: declarado 4.945 vs calculado 4.939 -> diff = 0.006 <= 0.010)
+        lot_tol = self.env['stock.lot'].create({
+            'name': 'LOT-TOLERANCE-TEST',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 142.875,
+            'largo_ft_frac': "16'",
+            'piezas': 182,
+            'vol_documental_m3': 4.945000,
+        })
+        lot_tol._compute_vol_shipment_m3()
+        lot_tol._compute_reconciliation_status()
+        self.assertEqual(lot_tol.reconciliation_status, 'tolerance')
+
+        # Caso revisar (ej: declarado 5.200 vs calculado 4.939 -> diff = 0.261 > 0.010)
+        lot_rev = self.env['stock.lot'].create({
+            'name': 'LOT-REVIEW-TEST',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 142.875,
+            'largo_ft_frac': "16'",
+            'piezas': 182,
+            'vol_documental_m3': 5.200000,
+        })
+        lot_rev._compute_vol_shipment_m3()
+        lot_rev._compute_reconciliation_status()
+        self.assertEqual(lot_rev.reconciliation_status, 'review')

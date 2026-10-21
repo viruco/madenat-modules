@@ -552,6 +552,36 @@ class StockLotExtended(models.Model):
         help="Nombre de la motonave o buque asignado cuando el dato exista"
     )
 
+    # Punto 2.5 (AD-130): Control del packing a nivel de lote
+    vol_documental_m3 = fields.Float(
+        string='Volumen Documental (m³)',
+        digits=(16, 6),
+        help='Volumen declarado por línea en el Packing de origen.'
+    )
+    reconciliation_status = fields.Selection([
+        ('none', 'Sin Dato Documental'),
+        ('match', 'Coincide'),
+        ('tolerance', 'Diferencia dentro de Tolerancia'),
+        ('review', 'Revisar'),
+    ], string='Conciliación Packing', compute='_compute_reconciliation_status', store=True,
+       help='Estado de conciliación entre volumen documental declarado en packing y volumen de embarque')
+
+    @api.depends('vol_documental_m3', 'vol_shipment_m3')
+    def _compute_reconciliation_status(self):
+        for lot in self:
+            v_doc = lot.vol_documental_m3 or 0.0
+            v_calc = lot.vol_shipment_m3 or 0.0
+            if v_doc <= 0.0001 or v_calc <= 0.0001:
+                lot.reconciliation_status = 'none'
+            else:
+                diff = abs(v_doc - v_calc)
+                if diff < 0.001:
+                    lot.reconciliation_status = 'match'
+                elif diff <= 0.010:
+                    lot.reconciliation_status = 'tolerance'
+                else:
+                    lot.reconciliation_status = 'review'
+
     def _compute_vol_purchase_alias(self):
         for rec in self:
             rec.vol_purchase_m3 = rec.volume_purchase_m3 or rec.volumen_m3 or 0.0
