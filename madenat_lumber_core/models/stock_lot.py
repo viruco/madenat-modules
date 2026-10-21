@@ -26,7 +26,7 @@ from odoo.exceptions import UserError, ValidationError
 from psycopg2 import errors as psycopg2_errors
 import logging
 from .utils_uom import (
-    INCH_SQ_METERS_TO_M3, get_s2s_adjustment, r3, r4, BLANK_CLEAR_FACTOR,
+    INCH_SQ_METERS_TO_M3, r3, r4, BLANK_CLEAR_FACTOR,
     MM_PER_INCH, FT_TO_M, M_TO_FT, parse_fraction_to_decimal_inch,
     ROUGH_THICKNESS_6_4_MM, NOMINAL_EXPORT_THICKNESS_6_4_INCHES, M3_DIVISOR,
 )

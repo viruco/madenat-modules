@@ -21,7 +21,6 @@ from .utils_uom import (
     S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
     calculate_volume_imperial_to_m3,
     calculate_volume_metric_m3,
-    get_s2s_adjustment,
     decimal_inch_to_fraction_str,
     r3,
     r4,

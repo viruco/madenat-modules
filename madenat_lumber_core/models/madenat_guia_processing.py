@@ -25,7 +25,6 @@ from .utils_uom import (
     MM_PER_INCH, M_TO_FT, S2S_WIDTH_ADJUSTMENT_INCH, BLANK_CLEAR_FACTOR,
     M3_DIVISOR, MBF_DIVISOR,
     calculate_volume_metric_m3,
-    get_s2s_adjustment,
     m3_to_mbf,
     mbf_to_m3,
     r3,
@@ -606,7 +605,7 @@ class MadenatGuiaProcessingLine(models.Model):
         🛡️ BLINDAJE: Si el cálculo geométrico real falla o faltan datos visuales,
         el sistema rescata el Volumen Nominal (vol_purchase_m3) para evitar ceros.
         WP-B / AD-115 (Opción a): Admite override manual export_width_manual_inches con motivo obligatorio.
-        Si no se fija manual, restablece el cálculo automático preexistente (a_in + recargo get_s2s_adjustment)
+        Si no se fija manual, restablece el cálculo automático preexistente (API única resolve_export_width_details)
         garantizando total coherencia comercial con los volúmenes históricos de embarque (ej. Guía 26270).
         """
         FACTOR_PIES = float(BLANK_CLEAR_FACTOR)
@@ -4271,11 +4270,14 @@ class MadenatGuiaProcessing(models.Model):
                     l['width_visual'] = f"{int(a_mm)}mm"
                 
                 else:
-                    # 🏆 Caso Exportación: Regla de Oro Madenat
-                    ajuste_s2s = get_s2s_adjustment(self.env, a_mm, is_s2s_inches=bool(l.get('is_s2s_inches')))
-                    
+                    # 🏆 Caso Exportación: Regla de Oro Madenat vía API única (H4 / AD-130)
+                    config = self.env['madenat.ingestion.config']
+                    details = config.resolve_export_width_details(
+                        rough_mm=a_mm,
+                        is_s2s_inches=bool(l.get('is_s2s_inches')),
+                    )
+                    a_pulg = details['calc_width_inches']
                     e_pulg = e_mm / float(MM_PER_INCH)
-                    a_pulg = (a_mm / float(MM_PER_INCH)) + float(ajuste_s2s)
                     
                     vol_m3 = float(
                             Decimal(str(pzas))
