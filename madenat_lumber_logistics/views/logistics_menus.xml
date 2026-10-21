@@ -28,6 +28,15 @@
             action="action_lumber_container_consolidation"
             sequence="15"/>
         
+        <!-- IMPORTAR TARJAS EXCEL (Bloque 7.2) -->
+        <menuitem 
+            id="menu_lumber_consolidation_import"
+            name="Importar Tarjas Excel"
+            parent="menu_lumber_logistics"
+            action="action_lumber_consolidation_import_wizard"
+            groups="madenat_lumber_core.group_madenat_operaciones"
+            sequence="16"/>
+        
         <!-- REBAJA POR MOTONAVE (AD-82 / CANON/18 §7.3) -->
         <!-- Reexpuesto tras implementación y pruebas. Visible sólo para el    -->
         <!-- contrato operativo (Operaciones/Jefatura/Gerencia; Jefatura y     -->

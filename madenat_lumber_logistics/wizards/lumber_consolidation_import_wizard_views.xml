@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Formulario del Asistente de Importación de Consolidación -->
+    <record id="view_lumber_consolidation_import_wizard_form" model="ir.ui.view">
+        <field name="name">lumber.consolidation.import.wizard.form</field>
+        <field name="model">lumber.consolidation.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importar Consolidación de Tarjas desde Excel">
+                <header>
+                    <button name="action_validate_file" 
+                            string="🔍 Analizar y Validar" 
+                            type="object" 
+                            class="btn-primary" 
+                            invisible="state != 'draft'"/>
+                    <button name="action_confirm_import" 
+                            string="✅ Confirmar Asignación" 
+                            type="object" 
+                            class="btn-success" 
+                            invisible="state != 'analyzed'"/>
+                    <button name="action_validate_file" 
+                            string="🔄 Re-analizar" 
+                            type="object" 
+                            class="btn-secondary" 
+                            invisible="state != 'analyzed'"/>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,analyzed,done"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        Suba el archivo Excel de Tarjas consolidadas (formato de doble bloque: Exportación izq / Compra der).
+                        El asistente validará las etiquetas y comparará los volúmenes sin modificar el inventario.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="state != 'analyzed' or total_pending_rows == 0">
+                        Se detectaron filas sin etiqueta o con etiqueta no localizada. Quedaron registradas en la pestaña
+                        <strong>Filas Pendientes</strong> para su asignación manual posterior.
+                    </div>
+                    <group>
+                        <group string="Parámetros de Importación">
+                            <field name="shipment_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="file_data" filename="file_name" readonly="state != 'draft'"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                        <group string="Métricas Detectadas" invisible="state == 'draft'">
+                            <field name="total_containers"/>
+                            <field name="total_lots_matched"/>
+                            <field name="total_pending_rows"/>
+                        </group>
+                    </group>
+                    <notebook invisible="state == 'draft'">
+                        <page string="Resumen de Validación">
+                            <group string="Estado General">
+                                <field name="validation_summary" nolabel="1" readonly="1"/>
+                            </group>
+                            <group string="Discrepancias de Volumen Detectadas">
+                                <field name="difference_report" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Filas Pendientes de Asignación Manual" invisible="total_pending_rows == 0">
+                            <field name="pending_line_ids" readonly="1">
+                                <list decoration-warning="1">
+                                    <field name="container_code"/>
+                                    <field name="tarja_num"/>
+                                    <field name="guia"/>
+                                    <field name="planta"/>
+                                    <field name="subproducto"/>
+                                    <field name="espesor"/>
+                                    <field name="ancho"/>
+                                    <field name="largo"/>
+                                    <field name="piezas"/>
+                                    <field name="m3_exp"/>
+                                    <field name="m3_nom"/>
+                                    <field name="fecha"/>
+                                    <field name="reason"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción de Ventana para el Asistente -->
+    <record id="action_lumber_consolidation_import_wizard" model="ir.actions.act_window">
+        <field name="name">Importar Tarjas Consolidadas</field>
+        <field name="res_model">lumber.consolidation.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+    </record>
+</odoo>

@@ -95,5 +95,7 @@ from . import test_h0_security_permissions
 from . import test_shipment_line_export_width
 # Bloque 7.1 (2026-10-21): Paridad del exportador de tarjas
 from . import test_tarja_paridad_exportador
+# Bloque 7.2 (2026-10-21): Asistente de importación de consolidación de tarjas
+from . import test_consolidation_import_wizard
 
 
