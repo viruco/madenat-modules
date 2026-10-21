@@ -94,4 +94,6 @@ from . import test_h0_security_permissions
 from . import test_resolve_export_width_api
 # 🏆 H4 (AD-130 / Punto 2.10): Pruebas doradas integrales de cubicación.
 from . import test_golden_reference_calculations
+# 🪵 H5-C: Ancho nominal en exportación (E3) y aviso en chatter pos-envío (E4).
+from . import test_h5_nominal_width_and_stock_notice
 

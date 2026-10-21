@@ -599,7 +599,7 @@ class MadenatGuiaProcessingLine(models.Model):
     # ==========================================================================
     @api.depends('thickness_visual', 'width_visual', 'length_ft', 'pieces', 
                  'largo_m', 'largo_nominal_m', 'vol_purchase_m3',
-                 'export_width_manual_inches', 'ancho_mm')
+                 'export_width_manual_inches', 'ancho_mm', 'ancho_nominal_mm')
     def _compute_vol_shipment_m3(self):
         """
         Calcula Volumen de Exportación (m³).
@@ -608,6 +608,7 @@ class MadenatGuiaProcessingLine(models.Model):
         WP-B / AD-115 (Opción a): Admite override manual export_width_manual_inches con motivo obligatorio.
         Si no se fija manual, restablece el cálculo automático preexistente (API única resolve_export_width_details)
         garantizando total coherencia comercial con los volúmenes históricos de embarque (ej. Guía 26270).
+        H5-C / AD-132: Ancho efectivo considera ancho nominal editado (ancho_nominal_mm or ancho_mm).
         """
         FACTOR_PIES = float(BLANK_CLEAR_FACTOR)
 
@@ -635,11 +636,12 @@ class MadenatGuiaProcessingLine(models.Model):
                     line.vol_shipment_m3 = fallback_vol
                     continue
 
-                # 5. Determinar Ancho y Largo vía API Única (H4 / AD-130)
+                # 5. Determinar Ancho y Largo vía API Única (H4 / AD-130 / H5-C AD-132)
                 config = self.env['madenat.ingestion.config']
                 is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
+                effective_w = line.ancho_nominal_mm or line.ancho_mm
                 details = config.resolve_export_width_details(
-                    rough_mm=line.ancho_mm if line.ancho_mm > 0 else (a_in * float(MM_PER_INCH)),
+                    rough_mm=effective_w if effective_w > 0 else (a_in * float(MM_PER_INCH)),
                     record=line,
                     is_s2s_inches=is_s2s,
                     width_visual=line.width_visual,
