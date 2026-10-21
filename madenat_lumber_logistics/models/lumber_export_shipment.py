@@ -1792,8 +1792,8 @@ class LumberExportShipment(models.Model):
                     sheet.write(data_row+i, off+11, guia, data_str_fmt)
                     sheet.write(data_row+i, off+12, fecha, data_str_fmt)
 
-                    tot_m3_emb += (lot.vol_shipment_m3 or 0)
-                    tot_m3_nom += v_nom
+                    tot_m3_emb = round(tot_m3_emb + round(lot.vol_shipment_m3 or 0.0, 3), 3)
+                    tot_m3_nom = round(tot_m3_nom + round(v_nom or 0.0, 3), 3)
 
                 # Fusión de Celdas para Etiqueta y Paquete (Merge)
                 for off in [0, 14]:
@@ -1809,8 +1809,8 @@ class LumberExportShipment(models.Model):
             # --- TOTALES POR CONTENEDOR ---
             for off in [0, 14]:
                 sheet.write(data_row, off+4, tot_pqts, footer_fmt)
-            sheet.write(data_row, 10, tot_m3_emb, footer_fmt)
-            sheet.write(data_row, 24, tot_m3_nom, footer_fmt)
+            sheet.write(data_row, 10, round(tot_m3_emb, 3), footer_fmt)
+            sheet.write(data_row, 24, round(tot_m3_nom, 3), footer_fmt)
 
             # Salto para el siguiente contenedor
             row = data_row + 3 

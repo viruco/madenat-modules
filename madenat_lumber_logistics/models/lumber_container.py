@@ -1775,9 +1775,6 @@ class LumberContainer(models.Model):
                 sheet.merge_range(2, offset+6, 2, offset+7, reserva, header_fmt)
                 cols = ['Embarcador', 'Producto', 'Planta', 'Etiqueta', 'Pqts', 'Subprod.', 'Espesor', 'Ancho', 'Largo', 'Pzas', 'M3', 'Guia', 'Fecha']
                 for i, c in enumerate(cols):
-                    # A3: columna 'M3' diferenciada por lado (izq=EXPORT, der=NOMINAL)
-                    if i == 10:
-                        c = 'M3 EXP' if offset == 0 else 'M3 NOM'
                     sheet.write(3, offset+i, c, header_fmt)
 
             # --- AGRUPACIÓN ---
@@ -1843,8 +1840,8 @@ class LumberContainer(models.Model):
                     sheet.write(row+i, off+11, guia, data_str_fmt)
                     sheet.write(row+i, off+12, fecha, data_str_fmt)
 
-                    tot_m3_emb += (lot.vol_shipment_m3 or 0)
-                    tot_m3_nom += v_nom
+                    tot_m3_emb = round(tot_m3_emb + round(lot.vol_shipment_m3 or 0.0, 3), 3)
+                    tot_m3_nom = round(tot_m3_nom + round(v_nom or 0.0, 3), 3)
 
                 for off in [0, 14]:
                     if span > 1:
@@ -1857,8 +1854,8 @@ class LumberContainer(models.Model):
 
             for off in [0, 14]:
                 sheet.write(row, off+4, tot_pqts, footer_fmt)
-            sheet.write(row, 10, tot_m3_emb, footer_fmt)
-            sheet.write(row, 24, tot_m3_nom, footer_fmt)
+            sheet.write(row, 10, round(tot_m3_emb, 3), footer_fmt)
+            sheet.write(row, 24, round(tot_m3_nom, 3), footer_fmt)
 
             workbook.close()
             output.seek(0)

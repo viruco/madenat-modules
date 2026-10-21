@@ -93,5 +93,7 @@ from . import test_sv_imputation_availability_p1_p5
 from . import test_h0_security_permissions
 # H4 / AD-130: Propagación de ancho manual en lumber.shipment.line
 from . import test_shipment_line_export_width
+# Bloque 7.1 (2026-10-21): Paridad del exportador de tarjas
+from . import test_tarja_paridad_exportador
 
 
