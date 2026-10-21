@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.48.0
-**Última actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
+**Versión documental:** 12.49.0
+**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->
+<!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
 <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
 
 ### Resumen Ejecutivo de Decisiones Arquitecturales (Tabla Sinóptica)
@@ -18,6 +19,7 @@
 | **AD-126** | 2026-10-18 | Volumen Real Físico F3 (`lumber.thickness.real.map`) y comparativo | Vigente |
 | **AD-127** | 2026-10-19 | Patios por Tipo, visibilidad de inventario y packing estándar Forestal Andes | Vigente |
 | **AD-128** | 2026-10-20 | Higiene Mínima Segura H0: permisos ACL, saneamiento pruebas y reglas de IA | Vigente |
+| **AD-129** | 2026-10-21 | Chatter con sudo() acotado, autor real y mínimo privilegio en escalamiento SV | Vigente |
 
 ---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
@@ -4109,6 +4111,23 @@ Auditoría y saneamiento del arnés de pruebas, seguridad de modelos huérfanos 
    - Prohibición irrestricta de `-i` (--init) y `-u all`. Solo `-u` quirúrgico con el script canónico `run_regression.sh`.
    - Citar siempre por sección o símbolo (`NombreClase.metodo`), nunca por número de línea volátil.
    - Prohibido volcar o abrir logs completos en el contexto; uso estricto de filtros o extractos específicos.
+
+---
+
+## 2026-10-21 — Publicación de Mensajes Chatter con Delegación Segura y Mínimo Privilegio (AD-129)
+
+### Contexto
+Al aplicar operaciones de rebaja o escalamiento (`MadenatSvOperation.action_apply`), el flujo invoca internamente `_sv_post_chatter` para registrar bitácora en el chatter del lote (`stock.lot`) y de la guía procesada asociada (`madenat.guia.processing`). Los roles de Auditoría (`group_madenat_auditoria`) y Contabilidad (`group_madenat_contabilidad`) poseen únicamente permisos de lectura (`perm_read=1`, `perm_write=0`) sobre la guía procesada según `ir.model.access.csv`. La llamada a `MailThread.message_post` requería permisos de modificación sobre el registro vinculado, provocando un `AccessError` legítimo en Odoo 18 al intentar registrar la nota informativa.
+
+### Decisión Aprobada (AD-129)
+1. **Publicación con `sudo()` Estrictamente Acotado:**
+   - En `MadenatSvOperation._sv_post_chatter`, la publicación de mensajes de chatter sobre `lot_id` y `guia_processing_id` se realiza con `sudo()` acotado exclusivamente a las llamadas `.message_post()`.
+   - Se mantiene la identidad funcional original: en `MadenatSvOperation._sv_chatter_mail_kwargs` se fija explícitamente `author_id` con el partner del usuario real (`self.env.user.partner_id.id`), preservando también `create_uid`.
+   - No se alteran grupos de seguridad, reglas de registro (`ir.rule`) ni permisos de acceso (`ir.model.access.csv`) sobre `madenat.guia.processing`, preservando el principio de mínimo privilegio. El resto del método `action_apply` y sus validaciones de negocio se evalúan con la identidad y permisos reales del usuario.
+2. **Validación y Pruebas:**
+   - `TestSvEscalationSecurity` pasa 7/7: `test_02`, `test_03` y `test_04` validados sin debilitar ni alterar sus aserciones; nuevas pruebas añadidas: `test_06` (verificación de preservación de `author_id` y `create_uid` en lote y guía) y `test_07` (verificación de que un usuario sin rol recibe `AccessError`).
+   - `TestSvRpcBypass` permanece 14/14 en verde, asegurando que las capacidades internas y marcas de serialización no quedan expuestas.
+
 
 
 

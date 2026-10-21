@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.50.0
-**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
+**Versión documental:** 8.51.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. HG-07 pasa a casi cerrado (9 de 10 resueltas con H0-B y H1-A, registradas test_06 y test_07, quedando solo TestSvConcurrency.test_01 diferida); registro de HG-09 (reconciliación de 19 modelos y 24 XMLs con 4 casos notables); AD-129. Versión 05 8.50.0 → 8.51.0. Sin push. -->
+<!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
 <!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
 <!-- actualizado: 2026-10-19 — Auditoría de Higiene de Código y Documentación: incorporación formal del Backlog Priorizado de Higiene de Código y Arquitectura (HG-01 a HG-08: descomposición modular de archivos >1.500L, seguridad ir.model.access.csv, vistas no declaradas, consultas .search() en bucles, pre-commit propuesto, saneamiento de 10 pruebas y racionalización CANON). Versión 05 8.47.0 → 8.48.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Bloque 6E (AD-127/E1-E4): Ajuste de Inventario por Patio (todas las ubicaciones internas con existencias agrupadas con 'Sin patio'; filtros Solo patios y Sin patio; TDD test_12); rectificación canónica de la brecha del Bloque 7 (sello, tara, peso, VGM, booking, buque y rolleo YA EXISTEN en lumber.container y lumber.export.shipment de Fase 3; brecha acotada a reporte Excel de Tarja, planilla multidimensional de REMATE y rebaja contable de merma). Versión 05 8.46.0 → 8.47.0. Sin push ni despliegue. -->
@@ -1359,8 +1360,9 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 | **HG-04** | Rendimiento | Erradicar 49 patrones de `.search()` dentro de bucles `for/while` (ej. `reception_parser.py`, `lumber_stock_report.py`). | 🟡 **DIFERIDO** (No autorizado en H0) | Búsquedas agrupadas pre-bucle con `search([('id', 'in', ...)])`. |
 | **HG-05** | Mantenibilidad | Código muerto, duplicado y literales harcodeados (`LUMBER_DIMENSION_MAP`, fallbacks). | 🟡 **DIFERIDO** (No autorizado en H0) | Tablas configurables en BD o limpieza de código inactivo. |
 | **HG-06** | Calidad / CI | Configuración de pre-commit incremental (solo hooks sobre archivos modificados, sin pylint-odoo global). | 🟡 **PROPUESTO** (No autorizado instalar en H0) | Definición formal en backlog; sin `--all-files`. |
-| **HG-07** | Pruebas | Saneamiento de las 10 pruebas fallidas conocidas. | 🟢 **PARCIAL (H0-B)** | 6 pruebas de fixtures/alcance corregidas y validadas; 4 complejas diagnosticadas y diferidas. |
+| **HG-07** | Pruebas | Saneamiento de las 10 pruebas fallidas conocidas. | 🟢 **CASI CERRADO (H0-B + H1-A)** | 9 de 10 resueltas (6 en H0-B + 3 en H1-A con delegación segura en chatter; registradas test_06 y test_07); queda solo TestSvConcurrency.test_01 (esfuerzo L, rediseño a runner multiproceso). |
 | **HG-08** | Documentación | Tablas sinópticas en documentos largos (`02`, `04`, `12`, `17`) y mapa de 15 preguntas en INDICE. | 🟢 **CERRADO (H0-D)** | Resúmenes ejecutivos de 1 pantalla y mapa temático formalizados en CANON. |
+| **HG-09** | Reconciliación | Reconciliación de dos cuentas: 19 modelos huérfanos (11 con ACL + 2 internos sin ACL + 3 abstractos exentos + 3 extensiones frente a 9+3) y 24 XML huérfanos (18 sin registros + 4 con registros = 22; faltan 2). Incluye 4 casos notables (`madenat_period_close.xml` inalcanzable desde UI, `shipping_views.xml` residuo modularizado, `stock_lot_views_inherit.xml` y `madenat_menus_por_perfil.xml`). | 🟡 **DIFERIDO** | Saneamiento e inventario exhaustivo de modelos y vistas XML sin alterar estabilidad. |
 
 ---
 
@@ -1373,12 +1375,11 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
    - **Esfuerzo:** **L**.
    - **Propuesta de Rediseño:** Convertir la verificación de concurrencia en una suite fuera de `TransactionCase` (ejecutable mediante runner independiente con commits reales en base de datos temporal) o validar la integridad de concurrencia mediante pruebas de bloqueo determinístico a nivel de ORM (`with_for_update()`).
 
-2. **`TestSvEscalationSecurity` (`test_02`, `test_03`, `test_04` en `madenat_lumber_logistics`):**
-   - **Clasificación:** Regresión real en delegación de seguridad entre modelos de negocio.
-   - **Causa Raíz:** Al ejecutar la acción `action_apply()` de rebaja como usuario de `contabilidad` o `auditoria`, el flujo invoca internamente `_sv_post_chatter()`, el cual intenta escribir una nota en el chatter del albarán y de la guía procesada asociada (`madenat.guia.processing`). Los usuarios con perfil exclusivamente contable/auditor no tienen privilegios de escritura en `madenat.guia.processing`.
-   - **Traza Resumida:** `odoo.exceptions.AccessError: You are not allowed to modify 'Recepción de Madera Procesada' (madenat.guia.processing)`.
-   - **Esfuerzo:** **M**.
-   - **Propuesta de Rediseño:** Utilizar elevación segura `sudo()` dentro del helper `_sv_post_chatter()` para la bitácora de mensajes de auditoría, o conceder permiso de escritura en la bitácora cruzada a los roles correspondientes.
+2. **`TestSvEscalationSecurity` (`test_02`, `test_03`, `test_04` en `madenat_lumber_core`):**
+   - **Clasificación:** Regresión real en delegación de seguridad entre modelos de negocio — **RESUELTO EN H1-A (AD-129)**.
+   - **Causa Raíz:** Al ejecutar `action_apply()` de rebaja como usuario de `contabilidad` o `auditoria`, el flujo invoca internamente `_sv_post_chatter()`, el cual intenta escribir una nota en el chatter de la guía procesada asociada (`madenat.guia.processing`). Los roles de Auditoría y Contabilidad carecen de privilegios de escritura en `madenat.guia.processing`.
+   - **Solución Implementada:** Publicación con `sudo()` estrictamente acotado sobre `lot_id` y `guia_processing_id`, con `author_id` del usuario real en `_sv_chatter_mail_kwargs`, preservando `create_uid` sin elevar ACLs ni grupos.
+   - **Estado:** 🟢 CERRADO en H1-A (AD-129). Suite pasa 7/7 (pruebas originales `test_02`, `test_03`, `test_04` intactas; `test_06` y `test_07` añadidas). `TestSvRpcBypass` 14/14.
 
 ---
 
@@ -1403,7 +1404,7 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 3. **Optimización de `.search()` en Bucles (HG-04):** Requiere análisis caso por caso y pruebas de regresión funcionales.
 4. **Código Muerto, Duplicado y `.gitignore` (HG-05):** Erradicación de código inactivo y adición de exclusiones en `.gitignore` para archivos de respaldo diferidas a fase de mantenimiento mayor.
 5. **Instalación de Pre-commit (HG-06):** No autorizado instalar en H0 sin consenso de equipo; especificación técnica registrada como propuesta incremental.
-6. **Resolución de Pruebas Complejas (HG-07):** Corrección de las 4 pruebas complejas diagnosticadas (`TestSvConcurrency` y `TestSvEscalationSecurity` en logistics) diferida para evitar modificaciones estructurales no acotadas.
+6. **Resolución de Pruebas Complejas (HG-07):** Corrección de la única prueba de concurrencia pendiente (`TestSvConcurrency.test_01_dos_transacciones_no_sobreconsumen`, esfuerzo L, rediseño a runner multiproceso) diferida para evitar modificaciones estructurales no acotadas. (Las 3 pruebas de `TestSvEscalationSecurity` fueron resueltas en H1-A; test_06 y test_07 incorporados).
 7. **Migración de Citas de Línea Obsoletas en Documentación (HG-08):** Migración gradual a citas por símbolo/sección; encabezados y tablas sinópticas formalizadas.
 8. **Preservación de WIP en Costing y Reports (Restricción D1–D6):** Área protegida por restricciones D1–D6 sin tocar en H0 (no forma parte de la taxonomía HG-01..HG-08).
 
