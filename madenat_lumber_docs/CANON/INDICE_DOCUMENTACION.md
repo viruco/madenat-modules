@@ -1,7 +1,8 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 12.54.0
-**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H4: Cierre de Fases 2 a 5. Sincronización monótona de CANON/04 (12.50.0, AD-130 unificación de reglas de exportación y AD-131 recálculo controlado de datos de prueba), CANON/05 (8.52.0, HG-05 candidatos a código muerto justificados, recálculo 87 lotes y diferidos) y CANON/17 (1.18.0, §9.1.1 5 familias y §10 hashes Consulta B y A.2). Índice 12.53.0 → 12.54.0. Sin push ni despliegue. | Bloque H4. -->
+**Versión documental:** 12.55.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H5-C: Cierre formal H5. Sincronización monótona de CANON/04 (12.51.0, AD-132 flujo de edición staging y aviso chatter en lote), CANON/05 (8.53.0, cierre H5 y diferimiento de escalado rebaja para Bloque 7) y CANON/12 (1.19.0, §12.7 flujo de edición antes y después del envío a stock). Índice 12.54.0 → 12.55.0. Sin push ni despliegue. | Bloque H5. -->
+<!-- actualizado: 2026-10-21 — Bloque H4: Cierre de Fases 2 a 5. Sincronización monótona de CANON/04 (12.50.0, AD-130 unificación de reglas de exportación y AD-131 recálculo controlado de datos de prueba), CANON/05 (8.52.0, HG-05 candidatos a código muerto justificados, recálculo 87 lotes y diferidos) y CANON/17 (1.18.0, §9.1.1 5 familias y §10 hashes Consulta B y A.2). Índice 12.53.0 → 12.54.0. Sin push ni despliegue. | Bloque H4. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. Sincronización monótona de CANON/04 (12.49.0, AD-129 chatter con sudo() acotado y autor real en escalamiento SV) y CANON/05 (8.51.0, HG-07 casi cerrado 9/10, test_06/07, HG-09 reconciliación 19 modelos y 24 XMLs). Índice 12.52.0 → 12.53.0. Sin push ni despliegue. | Bloque H1. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-C: Sincronización monótona de CANON/05 (8.49.0 → 8.50.0) con corrección de etiquetas de alcance diferido no autorizado (HG-01..HG-08). Índice 12.51.0 → 12.52.0. Sin push ni despliegue. | Bloque H1. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación del Mapa Rápido «Pregunta → Documento y Sección Canónica» (15 temas más consultados); sincronización de versiones monótonas en CANON/02, 04, 05, 07, 12 y 17; índice 12.50.0 → 12.51.0. Sin push ni despliegue. | Bloque H0. -->
@@ -119,8 +120,8 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
 | `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, y **H0 Higiene Mínima Segura — AD-128**) | 12.49.0 | 2026-10-20 | ✅ Vigente |
 | `03_TESTS.md` | Catálogo maestro de suites, tests unitarios e integración (§33 Bloque 6 suites y script canónico `run_regression.sh`) | 6.42.0 | 2026-10-19 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-131; **AD-130: Unificación reglas exportación por familia; AD-131: Recálculo controlado de datos de prueba**) | 12.50.0 | 2026-10-21 | ✅ Vigente |
-| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (HG-01..HG-08, HG-07 casi cerrado 9/10, HG-09, **Bloque H4: HG-05 candidatos justificados, recálculo 87 lotes y diferidos**) | 8.52.0 | 2026-10-21 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-132; **AD-130: Unificación reglas exportación; AD-131: Recálculo controlado datos prueba; AD-132: Flujo edición dimensiones staging y aviso chatter stock**) | 12.51.0 | 2026-10-21 | ✅ Vigente |
+| `05_BACKLOG.md` | Backlog canónico y priorizado por fases (HG-01..HG-08, HG-07 casi cerrado 9/10, HG-09, **Bloque H5: Cierre formal H5 (E3/E4) y diferimiento escalado rebaja para Bloque 7**) | 8.53.0 | 2026-10-21 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA (incluye prohibición de -i y -u all, citas por sección/símbolo, reportes $\le$ 80 líneas y DoD) | 7.4.0 | 2026-10-20 | ✅ Vigente |
@@ -128,7 +129,7 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado — ARCHIVADO, checklist migrado a este índice | 1.1.0 | 2026-06-16 | 🏷️ ARCHIVADO — checklist A-F consolidado en Anexo A |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — ARCHIVADO en LEGADO/auditorias | — | 2026-06-04 | 🏷️ ARCHIVADO — Fase A completada, evidencia histórica |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Derivado vigente |
-| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §3.3 Matriz Operativa ADRs, y **Tabla Sinóptica H0 — AD-128**) | 1.18.0 | 2026-10-20 | ✅ Vigente |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §12.7 Flujo edición antes y después de stock — AD-132, y **Tabla Sinóptica H0 — AD-128**) | 1.19.0 | 2026-10-21 | ✅ Vigente |
 | `12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — plan no ejecutado |
@@ -138,7 +139,7 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `17_CONSTITUCION_VOLUMENES.md` | Constitución de Volúmenes: definiciones NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL; §9 Especificación Canónica de Operaciones (F1 a F7); §9.1.1 5 Familias; §10 Hashes Consulta B y A.2 post-AD-131; **Tabla Sinóptica H0 — AD-128**) | 1.18.0 | 2026-10-21 | ✅ Vigente |
 | `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves | 1.2.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
 | `19_IMPUTACION_SV_Y_PROCESADORES.md` | Imputación declarada etiqueta→SV y saldo por procesador | 1.33.0 | 2026-10-15 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro y mapa rápido de 15 preguntas canónicas | 12.54.0 | 2026-10-21 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro y mapa rápido de 15 preguntas canónicas | 12.55.0 | 2026-10-21 | ✅ Vigente |
 
 <!-- actualizado: 2026-06-30 — indexados 05_AUDITORIA_XML_IDS, 12-15; 06_CHECKLIST marcado LEGACY; 00 y 07 actualizados; 05_CONTINUIDAD_GLOBAL y AUDITORIA_TRAZABILIDAD_OC movidos a LEGADO -->
 

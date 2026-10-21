@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.52.0
-**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H4: HG-05 candidatos a código muerto no eliminados por contratos activos justificados; eliminación de get_s2s_adjustment; resumen del recálculo controlado AD-131 (87 lotes recalculados, 0 Blanks tocados, 0 registros de costing afectados); registro formal de verificación pendiente de 'Enviar a stock' de recepción estándar diferida para H5. Versión 05 8.51.0 → 8.52.0. Sin push. -->
+**Versión documental:** 8.53.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H5-C: Cierre formal H5 (AD-132: corrección E3 ancho nominal en exportación staging, aviso chatter E4 en lote pos-envío); diferimiento de escalado de volumen en rebaja para Bloque 7. Versión 05 8.52.0 → 8.53.0. Sin push. -->
+<!-- actualizado: 2026-10-21 — Bloque H4: HG-05 candidatos a código muerto no eliminados por contratos activos justificados; eliminación de get_s2s_adjustment; resumen del recálculo controlado AD-131 (87 lotes recalculados, 0 Blanks tocados, 0 registros de costing afectados); registro formal de verificación pendiente de 'Enviar a stock' de recepción estándar diferida para H5. Versión 05 8.51.0 → 8.52.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. HG-07 pasa a casi cerrado (9 de 10 resueltas con H0-B y H1-A, registradas test_06 y test_07, quedando solo TestSvConcurrency.test_01 diferida); registro de HG-09 (reconciliación de 19 modelos y 24 XMLs con 4 casos notables); AD-129. Versión 05 8.50.0 → 8.51.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
 <!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
@@ -1429,10 +1430,22 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 - **Costing dependiente:** **0 registros** en `stock.lot.cost.line` afectados (NO TOCADOS, preservando D4).
 - **Líneas base:** Hashes Consulta B y Consulta A.2 actualizados en CANON/17 §10.
 
-### 3. Registro de Verificación Pendiente (Diferido a Bloque H5)
-- **Flujo "Enviar a stock" de Recepción Estándar (`lumber.reception`):**
-  - La verificación del paso de borrador/staging a stock directo en recepciones estándar queda formalmente diferida para el bloque de ciclo de vida (H5).
-  - No se ejecutó en H4 para preservar el alcance mínimo y la estabilidad del recálculo.
+### 3. Registro de Verificación Pendiente (Cerrado en Bloque H5)
+- **Flujo "Enviar a stock" de Recepción Estándar (`lumber.reception`):** Verificado formalmente en H5.
+
+---
+
+## Bloque H5 — Verificación y Corrección de Anchos Nominales (AD-132 / 2026-10-21) — 🟢 CERRADO
+
+### 1. Diagnóstico y Corrección de Defectos (H5-C)
+- **Defecto E3 (Staging):** En `madenat.guia.processing.line`, la edición del ancho nominal no recalculaba el volumen de exportación. Corregido unificando el ancho efectivo (`effective_w = ancho_nominal_mm or ancho_mm`) en `_compute_vol_shipment_m3` y añadiendo `'ancho_nominal_mm'` a `@api.depends`.
+- **Defecto E4 (Stock):** En `stock.lot`, la modificación posterior al envío conserva la salvaguarda de staging y emite aviso al chatter: `"dimensiones modificadas después del ingreso; el volumen no se recalculó"`.
+- **Pruebas TDD (C4):** 6 pruebas automáticas incorporadas en `test_h5_nominal_width_and_stock_notice.py` (100% OK).
+- **Regresión 7 módulos (C5):** 1617 pruebas ejecutadas; 1 falla esperada (`TestSvConcurrency.test_01`). Consulta B y Consulta A.2 100% invariantes.
+
+### 2. Alcance Formalmente Diferido para el Bloque 7
+- **Escalado de Volumen en Rebaja:** La reducción proporcional de volumen ante rebaja física de piezas en lotes de stock queda formalmente diferida y documentada para su diseño en el **Bloque 7** (Remate, Merma y Rebaja).
+
 
 
 

@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.50.0
-**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
+**Versión documental:** 12.51.0
+**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
+<!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
 <!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
 <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
@@ -23,6 +24,7 @@
 | **AD-129** | 2026-10-21 | Chatter con sudo() acotado, autor real y mínimo privilegio en escalamiento SV | Vigente |
 | **AD-130** | 2026-10-21 | Unificación de reglas de exportación por familia (API única y constantes UoM) | Vigente |
 | **AD-131** | 2026-10-21 | Recálculo controlado de datos de prueba en `madenat_test` (87 lotes corregidos) | Vigente |
+| **AD-132** | 2026-10-21 | Flujo de edición de dimensiones en staging y aviso chatter en stock (Bloque H5) | Vigente |
 
 ---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
@@ -4179,6 +4181,33 @@ Tras unificar la regla de exportación F2 y la tabla S2S, 87 lotes de prueba en 
    - Sincronización en líneas de recepción y guía processing por `lot_name`.
    - Consulta B actualizada: `stock_lot` 152 filas, hash `c18e13059b8155118f88e94bbb038fc3`, suma 521.6820 m³.
    - Consulta A.2 actualizada: `stock_lot` 152 filas, hash `26e74e8feb35260e2fd839281ce287d9`.
+
+---
+
+## AD-132: Flujo de Edición de Dimensiones en Staging y Salvaguarda con Aviso en Chatter Pos-Envío (Bloque H5)
+
+**Fecha:** 2026-10-21  
+**Estado:** ✅ APROBADA  
+**Ámbito:** `madenat_lumber_core` (`madenat.guia.processing.line`, `stock.lot`), `madenat_lumber_intake`  
+
+### Contexto y Motivación
+Durante la verificación del flujo "Enviar a Stock" y los anchos nominales (Bloque H5, Casos E1–E6), se identificaron dos comportamientos clave respecto al ciclo de vida de las dimensiones:
+1. **Defecto E3 (Staging antes de stock):** Al editar `ancho_nominal_mm` en `madenat.guia.processing.line` (ej. 150 → 140 mm), `vol_purchase_m3` se recalculaba correctamente a 4,410 m³, pero `vol_shipment_m3` permanecía congelado en 3,895 m³ porque `_compute_vol_shipment_m3` no incluía `'ancho_nominal_mm'` en su `@api.depends` y llamaba a `resolve_export_width_details` utilizando únicamente `line.ancho_mm` (ancho bruto).
+2. **Defecto E4 (Lote después de stock):** Al modificar piezas o ancho en un lote ya ingresado a stock, la salvaguarda de staging protegía correctamente el volumen contra recálculos involuntarios, pero no existía aviso visible ni trazabilidad en el chatter para alertar al operador sobre la discordancia geométrica sobrevenida.
+
+### Decisiones Aprobadas (AD-132)
+1. **Recálculo Integral de Exportación con Ancho Efectivo en Staging:**
+   - En `madenat.guia.processing.line`, se añade `'ancho_nominal_mm'` al decorador `@api.depends` del método `_compute_vol_shipment_m3`.
+   - Se resuelve el ancho efectivo como `effective_w = line.ancho_nominal_mm or line.ancho_mm` antes de invocar la API única `resolve_export_width_details(rough_mm=effective_w, ...)`.
+   - El estado fuera de tabla y el override manual (`export_width_manual_inches`) se reevalúan sobre el mismo ancho efectivo, manteniendo la precedencia canónica del override.
+   - En la familia `blank` (compra = exportación), los volúmenes se mantienen estrictamente invariantes.
+2. **Salvaguarda de Staging y Aviso en Chatter Pos-Envío:**
+   - En `stock.lot` (`StockLotExtended.write`), al modificar piezas o ancho (`piezas`, `ancho_mm`, `ancho_nominal_mm`) en lotes con `reception_id` y volumen mayor a 0,001 m³, **NO se recalcula el volumen** (la salvaguarda de staging R5/D6 se preserva intacta).
+   - Se registra automáticamente un mensaje informativo en el chatter:
+     `"dimensiones modificadas después del ingreso; el volumen no se recalculó"`.
+3. **Diferimiento del Escalado de Volumen en Rebaja:**
+   - El rediseño del escalado proporcional del volumen ante rebajas físicas de inventario (reducción de piezas en lotes de stock) queda formalmente diferido para su especificación e implementación en el **Bloque 7**.
+
 
 
 

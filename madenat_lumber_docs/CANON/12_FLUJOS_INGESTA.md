@@ -1,8 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.18.0\
-**Fecha de actualización:** 2026-10-20  <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
+**Versión documental:** 1.19.0\
+**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: §12.7 Flujo de edición de dimensiones antes y después del envío a stock (AD-132 / Bloque H5). Versión 1.18.0 → 1.19.0. | Bloque H5. -->
+<!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
 <!-- 2026-10-19: §3.3 Cita explícita de ADRs (AD-65, AD-79, AD-80, AD-87) en matriz de ingesta y formalización de Bloque 6 (AD-127). Versión 1.16.0 → 1.17.0. | Bloque 6. -->\
 
 ### Resumen Ejecutivo de Flujos de Ingesta (Tabla Sinóptica)
@@ -586,5 +587,19 @@ Tras la armonización canónica con las directrices de Cristhian Elgueta y la ar
 | **Recepción por Volumen (Lotes SV)** | `granel` / `volume` (AD-79) | **NO** (`0.000`) | Ingreso por metros cúbicos globales medidos en camión (báscula/metro cúbico). No posee desglose pieza a pieza ni escuadría nominal. |
 | **Retorno de Servicio / Procesado** | `service` (Cepillado / Imputación) | **SÍ** (cuando aplica) | Si el producto retornado mantiene escuadría visual comercial estándar (ej: 6/4), aplica F3 sobre la escuadría resultante imputada a la etiqueta SV (AD-87). |
 | **Blanks con Largo Métrico** | `f1550` / `metric` mixto | **SÍ** (si no es directo a stock) | Aplica F3 si se trata de madera aserrada estándar con largo métrico y espesor nominal visual mapeable. |
+
+### 12.7 Flujo de Edición de Dimensiones Antes y Después del Envío a Stock (AD-132 / Bloque H5)
+
+- **Antes del envío (Fase de Staging en Intake):**
+  - **Modelos operativos:** `madenat.guia.processing.line` y `lumber.reception.line`.
+  - **Recálculo integral de compra y exportación:** La edición manual del ancho nominal (`ancho_nominal_mm` o `width_nominal`) recalcula inmediatamente tanto el volumen de compra (`vol_purchase_m3`) como el volumen de exportación (`vol_shipment_m3`) a través de la API única `resolve_export_width_details(rough_mm=effective_w)` donde `effective_w = ancho_nominal_mm or ancho_mm`.
+  - **Estado fuera de tabla y override manual:** Se evalúan uniformemente sobre el ancho efectivo resuelto. Si el ancho nominal es vacío o 0, respalda en `ancho_mm`. El override manual (`export_width_manual_inches`) mantiene su precedencia canónica absoluta.
+  - **Blanks inalterados:** Para subproductos de la familia `blank`, se preserva estrictamente la regla de oro: compra = exportación (sin alteración de volumen).
+
+- **Después del envío (Fase de Stock en Lote):**
+  - **Modelo operativo:** `stock.lot`.
+  - **Salvaguarda de staging estricta:** Para lotes que provienen de recepción o proceso (`reception_id`) con volumen mayor a 0,001 m³, el volumen de exportación e inventario permanece protegido e inmutable (no se recalcula automáticamente).
+  - **Aviso de auditoría en chatter:** Al modificar piezas o ancho (`piezas`, `ancho_mm`, `ancho_nominal_mm`), el sistema registra automáticamente un mensaje en el chatter del lote: `"dimensiones modificadas después del ingreso; el volumen no se recalculó"`.
+  - **Escalado de volumen en rebaja:** La lógica de recálculo proporcional de volumen ante rebajas físicas de piezas queda formalmente documentada y diferida para su diseño integral en el **Bloque 7**.
 
 
