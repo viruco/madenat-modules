@@ -24,6 +24,10 @@
              
                 <field name="espesor_mm" string="E (mm)" optional="show"/>
                 <field name="ancho_mm" string="A (mm)" optional="show"/>
+                <field name="ancho_export_display" string="Ancho Export" optional="show"/>
+                <field name="out_of_table_status" string="Estado S2S" optional="show" widget="badge"
+                       decoration-warning="out_of_table_status == 'out_of_table'"
+                       decoration-success="out_of_table_status in ('in_table', 'confirmed')"/>
                 <field name="largo_m" string="L (m)" optional="show"/>
                 <field name="piezas" string="Pzas" sum="Total Piezas"/>
 
@@ -125,6 +129,14 @@
               </group>
               <group string="Final (Embarque)">
                 <field name="vol_shipment_m3" string="Vol. Export (m³)" class="text-success" style="font-weight: bold;"/>
+                <field name="ancho_export_display" string="Ancho Export" readonly="1"/>
+                <field name="out_of_table_status" string="Estado S2S" widget="badge"
+                       decoration-warning="out_of_table_status == 'out_of_table'"
+                       decoration-success="out_of_table_status in ('in_table', 'confirmed')"/>
+                <field name="export_width_manual_inches" string="Ancho Manual (in)"/>
+                <field name="export_width_manual_reason" string="Motivo Ancho Manual"
+                       invisible="not export_width_manual_inches"
+                       required="export_width_manual_inches &gt; 0"/>
                 <field name="width_final_inch" string="Ancho Final (pulg)"/>
               </group>
             </group>

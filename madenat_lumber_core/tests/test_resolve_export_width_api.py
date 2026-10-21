@@ -261,3 +261,124 @@ class TestResolveExportWidthAPI(TransactionCase):
         lot_rev._compute_vol_shipment_m3()
         lot_rev._compute_reconciliation_status()
         self.assertEqual(lot_rev.reconciliation_status, 'review')
+
+    def test_13_out_of_table_status_and_display_s2s(self):
+        """Puntos 2.6 y 2.8: Estado visible 'ancho fuera de tabla: confirmar' y display nominal S2S."""
+        product = self.env['product.product'].search([], limit=1)
+
+        # 1. En tabla: 150 mm -> nominal display '5 5/8', estado 'in_table'
+        lot_in = self.env['stock.lot'].create({
+            'name': 'LOT-S2S-150-IN',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 150.0,
+            'largo_m': 4.0,
+            'piezas': 175,
+        })
+        lot_in._compute_out_of_table_status()
+        lot_in._compute_ancho_export_display()
+        lot_in._compute_vol_shipment_m3()
+        self.assertEqual(lot_in.out_of_table_status, 'in_table')
+        self.assertFalse(lot_in.is_out_of_table)
+        self.assertEqual(lot_in.ancho_export_display, '5 5/8')
+        # Volumen calculado usa +1/8" (5.750"): 1.5 x 5.75 x 4.0 x 175 / 1550.003 = 3.895 m³
+        self.assertAlmostEqual(lot_in.vol_shipment_m3, 3.895, places=3)
+
+        # 2. Fuera de tabla: 170 mm -> estado 'out_of_table', is_out_of_table=True
+        lot_out = self.env['stock.lot'].create({
+            'name': 'LOT-S2S-170-OUT',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 170.0,
+            'largo_m': 4.0,
+            'piezas': 150,
+        })
+        lot_out._compute_out_of_table_status()
+        lot_out._compute_ancho_export_display()
+        lot_out._compute_vol_shipment_m3()
+        self.assertTrue(lot_out.is_out_of_table)
+        self.assertEqual(lot_out.out_of_table_status, 'out_of_table')
+        self.assertEqual(lot_out.ancho_export_display, '170 mm')
+        # Volumen de 170 mm fuera de tabla (regla d / métrico sin +1/8"): 3.886 m³
+        self.assertAlmostEqual(lot_out.vol_shipment_m3, 3.886, places=3)
+
+    def test_14_manual_override_validation_and_propagation(self):
+        """Puntos 2.6 y 2.7: Validación obligatoria de motivo ante captura manual y propagación a embarque."""
+        product = self.env['product.product'].search([], limit=1)
+
+        # 1. Validación en stock.lot: ancho manual > 0 sin motivo lanza ValidationError
+        with self.assertRaises(ValidationError):
+            self.env['stock.lot'].create({
+                'name': 'LOT-FAIL-NO-REASON',
+                'product_id': product.id,
+                'espesor_mm': 45.0,
+                'ancho_mm': 170.0,
+                'export_width_manual_inches': 6.693,
+                'export_width_manual_reason': '   ',  # Vacío
+            })
+
+        # 2. Captura manual válida con motivo en stock.lot
+        lot_manual = self.env['stock.lot'].create({
+            'name': 'LOT-MANUAL-CONFIRMED',
+            'product_id': product.id,
+            'espesor_mm': 45.0,
+            'ancho_mm': 170.0,
+            'largo_m': 4.0,
+            'piezas': 150,
+            'export_width_manual_inches': 6.75,
+            'export_width_manual_reason': 'Ancho especial cliente exportación',
+        })
+        lot_manual._compute_out_of_table_status()
+        lot_manual._compute_ancho_export_display()
+        lot_manual._compute_vol_shipment_m3()
+        self.assertEqual(lot_manual.out_of_table_status, 'confirmed')
+        self.assertTrue(lot_manual.is_out_of_table)
+        self.assertTrue(lot_manual.export_width_manual_user_id)
+
+        # 3. Validación en madenat.guia.processing.line
+        guia = self.env['madenat.guia.processing'].create({'name': 'GUIA-TEST-OVERRIDE'})
+        with self.assertRaises(ValidationError):
+            self.env['madenat.guia.processing.line'].create({
+                'processing_id': guia.id,
+                'product_id': product.id,
+                'lot_name': 'LOTE-GUIA-FAIL',
+                'ancho_mm': 170.0,
+                'export_width_manual_inches': 6.693,
+                'export_width_manual_reason': '   ',
+            })
+
+        line_valid = self.env['madenat.guia.processing.line'].create({
+            'processing_id': guia.id,
+            'product_id': product.id,
+            'lot_name': 'LOTE-GUIA-OK',
+            'ancho_mm': 170.0,
+            'export_width_manual_inches': 6.75,
+            'export_width_manual_reason': 'Ancho manual justificado',
+        })
+        line_valid._compute_out_of_table_status()
+        self.assertEqual(line_valid.out_of_table_status, 'confirmed')
+
+        # 4. Propagación a línea de embarque si el modelo está en registry
+        if 'lumber.export.shipment' in self.env:
+            partner = self.env['res.partner'].create({'name': 'Cliente Test Emb'})
+            shipment = self.env['lumber.export.shipment'].create({
+                'name': 'EXP-TEST-OVERRIDE',
+                'customer_id': partner.id,
+            })
+            container = self.env['lumber.container'].create({
+                'name': 'CONT-TEST-01',
+                'shipment_id': shipment.id,
+            })
+            ship_line = self.env['lumber.shipment.line'].create({
+                'shipment_id': shipment.id,
+                'container_id': container.id,
+                'lot_id': lot_manual.id,
+            })
+            ship_line._compute_export_dims()
+
+            # Verifica related fields y resolución vía API única
+            self.assertAlmostEqual(ship_line.export_width_manual_inches, 6.75, places=3)
+            self.assertEqual(ship_line.export_width_manual_reason, 'Ancho especial cliente exportación')
+            self.assertEqual(ship_line.out_of_table_status, 'confirmed')
+            self.assertAlmostEqual(ship_line.export_width_inches, 6.75, places=3)
+

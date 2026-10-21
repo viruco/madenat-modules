@@ -291,7 +291,90 @@ class MadenatGuiaProcessingLine(models.Model):
         string='Motivo ancho manual',
         help='Motivo obligatorio por el cual se asigna un ancho manual de exportación.'
     )
-    
+
+    # Punto 2.6 & 2.8 (AD-130): Estado fuera de tabla y ancho export visible
+    is_out_of_table = fields.Boolean(
+        string="Fuera de Tabla S2S",
+        compute="_compute_out_of_table_status",
+        store=True,
+    )
+    out_of_table_status = fields.Selection([
+        ('in_table', 'En Tabla S2S'),
+        ('out_of_table', 'ancho fuera de tabla: confirmar'),
+        ('confirmed', 'Confirmado Manual'),
+        ('not_applicable', 'No Aplica'),
+    ], string="Estado S2S", compute="_compute_out_of_table_status", store=True)
+
+    ancho_export_display = fields.Char(
+        string='Ancho Export',
+        compute='_compute_ancho_export_display',
+        store=True,
+        help="Ancho nominal de exportación S2S (ej: 150 mm → 5 5/8\")."
+    )
+
+    @api.depends('ancho_mm', 'ancho_nominal_mm', 'width_visual',
+                 'subproducto_id', 'export_width_manual_inches', 'export_width_manual_reason')
+    def _compute_out_of_table_status(self):
+        config = self.env['madenat.ingestion.config']
+        s2s_map = config.get_width_s2s_map(include_overwidth=False)
+        for line in self:
+            family = getattr(line.subproducto_id, 'calculation_family', False)
+            if family in ('blank', 'rough'):
+                line.out_of_table_status = 'not_applicable'
+                line.is_out_of_table = False
+                continue
+
+            w_mm = line.ancho_nominal_mm or line.ancho_mm or 0.0
+            if not w_mm or w_mm <= 0:
+                line.out_of_table_status = 'not_applicable'
+                line.is_out_of_table = False
+                continue
+
+            w_key = int(round(w_mm))
+            in_table = (w_key in s2s_map)
+
+            if in_table:
+                line.out_of_table_status = 'in_table'
+                line.is_out_of_table = False
+            else:
+                line.is_out_of_table = True
+                manual_in = line.export_width_manual_inches or 0.0
+                manual_reason = line.export_width_manual_reason or ''
+                if manual_in > 0 and manual_reason.strip():
+                    line.out_of_table_status = 'confirmed'
+                else:
+                    line.out_of_table_status = 'out_of_table'
+
+    @api.depends('ancho_mm', 'ancho_nominal_mm', 'width_visual', 'export_width_manual_inches')
+    def _compute_ancho_export_display(self):
+        config = self.env['madenat.ingestion.config']
+        for line in self:
+            w_mm = line.ancho_nominal_mm or line.ancho_mm or 0.0
+            if w_mm > 0:
+                details = config.resolve_export_width_details(
+                    rough_mm=w_mm,
+                    record=line,
+                    width_visual=line.width_visual,
+                )
+                line.ancho_export_display = details.get('nominal_width_label') or f"{details.get('nominal_width_inches', 0.0):.3f}\""
+            else:
+                line.ancho_export_display = ""
+
+    @api.constrains('export_width_manual_inches', 'export_width_manual_reason')
+    def _check_manual_export_width(self):
+        for line in self:
+            if (line.export_width_manual_inches or 0.0) > 0:
+                if not (line.export_width_manual_reason and line.export_width_manual_reason.strip()):
+                    raise ValidationError(_(
+                        "El motivo de captura manual de ancho es obligatorio cuando se especifica un ancho manual."
+                    ))
+
+    def write(self, vals):
+        if vals.get('export_width_manual_inches'):
+            vals.setdefault('export_width_manual_user_id', self.env.user.id)
+            vals.setdefault('export_width_manual_date', fields.Datetime.now())
+        return super().write(vals)
+
     # ==========================================================================
     # ESTADO Y VALIDACIÓN
     # ==========================================================================
@@ -1543,7 +1626,12 @@ class MadenatGuiaProcessing(models.Model):
                     'espesor_nominal_mm': item.espesor_nominal_mm, 
                     'ancho_nominal_mm': item.ancho_nominal_mm if item.ancho_nominal_mm > 0 else item.ancho_mm,
                     'note': raw_product_name, 
-                    'ref': sku_base
+                    'ref': sku_base,
+                    'export_width_manual_inches': item.export_width_manual_inches,
+                    'export_width_manual_reason': item.export_width_manual_reason,
+                    'export_width_manual_user_id': item.export_width_manual_user_id.id if item.export_width_manual_user_id else False,
+                    'export_width_manual_date': item.export_width_manual_date,
+                    'vol_documental_m3': item.vol_documental_m3,
                 }
 
                 # --- C. GESTIÓN DE PRODUCTO ---
@@ -4991,6 +5079,15 @@ class MadenatGuiaProcessing(models.Model):
             # Pero si viene del Staging Bridge, entrará como 'approved'/'recepcionado'
             'technical_validation': technical_validation,
             'estado_trazabilidad': estado_trazabilidad,
+
+            # ═══════════════════════════════════════════════════════
+            # CONTROL DE EXPORTACIÓN Y CONCILIACIÓN (AD-130 / H4)
+            # ═══════════════════════════════════════════════════════
+            'export_width_manual_inches': lot_dims.get('export_width_manual_inches', 0.0),
+            'export_width_manual_reason': lot_dims.get('export_width_manual_reason', ''),
+            'export_width_manual_user_id': lot_dims.get('export_width_manual_user_id', False),
+            'export_width_manual_date': lot_dims.get('export_width_manual_date', False),
+            'vol_documental_m3': lot_dims.get('vol_documental_m3', 0.0),
         }
         
         # ═══════════════════════════════════════════════════════

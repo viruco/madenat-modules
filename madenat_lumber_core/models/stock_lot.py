@@ -566,6 +566,102 @@ class StockLotExtended(models.Model):
     ], string='Conciliación Packing', compute='_compute_reconciliation_status', store=True,
        help='Estado de conciliación entre volumen documental declarado en packing y volumen de embarque')
 
+    # Punto 2.6 - 2.8 (AD-130): Ancho manual, fuera de tabla y display S2S
+    export_width_manual_inches = fields.Float(
+        string='Ancho Manual Export (in)',
+        digits=(16, 4),
+        help='Ancho de exportación en pulgadas ingresado manualmente en caso de estar fuera de tabla.'
+    )
+    export_width_manual_reason = fields.Char(
+        string='Motivo Ancho Manual',
+        help='Motivo obligatorio por el cual se asigna un ancho manual de exportación.'
+    )
+    export_width_manual_user_id = fields.Many2one(
+        'res.users',
+        string='Usuario Ancho Manual',
+        readonly=True,
+    )
+    export_width_manual_date = fields.Datetime(
+        string='Fecha Ancho Manual',
+        readonly=True,
+    )
+    is_out_of_table = fields.Boolean(
+        string="Fuera de Tabla S2S",
+        compute="_compute_out_of_table_status",
+        store=True,
+    )
+    out_of_table_status = fields.Selection([
+        ('in_table', 'En Tabla S2S'),
+        ('out_of_table', 'ancho fuera de tabla: confirmar'),
+        ('confirmed', 'Confirmado Manual'),
+        ('not_applicable', 'No Aplica'),
+    ], string="Estado S2S", compute="_compute_out_of_table_status", store=True)
+
+    ancho_export_display = fields.Char(
+        string='Ancho Export',
+        compute='_compute_ancho_export_display',
+        store=True,
+        help="Ancho nominal de exportación S2S (ej: 150 mm → 5 5/8\")."
+    )
+
+    @api.constrains('export_width_manual_inches', 'export_width_manual_reason')
+    def _check_manual_export_width(self):
+        for lot in self:
+            if (lot.export_width_manual_inches or 0.0) > 0:
+                if not (lot.export_width_manual_reason and lot.export_width_manual_reason.strip()):
+                    raise ValidationError(_(
+                        "El motivo de captura manual de ancho es obligatorio cuando se especifica un ancho manual."
+                    ))
+
+    @api.depends('ancho_mm', 'ancho_nominal_mm', 'subproducto_id', 'largo_ft_frac',
+                 'export_width_manual_inches', 'export_width_manual_reason')
+    def _compute_out_of_table_status(self):
+        config = self.env['madenat.ingestion.config']
+        s2s_map = config.get_width_s2s_map(include_overwidth=False)
+        for lot in self:
+            family = getattr(lot.subproducto_id, 'calculation_family', False)
+            if family in ('blank', 'rough') or bool(lot.largo_ft_frac):
+                lot.out_of_table_status = 'not_applicable'
+                lot.is_out_of_table = False
+                continue
+
+            w_mm = lot.ancho_nominal_mm or lot.ancho_mm or 0.0
+            if not w_mm or w_mm <= 0:
+                lot.out_of_table_status = 'not_applicable'
+                lot.is_out_of_table = False
+                continue
+
+            w_key = int(round(w_mm))
+            in_table = (w_key in s2s_map)
+
+            if in_table:
+                lot.out_of_table_status = 'in_table'
+                lot.is_out_of_table = False
+            else:
+                lot.is_out_of_table = True
+                manual_in = lot.export_width_manual_inches or 0.0
+                manual_reason = lot.export_width_manual_reason or ''
+                if manual_in > 0 and manual_reason.strip():
+                    lot.out_of_table_status = 'confirmed'
+                else:
+                    lot.out_of_table_status = 'out_of_table'
+
+    @api.depends('ancho_mm', 'ancho_nominal_mm', 'width_visual',
+                 'export_width_manual_inches', 'subproducto_id', 'largo_ft_frac')
+    def _compute_ancho_export_display(self):
+        config = self.env['madenat.ingestion.config']
+        for lot in self:
+            w_mm = lot.ancho_nominal_mm or lot.ancho_mm or 0.0
+            if w_mm > 0:
+                details = config.resolve_export_width_details(
+                    rough_mm=w_mm,
+                    record=lot,
+                    width_visual=lot.width_visual,
+                )
+                lot.ancho_export_display = details.get('nominal_width_display') or details.get('nominal_width_label') or f"{details.get('nominal_width_inches', 0.0):.3f}\""
+            else:
+                lot.ancho_export_display = ""
+
     @api.depends('vol_documental_m3', 'vol_shipment_m3')
     def _compute_reconciliation_status(self):
         for lot in self:
@@ -597,6 +693,7 @@ class StockLotExtended(models.Model):
         'product_id.commercial_length_m',
         'espesor_mm', 'ancho_mm', 'largo_m',
         'largo_ft_frac', 'piezas', 'reception_id',
+        'export_width_manual_inches',
         'volume_purchase_m3', 'volumen_m3' # 🚀 CAMBIO 2: Dependencias del Salvavidas
     )
     def _compute_vol_shipment_m3(self): # 🚀 CAMBIO 3: Nombre de función corto
@@ -1615,6 +1712,10 @@ class StockLotExtended(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """✅ MEJORA: Sobrescribir create para garantizar estado correcto en nuevos lotes"""
+        for vals in vals_list:
+            if vals.get('export_width_manual_inches'):
+                vals.setdefault('export_width_manual_user_id', self.env.user.id)
+                vals.setdefault('export_width_manual_date', fields.Datetime.now())
         new_lots = super().create(vals_list)
         
         for new_lot in new_lots:
@@ -1628,6 +1729,9 @@ class StockLotExtended(models.Model):
 
     def write(self, vals):
         """✅ MEJORA: Manejar cambios que puedan afectar el estado de procesado"""
+        if vals.get('export_width_manual_inches'):
+            vals.setdefault('export_width_manual_user_id', self.env.user.id)
+            vals.setdefault('export_width_manual_date', fields.Datetime.now())
         # 🏷️ Programa SV — Guarda server-side de etiquetas SV: bloquea cambios
         # directos de etiqueta/volumen/piezas fuera de las acciones controladas
         # (wizards de madenat.sv.operation). No afecta a lotes no-SV.

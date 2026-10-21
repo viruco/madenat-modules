@@ -578,6 +578,12 @@
                                         <field name="espesor_mm" string="Esp (mm) Real" class="text-center" width="90px"/>
                                         <field name="ancho_mm" string="Ancho (mm) Real" class="text-center" width="90px"/>
                                         <field name="largo_m" string="Largo (m) Real" class="text-center" width="90px"/>
+                                        <field name="ancho_export_display" string="Ancho Export" width="95px" readonly="1"/>
+                                        <field name="out_of_table_status" string="Estado S2S" widget="badge" width="120px"
+                                               decoration-warning="out_of_table_status == 'out_of_table'"
+                                               decoration-success="out_of_table_status in ('in_table', 'confirmed')"/>
+                                        <field name="export_width_manual_inches" string="Ancho Manual" optional="hide"/>
+                                        <field name="export_width_manual_reason" string="Motivo Manual" optional="hide"/>
 
                                         <field name="pieces" sum="Total Piezas" string="Piezas" class="text-end" width="90px"/>
 

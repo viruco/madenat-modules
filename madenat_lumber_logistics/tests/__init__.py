@@ -91,5 +91,7 @@ from . import test_volume_labels_unification
 from . import test_sv_imputation_availability_p1_p5
 # 🔐 H0-A (Auditoría Higiene 2026-10-20): Permisos de modelos y asistentes sin ACL.
 from . import test_h0_security_permissions
+# H4 / AD-130: Propagación de ancho manual en lumber.shipment.line
+from . import test_shipment_line_export_width
 
 

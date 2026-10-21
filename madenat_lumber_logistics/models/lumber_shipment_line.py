@@ -53,6 +53,25 @@ class LumberShipmentLine(models.Model):
     )
     
     # --- Datos Comerciales (Cálculo Dinámico) ---
+    export_width_manual_inches = fields.Float(
+        related='lot_id.export_width_manual_inches',
+        string='Ancho Manual (in)',
+        store=True,
+        readonly=True,
+    )
+    export_width_manual_reason = fields.Char(
+        related='lot_id.export_width_manual_reason',
+        string='Motivo Ancho Manual',
+        store=True,
+        readonly=True,
+    )
+    out_of_table_status = fields.Selection(
+        related='lot_id.out_of_table_status',
+        string='Estado S2S',
+        store=True,
+        readonly=True,
+    )
+
     export_width_inches = fields.Float(
         string='Ancho Nom. (Plg)', 
         compute='_compute_export_dims', 
@@ -79,7 +98,7 @@ class LumberShipmentLine(models.Model):
 
     # --- Cálculos y Lógica ---
 
-    @api.depends('lot_id', 'lot_id.ancho_mm')
+    @api.depends('lot_id', 'lot_id.ancho_mm', 'lot_id.export_width_manual_inches')
     def _compute_export_dims(self):
         """Conversión canónica de ancho a pulgadas según API única de exportación (H4 / AD-130)."""
         config = self.env['madenat.ingestion.config']

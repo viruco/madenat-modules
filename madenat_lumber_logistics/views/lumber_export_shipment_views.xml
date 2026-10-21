@@ -252,6 +252,11 @@
                                     <field name="container_id" optional="show"/>
                                     <field name="physical_volume_m3" string="Vol. Compra (m³)" sum="Total Físico" optional="show"/>
                                     <field name="export_width_inches" string="Ancho Nom. (plg)" optional="show"/>
+                                    <field name="out_of_table_status" string="Estado S2S" optional="show" widget="badge"
+                                           decoration-warning="out_of_table_status == 'out_of_table'"
+                                           decoration-success="out_of_table_status in ('in_table', 'confirmed')"/>
+                                    <field name="export_width_manual_inches" string="Ancho Manual (in)" optional="hide"/>
+                                    <field name="export_width_manual_reason" string="Motivo Manual" optional="hide"/>
                                     <field name="export_volume_m3" string="Vol. Export (m³)" sum="Total Facturable" 
                                            decoration-bf="1" decoration-success="export_volume_m3 > physical_volume_m3"/>
                                 </list>
