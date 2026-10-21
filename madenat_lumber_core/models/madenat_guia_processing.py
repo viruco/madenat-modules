@@ -475,11 +475,11 @@ class MadenatGuiaProcessingLine(models.Model):
                 rec.length_ft = 0.0
    
 
-    # 2. FÓRMULA FÍSICA (Pestaña 1): mm_real * mm_real * m / 1.000.000
     @api.depends('espesor_mm', 'ancho_mm', 'largo_m', 'pieces')
     def _compute_vol_physical_m3(self):
         for rec in self:
-            rec.vol_physical_m3 = calculate_volume_metric_m3(rec.espesor_mm, rec.ancho_mm, rec.largo_m, rec.pieces)
+            if rec.espesor_mm > 0 and rec.ancho_mm > 0 and rec.largo_m > 0 and rec.pieces:
+                rec.vol_physical_m3 = calculate_volume_metric_m3(rec.espesor_mm, rec.ancho_mm, rec.largo_m, rec.pieces)
 
     # 3. FÓRMULA COMERCIAL (Pestaña 2): mm_nominal * mm_real * m / 1.000.000
     @api.depends('espesor_nominal_mm', 'espesor_mm', 
@@ -498,7 +498,8 @@ class MadenatGuiaProcessingLine(models.Model):
             anc = rec.ancho_nominal_mm if rec.ancho_nominal_mm > 0 else rec.ancho_mm
             larg = rec.largo_nominal_m if rec.largo_nominal_m > 0 else rec.largo_m
 
-            rec.vol_purchase_m3 = calculate_volume_metric_m3(esp, anc, larg, rec.pieces)
+            if esp > 0 and anc > 0 and larg > 0 and rec.pieces:
+                rec.vol_purchase_m3 = calculate_volume_metric_m3(esp, anc, larg, rec.pieces)
     # COMPUTE: Volumen MBF (desde dimensiones imperiales)
     # ==========================================================================
 
