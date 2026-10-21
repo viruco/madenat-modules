@@ -718,11 +718,12 @@ class LumberReceptionLine(models.Model):
 
                 # ── FASE 3: Resolver fórmula desde modelo persistente ──
                 formula = self.env['lumber.export.formula']._resolve_for_profile(rule)
-                _s2s = float(get_s2s_adjustment(self.env, w_mm))
                 _logger.debug("H8-Fase3: perfil=%s fuente=%s kind=%s", rule, formula['source'], formula['formula_kind'])
 
                 # 3. MATRIZ DE INGENIERÍA (genérica, derivada de formula dict)
                 if t_in > 0 and w_in > 0 and l_m > 0 and qty > 0:
+                    config = self.env['madenat.ingestion.config']
+                    w_mm_calc = w_mm if w_mm > 0 else (w_in * float(MM_PER_INCH))
                     if formula['formula_kind'] == 'blank_clear':
                         # F4 / F6 (AD-116):
                         # Blanks que van directo a stock conservan volumen documental declarado sin recálculo.
@@ -732,13 +733,24 @@ class LumberReceptionLine(models.Model):
                         else:
                             # F4: 1.5" x (Ancho + 1/8") x L_ft x pzas / 5085.312 (sin deducción de 1/16")
                             t_calc = t_in
-                            w_calc = w_in + float(S2S_WIDTH_ADJUSTMENT_INCH)
+                            details = config.resolve_export_width_details(
+                                rough_mm=w_mm_calc,
+                                record=line,
+                                is_s2s_inches=True,
+                                width_visual=line.width_visual,
+                            )
+                            w_calc = details['calc_width_inches'] if details['calc_width_inches'] > 0 else (w_in + config.get_s2s_overwidth_inches())
                             l_ft = line.length_input_raw if line.length_input_raw else (l_m / METRO_A_PIE)
                             vol_exp = (t_calc * w_calc * l_ft * qty) / formula['principal_factor']
                             val_mbf = (t_calc * w_calc * l_ft * qty) / formula['mbf_divisor']
 
                     elif formula['formula_kind'] == 's2s_imperial':
-                        w_calc = w_in + _s2s if formula['s2s_adjustment_mode'] != 'none' else w_in
+                        details = config.resolve_export_width_details(
+                            rough_mm=w_mm_calc,
+                            record=line,
+                            width_visual=line.width_visual,
+                        )
+                        w_calc = details['calc_width_inches'] if formula['s2s_adjustment_mode'] != 'none' else details['nominal_width_inches']
                         vol_exp = float(
                             Decimal(str(t_in))
                             * Decimal(str(w_calc))
@@ -747,7 +759,7 @@ class LumberReceptionLine(models.Model):
                             / Decimal(str(formula['principal_factor']))
                         )
                         l_feet = l_m / METRO_A_PIE if l_m else 0.0
-                        val_mbf = (t_in * w_in * l_feet * qty) / formula['mbf_divisor']
+                        val_mbf = (t_in * details['nominal_width_inches'] * l_feet * qty) / formula['mbf_divisor']
                         
                     elif formula['formula_kind'] == 'metric_direct':
                         vol_exp = (t_mm * w_mm * l_m * qty) / formula['principal_factor']

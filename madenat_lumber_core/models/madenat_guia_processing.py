@@ -548,36 +548,23 @@ class MadenatGuiaProcessingLine(models.Model):
                     line.vol_shipment_m3 = fallback_vol
                     continue
 
-                # 5. Determinar Largo a usar
-                # Prioridad 1: length_ft | Prioridad 2: largo_m | Prioridad 3: largo_nominal_m
-                # MADENAT-FIX-BLANK-2026-06-02
+                # 5. Determinar Ancho y Largo vía API Única (H4 / AD-130)
+                config = self.env['madenat.ingestion.config']
+                is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
+                details = config.resolve_export_width_details(
+                    rough_mm=line.ancho_mm if line.ancho_mm > 0 else (a_in * float(MM_PER_INCH)),
+                    record=line,
+                    is_s2s_inches=is_s2s,
+                    width_visual=line.width_visual,
+                )
+
                 if line.length_ft > 0.1:
                     # FÓRMULA PIES — BLANK (F4): 1.5" x (Ancho + 1/8") x Largo en pies x Piezas / 5085.312
-                    if line.export_width_manual_inches and line.export_width_manual_inches > 0:
-                        w_blank = line.export_width_manual_inches
-                    else:
-                        config = self.env['madenat.ingestion.config']
-                        is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
-                        if line.ancho_mm and line.ancho_mm > 0:
-                            w_blank = config.resolve_export_width(line.ancho_mm, record=line, is_s2s_inches=is_s2s)
-                        else:
-                            w_blank = a_in + config.get_s2s_overwidth_inches()
+                    w_blank = details['calc_width_inches']
                     vol = (e_in * w_blank * line.length_ft * line.pieces) / FACTOR_PIES
                 else:
                     # FÓRMULA METROS — S2S/RIP:
-                    # AD-115 / AD-116: El ancho manual prevalece si existe.
-                    # De lo contrario, cálculo guiado por datos vía resolve_export_width (lumber.width.s2s.map).
-                    if line.export_width_manual_inches and line.export_width_manual_inches > 0:
-                        width_calc = line.export_width_manual_inches
-                    else:
-                        config = self.env['madenat.ingestion.config']
-                        is_s2s = getattr(line, 'is_s2s_inches', False) or self.env.context.get('is_s2s_inches', False)
-                        if line.ancho_mm and line.ancho_mm > 0:
-                            width_calc = config.resolve_export_width(line.ancho_mm, record=line, is_s2s_inches=is_s2s)
-                        else:
-                            recargo = get_s2s_adjustment(self.env, a_in * 25.4, is_s2s_inches=is_s2s)
-                            width_calc = a_in + float(recargo)
-
+                    width_calc = details['calc_width_inches']
                     largo_uso = line.largo_m if line.largo_m > 0 else line.largo_nominal_m
                     if largo_uso <= 0:
                         line.vol_shipment_m3 = fallback_vol

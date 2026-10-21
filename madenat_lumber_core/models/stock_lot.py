@@ -585,16 +585,15 @@ class StockLotExtended(models.Model):
             # ====================================================================
             # 1. 🔒 PROTECCIÓN DE INTEGRIDAD (STAGING / MANUAL OVERRIDE)
             # ====================================================================
-            # Si el registro proviene de una Recepción Certificada (Excel/PDF) y ya 
-            # posee un volumen mayor a cero, preservamos el dato original de origen.
+            # Salvaguarda de staging (R5/D6): registros de recepción con volumen preservados,
+            # salvo bypass explícito controlado (AD-131 / Fase 5).
             if lot.reception_id and lot.vol_shipment_m3 > 0.001:
-                continue
+                if not self.env.context.get('bypass_staging_safeguard'):
+                    continue
 
             # ====================================================================
             # 2. ⚙️ OBTENCIÓN Y NORMALIZACIÓN DE DIMENSIONES BASE
             # ====================================================================
-            # Determinamos si el cálculo se basa en el 'Standard Comercial' del producto
-            # o en las dimensiones físicas capturadas en la recepción.
             is_std = lot.product_id.use_commercial_standard
             
             # PRIORIDAD: nominal (wizard) > comercial estándar > físico
@@ -607,61 +606,63 @@ class StockLotExtended(models.Model):
                 else (lot.product_id.commercial_width_mm if is_std else lot.ancho_mm)
             )
             
-            # Validación de seguridad para evitar cálculos sobre registros incompletos
             if not e_mm or not a_mm or not lot.piezas:
-                # 🚀 CAMBIO 5: Aplicamos Salvavidas en vez de 0.0
                 lot.vol_shipment_m3 = nominal
                 continue
 
             # ====================================================================
-            # 3. 📐 CONVERSIÓN A SISTEMA IMPERIAL Y APLICACIÓN DE HOLGURA
+            # 3. 📐 RESOLUCIÓN DE ANCHO VÍA API ÚNICA (H4 / AD-130)
             # ====================================================================
-            # Conversión de precisión milimétrica a pulgadas (in)
             espesor_in = e_mm / float(MM_PER_INCH)
-            ancho_in = a_mm / float(MM_PER_INCH)
-            
-            # REGLA DE HOLGURA (Overmeasure) / AD-115:
-            # Si el producto NO es Standard (ej. Madera Rough), sumamos 1/8" (0.125) 
-            # al ancho para compensar la pérdida de volumen por cepillado según get_s2s_adjustment.
-            # Nominal fijado por wizard = valor comercial S2S → overmeasure cero.
-            using_nominal = (lot.espesor_nominal_mm > 0 or lot.ancho_nominal_mm > 0)
-            overmeasure = 0.0 if (is_std or using_nominal) else float(get_s2s_adjustment(self.env, a_mm))
-            ancho_calculo = ancho_in + overmeasure
+            config = self.env['madenat.ingestion.config']
+            is_s2s = getattr(lot, 'is_s2s_inches', False)
+            details = config.resolve_export_width_details(
+                rough_mm=a_mm,
+                record=lot,
+                is_s2s_inches=is_s2s,
+            )
+            ancho_calculo = details['calc_width_inches']
 
             # ====================================================================
-            # 4. 🚀 BIFURCACIÓN DE LÓGICA DE NEGOCIO (FACTOR 1550 vs 5085)
+            # 4. 🚀 BIFURCACIÓN DE LÓGICA DE NEGOCIO POR FAMILIA (H4)
             # ====================================================================
             try:
-                # 🎯 CASO A: MADERA CORTE IMPERIAL (BLANKS)
-                # Si el registro posee largo en pies (largo_ft_frac), aplicamos Factor 5085.312
-                if lot.largo_ft_frac:
-                    # Limpieza y casting de la fracción (ej: "16'" -> 16.0)
-                    largo_ft = float(lot.largo_ft_frac.replace("'", "").strip())
-                    # BLANK (F4): 1.5" x (Ancho + 1/8") x Largo en pies x Piezas / 5085.312
-                    overwidth = float(self.env['madenat.ingestion.config'].get_s2s_overwidth_inches())
-                    w_blank = ancho_in + overwidth
-                    vol_gold = (espesor_in * w_blank * largo_ft * lot.piezas) / FACTOR_BLANK_5085
-                
-                # 🎯 CASO B: MADERA CORTE MÉTRICO (ESTÁNDAR)
-                # Si no hay pies, utilizamos largo en metros y el Factor de Oro 1550.003
+                subprod = lot.subproducto_id
+                family = getattr(subprod, 'calculation_family', False)
+
+                # 🎯 CASO A: BLANKS (F5085 con +1/8", compra = exportación)
+                if family == 'blank' or lot.largo_ft_frac:
+                    if lot.largo_ft_frac:
+                        largo_ft = float(str(lot.largo_ft_frac).replace("'", "").strip())
+                    else:
+                        l_m = lot.product_id.commercial_length_m if is_std else lot.largo_m
+                        largo_ft = l_m / float(FT_TO_M) if l_m else 0.0
+
+                    vol_gold = (espesor_in * ancho_calculo * largo_ft * lot.piezas) / FACTOR_BLANK_5085
+
+                # 🎯 CASO B: RUGOSO / ASERRADA JCE (Métrico puro, compra = exportación)
+                elif family == 'rough':
+                    l_m = lot.product_id.commercial_length_m if is_std else lot.largo_m
+                    if not l_m:
+                        lot.vol_shipment_m3 = nominal
+                        continue
+                    vol_gold = (e_mm * a_mm * l_m * lot.piezas) / float(M3_DIVISOR)
+
+                # 🎯 CASO C: CEPILLADO RIP S2S (F1550 con +1/8" según tabla S2S)
                 else:
                     l_m = lot.product_id.commercial_length_m if is_std else lot.largo_m
                     if not l_m:
-                        # 🚀 CAMBIO 6: Aplicamos Salvavidas en vez de 0.0
                         lot.vol_shipment_m3 = nominal
                         continue
                     vol_gold = (espesor_in * ancho_calculo * l_m * lot.piezas) / float(INCH_SQ_METERS_TO_M3)
-                
+
                 # ====================================================================
                 # 5. ✅ CIERRE Y REDONDEO (3 DECIMALES ESTÁNDAR)
                 # ====================================================================
-                # 🚀 CAMBIO 7: Si por error vol_gold da 0, salvamos
                 calculado = r3(vol_gold)
                 lot.vol_shipment_m3 = calculado if calculado > 0 else nominal
 
             except (ValueError, TypeError, ZeroDivisionError):
-                # Fallback de seguridad ante datos mal formateados en fracciones
-                # 🚀 CAMBIO 8: Usamos Nominal en vez de 0.0
                 lot.vol_shipment_m3 = nominal   
 
     @api.depends('thickness_visual', 'espesor_nominal_mm', 'espesor_mm', 'ancho_nominal_mm',

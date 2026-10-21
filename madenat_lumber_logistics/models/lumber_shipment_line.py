@@ -81,10 +81,16 @@ class LumberShipmentLine(models.Model):
 
     @api.depends('lot_id', 'lot_id.ancho_mm')
     def _compute_export_dims(self):
-        """Conversión informativa de ancho milimétrico a pulgadas."""
+        """Conversión canónica de ancho a pulgadas según API única de exportación (H4 / AD-130)."""
+        config = self.env['madenat.ingestion.config']
         for line in self:
-            if line.lot_id and line.lot_id.ancho_mm:
-                line.export_width_inches = line.lot_id.ancho_mm / 25.4  # HF-001: MM_PER_INCH revertido → TD-004B
+            lot = line.lot_id
+            if lot and lot.ancho_mm:
+                details = config.resolve_export_width_details(
+                    rough_mm=lot.ancho_mm,
+                    record=lot,
+                )
+                line.export_width_inches = details['nominal_width_inches']
             else:
                 line.export_width_inches = 0.0
 
