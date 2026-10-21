@@ -97,5 +97,7 @@ from . import test_shipment_line_export_width
 from . import test_tarja_paridad_exportador
 # Bloque 7.2 (2026-10-21): Asistente de importación de consolidación de tarjas
 from . import test_consolidation_import_wizard
+# Bloque 7.3 (2026-10-21): Merma dimensional y rebaja R2
+from . import test_merma_dimensional_rebaja
 
 

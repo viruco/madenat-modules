@@ -379,6 +379,13 @@
                                         <span> m³</span>
                                     </div>
 
+                                    <label for="total_merma_dimensional_m3"
+                                           string="Merma Dimensional (m³)"/>
+                                    <div class="o_row">
+                                        <field name="total_merma_dimensional_m3" digits="[16, 3]"/>
+                                        <span> m³</span>
+                                    </div>
+
                                     <label for="volume_variance_pct"
                                            string="Desviación (Yield %)"/>
                                     <div class="o_row">

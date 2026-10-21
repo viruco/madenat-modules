@@ -300,6 +300,15 @@ class LumberExportShipment(models.Model):
         help="Suma del volumen físico real de todos los contenedores."
     )
 
+    # Bloque 7.3: Total merma dimensional de todos los contenedores
+    total_merma_dimensional_m3 = fields.Float(
+        'Total Merma Dimensional (m³)',
+        compute='_compute_totals',
+        store=True,
+        digits=(16, 3),
+        help="Suma de la merma dimensional de todos los contenedores del embarque."
+    )
+
     # 🟢 INSERTO 1: Definimos el campo de MBF para el resumen de la Motonave
     total_volume_mbf = fields.Float(
         'Volumen MBF Total', 
@@ -557,15 +566,17 @@ class LumberExportShipment(models.Model):
             else:
                 shipment.gross_margin_pct = 0.0
     
-    # ✅ MODIFICADO: Suma ambos volúmenes
+    # ✅ MODIFICADO: Suma ambos volúmenes y merma
     @api.depends('container_ids', 'container_ids.volume_m3', 'container_ids.total_volume_purchase_m3', 
+                 'container_ids.total_merma_dimensional_m3',
                  'container_ids.gross_weight_kg', 'container_ids.tare_weight_kg', 'container_ids.packages',
                  'container_ids.volume_mbf') # <-- Agregado dependencia MBF
     def _compute_totals(self):
         for rec in self:
             rec.container_count = len(rec.container_ids)
-            rec.total_volume_m3 = sum(rec.container_ids.mapped('volume_m3'))
-            rec.total_nominal_volume_m3 = sum(rec.container_ids.mapped('total_volume_purchase_m3'))
+            rec.total_volume_m3 = round(sum(rec.container_ids.mapped('volume_m3')), 3)
+            rec.total_nominal_volume_m3 = round(sum(rec.container_ids.mapped('total_volume_purchase_m3')), 3)
+            rec.total_merma_dimensional_m3 = round(sum(rec.container_ids.mapped('total_merma_dimensional_m3')), 3)
             
             # 🟢 INSERTO 3: Sumamos el MBF de todos los contenedores para el Dashboard
             rec.total_volume_mbf = sum(rec.container_ids.mapped('volume_mbf'))
@@ -2111,6 +2122,20 @@ class LumberExportShipment(models.Model):
             'type': 'ir.actions.client',
             'tag': 'reload',
         }
+
+    def action_open_consolidation_import_wizard(self):
+        """Abre el asistente de importación de tarjas consolidadas (Bloque 7.2)."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Importar Tarjas Consolidadas'),
+            'res_model': 'lumber.consolidation.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_shipment_id': self.id},
+        }
+
+
 class LumberShipmentCostLine(models.Model):
 
     _name = 'lumber.shipment.cost.line'

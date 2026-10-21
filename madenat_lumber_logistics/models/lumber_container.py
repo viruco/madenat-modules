@@ -152,6 +152,15 @@ class LumberContainer(models.Model):
         digits=(16, 3),
         help="Alias de Vol. Exportación (documental, total)."
     )
+
+    # Bloque 7.3: Merma dimensional total del contenedor
+    total_merma_dimensional_m3 = fields.Float(
+        'Total Merma Dimensional (m³)',
+        compute='_compute_volume_totals',
+        store=True,
+        digits=(16, 3),
+        help='Suma de la merma dimensional de los lotes del contenedor'
+    )
     
     volume_mbf = fields.Float(
         'Volumen MBF',
@@ -521,12 +530,13 @@ class LumberContainer(models.Model):
             container.max_gross_weight_kg = capacity['max_gross']
             container.max_volume_m3 = capacity['volume']
     
-    # [MÉTODO ACTUALIZADO] Lógica consolidada de volumen dual
+    # [MÉTODO ACTUALIZADO] Lógica consolidada de volumen dual y merma
     @api.depends(
         'line_ids', 
         'lot_ids.vol_shipment_m3', 
         'lot_ids.volume_purchase_m3',
-        'lot_ids.volumen_m3' # Dependencia legacy por seguridad
+        'lot_ids.volumen_m3',
+        'lot_ids.merma_dimensional_m3'
     )
     def _compute_volume_totals(self):
         for container in self:
@@ -536,6 +546,7 @@ class LumberContainer(models.Model):
             # Usamos getattr/sum con fallback para seguridad
             v_real = sum(getattr(l, 'vol_shipment_m3', 0.0) for l in lots)
             v_nom = sum(getattr(l, 'volume_purchase_m3', 0.0) for l in lots)
+            v_merma = sum(getattr(l, 'merma_dimensional_m3', 0.0) for l in lots)
             
             # 2. Lógica de Respaldo (Fallback)
             if v_real == 0 and lots:
@@ -547,11 +558,12 @@ class LumberContainer(models.Model):
                 v_nom = v_real
 
             # 3. Asignación de valores
-            container.total_vol_shipment_m3 = v_real
-            container.total_volume_purchase_m3 = v_nom
+            container.total_vol_shipment_m3 = round(v_real, 3)
+            container.total_volume_purchase_m3 = round(v_nom, 3)
+            container.total_merma_dimensional_m3 = round(v_merma, 3)
             
             # 4. Mapeo al campo estructural (Físico es el que ocupa espacio)
-            container.volume_m3 = v_real 
+            container.volume_m3 = round(v_real, 3) 
             
             # 5. Cálculo de Desviación
             if v_nom > 0:
@@ -1091,6 +1103,7 @@ class LumberContainer(models.Model):
         for line, lot, qty, src, sv_op in plan:
             line.write({
                 'rebaja_qty_m3': qty,
+                'rebaja_merma_m3': lot.merma_dimensional_m3,
                 'rebaja_picking_id': picking.id,
                 'rebaja_date': now,
                 'rebaja_user_id': self.env.user.id,
@@ -1153,7 +1166,10 @@ class LumberContainer(models.Model):
             self.env['madenat.sv.operation'].sv_reverse_allocation(
                 line.lot_id, container=self,
                 reason=_('Reversa de rebaja del contenedor %s.') % self.name)
-        lines.write({'rebaja_state': 'reversed'})
+        lines.write({
+            'rebaja_state': 'reversed',
+            'rebaja_merma_m3': 0.0,
+        })
         new_state = self.state_before_rebaja or 'loaded'
         self.write({'state': new_state})
         self.message_post(body=_(
@@ -1344,15 +1360,14 @@ class LumberContainer(models.Model):
             raise UserError(_(
                 'No se puede revertir la rebaja: los costos del Embarque %s ya '
                 'fueron distribuidos.') % shipment.name)
-        lot_cost_lines = self.env['stock.lot.cost.line'].browse()
-        if shipment.cost_line_ids:
+        if 'stock.lot.cost.line' in self.env and shipment.cost_line_ids:
             lot_cost_lines = self.env['stock.lot.cost.line'].search([
                 ('source_shipment_cost_line_id', 'in',
                  shipment.cost_line_ids.ids)])
-        if lot_cost_lines:
-            raise UserError(_(
-                'No se puede revertir la rebaja: existen %d costos atribuibles '
-                'al lote/embarque.') % len(lot_cost_lines))
+            if lot_cost_lines:
+                raise UserError(_(
+                    'No se puede revertir la rebaja: existen %d costos atribuibles '
+                    'al lote/embarque.') % len(lot_cost_lines))
         invoiced = shipment.cost_line_ids.filtered(
             lambda cl: getattr(cl, 'invoice_id', False)
             or getattr(cl, 'payment_state', 'not_paid')
@@ -1361,14 +1376,15 @@ class LumberContainer(models.Model):
             raise UserError(_(
                 'No se puede revertir la rebaja: existen costos con '
                 'facturación o pago asociados al Embarque.'))
-        consolidations = self.env['lumber.billing.consolidation'].search([
-            ('shipment_id', '=', shipment.id), ('state', '!=', 'cancelled')])
-        billed = consolidations.filtered(
-            lambda c: c.invoice_id or c.state == 'billed')
-        if billed:
-            raise UserError(_(
-                'No se puede revertir la rebaja: existe una consolidación de '
-                'facturación incompatible para el Embarque %s.') % shipment.name)
+        if 'lumber.billing.consolidation' in self.env:
+            consolidations = self.env['lumber.billing.consolidation'].search([
+                ('shipment_id', '=', shipment.id), ('state', '!=', 'cancelled')])
+            billed = consolidations.filtered(
+                lambda c: c.invoice_id or c.state == 'billed')
+            if billed:
+                raise UserError(_(
+                    'No se puede revertir la rebaja: existe una consolidación de '
+                    'facturación incompatible para el Embarque %s.') % shipment.name)
         return True
 
     def _assert_rebaja_return_valid(self, picking, return_picking):
@@ -1856,6 +1872,15 @@ class LumberContainer(models.Model):
                 sheet.write(row, off+4, tot_pqts, footer_fmt)
             sheet.write(row, 10, round(tot_m3_emb, 3), footer_fmt)
             sheet.write(row, 24, round(tot_m3_nom, 3), footer_fmt)
+
+            # Bloque 7.3: Línea de Merma Dimensional si existe diferencia
+            merma_tot = self.total_merma_dimensional_m3 or round(tot_m3_nom - tot_m3_emb, 3)
+            if merma_tot > 0.0005:
+                row_m = row + 1
+                for off in [0, 14]:
+                    sheet.merge_range(row_m, off, row_m, off+3, 'MERMA DIMENSIONAL', footer_fmt)
+                sheet.write(row_m, 10, round(merma_tot, 3), footer_fmt)
+                sheet.write(row_m, 24, round(merma_tot, 3), footer_fmt)
 
             workbook.close()
             output.seek(0)

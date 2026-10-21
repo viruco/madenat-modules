@@ -246,6 +246,10 @@ class LumberShipmentLine(models.Model):
         string='Cantidad rebajada (m³)', digits=(16, 3), default=0.0,
         copy=False,
         help='Volumen descontado de stock para este lote en este contenedor.')
+    rebaja_merma_m3 = fields.Float(
+        string='Merma dimensional rebajada (m³)', digits=(16, 3), default=0.0,
+        copy=False,
+        help='Merma dimensional reconocida al rebajar este lote en este contenedor.')
     rebaja_picking_id = fields.Many2one(
         'stock.picking', string='Salida de rebaja', copy=False,
         ondelete='set null', index=True)

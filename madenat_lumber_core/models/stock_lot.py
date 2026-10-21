@@ -552,6 +552,15 @@ class StockLotExtended(models.Model):
         help="Nombre de la motonave o buque asignado cuando el dato exista"
     )
 
+    # Bloque 7.3: Merma dimensional (compra nominal menos exportación)
+    merma_dimensional_m3 = fields.Float(
+        string='Merma Dimensional (m³)',
+        compute='_compute_merma_dimensional_m3',
+        store=True,
+        digits=(16, 3),
+        help='Diferencia entre volumen nominal de compra y volumen de exportación'
+    )
+
     # Punto 2.5 (AD-130): Control del packing a nivel de lote
     vol_documental_m3 = fields.Float(
         string='Volumen Documental (m³)',
@@ -887,6 +896,23 @@ class StockLotExtended(models.Model):
                 rec.vol_physical_diff_pct = False
 
             rec.is_export_greater_nominal = bool(exp > (nom + 0.0005))
+
+    @api.depends('volume_purchase_m3', 'volumen_m3', 'vol_shipment_m3', 'subproducto_id', 'product_id')
+    def _compute_merma_dimensional_m3(self):
+        """Calcula la merma dimensional por lote (Bloque 7.3).
+
+        Diferencia entre el volumen nominal de compra y el de exportación.
+        Cero en Blanks y perfiles rugosos donde compra == exportación.
+        """
+        for lot in self:
+            is_blank = (lot.subproducto_id and 'BLANK' in (lot.subproducto_id.name or '').upper()) or (lot.product_id and 'BLANK' in (lot.product_id.name or '').upper())
+            nom = lot.volume_purchase_m3 or lot.volumen_m3 or 0.0
+            exp = lot.vol_shipment_m3 or 0.0
+            diff = round(nom - exp, 3)
+            if is_blank or diff <= 0.0005:
+                lot.merma_dimensional_m3 = 0.0
+            else:
+                lot.merma_dimensional_m3 = diff
 
     # ==============================================================================
     # SECCIÓN 6: DIMENSIONES FINALES POST-PROCESO...

@@ -90,6 +90,13 @@
                             invisible="state != 'confirmed'" class="btn-secondary"
                             confirm="⚠️ ¿Confirma volver el Embarque a borrador? Esta acción será bloqueada si existe rebaja física, viaje terminal o cierre financiero."/>
 
+                    <button name="action_open_consolidation_import_wizard" 
+                            string="📥 Importar Tarjas Excel" 
+                            type="object" 
+                            class="btn-secondary" 
+                            icon="fa-upload"
+                            groups="madenat_lumber_core.group_madenat_operaciones"/>
+
                     <button name="action_export_shipment_xlsx" string="📊 Exportar Tarja Consolidada" 
                             type="object" class="btn-info" icon="fa-file-excel-o" 
                             invisible="not container_ids"/>
@@ -212,6 +219,7 @@
                         <group>
                             <field name="total_volume_m3" string="Vol. Export (m³)" decoration-bf="1"/>
                             <field name="total_nominal_volume_m3" string="Vol. Compra (m³)" class="text-muted"/>
+                            <field name="total_merma_dimensional_m3" string="Merma Dimensional (m³)" class="text-danger" invisible="total_merma_dimensional_m3 == 0"/>
                             <field name="total_volume_mbf" string="Volumen MBF Total" decoration-bf="1" decoration-success="1" digits="[16, 3]"/>
                             <field name="total_weight_kg" string="Peso Total Carga (Kg)"/>
                         </group>
