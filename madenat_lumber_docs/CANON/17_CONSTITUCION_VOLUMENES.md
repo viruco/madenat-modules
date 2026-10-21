@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.17.0
-**Fecha de actualización:** 2026-10-20  <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.16.0 → 1.17.0. | Bloque H0. -->
+**Versión documental:** 1.18.0
+**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: Bloque H4 (AD-130/AD-131) — formalización de las 5 familias de cubicación (§9.1.1), recálculo controlado de 87 lotes S2S y actualización de línea base de hashes Consulta B y Consulta A.2 (§10). Versión 1.17.0 → 1.18.0. | Bloque H4. -->
+<!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.16.0 → 1.17.0. | Bloque H0. -->
 <!-- 2026-10-19: §10.6.7 Rebaja de inventario y merma dimensional por exportación (E2 / Bloque 6E) — extinción completa de volumen nominal en stock y distribución de costo logístico sobre volumen de exportación. Versión 1.15.0 → 1.16.0. | Bloque 6E. -->
 
 ### Resumen Ejecutivo de Volúmenes (Tabla Sinóptica)
@@ -221,6 +222,29 @@ Detalle y redacción completa: `CANON/04_DECISION_LOG.md` (AD-82, AD-83, AD-84, 
 | **F3** | **Real Físico** | $\frac{38,1 \text{ mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas}}{1.000.000}$ | Geometría física neta ($38,1\text{ mm} = 1,5"$). Estado en código: **FALTA** (no existe campo ni función que compute volumen físico a partir de 38,1 mm para escuadría 6/4). |
 | **F4** | **Blanks (Exportación)** | $\frac{1,5" \times (\text{Ancho}_{in} + 0,125") \times \text{Largo}_{ft} \times \text{Piezas}}{5085,312}$ | Exportación en pies. Sin deducción de $1/16"$ en el espesor (espesor neto nominal $1,5"$). Vectores canónicos: $16\text{ ft} \times 250 = 4,425\text{ m³}$; $16\text{ ft} \times 270 = 4,778\text{ m³}$. Estado: **IMPLEMENTADO**. |
 
+### 9.1.1 Las 5 Familias de Cubicación y Reglas de Exportación (AD-130 / Bloque H4)
+
+A partir del Bloque H4 (AD-130), el subproducto (`madenat.subproducto`) gobierna la regla de exportación mediante el campo técnico `calculation_family`:
+
+1. **Cepillado S2S (`s2s`):**
+   - **Regla:** Fórmula **F2** (Factor 1550).
+   - **Mapeo:** Ancho Rough (mm) resuelto contra la tabla activa `lumber.width.s2s.map` (15 anchos entre 75 y 155 mm) + sobreancho obligatorio $+1/8"$ ($0,125"$).
+   - **Fuera de Tabla:** Si el ancho no figura en la tabla activa, se aplica la política `madenat.out_of_table_behavior` (`warning`, `block` o `direct`) y se señaliza en el campo `out_of_table_status`.
+   - **Override:** Admite sobreescritura manual justificada (`export_width_manual_inches`).
+2. **Blanks Clear (`blank`):**
+   - **Regla:** Fórmula **F4** (Factor 5085).
+   - **Mapeo:** Expresado en pies/pulgadas con sobreancho $+1/8"$ ($0,125"$). Confirmado en tarjas reales consolidadas de exportación (FA543R/FA531R).
+   - **Consistencia:** En ingreso métrico estándar compra = exportación si el subproducto es métrico; si tiene ADN imperial fraccionario, preserva la tarja real. No se descuenta $1/16"$ en espesor.
+3. **Aserrado / Rugoso / Verde (`rough`):**
+   - **Regla:** Fórmula **F1** geométrica métrica.
+   - **Mapeo:** Compra = Exportación = Geometría métrica exacta ($\text{Esp}_{mm} \times \text{Ancho}_{mm} \times \text{Largo}_{m} \times \text{Piezas} / 1.000.000$). Sin sobreancho ni recargos.
+4. **Escuadría / Vigas (`dimension`):**
+   - **Regla:** Conversión geométrica métrica directa según dimensiones de escuadría declaradas.
+5. **Molduras y Perfiles Especiales (`molding`):**
+   - **Regla:** Conversión métrica directa sin sobreancho de tabla S2S.
+
+---
+
 ### 9.2 Tabla S2S Canónica y Regla de Transición (Cristhian Elgueta — Planilla de Cubicación)
 
 La tabla canónica contractual de Cristhian Elgueta para madera aserrada S2S (Rough mm → S2S en pulgadas) comprende exactamente **15 anchos** activos en el modelo `lumber.width.s2s.map` (incluyendo 115 mm tras revertir `active=False` en `seed_s2s_115`):
@@ -311,13 +335,13 @@ SELECT
 FROM lumber_shipment_line;
 ```
 
-**Hashes canónicos oficiales de Consulta B (100% Invariantes):**
-- `stock_lot`: 152 filas · Hash = `5c2152193194066e5585b383ffe3673a` (MATCH EXACTO)
-- `madenat_guia_processing_line`: 82 filas · Hash = `356e70066083febd59645c1212e11ece` (MATCH EXACTO)
-- `lumber_shipment_line`: 11 filas · Hash = `bb5863f5850244b06b9235c2c595709b` (MATCH EXACTO)
+**Hashes canónicos oficiales de Consulta B (100% Invariantes post-AD-131):**
+- `stock_lot`: 152 filas · Hash = `c18e13059b8155118f88e94bbb038fc3` (POST-AD-131 / H4; histórico pre-AD-131: `5c2152193194066e5585b383ffe3673a`)
+- `madenat_guia_processing_line`: 82 filas · Hash = `356e70066083febd59645c1212e11ece` (MATCH EXACTO invariante)
+- `lumber_shipment_line`: 11 filas · Hash = `bb5863f5850244b06b9235c2c595709b` (MATCH EXACTO invariante)
 
-**Dato complementario — Suma de volúmenes (Medición al 2026-10-18):**
-- `stock_lot`: 152 filas · Suma = 531.2920 m³
+**Dato complementario — Suma de volúmenes (Medición al 2026-10-21 post-AD-131):**
+- `stock_lot`: 152 filas · Suma = 521.6820 m³ (histórico pre-AD-131: 531.2920 m³, diferencia neta: -9.610 m³ por 87 lotes S2S recalculados)
 - `madenat_guia_processing_line`: 82 filas · Suma = 295.8210 m³
 - `lumber_shipment_line`: 11 filas · Suma = 53.6030 m³
 
@@ -342,10 +366,10 @@ SELECT
 FROM lumber_shipment_line;
 ```
 
-**Hashes canónicos oficiales de Consulta A.2 (100% Invariantes):**
-- `stock_lot`: 152 filas · Hash = `6b1ec7d8dcd91cc6bd7ff90772759500` (MATCH EXACTO)
-- `madenat_guia_processing_line`: 82 filas · Hash = `e78e0265210add0676b240bed091921f` (MATCH EXACTO)
-- `lumber_shipment_line`: 11 filas · Hash = `b13357af2864a6cbeb3a386dff188a8e` (MATCH EXACTO)
+**Hashes canónicos oficiales de Consulta A.2 (100% Invariantes post-AD-131):**
+- `stock_lot`: 152 filas · Hash = `26e74e8feb35260e2fd839281ce287d9` (POST-AD-131 / H4; histórico pre-AD-131: `6b1ec7d8dcd91cc6bd7ff90772759500`)
+- `madenat_guia_processing_line`: 82 filas · Hash = `e78e0265210add0676b240bed091921f` (MATCH EXACTO invariante)
+- `lumber_shipment_line`: 11 filas · Hash = `b13357af2864a6cbeb3a386dff188a8e` (MATCH EXACTO invariante)
 
 ### 10.4 Consulta con `write_date` — Auditoría de Marcas Temporales (INFORMATIVA)
 ```sql
@@ -362,12 +386,12 @@ SELECT 'lumber_shipment_line', COUNT(*),
 FROM lumber_shipment_line;
 ```
 
-**Línea base fijada informativa:**
+**Línea base fijada informativa (Post-AD-131 al 2026-10-21):**
 | Tabla | Filas | Hash MD5 Fijado | Estado Informativo |
 |---|---|---|---|
-| `stock_lot` | 152 | `6667a4bd9f3aeff24a8588d32da23ed2`* | Auditado al 2026-10-18 (marca temporal actualizada en id 15892) |
-| `madenat_guia_processing_line` | 82 | `b43a26b6fd072ff96ed075ca1e2f585e` | Coincidente con línea base |
-| `lumber_shipment_line` | 11 | `b048f9428859b4c960b83b9ddf1cc701` | Coincidente con línea base |
+| `stock_lot` | 152 | `8b15e5b1c51f21045b6a3d449ef7f6ea` | Recálculo AD-131 aplicado (histórico pre-AD-131: `6667a4bd9f3aeff24a8588d32da23ed2`) |
+| `madenat_guia_processing_line` | 82 | `ae870c8744f1e76bb222b9571b3a798f` | Informativo (histórico: `b43a26b6fd072ff96ed075ca1e2f585e`) |
+| `lumber_shipment_line` | 11 | `4600b9b08512c8db64fa2d408a7d3031` | Informativo (histórico: `b048f9428859b4c960b83b9ddf1cc701`) |
 
 ### 10.5 Gobernanza de Edición de la Tabla S2S (D6 / G8 / H3 — AD-121)
 1. **Edición Segura:** La tabla `lumber.width.s2s.map` es editable por usuarios de los grupos `group_lumber_config_manager` y `group_madenat_auditoria`.

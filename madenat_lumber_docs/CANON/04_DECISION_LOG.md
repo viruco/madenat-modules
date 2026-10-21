@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.49.0
-**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->
+**Versión documental:** 12.50.0
+**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
+<!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
 <!-- actualizado: 2026-10-19 — Bloque 6 (AD-127): Patios por Tipo, Visibilidad de Ingresos e Inventario, Etiquetas de Volumen y Packing Estándar MADENAT. 6A: campo patio_type en stock.location, asignación automática por origen sin hardcode; aplicación en madenat_test de MARVAL (puerto) y Ferramenta (servicio). 6B: filtros y búsqueda en Consola de Ingresos (guías 4495589 y 95806 localizables); nuevo menú 'Inventario por Patio' (stock.quant lista y pivote readonly con piezas y volumen nominal de compra). 6C: etiquetas clarificadas 'Vol. Compra (m³)' y 'Vol. Export (m³)', volumen de compra visible por lote. 6D: plantilla estándar Forestal Andes con desplegables, botón de descarga en consola, formato standard_madenat en BD, pruebas ida/vuelta; descontinuación de lectores nativos. Ajustes A3a-e completados. Versión 04 12.46.0 → 12.47.0. | Bloque 6 (AD-127). -->
 
@@ -20,6 +21,8 @@
 | **AD-127** | 2026-10-19 | Patios por Tipo, visibilidad de inventario y packing estándar Forestal Andes | Vigente |
 | **AD-128** | 2026-10-20 | Higiene Mínima Segura H0: permisos ACL, saneamiento pruebas y reglas de IA | Vigente |
 | **AD-129** | 2026-10-21 | Chatter con sudo() acotado, autor real y mínimo privilegio en escalamiento SV | Vigente |
+| **AD-130** | 2026-10-21 | Unificación de reglas de exportación por familia (API única y constantes UoM) | Vigente |
+| **AD-131** | 2026-10-21 | Recálculo controlado de datos de prueba en `madenat_test` (87 lotes corregidos) | Vigente |
 
 ---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
@@ -4127,6 +4130,55 @@ Al aplicar operaciones de rebaja o escalamiento (`MadenatSvOperation.action_appl
 2. **Validación y Pruebas:**
    - `TestSvEscalationSecurity` pasa 7/7: `test_02`, `test_03` y `test_04` validados sin debilitar ni alterar sus aserciones; nuevas pruebas añadidas: `test_06` (verificación de preservación de `author_id` y `create_uid` en lote y guía) y `test_07` (verificación de que un usuario sin rol recibe `AccessError`).
    - `TestSvRpcBypass` permanece 14/14 en verde, asegurando que las capacidades internas y marcas de serialización no quedan expuestas.
+
+---
+
+## 2026-10-21 — Unificación de Reglas de Exportación por Familia (AD-130 / Bloque H4)
+
+### Contexto
+Existían discrepancias y duplicación de lógica en la resolución de dimensiones y volumen de exportación entre la ingesta documental (`madenat.guia.processing`), la recepción estándar (`lumber.reception`), el lote de inventario (`stock.lot`) y el detalle de embarque (`lumber.shipment.line`). La tabla S2S en BD (`lumber.width.s2s.map`) no incluía la columna del sobreancho aplicado ($+1/8"$), y no existía un punto único de resolución para las 5 familias de subproductos ni control de tolerancia en el mapeo métrico inverso.
+
+### Decisiones Aprobadas (AD-130)
+1. **API Única Centralizada:**
+   - `MadenatIngestionConfig.resolve_export_width_details(rough_mm, is_s2s_inches, record)` centraliza toda la resolución de ancho de exportación.
+   - Retorna diccionario canónico: `nominal_width_inches`, `allowance_inches`, `calculation_width_inches`, `out_of_table_status`, `warning_message`.
+   - Todas las rutas (lotes, líneas de guía, líneas de embarque) delegan estrictamente en esta API única.
+2. **Constantes y Gobernanza UoM:**
+   - Constantes centralizadas en `utils_uom.py`: `DEFAULT_S2S_ALLOWANCE_INCHES = 0.125`, `TOLERANCE_METRIC_REVERSE_INCHES = 0.001`, `FACTOR_1550 = 1550.003`, `FACTOR_5085 = 5085.312`, `MM_PER_INCH = 25.4`.
+   - Se agrega el campo `allowance_inches` (default 0.125) a `lumber.width.s2s.map` con permisos restringidos exclusivamente a `group_lumber_config_manager`.
+3. **Gobierno por Familia de Subproducto (`calculation_family`):**
+   - `s2s`: Factor 1550 con ancho de tabla S2S + 1/8".
+   - `blank`: Factor 5085 con +1/8" en tarjas reales consolidadas (FA543R/FA531R) y compra = exportación en ingreso métrico puro.
+   - `rough`: Métrica pura $e \times a \times l \times pzas / 1.000.000$ (compra = exportación).
+   - `dimension`: Métrica directa según escuadría.
+   - `molding`: Conversión métrica directa sin sobreancho S2S.
+4. **Packing List y Trazabilidad:**
+   - Adición de `vol_documental_m3` en líneas de ingest y `reconciliation_status` en la cabecera.
+   - Persistencia de `out_of_table_status` en el lote y propagación de override manual a líneas de embarque.
+   - Display nominal con fracción comercial en `lumber.shipment.line`.
+
+---
+
+## 2026-10-21 — Recálculo Controlado de Datos de Prueba en madenat_test (AD-131 / Bloque H4)
+
+### Contexto
+Tras unificar la regla de exportación F2 y la tabla S2S, 87 lotes de prueba en la base de datos `madenat_test` presentaban volúmenes calculados bajo fórmulas anteriores con diferencias aritméticas respecto a la regla unificada. Se requería corregir la base de prueba sin violar la salvaguarda de staging ni alterar lotes de Blanks o registros de costeo.
+
+### Decisiones Aprobadas (AD-131)
+1. **Protocolo de Seguridad:**
+   - Backup físico `pg_dump` previo obligatorio ejecutado: `madenat_test_pre_h4_recalc_20261021_164239.dump` (12 MB).
+   - Simulación dry-run previa con Gate estricto: cero lotes Blanks afectados.
+2. **Ejecución Controlada por ORM:**
+   - Script oficial `recalc_h4_ad131.py` ejecutado con `--apply` dentro del contenedor.
+   - 87 lotes cepillados S2S actualizados mediante `with_context(bypass_staging_safeguard=True)`.
+   - Registro obligatorio en chatter de cada lote modificado: `"recalculado por AD-131"`.
+   - Volumen anterior total: 259.579 m³ → Volumen nuevo total: 249.969 m³ (diferencia neta: -9.610 m³).
+3. **Invariantes Respetadas:**
+   - Lotes Blanks afectados: **0 lotes** (100% intactos).
+   - Registros de costeo dependientes (`stock.lot.cost.line`): **0 registros** (NO TOCADOS).
+   - Sincronización en líneas de recepción y guía processing por `lot_name`.
+   - Consulta B actualizada: `stock_lot` 152 filas, hash `c18e13059b8155118f88e94bbb038fc3`, suma 521.6820 m³.
+   - Consulta A.2 actualizada: `stock_lot` 152 filas, hash `26e74e8feb35260e2fd839281ce287d9`.
 
 
 

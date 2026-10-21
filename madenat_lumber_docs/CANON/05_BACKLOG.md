@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.51.0
-**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. HG-07 pasa a casi cerrado (9 de 10 resueltas con H0-B y H1-A, registradas test_06 y test_07, quedando solo TestSvConcurrency.test_01 diferida); registro de HG-09 (reconciliación de 19 modelos y 24 XMLs con 4 casos notables); AD-129. Versión 05 8.50.0 → 8.51.0. Sin push. -->
+**Versión documental:** 8.52.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H4: HG-05 candidatos a código muerto no eliminados por contratos activos justificados; eliminación de get_s2s_adjustment; resumen del recálculo controlado AD-131 (87 lotes recalculados, 0 Blanks tocados, 0 registros de costing afectados); registro formal de verificación pendiente de 'Enviar a stock' de recepción estándar diferida para H5. Versión 05 8.51.0 → 8.52.0. Sin push. -->
+<!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. HG-07 pasa a casi cerrado (9 de 10 resueltas con H0-B y H1-A, registradas test_06 y test_07, quedando solo TestSvConcurrency.test_01 diferida); registro de HG-09 (reconciliación de 19 modelos y 24 XMLs con 4 casos notables); AD-129. Versión 05 8.50.0 → 8.51.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
 <!-- actualizado: 2026-10-20 — Bloque H0 Higiene Mínima Segura (AD-128): Cierre de HG-02 (Permisos ACL) y HG-07 parcial (6 pruebas de fixtures/alcance saneadas); registro formal del diagnóstico de las 4 pruebas complejas pendientes; especificación de pre-commit incremental; y registro de alcance de higiene no autorizado / diferido (HG-01, 03, 04, 05, 08). Versión 05 8.48.0 → 8.49.0. Sin push ni despliegue. | Bloque H0. -->
 <!-- actualizado: 2026-10-19 — Auditoría de Higiene de Código y Documentación: incorporación formal del Backlog Priorizado de Higiene de Código y Arquitectura (HG-01 a HG-08: descomposición modular de archivos >1.500L, seguridad ir.model.access.csv, vistas no declaradas, consultas .search() en bucles, pre-commit propuesto, saneamiento de 10 pruebas y racionalización CANON). Versión 05 8.47.0 → 8.48.0. Sin push ni despliegue. -->
@@ -1407,6 +1408,31 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
 6. **Resolución de Pruebas Complejas (HG-07):** Corrección de la única prueba de concurrencia pendiente (`TestSvConcurrency.test_01_dos_transacciones_no_sobreconsumen`, esfuerzo L, rediseño a runner multiproceso) diferida para evitar modificaciones estructurales no acotadas. (Las 3 pruebas de `TestSvEscalationSecurity` fueron resueltas en H1-A; test_06 y test_07 incorporados).
 7. **Migración de Citas de Línea Obsoletas en Documentación (HG-08):** Migración gradual a citas por símbolo/sección; encabezados y tablas sinópticas formalizadas.
 8. **Preservación de WIP en Costing y Reports (Restricción D1–D6):** Área protegida por restricciones D1–D6 sin tocar en H0 (no forma parte de la taxonomía HG-01..HG-08).
+
+---
+
+## Bloque H4 — Cierre de Fase 3 a 5: Higiene, Recálculo y Diferidos (2026-10-21)
+
+### 1. Higiene y Código Muerto (HG-05 / Fase 3)
+- **Eliminado:** Método `get_s2s_adjustment()` en `MadenatIngestionConfig` (reemplazado al 100% por la API única `resolve_export_width_details`). Commit `9b94963`.
+- **Candidatos NO eliminados y debidamente justificados:**
+  - `LUMBER_DIMENSION_MAP` en `utils_uom.py`: preservado por ser contrato consumido activamente por pruebas de compatibilidad y mapeos de display.
+  - Constantes de tolerancia y fallbacks de ingest en `madenat_guia_processing.py`: preservados para garantizar la ingesta continua de líneas sintéticas sin dimensiones (ej. granel).
+  - `_compute_vol_shipment_m3` en `madenat.guia.processing.line`: preservado para el cálculo en staging de guías previo a confirmación.
+
+### 2. Resumen del Recálculo Controlado de Datos de Prueba (AD-131 / Fase 5)
+- **Ejecución:** Script `recalc_h4_ad131.py --apply` ejecutado vía ORM con bypass explícito de salvaguarda.
+- **Lotes S2S recalculados:** **87 lotes** en `stock.lot`.
+  - Volumen anterior: 259.579 m³ → Volumen nuevo: 249.969 m³ (Diferencia neta: **-9.610 m³**).
+  - Cada lote actualizado cuenta con mensaje en chatter: `"recalculado por AD-131"`.
+- **Lotes Blanks:** **0 lotes afectados** (100% conservados con su sobreancho $+1/8"$, superando el Gate 5.2).
+- **Costing dependiente:** **0 registros** en `stock.lot.cost.line` afectados (NO TOCADOS, preservando D4).
+- **Líneas base:** Hashes Consulta B y Consulta A.2 actualizados en CANON/17 §10.
+
+### 3. Registro de Verificación Pendiente (Diferido a Bloque H5)
+- **Flujo "Enviar a stock" de Recepción Estándar (`lumber.reception`):**
+  - La verificación del paso de borrador/staging a stock directo en recepciones estándar queda formalmente diferida para el bloque de ciclo de vida (H5).
+  - No se ejecutó en H4 para preservar el alcance mínimo y la estabilidad del recálculo.
 
 
 
