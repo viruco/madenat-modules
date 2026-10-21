@@ -832,22 +832,24 @@ class MadenatSvOperation(models.Model):
         sistema) solo cuando el actor no tiene uno.
         """
         partner = self.env.user.partner_id
+        kwargs = {'author_id': partner.id}
         if partner.email:
-            return {}
+            return kwargs
         company = self.company_id or self.env.company
         fallback = company.email or company.partner_id.email or (
             'noreply@madenat.local')
-        return {'email_from': fallback}
+        kwargs['email_from'] = fallback
+        return kwargs
 
     def _sv_post_chatter(self, balances=None):
         self.ensure_one()
         body = self._sv_chatter_body(balances)
         mail_kwargs = self._sv_chatter_mail_kwargs()
         if self.lot_id:
-            self.lot_id.message_post(
+            self.lot_id.sudo().message_post(
                 body=body, message_type='notification', **mail_kwargs)
         if self.guia_processing_id:
-            self.guia_processing_id.message_post(
+            self.guia_processing_id.sudo().message_post(
                 body=body, message_type='notification', **mail_kwargs)
         self.env['madenat.audit.log'].sudo().create({
             'guia_processing_id': self.guia_processing_id.id or False,

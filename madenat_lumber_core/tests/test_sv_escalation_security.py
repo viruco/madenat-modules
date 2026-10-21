@@ -170,3 +170,46 @@ class TestSvEscalationSecurity(SvTestCommon, TransactionCase):
             ('group_id', '=', self.group_oper.id)], limit=1)
         self.assertTrue(acl)
         self.assertFalse(acl.perm_unlink)
+
+    def test_06_chatter_mensaje_autor_real(self):
+        guia = self._sv_make_guia('SV-SEC-06')
+        lot = self._sv_make_lot(guia, label='SV00000000116')
+        user_audit = self._make_user('sv_audit_06', [self.group_audit])
+
+        operation = self.Operation.create({
+            'lot_id': lot.id,
+            'action_type': 'regularize_volume',
+            'new_volume_m3': 46.0,
+            'reason': 'Alza para verificación de autor chatter',
+            'evidence_reference': 'RESP-06',
+        })
+        operation.with_user(user_audit).action_apply()
+
+        # Mensaje en stock.lot conserva autor real y create_uid
+        lot_messages = lot.message_ids.filtered(
+            lambda m: m.author_id == user_audit.partner_id)
+        self.assertTrue(lot_messages)
+        self.assertEqual(lot_messages[0].author_id, user_audit.partner_id)
+        self.assertEqual(lot_messages[0].create_uid, user_audit)
+
+        # Mensaje en madenat.guia.processing publicado con sudo acotado conserva autor real
+        guia_messages = guia.message_ids.filtered(
+            lambda m: m.author_id == user_audit.partner_id)
+        self.assertTrue(guia_messages)
+        self.assertEqual(guia_messages[0].author_id, user_audit.partner_id)
+        self.assertEqual(guia_messages[0].create_uid, user_audit)
+
+    def test_07_usuario_sin_grupo_recibe_access_error(self):
+        guia = self._sv_make_guia('SV-SEC-07')
+        lot = self._sv_make_lot(guia, label='SV00000000117')
+        user_sin_grupo = self._make_user('sv_sin_grupo_07', [])
+
+        operation = self.Operation.create({
+            'lot_id': lot.id,
+            'action_type': 'rebaja',
+            'rebaja_volume_m3': 2.0,
+            'reason': 'Prueba sin grupo funcional',
+        })
+        with self.assertRaises(AccessError):
+            operation.with_user(user_sin_grupo).action_apply()
+
