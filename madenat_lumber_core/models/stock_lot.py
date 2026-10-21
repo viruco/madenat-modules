@@ -1751,8 +1751,21 @@ class StockLotExtended(models.Model):
                         "La Guía Origen de Volumen del lote %s es inmutable: "
                         "no puede limpiarse ni reasignarse a otra guía."
                     ) % (lot.name or lot.id))
+
+        # 🪵 H5-C / AD-132: Aviso en chatter al modificar piezas o ancho en lote pos-envío
+        dim_fields = {'piezas', 'ancho_mm', 'ancho_nominal_mm'}
+        lots_to_notify = self.env['stock.lot']
+        if dim_fields.intersection(vals.keys()):
+            for lot in self:
+                if lot.reception_id and ((lot.vol_shipment_m3 or 0.0) > 0.001 or (lot.volumen_m3 or 0.0) > 0.001):
+                    if any(vals[f] != lot[f] for f in dim_fields.intersection(vals.keys())):
+                        lots_to_notify |= lot
+
         result = super(StockLotExtended, self).write(vals)
-        
+
+        for lot in lots_to_notify:
+            lot.message_post(body="dimensiones modificadas después del ingreso; el volumen no se recalculó")
+
         # ✅ SI se agregó indicador de procesado, actualizar estado
         if any(field in vals for field in ['guia_processing_id', 'parent_lot_id', 'subproducto_id']):
             processed_lots = self.filtered(lambda l: l._is_processed_lot())
