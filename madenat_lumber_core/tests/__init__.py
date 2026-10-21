@@ -92,4 +92,6 @@ from . import test_volume_labels_6c
 from . import test_h0_security_permissions
 # 📐 H4 (AD-130): API única de resolución de exportación y metadatos.
 from . import test_resolve_export_width_api
+# 🏆 H4 (AD-130 / Punto 2.10): Pruebas doradas integrales de cubicación.
+from . import test_golden_reference_calculations
 
