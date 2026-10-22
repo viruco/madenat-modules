@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.51.0
-**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
+**Versión documental:** 12.52.0
+**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
+<!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
 <!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
 <!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL para 19 modelos/wizards huérfanos (H0-A); saneamiento de 6 pruebas unitarias mal diseñadas (H0-B); diagnóstico formal de concurrencia y escalación; reglas de operación IA (citas por símbolo/sección, prohibición -i y -u all). Versión 04 12.47.0 → 12.48.0. | Bloque H0 (AD-128). -->
@@ -25,6 +26,7 @@
 | **AD-130** | 2026-10-21 | Unificación de reglas de exportación por familia (API única y constantes UoM) | Vigente |
 | **AD-131** | 2026-10-21 | Recálculo controlado de datos de prueba en `madenat_test` (87 lotes corregidos) | Vigente |
 | **AD-132** | 2026-10-21 | Flujo de edición de dimensiones en staging y aviso chatter en stock (Bloque H5) | Vigente |
+| **AD-133** | 2026-10-21 | Paridad de tarjas exportador, importador doble bloque y merma dimensional R2 | Vigente |
 
 ---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
@@ -4207,6 +4209,46 @@ Durante la verificación del flujo "Enviar a Stock" y los anchos nominales (Bloq
      `"dimensiones modificadas después del ingreso; el volumen no se recalculó"`.
 3. **Diferimiento del Escalado de Volumen en Rebaja:**
    - El rediseño del escalado proporcional del volumen ante rebajas físicas de inventario (reducción de piezas en lotes de stock) queda formalmente diferido para su especificación e implementación en el **Bloque 7**.
+
+---
+
+## AD-133: Paridad de Tarjas Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2 (Bloque 7 / Fase 2)
+
+**Fecha:** 2026-10-21  
+**Estado:** ✅ APROBADA  
+**Ámbito:** `madenat_lumber_logistics` (`lumber.container`, `lumber.export.shipment`, `lumber.shipment.line`, `lumber.consolidation.import.wizard`, `lumber.consolidation.import.pending`), `madenat_lumber_core` (`stock.lot`)
+
+### Contexto y Motivación
+En la operación de exportación maderera de MADENAT, la consolidación física de contenedores y su despacho marítimo requiere paridad absoluta con los formatos oficiales exigidos por los terminales portuarios y agencias aduaneras:
+1. **Paridad de Tarja Exportador (Bloque 7.1):** Las tarjas consolidadas por contenedor generadas por el sistema debían ajustarse a las referencias doradas de operación real (muestras FA543R y FA610R), que estructuran un formato XLSX de doble bloque idéntico (Exportación a la izquierda y Compra Nominal a la derecha) con sumas de filas redondeadas a 3 decimales, sin columnas espurias inventadas (SAG) ni desfases.
+2. **Importador de Consolidación de Tarjas (Bloque 7.2):** La necesidad operativa de conciliar planillas Excel externas enviadas por plantas o exportadores requería un asistente capaz de procesar la estructura real de doble bloque, tolerar y aislar paquetes sin etiqueta sin descartar información, y comparar volúmenes contra la base de datos sin alterar inventario.
+3. **Merma Dimensional y Extinción de Quant en Rebaja Física (Bloque 7.3):** Como el inventario en bodega se custodia en Volumen Nominal de Compra ($F1$) y el despacho se factura en Volumen de Exportación ($F2$), la salida física por contenedor debía extinguir la totalidad del quant en stock para evitar remanentes residuales fantasma con 0 piezas, reconociendo la merma dimensional ($F1 - F2$) tanto a nivel de línea como acumulada en contenedor y embarque, con capacidad de reversa limpia R2.
+
+### Decisiones Aprobadas (AD-133)
+1. **Paridad del Exportador de Tarjas XLSX (7.1):**
+   - El método `action_export_packing_list_xlsx` en `lumber.container` genera el libro de tarja respetando estrictamente 13 columnas por bloque:
+     - Bloque Izquierdo (Exportación, cols 1-13): Embarcador, Producto, Planta, Etiqueta, Pqts, Subproducto, Espesor, Ancho, Largo, Piezas, M3, Guía, Fecha.
+     - Bloque Derecho (Compra, cols 15-27): mismas columnas mapeadas a las dimensiones nominales de compra.
+   - Columnas no operativas (ej. SAG) quedan totalmente erradicadas.
+   - Los totales de pie de página se calculan sumando las filas redondeadas individualmente con `round(..., 3)`, asegurando coincidencia exacta contra los cálculos portuarios en FA543R (43,254 vs 52,297 m³) y FA610R (Blanks y rugoso).
+
+2. **Asistente de Importación de Consolidación con Doble Bloque y Cola de Pendientes (7.2):**
+   - Implementación del wizard `lumber.consolidation.import.wizard` y el modelo de pendientes `lumber.consolidation.import.pending`.
+   - Lectura resiliente del doble bloque (cols 0-12 y 14-26).
+   - Filas que carecen de etiqueta o cuyo proveedor no coincide unívocamente se capturan como pendientes sin interrumpir el proceso ni perder datos.
+   - Detección y reporte analítico de diferencias de volumen entre la planilla y el sistema con tolerancia $\pm 0,001\text{ m}^3$.
+   - Invarianza: el asistente no crea lotes ni modifica tablas de stock.
+
+3. **Merma Dimensional y Rebaja Física de Inventario R2 (7.3):**
+   - **Campo en Lote:** `stock.lot.merma_dimensional_m3` calculado como `round(nom - exp, 3)`, donde `nom = volume_purchase_m3 or volumen_m3` y `exp = vol_shipment_m3`. Se fija estrictamente en `0.0` para la familia `blank` y para perfiles rugosos donde compra == exportación.
+   - **Totales Acumulados:** Campos computados y almacenados `total_merma_dimensional_m3` en `lumber.container` y `lumber.export.shipment`. En el reporte XLSX de tarja, se agrega fila de pie de página `"MERMA DIMENSIONAL"` cuando existe diferencia acumulada $> 0,0005\text{ m}^3$.
+   - **Extinción del Quant en Rebaja:** En `_rebajar_container()`, la salida física (`stock.move` / `stock.picking`) descuenta el volumen total en stock del lote (`lot.volumen_restante_m3`), extinguiendo completamente el quant interno. La merma dimensional se almacena en `lumber.shipment.line.rebaja_merma_m3`.
+   - **Reversa R2 (`action_reverse_rebaja`):** Restaura el quant nominal al estado previo y resetea `rebaja_merma_m3 = 0.0`.
+   - **Prueba Dorada Canónica:** Validada en `TestMermaDimensionalRebaja` con el caso histórico Packing 40030:
+     - Compra nominal: $54,518\text{ m}^3$
+     - Exportación: $44,713\text{ m}^3$
+     - Merma dimensional reconocida: $9,805\text{ m}^3$ (exactitud 100%).
+
 
 
 

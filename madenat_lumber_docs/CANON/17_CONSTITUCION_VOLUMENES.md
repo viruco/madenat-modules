@@ -1,7 +1,8 @@
 # 17 — Constitución de Volúmenes (NOMINAL / DISPONIBLE / EXPORTACIÓN / OFICIAL)
 
-**Versión documental:** 1.18.0
-**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: Bloque H4 (AD-130/AD-131) — formalización de las 5 familias de cubicación (§9.1.1), recálculo controlado de 87 lotes S2S y actualización de línea base de hashes Consulta B y Consulta A.2 (§10). Versión 1.17.0 → 1.18.0. | Bloque H4. -->
+**Versión documental:** 1.19.0
+**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: Bloque 7.3 (AD-133) — formalización e implementación de la merma dimensional en stock.lot (merma_dimensional_m3), totales por contenedor y embarque, extinción total del quant nominal en la rebaja R2 y verificación post-AD-131 de hashes B y A.2 en pre-deploy. Versión 1.18.0 → 1.19.0. | Bloque 7. -->
+<!-- 2026-10-21: Bloque H4 (AD-130/AD-131) — formalización de las 5 familias de cubicación (§9.1.1), recálculo controlado de 87 lotes S2S y actualización de línea base de hashes Consulta B y Consulta A.2 (§10). Versión 1.17.0 → 1.18.0. | Bloque H4. -->
 <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.16.0 → 1.17.0. | Bloque H0. -->
 <!-- 2026-10-19: §10.6.7 Rebaja de inventario y merma dimensional por exportación (E2 / Bloque 6E) — extinción completa de volumen nominal en stock y distribución de costo logístico sobre volumen de exportación. Versión 1.15.0 → 1.16.0. | Bloque 6E. -->
 
@@ -434,12 +435,22 @@ En cumplimiento de las instrucciones de Cristhian Elgueta y las reglas del Bloqu
    - **Prevención de % con Ceros:** Cuando el estado no es `calculado`, la métrica `% Dif.Vol` queda vacía (`False`), evitando distorsiones visuales o porcentajes engañosos (ej: falsos -100%).
    - **Badge y Filtros:** La vista de lista presenta un badge cromático según estado y la vista de búsqueda incorpora filtros guardados por estado de real físico.
 
-7. **REBAJA DE INVENTARIO Y MERMA DIMENSIONAL POR EXPORTACIÓN (E2 / Bloque 6E):**
+7. **REBAJA DE INVENTARIO Y MERMA DIMENSIONAL POR EXPORTACIÓN (E2 / Bloque 7 / AD-133):**
    - **Unidad de Medida del Stock:** En el modelo estándar de Odoo, la cantidad de existencias (`stock.quant.quantity`) se mide en metros cúbicos (`m³`).
    - **Custodia en Patio:** El lote ingresa al inventario custodiando su **Volumen Nominal de Compra** ($F1$, ej. 2,495 m³ en lote D8833 de guía 26270).
    - **Facturación y Despacho:** Al consolidar o embarcar, el documento comercial y facturación refleja el **Volumen de Exportación** ($F2$, ej. 2,067 m³).
-   - **Extinción del Quant Físico:** Para evitar saldos residuales "fantasmas" en patio (lotes con 0 piezas pero con saldo positivo en metros cúbicos), la rebaja de inventario en `stock.move` debe extinguir la totalidad del quant en stock ($F1$), reconociendo la merma dimensional ($F1 - F2$, ej. 0,428 m³, -17,15%) como ajuste o merma de exportación.
+   - **Extinción del Quant Físico:** Para evitar saldos residuales "fantasmas" en patio (lotes con 0 piezas pero con saldo positivo en metros cúbicos), la rebaja de inventario en `stock.move` extingue la totalidad del quant en stock ($F1$), reconociendo la merma dimensional ($F1 - F2$, ej. 0,428 m³, -17,15%) registrada en `lumber.shipment.line.rebaja_merma_m3`.
+   - **Campos Implementados (Bloque 7.3):**
+     - `stock.lot.merma_dimensional_m3`: $(\text{Compra} - \text{Exportación})$ con `r3()`; cero en Blanks y perfiles rugosos donde compra == exportación.
+     - `lumber.container.total_merma_dimensional_m3`: Suma de merma de los lotes del contenedor; fila dedicada de pie de página en reporte XLSX.
+     - `lumber.export.shipment.total_merma_dimensional_m3`: Suma de merma de todos los contenedores del embarque.
+     - `lumber.shipment.line.rebaja_merma_m3`: Registro de la merma reconocida al ejecutar `action_rebajar()`, reseteada a 0.0 al revertir con `action_reverse_rebaja()`.
+   - **Prueba Dorada Canónica (Packing 40030):**
+     - Compra nominal: $54,518\text{ m}^3$
+     - Exportación documental: $44,713\text{ m}^3$
+     - Merma dimensional: $9,805\text{ m}^3$ (validada al 100% en `TestMermaDimensionalRebaja`).
    - **Costeo Logístico (`lumber.shipment.costing`):** Los costos del embarque se distribuyen sobre la base del volumen de exportación ($F2$), concentrando el costo en los metros cúbicos facturados.
+
 
 
 

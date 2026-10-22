@@ -4,6 +4,14 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.41.0] - 2026-10-21
+
+### Added
+- **Bloque 7 (Fase 2 / AD-133) — Paridad de Tarja, Importador de Consolidación y Merma Dimensional R2**:
+  - **7.1 Paridad de Tarja Exportador**: Generación XLSX de tarja por contenedor con doble bloque simétrico (cols 1-13 izq exportación, cols 15-27 der compra), totales por suma de filas con `round(..., 3)` y paridad con tarjas de referencia FA543R y FA610R.
+  - **7.2 Asistente de Importación de Consolidación**: Wizard `lumber.consolidation.import.wizard` para lectura de doble bloque y modelo `lumber.consolidation.import.pending` para filas sin etiqueta, con informe de diferencias e invarianza de BD.
+  - **7.3 Merma Dimensional y Rebaja R2**: Campo `total_merma_dimensional_m3` en contenedor y embarque, extinción total del quant nominal en `_rebajar_container()` registrando `rebaja_merma_m3`, y reversa limpia en `action_reverse_rebaja()`. Prueba dorada packing 40030 (compra 54,518 m³, exportación 44,713 m³, merma 9,805 m³).
+
 ## [18.0.1.39.0] - 2026-10-17
 
 ### Fixed

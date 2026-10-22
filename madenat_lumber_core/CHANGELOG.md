@@ -1,3 +1,10 @@
+## [18.0.6.25.0] - 2026-10-21
+
+### Added
+- **Bloque 7 (Fase 2 / AD-133) — Merma Dimensional y Línea Base de Salud Pre-Deploy**:
+  - **7.3 Merma Dimensional en Lote**: Campo `merma_dimensional_m3` en `stock.lot` computado y almacenado como diferencia compra nominal vs exportación con `r3()`. Cero en Blanks y perfiles rugosos donde compra == exportación.
+  - **7.4 Línea Base en Health Check**: Actualización de hashes canónicos Consulta B y Consulta A.2 post-AD-131 en `pre_deploy_health_check.py` y `test_pre_deploy_health_check.py` (43 OK, 0 críticos).
+
 ## [18.0.6.23.0] - 2026-10-19
 
 ### Changed

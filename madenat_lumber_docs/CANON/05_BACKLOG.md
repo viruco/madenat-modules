@@ -1,7 +1,8 @@
 # MADENAT — Backlog Canónico
 
-**Versión documental:** 8.53.0
-**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque H5-C: Cierre formal H5 (AD-132: corrección E3 ancho nominal en exportación staging, aviso chatter E4 en lote pos-envío); diferimiento de escalado de volumen en rebaja para Bloque 7. Versión 05 8.52.0 → 8.53.0. Sin push. -->
+**Versión documental:** 8.54.0
+**Fecha de actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): Cierre formal de 7.1 (paridad tarja exportador), 7.2 (importador consolidación doble bloque y pendientes), 7.3 (merma dimensional y rebaja R2 con prueba dorada 40030) y 7.4 (regresión 1.625 tests y health check post-AD-131 43 OK); Fase 3 (REMATE) y asiento contable diferidos. Versión 05 8.53.0 → 8.54.0. Sin push. -->
+<!-- actualizado: 2026-10-21 — Bloque H5-C: Cierre formal H5 (AD-132: corrección E3 ancho nominal en exportación staging, aviso chatter E4 en lote pos-envío); diferimiento de escalado de volumen en rebaja para Bloque 7. Versión 05 8.52.0 → 8.53.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H4: HG-05 candidatos a código muerto no eliminados por contratos activos justificados; eliminación de get_s2s_adjustment; resumen del recálculo controlado AD-131 (87 lotes recalculados, 0 Blanks tocados, 0 registros de costing afectados); registro formal de verificación pendiente de 'Enviar a stock' de recepción estándar diferida para H5. Versión 05 8.51.0 → 8.52.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-D: Cierre documental H1. HG-07 pasa a casi cerrado (9 de 10 resueltas con H0-B y H1-A, registradas test_06 y test_07, quedando solo TestSvConcurrency.test_01 diferida); registro de HG-09 (reconciliación de 19 modelos y 24 XMLs con 4 casos notables); AD-129. Versión 05 8.50.0 → 8.51.0. Sin push. -->
 <!-- actualizado: 2026-10-21 — Bloque H1-C: Corrección de etiquetas en alcance diferido no autorizado para coincidencia exacta con la tabla HG-01..HG-08 (HG-05 Mantenibilidad/.gitignore, HG-06 CI, HG-07 Pruebas, HG-08 Documentación/citas por símbolo, y segregación de restricciones D1–D6). Versión 05 8.49.0 → 8.50.0. Sin push. -->
@@ -1333,11 +1334,22 @@ Ruta de muestras analizadas: `/home/viruco/dev-stack/odoo/odoo-18-ce/muestras_do
   - Estructura: Planilla resumen multi-contenedor agrupada por Nave, Booking, Puertos y Consignatario, desglosando especificaciones y trazabilidad de roll over (roleos de naves previas).
   - Brecha Real en Odoo: Falta el **asistente / reporte de REMATE** que consolide todos los contenedores de un embarque y genere el Excel multidimensional aprovechando los vínculos de roleo ya existentes en los wizards `lumber.vessel.rollover.wizard` y `lumber.container.rollover.wizard`.
 
-#### 3. Mecanismo de Rebaja de Volumen en Stock (E2)
+#### 3. Mecanismo de Rebaja de Volumen en Stock (E2 / Bloque 7.3 — IMPLEMENTADO)
 - **Unidad de Medida:** `stock.quant.quantity` se expresa en **`m³`** (metro cúbico).
 - **Entrada vs Salida:** El lote ingresa a stock custodiando su **Volumen Nominal de Compra** (`volume_purchase_m3`, ej. 2.495 m³ en lote D8833 de guía 26270).
-- **Brecha Contable:** Si al consolidar o embarcar se rebaja solo el **Volumen de Exportación** (`vol_shipment_m3`, ej. 2.067 m³), queda un remanente fantasma de 0.428 m³ en patio con 0 piezas físicas.
-- **Solución Canónica Requerida:** La rebaja en `stock.move` debe extinguir la totalidad del quant físico (`volume_purchase_m3 = 2.495 m³`), reconociendo la diferencia dimensional (`2.495 - 2.067 = 0.428 m³`, -17.15%) en una cuenta o dimensión analítica de merma dimensional por exportación. En costeo (`lumber.shipment.costing`), los costos logísticos se distribuyen sobre el volumen de exportación (`vol_shipment_m3`).
+- **Extinción del Quant en Rebaja (R2):** La rebaja en `stock.move` extingue la totalidad del quant físico (`lot.volumen_restante_m3`), reconociendo la merma dimensional (`nominal - exportacion`) en `lumber.shipment.line.rebaja_merma_m3`.
+- **Reversa R2 (`action_reverse_rebaja`):** Restaura el quant nominal y resetea la merma rebajada a 0.0.
+- **Validación:** Validado con la prueba dorada Packing 40030: compra 54,518 m³, exportación 44,713 m³, merma 9,805 m³.
+
+#### 4. Estado de Implementación del Bloque 7
+- **Fase 2 (7.1, 7.2, 7.3, 7.4) — 🟢 CERRADO / IMPLEMENTADO (2026-10-21):**
+  - **7.1 Paridad de Tarja Exportador:** Generación de libro XLSX de tarja con doble bloque simétrico (cols 1-13 y 15-27), 13 columnas exactas, sumas redondeadas a 3 decimales y paridad validada contra FA543R y FA610R (`TestTarjaParidadExportador`).
+  - **7.2 Asistente de Importación de Consolidación:** `lumber.consolidation.import.wizard` con lectura de doble bloque, modelo `lumber.consolidation.import.pending` para filas sin etiqueta sin pérdida de datos, e informe de diferencias sin efectos secundarios (`TestConsolidationImportWizard`).
+  - **7.3 Merma Dimensional y Rebaja R2:** Campos `merma_dimensional_m3` en lote, `total_merma_dimensional_m3` en contenedor y embarque, extinción del quant en rebaja y reversa limpia (`TestMermaDimensionalRebaja`).
+  - **7.4 Regresión y Pre-Deploy Health Check:** 1.625 pruebas ejecutadas (1 falla esperada por diseño de concurrencia en runner estándar); pre-deploy health check con 43 OK, 0 críticos y coincidencia 100% de Consulta B y A.2 post-AD-131.
+- **Fase 3 (REMATE multidimensional) y Asiento Contable de Merma — 🟡 DIFERIDO:**
+  - Planilla de REMATE consolidada por motonave y asiento contable de variación de existencias/merma quedan en backlog como trabajo futuro no autorizado en esta fase.
+
 
 
 ---

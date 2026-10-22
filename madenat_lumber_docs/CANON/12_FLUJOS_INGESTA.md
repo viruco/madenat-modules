@@ -1,8 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.19.0\
-**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: §12.7 Flujo de edición de dimensiones antes y después del envío a stock (AD-132 / Bloque H5). Versión 1.18.0 → 1.19.0. | Bloque H5. -->
+**Versión documental:** 1.20.0
+**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: §12.8 Asistente de importación de consolidación de tarjas desde Excel con doble bloque y filas pendientes (AD-133 / Bloque 7.2). Versión 1.19.0 → 1.20.0. | Bloque 7. -->
+<!-- 2026-10-21: §12.7 Flujo de edición de dimensiones antes y después del envío a stock (AD-132 / Bloque H5). Versión 1.18.0 → 1.19.0. | Bloque H5. -->
 <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
 <!-- 2026-10-19: §3.3 Cita explícita de ADRs (AD-65, AD-79, AD-80, AD-87) en matriz de ingesta y formalización de Bloque 6 (AD-127). Versión 1.16.0 → 1.17.0. | Bloque 6. -->\
 
@@ -600,6 +601,22 @@ Tras la armonización canónica con las directrices de Cristhian Elgueta y la ar
   - **Modelo operativo:** `stock.lot`.
   - **Salvaguarda de staging estricta:** Para lotes que provienen de recepción o proceso (`reception_id`) con volumen mayor a 0,001 m³, el volumen de exportación e inventario permanece protegido e inmutable (no se recalcula automáticamente).
   - **Aviso de auditoría en chatter:** Al modificar piezas o ancho (`piezas`, `ancho_mm`, `ancho_nominal_mm`), el sistema registra automáticamente un mensaje en el chatter del lote: `"dimensiones modificadas después del ingreso; el volumen no se recalculó"`.
-  - **Escalado de volumen en rebaja:** La lógica de recálculo proporcional de volumen ante rebajas físicas de piezas queda formalmente documentada y diferida para su diseño integral en el **Bloque 7**.
+  - **Escalado de volumen en rebaja:** La lógica de recálculo proporcional de volumen ante rebajas físicas de piezas queda formalmente implementada en el **Bloque 7** mediante la extinción del quant nominal completo y reconocimiento de `rebaja_merma_m3` (AD-133).
+
+### 12.8 Asistente de Importación de Consolidación de Tarjas desde Excel (AD-133 / Bloque 7.2)
+
+- **Modelo Operativo:** `lumber.consolidation.import.wizard` y líneas pendientes `lumber.consolidation.import.pending` en `madenat_lumber_logistics`.
+- **Estructura Doble Bloque:** Soporte nativo para lectura de planillas de consolidación en formato real exportador:
+  - **Bloque Izquierdo (Exportación):** Columnas 1 a 13 (Embarcador, Producto, Planta, Etiqueta, Pqts, Subproducto, Espesor, Ancho, Largo, Piezas, M3, Guía, Fecha).
+  - **Bloque Derecho (Compra Nominal):** Columnas 15 a 27 (mismas especificaciones en base nominal de compra).
+- **Manejo de Filas sin Etiqueta:**
+  - Filas que carecen de etiqueta o cuyo proveedor no coincide unívocamente no se descartan ni interrumpen la importación.
+  - Se capturan como registros de asignación pendiente en `lumber.consolidation.import.pending`, preservando proveedor, piezas y volúmenes para conciliación manual en UI.
+- **Validación y Detección de Discrepancias:**
+  - Compara los volúmenes declarados en la planilla contra los volúmenes registrados en el sistema (`vol_shipment_m3` y `volume_purchase_m3`).
+  - Emite informe detallado de diferencias tolerando $\pm 0,001\text{ m}^3$ por redondeo.
+- **Garantía de Invarianza Estructural:**
+  - El asistente opera como herramienta de auditoría y consolidación; **no crea lotes ni modifica inventario en BD**, garantizando el principio de inmutabilidad de datos almacenados.
+
 
 
