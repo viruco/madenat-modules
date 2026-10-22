@@ -42,12 +42,12 @@ class TestPreDeployHealthCheck(TransactionCase):
     def test_02_canonical_hashes_defined(self):
         """Verifica que los hashes canónicos oficiales B y A.2 estén definidos según CANON/17."""
         # Consulta B (volúmenes de negocio redondeados a 4 decimales)
-        self.assertEqual(CANONICAL_HASH_B['stock_lot'], '5c2152193194066e5585b383ffe3673a')
+        self.assertEqual(CANONICAL_HASH_B['stock_lot'], 'c18e13059b8155118f88e94bbb038fc3')
         self.assertEqual(CANONICAL_HASH_B['madenat_guia_processing_line'], '356e70066083febd59645c1212e11ece')
         self.assertEqual(CANONICAL_HASH_B['lumber_shipment_line'], 'bb5863f5850244b06b9235c2c595709b')
 
         # Consulta A.2 (nombre y volumen sin marcas temporales)
-        self.assertEqual(CANONICAL_HASH_A2['stock_lot'], '6b1ec7d8dcd91cc6bd7ff90772759500')
+        self.assertEqual(CANONICAL_HASH_A2['stock_lot'], '26e74e8feb35260e2fd839281ce287d9')
         self.assertEqual(CANONICAL_HASH_A2['madenat_guia_processing_line'], 'e78e0265210add0676b240bed091921f')
         self.assertEqual(CANONICAL_HASH_A2['lumber_shipment_line'], 'b13357af2864a6cbeb3a386dff188a8e')
 

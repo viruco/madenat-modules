@@ -78,16 +78,16 @@ PARAM_CANONICAL = {
     'madenat.s2s_overwidth_inches': '0.125',
 }
 
-# Hashes canonicos oficiales de Consulta B (volumenes de negocio redondeados a 4 decimales - AD-121)
+# Hashes canonicos oficiales de Consulta B (volumenes de negocio redondeados a 4 decimales - AD-121 / AD-131)
 CANONICAL_HASH_B = {
-    'stock_lot': '5c2152193194066e5585b383ffe3673a',
+    'stock_lot': 'c18e13059b8155118f88e94bbb038fc3',
     'madenat_guia_processing_line': '356e70066083febd59645c1212e11ece',
     'lumber_shipment_line': 'bb5863f5850244b06b9235c2c595709b',
 }
 
-# Hashes canonicos oficiales de Consulta A.2 (nombre y volumen sin write_date - AD-121)
+# Hashes canonicos oficiales de Consulta A.2 (nombre y volumen sin write_date - AD-121 / AD-131)
 CANONICAL_HASH_A2 = {
-    'stock_lot': '6b1ec7d8dcd91cc6bd7ff90772759500',
+    'stock_lot': '26e74e8feb35260e2fd839281ce287d9',
     'madenat_guia_processing_line': 'e78e0265210add0676b240bed091921f',
     'lumber_shipment_line': 'b13357af2864a6cbeb3a386dff188a8e',
 }
