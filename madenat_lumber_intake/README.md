@@ -284,6 +284,35 @@ visibles en el formulario (icono ⚠ + texto) y en la lista. Se generan cuando:
   viaja en la descripción de `madenat.audit.log` (`_log_intake_origin`) y en el
   formulario/lista del wizard.
 
+### 8.3 Espesor nominal declarado por el documento (Fase 2B, Paso 2)
+
+El packing S2S trae el espesor **físico** del embarque (6/4 = 38,1 mm) y la
+guía el espesor **nominal** de compra («… de 45mm»). La compra se cubica con
+el nominal (`V = t · w · l · pzas / 10⁶`), así que sin este paso quedaba igual
+al embarque.
+
+Al derivar a **Producto** con perfil `f1550`, tras `action_process_documents()`
+el wizard ejecuta `_apply_document_nominal_thickness()` (`models/intake_wizard.py`),
+que usa el módulo puro `models/intake_nominal.py`:
+
+| Fuente | Regla |
+|---|---|
+| Glosa del PDF | `de NNmm` (valor único; dos valores distintos → sin evidencia) |
+| Aritmética | `t = total_volume_m3 · 10⁶ / Σ(w · l · pzas)` |
+| Coherencia | glosa ↔ aritmética dentro de **±2 mm** |
+| Límites | `nominal ≥ espesor físico`; volumen declarado entre **1,0×** y **1,4×** el del packing |
+
+- **Nunca bloquea**: sin evidencia coherente se conserva lo leído y se añade una
+  línea a `reading_warning` («Espesor nominal no resuelto desde el documento…»).
+- **El valor del operador prevalece**: si `thickness_nominal != thickness` en
+  alguna línea, el método no actúa.
+- Se lee `total_volume_m3` y **no** `declared_volume_m3` (este último puede
+  capturar el código de material: guía 40030 → 3322,0).
+- Solo escribe `thickness_nominal` en el staging de la recepción **recién
+  creada**; no toca registros históricos.
+- Resultado en la guía 40030: compra **54.518 m³** (antes 46.158), embarque
+  **44.713 m³** sin cambios.
+
 ---
 
 ## 9. Estados y transición de revisión
@@ -424,6 +453,9 @@ Coherente con "consola readonly" y "wizard de creación".
 | T2A-5 | Perfil distinto del elegido + unidad no reconocida → advertencia |
 | T2A-6 | Fix 2A-1b: con cabeceras de **1, 2 y 3 líneas** la fila de producto nunca es título |
 | T2A-7 | Fila de producto con **unidad + cantidad** (`M3 54,518`) fuera del título |
+| T2B-N1..N3 | Helpers puros del nominal: glosa `de NNmm`, aritmética `V/Σ(w·l·pzas)` y coherencia ±2 mm |
+| T2B-N4 | Guía 40030: escribe nominal 45 → compra **54.518 m³** con embarque **44.713 m³** |
+| T2B-N5..N8 | Packing que ya trae 45 (sin cambios), sin evidencia (marca), valor del operador, glosa incoherente |
 
 `tests/test_intake_wizard_view.py` protege el contrato XML: campos de la marca
 visible y `sum=` en las columnas numéricas de las fachadas de intake.
@@ -549,3 +581,4 @@ acción "Nuevo Ingreso" lanza `madenat.lumber.intake.wizard`.
 | 2026-10-23 | Marca de advertencia **no bloqueante** (`reading_warning`/`has_reading_warning`) en wizard; consola intacta (vista SQL) | Implementado |
 | 2026-10-23 | `sum=` en volumen de compra/exportación, MBF e importe de las vistas de fachada de intake | Implementado |
 | 2026-10-23 | **2A-1b**: el título del PDF excluye filas de producto (≥2 magnitudes o unidad + cantidad). Con cabeceras de 1–3 líneas la glosa entraba en la ventana de título y «Cepillada» se promovía a señal fuerte | Implementado |
+| 2026-10-23 | **2B Paso 2**: el espesor nominal de compra se toma del documento (glosa `de NNmm` + aritmética con `total_volume_m3`), se escribe en el staging S2S y el valor del operador prevalece | Implementado |
