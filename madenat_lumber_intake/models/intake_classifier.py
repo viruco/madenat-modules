@@ -9,10 +9,13 @@ por raíz y extracción de señales. Lo consumen:
 
 Señales analizadas — y SOLO estas (documentado en README §8):
   1. ``filename``       nombre del PDF y del Excel, sin extensión;
-  2. ``pdf_title``      primeras ``TITLE_LINES`` líneas útiles del PDF;
-  3. ``pdf_product``    filas de producto del PDF (>= 2 magnitudes numéricas, o
-                        las que siguen a una cabecera DESCRIPCIÓN / GLOSA /
-                        DETALLE / PRODUCTO);
+  2. ``pdf_title``      primeras ``TITLE_LINES`` líneas útiles del PDF que NO
+                        sean filas de producto (fix 2A-1b: con cabeceras cortas
+                        la fila de producto entraba en el título y su adjetivo
+                        de artículo se promovía a señal fuerte);
+  3. ``pdf_product``    filas de producto del PDF (>= 2 magnitudes numéricas,
+                        unidad + cantidad, o las que siguen a una cabecera
+                        DESCRIPCIÓN / GLOSA / DETALLE / PRODUCTO);
   4. ``excel_product``  nombres de producto del Excel ya extraídos por
                         ``extract_document`` (``description`` /
                         ``product_name_original``).
@@ -89,6 +92,17 @@ _NOISE_RE = re.compile(
 # Cabecera de la tabla de detalle (habilita las líneas siguientes como señal).
 _PRODUCT_HEADER_RE = re.compile(r'\b(descripcion|glosa|detalle|producto|especie)\b')
 _NUMBER_RE = re.compile(r'\d+(?:[.,]\d+)?')
+
+# Fila de producto con UNA sola magnitud: unidad y cantidad juntas, en
+# cualquiera de los dos órdenes ("3322 M3", "M3 54,518", "38,1 mm", "175 pzas").
+# Se excluyen las unidades de una sola letra («m», «in») para no confundir
+# texto corrido ni fechas; una fila con dimensión suelta ("3.2 m") ya cae por
+# la regla de dos o más magnitudes.
+_UNIT_LIST = r'(?:mm|cm|mts|m3|m³|pulg|pies|ft|pcs|pzas|unid)'
+_UNIT_QTY_RE = re.compile(
+    r'\d+(?:[.,]\d+)?\s*%s(?!\w)|\b%s\s*\d+(?:[.,]\d+)?' % (_UNIT_LIST, _UNIT_LIST),
+    re.IGNORECASE,
+)
 
 # Filas administrativas (transportista, chofer, dirección, giro): no describen
 # el producto aunque incluyan la palabra «servicio» (ej. «SERVICIO Y
@@ -211,8 +225,15 @@ def _is_admin(line):
 
 
 def _is_product_row(line):
-    """Fila de producto: dos o más magnitudes numéricas en la misma línea."""
-    return len(_NUMBER_RE.findall(line)) >= 2
+    """Fila de producto: dos o más magnitudes, o una magnitud con unidad.
+
+    Fix 2A-1b: la unidad explícita cubre filas de producto que solo traen una
+    cifra ("M3 3,895"). El título del PDF se construye excluyendo estas filas:
+    una fila de producto nunca describe la naturaleza del documento.
+    """
+    if len(_NUMBER_RE.findall(line)) >= 2:
+        return True
+    return bool(_UNIT_QTY_RE.search(line))
 
 
 def pdf_signals(pdf_text):
@@ -229,7 +250,12 @@ def pdf_signals(pdf_text):
         line for line in lines
         if not _is_noise(line) and not _is_admin(line)
     ]
-    title = clean[:TITLE_LINES]
+    # Fix 2A-1b: el título son las primeras líneas útiles que NO son filas de
+    # producto. Con cabeceras de 1–3 líneas la fila de producto caía dentro de
+    # la ventana y «Cepillada» se volvía señal fuerte (falso Procesado).
+    title = [
+        line for line in clean if not _is_product_row(line)
+    ][:TITLE_LINES]
     products = []
     pending = 0
     for line in clean:
