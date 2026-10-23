@@ -342,23 +342,24 @@ def advisory_message(advisory):
 
 def profile_message(detected_code, selected_profile):
     """Advertencia si el perfil no es detectable o no coincide con el elegido."""
+    selected = selected_profile or 'sin perfil'
     if not detected_code:
         return (
             'Perfil de lectura no detectable: el documento no expone una '
             'estructura reconocible. Se conserva el perfil elegido (%s).'
-            % selected_profile
+            % selected
         )
     allowed = DETECTED_PROFILE_CODES.get(detected_code)
     if allowed is None:
         return (
             'Perfil de lectura detectado no reconocido (%s). Se conserva el '
-            'perfil elegido (%s).' % (detected_code, selected_profile)
+            'perfil elegido (%s).' % (detected_code, selected)
         )
     if selected_profile not in allowed:
         return (
             'El perfil detectado (%s) no coincide con el elegido (%s). '
             'Verifique la lectura del documento.'
-            % (detected_code, selected_profile)
+            % (detected_code, selected)
         )
     return ''
 
