@@ -91,12 +91,17 @@ y XML IDs del core (`madenat_lumber_core`), que es dependencia declarada.
 
 ## 4. Requisitos comunes del wizard
 
-Todo ingreso iniciado desde el wizard `madenat.lumber.intake.wizard` requiere obligatoriamente
-los siguientes tres elementos **antes de derivar** a cualquiera de los dos destinos:
+Los requisitos **dependen de la modalidad** (`intake_modality`) y se validan en
+`_guard_route_document()` **antes** de crear el registro destino:
 
-1. **Archivo Excel** (`excel_file`, `excel_filename`) — Packing List con detalle de lotes/paquetes.
-2. **Guía/PDF** (`pdf_file`, `pdf_filename`) — Documento de despacho/guía comercial.
-3. **Patio de Asignación** (`assignment_location_id`) — Ubicación física de recepción.
+| Modalidad | Documentos exigidos | Estado previo exigido |
+|---|---|---|
+| `normal` + Producto | Guía/PDF **y** Excel (Packing List) | `previewed` (hay que pulsar «Leer documento») |
+| `normal` + Procesado | Guía/PDF **y** Excel | `draft` o `previewed` (no exige preview) |
+| `volume` | Guía/PDF **o** Excel (al menos uno) | `draft` o `previewed` |
+
+En todas: **Patio de Asignación** (`assignment_location_id`) interno, obligatorio.
+Si falta algo, se levanta `UserError` y no se crea destino.
 
 ### Mapeo a destinos
 
@@ -202,12 +207,14 @@ en la práctica.
 1. Operario abre **"Ingreso de Madera"** (`menu_madenat_lumber_intake_wizard` →
    `action_madenat_lumber_intake_console`, consola readonly).
 2. **"Nuevo Ingreso"** lanza el wizard (`action_madenat_lumber_intake_new`, target=new).
-3. El operario carga **Excel (obligatorio)** y **PDF (opcional)**.
-4. `_onchange_suggest_tipo_ingreso` sugiere `procesado` si el nombre de archivo
-   contiene keywords (`cepillado`, `servicio`, `proceso`, `maquila`).
+3. El operario carga **Excel** y **PDF** (obligatorios en modalidad normal).
+4. Adjuntar archivos **no clasifica**: sólo limpia los indicadores previos
+   (`_onchange_suggest_tipo_ingreso`). La clasificación ocurre al pulsar
+   «Leer documento» (ver §8.1).
 5. `action_preview_document`:
    - **Producto** → prelectura con `madenat_ingestion_engine.extract_document()`
-     (resumen informativo; sin conversión de unidades ni descarte de filas).
+     (resumen informativo; sin conversión de unidades ni descarte de filas) y
+     enriquecimiento de la clasificación con los nombres de producto del Excel.
    - **Procesado** → no usa `extract_document()`; informa que el flujo nativo
      interpretará el documento.
 6. `action_route_document` (idempotente vía `_existing_target`):
@@ -217,7 +224,8 @@ en la práctica.
      `assignment_location_id`) y llama `action_verify_data()`.
 7. `_persist_target` marca `state='routed'` y guarda `target_model/res_id/reference`.
 8. `_log_intake_origin` crea `madenat.audit.log` (`action_type='creation'`,
-   `batch_id='intake:<wizard_id>'`, link `reception_id` o `guia_processing_id`).
+   `batch_id='intake:<wizard_id>'`, link `reception_id` o `guia_processing_id`) e
+   incluye la marca de advertencia de lectura en la descripción.
 9. El wizard abre el registro origen creado.
 10. La consola muestra el registro consolidado (trazabilidad `source_model` +
     `source_res_id`, resumen y evidencia).
@@ -227,6 +235,54 @@ en la práctica.
     - Producto → `action_confirm_reception()`.
     - Procesado → `action_validate()`.
 14. Se postea en el chatter del origen "Enviado a stock desde la consola Ingreso de Madera."
+
+### 8.1 Clasificador de tipo de ingreso (Fase 2A)
+
+`_classify_normal_document()` (`models/intake_wizard.py`) usa **sólo** estas
+señales, extraídas por `models/intake_classifier.py`:
+
+| Señal | Origen | Naturaleza |
+|---|---|---|
+| `filename` | nombre del PDF y del Excel (sin extensión) | **fuerte** (el operador/el archivo declara el tipo) |
+| `pdf_title` | primeras 3 líneas útiles del PDF | **fuerte** (título del documento) |
+| `pdf_product` | filas de producto del PDF: ≥ 2 magnitudes numéricas, o las que siguen a una cabecera `DESCRIPCIÓN/GLOSA/DETALLE/PRODUCTO` | débil |
+| `excel_product` | `description` / `product_name_original` de `extract_document` | débil |
+
+- Se **descarta** el texto legal/institucional antes de comparar (SII, RUT,
+  timbraje, resolución, firma electrónica, URLs): evita que «Servicio de
+  Impuestos Internos» clasifique como Procesado.
+- Comparación: minúsculas, **sin acentos**, por **raíz al inicio de palabra**
+  (`cepill` coincide con `Cepillada`) y **abreviaturas punteadas** (`CEP.` es
+  prefijo de `cepillado`).
+- **Dos vocabularios configurables**:
+  - Decisivo: `madenat.tipo_ingreso_keywords` (parámetro del núcleo, sin cambios)
+    → `["cepillado","servicio","proceso","maquila"]`.
+  - De artículo (débil): `madenat.tipo_ingreso_weak_keywords` (parámetro propio,
+    por defecto `["cepill","cep."]`). Sólo es decisivo en `filename`/`pdf_title`;
+    en glosa o nombre de producto **no cambia el tipo**, sólo marca advertencia.
+    Motivo (prueba en seco 2A): «Madera … Cepillada» aparece igual en compras
+    S2S de Producto y en servicios de cepillado.
+- El tipo sólo se decide en «Leer documento»; adjuntar archivos no lo cambia.
+
+### 8.2 Marca de advertencia de lectura (no bloqueante)
+
+Campos `reading_warning` (texto) y `has_reading_warning` (booleano) del wizard,
+visibles en el formulario (icono ⚠ + texto) y en la lista. Se generan cuando:
+
+| Caso | Mensaje (extracto) |
+|---|---|
+| Sin señal de tipo | «Sin señal de tipo en las señales revisadas … Se conserva el tipo por defecto» |
+| Señal de artículo (débil) | «Posible servicio (señal de artículo, no de servicio) … NO se cambió el tipo» |
+| Perfil no detectable o distinto del elegido | «Perfil de lectura no detectable …» / «El perfil detectado (X) no coincide con el elegido (Y)» |
+| Unidad no reconocida | «Unidad no reconocida: unidades no reconocidas … / N dimensión(es) sin unidad de origen» |
+
+- **Nunca bloquea** ni abre popups: es información persistida en el wizard.
+- En la rama **Procesado** el wizard no lee el Excel (por diseño), por lo que
+  perfil/unidad sólo se evalúan en la prelectura de **Producto**.
+- La consola es una vista SQL de solo lectura sobre tablas del núcleo: **no se
+  tocó** para mostrar la marca. Alternativa mínima implementada: la advertencia
+  viaja en la descripción de `madenat.audit.log` (`_log_intake_origin`) y en el
+  formulario/lista del wizard.
 
 ---
 
@@ -344,12 +400,14 @@ Coherente con "consola readonly" y "wizard de creación".
 - Botones: `Leer documento` (`action_preview_document`), `Continuar ingreso`
   (`action_route_document`), `Abrir registro creado` (`action_open_intake_target`).
 - Vista previa solo visible en estado `previewed` para producto.
+- Marca de advertencia de lectura: aviso ⚠ + `reading_warning` en el formulario
+  y columna `has_reading_warning` en la lista (nunca popup ni bloqueo).
 
 ---
 
 ## 13. Estrategia de pruebas
 
-`tests/test_intake_wizard.py` (6 tests, `post_install`, tag `madenat_lumber_intake`):
+`tests/test_intake_wizard.py` (`post_install`, tag `madenat_lumber_intake`):
 
 | Test | Cubre |
 |---|---|
@@ -359,6 +417,14 @@ Coherente con "consola readonly" y "wizard de creación".
 | T4 | Procesado — deriva bytes al parser nativo (`action_verify_data`) |
 | T5 | Idempotencia (doble clic → único destino y único evento de origen) |
 | T6 | Error conocido → sin destino ni evento de origen |
+| T2A-1 | Clasificación por raíz/tildes/abreviaturas (`Cepillada`, `CEPILLADO`, `PINO CEP. SECO LATERAL`, `SERVICIO CEPILLADO`) |
+| T2A-2 | Sin señal de tipo → default Producto + `has_reading_warning` |
+| T2A-3 | «Servicio de Impuestos Internos» + madera aserrada → no Procesado |
+| T2A-4 | «Cepillada» en glosa = señal débil (no cambia el tipo) |
+| T2A-5 | Perfil distinto del elegido + unidad no reconocida → advertencia |
+
+`tests/test_intake_wizard_view.py` protege el contrato XML: campos de la marca
+visible y `sum=` en las columnas numéricas de las fachadas de intake.
 
 Los tests de preview ejercitan `extract_document()` real con Excel sintético; los de
 derivación mockean `action_process_documents` y `action_verify_data` para aislar el
@@ -376,19 +442,26 @@ comportamiento del intake (no verifican parser ni gates, que son del core).
 
 - `migrations/18.0.0.2.0/post-migrate.py`: limpia el menú raíz huérfano
   "Ingreso Global" (`parent_id IS NULL` y sin hijos). **Idempotente** (DELETE acotado).
-- La versión actual es `18.0.0.4.0`; **no existe migración para los saltos 0.2.0 → 0.4.0**
-  (sin cambio de datos conocido; documentar si en el futuro se requiere).
+- `migrations/18.0.0.21.0/post-migrate.py`: crea
+  `madenat.tipo_ingreso_weak_keywords` (`["cepill","cep."]`) **sólo si no
+  existe** (nunca pisa personalizaciones) y normaliza
+  `madenat.tipo_ingreso_keywords` únicamente cuando su contenido normalizado es
+  exactamente el seed canónico (misma lista y orden). Idempotente.
+- Versión actual del módulo: `18.0.0.21.0`.
+- **Pendiente de ejecución**: la migración se aplica en el upgrade
+  (`-u madenat_lumber_intake`), que requiere aprobación explícita.
 
 ---
 
 ## 15. Estado actual confirmado de instalación
 
-Verificado en **`madenat_test`** (base activa de la instancia):
+Verificado en **`madenat_test`** (base activa de la instancia, 2026-10-23):
 
-- `madenat_lumber_intake` → `state=installed`, `latest_version=18.0.0.3.0`.
+- `madenat_lumber_intake` → `state=installed`, `latest_version=18.0.0.20.0`
+  (el código ya está en `18.0.0.21.0`, pendiente de upgrade aprobado).
 - Vista PostgreSQL `madenat_lumber_intake_console` existe.
-- Conteos: `lumber_reception=10`, `madenat_guia_processing=2`, `wizard=1`.
-- Consola consolida 12 filas: 10 `product` + 2 `processed`.
+- Conteos: `lumber_reception=8`, `madenat_guia_processing=13`.
+- Consola consolida 21 filas de origen con documentos registrados.
 
 > **No confundir con `madenattest`:** la base activa del contenedor es `madenat_test`.
 > La validación final de este módulo debe hacerse en `madenat_test`.
@@ -405,7 +478,8 @@ Verificado en **`madenat_test`** (base activa de la instancia):
 | R4 | Media | Ejecución delegada depende del ACL del core sobre `lumber.reception`, `madenat.guia.processing`, `madenat.audit.log` (no verificado) | `action_send_to_stock` / `_log_intake_origin` |
 | R5 | Baja | Compute por fila (`_compute_review_metrics`, `_compute_packing_lines`) puede generar N+1 | `intake_console.py:227-288` |
 | R6 | Resuelto | Backups internos (`backups_20260819_*`, `*.bak_*`) movidos a `_archive_pre_cleanup_20260822/` (2026-08-22) | limpieza de addons path |
-| R7 | Info | manifest en 0.3.0 sin migración 0.3.0 | `__manifest__.py` vs `migrations/` |
+| R7 | Info | `madenat_lumber_core/tests/test_ingestion_keywords_seed.py` (T-KEY-01/T-KEY-05) exige igualdad exacta del parámetro con la lista legacy; el vocabulario nuevo vive en un parámetro aparte para no romperlo | `madenat_ingestion_config.py:487` vs `tests/test_ingestion_keywords_seed.py:43-53` |
+| R8 | Info | La marca de advertencia no se muestra en la consola (vista SQL sobre tablas del núcleo): se consulta en el wizard y en `madenat.audit.log` | `intake_console.py:600` (`init`) |
 
 **Límites conocidos:**
 - Sin aislamiento multiempresa en la vista SQL (módulo single-company).
@@ -467,3 +541,8 @@ acción "Nuevo Ingreso" lanza `madenat.lumber.intake.wizard`.
 | 2026-08-17 | Restricción de menús nativos (`reception`/`guia.processing`) a admin/system (UX puerta única) | Implementado |
 | 2026-08-17 | Consola readonly como vista SQL (`_auto=False`), no duplica datos | Implementado |
 | 2026-08-17 | Auditoría: confirmada instalación en `madenat_test` (18.0.0.3.0); riesgos R1–R7 registrados | Documentado |
+| 2026-10-23 | Clasificador por **señales relevantes** (archivo, título, glosa, producto Excel); se descarta texto legal (SII) | Implementado |
+| 2026-10-23 | Comparación por **raíz + sin acentos + abreviaturas**; las keywords siguen en `madenat.tipo_ingreso_keywords` | Implementado |
+| 2026-10-23 | «Cepillada/cepillado» = vocabulario de **artículo** (`madenat.tipo_ingreso_weak_keywords`): decisivo sólo en archivo/título; en glosa sólo advierte | Implementado |
+| 2026-10-23 | Marca de advertencia **no bloqueante** (`reading_warning`/`has_reading_warning`) en wizard; consola intacta (vista SQL) | Implementado |
+| 2026-10-23 | `sum=` en volumen de compra/exportación, MBF e importe de las vistas de fachada de intake | Implementado |
