@@ -227,8 +227,8 @@
                                     <field name="espesor_nominal_mm" string="Esp. Nom (mm)"/>
                                     <field name="ancho_nominal_mm" string="Ancho Nom (mm)"/>
                                     <field name="largo_nominal_m" string="Largo Nom (m)"/>
-                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
-                                    <field name="vol_shipment_m3" string="Vol. Export (m³)"/>
+                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total volumen de compra (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)" sum="Total volumen de exportación (m³)"/>
                                 </list>
                             </field>
 
@@ -242,10 +242,10 @@
                                     <field name="lot_or_package"/>
                                     <field name="material_code"/>
                                     <field name="description"/>
-                                    <field name="volume_m3"/>
+                                    <field name="volume_m3" sum="Total volumen (m³)"/>
                                     <field name="uom"/>
                                     <field name="unit_price"/>
-                                    <field name="line_amount"/>
+                                    <field name="line_amount" sum="Total importe"/>
                                     <field name="observation"/>
                                 </list>
                             </field>

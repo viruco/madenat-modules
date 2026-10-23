@@ -994,7 +994,7 @@
                                 <field name="length_input_raw" string="Largo declarado"/>
                                 <field name="lengthuom" string="Unidad"/>
                                 <field name="pieces" string="Piezas"/>
-                                <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
+                                <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total volumen de compra (m³)"/>
                             </list>
                         </field>
 
@@ -1014,8 +1014,8 @@
                                 <field name="length_ft" string="Largo declarado (ft)"/>
                                 <field name="pieces" string="Piezas"/>
                                 <field name="vol_documental_m3" string="Vol. Doc. (m³)"/>
-                                <field name="vol_purchase_m3" string="Vol. Compra (m³)"/>
-                                <field name="vol_shipment_m3" string="Vol. Export (m³)"/>
+                                <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total volumen de compra (m³)"/>
+                                <field name="vol_shipment_m3" string="Vol. Export (m³)" sum="Total volumen de exportación (m³)"/>
                             </list>
                         </field>
 
@@ -1028,10 +1028,10 @@
                                 <field name="lot_or_package" string="Lote/Paquete"/>
                                 <field name="material_code" string="Código"/>
                                 <field name="description" string="Descripción"/>
-                                <field name="volume_m3" string="Volumen (m³)"/>
+                                <field name="volume_m3" string="Volumen (m³)" sum="Total volumen (m³)"/>
                                 <field name="uom" string="U/M"/>
                                 <field name="unit_price" string="Precio unitario"/>
-                                <field name="line_amount" string="Total línea"/>
+                                <field name="line_amount" string="Total línea" sum="Total importe"/>
                                 <field name="observation" string="Observación"/>
                             </list>
                         </field>

@@ -166,11 +166,11 @@
                                     <field name="thickness_visual" string="Esp. Comercial" readonly="1"/>
                                     <field name="width_visual" string="Ancho Comercial" readonly="1"/>
                                     <field name="length" string="Largo (m)" readonly="1"/>
-                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1"/>
-                                    <field name="vol_shipment_m3" string="Vol. Export (m³)" readonly="1"/>
-                                    <field name="vol_mbf" string="Vol. MBF" readonly="1"/>
+                                    <field name="vol_purchase_m3" string="Vol. Compra (m³)" readonly="1" sum="Total volumen de compra (m³)"/>
+                                    <field name="vol_shipment_m3" string="Vol. Export (m³)" readonly="1" sum="Total volumen de exportación (m³)"/>
+                                    <field name="vol_mbf" string="Vol. MBF" readonly="1" sum="Total MBF"/>
                                     <field name="cost_clp_unit" string="Costo (CLP)" readonly="1"
-                                           widget="monetary"/>
+                                           widget="monetary" sum="Total costo (CLP)"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
