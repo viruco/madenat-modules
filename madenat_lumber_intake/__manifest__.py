@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Intake',
-    'version': '18.0.0.20.0',
+    'version': '18.0.0.21.0',
     'summary': 'Puerta única de ingreso de madera — fachada sobre Recepción y Guía Processing',
     'description': """
 Módulo fachada para el ingreso operacional simplificado ("Ingreso de Madera").
