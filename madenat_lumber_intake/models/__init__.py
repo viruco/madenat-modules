@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from . import intake_nominal
 from . import intake_wizard
 from . import intake_console
 from . import volume_detail_line

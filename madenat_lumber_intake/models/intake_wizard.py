@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import json
+import logging
 import re
 
 from odoo import models, fields, api, _
@@ -25,6 +26,14 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     extract_document,
     _extract_pdf_text,
 )
+from .intake_nominal import (
+    nominal_from_text,
+    nominal_from_volume,
+    resolve_nominal,
+    volume_is_plausible,
+)
+
+_logger = logging.getLogger(__name__)
 
 
 class MadenatLumberIntakeWizard(models.Model):
@@ -914,6 +923,9 @@ class MadenatLumberIntakeWizard(models.Model):
                 # Método público canónico: Gate0/Gate1 nativos de Recepción.
                 reception.action_process_documents()
 
+                # FASE 13/2B (Paso 2): espesor nominal declarado por el documento.
+                self._apply_document_nominal_thickness(reception)
+
                 self._persist_target(reception)
                 self._log_intake_origin(reception)
 
@@ -928,6 +940,84 @@ class MadenatLumberIntakeWizard(models.Model):
             # excepción se re-lance y evite el flush implícito del RPC.
             self.flush_recordset(['state', 'error_message'])
             raise
+
+    # ── Paso 2 (2B): espesor nominal declarado por el documento ───────────
+    def _apply_document_nominal_thickness(self, reception):
+        """Escribe el espesor nominal que declara el documento (solo S2S).
+
+        El packing trae el espesor FÍSICO del embarque (6/4 = 38,1 mm) y la
+        guía el NOMINAL de compra ("de 45mm"). Sin este paso la compra se
+        cubica con el físico y queda igual al embarque (F-14).
+
+        Nunca bloquea: si no hay evidencia coherente se conserva lo leído y se
+        deja la marca de advertencia. El valor del operador prevalece.
+        """
+        lines = reception.reception_line_ids
+        if reception.ingestion_profile != 'f1550' or not lines:
+            return False
+        # El operador (o el parser) ya fijó un nominal distinto del físico.
+        if any(
+            abs((line.thickness_nominal or 0.0) - (line.thickness or 0.0)) > 0.01
+            for line in lines
+        ):
+            return False
+        try:
+            glosa = nominal_from_text(self._extract_pdf_text_safe())
+            declared = self._declared_purchase_volume()
+            documental = sum(lines.mapped('vol_documental_m3'))
+            aritmetico = (
+                nominal_from_volume(declared, lines)
+                if volume_is_plausible(declared, documental) else None
+            )
+            physical = max(lines.mapped('thickness') or [0.0])
+            nominal = resolve_nominal(glosa, aritmetico, physical)
+            if not nominal:
+                self._append_reading_warning(
+                    'Espesor nominal no resuelto desde el documento: se '
+                    'conserva el del packing y la compra queda igual al '
+                    'embarque. Confirme el espesor de compra si corresponde.')
+                return False
+            if all(abs((line.thickness_nominal or 0.0) - nominal) < 0.01
+                   for line in lines):
+                return False
+            lines.write({'thickness_nominal': nominal})
+            lines.flush_recordset(['thickness_nominal', 'vol_purchase_m3'])
+            return True
+        except Exception as error:  # nunca bloquea el ingreso
+            _logger.warning(
+                '2B Paso 2: no se pudo resolver el espesor nominal (%s): %s',
+                reception.name, error)
+            self._append_reading_warning(
+                'Espesor nominal no resuelto por un error de lectura; se '
+                'conserva el del packing.')
+            return False
+
+    def _declared_purchase_volume(self):
+        """Volumen que declara el PDF en su cabecera (``total_volume_m3``).
+
+        Se usa ``total_volume_m3`` y NO ``declared_volume_m3``: este último
+        puede capturar el código de material (F-13: guía 40030 → 3322,0).
+        """
+        if not self.pdf_file:
+            return 0.0
+        try:
+            result = extract_document(
+                base64.b64decode(self.pdf_file),
+                self.pdf_filename or 'guia.pdf',
+            )
+        except Exception:
+            return 0.0
+        try:
+            header = result.header or {}
+            return round(float(header.get('total_volume_m3') or 0.0), 3)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _append_reading_warning(self, message):
+        """Añade una línea a la marca de advertencia sin perder las previas."""
+        current = (self.reading_warning or '').strip()
+        text = '%s\n%s' % (current, message) if current else message
+        self.write({'reading_warning': text, 'has_reading_warning': True})
 
     # ── Rama Procesado ────────────────────────────────────────────────────
     def _route_procesado(self):

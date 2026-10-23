@@ -49,3 +49,4 @@ from . import test_volume_console_search_menu
 # FASE 12 (Perfil de Ingesta Fase A): transferencia y guarda de coherencia
 from . import test_intake_profile_coherence
 
+from . import test_intake_nominal_thickness
