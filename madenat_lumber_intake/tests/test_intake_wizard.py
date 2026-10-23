@@ -2,6 +2,7 @@
 import base64
 import io
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from openpyxl import Workbook
@@ -641,3 +642,97 @@ class TestIntakeWizard(TransactionCase):
         profile = wizard.ingestion_profile
         wizard._onchange_suggest_ingestion_profile()
         self.assertEqual(wizard.ingestion_profile, profile)
+
+    # ── Fase 2A: clasificador por señales relevantes ─────────────────────
+    def _classify_text(self, text, pdf_filename='guia.pdf',
+                       excel_filename='packing.xlsx'):
+        """Crea un wizard normal y ejecuta la clasificación con `text` como PDF."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': excel_filename,
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': pdf_filename,
+            'assignment_location_id': self.location.id,
+        })
+        with patch.object(intake_wizard_module, '_extract_pdf_text',
+                          return_value=text):
+            wizard._classify_normal_document()
+        return wizard
+
+    def test_t2a_raiz_tildes_y_abreviaturas(self):
+        """«Cepillada», «CEPILLADO», «PINO CEP. SECO LATERAL» → Procesado."""
+        for text in ('Cepillada', 'CEPILLADO', 'PINO CEP. SECO LATERAL',
+                     'SERVICIO CEPILLADO'):
+            with self.subTest(text=text):
+                wizard = self._classify_text(text)
+                self.assertEqual(wizard.tipo_ingreso, 'procesado', text)
+                self.assertTrue(wizard.tipo_ingreso_auto_detectado)
+                self.assertEqual(wizard.classification_result, 'Procesado')
+                self.assertFalse(wizard.has_reading_warning)
+
+    def test_t2a_sin_senal_mantiene_default_y_marca(self):
+        """Texto de producto sin señal: Producto + marca de advertencia."""
+        wizard = self._classify_text(
+            'MADERA ASERRADA BRUTA 2 X 4 X 3.2 100 1.234')
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertTrue(wizard.has_reading_warning)
+        self.assertIn('Sin señal de tipo', wizard.reading_warning)
+
+    def test_t2a_texto_legal_sii_no_clasifica_procesado(self):
+        """«Servicio de Impuestos Internos» no es señal de servicio."""
+        text = (
+            'MADENAT SPA\n'
+            'SERVICIO DE IMPUESTOS INTERNOS\n'
+            'R.U.T.: 76.123.456-7\n'
+            'GUIA DE DESPACHO ELECTRONICA N 1234\n'
+            '10 2 X 3 MADERA ASERRADA BRUTA 1.234 5.678\n'
+        )
+        wizard = self._classify_text(text)
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertEqual(wizard.classification_result, 'Producto')
+
+    def test_t2a_cepillada_en_glosa_es_senal_debil(self):
+        """Prueba en seco 2A: «Cepillada» en la glosa NO cambia el tipo."""
+        text = (
+            'SOCIEDAD FORESTAL EJEMPLO LTDA\n'
+            'R.U.T.: 77.245.870-3\n'
+            'GUIA DE DESPACHO ELECTRONICA N 41471\n'
+            '3322 M3 52,63 Madera de Pino Radiata Cepillada Calidad Col A '
+            'de 45mm 221.973,6 0 11.682.471\n'
+        )
+        wizard = self._classify_text(text)
+        self.assertEqual(wizard.tipo_ingreso, 'producto')
+        self.assertTrue(wizard.has_reading_warning)
+        self.assertIn('Posible servicio', wizard.reading_warning)
+
+    def test_t2a_perfil_y_unidad_en_marca_de_advertencia(self):
+        """Perfil distinto del elegido + unidad no reconocida → advertencia."""
+        wizard = self.Wizard.create({
+            'intake_modality': 'normal',
+            'tipo_ingreso': 'producto',
+            'ingestion_profile': 'f5085',
+            'excel_file': self._b64(b'excel-bytes'),
+            'excel_filename': 'packing.xlsx',
+            'pdf_file': self._b64(b'%PDF-fake'),
+            'pdf_filename': 'guia.pdf',
+            'assignment_location_id': self.location.id,
+        })
+        result = SimpleNamespace(
+            detected_profile_code='packing_metrico_aserrada',
+            lines=[{
+                'description': 'MADERA ASERRADA BRUTA',
+                'thickness_value_raw': '38', 'thickness_unit': None,
+                'width_value_raw': '170', 'width_unit': 'yard',
+                'length_value_raw': '4.05', 'length_unit': 'm',
+            }],
+        )
+        with patch.object(intake_wizard_module, '_extract_pdf_text',
+                          return_value='MADERA ASERRADA BRUTA'):
+            outcome, warning = wizard._reading_analysis(result=result)
+        self.assertFalse(outcome['tipo'])
+        self.assertIn('no coincide con el elegido', warning)
+        self.assertIn('Unidad no reconocida', warning)
+        self.assertIn('Sin señal de tipo', warning)
+

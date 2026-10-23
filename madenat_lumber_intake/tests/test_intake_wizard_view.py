@@ -34,3 +34,31 @@ class TestIntakeWizardViewDocuments(TransactionCase):
             self._field_required('pdf_file'), "intake_modality == 'normal'")
         self.assertEqual(
             self._field_required('excel_file'), "intake_modality == 'normal'")
+
+    # ── Fase 2A: marca de advertencia y totales del packing ───────────────
+    def _arch(self, xmlid):
+        return etree.fromstring(self.env.ref(xmlid).arch)
+
+    def test_marca_advertencia_visible_en_formulario(self):
+        """La marca se muestra en el formulario (icono + texto), sin popup."""
+        root = self._arch(
+            'madenat_lumber_intake.view_madenat_lumber_intake_wizard_form')
+        self.assertTrue(root.xpath("//field[@name='reading_warning']"))
+        self.assertTrue(root.xpath("//field[@name='has_reading_warning']"))
+
+    def test_totales_packing_en_vistas_de_fachada(self):
+        """sum= en volumen de compra/exportación, MBF y costo (vistas intake)."""
+        cases = (
+            ('madenat_lumber_intake.view_lumber_reception_intake_facade_form',
+             ('vol_purchase_m3', 'vol_shipment_m3', 'vol_mbf', 'cost_clp_unit')),
+            ('madenat_lumber_intake.view_madenat_guia_processing_intake_facade_form',
+             ('vol_purchase_m3', 'vol_shipment_m3')),
+            ('madenat_lumber_intake.view_madenat_lumber_intake_console_form',
+             ('vol_purchase_m3', 'vol_shipment_m3')),
+        )
+        for xmlid, fields in cases:
+            root = self._arch(xmlid)
+            for name in fields:
+                nodes = root.xpath("//list//field[@name='%s'][@sum]" % name)
+                self.assertTrue(nodes, '%s sin sum= en %s' % (name, xmlid))
+
