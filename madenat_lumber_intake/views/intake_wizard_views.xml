@@ -56,6 +56,11 @@
                                 name="classification_result"
                                 string="Clasificación documental detectada"
                                 invisible="intake_modality != 'normal' or not classification_result" />
+                            <field name="has_reading_warning" invisible="1" />
+                            <div class="text-warning fw-bold" invisible="not has_reading_warning">
+                                <i class="fa fa-exclamation-triangle me-1" title="Advertencia de lectura"/>
+                                Lectura con advertencia — revise el detalle antes de continuar
+                            </div>
                             <field
                                 name="assignment_location_id" />
                             <field
@@ -150,6 +155,14 @@
                     </div>
 
                     <div class="alert alert-warning"
+                         invisible="not has_reading_warning"
+                         role="alert">
+                        <i class="fa fa-exclamation-triangle me-2" title="Advertencia de lectura"/>
+                        <strong>Advertencia de lectura:</strong>
+                        <field name="reading_warning" readonly="1" nolabel="1" />
+                    </div>
+
+                    <div class="alert alert-warning"
                          invisible="not profile_warning_message"
                          role="alert">
                         <strong>Advertencia de coherencia de perfil:</strong>
@@ -182,6 +195,7 @@
                 <field name="tipo_ingreso" />
                 <field name="excel_filename" />
                 <field name="state" />
+                <field name="has_reading_warning" optional="show" />
                 <field name="target_reference" />
             </list>
         </field>

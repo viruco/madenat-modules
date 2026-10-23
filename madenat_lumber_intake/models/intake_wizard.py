@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import json
 import re
 
 from odoo import models, fields, api, _
@@ -7,6 +8,17 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare
 
 from .intake_constants import CONSOLE_ID_OFFSET
+from .intake_classifier import (
+    WEAK_KEYWORDS_DEFAULT,
+    advisory_message,
+    build_reading_warnings,
+    classify,
+    collect_signals,
+    no_signal_message,
+    profile_message,
+    unit_message,
+    unit_stats,
+)
 
 from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionError,
@@ -77,6 +89,24 @@ class MadenatLumberIntakeWizard(models.Model):
         string='Clasificación documental detectada', readonly=True,
         help='Resultado de la clasificación Producto/Procesado aplicada al '
              'leer el documento (no cambia al adjuntar archivos).',
+    )
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Marca de advertencia de lectura (NO bloqueante)
+    # ─────────────────────────────────────────────────────────────────────
+    reading_warning = fields.Text(
+        string='Advertencia de lectura',
+        readonly=True,
+        copy=False,
+        help='Motivos por los que la lectura del documento merece revisión: '
+             'sin señal de tipo, perfil de lectura no detectable o distinto '
+             'del elegido, unidad no reconocida. Nunca bloquea el ingreso.',
+    )
+    has_reading_warning = fields.Boolean(
+        string='Tiene advertencia de lectura',
+        readonly=True,
+        copy=False,
+        default=False,
     )
 
     tipo_detalle_granel = fields.Selection(
@@ -546,35 +576,109 @@ class MadenatLumberIntakeWizard(models.Model):
             },
         }
 
-    def _classify_normal_document(self):
-        """Clasifica Producto/Procesado desde el contenido real del documento
-        (glosa del PDF). No usa nombre de archivo ni asigna 'granel'."""
-        self.ensure_one()
+    # ─────────────────────────────────────────────────────────────────────
+    # Clasificación por señales relevantes (Fase 2A)
+    # ─────────────────────────────────────────────────────────────────────
+    def _reading_keywords(self):
+        """Vocabularios del clasificador: decisivo y de artículo (débil).
+
+        - Decisivo: ``madenat.ingestion.config.get_tipo_ingreso_keywords(
+          'procesado')`` (parámetro ``madenat.tipo_ingreso_keywords`` con su
+          fallback del núcleo). Sigue siendo la única fuente del vocabulario.
+        - Débil: parámetro ``madenat.tipo_ingreso_weak_keywords`` (lista JSON);
+          si falta o es inválido se usa ``WEAK_KEYWORDS_DEFAULT`` del código.
+        """
         config = self.env['madenat.ingestion.config']
-        keywords_procesado = config.get_tipo_ingreso_keywords('procesado')
-
-        texto = ''
-        if self.pdf_file:
+        strong = config.get_tipo_ingreso_keywords('procesado') or []
+        weak = list(WEAK_KEYWORDS_DEFAULT)
+        raw = self.env['ir.config_parameter'].sudo().get_param(
+            'madenat.tipo_ingreso_weak_keywords', '')
+        if raw:
             try:
-                pdf_bytes = base64.b64decode(self.pdf_file)
-                texto = _extract_pdf_text(
-                    pdf_bytes, self.pdf_filename or 'guia.pdf') or ''
-            except Exception:
-                texto = ''
+                parsed = json.loads(raw)
+            except (TypeError, ValueError):
+                parsed = None
+            if isinstance(parsed, list):
+                cleaned = [
+                    str(item).strip() for item in parsed if str(item).strip()
+                ]
+                if cleaned:
+                    weak = cleaned
+        return strong, weak
 
-        texto = (texto or '').casefold()
-        if any(p in texto for p in keywords_procesado):
-            self.write({
-                'tipo_ingreso': 'procesado',
-                'tipo_ingreso_auto_detectado': True,
-                'classification_result': 'Procesado',
-            })
-        else:
-            self.write({
-                'tipo_ingreso': 'producto',
-                'tipo_ingreso_auto_detectado': False,
-                'classification_result': 'Producto',
-            })
+    def _extract_pdf_text_safe(self):
+        """Texto del PDF adjunto; cadena vacía si no hay o no es legible."""
+        if not self.pdf_file:
+            return ''
+        try:
+            return _extract_pdf_text(
+                base64.b64decode(self.pdf_file),
+                self.pdf_filename or 'guia.pdf') or ''
+        except Exception:
+            return ''
+
+    def _reading_signals(self, result=None, pdf_text=None):
+        """Señales relevantes: archivo, título/glosa del PDF y producto Excel."""
+        names = []
+        if result is not None:
+            for line in result.lines or []:
+                name = line.get('description') or line.get('product_name_original')
+                if name:
+                    names.append(str(name))
+        if pdf_text is None:
+            pdf_text = self._extract_pdf_text_safe()
+        return collect_signals(
+            pdf_text=pdf_text,
+            filenames=[self.pdf_filename, self.excel_filename],
+            excel_product_names=names,
+        )
+
+    def _reading_analysis(self, result=None, pdf_text=None):
+        """Clasifica y compone la marca de advertencia (nunca bloquea).
+
+        Sin `result` sólo se dispone de PDF + nombres de archivo (rama
+        Procesado, que por diseño no invoca el motor). Con `result` se añaden
+        nombres de producto del Excel, perfil detectado y unidades de origen.
+        """
+        strong, weak = self._reading_keywords()
+        signals = self._reading_signals(result=result, pdf_text=pdf_text)
+        outcome = classify(signals, strong, weak)
+        detected = getattr(result, 'detected_profile_code', None) \
+            if result is not None else None
+        warning = build_reading_warnings(
+            no_type_signal=None if outcome['tipo'] else no_signal_message(
+                signals, outcome['analyzed']),
+            advisory=advisory_message(outcome['advisory']),
+            profile=profile_message(detected, self.ingestion_profile)
+            if result is not None else '',
+            units=unit_message(unit_stats(result.lines))
+            if result is not None else '',
+        )
+        return outcome, warning
+
+    def _write_reading_result(self, outcome, warning):
+        """Persiste tipo detectado + marca de advertencia (sin popups)."""
+        procesado = outcome['tipo'] == 'procesado'
+        self.write({
+            'tipo_ingreso': 'procesado' if procesado else 'producto',
+            'tipo_ingreso_auto_detectado': procesado,
+            'classification_result': 'Procesado' if procesado else 'Producto',
+            'reading_warning': warning or False,
+            'has_reading_warning': bool(warning),
+        })
+
+    def _classify_normal_document(self, pdf_text=None):
+        """Clasifica Producto/Procesado desde señales relevantes del documento.
+
+        Señales (documentadas en README §8): nombre de archivo, título del PDF,
+        glosa de producto del PDF y —cuando ya se leyó el Excel— nombres de
+        producto del motor. Comparación sin acentos, por raíz al inicio de
+        palabra y con abreviaturas. El texto legal del PDF se descarta.
+        """
+        self.ensure_one()
+        outcome, warning = self._reading_analysis(pdf_text=pdf_text)
+        self._write_reading_result(outcome, warning)
+        return outcome
 
     def action_preview_document(self):
         self.ensure_one()
@@ -584,8 +688,10 @@ class MadenatLumberIntakeWizard(models.Model):
             return self._preview_volume()
 
         # Modalidad normal: clasificación Producto/Procesado por contenido real,
-        # al ejecutar Leer documento (no al adjuntar).
-        self._classify_normal_document()
+        # al ejecutar Leer documento (no al adjuntar). El texto del PDF se
+        # extrae una sola vez y se reutiliza en el enriquecimiento posterior.
+        pdf_text = self._extract_pdf_text_safe()
+        self._classify_normal_document(pdf_text=pdf_text)
 
         # Normal requiere Excel para el detalle/preview.
         if not self.excel_file:
@@ -637,6 +743,19 @@ class MadenatLumberIntakeWizard(models.Model):
 
         lines = result.lines or []
 
+        # Enriquecimiento con el Excel ya leído: nombres de producto del motor,
+        # perfil detectado y unidades de origen. Nunca bloquea: sólo marca.
+        outcome, reading_warning = self._reading_analysis(
+            result=result, pdf_text=pdf_text)
+        if outcome['tipo'] == 'procesado':
+            # Señal decisiva que sólo aporta el Excel → se deriva a Procesado.
+            self._write_reading_result(outcome, reading_warning)
+        else:
+            self.write({
+                'reading_warning': reading_warning or False,
+                'has_reading_warning': bool(reading_warning),
+            })
+
         preview_lines = []
         for line in lines[:5]:
             preview_lines.append(
@@ -650,6 +769,11 @@ class MadenatLumberIntakeWizard(models.Model):
 
         total_volume = sum((l.get('volume_m3') or 0) for l in lines)
         warnings_text = '\n'.join(result.warnings or []) or False
+        if reading_warning:
+            warnings_text = (
+                reading_warning + '\n' + warnings_text
+                if warnings_text else reading_warning
+            )
 
         profile_warning = self._check_profile_coherence()
         if profile_warning:
@@ -1329,7 +1453,8 @@ class MadenatLumberIntakeWizard(models.Model):
             'Destino: %s #%s (%s)\n'
             'Excel: %s\n'
             'PDF: %s\n'
-            'Guía detectada: %s'
+            'Guía detectada: %s\n'
+            'Advertencia de lectura: %s'
             % (
                 self.tipo_ingreso,
                 destination._name,
@@ -1338,6 +1463,7 @@ class MadenatLumberIntakeWizard(models.Model):
                 self.excel_filename or '(sin nombre)',
                 self.pdf_filename or '(sin PDF)',
                 guide_no,
+                self.reading_warning or '(ninguna)',
             )
         )
 
