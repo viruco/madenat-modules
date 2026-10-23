@@ -244,8 +244,8 @@ señales, extraídas por `models/intake_classifier.py`:
 | Señal | Origen | Naturaleza |
 |---|---|---|
 | `filename` | nombre del PDF y del Excel (sin extensión) | **fuerte** (el operador/el archivo declara el tipo) |
-| `pdf_title` | primeras 3 líneas útiles del PDF | **fuerte** (título del documento) |
-| `pdf_product` | filas de producto del PDF: ≥ 2 magnitudes numéricas, o las que siguen a una cabecera `DESCRIPCIÓN/GLOSA/DETALLE/PRODUCTO` | débil |
+| `pdf_title` | primeras 3 líneas útiles del PDF **que no son filas de producto** | **fuerte** (título del documento) |
+| `pdf_product` | filas de producto del PDF: ≥ 2 magnitudes numéricas, **unidad + cantidad** (`3322 M3`, `M3 54,518`, `38,1 mm`), o las que siguen a una cabecera `DESCRIPCIÓN/GLOSA/DETALLE/PRODUCTO` | débil |
 | `excel_product` | `description` / `product_name_original` de `extract_document` | débil |
 
 - Se **descarta** el texto legal/institucional antes de comparar (SII, RUT,
@@ -417,11 +417,13 @@ Coherente con "consola readonly" y "wizard de creación".
 | T4 | Procesado — deriva bytes al parser nativo (`action_verify_data`) |
 | T5 | Idempotencia (doble clic → único destino y único evento de origen) |
 | T6 | Error conocido → sin destino ni evento de origen |
-| T2A-1 | Clasificación por raíz/tildes/abreviaturas (`Cepillada`, `CEPILLADO`, `PINO CEP. SECO LATERAL`, `SERVICIO CEPILLADO`) |
+| T2A-1 | Clasificación por raíz/tildes/abreviaturas (`Cepillada`, `CEPILLADO`, `PINO CEP. SECO LATERAL`, `SERVICIO CEPILLADO`), **comprobando la fuente** (`pdf_title`) de la coincidencia |
 | T2A-2 | Sin señal de tipo → default Producto + `has_reading_warning` |
 | T2A-3 | «Servicio de Impuestos Internos» + madera aserrada → no Procesado |
 | T2A-4 | «Cepillada» en glosa = señal débil (no cambia el tipo) |
 | T2A-5 | Perfil distinto del elegido + unidad no reconocida → advertencia |
+| T2A-6 | Fix 2A-1b: con cabeceras de **1, 2 y 3 líneas** la fila de producto nunca es título |
+| T2A-7 | Fila de producto con **unidad + cantidad** (`M3 54,518`) fuera del título |
 
 `tests/test_intake_wizard_view.py` protege el contrato XML: campos de la marca
 visible y `sum=` en las columnas numéricas de las fachadas de intake.
@@ -546,3 +548,4 @@ acción "Nuevo Ingreso" lanza `madenat.lumber.intake.wizard`.
 | 2026-10-23 | «Cepillada/cepillado» = vocabulario de **artículo** (`madenat.tipo_ingreso_weak_keywords`): decisivo sólo en archivo/título; en glosa sólo advierte | Implementado |
 | 2026-10-23 | Marca de advertencia **no bloqueante** (`reading_warning`/`has_reading_warning`) en wizard; consola intacta (vista SQL) | Implementado |
 | 2026-10-23 | `sum=` en volumen de compra/exportación, MBF e importe de las vistas de fachada de intake | Implementado |
+| 2026-10-23 | **2A-1b**: el título del PDF excluye filas de producto (≥2 magnitudes o unidad + cantidad). Con cabeceras de 1–3 líneas la glosa entraba en la ventana de título y «Cepillada» se promovía a señal fuerte | Implementado |
