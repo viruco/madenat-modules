@@ -43,6 +43,15 @@ from .width_mapping import WidthMappingTable
 
 _logger = logging.getLogger(__name__)
 
+# Perfil de ingesta elegido por el operador -> regla de cálculo de exportación.
+# Única fuente de verdad de la regla de las líneas (FASE 13/2B, Paso 1): manda
+# el perfil, no la fila de `lumber.ingestion.format` que haya usado el parser.
+_PROFILE_EXPORT_RULE = {
+    'f1550': 'f1550',
+    'f5085': 'f5085',
+    'metric': 'metric',
+}
+
 # ============================================================================
 # ✅ NUEVO: LÍNEA DE VERIFICACIÓN (STAGING)
 # ============================================================================
@@ -932,7 +941,38 @@ class LumberReception(models.Model):
     def write(self, vals):
         """Bloquea cambios operativos a usuarios sin rol operativo."""
         self._check_intake_operational_write(vals)
-        return super().write(vals)
+        # FASE 13/2B (Paso 1): se recuerda la regla que derivaba el perfil
+        # ANTERIOR para no pisar reglas ajenas al perfil (posibles ajustes
+        # manuales o decisiones del parser).
+        previous_rules = {}
+        if 'ingestion_profile' in vals:
+            previous_rules = {
+                rec.id: _PROFILE_EXPORT_RULE.get(rec.ingestion_profile)
+                for rec in self
+            }
+        res = super().write(vals)
+        if previous_rules:
+            self._sync_lines_export_rule(previous_rules)
+        return res
+
+    def _sync_lines_export_rule(self, previous_rules):
+        """Alinea las líneas AUTO-DERIVADAS con el perfil elegido (borrador).
+
+        Solo se propaga a las líneas cuya regla actual es la que derivaba el
+        perfil anterior: son valores automáticos. Una regla distinta se
+        considera decisión ajena y se respeta. Nunca actúa fuera de borrador.
+        """
+        for rec in self:
+            if rec.state != 'draft':
+                continue
+            rule = _PROFILE_EXPORT_RULE.get(rec.ingestion_profile)
+            previous = previous_rules.get(rec.id)
+            if not rule or not previous or previous == rule:
+                continue
+            stale = rec.reception_line_ids.filtered(
+                lambda line: line.export_calculation_rule == previous)
+            if stale:
+                stale.write({'export_calculation_rule': rule})
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🛡️ CONSTRAINT SQL ANTI-DUPLICADO (2026-06-11)
@@ -2138,6 +2178,14 @@ class LumberReception(models.Model):
     # ========================================================================
     # ✅ MÉTODO: LLENAR TABLA DE VALIDACIÓN (STAGING)
     # ========================================================================
+    def _export_rule_for_profile(self, fallback=None):
+        """Regla de exportación derivada del perfil elegido.
+
+        `fallback` conserva lo que traiga el parser si el perfil no está en el
+        mapa; nunca pisa un perfil conocido.
+        """
+        return _PROFILE_EXPORT_RULE.get(self.ingestion_profile) or fallback or 'metric'
+
     def _fill_staging_table(self, pl_data):
         """
         ✅ MÉTODO v5.6: LLENAR TABLA DE VALIDACIÓN (STAGING)
@@ -2204,7 +2252,8 @@ class LumberReception(models.Model):
                 # la matemática correcta (fracciones vs cuartos) según el perfil.
                 # 'thickness_visual': item.get('thickness_visual', ''),
                 # 'width_visual': item.get('width_visual', ''),
-                'export_calculation_rule': item.get('export_rule', 'metric'),
+                'export_calculation_rule': self._export_rule_for_profile(
+                    item.get('export_rule')),
                 
                 # 🎯 CAPA NOMINAL (Dato validado en Odoo Shell)
                 'thickness_nominal': item.get('thickness_nominal', 0.0),
