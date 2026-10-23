@@ -12,6 +12,7 @@ from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 
 from ..models.intake_constants import CONSOLE_ID_OFFSET
+from odoo.addons.madenat_lumber_intake.models import intake_classifier
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
 
 
@@ -706,6 +707,53 @@ class TestIntakeWizard(TransactionCase):
         self.assertEqual(wizard.tipo_ingreso, 'producto')
         self.assertTrue(wizard.has_reading_warning)
         self.assertIn('Posible servicio', wizard.reading_warning)
+
+    def test_t2a_titulo_servicio_confirmado_en_la_fuente(self):
+        """T2A-1 (reajustado 2A-1b): el servicio se decide por el TÍTULO.
+
+        Se comprueba la fuente de la coincidencia, no solo el resultado: el
+        vocabulario de servicio es decisivo en `pdf_title` (señal fuerte).
+        """
+        signals = intake_classifier.collect_signals(
+            pdf_text='SERVICIO CEPILLADO', filenames=['guia.pdf'])
+        outcome = intake_classifier.classify(
+            signals,
+            ['cepillado', 'servicio', 'proceso', 'maquila'],
+            intake_classifier.WEAK_KEYWORDS_DEFAULT,
+        )
+        self.assertEqual(outcome['tipo'], 'procesado')
+        self.assertTrue(outcome['matches'])
+        self.assertEqual(
+            {match['source'] for match in outcome['matches']}, {'pdf_title'})
+
+    def test_t2a_fila_producto_nunca_es_titulo(self):
+        """Fix 2A-1b: con cabeceras de 1, 2 y 3 líneas la glosa no es título.
+
+        Antes, la fila de producto entraba en la ventana de título y su
+        adjetivo de artículo («Cepillada») se promovía a señal fuerte.
+        """
+        product_row = (
+            '3322 M3 52,63 Madera de Pino Radiata Cepillada Calidad Col A '
+            'de 45mm 221.973,6 0 11.682.471')
+        headers = (
+            'PROVEEDOR EJEMPLO LTDA',
+            'PROVEEDOR EJEMPLO LTDA\nGUIA DE DESPACHO ELECTRONICA N 41471',
+            'PROVEEDOR EJEMPLO LTDA\nGUIA DE DESPACHO ELECTRONICA N 41471\n'
+            'REFERENCIA MC-1812-248',
+        )
+        for header in headers:
+            with self.subTest(header=header):
+                wizard = self._classify_text(header + '\n' + product_row)
+                self.assertEqual(wizard.tipo_ingreso, 'producto')
+                self.assertTrue(wizard.has_reading_warning)
+                self.assertIn('Posible servicio', wizard.reading_warning)
+
+    def test_t2a_fila_producto_con_unidad_y_cantidad(self):
+        """Una fila «M3 + cifra» (unidad y cantidad) tampoco es título."""
+        signals = intake_classifier.collect_signals(
+            pdf_text='PROVEEDOR EJEMPLO LTDA\nTOTAL M3 54,518',
+            filenames=['guia.pdf'])
+        self.assertEqual(signals['pdf_title'], 'PROVEEDOR EJEMPLO LTDA')
 
     def test_t2a_perfil_y_unidad_en_marca_de_advertencia(self):
         """Perfil distinto del elegido + unidad no reconocida → advertencia."""
