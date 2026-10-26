@@ -4,6 +4,35 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.0.22.0] - 2026-10-26
+
+### Added
+- **FASE 13/2D — Procedencia del perfil de lectura (`profile_suggested`, `profile_origin`, `profile_mismatch_hint`)**:
+  - La sugerencia documental se guarda aparte y **nunca** sobrescribe una elección explícita
+    del operador (`profile_origin = 'chosen'`). El aviso de discrepancia es no bloqueante.
+  - `_onchange_mark_profile_chosen`: una coincidencia con el valor sugerido no se interpreta
+    como elección del operador.
+  - Distintivo «Perfil sugerido por el documento» en el formulario mientras la procedencia
+    no sea una elección explícita (limitación aceptada H4).
+- **FASE 13/2D — Vigencia de la lectura (`reading_signature`)**:
+  - La lectura graba una huella de sus entradas; `action_route_document` exige lectura
+    vigente en las **tres** modalidades (decisión H2).
+  - `write()` invalida el preview (vuelve a `draft` y limpia preview, marca de advertencia y
+    huella) cuando cambia una entrada de la lectura; un vals idéntico no invalida.
+- **FASE 13/2D — Documentos requeridos (`has_required_documents`)**:
+  - «Leer documento» sólo se habilita con los documentos exigidos por la modalidad y, si
+    faltan, no escribe nada (la comprobación precede a la clasificación).
+- Pruebas nuevas: `tests/test_intake_profile_provenance.py` (T-2D-1 … T-2D-9) y utilidad
+  `tests/intake_reading_helpers.py` para las pruebas de derivación.
+
+### Changed
+- Las pruebas de derivación existentes marcan la lectura como vigente antes de rutear
+  (`mark_previewed`), coherente con la nueva guarda H2.
+
+### Notas
+- Sin migración de datos: las columnas nuevas se inicializan con sus valores por defecto
+  (`profile_origin = 'default'`). Verificado en el upgrade de `madenat_test`.
+
 ## [18.0.0.19.0] - 2026-10-19
 
 ### Added

@@ -581,4 +581,59 @@ acción "Nuevo Ingreso" lanza `madenat.lumber.intake.wizard`.
 | 2026-10-23 | Marca de advertencia **no bloqueante** (`reading_warning`/`has_reading_warning`) en wizard; consola intacta (vista SQL) | Implementado |
 | 2026-10-23 | `sum=` en volumen de compra/exportación, MBF e importe de las vistas de fachada de intake | Implementado |
 | 2026-10-23 | **2A-1b**: el título del PDF excluye filas de producto (≥2 magnitudes o unidad + cantidad). Con cabeceras de 1–3 líneas la glosa entraba en la ventana de título y «Cepillada» se promovía a señal fuerte | Implementado |
+| 2026-10-26 | **2D**: la sugerencia de perfil nunca pisa la elección del operador (`profile_origin` = default/suggested/chosen; el aviso de discrepancia es no bloqueante) | Implementado |
+| 2026-10-26 | **2D/H2**: la derivación exige lectura vigente en las **tres** modalidades (`state='previewed'` + `reading_signature` coincidente) | Implementado |
+| 2026-10-26 | **2D**: un cambio real en las entradas de la lectura invalida el preview (la verdad vive en `write()`, no en el onchange) | Implementado |
+| 2026-10-26 | **2D/R6**: `_onchange_intake_modality_patio` sigue diferido (sin cambios de patio automáticos al cambiar modalidad) | Pendiente (R6) |
+
+---
+
+## 19. Procedencia del perfil y vigencia de la lectura (FASE 13/2D)
+
+Regla de separación lectura/edición intacta: estas reglas **no** abren pantallas nuevas.
+
+### Campos añadidos (5)
+
+| Campo | Tipo | Función |
+|---|---|---|
+| `profile_suggested` | Selection (persistido) | Perfil que sugiere el documento, guardado **aparte** del aplicado |
+| `profile_origin` | Selection `default`/`suggested`/`chosen`, default `default` | Trazabilidad de la decisión: quién fijó el perfil |
+| `profile_mismatch_hint` | Char (compute) | Aviso no bloqueante cuando el operador eligió distinto de la sugerencia |
+| `reading_signature` | Char | Huella MD5 de las entradas con las que se ejecutó la última lectura |
+| `has_required_documents` | Boolean (compute) | Habilita «Leer documento»: normal exige PDF+Excel; Volúmenes al menos uno |
+
+### Reglas
+
+1. **La sugerencia nunca pisa al operador.** `_onchange_suggest_ingestion_profile`
+   registra siempre `profile_suggested`, pero sólo aplica el valor cuando
+   `profile_origin != 'chosen'`. Con elección explícita aparece el aviso
+   «El documento sugiere X; usted eligió Y. Se leerá con su elección».
+2. **Una coincidencia no es una elección.** `_onchange_mark_profile_chosen`
+   distingue el valor sugerido del elegido: si el campo coincide con
+   `profile_suggested`, la procedencia sigue siendo `suggested`.
+3. **La lectura es vigente o no es.** `reading_signature` se graba al leer
+   (las tres modalidades, incluido Procesado) y se compara en
+   `_guard_route_document`: sin `previewed` o con huella distinta, la
+   derivación se bloquea con mensaje que pide volver a leer.
+4. **Invalidación en `write()`, no en el onchange.** Si una entrada de la
+   lectura cambia de valor (modalidad, perfil, patio, nivel de detalle, archivo
+   o nombre de archivo) y el wizard estaba en `previewed`, se limpian preview,
+   marca de advertencia y huella, y el estado vuelve a `draft`. Un vals
+   idéntico al almacenado **no** invalida. El onchange homónimo sólo refleja
+   el cambio en pantalla.
+5. **«Leer documento» sin documentos requeridos no escribe nada**: la
+   comprobación ocurre antes de clasificar (ni `tipo_ingreso` ni marcas).
+
+### Limitación aceptada (H4)
+
+El distintivo «Perfil sugerido por el documento» se muestra mientras
+`profile_origin != 'chosen'`; tras una elección explícita desaparece y queda
+sólo el aviso de discrepancia (si aplica). No se añade un badge permanente de
+«elegido por el operador» para no duplicar señales en el formulario.
+
+### Fuera de alcance (R6)
+
+`_onchange_intake_modality_patio` continúa diferido: cambiar de modalidad no
+reasigna el patio automáticamente. Queda documentado como riesgo abierto.
+
 | 2026-10-23 | **2B Paso 2**: el espesor nominal de compra se toma del documento (glosa `de NNmm` + aritmética con `total_volume_m3`), se escribe en el staging S2S y el valor del operador prevalece | Implementado |
