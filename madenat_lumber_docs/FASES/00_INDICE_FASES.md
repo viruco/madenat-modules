@@ -14,8 +14,9 @@ Cada carpeta de fase que vivía en la raíz del stack (`/home/viruco/dev-stack/o
 fuera de git) tiene ahora una copia versionada en `madenat_lumber_docs/FASES/<CARPETA>/`,
 restringida a documentación: `.md`, `.txt`, `.csv`, `.pdf`, `.xlsx`, `.xls` menores de 2 MB por archivo.
 Los originales **siguen en su sitio** hasta que se autorice su borrado en el punto de control C1, y ya
-están comprimidos y verificados en `/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz`
-(94/94, D7: `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+están comprimidos y verificados en `/mnt/g/madenat_respaldos/consolidacion_20261026/<CARPETA>.tar.gz`
+(94/94, D7: `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`). Esa ruta está en la unidad `G:`
+de Windows: **sin el disco montado no existe** (ver `CANON/02_CONTINUIDAD.md` §22.6).
 
 **No versionado en git (por diseño del filtro):** `addons/`, `workcopy/`, `verify_*`, `respaldos/`,
 `backups_*`, `*.dump`, `*.sql`, `*.tar*`, `*.log` de más de 1 MB y binarios de más de 2 MB.
@@ -140,8 +141,8 @@ y `FASES/00_MANIFIESTO_TANDA_1..8.csv` (sha256 origen vs copiado por tanda).
 
 Las **26 citas** de E8 que conservan un artefacto **no versionado** ya dicen en prosa la carpeta de origen; esta
 sección añade el `.tar.gz` de D7 que lo contiene, para que el artefacto siga siendo localizable aunque el
-original de la raíz esté en cuarentena. Ruta completa del respaldo:
-`/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz`.
+original de la raíz esté en cuarentena. Ruta completa del respaldo (unidad `G:`, requiere el disco montado):
+`/mnt/g/madenat_respaldos/consolidacion_20261026/<CARPETA>.tar.gz`.
 
 Verificado con `tar -tzf` (rutas y bytes dentro del archivo): **16 artefactos distintos en 26 citas, 16/16
 presentes**. Correspondencia cita por cita en `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv`.

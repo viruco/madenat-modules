@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.56.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: AD-135 ampliado con el análisis de las 3 carpetas ambiguas (`config` = dependencia viva, excluida), la refutación de R-E8-1 (no hay deriva de esquema: los 7 errores son tests sin `@tagged('post_install')`), el diff de `run_regression.sh` y el arreglo de `conciliation_status` propuestos sin aplicar, `.clinerules` §6 aplicado, el script de cuarentena con dry-run (92 aptas / 0 bloqueadas / 2 excluidas) y los punteros a 16 artefactos dentro de los `.tar.gz`. Versión 04 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.57.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo y cuarentena visible (post-FASE 4)**: el respaldo de 95 archivos (1.163.365.900 B) se copió a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`), se verificó 95/95 por `sha256` y solo entonces se borró el origen; AD-135 registra la dependencia del montaje de `G:` (el script aborta sin él, `respaldo_montado`) y el renombrado de la carpeta de cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 04 12.56.0 → 12.57.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: AD-135 ampliado con el análisis de las 3 carpetas ambiguas (`config` = dependencia viva, excluida), la refutación de R-E8-1 (no hay deriva de esquema: los 7 errores son tests sin `@tagged('post_install')`), el diff de `run_regression.sh` y el arreglo de `conciliation_status` propuestos sin aplicar, `.clinerules` §6 aplicado, el script de cuarentena con dry-run (92 aptas / 0 bloqueadas / 2 excluidas) y los punteros a 16 artefactos dentro de los `.tar.gz`. Versión 04 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
@@ -4361,7 +4362,7 @@ Se corrigieron las cabeceras (el lado equivocado) y la fecha del índice (2026-1
 
 | Métrica | Valor | Cómo se verificó |
 |---|---|---|
-| Carpetas comprimidas | **94/94** | `tar -czf` por carpeta en `~/dev-stack/backups/consolidacion_20261026/` |
+| Carpetas comprimidas | **94/94** | `tar -czf` por carpeta en `~/dev-stack/backups/consolidacion_20261026/`, hoy `/mnt/g/madenat_respaldos/consolidacion_20261026/` (§22.6 de 02) |
 | Archivos originales | 41.574 | `os.walk` sin seguir symlinks (0 symlinks) |
 | Bytes originales | 1.549.605.212 | suma de tamaños, idéntica a la del manifiesto E0 |
 | Bytes comprimidos | 1.157.997.868 (1.104,4 MB, 74,7 %) | `du` del directorio de respaldos |
@@ -4470,7 +4471,9 @@ regla previa alterada, sha256 resultante `8f642a5…`. Al vivir en la raíz de `
 **Cuarentena (punto 6).** `FASES/00_CUARENTENA_20261026.py` verifica antes de cada movimiento: (1) `.tar.gz`
 existente y con sha256 igual al CSV de D7; (2) rutas y bytes del `.tar.gz` iguales al original; (3) ningún
 proceso con archivos abiertos (`/proc/*/{cwd,exe,fd}`); (4) que la carpeta no sea origen de un bind mount
-(`docker inspect` de todos los contenedores). Mueve con `os.rename` a `.pendiente_borrado_20261026/`, registra
+(`docker inspect` de todos los contenedores). Comprueba además que el disco del respaldo esté montado
+(`respaldo_montado`) y aborta sin mover nada si `/mnt/g` no lo está. Mueve con `os.rename` a
+`PENDIENTE_BORRADO_20261026/` (visible), registra
 en `_diario.jsonl` (origen, destino, fecha, archivos, bytes, sha256 del manifiesto de rutas, `.tar.gz` y su
 sha256) y permite revertir recalculando el manifiesto. Es fail-closed: si una carpeta se bloquea, no mueve
 ninguna. `config` está bloqueada en código y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` queda postergada hasta
@@ -4487,7 +4490,8 @@ todos presentes en su `.tar.gz` (verificado con `tar -tzf`). Se documentaron en 
    (`appointment_crm` incluida, con opción de excluirla); el total apto para cuarentena es **92**.
 2. El rojo de `conciliation_status` deja de ser un riesgo de esquema y pasa a ser un defecto de etiquetado de
    tests: el arreglo es de dos líneas y no toca datos.
-3. El respaldo externo sigue pendiente y ahora incluye una decisión previa: la visibilidad del repositorio.
+3. El respaldo externo **ya está movido** (2026-10-26, `/mnt/g/madenat_respaldos/consolidacion_20261026/`,
+   95/95 verificado); lo que sigue pendiente es la visibilidad del repositorio antes de cualquier `push`.
 
 **Riesgos abiertos tras la FASE 4.**
 
@@ -4502,6 +4506,18 @@ todos presentes en su `.tar.gz` (verificado con `tar -tzf`). Se documentaron en 
    `post_install`; hoy no fallan, pero comparten la causa raíz de los 8 rojos.
 5. **R-E8-4 (sin cambios).** `TestConsolidationImportWizard` sigue omitiéndose entero dentro del contenedor
    porque los xlsx de referencia no están montados ni versionados.
+
+**Respaldo movido y cuarentena visible (2026-10-26, posterior a la FASE 4).** Por instrucción expresa, los 95
+archivos del respaldo (1.163.365.900 B) se copiaron con `rsync -a --checksum --partial` a
+`/mnt/g/madenat_respaldos/consolidacion_20261026/` (`G:\madenat_respaldos\consolidacion_20261026\`): EXIT=0,
+0 borrados, 95/95 con el mismo nombre, tamaño y `sha256` que el CSV de D7, `git bundle verify` = «records a
+complete history» y 3 `.tar.gz` al azar con `tar -tzf` OK. Solo entonces se eliminó el origen y quedó
+`~/dev-stack/backups/LEEME_RESPALDO_MOVIDO.txt` con ruta, inventario e instrucciones de restauración.
+**Consecuencia operativa:** la verificación de los `.tar.gz` pasa a depender del montaje de `G:`;
+`00_CUARENTENA_20261026.py` lo comprueba al arrancar (`respaldo_montado()`) y aborta con `rc=2` **sin mover
+nada** si el disco no está montado. La carpeta de cuarentena se renombró a **`PENDIENTE_BORRADO_20261026/`**
+(visible, sin punto inicial) y el dry-run se repitió tras el cambio: **92 aptas (1.441,5 MB), 0 bloqueadas,
+2 excluidas**. El CSV de D7, por ser evidencia fechada, no se modificó.
 
 
 

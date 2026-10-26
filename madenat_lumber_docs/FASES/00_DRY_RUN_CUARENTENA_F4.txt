@@ -1,7 +1,8 @@
 ==============================================================================
 CUARENTENA (DRY-RUN) — tanda AB — 94 candidatas
 Origen : /home/viruco/dev-stack/odoo/odoo-18-ce
-Destino: /home/viruco/dev-stack/odoo/odoo-18-ce/.pendiente_borrado_20261026
+Destino: /home/viruco/dev-stack/odoo/odoo-18-ce/PENDIENTE_BORRADO_20261026
+Respaldo: /mnt/g/madenat_respaldos/consolidacion_20261026
 Montajes de contenedor considerados: 4
 ==============================================================================
 [  1] APTA       FIX_GUIA_DUP_FINAL_20261007_171740              12323 arch.       99.9 MB  .tar.gz OK

@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.53.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: §22.5 con los 7 puntos (repo público, `config` excluida, R-E8-1 refutado, diffs de `run_regression.sh` y `conciliation_status` sin aplicar, `.clinerules` §6 aplicado, script de cuarentena con dry-run 92/0/2 y 16 artefactos localizados en los `.tar.gz`) y §22.4 actualizado. Versión 02 12.52.0 → 12.53.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.54.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo (post-FASE 4)**: §22.6 nueva con el movimiento de los 95 archivos (1.163.365.900 B) a `/mnt/g/madenat_respaldos/consolidacion_20261026/`, la verificación 95/95 por `sha256` y el borrado del origen; §22.3/§22.4 y la fila P6 apuntan a la ruta nueva, registran la dependencia del montaje de `G:` (el script aborta con `rc=2` si falta) y el renombrado de la cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 02 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: §22.5 con los 7 puntos (repo público, `config` excluida, R-E8-1 refutado, diffs de `run_regression.sh` y `conciliation_status` sin aplicar, `.clinerules` §6 aplicado, script de cuarentena con dry-run 92/0/2 y 16 artefactos localizados en los `.tar.gz`) y §22.4 actualizado. Versión 02 12.52.0 → 12.53.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: §22.3 con el respaldo íntegro (94/94 .tar.gz + bundle `ec3d2886…`), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos); §22.4 con la propuesta de borrado en dos tandas (59 + 35) y el riesgo de `run_regression.sh`. Versión 02 12.51.0 → 12.52.0. Sin push ni despliegue. | FASE 3. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: §22 con el estado de la consolidación (AD-135). Versión 02 12.50.0 → 12.51.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.50.0 / 2026-10-26 al registrar §21 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
@@ -2441,7 +2442,7 @@ docker compose start web && curl -s -o /dev/null -w '%{http_code}' http://127.0.
 
 | Etapa | Resultado | Commit |
 |---|---|---|
-| **D7** | 94/94 carpetas comprimidas en `~/dev-stack/backups/consolidacion_20261026/` (41.574 archivos, 1.549.605.212 B → 1.157.997.868 B); `tar -tzvf` vs original: 0 faltantes, 0 sobrantes; sha256 de los 94 `.tar.gz` + del bundle en `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv` | `ac1a892` |
+| **D7** | 94/94 carpetas comprimidas en `/mnt/g/madenat_respaldos/consolidacion_20261026/` (entonces `~/dev-stack/backups/consolidacion_20261026/`, movidas el 2026-10-26; 41.574 archivos, 1.549.605.212 B → 1.157.997.868 B); `tar -tzvf` vs original: 0 faltantes, 0 sobrantes; sha256 de los 94 `.tar.gz` + del bundle en `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv` | `ac1a892` |
 | **Bundle** | `git bundle create --all` (5.368.032 B, sha256 `ec3d2886…`), `git bundle verify` = «records a complete history»; 56 refs (HEAD, 31 ramas, 2 remotos, 16 tags, 6 worktrees); remoto `git@github.com:viruco/madenat-modules.git` | (junto a `ac1a892`) |
 | **E8** | 85 citas reescritas a `FASES/<carpeta>/` en 29 archivos (46 en `CANON`, 2 en `WIKI`, 37 en copias de `FASES`); 26 de ellas conservan el artefacto no versionado como prosa; nota de consolidación en 8 documentos vivos + `FASES/00_INDICE_FASES.md` v1.1.0 | `6b911fd` |
 | **Enlaces** | Copiados 7 `.py` y 2 `.log` (< 1 MB) de `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015`; 9/9 sha256 idénticos; enlaces Markdown rotos 2 → **0** | `2f09bd5` |
@@ -2456,16 +2457,18 @@ Detalle fila a fila en `FASES/00_REESCRITURAS_E8.csv`.
 
 **No versionado (por diseño).** Código, `workcopy/`, `verify_*`, `respaldos/`, dumps, `*.tar*` y binarios > 2 MB
 quedan fuera de git; desde D7 su copia íntegra está en
-`/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz` (94/94 verificados), junto con el dump
-`madenat_test_pre_2d_20261026_0956.dump` (sha256 `279f466c…`) en `/home/viruco/dev-stack/backups/`.
+`/mnt/g/madenat_respaldos/consolidacion_20261026/<CARPETA>.tar.gz` (94/94 verificados, movidos allí el
+2026-10-26; ver §22.6), junto con el dump `madenat_test_pre_2d_20261026_0956.dump` (sha256 `279f466c…`) en
+`/home/viruco/dev-stack/backups/`.
 
 ### 22.4 Punto de retoma
 
 1. Decidir la **visibilidad del repositorio** antes de cualquier `push`: `viruco/madenat-modules` es público y
    `main` no está protegida (§22.5, punto 1).
-2. Indicar el destino de la **copia externa** de `/home/viruco/dev-stack/backups/consolidacion_20261026/`
-   (1.163.365.900 B, 95 entradas).
-3. Autorizar (o no) la **cuarentena reversible** de las **92 carpetas** aptas con
+2. La **copia externa** de `/mnt/g/madenat_respaldos/consolidacion_20261026/` (1.163.365.900 B, 95 entradas)
+   **ya está hecha** (2026-10-26, §22.6). Queda decidir si además se duplica a un **medio USB extraíble**.
+3. Antes de cualquier `--ejecutar`, comprobar que `/mnt/g` sigue montado (`ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` = 95): la verificación de los 94 `.tar.gz` depende de ese montaje.
+4. Autorizar (o no) la **cuarentena reversible** de las **92 carpetas** aptas con
    `FASES/00_CUARENTENA_20261026.py --ejecutar --tanda A` y luego `--tanda B`; `config` queda excluida y
    `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` postergada hasta aplicar el fix de `run_regression.sh`.
    Nada se ha movido ni borrado.
@@ -2486,7 +2489,7 @@ ni `mv` a cuarentena, ni `push`, ni cambios de código. Informe completo en `FAS
 | **P3 · `run_regression.sh`** | `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"`; `bash -n` OK; prueba funcional con `docker` simulado (ruta por defecto, override y fallo `rc=3`). Hallazgo: con `set -e`, `RET=$?` es código muerto y el `.exit` no se escribe al fallar | **Sin aplicar** |
 | **P4 · `conciliation_status`** | **R-E8-1 refutado**: el campo existe (`intake_guia_processing.py:159`, `default='not_compared', required=True`), `ir_model_fields.required = t` y la columna `NOT NULL` son coherentes; creado el 2026-10-01 en `cdf2ea8` (intake `18.0.0.11.0`) y nunca eliminado. Reproducción con rollback sobre `madenat_f4_probe`: registro completo ⇒ crea con `not_compared`; campo retirado del registro (equivalente a `at_install`) ⇒ `NotNullViolation` idéntico. Causa: los 2 archivos de test **sin `@tagged`** corren antes de cargar `madenat_lumber_intake` | **Sin aplicar** (arreglo: 2 líneas de `@tagged`) |
 | **P5 · `.clinerules`** | Copia previa `…/backups/clinerules_20261026/madenat-regla-de-oro.md.pre-20261026` (sha256 `f9b9b34…`); aplicado §6 «Documentación consolidada» y «Cierre» → §7; 7 secciones, nada más cambia; sha256 nuevo `8f642a5…`; no genera commit (fuera de `custom_addons/.git`) | **Aplicado** |
-| **P6 · cuarentena** | `FASES/00_CUARENTENA_20261026.py`: verifica `.tar.gz` + sha256 del CSV, rutas y bytes contra el original, procesos con archivos abiertos y bind mounts; `os.rename` a `.pendiente_borrado_20261026/`; diario `_diario.jsonl` con manifiesto sha256; `--revertir` con re-verificación; fail-closed | Dry-run: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** de 94; **sin ejecutar** |
+| **P6 · cuarentena** | `FASES/00_CUARENTENA_20261026.py`: **comprueba primero que `/mnt/g` esté montado** (`respaldo_montado`; aborta sin mover nada si no lo está); verifica `.tar.gz` + sha256 del CSV, rutas y bytes contra el original, procesos con archivos abiertos y bind mounts; `os.rename` a `PENDIENTE_BORRADO_20261026/` (visible); diario `_diario.jsonl` con manifiesto sha256; `--revertir` con re-verificación; fail-closed | Dry-run: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** de 94; **sin ejecutar** |
 | **P7 · punteros** | 26 citas de E8 → **16 artefactos**, 16/16 presentes en su `.tar.gz`; `FASES/00_INDICE_FASES.md` §4 (v1.2.0) y `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv` | Aplicado |
 
 **Correcciones declaradas sobre la FASE 3.** (a) R-E8-1 («deriva de esquema») queda **refutado**: no hay que
@@ -2498,3 +2501,25 @@ excluida; (c) el total ejecutable baja de 94 a **92** (93 sin `config`, menos `F
 fallaría (clave configurada rechazada; la válida es de `viruco-sys`, y `gh` opera por https como `viruco`);
 R-F4-3 `run_regression.sh` mientras no se aplique el diff; R-F4-4 otros 5 archivos de test de core usan
 `madenat.guia.processing` sin `post_install`; R-E8-4 (`TestConsolidationImportWizard` omitido entero) sin cambios.
+
+### 22.6 Respaldo movido a disco externo (2026-10-26, posterior al cierre)
+
+Por instrucción expresa, el respaldo completo (1,1 GiB, 95 archivos) salió del disco del sistema:
+
+| Aspecto | Resultado |
+|---|---|
+| Destino | `/mnt/g/madenat_respaldos/consolidacion_20261026/` = `G:\madenat_respaldos\consolidacion_20261026\`: unidad `G:` «DEV», ST500LM030 SATA HDD, disco físico distinto del sistema y del disco virtual de WSL (no es un USB extraíble) |
+| Copia | `rsync -a --checksum --partial`: EXIT=0, 95 archivos creados, 0 borrados, 1.163.365.900 B |
+| Verificación en destino | 95/95 archivos con igual nombre, tamaño y `sha256` que `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`; `git bundle verify` = «records a complete history» (56 refs); 3 `.tar.gz` al azar con `tar -tzf` OK; **0 diferencias** |
+| Borrado del origen | `rm -r` EXIT=0, **solo después** de verificar; en su lugar queda `~/dev-stack/backups/LEEME_RESPALDO_MOVIDO.txt` (2.484 B) con ruta, fecha, inventario e instrucciones de restauración |
+| Re-verificación | 95/95 de nuevo tras eliminar el origen |
+
+**Dependencia del montaje (crítica).** `/mnt/g` es la unidad `G:` de Windows montada por 9p: **sin disco montado
+la ruta no existe** y la verificación de los `.tar.gz` no puede hacerse. `FASES/00_CUARENTENA_20261026.py`
+comprueba el montaje al arrancar (`respaldo_montado()`) y **aborta sin mover nada** (`rc=2`) si falla. Antes de
+cada `--ejecutar`: `ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` debe dar **95**. El CSV de D7
+**no se modificó** (es evidencia fechada) y conserva la ruta original, ya inexistente.
+
+**Carpeta de cuarentena.** Renombrada de `.pendiente_borrado_20261026/` a **`PENDIENTE_BORRADO_20261026/`**
+(visible, sin punto inicial) para que no pase inadvertida; el dry-run se repitió tras el cambio con el mismo
+resultado: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** (`FASES/00_DRY_RUN_CUARENTENA_F4.txt`, 106 líneas).

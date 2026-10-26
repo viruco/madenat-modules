@@ -8,12 +8,12 @@ Este documento no autoriza nada: registra la evidencia de los 7 puntos encargado
 
 | # | Punto | Resultado | Estado |
 |---|---|---|---|
-| 1 | Respaldo externo | `origin` correcto; **el repositorio es PÚBLICO**; `fase13-2a-lectura` **no existe** en el remoto; respaldo 1.163.365.900 B (1,1 GiB, 95 entradas) | Sin push; destino externo pendiente |
+| 1 | Respaldo externo | `origin` correcto; **el repositorio es PÚBLICO**; `fase13-2a-lectura` **no existe** en el remoto; respaldo 1.163.365.900 B (1,1 GiB, 95 archivos) | Sin push; **respaldo movido a `G:` y verificado 95/95** (2026-10-26) |
 | 2 | Carpetas ambiguas | `config` = **dependencia viva** (excluida); `postgresql.conf` = vacía (apta); `appointment_crm` = shim no cargable (apta con reserva) | Decidido con evidencia |
 | 3 | `run_regression.sh:11` | Diff con `${MADENAT_LOG_DIR:-…}`; `bash -n` OK y prueba funcional con `docker` simulado | **Sin aplicar** (espera OK) |
 | 4 | `conciliation_status` | **No hay deriva de esquema**: es una etiqueta de test faltante; reproducido y propuesto el arreglo mínimo | **Sin aplicar** |
 | 5 | `.clinerules` | §6 añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
-| 6 | Cuarentena | Script `FASES/00_CUARENTENA_20261026.py` con dry-run, verificación y reversión | Sin ejecutar |
+| 6 | Cuarentena | Script `FASES/00_CUARENTENA_20261026.py` con dry-run, verificación, guarda de montaje y reversión | Sin ejecutar (92/0/2) |
 | 7 | Punteros a artefactos | 26 citas → 16 artefactos, 16/16 localizados en su `.tar.gz`; `FASES/00_INDICE_FASES.md` §4 | Aplicado |
 
 ---
@@ -77,13 +77,28 @@ $ gh api repos/viruco/madenat-modules --jq '{private,visibility,default_branch,s
 
 | Métrica | Valor |
 |---|---|
-| Ruta | `/home/viruco/dev-stack/backups/consolidacion_20261026/` |
+| Ruta | `/mnt/g/madenat_respaldos/consolidacion_20261026/` (= `G:\madenat_respaldos\consolidacion_20261026\`) |
+| Ruta original (hasta 2026-10-26) | `/home/viruco/dev-stack/backups/consolidacion_20261026/` — eliminada tras verificar la copia |
 | `du -sb` | **1.163.365.900 B** (1,1 GiB) |
 | `du -sh` | `1.1G` |
 | Entradas | **95** (94 `.tar.gz` de carpetas + 1 bundle del repo) |
 | Espacio libre en `/` | 926 G disponibles (sin presión) |
 
-**Pendiente:** el destino de la copia externa lo indica el usuario. No se ha copiado nada fuera del disco.
+**Movido a disco externo (2026-10-26, después del cierre de esta fase).** La carpeta completa se copió a
+`/mnt/g/madenat_respaldos/consolidacion_20261026/` (= `G:\madenat_respaldos\consolidacion_20261026\`; unidad
+`G:` «DEV», ST500LM030 SATA HDD, disco físico distinto del sistema y del disco virtual de WSL) con
+`rsync -a --checksum --partial`: **EXIT=0**, 95 archivos creados, **0 borrados**, 1.163.365.900 B transferidos
+(62,9 MB/s). Verificación en destino: **95/95** archivos con el mismo tamaño en bytes y el mismo `sha256` que
+`FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`; `git bundle verify` = «records a complete
+history» (56 refs); 3 `.tar.gz` al azar con `tar -tzf` OK; nombres idénticos origen/destino; **0 diferencias**.
+Solo entonces se eliminó el origen (`rm -r`, EXIT=0) y en su lugar quedó
+`~/dev-stack/backups/LEEME_RESPALDO_MOVIDO.txt` con la ruta nueva, la fecha, los 95 archivos y las
+instrucciones de restauración (`rsync`, `robocopy`, `tar -xzf`, `git clone` del bundle).
+
+> **Dependencia del montaje.** `/mnt/g` es la unidad `G:` de Windows montada por 9p: **si el disco no está
+> montado, esa ruta no existe** y toda verificación de los `.tar.gz` falla. `00_CUARENTENA_20261026.py` lo
+> comprueba al arrancar (`respaldo_montado`) y **aborta sin mover nada** si `G:` no está montado. Antes de un
+> `--ejecutar`, confirmar: `ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` → **95**.
 
 ---
 
@@ -336,7 +351,11 @@ SHA256SUMS del directorio con esa misma huella
 
 ## 6. Cuarentena — script preparado, dry-run ejecutado
 
-**Archivo:** `madenat_lumber_docs/FASES/00_CUARENTENA_20261026.py` (423 líneas, `python3 -m py_compile` OK).
+**Archivo:** `madenat_lumber_docs/FASES/00_CUARENTENA_20261026.py` (456 líneas, `python3 -m py_compile` OK).
+
+**Antes de empezar** comprueba que el disco del respaldo esté montado (`respaldo_montado`): si `/mnt/g` no es
+un punto de montaje —o no existe la carpeta de respaldos— sale con `rc=2` **sin listar ni mover nada**. Es la
+guarda que impide que la verificación del `.tar.gz` se apoye en una ruta vacía.
 
 **Qué hace, por carpeta, antes de mover nada** (si una condición falla, la carpeta se bloquea y el script
 **no mueve ninguna**: fail-closed):
@@ -349,9 +368,9 @@ SHA256SUMS del directorio con esa misma huella
    de todos los contenedores; es la comprobación que detecta `config/`).
 
 **Movimiento:** `os.rename` al mismo sistema de archivos (no copia, no borra) a
-`/home/viruco/dev-stack/odoo/odoo-18-ce/.pendiente_borrado_20261026/`. Por cada carpeta se escribe una línea en
-`_diario.jsonl` con origen, destino, fecha, archivos, bytes, `sha256` del manifiesto de rutas, `.tar.gz` y su
-sha256.
+`/home/viruco/dev-stack/odoo/odoo-18-ce/PENDIENTE_BORRADO_20261026/` (carpeta **visible**, sin punto inicial). Por
+cada carpeta se escribe una línea en `_diario.jsonl` con origen, destino, fecha, archivos, bytes, `sha256` del
+manifiesto de rutas, `.tar.gz` y su sha256.
 
 **Reversión:** `--revertir [--ejecutar]` recorre el diario en orden inverso, **recalcula el manifiesto** de la
 carpeta en cuarentena, lo compara con el registrado, comprueba que el origen esté libre y hace `os.rename` de
@@ -367,7 +386,8 @@ hasta que se aplique el fix de `run_regression.sh`; `--excluir` permite sacar cu
 ==============================================================================
 CUARENTENA (DRY-RUN) — tanda AB — 94 candidatas
 Origen : /home/viruco/dev-stack/odoo/odoo-18-ce
-Destino: /home/viruco/dev-stack/odoo/odoo-18-ce/.pendiente_borrado_20261026
+Destino: /home/viruco/dev-stack/odoo/odoo-18-ce/PENDIENTE_BORRADO_20261026
+Respaldo: /mnt/g/madenat_respaldos/consolidacion_20261026
 Montajes de contenedor considerados: 4
 ==============================================================================
 [  1] APTA       FIX_GUIA_DUP_FINAL_20261007_171740              12323 arch.       99.9 MB  .tar.gz OK
@@ -382,8 +402,9 @@ Aptas: 92 (1441.5 MB) | Bloqueadas: 0 | Excluidas: 2 | Listadas: 94
 DRY-RUN: no se movió nada. Para ejecutar: --ejecutar --tanda AB
 ```
 
-**Resultado:** 92 aptas (1.441,5 MB), **0 bloqueadas**, 2 excluidas. Ninguna carpeta se movió: el script está
-en modo simulación y no existe `.pendiente_borrado_20261026/`.
+**Resultado:** 92 aptas (1.441,5 MB), **0 bloqueadas**, 2 excluidas — idéntico al dry-run previo al renombrado
+y al movimiento del respaldo. Ninguna carpeta se movió: el script está en modo simulación y no existe
+`PENDIENTE_BORRADO_20261026/`.
 
 ---
 
@@ -418,7 +439,9 @@ dentro de su `.tar.gz`** (rutas y bytes, 16/16).
   `.tar.gz`, para que el artefacto sea localizable sin abrir 94 respaldos.
 - `madenat_lumber_docs/FASES/00_PUNTEROS_ARTEFACTOS_F4.csv`: las **26** filas con `documento`, `carpeta`,
   `artefacto` y ruta completa del `.tar.gz`.
-- Ruta de los respaldos: `/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz`.
+- Ruta de los respaldos: `/mnt/g/madenat_respaldos/consolidacion_20261026/<CARPETA>.tar.gz` (la del CSV de D7,
+  `~/dev-stack/backups/consolidacion_20261026/`, quedó obsoleta al mover el respaldo el 2026-10-26; el CSV **no**
+  se modificó).
 
 Las 12 carpetas afectadas pertenecen todas a la Tanda B y todas conservan su `.tar.gz` verificado en D7, así que
 la cita sigue siendo trazable después de la cuarentena.
@@ -454,7 +477,7 @@ las 94 carpetas originales siguen en la raíz; no queda ninguna base temporal (`
 | # | Acción | Requiere |
 |---|---|---|
 | 1 | Decidir visibilidad del repositorio (hoy **público**) antes de cualquier `push` | Decisión del usuario |
-| 2 | Indicar destino de la copia externa de `consolidacion_20261026/` (1,1 GiB) | Decisión del usuario |
+| 2 | ~~Indicar destino de la copia externa~~ → **hecho el 2026-10-26**: movida a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`) y verificada 95/95. Queda decidir si además se duplica a un **medio USB extraíble** | Decisión del usuario |
 | 3 | Aplicar el diff de `run_regression.sh` (punto 3) en commit aparte | OK explícito |
 | 4 | Aplicar `@tagged('post_install', …)` en los 2 archivos de test (punto 4.5) | OK explícito |
 | 5 | Ejecutar la cuarentena (`--ejecutar --tanda A`, luego `--tanda B`) | Orden explícita |

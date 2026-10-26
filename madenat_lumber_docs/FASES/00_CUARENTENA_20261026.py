@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Cuarentena reversible de carpetas de fase — FASE 4 (2026-10-26).
 
-Mueve carpetas de la raíz del stack a `.pendiente_borrado_20261026/` con
+Mueve carpetas de la raíz del stack a `PENDIENTE_BORRADO_20261026/` con
 `os.rename` (mismo sistema de archivos: no copia, no borra). Antes de cada
 movimiento verifica cuatro condiciones y ABORTA esa carpeta si alguna falla:
 
@@ -10,6 +10,12 @@ movimiento verifica cuatro condiciones y ABORTA esa carpeta si alguna falla:
   2. el contenido del `.tar.gz` coincide con el original (rutas y bytes);
   3. ningún proceso del host tiene abiertos archivos de la carpeta;
   4. la carpeta no es origen de un bind mount de un contenedor Docker.
+
+Y antes de empezar comprueba que el disco del respaldo está montado (ver
+`respaldo_montado`): los `.tar.gz` viven en
+`/mnt/g/madenat_respaldos/consolidacion_20261026`, movidos allí el 2026-10-26.
+Sin ese disco no hay manera de comprobar la condición 1, así que el script
+aborta sin mover nada. La carpeta de cuarentena es visible (sin punto inicial).
 
 Modos:
   (por defecto) --dry-run   no mueve nada; verifica y muestra el plan.
@@ -40,12 +46,35 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 RAIZ = "/home/viruco/dev-stack/odoo/odoo-18-ce"
-CUARENTENA = os.path.join(RAIZ, ".pendiente_borrado_20261026")
+CUARENTENA = os.path.join(RAIZ, "PENDIENTE_BORRADO_20261026")
 BACKUPS = "/mnt/g/madenat_respaldos/consolidacion_20261026"
 CSV_D7 = os.path.join(
     RAIZ, "custom_addons/madenat_lumber_docs/FASES/FASE13_20261023/"
           "evidencias/SHA256_BACKUPS_CONSOLIDACION.csv")
 DIARIO = os.path.join(CUARENTENA, "_diario.jsonl")
+
+
+def respaldo_montado():
+    """Comprueba que el disco del respaldo esté montado (fail-closed).
+
+    Los `.tar.gz` de D7 viven en un disco aparte de la raíz del stack: `/mnt/g`
+    (unidad `G:` de Windows), montado por 9p. Si `G:` no está montado, `BACKUPS`
+    puede existir como directorio vacío del disco del sistema y la comprobación
+    del `.tar.gz` no tendría sustento; en ese caso se aborta sin mover nada.
+    """
+    real = os.path.realpath(BACKUPS)
+    partes = real.split(os.sep)
+    punto = os.sep + os.path.join(*partes[1:3]) if len(partes) > 3 else None
+    if not os.path.isdir(BACKUPS):
+        print("ABORTA: no existe la carpeta de respaldos %s" % BACKUPS)
+        print("        Montar el disco y comprobar: ls %s" % (punto or BACKUPS))
+        return False
+    if punto and not os.path.ismount(punto):
+        print("ABORTA: %s no es un punto de montaje: el disco no está montado." % punto)
+        print("        Conectar/montar el disco y repetir; no se movió nada.")
+        return False
+    return True
+
 
 # Excluidas por evidencia (FASE 4, punto 2): NUNCA se mueven.
 EXCLUIDAS_FIJAS = {
@@ -347,6 +376,9 @@ def main(argv=None):
     if args.revertir:
         return revertir(args.ejecutar)
 
+    if not respaldo_montado():
+        return 2
+
     lista = []
     if "A" in args.tanda:
         lista += TANDA_A
@@ -362,6 +394,7 @@ def main(argv=None):
     print("CUARENTENA (%s) — tanda %s — %d candidatas" % (modo, args.tanda, len(lista)))
     print("Origen : %s" % RAIZ)
     print("Destino: %s" % CUARENTENA)
+    print("Respaldo: %s" % BACKUPS)
     print("Montajes de contenedor considerados: %d" % len(montajes))
     if aviso:
         print("AVISO docker: %s" % aviso)
