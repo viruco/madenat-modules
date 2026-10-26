@@ -1,0 +1,9 @@
+AUTH_OK uid=2974
+REUSE link_id=30 state=linked
+AFTER_LINK state=linked processor=V3 Planta (temp) linked_by=V3 Concil Oper (temporal) env=5.000 ret=0.000
+OPER_REVERSE_DENIED error=True
+JEF_AUTH uid=2975
+JEF write_err=False reverse_err=False read_err=False
+AFTER_REVERSE_JEF state=reversed reversed_by=V3 Concil Jef (temporal)
+AUDIT [('processor_return_link_reverse', 'REL00030'), ('processor_return_link', 'REL00030')]
+RESULT operational_ok=True

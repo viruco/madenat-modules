@@ -1,0 +1,163 @@
+7ac1fcb fix(logistics): S1 — clave documental con las etiquetas seleccionadas
+ madenat_lumber_logistics/CHANGELOG.md              |  29 ++
+ madenat_lumber_logistics/__manifest__.py           |   2 +-
+ .../models/madenat_sv_imputation.py                |  61 ++++-
+ madenat_lumber_logistics/tests/__init__.py         |   3 +
+ .../tests/test_sv_rebaja_documentary_key.py        | 295 +++++++++++++++++++++
+ .../wizards/madenat_sv_imputation_wizard.py        |  14 +
+ 6 files changed, 397 insertions(+), 7 deletions(-)
+commit 7ac1fcb8730b06865545d165edf13dff22737861
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 14:40:36 2026 -0300
+
+    fix(logistics): S1 — clave documental con las etiquetas seleccionadas
+    
+    Defecto F1 (causa raíz) del diagnóstico
+    DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015: _i2_signature solo
+    incluía los repartos SV (no las etiquetas seleccionadas) y _i2_get_or_create
+    buscaba por documentary_key SIN filtrar estado (la clave es UNIQUE). Para la
+    guía 1198, cualquier preparación sin reparto colisionaba con el documento
+    APLICADO IMP02220 y terminaba en «ya no admite preparación (estado applied)»:
+    las etiquetas nunca se registraban.
+    
+    - _i2_signature incluye las etiquetas incluidas (_i2_included_lines, ordenadas
+      por processed_lot_id) con su volumen nominal (L<id>:<nominal>), además de los
+      repartos SV, de forma determinista.
+    - _i2_get_or_create devuelve SOLO documentos en trabajo (draft/pending):
+      applied -> mensaje claro «ya se aplicó con esta misma selección» sin
+      duplicar; reversed/cancelled -> documento NUEVO con clave distinta y
+      trazable (discriminador determinista con el id del documento que ocupa la
+      clave).
+    - Retrocompatibilidad total: la receta base de la clave no cambia
+      (discriminator='' => histórico byte a byte), así que las claves y firmas de
+      los documentos ya aplicados (IMP02220) siguen idénticas y verificables. Sin
+      migración de datos.
+    - Una sola implementación central (modelo); el asistente solo aporta la firma.
+    
+    Pruebas (TDD, primero en rojo: firma vacía, «fue anulado» y «ya no admite
+    preparación»): tests/test_sv_rebaja_documentary_key.py DK-01..08, incluido el
+    perfil IMP04823 y la clave histórica con signature=''. Regresión del módulo:
+    4 failed de 528 (mismo subconjunto del baseline, 0 nuevas por nombre).
+    IMP04823/IMP02220 intactos.
+    
+    Versión 18.0.1.31.0 -> 18.0.1.32.0. CHANGELOG actualizado.
+    
+    Ref: AD-109 (FASE 10).
+
+diff --git a/madenat_lumber_logistics/models/madenat_sv_imputation.py b/madenat_lumber_logistics/models/madenat_sv_imputation.py
+index 283ead1..36834c7 100644
+--- a/madenat_lumber_logistics/models/madenat_sv_imputation.py
++++ b/madenat_lumber_logistics/models/madenat_sv_imputation.py
+@@ -442,11 +442,24 @@ class MadenatSvImputation(models.Model):
+     # CLAVE DOCUMENTAL E IDEMPOTENCIA (D-I2-17) — sin `picking_id`.
+     # ══════════════════════════════════════════════════════════════════════
+     @api.model
+-    def _i2_build_documentary_key(self, guia, processor=None, signature=''):
++    def _i2_build_documentary_key(self, guia, processor=None, signature='',
++                                  discriminator=''):
++        """Clave documental (idempotencia, D-I2-17).
++
++        La receta **base** —``I2|guia|processor|signature``— NO cambia: los
++        documentos históricos conservan exactamente su clave. El
++        ``discriminator`` (S1, FASE 10) es **opcional** y se añade al final SÓLO
++        cuando hace falta una clave DISTINTA para una operación nueva que
++        colisiona con un documento en estado TERMINAL; así la clave sigue siendo
++        determinista y **trazable** (incluye el id del documento que ocupaba la
++        clave) sin tocar las existentes ni migrar datos.
++        """
+         raw = 'I2|%s|%s|%s' % (
+             guia.id if guia else 0,
+             processor.id if processor else 0,
+             signature or '')
++        if discriminator:
++            raw = '%s|%s' % (raw, discriminator)
+         digest = hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16].upper()
+         return 'IMP-%s-%s' % (guia.id if guia else 0, digest)
+ 
+@@ -460,18 +473,54 @@ class MadenatSvImputation(models.Model):
+ 
+     @api.model
+     def _i2_get_or_create(self, guia, processor=None, signature=''):
+-        """Devuelve (sin duplicar) la imputación de trabajo de la guía.
+-
+-        Idempotencia estable: si existe una imputación de trabajo, se reutiliza;
+-        si no, se busca por `documentary_key` (reintento) antes de crear.
++        """Devuelve (sin duplicar) la imputación de TRABAJO de la guía.
++
++        Idempotencia estable: si existe una imputación de **trabajo**
++        (draft/pending) se reutiliza; si no, se busca por ``documentary_key`` un
++        documento reutilizable antes de crear.
++
++        S1 (FASE 10): sólo se devuelve un documento en estado de TRABAJO
++        (draft/pending). Un documento en estado TERMINAL **no** se adopta:
++        ``documentary_key`` es UNIQUE y antes se devolvía por coincidencia de
++        clave, provocando «ya no admite preparación (estado applied)» /
++        «fue anulado» (defecto F1).
++
++        * ``applied`` → la operación **ya se aplicó con esta selección**: se
++          informa con un mensaje claro y NO se duplica.
++        * ``reversed``/``cancelled`` → la operación es NUEVA: se crea un
++          documento con una clave DISTINTA y **trazable** (discriminador con el
++          id del documento que ocupa la clave), sin tocar claves históricas.
+         """
+         work = self._i2_find_work_for_guia(guia)
+         if work:
+             return work
+         key = self._i2_build_documentary_key(guia, processor, signature)
+         existing = self.search([('documentary_key', '=', key)], limit=1)
+-        if existing:
++        if existing and existing.state in ('draft', 'pending'):
+             return existing
++        if existing and existing.state == 'applied':
++            raise UserError(_(
++                'Esta rebaja ya se aplicó con esta misma selección de etiquetas '
++                '(%s). No se duplica: consulta el documento aplicado o cambia '
++                'la selección para una operación nueva.') % existing.name)
++        # La clave base está ocupada por un documento terminal no aplicado
++        # (anulado/reversado): se busca la primera clave libre con discriminador
++        # trazable. Determinista (no depende de fecha ni de sesión).
++        discriminator = ''
++        while existing:
++            discriminator = ('%s>%s' % (discriminator, existing.id)
++                             if discriminator else str(existing.id))
++            key = self._i2_build_documentary_key(
++                guia, processor, signature, discriminator=discriminator)
++            existing = self.search([('documentary_key', '=', key)], limit=1)
++            if existing and existing.state in ('draft', 'pending'):
++                return existing
++            if existing and existing.state == 'applied':
++                raise UserError(_(
++                    'Esta rebaja ya se aplicó con esta misma selección de '
++                    'etiquetas (%s). No se duplica: consulta el documento '
++                    'aplicado o cambia la selección para una operación '
++                    'nueva.') % existing.name)
+         vals = {'guia_processing_id': guia.id, 'documentary_key': key}
+         if processor:
+             vals['processor_id'] = processor.id
+diff --git a/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py b/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
+index 8eaca7f..d1235d3 100644
+--- a/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
++++ b/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
+@@ -584,8 +584,22 @@ class MadenatSvImputationWizard(models.TransientModel):
+ 
+     # ── Construcción del documento ───────────────────────────────────────
+     def _i2_signature(self):
++        """Firma DETERMINISTA de la operación preparada (S1, FASE 10).
++
++        Incluye las **etiquetas incluidas** (marcadas o con reparto, D4/D5) con
++        su volumen nominal, **además** de los repartos SV. Así la clave
++        documental identifica *qué* se registra, no sólo *a qué SV*: dos
++        preparaciones con selecciones distintas de la misma guía no colisionan
++        entre sí ni con un documento aplicado/terminal previo (defecto F1).
++
++        La firma SÓLO se usa para construir claves NUEVAS: los documentos ya
++        creados conservan su ``documentary_key`` (no se recalcula ni migra).
++        """
+         self.ensure_one()
+         parts = []
++        for wline in self._i2_included_lines().sorted('processed_lot_id'):
++            parts.append('L%s:%.3f' % (
++                wline.processed_lot_id.id, wline.nominal_volume_m3 or 0.0))
+         for wline in self.line_ids.sorted('processed_lot_id'):
+             for alloc in wline.sv_alloc_ids.sorted('sv_lot_id'):
+                 parts.append('%s:%s:%.3f' % (

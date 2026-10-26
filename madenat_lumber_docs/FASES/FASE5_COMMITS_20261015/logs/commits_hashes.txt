@@ -1,0 +1,5 @@
+ed42df54dab62beea0780337971d3657b4232ac1 feat(intake): consola de intake, ciclo de vida de guia y guardas de eliminacion (AD-101/AD-104/AD-105)
+ded5e89df3a1b98398f7ea66ebb50ebcddb251cf feat(logistics): imputacion SV (I2), rebaja de etiquetas, H6, chatter y version 18.0.1.27.0
+a6912569e906eee3f74da7b8ef907187b3a8a865 fix(shipping_core): restituye el elemento <chatter/> en Motonave/Viaje y aclara AD-92 (rolleo por Embarque)
+0ef438868ed7dd4e14d8ee34167af01ea4933d2c feat(core): H1/H2/H3, guardas de eliminacion de guia, guias duplicadas y guarda de etiqueta SV
+d67313bf914fda3d2804925d240e5037f9fddc25 docs(canon): sincroniza CANON 02/03/04/05/18/19/INDICE y WIKI y registra AD-106 (supuesto de una sola compania)

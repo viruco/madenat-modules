@@ -1,0 +1,11 @@
+AUTH_OK uid=2974
+MENU_CONCILIACION True -> ['Conciliación Envío–Retorno']
+VIEW madenat.processor.return.link    form arch_len=2961   missing=NONE
+VIEW madenat.processor.return.link    list arch_len=626    missing=NONE
+VIEW madenat.guia.processing          form arch_len=60972  missing=NONE
+VIEW stock.picking                    form arch_len=23648  missing=NONE
+VIEW madenat.sv.imputation            form arch_len=5715   missing=NONE
+VIEW madenat.sv.imputation.wizard     form arch_len=3796   missing=NONE
+SEARCH_READ error=False
+FIELDS_GET ok=True n=40
+RESULT menus_ok=True missing_total=NONE

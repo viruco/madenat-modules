@@ -1,0 +1,126 @@
+commit 2985768930957e51069d6b7828b7361c273c0c45
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 12:38:03 2026 -0300
+
+    docs(canon): AD-107 cierra D18, mantiene P2-2 fuera y registra los hallazgos de instalacion desde cero
+    
+    - CANON/04_DECISION_LOG.md (**12.22.0 -> 12.23.0**): alta **AD-107 -> (1) D18 CERRADO** en dos commits
+      (`bfda876` core; `56405cb` logistics 18.0.1.28.0) con su atribucion documental (CANON/18 §7.3/§14.1/§14.5,
+      `AUDIT_B01_20261004`, CANON/12 §5.2/§6.2 y los guards AUD-ETQ-02/06 de `ded5e89`); **(2) P2-2 FUERA** por
+      decision (menu vacio de `reports`, origen no demostrado); **(3) reparacion K2** de la instalacion desde cero
+      de `intake` (movimiento puro del bloque de la accion; verificado con `exit 0`); **(4) HALLAZGO BLOQUEANTE
+      abierto**: `<record model="ir.ui.menu">` sin `name` en `madenat_sv_imputation_views.xml` =>
+      `madenat_lumber_logistics` no instala desde cero (`NotNullViolation`), introducido por `ded5e89` al retirar
+      su `<menuitem>` (restan dos opciones minimas, sujetas a decision); **(5) hallazgo de despliegue**: no mezclar
+      «BD con WIP» y «codigo sin WIP» (la vista de `costing` con `action_apply_c2` falla al re-validarse);
+      **(6) defecto de prueba K7** (`product.template` vs `product.product`); **(7) regla operativa**: despliegue
+      por `-u` de los modulos indicados.
+    - CANON/05_BACKLOG.md (**8.27.0 -> 8.28.0**): pendientes abiertos por la FASE 7.
+    - CANON/INDICE_DOCUMENTACION.md (**12.33.0 -> 12.34.0**): sincronizacion del indice.
+    
+    Numeracion monotona, sin renumerar. Solo documentacion: no se toca codigo, datos, vistas ni ACL.
+    
+    Commit local 4/4 de la FASE 7. Sin push ni despliegue.
+
+ madenat_lumber_docs/CANON/04_DECISION_LOG.md      | 58 ++++++++++++++++++++++-
+ madenat_lumber_docs/CANON/05_BACKLOG.md           | 15 +++++-
+ madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md |  4 +-
+ 3 files changed, 71 insertions(+), 6 deletions(-)
+
+commit c4935ed49f4c74701ae2de75bcbacd0226eb3bfc
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 11:45:39 2026 -0300
+
+    fix(intake): define la accion «Nuevo Ingreso» antes de la vista que la usa (instalacion desde cero)
+    
+    - `views/intake_console_views.xml`: la accion `action_madenat_lumber_intake_new` estaba definida al FINAL
+      del archivo (linea 1128) y se USABA en la linea 20 (boton `type="action"` dentro del archivo `arch` de la
+      vista `view_madenat_lumber_intake_console_list`). Odoo procesa los registros de un archivo en orden, por lo
+      que la resolucion del XML-ID fallaba al INSTALAR:
+        ParseError: while parsing .../intake_console_views.xml:7, somewhere inside
+        ValueError: External ID not found in the system: madenat_lumber_intake.action_madenat_lumber_intake_new
+      (verificado en FASE 6/V1 con base limpia). La actualizacion (`-u`) no fallaba porque el registro ya existia.
+    - CAMBIO MINIMO: se mueve el bloque COMPLETO (comentario + `<record>`) al inicio del archivo, por delante de
+      su primer uso. NO se altera ningun id, nombre, modelo, campo ni contenido: el diff es un MOVIMIENTO PURO
+      (+12/-12 lineas; mismo multiset de lineas no vacias, mismos 5 ids en el mismo orden, XML bien formado).
+    - Barrido de referencias adelantadas en TODOS los modulos instalables: era la UNICA del repositorio; tras el
+      cambio el barrido queda en 0.
+    - Sin cambio de version (se mantiene 18.0.0.15.0): la correccion afecta a un archivo de datos ya declarado en
+      el manifest, que se recarga con el `-u madenat_lumber_intake` del despliegue; no cambia modelo, datos,
+      seguridad ni ACL, por lo que una version nueva no es indispensable.
+    
+    Commit local 3/4 de la FASE 7. Sin push ni despliegue.
+
+ .../views/intake_console_views.xml                 | 24 +++++++++++-----------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+commit 56405cb58c8b36215e1f5242de29c37761e0279a
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 11:43:38 2026 -0300
+
+    feat(logistics): asistente de rebaja por nave y adaptacion al motivo de reversa (cierre D18)
+    
+    Intervenciones incluidas:
+    - D18-2 `wizards/lumber_shipment_rebaja_wizard.py` (+380/-50): submodelo
+      `lumber.shipment.rebaja.wizard.line`, campos de seleccion/exclusion y metricas
+      (`line_ids`, `excluded_container_ids`, `voyage_available`, `result_message`, totales EXPORT/NOMINAL/SV) y
+      metodos `_rebaja_require_group`, `_scope_containers`, `_classify`, `_rebuild_lines`, `_line_commands`, etc.
+    - D18-3 `wizards/lumber_shipment_rebaja_wizard_views.xml` (+51/-10): formulario del asistente y accion
+      `action_lumber_shipment_rebaja_wizard` (ya referenciada por `views/logistics_menus.xml`, commit `ded5e89`).
+    - D18-4 `tests/test_rebaja_contenedor.py` (+382/-14): rolleo seguro, zarpe con excepcion, retorno R2 y las
+      nuevas reglas del asistente.
+    - D18-5 `tests/test_service_return_imputation_guard.py` (+2): motivo de reversa en los casos 06 y 09.
+    
+    Fundamento documental (atribucion demostrada en FASE 6/V2):
+    - `CANON/18` §7.3 «Rebajar por nave (masiva)» y §14.1 «Rebaja por nave (asistente): ... rebaja masiva con
+      savepoint por contenedor e informe de exitos/fallos» + «Permisos: ... rechazo en servidor
+      (`_rebaja_require_group`)»; §14.5 cita la suite `TestRebajaContenedor`.
+    - Expediente `AUDIT_B01_20261004` (2026-10-04) analiza el estado YA modificado (cita `_classify`, metodo que
+      solo existe en este archivo) => el WIP databa del 2026-10-03.
+    
+    Origen de la omision previa (FASE 5): el triaje de FASE 1 marco estos archivos como `desconocido` (D18) y se
+    excluyeron por la regla «ante la duda, no commitear». Consecuencia verificada en FASE 6/V1: al estar su ACL
+    commiteada (`ded5e89`) y faltar el modelo, `madenat_lumber_logistics` NO cargaba en una instalacion limpia
+    (`Failed to load registry` / `No matching record found for external id
+    'model_lumber_shipment_rebaja_wizard_line'`).
+    
+    Version del modulo: 18.0.1.27.0 -> 18.0.1.28.0 (CHANGELOG con la entrada 18.0.1.28.0).
+    El contenido de los 4 archivos es IDENTICO al del WIP previo (comprobado por SHA256).
+    Sin cambios en costing ni en el menu de reports (fuera del alcance por decision).
+    
+    Commit local 2/4 de la FASE 7. Sin push ni despliegue.
+
+ madenat_lumber_logistics/CHANGELOG.md              |  25 ++
+ madenat_lumber_logistics/__manifest__.py           |   2 +-
+ .../tests/test_rebaja_contenedor.py                | 396 ++++++++++++++++++-
+ .../tests/test_service_return_imputation_guard.py  |   2 +
+ .../wizards/lumber_shipment_rebaja_wizard.py       | 430 ++++++++++++++++++---
+ .../lumber_shipment_rebaja_wizard_views.xml        |  61 ++-
+ 6 files changed, 841 insertions(+), 75 deletions(-)
+
+commit bfda8762c914f56eff89d8c7078aea0eef6bf78d
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 11:42:15 2026 -0300
+
+    fix(core): alinea la prueba de homonimo guia-recepcion con la identidad por modelo (cierre D18-1)
+    
+    - tests/test_duplicate_validation.py: renombra `test_02_duplicate_in_guia_processing` ->
+      `test_02_homonym_guia_vs_reception` y corrige la expectativa: la coincidencia de NUMERO entre
+      flujos (guia procesada vista desde Recepcion) NO bloquea; si bloquea la identidad natural del
+      MISMO modelo (`exclude_model='madenat.guia.processing'`).
+    - Fundamento documental: CANON/12 (12_FLUJOS_INGESTA.md) §5.2 «Prohibiciones» (`guia_number` no es
+      discriminador fiable) y §6.2 (la coincidencia por `guia_number` no es el discriminador canonico).
+    - Fundamento tecnico: el parametro `exclude_model`/`cross_model` fue entregado en el commit
+      `0ef4388` (feat(core) de la FASE 5). La version anterior del test quedo en contradiccion con el
+      codigo ya commiteado.
+    - Motivo de la omision previa: la FASE 5 excluyo esta entrada por el triaje `desconocido` (D18),
+      aplicando la regla «ante la duda, no commitear». El HEAD `ed42df5` la reproducia como falla:
+      `FAIL: TestDuplicateValidation.test_02_duplicate_in_guia_processing` (verificado en FASE 6/V1).
+    - Sin cambio de version (se mantiene 18.0.6.9.0): solo cambia una PRUEBA; no altera modelos,
+      vistas, datos, seguridad ni ACL, por lo que no procede una version nueva del modulo.
+    - El contenido del archivo es IDENTICO al del WIP verificado en la FASE 5 (se comprueba por SHA256).
+    
+    Commit local 1/4 de la FASE 7 (cierre de D18). Sin push ni despliegue.
+
+ .../tests/test_duplicate_validation.py             | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)

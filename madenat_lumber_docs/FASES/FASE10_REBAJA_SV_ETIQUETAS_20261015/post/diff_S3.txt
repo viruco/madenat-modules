@@ -1,0 +1,69 @@
+e2d6b64 fix(logistics): S3 — bloqueo del guardado de un documento de rebaja vacío
+ madenat_lumber_logistics/CHANGELOG.md              |  23 +++
+ madenat_lumber_logistics/__manifest__.py           |   2 +-
+ madenat_lumber_logistics/tests/__init__.py         |   3 +
+ .../tests/test_sv_rebaja_empty_guard.py            | 179 +++++++++++++++++++++
+ .../wizards/madenat_sv_imputation_wizard.py        |  15 +-
+ 5 files changed, 220 insertions(+), 2 deletions(-)
+commit e2d6b64d28a1a424986861a0a4f08a6d3fba8508
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 14:30:12 2026 -0300
+
+    fix(logistics): S3 — bloqueo del guardado de un documento de rebaja vacío
+    
+    Defecto F3 del diagnóstico DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015:
+    _i2_build_imputation no exigía ninguna etiqueta incluida (solo action_apply lo
+    hacía). Guardar sin seleccionar, o desmarcar todo lo ya registrado, dejaba o
+    BORRABA líneas en silencio: así se produjo el documento vacío vinculado al SV
+    (IMP04823).
+    
+    - Se comprueba _i2_included_lines() ANTES de crear/actualizar el documento.
+      Sin etiquetas incluidas: UserError de negocio en español que pide
+    tseleccionar al menos una etiqueta. Un guardado rechazado no crea documento
+      nuevo ni pierde las líneas ya registradas.
+    - Se conservan los flujos legítimos: anular, «Volver a borrador», reabrir,
+      SAVE-05 (destino SV previsto con cantidad 0) y el techo duro.
+    
+    Pruebas (TDD, primero en rojo): tests/test_sv_rebaja_empty_guard.py SG-01..06
+    (T6). Comprueban efectos reales (creación/borrado) sin el savepoint que Odoo
+    interpone en assertRaises. Regresión del módulo: 4 failed de 519 (mismo
+    subconjunto del baseline, 0 nuevas por nombre).
+    
+    Versión 18.0.1.30.0 -> 18.0.1.31.0. CHANGELOG actualizado.
+    Sin cambios en datos, firmas ni documentos históricos. Sin migración.
+    
+    Ref: AD-109 (FASE 10).
+
+diff --git a/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py b/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
+index a698d03..8eaca7f 100644
+--- a/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
++++ b/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
+@@ -614,6 +614,19 @@ class MadenatSvImputationWizard(models.TransientModel):
+         # rechaza sin dejar documentos ni estados parciales (§19.16).
+         Imputation._i2_check_guia_is_eligible_return(
+             self.guia_processing_id)
++        # S3 (FASE 10, 2026-10-15): NO se persiste un documento de rebaja VACÍO
++        # —ni se borran en silencio las líneas ya registradas— exigiendo al
++        # menos UNA etiqueta incluida (marcada O con reparto explícito, D4/D5).
++        # La comprobación va ANTES de crear/actualizar: un guardado rechazado no
++        # deja documento nuevo ni pierde líneas. Los flujos legítimos (anular,
++        # «Volver a borrador», reabrir) no pasan por aquí y siguen intactos.
++        included = self._i2_included_lines()
++        if not included:
++            raise UserError(_(
++                'No se puede guardar un documento de rebaja sin etiquetas. '
++                'Selecciona al menos una etiqueta (o asigna un destino SV con '
++                'cantidad) antes de guardar; no se admiten documentos de '
++                'rebaja vacíos.'))
+         imp = self.imputation_id
+         if not (imp and imp.exists()):
+             # El asistente se abrió SIN documento vinculado. Si otra sesión creó
+@@ -664,7 +677,7 @@ class MadenatSvImputationWizard(models.TransientModel):
+         # reparto positivo).
+         if self.sv_lot_id and imp.work_sv_lot_id != self.sv_lot_id:
+             imp.work_sv_lot_id = self.sv_lot_id
+-        included = self._i2_included_lines()
++        # `included` ya se calculó y validó arriba (S3): no se recalcula.
+         existing_by_lot = {l.processed_lot_id.id: l for l in imp.line_ids}
+         keep_line_ids = set()
+         for wline in included:

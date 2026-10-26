@@ -1,0 +1,3 @@
+573a164b6ddba01af751c6d9bd618e29e6b0d7cf feat(madenat): consolida ingreso, retorno de servicio e imputación SV
+d2a0d2f239139ce8d8ea20488ed377790ca9e39b feat(logistics): vincular envíos a procesador con retornos e imputaciones SV
+b1d2d1911648f3264bf629c8eccf79a1c140eaf3 fix(logistics): integridad del vínculo envío-retorno

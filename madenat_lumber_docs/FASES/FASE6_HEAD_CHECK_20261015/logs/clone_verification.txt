@@ -1,0 +1,5 @@
+HEAD=ed42df54dab62beea0780337971d3657b4232ac1
+rama=feat/guia-correccion-documental-preservada-20261002
+status_entradas=0
+commits_5=ed42df5 feat(intake): consola de intake, ciclo de vida de guia y guardas de eliminacion (AD-101/AD-104/AD-105)|ded5e89 feat(logistics): imputacion SV (I2), rebaja de etiquetas, H6, chatter y version 18.0.1.27.0|a691256 fix(shipping_core): restituye el elemento <chatter/> en Motonave/Viaje y aclara AD-92 (rolleo por Embarque)|0ef4388 feat(core): H1/H2/H3, guardas de eliminacion de guia, guias duplicadas y guarda de etiqueta SV|d67313b docs(canon): sincroniza CANON 02/03/04/05/18/19/INDICE y WIKI y registra AD-106 (supuesto de una sola compania)|
+huella_listado=7fa44db6557e97a7ad958c552f469ca7526a19676ea9e31dd5cedeb3985aa231

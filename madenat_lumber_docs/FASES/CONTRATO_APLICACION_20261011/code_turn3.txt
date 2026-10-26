@@ -1,0 +1,10 @@
+# Cambios del turno (contrato de aplicación) — Sun Oct 11 01:14:51 UTC 2026
+# Archivos modificados por esta intervención:
+ - models/madenat_sv_imputation.py  (_i2_validate_payload: exige >=1 reparto positivo a SV autorizado; etiqueta_pendiente_m3)
+ - views/madenat_sv_imputation_views.xml  (columna Pendiente de reparto)
+ - tests/test_sv_rebaja_contrato.py  (NUEVO, POL-01..08)
+ - tests/test_sv_imputation_i2.py  (T-I2-06 alineado a la politica)
+ - tests/test_sv_imputation_candidates.py  (CAND-07/08/09 alineados)
+ - tests/__init__.py  (registro POL)
+ - __manifest__.py  (18.0.1.16.0 -> 18.0.1.17.0)
+ - CHANGELOG.md

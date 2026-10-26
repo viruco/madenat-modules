@@ -1,0 +1,8 @@
+# K5-c - CAMINO DE ACTUALIZACION (-u) sobre una COPIA temporal de madenat_test
+# (madenat_test queda intacta; la copia se creo desde el dump previo a la fase)
+docker exec odoo18_app odoo -d madenat_test_fase7_test \
+  --addons-path=/tmp/fase7_clone,/usr/lib/python3/dist-packages/odoo/addons \
+  --db-filter=^madenat_test_fase7_test$ \
+  -u madenat_lumber_shipping_core,madenat_lumber_core,madenat_lumber_logistics,madenat_lumber_intake \
+  --test-enable --test-tags=/madenat_lumber_core,/madenat_lumber_intake,/madenat_lumber_logistics \
+  --stop-after-init --http-port=9996 --max-cron-threads=0

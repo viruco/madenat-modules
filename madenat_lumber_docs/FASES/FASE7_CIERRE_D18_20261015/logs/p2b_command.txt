@@ -1,0 +1,7 @@
+# PASO 2b - SUITES de los modulos MADENAT instalables (core + intake), con -u (sin -u all)
+docker exec odoo18_app odoo -d madenat_head_check2_test \
+  --addons-path=/tmp/fase7_clone,/usr/lib/python3/dist-packages/odoo/addons \
+  --db-filter=^madenat_head_check2_test$ \
+  -u madenat_lumber_core,madenat_lumber_intake \
+  --test-enable --test-tags=/madenat_lumber_core,/madenat_lumber_intake \
+  --stop-after-init --http-port=9997 --max-cron-threads=0

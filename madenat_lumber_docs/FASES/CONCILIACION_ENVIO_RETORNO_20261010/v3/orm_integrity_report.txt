@@ -1,0 +1,10 @@
+ARCH_HAS documentary_status True
+ARCH_HAS requires_reimputation True
+ARCH_HAS previous_imputation_id True
+ARCH_HAS Requiere reimputación True
+LIST_NO_SUM True LIST_NO_AVG True
+AGGREGATOR shipment_volume_m3 = False
+AGGREGATOR return_nominal_m3  = False
+HELP_OK True
+IR_RULE_COUNT 1
+GUIA_HAS_COMPANY False

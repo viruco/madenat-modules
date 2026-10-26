@@ -1,0 +1,5 @@
+docker exec odoo18_app odoo -d madenat_head_check \
+  --addons-path=/tmp/fase6_clone,/usr/lib/python3/dist-packages/odoo/addons \
+  --db-filter=^madenat_head_check$ \
+  -i madenat_lumber_core --test-tags=/madenat_lumber_core \
+  --without-demo=all --test-enable --stop-after-init --http-port=9998 --max-cron-threads=0

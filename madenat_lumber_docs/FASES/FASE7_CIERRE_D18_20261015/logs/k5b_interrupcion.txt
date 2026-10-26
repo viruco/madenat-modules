@@ -1,0 +1,7 @@
+=== CAMBIO DE METODO (documentado para INFORME_FASE7.md) ===
+hora: 2026-10-15 12:22:24
+Motivo: --test-enable en instalacion desde cero arrastra los tests de los modulos de Odoo (mail, product, analytic...); a los ~2800 tests los de MADENAT aun no habian empezado. No aporta evidencia sobre nuestros modulos y alarga la fase.
+Procedimiento corregido: (1) INSTALABILIDAD sin --test-enable; (2) SUITES con --test-enable --test-tags limitado a los modulos MADENAT + -u de esos modulos.
+
+--- estado del proceso K5-b (interrumpido) ---
+tests_iniciados_antes_de_interrumpir: 3047

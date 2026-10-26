@@ -1,0 +1,6 @@
+2026-10-10 18:55:15,361 1186 INFO madenat_test odoo.addons.madenat_lumber_core.models.reception_parser: 🔍 _check_guide_duplicate: buscando guía=CHAIN-G company=1 partner=14896 exclude=None@madenat.guia.processing cross_model=True 
+2026-10-10 18:55:15,426 1186 INFO madenat_test odoo.addons.madenat_lumber_core.models.reception_parser: ✅ _check_guide_duplicate: sin duplicados para guía=CHAIN-G 
+CHAIN {"A": 701, "B": 702, "C": 703, "states": ["reversed", "reversed", "applied"], "link_imputation": 703, "link_previous": 702, "active_links": 1, "doc_status": "applied"}
+CHAIN_AUDIT ["REL00104 \u2014 reimputaci\u00f3n IMP01350 \u2192 IMP01352", "REL00104 \u2014 reimputaci\u00f3n IMP01352 \u2192 IMP01354"]
+COMPANY {"link_company_related": "picking_id.company_id", "picking_company_required": false, "guia_has_company": false, "imp_company_required": true}
+ROLLED_BACK_OK

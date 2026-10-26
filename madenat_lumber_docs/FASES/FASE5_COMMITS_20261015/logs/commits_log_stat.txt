@@ -1,0 +1,277 @@
+commit ed42df54dab62beea0780337971d3657b4232ac1
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 10:55:51 2026 -0300
+
+    feat(intake): consola de intake, ciclo de vida de guia y guardas de eliminacion (AD-101/AD-104/AD-105)
+    
+    Intervenciones incluidas:
+    - intake (AD-101): busqueda, filtros y agrupaciones de la Consola de Intake (OC documental vs OC vinculada,
+      guide_date_kind, modalidades) y filtro por fecha de modificacion. Archivos: models/intake_console.py y
+      tests/test_search_console_oc_fecha_modality.py.
+    - intake/AUD-ETQ-08: dependencias coherentes de los computes de la consola y recomputacion REAL de metricas.
+      Suites tests/test_intake_console_compute_depends.py y tests/test_intake_metrics_recompute.py.
+    - intake-volumen: models/volume_detail_line.py y views/intake_menus.xml.
+    - intake/guias (AD-104, FASE 3): el asistente de ciclo de vida comparte la guarda unica de eliminacion del core
+      (D-G1..D-G4), exige motivo y deja registro de atribucion trazable. Archivos:
+      models/intake_guide_lifecycle_wizard.py, views/intake_guide_lifecycle_wizard_views.xml y suite
+      tests/test_guia_delete_guards.py (escenarios a-m).
+    - intake/guias ACL: tests/test_guia_delete_acl.py (la eliminacion exige rol ademas de motivo) y
+      tests/test_guide_lifecycle_delete_attribution.py.
+    - FASE 3 / G2 (fixture): tests/test_guide_lifecycle_phase2.py con limpieza por IDs explicitos (sin residuo
+      nuevo de socios «P Conc Fase 2»).
+    - FASE 4 / H1 (AD-105): el asistente de reclasificacion AD-73 aporta su PROPIO motivo de negocio al eliminar
+      la guia (models/intake_reclassify_wizard.py), en lugar de un valor por defecto.
+    
+    Version del modulo: 18.0.0.11.0 -> 18.0.0.15.0 (CHANGELOG nuevo con la entrada 18.0.0.15.0).
+    
+    Referencias AD: AD-101, AD-104 y AD-105.
+    Expedientes: APPLY_BUSQUEDA_INTAKE_20261007, AUDIT_BUSQUEDA_FILTROS_INTAKE_20261007,
+    FIX_DELETE_INTAKE_20261007_145130, AUDIT_DELETE_INTAKE_20261007_130559 y AUDITORIA_INTEGRAL_20261012/fase3|fase4.
+    
+    Commit local 5/5 de la FASE 5. Sin push ni despliegue.
+
+ madenat_lumber_intake/CHANGELOG.md                 |  88 ++++
+ madenat_lumber_intake/__manifest__.py              |   2 +-
+ madenat_lumber_intake/models/intake_console.py     |  18 +-
+ .../models/intake_guide_lifecycle_wizard.py        | 242 ++++++++++-
+ .../models/intake_reclassify_wizard.py             |   8 +-
+ madenat_lumber_intake/models/volume_detail_line.py |  48 ++-
+ madenat_lumber_intake/tests/__init__.py            |  10 +
+ .../tests/test_guia_delete_acl.py                  | 178 ++++++++
+ .../tests/test_guia_delete_guards.py               | 457 +++++++++++++++++++++
+ .../test_guide_lifecycle_delete_attribution.py     | 309 ++++++++++++++
+ .../tests/test_guide_lifecycle_phase2.py           | 389 ++++++++++++++++++
+ .../tests/test_intake_console_compute_depends.py   |  63 +++
+ .../tests/test_intake_metrics_recompute.py         | 135 ++++++
+ .../tests/test_search_console_oc_fecha_modality.py | 264 ++++++++++++
+ .../views/intake_guide_lifecycle_wizard_views.xml  |   2 +
+ madenat_lumber_intake/views/intake_menus.xml       |  16 +
+ 16 files changed, 2203 insertions(+), 26 deletions(-)
+
+commit ded5e89df3a1b98398f7ea66ebb50ebcddb251cf
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 10:55:29 2026 -0300
+
+    feat(logistics): imputacion SV (I2), rebaja de etiquetas, H6, chatter y version 18.0.1.27.0
+    
+    Intervenciones incluidas (commit por MODULO; madenat_sv_imputation.py y lumber_container.py mezclan varias):
+    - I2/imputacion-SV (AD-91/AD-102, AUD-ETQ-01..07): modelo documental madenat.sv.imputation, asistente
+      madenat_sv_imputation_wizard, vistas, acciones y la NUEVA regla de registro multi-compania
+      security/madenat_sv_imputation_rules.xml (declarada en el manifest). Suites test_sv_imputation_i2.py,
+      test_sv_imputation_candidates.py, test_sv_imputation_manual.py y test_processor_return_link.py.
+    - rebaja-etiquetas (AUD-ETQ-01..11): operativa, blindaje, cierre probatorio, contrato de aplicacion,
+      material del packing list, navegacion unificada, seleccion/asignacion al SV de trabajo y UI limpia;
+      incluye las acciones visibles del asistente. Suites test_sv_rebaja_operativa.py, _blindaje.py, _cierre.py,
+      _contrato.py, _material.py, _navigation.py, _seleccion_asignacion.py, _ui_limpia.py y _ui_acciones.py.
+    - reset/reapertura: volver a borrador y reasignar (RESET) con concurrencia real, capacidad de la etiqueta
+      retornada y aislamiento/limpieza del token de reapertura. Suites test_sv_rebaja_reset*.py (4).
+    - sobrescritura-LOCK: proteccion contra la sobrescritura concurrente de borradores (matriz C1-C8 y TX).
+      Suites test_sv_rebaja_save_lock.py, _save_lock_direct.py y _save_lock_tx.py.
+    - persistencia/SIMPLE: persistencia y recuperacion del trabajo (SAVE) y simplificacion operativa.
+      Suites test_sv_rebaja_persistencia.py y test_sv_rebaja_simple.py.
+    - embarque/zarpe-B01 (AD-93/AD-94): zarpe bloqueante con motivo y reversa nativa. models/lumber_export_shipment.py,
+      wizards/lumber_shipment_zarpe_wizard.py + _views.xml y views/lumber_export_shipment_views.xml.
+    - rebaja-contenedor + UI/navegacion: models/lumber_container.py, wizards/lumber_container_rollover_wizard.py,
+      views/logistics_menus.xml, views/lumber_actions.xml y views/lumber_container_views.xml.
+    - backlog-documental (AD-100): views/lumber_document_checklist_views.xml y tests/test_documentary_backlog.py
+      + tests/test_document_status_b2.py.
+    - HOTFIX OWL chatter (2026-10-12, 19 §19.33): div.oe_chatter -> <chatter/> en views/madenat_sv_imputation_views.xml
+      y views/madenat_processor_return_link_views.xml; suite tests/test_hotfix_owl_chatter.py.
+    - FASE 4 / H6 (AD-105): fixtures de test_sv_rebaja_* saneadas (sin residuo de socios `*_oper`).
+    - ACL por rol de la rebaja + asignacion SV: security/ir.model.access.csv y tests/test_sv_assignment_user_rights.py.
+    
+    Version del modulo: 18.0.1.8.0 -> 18.0.1.27.0 (CHANGELOG 18.0.1.27.0).
+    
+    Referencias AD: AD-91, AD-92, AD-93, AD-94, AD-100, AD-102 y AD-105.
+    Expedientes: AUDIT_REBAJA_ETIQUETAS_20261011, BLINDAJE_REBAJA_LOCAL_20261012,
+    BLINDAJE_SOBRESCRITURA_20261012, CIERRE_SOBRESCRITURA_V123_20261012, CONTRATO_APLICACION_20261011,
+    IMPL_ASSIGN_SV_20261010_165247, CONCILIACION_ENVIO_RETORNO_20261010, HOTFIX_OWL_CHATTER_OE_20261012,
+    FIX_SV_SELECCIONAR_TODAS_20261010, IMPL_SERVICE_RETURN_AB_20261007 y AUDITORIA_INTEGRAL_20261012/fase4.
+    
+    EXCLUIDO de este commit (D18, origen no confirmado): tests/test_rebaja_contenedor.py,
+    tests/test_service_return_imputation_guard.py, wizards/lumber_shipment_rebaja_wizard.py y
+    wizards/lumber_shipment_rebaja_wizard_views.xml.
+    RIESGO DECLARADO: al no incluir el asistente de rebaja, las suites test_sv_rebaja_* quedan versionadas sin la
+    ultima version de su implementacion; todo permanece en el WIP (no se pierde nada). Se resuelve con un commit
+    posterior cuando se confirme D18.
+    
+    Commit local 4/5 de la FASE 5. Sin push ni despliegue.
+
+ madenat_lumber_logistics/CHANGELOG.md              |  660 +++++++++++
+ madenat_lumber_logistics/__manifest__.py           |    5 +-
+ .../models/lumber_container.py                     |  138 ++-
+ .../models/lumber_export_shipment.py               |  143 ++-
+ .../models/madenat_sv_imputation.py                |  813 +++++++++++++-
+ .../security/ir.model.access.csv                   |    4 +
+ .../security/madenat_sv_imputation_rules.xml       |   37 +
+ madenat_lumber_logistics/tests/__init__.py         |   42 +
+ .../tests/test_document_status_b2.py               |    4 +-
+ .../tests/test_documentary_backlog.py              |    1 +
+ .../tests/test_hotfix_owl_chatter.py               |  139 +++
+ .../tests/test_processor_return_link.py            |    6 +-
+ .../tests/test_sv_assignment_user_rights.py        |  136 +++
+ .../tests/test_sv_imputation_candidates.py         |   28 +-
+ .../tests/test_sv_imputation_i2.py                 |   16 +-
+ .../tests/test_sv_imputation_manual.py             |  328 ++++++
+ .../tests/test_sv_rebaja_blindaje.py               |  271 +++++
+ .../tests/test_sv_rebaja_cierre.py                 |  401 +++++++
+ .../tests/test_sv_rebaja_contrato.py               |  223 ++++
+ .../tests/test_sv_rebaja_material.py               |  203 ++++
+ .../tests/test_sv_rebaja_navigation.py             |  272 +++++
+ .../tests/test_sv_rebaja_operativa.py              |  373 +++++++
+ .../tests/test_sv_rebaja_persistencia.py           |  539 +++++++++
+ .../tests/test_sv_rebaja_reset.py                  |  408 +++++++
+ .../tests/test_sv_rebaja_reset_concurrency.py      |  418 +++++++
+ .../tests/test_sv_rebaja_reset_lot_capacity.py     |  365 ++++++
+ .../tests/test_sv_rebaja_reset_token.py            |  186 ++++
+ .../tests/test_sv_rebaja_save_lock.py              |  722 ++++++++++++
+ .../tests/test_sv_rebaja_save_lock_direct.py       |  197 ++++
+ .../tests/test_sv_rebaja_save_lock_tx.py           |  473 ++++++++
+ .../tests/test_sv_rebaja_seleccion_asignacion.py   |  359 ++++++
+ .../tests/test_sv_rebaja_simple.py                 |  408 +++++++
+ .../tests/test_sv_rebaja_ui_acciones.py            |  180 +++
+ .../tests/test_sv_rebaja_ui_limpia.py              |  542 +++++++++
+ madenat_lumber_logistics/views/logistics_menus.xml |   26 +-
+ madenat_lumber_logistics/views/lumber_actions.xml  |    2 +-
+ .../views/lumber_container_views.xml               |    4 +-
+ .../views/lumber_document_checklist_views.xml      |   10 +-
+ .../views/lumber_export_shipment_views.xml         |   61 +-
+ .../views/madenat_processor_return_link_views.xml  |   11 +-
+ .../views/madenat_sv_imputation_views.xml          |  312 +++++-
+ .../wizards/lumber_container_rollover_wizard.py    |    7 +-
+ .../wizards/lumber_shipment_zarpe_wizard.py        |   46 +-
+ .../wizards/lumber_shipment_zarpe_wizard_views.xml |   21 +-
+ .../wizards/madenat_sv_imputation_wizard.py        | 1160 +++++++++++++++++++-
+ .../wizards/madenat_sv_imputation_wizard_views.xml |  305 ++++-
+ 46 files changed, 10717 insertions(+), 288 deletions(-)
+
+commit a6912569e906eee3f74da7b8ef907187b3a8a865
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 10:54:57 2026 -0300
+
+    fix(shipping_core): restituye el elemento <chatter/> en Motonave/Viaje y aclara AD-92 (rolleo por Embarque)
+    
+    Intervenciones incluidas:
+    - Reparacion de marcado corrupto (doctrina del HOTFIX OWL chatter, AD-105): las vistas de Motonave y Viaje
+      traian el fragmento `hatter/>` (residuo de `div.oe_chatter`) en lugar de `<chatter/>`; Odoo 18 CE no compila
+      ese marcado y ambas vistas estan LISTADAS en el manifest del modulo, por lo que `madenat_lumber_shipping_core`
+      no podia cargar sus vistas. Se restituye el elemento canonico `<chatter/>`.
+    - AD-92 (2026-10-05, «Rolleo centrado en Embarque»): se precisa en el modelo y en la vista que el rolleo YA NO
+      se ejecuta desde la Motonave; el boton solo abre la lista de Embarques filtrada por esa Motonave (consulta).
+    
+    Archivos: models/shipping_vessel.py, views/shipping_vessel_views.xml, views/shipping_voyage_views.xml.
+    Version del modulo: 18.0.1.0.0 (el manifest no se modifica).
+    
+    Referencias AD: AD-92 y AD-105. Expediente: HOTFIX_OWL_CHATTER_OE_20261012 (el fragmento corrupto no estaba
+    registrado en ningun expediente previo).
+    
+    Hallazgo colateral (NO corregido aqui, fuera de alcance): `models/shipping_vessel.py` importa `AccessError`
+    que no se usa; y el archivo pierde el salto de linea final.
+    
+    Commit local 3/5 de la FASE 5. Sin push ni despliegue.
+
+ madenat_lumber_shipping_core/models/shipping_vessel.py  | 17 +++++++++++------
+ .../views/shipping_vessel_views.xml                     |  8 +++++---
+ .../views/shipping_voyage_views.xml                     |  2 +-
+ 3 files changed, 17 insertions(+), 10 deletions(-)
+
+commit 0ef438868ed7dd4e14d8ee34167af01ea4933d2c
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 10:54:08 2026 -0300
+
+    feat(core): H1/H2/H3, guardas de eliminacion de guia, guias duplicadas y guarda de etiqueta SV
+    
+    Intervenciones incluidas (commit por MODULO; varios archivos mezclan intervenciones):
+    - intake/guias-dup-delete (2026-10-07): validacion efectiva de guias duplicadas en la ingesta
+      (Procesado / Volumenes / formulario directo) reutilizando C1; aviso no bloqueante en Recepcion,
+      prevencion de avisos repetidos y regresion del incidente de la guia 15183 (cross-model mismo emisor).
+      Archivos: models/mixin_lumber_ingest.py, models/reception_parser.py, models/reception_workflow.py y
+      suites test_guide_duplicate_warnings.py / test_guide_duplicate_ingest.py /
+      test_guide_dup_regression_15183.py.
+    - core/guias (AD-103/AD-104): guardas de eliminacion de guia (D-G1..D-G4) y ajustes de la via directa.
+    - lote/stock_quant-FK (2026-10-12): la etiqueta SV con existencias no se elimina (guarda proactiva
+      _sv_guard_unlink + traduccion de la ForeignKeyViolation a mensaje de negocio con savepoint);
+      suite test_sv_lot_unlink_guard.py.
+    - FASE 4 (AD-105): H1 motivo obligatorio por cualquier via (se retira el valor por defecto de la FASE 3);
+      H2 rol autorizado = Jefatura de Operaciones o sistema (GUIA_DELETE_GROUPS / _guia_delete_group_ok()),
+      en lugar del grupo tecnico stock.group_stock_manager; H3/H-SEC-5 bitacora madenat.audit.log
+      APPEND-ONLY por ORM (write/unlink bloqueados incluso con sudo(); limite SQL/DBA declarado) + ACL del
+      grupo de sistema 1,1,1,1 -> 1,0,1,0 + limpieza test-only del ledger con token inerte.
+      Archivos: models/madenat_audit_log.py, models/madenat_guia_processing.py, models/madenat_sv_internal.py,
+      models/madenat_sv_operation.py, security/ir.model.access.csv, tests/test_guia_processing.py y
+      suite test_audit_log_immutability.py.
+    - UI/navegacion: views/lumber_core_menu.xml.
+    
+    Version del modulo: 18.0.6.6.0 -> 18.0.6.9.0 (CHANGELOG 18.0.6.9.0).
+    
+    Referencias AD: AD-103, AD-104 y AD-105.
+    Expedientes: AUDITORIA_INTEGRAL_20261012/fase2|fase3|fase4, INCIDENTE_GUIA_15183_20261007,
+    FIX_GUIA_DUP_CIERRE_20261007_170340, DIAGNOSTICO_SV000000841_20261012.
+    
+    EXCLUIDO (D18, origen no confirmado): tests/test_duplicate_validation.py; permanece en el WIP.
+    
+    Commit local 3/5 de la FASE 5. Sin push ni despliegue.
+
+ madenat_lumber_core/CHANGELOG.md                   |  72 ++++
+ madenat_lumber_core/__manifest__.py                |   2 +-
+ madenat_lumber_core/models/madenat_audit_log.py    |  57 ++-
+ .../models/madenat_guia_processing.py              | 329 +++++++++++++++-
+ madenat_lumber_core/models/madenat_sv_internal.py  |   4 +-
+ madenat_lumber_core/models/madenat_sv_operation.py |  14 +
+ madenat_lumber_core/models/mixin_lumber_ingest.py  |  25 ++
+ madenat_lumber_core/models/reception_parser.py     | 244 +++++++-----
+ madenat_lumber_core/models/reception_workflow.py   |  47 ++-
+ madenat_lumber_core/models/stock_lot.py            |  23 +-
+ madenat_lumber_core/security/ir.model.access.csv   |   4 +-
+ madenat_lumber_core/tests/__init__.py              |  13 +
+ .../tests/test_audit_log_immutability.py           | 113 ++++++
+ madenat_lumber_core/tests/test_guia_processing.py  |   9 +-
+ .../tests/test_guide_dup_regression_15183.py       | 143 +++++++
+ .../tests/test_guide_duplicate_ingest.py           | 426 +++++++++++++++++++++
+ .../tests/test_guide_duplicate_warnings.py         | 183 +++++++++
+ .../tests/test_sv_lot_unlink_guard.py              | 107 ++++++
+ madenat_lumber_core/views/lumber_core_menu.xml     | 137 ++++++-
+ 19 files changed, 1835 insertions(+), 117 deletions(-)
+
+commit d67313bf914fda3d2804925d240e5037f9fddc25
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 10:53:18 2026 -0300
+
+    docs(canon): sincroniza CANON 02/03/04/05/18/19/INDICE y WIKI y registra AD-106 (supuesto de una sola compania)
+    
+    Intervenciones documentadas (cerradas entre 2026-10-10 y 2026-10-12):
+    - FASE 2 (higiene): 02 §17.16.19..§17.16.29 restituidas literalmente (D13), indice de snapshots (D14)
+      y registro de la decision D15 -> AD-103.
+    - FASE 3 (guardas de eliminacion de guia G1/G2): AD-104 (D-G1..D-G4 + saneamiento de fixture).
+    - FASE 4 (cierre de brechas H1-H6): AD-105 (H1 motivo obligatorio por cualquier via; H2 rol
+      jefatura/sistema; H3/H-SEC-5 bitacora APPEND-ONLY por ORM con limite SQL/DBA declarado; H4; H6).
+    - HOTFIX OWL chatter (2026-10-12): 19 §19.33, 02 §17.16.30, 03 §30 y 05.
+    - Ciclo de rebaja de etiquetas / imputacion SV (I2) y conciliacion envio-retorno: 19 §19.14..§19.33,
+      18_CONSOLIDACION_Y_REBAJA y 03.
+    - WIKI: despliegue de modulo (03_OPERACION/despliegue_modulo.md) y NUEVA pagina de higiene del entorno
+      (03_OPERACION/higiene_entorno.md).
+    - NUEVO (FASE 5 / C-3): AD-106 - MADENAT opera con UNA sola compania: no se implementa company_id ni
+      ir.rule de compania en madenat.guia.processing (condicion de reapertura declarada) y se conservan los
+      3 usuarios inactivos @madenat.test (D7 = CONSERVAR).
+    
+    Versiones documentales: 02 12.40.0; 03 6.38.0; 04 12.21.0 -> 12.22.0 (AD-106); 05 8.26.0 -> 8.27.0
+    (supuesto de una sola compania + usuarios de prueba); 18 1.2.0; 19 1.31.0; INDICE 12.32.0 -> 12.33.0;
+    WIKI/00 2.0.2. Numeracion monotona, sin renumerar.
+    
+    Referencias AD: AD-103, AD-104, AD-105 y AD-106.
+    Expedientes: AUDITORIA_INTEGRAL_20261012/fase2|fase3|fase4, HOTFIX_OWL_CHATTER_OE_20261012,
+    AUDIT_REBAJA_ETIQUETAS_20261011, CONCILIACION_ENVIO_RETORNO_20261010.
+    
+    Commit local 1/5 de la FASE 5 (commits ordenados por modulo). Sin push ni despliegue.
+
+ madenat_lumber_docs/CANON/02_CONTINUIDAD.md        |  464 ++++++++-
+ madenat_lumber_docs/CANON/03_TESTS.md              |  601 ++++++++++-
+ madenat_lumber_docs/CANON/04_DECISION_LOG.md       |  115 ++-
+ madenat_lumber_docs/CANON/05_BACKLOG.md            |  206 +++-
+ .../CANON/18_CONSOLIDACION_Y_REBAJA.md             |    4 +-
+ .../CANON/19_IMPUTACION_SV_Y_PROCESADORES.md       | 1071 +++++++++++++++++++-
+ madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md  |  133 ++-
+ madenat_lumber_docs/WIKI/00_INDICE.md              |    7 +-
+ .../WIKI/03_OPERACION/despliegue_modulo.md         |   36 +
+ .../WIKI/03_OPERACION/higiene_entorno.md           |  140 +++
+ 10 files changed, 2761 insertions(+), 16 deletions(-)
