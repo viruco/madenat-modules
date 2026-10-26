@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.42.0
-**Fecha de actualización:** 2026-10-19  <!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
+**Versión documental:** 6.43.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 6.43.0 / 2026-10-26 al registrar §34 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 14 pruebas unitarias (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 5 en test_volume_comparison_5c); desglose nominal de las 10 fallas preexistentes de regresión (6 en core, 4 en logistics); corrección de atribución errónea "de costing". Total esperado en suite: 1.551 + 14 = 1.565 pruebas. Versión 03 6.40.0 → 6.41.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 13 pruebas unitarias nuevas en madenat_lumber_core (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 4 en test_volume_comparison_5c). Total acumulado esperado en suite: 1.551 + 13 = 1.564 pruebas. Versión 03 6.39.0 → 6.40.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §31 REGLA CANÓNICA DE ARNÉS DE REGRESIÓN: uso exclusivo de -u (nunca -i) sobre módulos requeridos (M1 / AD-125). Análisis Odoo loading.py / convert.py; erradicación de -i en scripts. Versión 03 6.38.0 → 6.39.0. Sin commit/push. -->

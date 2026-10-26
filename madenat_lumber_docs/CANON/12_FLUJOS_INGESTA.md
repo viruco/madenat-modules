@@ -1,8 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.20.0
-**Fecha de actualización:** 2026-10-21  <!-- 2026-10-21: §12.8 Asistente de importación de consolidación de tarjas desde Excel con doble bloque y filas pendientes (AD-133 / Bloque 7.2). Versión 1.19.0 → 1.20.0. | Bloque 7. -->
+**Versión documental:** 1.21.0
+**Fecha de actualización:** 2026-10-26  <!-- 2026-10-26: **Consolidación documental FASE 2 (E1)** — sincronización de la cabecera con la fila del índice, que ya declaraba 1.21.0 / 2026-10-26 al registrar §13 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+<!-- 2026-10-21: §12.8 Asistente de importación de consolidación de tarjas desde Excel con doble bloque y filas pendientes (AD-133 / Bloque 7.2). Versión 1.19.0 → 1.20.0. | Bloque 7. -->
 <!-- 2026-10-21: §12.7 Flujo de edición de dimensiones antes y después del envío a stock (AD-132 / Bloque H5). Versión 1.18.0 → 1.19.0. | Bloque H5. -->
 <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
 <!-- 2026-10-19: §3.3 Cita explícita de ADRs (AD-65, AD-79, AD-80, AD-87) en matriz de ingesta y formalización de Bloque 6 (AD-127). Versión 1.16.0 → 1.17.0. | Bloque 6. -->\

@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.49.0
-**Fecha de actualización:** 2026-10-20  <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL (H0-A) y saneamiento de pruebas (H0-B); versión 02 12.48.0 → 12.49.0. Sin push ni despliegue. -->
+**Versión documental:** 12.50.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.50.0 / 2026-10-26 al registrar §21 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL (H0-A) y saneamiento de pruebas (H0-B); versión 02 12.48.0 → 12.49.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
 
 ### Resumen Ejecutivo de Continuidad (Tabla Sinóptica)

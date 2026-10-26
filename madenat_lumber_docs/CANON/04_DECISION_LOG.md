@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.52.0
-**Última actualización:** 2026-10-21  <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
+**Versión documental:** 12.53.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
 <!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
 <!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
 <!-- actualizado: 2026-10-21 — Escalamiento SV y Delegación Segura Chatter (AD-129): publicación de chatter en _sv_post_chatter con sudo() acotado y autor real sin alterar ACLs; TestSvEscalationSecurity 7/7 y TestSvRpcBypass 14/14. Versión 04 12.48.0 → 12.49.0. | Bloque H1. -->

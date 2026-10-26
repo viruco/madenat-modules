@@ -1,8 +1,8 @@
 # MADENAT — Índice de Conocimiento Operativo
 
-**Versión:** 2.0.2
-**Fecha:** 2026-10-12
-**Estado:** ACTIVO — Actualizado en auditoría documental 2026-06-30; alta de `03_OPERACION/higiene_entorno.md` (2026-10-07); **2026-10-12: HOTFIX OWL chatter** — `div.oe_chatter` → `<chatter/>` en `madenat.sv.imputation`/`processor.return.link` (`madenat_lumber_logistics` **18.0.1.26.0**; ver `CANON/19` §19.33 y `HOTFIX_OWL_CHATTER_OE_20261012/`)
+**Versión:** 2.1.0
+**Fecha:** 2026-10-26
+**Estado:** ACTIVO — Actualizado en auditoría documental 2026-06-30; alta de `03_OPERACION/higiene_entorno.md` (2026-10-07); **2026-10-12: HOTFIX OWL chatter** — `div.oe_chatter` → `<chatter/>` en `madenat.sv.imputation`/`processor.return.link` (`madenat_lumber_logistics` **18.0.1.26.0**; ver `CANON/19` §19.33 y `HOTFIX_OWL_CHATTER_OE_20261012/`); **2026-10-26: consolidación documental (FASE 2 / E1)** — sincronía con `CANON/INDICE_DOCUMENTACION.md` **v12.57.0**; 7 entradas CANON marcadas como archivadas en `LEGADO/`; alta de 4 notas que existían sin indexar (`02_TECNICO/madenat_lumber_logistics.md`, `02_TECNICO/roadmap_core.md`, `05_INCIDENTES/INC-011`, sesión 2026-09-08)
 
 ---
 
@@ -19,24 +19,28 @@
 | Archivo | Dueño de la verdad |
 |---|---|
 | `CANON/00_ARQUITECTURA.md` | Base técnica, componentes, restricciones y gates |
-| `CANON/01_FLUJO_PACKING.md` | Flujo funcional de packing y estados |
+| `CANON/01_FLUJO_PACKING.md` | 🏷️ ARCHIVADO en `LEGADO/` — absorbido por `00` y `12_FLUJOS_INGESTA` |
 | `CANON/02_CONTINUIDAD.md` | Checkpoint vivo de retoma operativa |
 | `CANON/03_TESTS.md` | Matriz de pruebas y evidencia funcional |
 | `CANON/04_DECISION_LOG.md` | Registro de decisiones técnicas y funcionales |
 | `CANON/05_BACKLOG.md` | Prioridades y tareas pendientes vigentes |
 | `CANON/05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
-| `CANON/06_CHECKLIST.md` | [LEGACY] Checklist operativo — reemplazado por 09 |
+| `CANON/06_CHECKLIST.md` | 🏷️ ARCHIVADO en `LEGADO/` — reemplazado por el checklist A-F del índice |
 | `CANON/07_TRABAJO_CON_IA.md` | Protocolo canónico de trabajo con IA |
 | `CANON/08_COSTEO.md` | Flujo canónico de costeo end-to-end |
-| `CANON/09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro, checklist canónico, huecos, riesgos |
-| `CANON/10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria — migración Float→Monetary |
+| `CANON/09_FASE_DOCUMENTAL_MAESTRA.md` | 🏷️ ARCHIVADO en `LEGADO/` — checklist migrado al índice |
+| `CANON/10_AUDITORIA_MONETARIA_FASE_A.md` | 🏷️ ARCHIVADO en `LEGADO/auditorias` — evidencia histórica de Fase A |
 | `CANON/11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline |
 | `CANON/12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera |
-| `CANON/12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles |
-| `CANON/13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación |
-| `CANON/14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental |
+| `CANON/12_ARQUITECTURA_OPERATIVA_PERFILES.md` | 🏷️ ARCHIVADO en `LEGADO/diseno` — diseño no implementado |
+| `CANON/13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | 🏷️ ARCHIVADO en `LEGADO/diseno` — diseño no implementado |
+| `CANON/14_GUIA_EJECUCION_INCREMENTAL.md` | 🏷️ ARCHIVADO en `LEGADO/diseno` — plan no ejecutado |
 | `CANON/15_DIAGNOSTICO_NAVEGACION_ACTUAL.md` | Diagnóstico de navegación actual |
-| `CANON/INDICE_DOCUMENTACION.md` | Mapa maestro de todos los documentos (v10.0.0) |
+| `CANON/16_AUDITORIA_20261001.md` | Auditoría integral del 2026-10-01 |
+| `CANON/17_CONSTITUCION_VOLUMENES.md` | Constitución de volúmenes F1/F2/F3, hashes y tablas |
+| `CANON/18_CONSOLIDACION_Y_REBAJA.md` | Consolidación de volumen y rebaja de etiquetas |
+| `CANON/19_IMPUTACION_SV_Y_PROCESADORES.md` | Imputación SV y procesadores (retornos, rebajas, contrato) |
+| `CANON/INDICE_DOCUMENTACION.md` | Mapa maestro de todos los documentos (v12.57.0) |
 
 ---
 
@@ -74,6 +78,8 @@
 | `02_TECNICO/validadores_checklist.md` | ValidationChecklistMixin (7 validadores) |
 | `02_TECNICO/reportes_inventario_recepcion.md` | Reportes de inventario y recepción |
 | `02_TECNICO/flujo_dimensiones_comerciales.md` | Flujo de dimensiones comerciales |
+| `02_TECNICO/madenat_lumber_logistics.md` | Módulo de logística: retornos de servicio, imputación SV y rebajas |
+| `02_TECNICO/roadmap_core.md` | Hoja de ruta técnica del núcleo (estado y pendientes por bloque) |
 
 ---
 
@@ -120,6 +126,7 @@
 | `05_INCIDENTES/INC-008_noupdate_billing_menus.md` | noupdate en menús de billing |
 | `05_INCIDENTES/INC-009_auto_dependencia_costing.md` | Auto-dependencia en costing |
 | `05_INCIDENTES/INC-010_thickness_visual_6_4_rango_s2s.md` | thickness_visual 6/4 rango S2S |
+| `05_INCIDENTES/INC-011_DESALINEACION_CODIGO_DB_MADENAT_TEST_20261003.md` | Desalineación entre código y base `madenat_test` (2026-10-03) |
 
 ---
 
@@ -129,6 +136,7 @@
 |---|---|
 | `06_SESIONES/_PLANTILLA_SESION.md` | Plantilla para registrar sesiones: contexto, objetivos, decisiones, pendientes |
 | `06_SESIONES/_CAPSULA_CONTEXTO.md` | Cápsula activa de contexto para pegar en IA |
+| `06_SESIONES/2026-09-08_sesion_defectos_intake_guia_procesada.md` | Sesión 2026-09-08: defectos detectados en intake de guía procesada |
 
 ---
 
