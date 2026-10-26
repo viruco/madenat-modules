@@ -2366,3 +2366,46 @@ Consultas oficiales B y A.2 ejecutadas en las tres tablas con coincidencia 100% 
 
 
 
+
+---
+
+## 21. FASE 13 / 2D — PROCEDENCIA DEL PERFIL Y VIGENCIA DE LA LECTURA (AD-134, 2026-10-26)
+
+### 21.1 Estado al cierre
+
+| Ítem | Valor | Comprobación |
+|---|---|---|
+| Versión del módulo | `madenat_lumber_intake` **18.0.0.22.0** | [VERIFICADO `ir_module_module.latest_version`] |
+| Respaldo previo | `/tmp/madenat_test_pre_2d_20261026_0956.dump` (11,7 MB, `pg_dump -Fc`) | [VERIFICADO `ls -la`] |
+| Suite del módulo | **541 tests** ejecutados · `445 post-tests` · **0 failed, 0 error** | [VERIFICADO log `/tmp/2d_upgrade2.log`] |
+| Datos | md5 líneas `f8df05ac…` / lotes `d5bf9ef6…` **idénticos** antes/después; 84 líneas y 152 lotes | [VERIFICADO SQL antes/después] |
+| Conteos | `lumber.reception` 8 · `madenat.guia.processing` 13 (sin cambios) | [VERIFICADO] |
+| Migración | **No requerida**: `profile_origin` NOT NULL con 112/112 filas en `'default'` | [VERIFICADO `information_schema`] |
+| Web | **HTTP 200** en `/web/login`; `odoo18_app` y `odoo18_db` arriba | [VERIFICADO `curl`] |
+
+### 21.2 Comandos ejecutados (secuencia)
+
+```bash
+docker exec odoo18_db pg_dump -U odoo -Fc -d madenat_test > /tmp/madenat_test_pre_2d_20261026_0956.dump
+docker compose stop web
+docker compose run --rm -T web odoo -d madenat_test -u madenat_lumber_intake \
+    --stop-after-init --test-tags /madenat_lumber_intake --log-level=test
+docker compose start web && curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8069/web/login
+```
+
+### 21.3 Cambios de código (commits)
+
+| Commit | Contenido |
+|---|---|
+| `bb398e3` | `feat(intake)`: modelo + vista + versión `18.0.0.22.0` (campos de procedencia, huella, `has_required_documents`) |
+| `a3b24bd` | `test(intake)`: suite `T-2D-1..9` + utilidad `mark_previewed` + adaptación de las suites de derivación |
+| `9804066` | `test(intake)`: lectura rancia por vía baja y estado `previewed` en Procesado |
+| `b5dc5c5` | `docs(intake)`: README §19, historial de decisiones y CHANGELOG |
+
+### 21.4 Punto de retoma
+
+1. Revisión del bloque por el operador (FASE 2D cerrada, sin abrir 2B tramo 3 ni Fase 2C).
+2. Riesgo abierto **R6**: `_onchange_intake_modality_patio` diferido — cambiar modalidad no reasigna patio.
+3. Limitación aceptada **H4**: sin badge permanente de «elegido por el operador».
+4. Regla de trabajo: `.clinerules/madenat-regla-de-oro.md` (un paso por vez, evidencia antes de afirmar).
+

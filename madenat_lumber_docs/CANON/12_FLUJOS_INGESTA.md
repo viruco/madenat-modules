@@ -620,3 +620,55 @@ Tras la armonización canónica con las directrices de Cristhian Elgueta y la ar
 
 
 
+
+---
+
+## 13. Procedencia del perfil de lectura y vigencia de la lectura (AD-134 / FASE 13-2D, 2026-10-26)
+
+### 13.1 Secuencia canónica del ingreso (sin cambios de pantallas)
+
+```
+Adjuntar documentos → «Leer documento» (state = previewed + reading_signature)
+                    → «Continuar ingreso» (guardas → _route_granel/_route_producto/_route_procesado)
+```
+
+- La lectura deja el wizard en **`previewed`** en las tres modalidades (Producto, Procesado y Volúmenes).
+- La derivación se bloquea si falta la lectura (`state != 'previewed'`) o si la huella no coincide con los
+  datos actuales (lectura rancia).
+
+### 13.2 Procedencia del perfil
+
+| `profile_origin` | Significado | Efecto de la sugerencia documental |
+|---|---|---|
+| `default` | Valor inicial del campo (sin análisis) | Aplica el perfil sugerido y pasa a `suggested` |
+| `suggested` | Fijado por la sugerencia documental | Puede actualizarse con una nueva sugerencia |
+| `chosen` | Elección explícita del operador | **No** se aplica; sólo se registra en `profile_suggested` y se muestra el aviso |
+
+`profile_mismatch_hint` (no bloqueante) aparece cuando `profile_origin = 'chosen'`, existe
+`profile_suggested` y el perfil aplicado difiere de la sugerencia. La lectura se hace **siempre** con la
+elección del operador.
+
+### 13.3 Invalidación de la lectura
+
+Entradas vigiladas (`_READING_INPUT_FIELDS`): `intake_modality`, `ingestion_profile`,
+`assignment_location_id`, `tipo_detalle_granel`, `excel_file`, `excel_filename`, `pdf_file`, `pdf_filename`.
+
+- Si alguna cambia de valor y el wizard estaba en `previewed`, `write()` limpia preview, marca de
+  advertencia y huella, y devuelve el estado a `draft`.
+- Un vals idéntico al almacenado no invalida (evita ruido del cliente web).
+- Asignar el campo en Python también pasa por `write()` ⇒ invalida. La única vía que **no** invalida es una
+  escritura de bajo nivel (`_write`/SQL directo): para ese caso existe la comparación de huella en la guarda.
+
+### 13.4 Documentos requeridos
+
+`has_required_documents` (compute) gobierna el botón «Leer documento»:
+
+- Modalidad **normal**: PDF/Guía **y** Excel.
+- Modalidad **Volúmenes**: al menos uno (PDF o Excel).
+
+Si faltan, `action_preview_document` lanza `UserError` **antes de clasificar**: no se escribe ningún campo.
+
+### 13.5 Fuera de alcance
+
+`_onchange_intake_modality_patio` sigue diferido (R6): cambiar de modalidad no reasigna el patio.
+

@@ -110,6 +110,9 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | 13 | ¿Cómo opera la consola única de ingreso `madenat_lumber_intake`? | `CANON/02_CONTINUIDAD.md` | §2 Puerta única, CANON/04 AD-51 |
 | 14 | ¿Cómo se gestionan las mermas y rebajas de inventario por exportación?| `CANON/17_CONSTITUCION_VOLUMENES.md` | §10.6.7 Rebaja y merma dimensional |
 | 15 | ¿Cuál es la regla de redondeo único en cálculos volumétricos? | `CANON/04_DECISION_LOG.md` | AD-122 (r3 ROUND_HALF_UP sin recálculos) |
+| 16 | ¿Puede la sugerencia documental cambiar el perfil que eligió el operador? | `CANON/04_DECISION_LOG.md` | AD-134, CANON/12 §13.2 (nunca: `profile_origin='chosen'`) |
+| 17 | ¿Cuándo deja de ser válida una lectura del documento? | `CANON/12_FLUJOS_INGESTA.md` | §13.3 Entradas vigiladas e invalidación en `write()` |
+| 18 | ¿Por qué el botón «Leer documento» está oculto? | `CANON/12_FLUJOS_INGESTA.md` | §13.4 `has_required_documents` por modalidad |
 
 ---
 
@@ -119,9 +122,9 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 |---|---|---|---|---|
 | `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones (incluye §4.8 Gestión Operativa de Etiquetas SV, §4.9 Modo A autoservicio y §4.10 Búsqueda/filtros/agrupaciones de la Consola de Intake) | 7.18.0 | 2026-10-07 | ✅ Vigente |
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA |
-| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, y **H0 Higiene Mínima Segura — AD-128**) | 12.49.0 | 2026-10-20 | ✅ Vigente |
-| `03_TESTS.md` | Catálogo maestro de suites, tests unitarios e integración (§33 Bloque 6 suites y script canónico `run_regression.sh`) | 6.42.0 | 2026-10-19 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-133; **AD-130: Unificación reglas exportación; AD-131: Recálculo controlado datos prueba; AD-132: Flujo edición dimensiones staging y aviso chatter stock; AD-133: Paridad tarjas exportador, importador doble bloque y merma dimensional R2**) | 12.52.0 | 2026-10-21 | ✅ Vigente |
+| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, **H0 Higiene Mínima Segura — AD-128** y **§21 FASE 13/2D — AD-134**) | 12.50.0 | 2026-10-26 | ✅ Vigente |
+| `03_TESTS.md` | Catálogo maestro de suites, tests unitarios e integración (§33 Bloque 6 suites y script canónico `run_regression.sh`; §34 FASE 13/2D — AD-134) | 6.43.0 | 2026-10-26 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-134; **AD-130: Unificación reglas exportación; AD-131: Recálculo controlado datos prueba; AD-132: Flujo edición dimensiones staging y aviso chatter stock; AD-133: Paridad tarjas exportador, importador doble bloque y merma dimensional R2; AD-134: Procedencia del perfil y vigencia de la lectura**) | 12.53.0 | 2026-10-26 | ✅ Vigente |
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases (HG-01..HG-08, HG-07 casi cerrado 9/10, HG-09, **Bloque 7: Cierre formal Fase 2 (7.1-7.4) y diferimiento de REMATE y asiento contable de merma**) | 8.54.0 | 2026-10-21 | ✅ Vigente |
 | `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail | 1.1.0 | 2026-09-25 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice |
@@ -130,7 +133,7 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `09_FASE_DOCUMENTAL_MAESTRA.md` | Mapa maestro consolidado — ARCHIVADO, checklist migrado a este índice | 1.1.0 | 2026-06-16 | 🏷️ ARCHIVADO — checklist A-F consolidado en Anexo A |
 | `10_AUDITORIA_MONETARIA_FASE_A.md` | Auditoría monetaria Fase A — ARCHIVADO en LEGADO/auditorias | — | 2026-06-04 | 🏷️ ARCHIVADO — Fase A completada, evidencia histórica |
 | `11_FASE_E_VALIDACION.md` | Validación end-to-end, CI pipeline, runbook operativo | 1.1.0 | 2026-06-16 | ✅ Derivado vigente |
-| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §12.7 Flujo edición antes y después de stock — AD-132, §12.8 Asistente importación consolidación tarjas — AD-133, y **Tabla Sinóptica H0 — AD-128**) | 1.20.0 | 2026-10-21 | ✅ Vigente |
+| `12_FLUJOS_INGESTA.md` | Flujos de ingesta de madera y discriminación operativa (incluye §11.5 volumen oficial de Recepción, §11.8 imputación SV, §12 Reglas de Ingreso Directo, Blanks F4/F6, Patios F7, Secado en Horno, §12.7 Flujo edición antes y después de stock — AD-132, §12.8 Asistente importación consolidación tarjas — AD-133, **§13 Procedencia del perfil y vigencia de la lectura — AD-134** y **Tabla Sinóptica H0 — AD-128**) | 1.21.0 | 2026-10-26 | ✅ Vigente |
 | `12_ARQUITECTURA_OPERATIVA_PERFILES.md` | Arquitectura operativa y perfiles — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `13_ARQUITECTURA_TECNICA_IMPLEMENTACION.md` | Arquitectura técnica de implementación — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — diseño no implementado |
 | `14_GUIA_EJECUCION_INCREMENTAL.md` | Guía de ejecución incremental — ARCHIVADO en LEGADO/diseno | 1.0.0 | 2026-06-05 | 🏷️ ARCHIVADO — plan no ejecutado |
@@ -303,3 +306,14 @@ archiva). Corrección mínima de robustez: **guarda proactiva** de la etiqueta S
 `test_sv_lot_unlink_guard.py` (4 → **0 failed/0 error**); regresión `core+intake+logistics` **1279 → 6 failed /
 4 error** con el **mismo** conjunto de 10 fallos preexistentes (diff idéntico). Lote 10215 y quants 7840/7841
 **intactos**. **Sin commit/push/despliegue; TEST remoto intacto.** -->
+
+<!-- actualizado: 2026-10-26 — **FASE 13/2D (AD-134)**: `04` **AD-134**, `12` **§13**, `03` **§34**, `02` **§21**.
+Versiones: 04 **12.53.0**, 12 **1.21.0**, 03 **6.43.0**, 02 **12.50.0**. Módulo `madenat_lumber_intake`
+**18.0.0.22.0** (sin cambios en core/engine). La sugerencia documental de perfil ya **no** sobrescribe la elección
+del operador (`profile_origin` = `default`/`suggested`/`chosen`, aviso no bloqueante `profile_mismatch_hint`);
+la derivación exige lectura vigente en las **tres** modalidades (`state='previewed'` + `reading_signature`) y
+`write()` invalida el preview cuando cambia una entrada de la lectura. Suite del módulo **541 tests / 0 failed /
+0 error**; datos intactos (md5 líneas `f8df05ac…`, lotes `d5bf9ef6…`); **HTTP 200**. Limitación aceptada H4;
+riesgo abierto R6 (`_onchange_intake_modality_patio` diferido). Sin commit/push fuera de `custom_addons`
+propios de esta fase. -->
+

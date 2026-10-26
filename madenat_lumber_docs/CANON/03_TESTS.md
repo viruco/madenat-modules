@@ -1672,3 +1672,35 @@ Se incorporan 26 pruebas unitarias nuevas distribuidas en `madenat_lumber_core`,
 - `test_07_console_download_action`: Verificación de la acción de descarga y adjunto desde la Consola de Ingreso.
 
 **Total pruebas acumuladas esperadas en suite:** 1.565 + 26 = **1.591 pruebas**.
+
+---
+
+## 34. PRUEBAS DE LA FASE 13/2D — PROCEDENCIA DEL PERFIL Y VIGENCIA DE LA LECTURA (AD-134)
+
+Suite nueva `madenat_lumber_intake/tests/test_intake_profile_provenance.py` (9 pruebas, `post_install`).
+
+| Prueba | Contrato verificado | Estado |
+|---|---|---|
+| `test_t2d_1_sugerencia_no_pisa_eleccion_del_operador` | Con `profile_origin='chosen'`, la sugerencia sólo se registra en `profile_suggested`; el aviso nombra la sugerencia y la elección | [VERIFICADO] |
+| `test_t2d_2_sugerencia_se_aplica_sin_eleccion_previa` | Sin elección (`default`), la sugerencia se aplica y la procedencia pasa a `suggested`; sin aviso | [VERIFICADO] |
+| `test_t2d_3_coincidencia_no_es_eleccion` | Coincidir con la sugerencia no marca `chosen`; elegir otro perfil sí lo marca y activa el aviso | [VERIFICADO] |
+| `test_t2d_4_cambio_de_entrada_invalida_lectura` | Cambiar el perfil tras leer devuelve el wizard a `draft` y limpia preview, guía, marca y huella | [VERIFICADO] |
+| `test_t2d_5_vals_identico_no_invalida` | Escribir los mismos valores conserva `previewed` y la huella | [VERIFICADO] |
+| `test_t2d_6_derivacion_sin_lectura_bloquea_en_tres_modalidades` | Sin lectura, las tres modalidades lanzan `UserError` y no crean destino; tras leer, las tres quedan en `previewed` con huella | [VERIFICADO] |
+| `test_t2d_7_lectura_rancia_bloquea_y_preview_renueva` | Datos mutados por vía baja (`_write`) ⇒ bloqueo «cambiaron después de la lectura»; volver a leer permite derivar | [VERIFICADO] |
+| `test_t2d_8_preview_sin_documentos_no_escribe_nada` | Falta PDF, falta Excel y Volúmenes sin documentos: `UserError` y wizard intacto (sin tipo detectado, sin marcas, sin huella) | [VERIFICADO] |
+| `test_t2d_9_documentos_requeridos_y_contrato_de_vista` | `has_required_documents` por modalidad; botón «Leer documento» condicionado; campos de procedencia y aviso presentes en el formulario | [VERIFICADO] |
+
+**Utilidad de pruebas:** `tests/intake_reading_helpers.py::mark_previewed` deja el wizard en `previewed`
+con huella coherente sin ejecutar el motor; la usan las suites de derivación
+(`test_intake_wizard`, `test_granel_route`, `test_intake_modality`, `test_intake_profile_coherence`,
+`test_volume_extraction`, `test_volume_operational`, `test_intake_volume_detail_pieces`) para no
+depender de la extracción real.
+
+**Ajuste de expectativa por H2:** `test_intake_wizard.test_t2_procesado_preview_does_not_invoke_extract_document`
+ahora espera `state == 'previewed'` (antes `'draft'`) y exige huella de lectura.
+
+**Resultado de la suite del módulo (madenat_test, 2026-10-26):** `541 tests` ejecutados
+(`445 post-tests`), **0 failed, 0 error**. Los `ERROR` de `pg_advisory_xact_lock` en el log pertenecen a
+`TestDeleteConcurrency.test_01`, prueba que provoca el timeout de bloqueo a propósito.
+

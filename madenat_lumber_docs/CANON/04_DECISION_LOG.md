@@ -4255,3 +4255,51 @@ En la operación de exportación maderera de MADENAT, la consolidación física 
 
 
 
+
+---
+
+## AD-134: Procedencia del Perfil de Lectura y Vigencia de la Lectura (FASE 13 / 2D, 2026-10-26)
+
+**Contexto.** La sugerencia documental de perfil (`_onchange_suggest_ingestion_profile`) sobrescribía
+una elección explícita del operador, y las tres modalidades permitían derivar el ingreso sin lectura
+previa (o con una lectura obsoleta tras cambiar archivos, perfil, patio o nivel de detalle).
+
+**Decisiones aprobadas y estado**
+
+| ID | Decisión | Estado |
+|---|---|---|
+| H1 | Documentar la regla de un paso por vez en `.clinerules/madenat-regla-de-oro.md` y guardar el prompt en `FASE13_INTAKE_ENGINE_20261023/PROMPT_2D.md` | [VERIFICADO — archivos creados] |
+| H2 | La derivación exige lectura vigente en las **tres** modalidades (`state='previewed'` + `reading_signature` coincidente); la lectura de Procesado también deja `previewed` | [VERIFICADO — T-2D-6, suite 445/445] |
+| H3 | Migración sólo si los valores por defecto no bastan; en su caso, inicialización idempotente de columnas nuevas | [VERIFICADO — no hizo falta: `profile_origin` NOT NULL con 112/112 filas en `'default'`] |
+| H4 | Aceptar la limitación del distintivo «Perfil sugerido»: visible mientras `profile_origin != 'chosen'`; sin badge adicional de «elegido» | [VERIFICADO — `views/intake_wizard_views.xml`, T-2D-9] |
+| H5 | Diferir `_onchange_intake_modality_patio` (cambiar de modalidad no reasigna patio) | [DOCUMENTADO — riesgo R6 abierto] |
+
+**Campos nuevos (5)**
+
+- `profile_suggested` (Selection, persistido): perfil que sugiere el documento, separado del aplicado.
+- `profile_origin` (Selection `default`/`suggested`/`chosen`, default `default`, required): trazabilidad.
+- `profile_mismatch_hint` (Char, compute no almacenado): aviso no bloqueante de discrepancia.
+- `reading_signature` (Char, readonly): huella MD5 de las entradas de la última lectura.
+- `has_required_documents` (Boolean, compute no almacenado): habilita «Leer documento».
+
+**Reglas canónicas**
+
+1. La sugerencia **nunca** sobrescribe una elección explícita (`profile_origin == 'chosen'`); sólo se
+   registra en `profile_suggested` y se muestra el aviso.
+2. Una coincidencia con el valor sugerido **no** se interpreta como elección (`_onchange_mark_profile_chosen`).
+3. La invalidación de la lectura vive en `write()` (cubre RPC, `save()` y escrituras del servidor);
+   un vals idéntico al almacenado **no** invalida. El onchange homónimo sólo refleja el cambio en pantalla.
+4. `_guard_route_document` compara la huella: sin `previewed` o con huella distinta ⇒ bloqueo con mensaje
+   que pide volver a leer. La comprobación de documentos requeridos precede a la de estado.
+5. «Leer documento» sin los documentos exigidos por la modalidad **no escribe nada** (ni `tipo_ingreso`
+   ni marcas de advertencia).
+
+**Evidencia de despliegue (madenat_test)**
+
+- Versión `madenat_lumber_intake` **18.0.0.22.0** (`ir_module_module.latest_version`).
+- Respaldo previo: `/tmp/madenat_test_pre_2d_20261026_0956.dump` (11,7 MB, `pg_dump -Fc`).
+- Upgrade: `docker compose run --rm web odoo -d madenat_test -u madenat_lumber_intake --stop-after-init --test-tags /madenat_lumber_intake` ⇒ **445 post-tests, 0 failed, 0 error**.
+- Datos intactos: md5 de líneas `f8df05ac…` y lotes `d5bf9ef6…` idénticos antes/después (mismos 84 y 152
+  registros); `lumber.reception` 8 y `madenat.guia.processing` 13, sin cambios.
+- Web arriba: **HTTP 200** en `/web/login`.
+
