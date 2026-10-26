@@ -1,0 +1,20 @@
+### Estado final tras implementacion A/B + UI + retiro (2026-10-08)
+
+## Git
+HEAD=e302c488321c276af7e07f1abeecc8bc261a89f4
+76
+
+## Modulos
+ madenat_lumber_core installed 18.0.6.5.0
+ madenat_lumber_logistics installed 18.0.1.6.0
+ madenat_lumber_intake installed 18.0.0.11.0
+
+## Columna
+ service_return_confirmation character varying
+
+## Vista console form
+ 1867 madenat.lumber.intake.console.form 2026-10-08 12:38:43.790524
+
+## Vista search nueva
+ 2909 madenat.guia.processing.search.service.return
+

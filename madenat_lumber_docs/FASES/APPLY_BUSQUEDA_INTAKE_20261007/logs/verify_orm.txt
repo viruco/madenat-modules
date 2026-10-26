@@ -1,0 +1,55 @@
+2026-10-08 01:04:18,519 39 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-08 01:04:18,520 39 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-08 01:04:18,520 39 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-08 01:04:18,520 39 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-08 01:04:18,979 39 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-08 01:04:19,157 39 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-08 01:04:19,989 39 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 01:04:19,989 39 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 01:04:20,697 39 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-08 01:04:20,719 39 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.02s, 0 queries (+0 extra) 
+2026-10-08 01:04:21,070 39 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-08 01:04:24,185 39 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-08 01:04:24,190 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-08 01:04:24,335 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-08 01:04:24,335 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-08 01:04:24,335 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-08 01:04:24,336 39 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-08 01:04:24,764 39 INFO madenat_test odoo.modules.loading: 88 modules loaded in 3.69s, 0 queries (+0 extra) 
+2026-10-08 01:04:25,112 39 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-08 01:04:25,152 39 INFO madenat_test odoo.modules.registry: Registry loaded in 5.159s 
+CONSOLE_ROWS 18
+TYPE product 7
+TYPE processed 6
+TYPE volume 5
+DATEKIND emission 17
+DATEKIND reception 1
+OC_DOC 15
+OC_LINKED 0
+OC_PENDING 15
+OC_NONE 3
+COMBO_product_AND_volume 0
+GROUP ingestion_type 3
+GROUP guide_date_kind 2
+GROUP oc_documental 15
+GROUP processor_id 1
+PRODUCT_SEARCH 62 2
+ROWS 18 DISTINCT_IDS 18
+NAV_ID_OK lumber.reception True True
+NAV lumber.reception lumber.reception True
+NAV_ID_OK madenat.guia.processing True True
+NAV madenat.guia.processing madenat.guia.processing True
+DONE

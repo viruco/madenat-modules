@@ -1,0 +1,16 @@
+TestGuiaPickingLink.test_t_g2_03_exclusion_retornos
+TestOrphanMoveCleanupSavepoint.test_partial_batch_failure_protected_moves_survive
+TestProcessorLocations.test_09_auditoria_envio_normal
+TestProcessorShipmentAD89.test_t1_envio_manual_parcial_sin_motivo
+TestProcessorShipmentAD89.test_t5_desviacion_real_no_aplica_en_i1
+TestProcessorShipmentAD89.test_t6_idempotencia
+TestSvConcurrency.test_01_dos_transacciones_no_sobreconsumen
+TestSvEscalationSecurity.test_02_costo_exige_contabilidad
+TestSvEscalationSecurity.test_03_alza_de_baseline_exige_auditoria
+TestSvEscalationSecurity.test_04_auditoria_y_contabilidad_por_dos_personas
+canceling statement due to statement timeout
+could not obtain lock on row in relation "stock_lot"
+could not serialize access due to concurrent update
+null value in column "reason" of relation "madenat_sv_operation" violates not-null constraint
+null value in column "reason" of relation "madenat_sv_rename_wizard" violates not-null constraint
+update or delete on table "stock_lot" violates foreign key constraint "stock_quant_lot_id_fkey" on table "stock_quant"

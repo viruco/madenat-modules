@@ -1,0 +1,1 @@
+/home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons

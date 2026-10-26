@@ -1,0 +1,3 @@
+60740502b7fe6815d434f002ebbb7f28c2229a3c9d020cb4fa6c5758c008a73b  ./custom_addons_worktree.tar.gz
+43d7990abbdaa427238ef478c0346a5194a2047424c12cde7f99d34269406115  ./madenat_test_pre_fase4.dump
+7ee88e409194bb108e9547046ed2c975a79cb7d246925de6953a7bc2ea7311f6  ./wip_tracked_HEAD.diff

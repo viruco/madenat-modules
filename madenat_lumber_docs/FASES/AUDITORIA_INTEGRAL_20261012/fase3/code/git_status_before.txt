@@ -1,0 +1,105 @@
+ M madenat_lumber_core/CHANGELOG.md
+ M madenat_lumber_core/__manifest__.py
+ M madenat_lumber_core/models/madenat_audit_log.py
+ M madenat_lumber_core/models/madenat_guia_processing.py
+ M madenat_lumber_core/models/madenat_sv_operation.py
+ M madenat_lumber_core/models/mixin_lumber_ingest.py
+ M madenat_lumber_core/models/reception_parser.py
+ M madenat_lumber_core/models/reception_workflow.py
+ M madenat_lumber_core/models/stock_lot.py
+ M madenat_lumber_core/security/ir.model.access.csv
+ M madenat_lumber_core/tests/__init__.py
+ M madenat_lumber_core/tests/test_duplicate_validation.py
+ M madenat_lumber_core/views/lumber_core_menu.xml
+ M madenat_lumber_costing/__manifest__.py
+ M madenat_lumber_costing/models/__init__.py
+ M madenat_lumber_costing/models/lumber_cost_distribution.py
+ M madenat_lumber_costing/models/lumber_shipment_costing.py
+ M madenat_lumber_costing/security/ir.model.access.csv
+ M madenat_lumber_costing/tests/__init__.py
+ M madenat_lumber_costing/views/lumber_cost_distribution_views.xml
+ M madenat_lumber_docs/CANON/02_CONTINUIDAD.md
+ M madenat_lumber_docs/CANON/03_TESTS.md
+ M madenat_lumber_docs/CANON/04_DECISION_LOG.md
+ M madenat_lumber_docs/CANON/05_BACKLOG.md
+ M madenat_lumber_docs/CANON/18_CONSOLIDACION_Y_REBAJA.md
+ M madenat_lumber_docs/CANON/19_IMPUTACION_SV_Y_PROCESADORES.md
+ M madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md
+ M madenat_lumber_docs/WIKI/00_INDICE.md
+ M madenat_lumber_docs/WIKI/03_OPERACION/despliegue_modulo.md
+ M madenat_lumber_intake/__manifest__.py
+ M madenat_lumber_intake/models/intake_console.py
+ M madenat_lumber_intake/models/intake_guide_lifecycle_wizard.py
+ M madenat_lumber_intake/models/volume_detail_line.py
+ M madenat_lumber_intake/tests/__init__.py
+ M madenat_lumber_intake/views/intake_guide_lifecycle_wizard_views.xml
+ M madenat_lumber_intake/views/intake_menus.xml
+ M madenat_lumber_logistics/CHANGELOG.md
+ M madenat_lumber_logistics/__manifest__.py
+ M madenat_lumber_logistics/models/lumber_container.py
+ M madenat_lumber_logistics/models/lumber_export_shipment.py
+ M madenat_lumber_logistics/models/madenat_sv_imputation.py
+ M madenat_lumber_logistics/security/ir.model.access.csv
+ M madenat_lumber_logistics/tests/__init__.py
+ M madenat_lumber_logistics/tests/test_document_status_b2.py
+ M madenat_lumber_logistics/tests/test_documentary_backlog.py
+ M madenat_lumber_logistics/tests/test_processor_return_link.py
+ M madenat_lumber_logistics/tests/test_rebaja_contenedor.py
+ M madenat_lumber_logistics/tests/test_service_return_imputation_guard.py
+ M madenat_lumber_logistics/tests/test_sv_imputation_candidates.py
+ M madenat_lumber_logistics/tests/test_sv_imputation_i2.py
+ M madenat_lumber_logistics/views/logistics_menus.xml
+ M madenat_lumber_logistics/views/lumber_actions.xml
+ M madenat_lumber_logistics/views/lumber_container_views.xml
+ M madenat_lumber_logistics/views/lumber_document_checklist_views.xml
+ M madenat_lumber_logistics/views/lumber_export_shipment_views.xml
+ M madenat_lumber_logistics/views/madenat_processor_return_link_views.xml
+ M madenat_lumber_logistics/views/madenat_sv_imputation_views.xml
+ M madenat_lumber_logistics/wizards/lumber_container_rollover_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard_views.xml
+ M madenat_lumber_logistics/wizards/lumber_shipment_zarpe_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_zarpe_wizard_views.xml
+ M madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py
+ M madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard_views.xml
+ M madenat_lumber_reports/views/lumber_reports_menu.xml
+ M madenat_lumber_shipping_core/models/shipping_vessel.py
+ M madenat_lumber_shipping_core/views/shipping_vessel_views.xml
+ M madenat_lumber_shipping_core/views/shipping_voyage_views.xml
+?? madenat_lumber_core/tests/test_guide_dup_regression_15183.py
+?? madenat_lumber_core/tests/test_guide_duplicate_ingest.py
+?? madenat_lumber_core/tests/test_guide_duplicate_warnings.py
+?? madenat_lumber_core/tests/test_sv_lot_unlink_guard.py
+?? madenat_lumber_costing/models/stock_lot_cost_line.py
+?? madenat_lumber_costing/tests/test_shipment_costing_c2.py
+?? madenat_lumber_costing/views/lumber_shipment_costing_views.xml
+?? madenat_lumber_docs/WIKI/03_OPERACION/higiene_entorno.md
+?? madenat_lumber_intake/CHANGELOG.md
+?? madenat_lumber_intake/tests/test_guia_delete_acl.py
+?? madenat_lumber_intake/tests/test_guide_lifecycle_delete_attribution.py
+?? madenat_lumber_intake/tests/test_guide_lifecycle_phase2.py
+?? madenat_lumber_intake/tests/test_intake_console_compute_depends.py
+?? madenat_lumber_intake/tests/test_intake_metrics_recompute.py
+?? madenat_lumber_intake/tests/test_search_console_oc_fecha_modality.py
+?? madenat_lumber_logistics/security/madenat_sv_imputation_rules.xml
+?? madenat_lumber_logistics/tests/test_hotfix_owl_chatter.py
+?? madenat_lumber_logistics/tests/test_sv_assignment_user_rights.py
+?? madenat_lumber_logistics/tests/test_sv_imputation_manual.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_blindaje.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_cierre.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_contrato.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_material.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_navigation.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_operativa.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_persistencia.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_reset.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_reset_concurrency.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_reset_lot_capacity.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_reset_token.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_save_lock.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_save_lock_direct.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_save_lock_tx.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_seleccion_asignacion.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_simple.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_ui_acciones.py
+?? madenat_lumber_logistics/tests/test_sv_rebaja_ui_limpia.py

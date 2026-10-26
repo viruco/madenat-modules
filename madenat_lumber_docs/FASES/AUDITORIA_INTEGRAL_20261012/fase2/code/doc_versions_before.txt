@@ -1,0 +1,6 @@
+CANON/02_CONTINUIDAD.md                       Versión documental:** 12.39.0
+CANON/03_TESTS.md                             Versión documental:** 6.38.0
+CANON/05_BACKLOG.md                           Versión documental:** 8.26.0
+CANON/19_IMPUTACION_SV_Y_PROCESADORES.md      Versión documental:** 1.31.0
+CANON/INDICE_DOCUMENTACION.md                 Versión documental:** 12.29.0
+WIKI/00_INDICE.md                             Versión:** 2.0.2

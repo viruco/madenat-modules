@@ -1,0 +1,22 @@
+CONSOLE_ROWS 18
+TYPE product 7
+TYPE processed 6
+TYPE volume 5
+DATEKIND emission 17
+DATEKIND reception 1
+OC_DOC 15
+OC_LINKED 0
+OC_PENDING 15
+OC_NONE 3
+COMBO_product_AND_volume 0
+GROUP ingestion_type 3
+GROUP guide_date_kind 2
+GROUP oc_documental 15
+GROUP processor_id 1
+PRODUCT_SEARCH 62 2
+ROWS 18 DISTINCT_IDS 18
+NAV_ID_OK lumber.reception True True
+NAV lumber.reception lumber.reception True
+NAV_ID_OK madenat.guia.processing True True
+NAV madenat.guia.processing madenat.guia.processing True
+DONE

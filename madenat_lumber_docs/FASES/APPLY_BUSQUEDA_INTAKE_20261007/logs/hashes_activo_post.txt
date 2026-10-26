@@ -1,0 +1,4 @@
+923a69122d4fcabc65bb56f82a590dc3  custom_addons/madenat_lumber_intake/models/intake_console.py
+cf07b72a1977b4d301733bbd583b8e3a  custom_addons/madenat_lumber_intake/views/intake_console_views.xml
+baf2f8ba08f533da87ed117dd2307a21  custom_addons/madenat_lumber_intake/tests/__init__.py
+895b783b6a2800a98ac99ac7ce0c2b1e  custom_addons/madenat_lumber_intake/tests/test_search_console_oc_fecha_modality.py
