@@ -1,0 +1,3 @@
+677294b docs(canon): AD-108 cierra M1/M2, documenta el metodo de verificacion y caracteriza D1 (costing)
+7c417ae test(core): usa product.product en la prueba de longitudes (no el id de product.template)
+7d277e9 fix(logistics): define el menu de imputaciones antes de inactivarlo (instalacion desde cero)

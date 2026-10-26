@@ -1,0 +1,11 @@
+madenat_lumber_costing/__manifest__.py
+madenat_lumber_costing/models/__init__.py
+madenat_lumber_costing/models/lumber_cost_distribution.py
+madenat_lumber_costing/models/lumber_shipment_costing.py
+madenat_lumber_costing/security/ir.model.access.csv
+madenat_lumber_costing/tests/__init__.py
+madenat_lumber_costing/views/lumber_cost_distribution_views.xml
+madenat_lumber_reports/views/lumber_reports_menu.xml
+madenat_lumber_costing/models/stock_lot_cost_line.py
+madenat_lumber_costing/tests/test_shipment_costing_c2.py
+madenat_lumber_costing/views/lumber_shipment_costing_views.xml

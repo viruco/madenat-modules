@@ -1,0 +1,5 @@
+# A - PASO 2a: instalar billing (depende de core+logistics, NO de costing) para evitar artefactos de alcance
+docker exec odoo18_app odoo -d madenat_dr_check_test \
+  --addons-path=/tmp/fase8_clone,/usr/lib/python3/dist-packages/odoo/addons \
+  --db-filter=^madenat_dr_check_test$ \
+  -i madenat_lumber_billing --without-demo=all --stop-after-init --http-port=9995 --max-cron-threads=0

@@ -1,0 +1,87 @@
+commit 677294b7cdc3e0cfbe1cdaef441efcb2234f8681
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 13:11:14 2026 -0300
+
+    docs(canon): AD-108 cierra M1/M2, documenta el metodo de verificacion y caracteriza D1 (costing)
+    
+    - CANON/04_DECISION_LOG.md (**12.23.0 -> 12.24.0**): alta **AD-108** -> **(1) M1 cerrado** (menu
+      `menu_madenat_sv_imputation` sin `name`: se restituye su `<menuitem>` antes del `<record>` segun el mecanismo
+      documentado en `UNIFY_SV_REBAJA_MENU_20261010`; `logistics` **18.0.1.29.0**; barrido de la clase: 0 casos);
+      **(2) M2 cerrado** (prueba de longitudes a `product.product`, solo test); **(3) metodo de verificacion** en
+      dos pasos (instalabilidad sin tests / suites con `--test-tags`) + camino `-u` desde un dump anterior al WIP
+      de costing (2026-10-02); **(4) resultados**: `-i` de los 4 modulos con **exit 0** (**DR demostrada**),
+      A∩B = 4 fallas del baseline y **0 nuevas atribuibles a M1/M2**, `TestLengthUomAndSubproducto` en verde, y
+      hallazgo de **configuracion no sembrada** en el alta limpia (precision decimal 2 vs 4, 1 producto vs 20,
+      parametros `madenat.*`); **(5) D1 `costing`** caracterizado (HEAD y WIP coherentes por separado; rompe la
+      mezcla; `reports` depende de el) con tres opciones a decision; **(6) P2-2** sigue fuera; **(7) riesgos**.
+    - CANON/05_BACKLOG.md (**8.28.0 -> 8.29.0**): M1/M2 resueltos y nuevos pendientes (configuracion no sembrada,
+      D1, prueba dependiente de datos, VIEW-01/04).
+    - CANON/INDICE_DOCUMENTACION.md (**12.34.0 -> 12.35.0**): sincronizacion.
+    
+    Numeracion monotona, sin renumerar. Solo documentacion: no se toca codigo, datos, vistas ni ACL.
+    
+    Commit local 3/3 de la FASE 8. Sin push ni despliegue.
+
+ madenat_lumber_docs/CANON/04_DECISION_LOG.md      | 77 ++++++++++++++++++++++-
+ madenat_lumber_docs/CANON/05_BACKLOG.md           | 32 +++++++---
+ madenat_lumber_docs/CANON/INDICE_DOCUMENTACION.md |  4 +-
+ 3 files changed, 100 insertions(+), 13 deletions(-)
+
+commit 7c417ae45fc30e9c8f3796ce4879dfab28e4b40f
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 13:09:00 2026 -0300
+
+    test(core): usa product.product en la prueba de longitudes (no el id de product.template)
+    
+    - `tests/test_length_uom_and_subproducto.py`: `self.Product = self.env['product.template']` ->
+      `self.env['product.product']` (y el mensaje de la asercion). El helper pasaba `self.product.id` (id de
+      PLANTILLA) al campo `product_id` de `lumber.reception.line`, que es
+      `Many2one('product.product')` (`models/mixin_lumber_ingest.py:415`): en una base LIMPIA los espacios de id de
+      `product_template` y `product_product` divergen ⇒ `browse()` apuntaba a una variante inexistente ⇒
+      `MissingError: Record does not exist or has been deleted. (Record: product.product(607,))` en los 4 tests
+      de la clase. En `madenat_test` los ids coinciden para el producto devuelto por el `search`, por lo que el
+      defecto quedaba OCULTO.
+    - Solo se toca la PRUEBA: no se modifica el codigo de produccion ni el mixin.
+    - Sin cambio de version (se mantiene 18.0.6.9.0): es una correccion de test; no altera modelos, vistas, datos,
+      seguridad ni ACL, por lo que una version nueva no es indispensable.
+    
+    Verificacion: FASE 8 A-Paso 2 — `TestLengthUomAndSubproducto` **en verde** (los 4 tests ejecutados, 0 fallas)
+    sobre base limpia, donde la FASE 7 lo reprodujo con `MissingError`.
+    
+    Commit local 2/3 de la FASE 8. Sin push ni despliegue.
+
+ madenat_lumber_core/tests/test_length_uom_and_subproducto.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 7d277e9ef4981c5bef63fd8984ee3ebeb315c67a
+Author: Mauricio Navarrete <mauricio@madenat.cl>
+Date:   Thu Oct 15 13:08:34 2026 -0300
+
+    fix(logistics): define el menu de imputaciones antes de inactivarlo (instalacion desde cero)
+    
+    - `views/madenat_sv_imputation_views.xml`: se **restituye el `<menuitem>`** de
+      `menu_madenat_sv_imputation` (name="Imputaciones documentales SV", parent=`menu_lumber_logistics`,
+      action=`action_madenat_sv_imputation`, sequence=19) **antes** de su `<record model="ir.ui.menu">`.
+    - Causa: en `ded5e89` se retiro el `<menuitem>` y quedo solo el `<record>` con `active=False`, de modo que en
+      una **instalacion desde cero** el registro se crea SIN `name` ⇒
+      `NotNullViolation: null value in column "name" of relation "ir_ui_menu"` ⇒ `Failed to load registry`.
+      En una base existente el `-u` no falla (el menu ya existe), por lo que el defecto era LATENTE.
+    - Intencion documentada (evidencia): expediente `UNIFY_SV_REBAJA_MENU_20261010/README.md` —
+      «Menú `menu_madenat_sv_imputation`: retirado de navegación (`active=False`, **`record` posterior al
+      `menuitem`** ⇒ no reaparece al reaplicar `-u`; reversible)» — y CANON/02 §17.x + CANON/03 (NAV-02: «542
+      inactivo «Imputaciones documentales SV»; acción 867 preservada»). La restitucion es la opcion MINIMA que
+      respeta ese mecanismo: mismos id/nombre/parent/accion/sequence, menu sigue inactivo, y la recuperacion
+      documentada (`active=True` + `-u`) vuelve a ser posible en un alta limpia.
+    - Version del modulo: 18.0.1.28.0 -> **18.0.1.29.0** (CHANGELOG con la entrada 18.0.1.29.0).
+    - Barrido de la misma clase (records/menuitems de menu sin los campos obligatorios) en TODOS los modulos
+      instalables: 0 casos restantes (los demas hallazgos eran ids de otros modulos o XML comentado).
+    
+    Verificacion: FASE 8 A-Paso 1 — `-i madenat_lumber_shipping_core,madenat_lumber_core,madenat_lumber_logistics,madenat_lumber_intake`
+    en base limpia ⇒ **exit 0** y `madenat_lumber_logistics loaded in 4.70s`.
+    
+    Commit local 1/3 de la FASE 8. Sin push ni despliegue.
+
+ madenat_lumber_logistics/CHANGELOG.md                | 20 ++++++++++++++++++++
+ madenat_lumber_logistics/__manifest__.py             |  2 +-
+ .../views/madenat_sv_imputation_views.xml            |  5 +++++
+ 3 files changed, 26 insertions(+), 1 deletion(-)

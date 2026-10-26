@@ -1,0 +1,45 @@
+2026-10-07 18:38:43,335 1 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-07 18:38:43,335 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-07 18:38:43,336 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-07 18:38:43,336 1 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-07 18:38:43,711 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-07 18:38:43,819 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-07 18:38:44,386 1 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-07 18:38:44,386 1 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-07 18:38:44,476 1 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-07 18:38:44,499 1 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.02s, 0 queries (+0 extra) 
+2026-10-07 18:38:44,657 1 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-07 18:38:47,702 1 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-07 18:38:47,705 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-07 18:38:47,706 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-07 18:38:47,827 1 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-07 18:38:48,325 1 INFO madenat_test odoo.modules.loading: 88 modules loaded in 3.67s, 0 queries (+0 extra) 
+2026-10-07 18:38:47,733 1 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-07 18:38:45,924 1 INFO madenat_test odoo.modules.registry: Registry loaded in 1.536s 
+GUIA_EXISTS True
+GUIA 33152 15183 cancelled service
+OWN_PICKINGS ['EMB-04201']
+FOREIGN_PICKINGS ['EMB-00227']
+AMBIGUOUS_PICKINGS []
+DIRECT_LINK_PICKINGS ['EMB-04201']
+BLOCKERS_A ['- 1 albarán(es) vinculados a la guía (vínculo directo o lote propio) o con atribución textual ambigua pendiente', '  · 1 por vínculo directo (guia_processing_id): EMB-04201 [done]']
+REQUIREMENTS_OK_A False
+P436_FK False
+P7813_FK 33152
+P7814_FK False
+ROLLBACK_OK
