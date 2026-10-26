@@ -1,7 +1,8 @@
 # Índice de Documentación — MADENAT Lumber Core
 
-**Versión documental:** 12.58.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E2/D3)**: renumeración `05_AUDITORIA_XML_IDS.md` → `20_AUDITORIA_XML_IDS.md` mediante `git mv` (contenido normativo intacto; versión 1.1.0 → 1.2.0) para eliminar la ambigüedad del prefijo `05` con `05_BACKLOG.md`. Referencias actualizadas en `WIKI/00_INDICE.md`, `CANON/07_TRABAJO_CON_IA.md` y `RAW/IMPLEMENTACION_IDENTIFICACION_OPERATIVA_LOTES_R1_20260925.md`. Huecos `01`, `06`, `09`, `10` y `14` marcados 🔒 reservados (no reutilizar); los números nuevos parten de `21`. Índice 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 12.59.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: anexo §11 con los índices derivados (`FASES/00_INDICE_FASES.md`, `RAW/00_INDICE_RAW.md`); §7 corregido (RAW tiene 33 documentos, no 4); sincronización de `02` (12.51.0, §22) y `04` (12.54.0, AD-135). Índice 12.58.0 → 12.59.0. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E2/D3)**: renumeración `05_AUDITORIA_XML_IDS.md` → `20_AUDITORIA_XML_IDS.md` mediante `git mv` (contenido normativo intacto; versión 1.1.0 → 1.2.0) para eliminar la ambigüedad del prefijo `05` con `05_BACKLOG.md`. Referencias actualizadas en `WIKI/00_INDICE.md`, `CANON/07_TRABAJO_CON_IA.md` y `RAW/IMPLEMENTACION_IDENTIFICACION_OPERATIVA_LOTES_R1_20260925.md`. Huecos `01`, `06`, `09`, `10` y `14` marcados 🔒 reservados (no reutilizar); los números nuevos parten de `21`. Índice 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: corrección de la sincronización de versiones. Las filas de `02`, `03`, `04` y `12` ya declaraban 12.50.0 / 6.43.0 / 12.53.0 / 1.21.0 desde `1c14206`, pero las cabeceras de esos documentos seguían en 12.49.0 / 6.42.0 / 12.52.0 / 1.20.0; se corrigen las cabeceras (lado equivocado) y la fecha de este índice (2026-10-21 → 2026-10-26). Índice 12.56.0 → 12.57.0. Sin cambio de contenido normativo. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): Cierre formal Bloque 7 Fase 2 (7.1 paridad exportador, 7.2 importador consolidación doble bloque y pendientes, 7.3 merma dimensional y rebaja R2 con prueba dorada 40030, 7.4 regresión 1.625 tests y health check post-AD-131 43 OK). Sincronización monótona de CANON/04 (12.52.0, AD-133), CANON/05 (8.54.0), CANON/12 (1.20.0, §12.8) y CANON/17 (1.19.0, §10.6.7). Índice 12.55.0 → 12.56.0. Sin push ni despliegue. | Bloque 7. -->
 <!-- actualizado: 2026-10-21 — Bloque H5-C: Cierre formal H5. Sincronización monótona de CANON/04 (12.51.0, AD-132 flujo de edición staging y aviso chatter en lote), CANON/05 (8.53.0, cierre H5 y diferimiento de escalado rebaja para Bloque 7) y CANON/12 (1.19.0, §12.7 flujo de edición antes y después del envío a stock). Índice 12.54.0 → 12.55.0. Sin push ni despliegue. | Bloque H5. -->
@@ -124,9 +125,9 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 |---|---|---|---|---|
 | `00_ARQUITECTURA.md` | Arquitectura, modelos, gates, campos, restricciones (incluye §4.8 Gestión Operativa de Etiquetas SV, §4.9 Modo A autoservicio y §4.10 Búsqueda/filtros/agrupaciones de la Consola de Intake) | 7.18.0 | 2026-10-07 | ✅ Vigente |
 | `01_FLUJO_PACKING.md` | Flujo funcional de packing y estados — ARCHIVADO en LEGADO | 4.0.0 | 2026-05-13 | 🏷️ ARCHIVADO — absorbido por 00 y 12_FLUJOS_INGESTA · 🔒 número reservado, no reutilizar |
-| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, **H0 Higiene Mínima Segura — AD-128** y **§21 FASE 13/2D — AD-134**) | 12.50.0 | 2026-10-26 | ✅ Vigente |
+| `02_CONTINUIDAD.md` | Checkpoint técnico vivo. Estado actual, riesgos, punto de retoma (incluye §14 Gestión Operativa de Etiquetas SV, §15 Fase 2, §16 Búsqueda/filtros Consola Intake, §17 Auditoría retoma retorno servicio, §18 Procedimiento Operacional de Despliegue a TEST Remoto, §19 Bloque 5 Volumen Real Físico — AD-126, §20 Estado al cierre de la jornada 2026-10-19, **H0 Higiene Mínima Segura — AD-128** y **§21 FASE 13/2D — AD-134**, **§22 Consolidación documental — AD-135**) | 12.51.0 | 2026-10-26 | ✅ Vigente |
 | `03_TESTS.md` | Catálogo maestro de suites, tests unitarios e integración (§33 Bloque 6 suites y script canónico `run_regression.sh`; §34 FASE 13/2D — AD-134) | 6.43.0 | 2026-10-26 | ✅ Vigente |
-| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-134; **AD-130: Unificación reglas exportación; AD-131: Recálculo controlado datos prueba; AD-132: Flujo edición dimensiones staging y aviso chatter stock; AD-133: Paridad tarjas exportador, importador doble bloque y merma dimensional R2; AD-134: Procedencia del perfil y vigencia de la lectura**) | 12.53.0 | 2026-10-26 | ✅ Vigente |
+| `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-80..AD-135; **AD-130: Unificación reglas exportación; AD-131: Recálculo controlado datos prueba; AD-132: Flujo edición dimensiones staging y aviso chatter stock; AD-133: Paridad tarjas exportador, importador doble bloque y merma dimensional R2; AD-134: Procedencia del perfil y vigencia de la lectura; AD-135: Consolidación de la documentación dispersa en `madenat_lumber_docs`**) | 12.54.0 | 2026-10-26 | ✅ Vigente |
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases (HG-01..HG-08, HG-07 casi cerrado 9/10, HG-09, **Bloque 7: Cierre formal Fase 2 (7.1-7.4) y diferimiento de REMATE y asiento contable de merma**) | 8.54.0 | 2026-10-21 | ✅ Vigente |
 | `06_CHECKLIST.md` | Checklist operativo de sesión — ARCHIVADO en LEGADO | 4.2.0 | 2026-06-30 | 🏷️ ARCHIVADO — reemplazado por checklist A-F en este índice · 🔒 número reservado, no reutilizar |
 | `07_TRABAJO_CON_IA.md` | Protocolo de trabajo con IA (incluye prohibición de -i y -u all, citas por sección/símbolo, reportes $\le$ 80 líneas y DoD) | 7.4.0 | 2026-10-20 | ✅ Vigente |
@@ -145,7 +146,7 @@ Cualquier otro documento fuera de esta carpeta es auxiliar, histórico o de conv
 | `18_CONSOLIDACION_Y_REBAJA.md` | Consolidación y rebaja de contenedores y naves | 1.2.0 | 2026-10-01 | 🟢 EN IMPLEMENTACIÓN |
 | `19_IMPUTACION_SV_Y_PROCESADORES.md` | Imputación declarada etiqueta→SV y saldo por procesador | 1.33.0 | 2026-10-15 | ✅ Vigente |
 | `20_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail (renumerado desde `05` en FASE 2/D3) | 1.2.0 | 2026-09-25 | ✅ Vigente |
-| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro y mapa rápido de 18 preguntas canónicas | 12.58.0 | 2026-10-26 | ✅ Vigente |
+| `INDICE_DOCUMENTACION.md` | Este archivo. Mapa maestro y mapa rápido de 18 preguntas canónicas | 12.59.0 | 2026-10-26 | ✅ Vigente |
 
 **Regla de numeración (FASE 2 / D2):** los números `01`, `06`, `09`, `10` y `14` quedan **reservados** por documentos archivados en `LEGADO/` y **no se reutilizan**; la numeración de documentos nuevos parte de **`21`**. El número `20` se asignó a la auditoría de XML IDs (renumerada desde `05`) para eliminar la ambigüedad del prefijo `05` con `05_BACKLOG.md`.
 
@@ -198,7 +199,10 @@ Estructura:
 
 ## 7. Documentos en RAW
 
-`RAW/` contiene investigaciones vivas temporales (4 archivos, fechas 2026-06-21/22). No son fuente canónica.
+`RAW/` contiene **33 documentos** de investigación, implementación y auditoría de una sola sesión (fechas
+2026-06-21 a 2026-09-25) más 1 fixture Excel no versionado. No son fuente canónica. El inventario completo
+—fecha, tema, tipo, referencias y tamaño— vive en **`RAW/00_INDICE_RAW.md`** (30 de los 33 no tienen
+ninguna referencia externa).
 
 ---
 
@@ -321,3 +325,23 @@ la derivación exige lectura vigente en las **tres** modalidades (`state='previe
 riesgo abierto R6 (`_onchange_intake_modality_patio` diferido). Sin commit/push fuera de `custom_addons`
 propios de esta fase. -->
 
+
+---
+
+## 11. Anexo — Índices derivados de la consolidación (FASE 2, 2026-10-26)
+
+Estos índices **no son canónicos**: son inventarios generados desde el sistema de archivos para localizar
+material que no tiene dueño canónico. Su verdad es descriptiva (qué existe, dónde y con qué hash).
+
+| Índice | Ruta | Alcance |
+|---|---|---|
+| **Índice de FASES** | `FASES/00_INDICE_FASES.md` | 93 carpetas de fase: fecha, resumen, estado, ruta nueva y qué quedó fuera de git |
+| **Índice de RAW** | `RAW/00_INDICE_RAW.md` | 33 documentos RAW + 1 fixture: fecha, tema, tipo, referencias externas y bytes |
+| **Manifiesto de línea base** | `FASES/00_MANIFIESTO_CONSOLIDACION_ANTES.csv` | sha256 de los 612 archivos tocados o copiados antes de mover nada |
+| **Manifiestos por tanda** | `FASES/00_MANIFIESTO_TANDA_1..8.csv` | sha256 origen vs copiado por tanda (568 archivos de fase) |
+| **Evidencia 2B/2D** | `FASES/FASE13_20261023/` | Informes 2A/2B/FRENTE_A/FRENTE_B, PROMPT_2D, evidencias CSV y logs |
+| **Scripts de auditoría (legado)** | `LEGADO/auditorias/scripts/` | 11 scripts sueltos rescatados de la raíz del stack |
+
+**Reglas de uso.** (a) Los índices no se citan como verdad doctrinal; la verdad sigue en `CANON/`.
+(b) Se regeneran cuando cambia el conjunto de archivos. (c) Los números canónicos `00`–`20` no se tocan por
+la existencia de estos índices: los documentos nuevos parten de `21` (D2).

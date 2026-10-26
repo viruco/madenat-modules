@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.50.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.50.0 / 2026-10-26 al registrar §21 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 12.51.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: §22 con el estado de la consolidación (AD-135). Versión 02 12.50.0 → 12.51.0. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.50.0 / 2026-10-26 al registrar §21 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL (H0-A) y saneamiento de pruebas (H0-B); versión 02 12.48.0 → 12.49.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
 
@@ -2410,3 +2411,30 @@ docker compose start web && curl -s -o /dev/null -w '%{http_code}' http://127.0.
 3. Limitación aceptada **H4**: sin badge permanente de «elegido por el operador».
 4. Regla de trabajo: `.clinerules/madenat-regla-de-oro.md` (un paso por vez, evidencia antes de afirmar).
 
+
+---
+
+## 22. CONSOLIDACIÓN DE LA DOCUMENTACIÓN DISPERSA EN `madenat_lumber_docs` (AD-135, FASE 2, 2026-10-26)
+
+### 22.1 Estado al cierre
+
+| Etapa | Resultado | Commit |
+|---|---|---|
+| **E0** | Estado base verificado: `HEAD` `1c14206`, rama `fase13-2a-lectura`, 11 cambios ajenos intactos. Manifiesto de línea base con sha256 de 612 archivos | `7356ac7` |
+| **E1** | Sincronizadas las cabeceras de `02`, `03`, `04` y `12` con el índice (el lado equivocado eran las cabeceras); fecha del índice y `WIKI/00_INDICE.md` v2.1.0 | `96963d4` |
+| **E2** | `CANON/05_AUDITORIA_XML_IDS.md` → `CANON/20_AUDITORIA_XML_IDS.md`; huecos `01/06/09/10/14` marcados reservados | `4337630` |
+| **E3** | `FASE13_INTAKE_ENGINE_20261023/` consolidada en `FASES/FASE13_20261023/` (27 archivos, 1,1 MB); md5 `45ad1588…`/`02d6284d…` intactos; comparador con exit 0 | `7d57772` |
+| **E4** | 78 carpetas de fase consolidadas en `FASES/` (568 archivos, 5.627.119 B) en 8 tandas, cada una con su manifiesto sha256 | `15d5597` … `7309c01`, índice `cb189d9` |
+| **E5** | 11 scripts de auditoría sueltos versionados en `LEGADO/auditorias/scripts/` (11/11 sha256 idénticos); `run_tests.sh` y `deploy_production.sh` quedan en la raíz | `3b5a9af` |
+| **E6** | `RAW/00_INDICE_RAW.md` (33 documentos + 1 fixture) y anexo de índices en `CANON/INDICE_DOCUMENTACION.md`; este §22 y AD-135 | (este commit) |
+| **E7** | Verificación global: enlaces relativos, sha256 de lo movido, rutas antiguas y `git status` | (este commit) |
+
+**No versionado (por diseño).** Código, `workcopy/`, `verify_*`, `respaldos/`, dumps, `*.tar*` y binarios > 2 MB
+quedan fuera de git y se archivan comprimidos en `/home/viruco/dev-stack/backups/` (D7), junto con el dump
+`madenat_test_pre_2d_20261026_0956.dump` (sha256 `279f466c…`).
+
+### 22.2 Punto de retoma
+
+1. Revisión del informe de consolidación y autorización (o no) del borrado de los originales de la raíz (C1).
+2. Después de C1: archivar las 7 carpetas espejo en `.tar.gz` y verificar los comprimidos.
+3. Sin autorización expresa no se toca código: el ajuste de los tests que dependen de xlsx es C2.

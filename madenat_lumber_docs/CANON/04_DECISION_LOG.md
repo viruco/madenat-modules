@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.53.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 12.54.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
 <!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
 <!-- actualizado: 2026-10-21 — Bloque H4: AD-130 (Unificación de Reglas de Exportación por Familia) y AD-131 (Recálculo Controlado de Datos de Prueba en madenat_test). Versión 04 12.49.0 → 12.50.0. | Bloque H4. -->
@@ -4303,4 +4304,47 @@ previa (o con una lectura obsoleta tras cambiar archivos, perfil, patio o nivel 
 - Datos intactos: md5 de líneas `f8df05ac…` y lotes `d5bf9ef6…` idénticos antes/después (mismos 84 y 152
   registros); `lumber.reception` 8 y `madenat.guia.processing` 13, sin cambios.
 - Web arriba: **HTTP 200** en `/web/login`.
+
+---
+
+## AD-135: Consolidación de la Documentación Dispersa dentro de `madenat_lumber_docs` (FASE 2, 2026-10-26)
+
+**Contexto.** La documentación de fases vivía en 94 carpetas sueltas en la raíz del stack
+(`/home/viruco/dev-stack/odoo/odoo-18-ce/`), **fuera** del repositorio git (`custom_addons`), mientras el
+núcleo documental (`CANON/`, `WIKI/`, `RAW/`, `LEGADO/`) está versionado dentro de `madenat_lumber_docs`.
+Inventario de partida [VERIFICADO — `find`/`git ls-files` del 2026-10-26]: 3.645 archivos `.md` en el stack;
+218 archivos (183 versionados, 35 ignorados) en `madenat_lumber_docs`; 21 rutas espejo que replican
+`madenat_lumber_docs` dentro de carpetas de fase; dos documentos canónicos con el mismo prefijo `05`
+(`05_BACKLOG.md` y `05_AUDITORIA_XML_IDS.md`, esta última con 27 citas ambiguas a `CANON/05`).
+
+**Decisiones aprobadas y estado**
+
+| ID | Decisión | Estado |
+|---|---|---|
+| D1 | `madenat_lumber_docs` permanece dentro del repositorio `custom_addons` (rama `fase13-2a-lectura`) | [VERIFICADO — `git rev-parse --abbrev-ref HEAD`] |
+| D2 | Huecos `01`, `06`, `09`, `10` y `14` bloqueados; se registran como «🔒 número reservado, no reutilizar» en `CANON/INDICE_DOCUMENTACION.md`; los números nuevos parten de `21` | [VERIFICADO — `INDICE_DOCUMENTACION.md` §2 y «Regla de numeración»] |
+| D3 | `CANON/05_AUDITORIA_XML_IDS.md` → `CANON/20_AUDITORIA_XML_IDS.md` (`git mv`, contenido intacto, v1.1.0 → v1.2.0) y actualización de sus 5 citas | [VERIFICADO — `git log --stat 4337630`; grep sin referencias residuales salvo la línea histórica del índice] |
+| D4 | La documentación de fase se consolida en `madenat_lumber_docs/FASES/<CARPETA>/` con filtro de tipos y tamaños | [VERIFICADO — 78 carpetas, 568 archivos, 5.627.119 B; manifiestos `00_MANIFIESTO_TANDA_1..8.csv`] |
+| D5 | Evidencia 2B/2D (CSV, scripts, logs) congelada en el repo; el dump de 11,7 MB queda fuera de git con su sha256 anotado | [VERIFICADO — `FASES/FASE13_20261023/`; `evidencias/SHA256_FUERA_DE_GIT.csv`; dump en `/home/viruco/dev-stack/backups/`] |
+| D6 | Los tests que dependen de xlsx ausentes se saltarán con aviso si falta el archivo | [PENDIENTE — requiere autorización en el punto de control C2; **no ejecutado**] |
+| D7 | Las carpetas espejo se archivan en `.tar.gz` fuera de git; el borrado del original requiere autorización | [PENDIENTE — se ejecuta después de C1] |
+
+**Hallazgo corregido en el índice (E1).** El commit `1c14206` añadió contenido a `02`, `03`, `04` y `12`
+y subió sus filas del índice a 12.50.0 / 6.43.0 / 12.53.0 / 1.21.0, pero **no** subió las cabeceras de los
+propios documentos, que seguían en 12.49.0 / 6.42.0 / 12.52.0 / 1.20.0 [VERIFICADO — `git show 1c14206`].
+Se corrigieron las cabeceras (el lado equivocado) y la fecha del índice (2026-10-21 → 2026-10-26).
+
+**Consecuencias.**
+
+1. La documentación de fase es ahora rastreable y versionada; los originales de la raíz siguen intactos
+   hasta la autorización de borrado (C1).
+2. `FASES/00_INDICE_FASES.md` y `RAW/00_INDICE_RAW.md` indexan, respectivamente, las 93 carpetas de fase y
+   los 33 documentos RAW (30 de ellos sin ninguna referencia externa) [VERIFICADO — ambos índices generados
+   desde el sistema de archivos].
+3. El filtro de consolidación **no** copia código, dumps ni binarios; esos restos se archivan comprimidos
+   fuera de git, por lo que el repositorio no crece con artefactos de auditoría pesados.
+4. Riesgo asumido: cualquier documento que cite literalmente `FASE13_INTAKE_ENGINE_20261023/` debe usar la
+   nueva ruta `custom_addons/madenat_lumber_docs/FASES/FASE13_20261023/` [VERIFICADO — 4 citas actualizadas
+   en `CANON/04`, `PROMPT_2D.md` e `INFORME_FASE_2B.md`].
+
 
