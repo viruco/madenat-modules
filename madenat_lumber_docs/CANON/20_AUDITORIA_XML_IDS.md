@@ -1,8 +1,10 @@
 # Auditoría de XML IDs — R1 Stock Detail
 
-**Versión documental:** 1.1.0
+**Número canónico:** 20 — renumerado desde `05` en la consolidación documental FASE 2 (D3), por colisión de prefijo con `05_BACKLOG.md`.
+**Versión documental:** 1.2.0
 **Fecha:** 2026-06-15
-**Última actualización:** 2026-09-25  <!-- actualizado: 2026-09-25 — Programación 1: identificación operativa de lotes R1 -->
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — Consolidación documental FASE 2 (E2/D3): renumeración 05 → 20 (`git mv`, contenido normativo intacto) y actualización de las referencias que citaban el nombre anterior. Versión 1.1.0 → 1.2.0. -->
+**Última actualización de contenido:** 2026-09-25  <!-- actualizado: 2026-09-25 — Programación 1: identificación operativa de lotes R1 -->
 **Estado:** ✅ Vigente — Auditoría de XML IDs de R1; referencias de código revalidadas al 2026-09-25 (AD-77).
 **Propósito:** Validar que los nuevos XML IDs existen en BD y que los viejos (`view_stock_lot_*`) han desaparecido.
 

@@ -103,7 +103,7 @@ madenat_lumber_logistics / madenat_lumber_billing
 | `03_TESTS.md` | Matriz de validación funcional y técnica (T01–T33 + suites automatizadas) |
 | `04_DECISION_LOG.md` | Decisiones de arquitectura, naming, cálculo y operación (AD-01 a AD-38) |
 | `05_BACKLOG.md` | Backlog canónico y priorizado por fases |
-| `05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
+| `20_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail (renumerado desde `05` en FASE 2/D3) |
 | `07_TRABAJO_CON_IA.md` | Este archivo. Protocolo de trabajo con IA |
 | `08_COSTEO.md` | Flujo canónico de costeo end-to-end |
 | `11_FASE_E_VALIDACION.md` | Runbook operativo, CI pipeline (derivado vigente) |

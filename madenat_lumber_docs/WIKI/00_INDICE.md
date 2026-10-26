@@ -24,7 +24,6 @@
 | `CANON/03_TESTS.md` | Matriz de pruebas y evidencia funcional |
 | `CANON/04_DECISION_LOG.md` | Registro de decisiones técnicas y funcionales |
 | `CANON/05_BACKLOG.md` | Prioridades y tareas pendientes vigentes |
-| `CANON/05_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
 | `CANON/06_CHECKLIST.md` | 🏷️ ARCHIVADO en `LEGADO/` — reemplazado por el checklist A-F del índice |
 | `CANON/07_TRABAJO_CON_IA.md` | Protocolo canónico de trabajo con IA |
 | `CANON/08_COSTEO.md` | Flujo canónico de costeo end-to-end |
@@ -40,6 +39,7 @@
 | `CANON/17_CONSTITUCION_VOLUMENES.md` | Constitución de volúmenes F1/F2/F3, hashes y tablas |
 | `CANON/18_CONSOLIDACION_Y_REBAJA.md` | Consolidación de volumen y rebaja de etiquetas |
 | `CANON/19_IMPUTACION_SV_Y_PROCESADORES.md` | Imputación SV y procesadores (retornos, rebajas, contrato) |
+| `CANON/20_AUDITORIA_XML_IDS.md` | Auditoría de XML IDs — R1 Stock Detail |
 | `CANON/INDICE_DOCUMENTACION.md` | Mapa maestro de todos los documentos (v12.57.0) |
 
 ---

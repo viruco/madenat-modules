@@ -149,7 +149,7 @@ acordado/no ejecutado).
 | H3 | Múltiples fuentes de fecha de ingreso en `stock.quant` (`lot_reception_date`, `lot_entry_datetime`, `reception_date` de Core, `lot_id.reception_id.reception_date`) | Deuda previa (ampliada) | Pendiente — revisión arquitectónica en backlog |
 | H4 | `lot_origin_document` coincide con el N° de guía cuando el origen es guía de procesamiento | Comportamiento esperado | Documentado (no es defecto) |
 | H5 | Cinco campos `store=True` + índice booleano de baja cardinalidad sobre `stock.quant` | Pendiente | Observar rendimiento a escala (backlog) |
-| H6 | `05_AUDITORIA_XML_IDS.md` describía R1 con campos y líneas desactualizados | Drift documental | **Corregido** en esta sesión (v1.1.0) |
+| H6 | `20_AUDITORIA_XML_IDS.md` describía R1 con campos y líneas desactualizados | Drift documental | **Corregido** en esta sesión (v1.1.0) |
 | H7 | Sin test automatizado del token técnico, la etiqueta operativa y `is_volume_lot` en `madenat_lumber_reports/tests/` | Pendiente | Backlog |
 | H8 | `is_volume_lot` no sigue el prefijo `lot_*` del resto de campos del modelo | Excepción deliberada (aprobada) | Documentado en AD-77 y `00_ARQUITECTURA.md` §4.7 |
 | H9 | CANON no tenía dueño del inventario de campos de R1 | Brecha de propiedad documental | **Resuelto** con `00_ARQUITECTURA.md` §4.7 |
@@ -161,6 +161,6 @@ acordado/no ejecutado).
 - `CANON/02_CONTINUIDAD.md` — §13 (estado, evidencia, límite y retoma).
 - `CANON/03_TESTS.md` — §8 (evidencia y matriz de la regla de token).
 - `CANON/05_BACKLOG.md` — hitos pendientes derivados (validación visual, XLSX, test, fuentes de fecha, rendimiento).
-- `CANON/05_AUDITORIA_XML_IDS.md` — v1.1.0 (XML IDs de R1 y referencias revalidadas).
+- `CANON/20_AUDITORIA_XML_IDS.md` — v1.2.0 (XML IDs de R1 y referencias revalidadas; renumerado desde `05` en la consolidación documental FASE 2/D3).
 - Código: `madenat_lumber_reports/models/lumber_stock_report.py`, `views/inventory_report_views.xml`,
   `__manifest__.py`, `CHANGELOG.md`.
