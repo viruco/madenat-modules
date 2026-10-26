@@ -1,0 +1,33 @@
+PRE-02 / F3.1 — PUBLICACIÓN CONTROLADA · PRE-FLIGHT (Fases 0 y 1, sólo lectura)
+============================================================================
+Timestamp: 20261003_175136 · 2026-10-03T20:51Z
+Repo git : /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+
+--- FASE 0 (local) ---
+Rama actual              : feat/p0-r-core-sv-foundation-remediation-20261002   OK
+HEAD                     : bee61e7ee3b829376e261ea37b3f38a9202f2bbd             OK
+HEAD^ (parent)           : 4aa40113c029fc0a871ae3368e08593bb771774d             OK
+Árbol de trabajo         : limpio (git status vacío)                             OK
+Staged                   : vacío                                               OK
+Untracked                : vacío                                               OK
+git diff --check         : exit 0 (sin hallazgos)                              OK
+origin/main              : b862415c5e177a869c38acf574b8cd77b236ab06             OK
+merge-base(HEAD,o/main)  : b862415c5e177a869c38acf574b8cd77b236ab06             OK
+diff --name-only 4aa40113..bee61e7  : exactamente
+    madenat_lumber_core/models/madenat_guia_processing.py
+    madenat_lumber_core/tests/test_granel_route.py                              OK
+git show --check bee61e7 : exit 0                                               OK
+ahead/behind vs origin/main : 0 behind / 17 ahead
+
+--- FASE 1 (remoto, sólo lectura) ---
+Remoto origin (fetch)    : git@github.com:viruco/madenat-modules.git (SSH)
+Nota SSH                 : SSH rechazado (publickey). gh autenticado por HTTPS
+                           (cuenta viruco, scopes: repo). credential.helper=store
+                           (usuario HTTPS=viruco). Se usará HTTPS para el push.
+Repo GitHub              : viruco/madenat-modules (público; default branch: main)
+Remote main (HTTPS)      : b862415c5e177a869c38acf574b8cd77b236ab06             OK (= base esperada)
+Rama remota objetivo     : NO EXISTE en el remoto (ls-remote sólo devolvió main) → push procede
+PR abierto head→base main: NINGUNO (gh pr list → [])
+
+GATE 0: VERDE
+GATE 1: VERDE

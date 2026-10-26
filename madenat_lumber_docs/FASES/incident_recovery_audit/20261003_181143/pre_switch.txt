@@ -1,0 +1,64 @@
+=== PRE-SWITCH AUDIT (FASE 0) ===
+timestamp: 2026-10-03T18:11:43-03:00
+worktree: /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+git-dir: .git
+
+--- git status --short (expect empty) ---
+[end status]
+
+--- current branch ---
+feat/p0-r-core-sv-foundation-remediation-20261002
+--- current HEAD ---
+bee61e7ee3b829376e261ea37b3f38a9202f2bbd
+
+--- dest ref rev-parse ---
+106d0010ec6cc7924046c50029b95ecd10677896
+--- dest ref short ---
+106d001
+
+--- in-progress git ops ---
+absent: MERGE_HEAD
+absent: CHERRY_PICK_HEAD
+absent: REBASE_HEAD
+absent: revert-merge/HEAD
+absent: index.lock
+absent: HEAD.lock
+
+--- versions CURRENT (bee61e7) ---
+    'version': '18.0.6.3.0',
+    'version': '18.0.1.2.0',
+--- versions DEST (106d001) ---
+    'version': '18.0.6.5.0',
+    'version': '18.0.1.6.0',
+
+--- models DEST (106d001) ---
+106d001:madenat_lumber_logistics/models/madenat_sv_imputation.py:53:    _name = 'madenat.sv.imputation'
+106d001:madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py:13:    _name = 'lumber.shipment.rebaja.wizard'
+106d001:madenat_lumber_logistics/wizards/madenat_processor_shipment_wizard.py:36:    _name = 'madenat.processor.shipment.wizard'
+--- models CURRENT (bee61e7) [expect none] ---
+NONE FOUND
+
+--- merge-base / relation ---
+merge-base: b862415c5e177a869c38acf574b8cd77b236ab06
+bee61e7 is NOT ancestor of 106d001
+
+--- ON-DISK (mounted, pre-switch) versions ---
+core manifest: 
+logistics manifest: 
+logistics wizards dir:
+  __init__.py
+  lumber_consolidation_import_wizard.py
+  lumber_container_lot_wizard.py
+  lumber_container_lot_wizard_views.xml
+  lumber_container_rollover_wizard.py
+  lumber_container_rollover_wizard_views.xml
+core models has madenat_sv_imputation.py? : 0
+
+--- CUT-POINT MARKER (UTC) ---
+switch_marker_utc=2026-10-03T21:12:24Z
+before_total_log_lines=567590
+before_last_line=2026-10-03 21:12:06,894 1 INFO madenat_test werkzeug: 172.19.0.1 - - [03/Oct/2026 21:12:06] "GET /web/login HTTP/1.1" 200 - 6 0.023 0.031
+
+--- ON-DISK (mounted) PRE-SWITCH versions (authoritative) ---
+core:     'version': '18.0.6.3.0',
+logistics:     'version': '18.0.1.2.0',

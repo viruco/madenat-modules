@@ -1,0 +1,48 @@
+ORÁCULO INTEGRAL F3.1 — PRE-FLIGHT (evidencia)
+==============================================
+Identificador     : oracle_f31_20261003_165538
+Fecha (host)      : 2026-10-03 16:55 (UTC 19:55Z)
+Repo              : /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+Rama activa       : feat/p0-r-core-sv-foundation-remediation-20261002
+
+--- Identidad Git ---
+HEAD              : 4aa40113c029fc0a871ae3368e08593bb771774d
+HEAD^ (parent)    : 1df283e3cff10d6b5dae582183a054ad10958ca2
+origin/main       : b862415c5e177a869c38acf574b8cd77b236ab06
+merge-base(H,o/m) : b862415c5e177a869c38acf574b8cd77b236ab06
+Estado vs ref     : [origin/main: ahead 16]
+
+--- Cambios sin commit (git status --porcelain) ---
+ M madenat_lumber_core/models/madenat_guia_processing.py
+ M madenat_lumber_core/tests/test_granel_route.py
+=> Solo los dos archivos autorizados. Ningún archivo adicional.
+
+--- git diff --check ---
+exit=0 (sin errores de whitespace)
+
+--- SHA-256 de los archivos autorizados (árbol activo) ---
+7f8c530b2984ae4adeb288c426b9c48a7869412d7ad7ccacd9dea9b3c0cf517e  madenat_lumber_core/models/madenat_guia_processing.py
+d05a7d48c2f08a73699941bf616aba49efe8cdd977677af6302d090e37f05e18  madenat_lumber_core/tests/test_granel_route.py
+
+--- Comparación contra baseline PRE-02 (pre02_audit/20261003_1541/final_sha256.txt) ---
+madenat_guia_processing.py : 7f8c530b…0cf517e  -> COINCIDE
+test_granel_route.py       : d05a7d48…e37f05e18 -> COINCIDE
+
+--- Worktree de validación creado (detached) ---
+Path              : /home/viruco/dev-stack/odoo/odoo-18-ce/oracle_f31_20261003_165538
+HEAD              : 4aa40113c029fc0a871ae3368e08593bb771774d
+Diff vs HEAD      : solo los 2 archivos autorizados (copiados del árbol activo)
+Hashes en worktree: COINCIDEN con baseline PRE-02
+
+--- Confirmación de no existencia previa de recursos ---
+DB oracle_f31_*       : NO existía (psql -l)
+filestore oracle_f31_*: NO existía (/var/lib/odoo/filestore/)
+/tmp/oracle_f31_*     : NO existía (contenedor)
+Directorio de logs    : creado nuevo (oracle_f31_audit/20261003_165538)
+
+--- Recursos históricos NO intervenidos ---
+f31_test_20261003_1410     : intacto (worktree + /tmp + DB + filestore)
+pre02_test_20261003_1541   : intacto (worktree + /tmp + DB + filestore)
+madenat_test               : intacto
+
+Dictamen pre-flight: PROCEDE (identidad y hashes consistentes).

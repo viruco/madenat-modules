@@ -1,0 +1,10 @@
+ERROR <DB> odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ❌ Error ORM eliminando moves huérfanos: Simulated integrity failure inside savepoint 
+ERROR <DB> odoo.schema: Table 'stock_lot': unable to add constraint 'stock_lot_check_cost_positive' as CHECK(total_cost_usd >= N) 
+ERROR <DB> odoo.sql_db: bad query: b'INSERT INTO "madenat_sv_operation" ("action_type", "company_id", "create_date", "create_uid", "lot_id", "name", "rebaja_volume_mN", "requested_by_id", "state", "write_date", "write_uid") VALUES (\'rebaja\', N, \'N-N-N N:N:N.N\', N, N, \'SVON\', \'N.N\', N, \'draft\', \'N-N-N N:N:N.N\', N) RETURNING "id"'
+ERROR <DB> odoo.sql_db: bad query: b'INSERT INTO "madenat_sv_rename_wizard" ("create_date", "create_uid", "lot_id", "new_label", "write_date", "write_uid") VALUES (\'N-N-N N:N:N.N\', N, N, \'SVO\', \'N-N-N N:N:N.N\', N) RETURNING "id"'
+ERROR <DB> odoo.sql_db: bad query: b'SELECT id FROM stock_lot WHERE id = N FOR UPDATE NOWAIT'
+ERROR ? odoo.sql_db: bad query: b'INSERT INTO "madenat_sv_operation" ("action_type", "company_id", "create_date", "create_uid", "destination_reference", "lot_id", "name", "reason", "rebaja_pieces", "rebaja_volume_mN", "requested_by_id", "state", "write_date", "write_uid") VALUES (\'rebaja\', N, \'N-N-N N:N:N.N\', N, NULL, N, \'SVON\', \'Rebaja concurrente B (N.N m\xcN\xbN)\', N, \'N.N\', N, \'draft\', \'N-N-N N:N:N.N\', N) RETURNING "id"'
+ERROR: could not obtain lock on row in relation "stock_lot"
+ERROR: could not serialize access due to concurrent update
+ERROR: null value in column "reason" of relation "madenat_sv_operation" violates not-null constraint
+ERROR: null value in column "reason" of relation "madenat_sv_rename_wizard" violates not-null constraint

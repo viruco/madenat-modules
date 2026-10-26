@@ -1,0 +1,3 @@
+ .../models/madenat_guia_processing.py              | 174 +++++++++++++++------
+ madenat_lumber_core/tests/test_granel_route.py     |  75 ++++++++-
+ 2 files changed, 193 insertions(+), 56 deletions(-)

@@ -1,0 +1,2 @@
+7f8c530b2984ae4adeb288c426b9c48a7869412d7ad7ccacd9dea9b3c0cf517e  madenat_lumber_core/models/madenat_guia_processing.py
+d05a7d48c2f08a73699941bf616aba49efe8cdd977677af6302d090e37f05e18  madenat_lumber_core/tests/test_granel_route.py

@@ -1,0 +1,14 @@
+=== STATUS (conflict) ===
+UU madenat_lumber_core/models/madenat_guia_processing.py
+UU madenat_lumber_core/tests/test_granel_route.py
+
+=== UNMERGED FILES ===
+madenat_lumber_core/models/madenat_guia_processing.py
+madenat_lumber_core/tests/test_granel_route.py
+
+=== conflict markers (<<<<<<<) ===
+model: 1
+test: 1
+
+=== CHERRY_PICK_HEAD ===
+bee61e7ee3b829376e261ea37b3f38a9202f2bbd

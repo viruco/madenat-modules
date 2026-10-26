@@ -1,0 +1,52 @@
+2026-10-03 21:12:49,280 1 INFO ? odoo.service.server: autoreload: python code updated, autoreload activated 
+2026-10-03 21:12:49,292 1 INFO madenat_test odoo.service.server: Initiating server reload 
+2026-10-03 21:12:51,209 1 INFO madenat_test odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 6 connections  
+Exception in thread odoo.service.cron.cron0:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.12/threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 558, in target
+    self.cron_thread(i)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 540, in cron_thread
+    _run_cron(cr)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 524, in _run_cron
+    pg_conn.poll()
+psycopg2.InterfaceError: connection already closed
+2026-10-03 21:12:54,555 1 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-03 21:12:54,556 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-03 21:12:54,556 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-03 21:12:54,556 1 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-03 21:12:54,950 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-03 21:12:55,039 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-03 21:12:55,551 1 INFO ? odoo.service.server: Watching addons folder /usr/lib/python3/dist-packages/odoo/addons 
+2026-10-03 21:12:55,551 1 INFO ? odoo.service.server: Watching addons folder /var/lib/odoo/addons/18.0 
+2026-10-03 21:12:55,551 1 INFO ? odoo.service.server: Watching addons folder /mnt/extra-addons 
+2026-10-03 21:13:00,966 1 INFO ? odoo.service.server: AutoReload watcher running with watchdog 
+2026-10-03 21:13:00,967 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on cf7880e68800:8069 
+2026-10-03 21:13:01,053 1 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-03 21:13:01,062 1 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-03 21:13:01,219 1 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-03 21:13:03,234 1 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-03 21:13:03,239 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-03 21:13:03,240 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-03 21:13:03,240 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-03 21:13:03,240 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-03 21:13:03,240 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-03 21:13:03,240 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-03 21:13:03,241 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-03 21:13:03,241 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-03 21:13:03,395 1 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-03 21:13:03,817 1 INFO madenat_test odoo.modules.loading: 88 modules loaded in 2.60s, 0 queries (+0 extra) 
+2026-10-03 21:13:04,122 1 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-03 21:13:04,163 1 INFO madenat_test odoo.modules.registry: Registry loaded in 3.194s 

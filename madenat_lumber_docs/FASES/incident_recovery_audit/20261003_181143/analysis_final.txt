@@ -1,0 +1,17 @@
+=== BEFORE/AFTER LOG ANALYSIS (case-insensitive) ===
+BEFORE lines=567589
+BEFORE Missing model = 3
+567524:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model lumber.shipment.rebaja.wizard 
+567525:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.sv.imputation 
+567526:2026-10-03 20:58:09,794 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.processor.shipment.wizard 
+BEFORE ALTER TABLE  = 0
+BEFORE Traceback hdrs = 568
+
+AFTER  lines=1978
+AFTER  Missing model = 0
+AFTER  ERROR/CRITICAL = 1
+AFTER  ALTER TABLE   = 0
+AFTER  Traceback hdrs = 1 (benign cron close at reload)
+
+=== reload line: 0 queries => no module update / no writes ===
+50:2026-10-03 21:13:03,817 1 INFO madenat_test odoo.modules.loading: 88 modules loaded in 2.60s, 0 queries (+0 extra) 

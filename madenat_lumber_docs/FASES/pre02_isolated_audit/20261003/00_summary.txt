@@ -1,0 +1,51 @@
+PRE-02 — RAMA AISLADA · EVIDENCIA (BLOQUEADO EN CHERRY-PICK)
+============================================================
+Timestamp: 20261003 (host) · 2026-10-03
+
+--- FASE 0 (pre-flight) — VERDE ---
+origin/main              : b862415c5e177a869c38acf574b8cd77b236ab06
+bee61e7 existe local     : SÍ (commit)
+bee61e7 parent           : 4aa40113c029fc0a871ae3368e08593bb771774d
+git show --check bee61e7 : sin errores de whitespace
+bee61e7 archivos         : madenat_lumber_core/models/madenat_guia_processing.py
+                           madenat_lumber_core/tests/test_granel_route.py  (exactamente 2)
+rama nueva               : ausente local y remota
+rama actual              : feat/p0-r-... limpia
+
+--- FASE 1 (worktree aislado) ---
+Incidente: el primer `git worktree add -b` falló por un `index.lock` (carrera
+auto-infligida: se ejecutó en paralelo un `git status` dependiente). Git revirtió
+el directorio y el admin-dir del worktree, dejando solo el ref de rama en b862415c.
+Recuperación: `git worktree add <path> fix/pre02-service-reception-quantities-20261003`
+(secuencial) → OK.
+Ruta worktree            : /home/viruco/dev-stack/odoo/odoo-18-ce/pre02_isolated_20261003
+Rama                     : fix/pre02-service-reception-quantities-20261003
+HEAD inicial             : b862415c5e177a869c38acf574b8cd77b236ab06   (== origin/main)
+Árbol                    : limpio
+
+--- FASE 2 (cherry-pick -x) — CONFLICTO → ABORTADO ---
+Comando : git cherry-pick -x bee61e7ee3b829376e261ea37b3f38a9202f2bbd
+Resultado: CONFLICT (content) en AMBOS archivos. exit=1.
+  UU madenat_lumber_core/models/madenat_guia_processing.py
+  UU madenat_lumber_core/tests/test_granel_route.py
+  CHERRY_PICK_HEAD = bee61e7ee3b829376e261ea37b3f38a9202f2bbd
+Acción: git cherry-pick --abort → exit=0. NO se resolvió ni modificó nada.
+Post-abort: HEAD = b862415c5e177a869c38acf574b8cd77b236ab06; árbol limpio.
+
+Causa raíz (sólo lectura):
+  merge-base(b862415c, 4aa40113) = b862415c  → 4aa40113 está 16 commits delante de main.
+  commits main..4aa40113 = 16 ; main..bee61e7 = 17
+  diff --stat de los 2 archivos (main..4aa40113):
+     models/madenat_guia_processing.py | 1320 ++--- ; tests/test_granel_route.py | 112 +-
+  El contexto de código que el diff de PRE-02 necesita NO existe en main; el
+  commit PRE-02 depende de los 16 commits previos de la rama P0-R.
+
+--- FASE 3/4 ---
+NO ejecutadas (detención por conflicto). No se corrió Odoo ni pruebas.
+No se creó DB/filestore/copia de validación (no se llegó a Fase 4).
+
+--- PRESERVACIÓN ---
+Worktree aislado conservado (clean, en b862415c).
+Rama original feat/p0-r-... = bee61e7... (intacta).
+PR #1 = OPEN (intacto, sin editar).
+Sin cambios en main, origin/main, tags ni ramas remotas.

@@ -1,0 +1,19 @@
+fix(core): garantiza cantidades reales en recepción service
+
+Corrige PRE-02 en el flujo granel → service.
+
+- Elimina movimientos fantasma detectando lotes desde move lines reales.
+- Garantiza una move line trazable con cantidad derivada de la guía y UoM
+  estándar antes de la validación nativa del picking.
+- Mantiene idempotencia y evita bypass de validación de stock.
+- Añade cobertura de regresión para granel → service, trazabilidad e
+  idempotencia.
+
+Validación previa:
+- Oráculo integral F3.1: 73 passed, 0 failed.
+- Regresión guia_processing,sv,-f31: 204 tests, 0 failed, 0 errors.
+- F3.1: 13 tests, 0 failed, 0 errors.
+
+Evidencia:
+oracle_f31_audit/20261003_165538/INFORME_FINAL_F31.md
+SHA-256: ea9a37f365364b481f915a966049e8fe551c37d96f1015297cb351b897d41e41

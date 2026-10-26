@@ -1,0 +1,15 @@
+=== POST-SWITCH AUDIT (FASE 1) ===
+timestamp_utc=2026-10-03T21:12:49Z
+switch_exit_code=0
+branch=feat/guia-correccion-documental-preservada-20261002
+HEAD_full=106d0010ec6cc7924046c50029b95ecd10677896
+HEAD_short=106d001
+--- git status --short (expect empty) ---
+[end status]
+--- on-disk versions (mounted) ---
+    'version': '18.0.6.5.0',
+    'version': '18.0.1.6.0',
+--- model presence on disk ---
+madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py:13:    _name = 'lumber.shipment.rebaja.wizard'
+madenat_lumber_logistics/wizards/madenat_processor_shipment_wizard.py:36:    _name = 'madenat.processor.shipment.wizard'
+madenat_lumber_logistics/models/madenat_sv_imputation.py:53:    _name = 'madenat.sv.imputation'

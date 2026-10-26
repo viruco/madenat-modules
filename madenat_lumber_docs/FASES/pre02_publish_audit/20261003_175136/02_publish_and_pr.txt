@@ -1,0 +1,54 @@
+PRE-02 / F3.1 — PUBLICACIÓN CONTROLADA Y PR · EVIDENCIA (Fases 2–4)
+=================================================================
+Timestamp: 20261003_175136
+
+--- FASE 2 (PUSH) — GATE 2 VERDE ---
+Comando: git -c credential.helper= -c credential.helper='!gh auth git-credential' \
+         push https://github.com/viruco/madenat-modules.git \
+         refs/heads/feat/p0-r-core-sv-foundation-remediation-20261002:refs/heads/feat/p0-r-core-sv-foundation-remediation-20261002
+Resultado: * [new branch] feat/p0-r-core-sv-foundation-remediation-20261002 -> feat/p0-r-core-sv-foundation-remediation-20261002
+exit=0  (sin --force, sin --force-with-lease, sin --tags, refspec único)
+Verificación remota:
+  refs/heads/feat/p0-r-core-sv-foundation-remediation-20261002 = bee61e7ee3b829376e261ea37b3f38a9202f2bbd  OK
+  parent (por SHA) = 4aa40113c029fc0a871ae3368e08593bb771774d                                              OK
+  refs/heads/main = b862415c5e177a869c38acf574b8cd77b236ab06 (sin cambios)                                 OK
+  tags: no se publicó ninguno (push sin --tags)                                                            OK
+Nota: la rama se publicó por HTTPS (SSH de origin no disponible). No se modificó
+configuración persistente (se usó `-c` por invocación).
+
+--- FASE 3 (PR) ---
+Comando: gh pr create --repo viruco/madenat-modules --base main \
+         --head feat/p0-r-core-sv-foundation-remediation-20261002 \
+         --title 'fix(core): garantiza cantidades reales en recepción service' \
+         --body-file pre02_publish_audit/20261003_175136/pr_body.md
+Resultado: https://github.com/viruco/madenat-modules/pull/1
+exit=0
+
+--- FASE 4 (VERIFICACIÓN) ---
+Número            : 1
+URL               : https://github.com/viruco/madenat-modules/pull/1
+Estado            : OPEN (no draft)
+Base              : main
+Head              : feat/p0-r-core-sv-foundation-remediation-20261002
+Head SHA          : bee61e7ee3b829376e261ea37b3f38a9202f2bbd   OK
+Título            : fix(core): garantiza cantidades reales en recepción service
+Cuerpo            : COINCIDE EXACTAMENTE (body_exact_match=True; 2212 == 2212 bytes)
+                    SHA-256 body enviado: 471930467fc49a7efbc0683c809da140adc4638dd50f57b56dc69c8bd9034370
+main (remoto)     : b862415c5e177a869c38acf574b8cd77b236ab06 (SIN CAMBIOS)
+origin/main local : b862415c5e177a869c38acf574b8cd77b236ab06 (SIN CAMBIOS)
+
+Alcance observado del PR (branch → main):
+  changedFiles = 59 · additions = 10215 · deletions = 289 · commits = 17
+  El PR incluye TODOS los commits de la rama autorizada (merge-base con main =
+  b862415c), no sólo el commit PRE-02. El commit bee61e7 (tip de la rama) aporta
+  EXACTAMENTE los 2 archivos autorizados:
+    madenat_lumber_core/models/madenat_guia_processing.py
+    madenat_lumber_core/tests/test_granel_route.py
+  No se introdujeron archivos/commits FUERA de la rama autorizada.
+  Consecuencia: la verificación literal "el PR contiene exactamente los dos
+  archivos" NO se cumple a nivel de PR (sí a nivel del commit autorizado), por la
+  profundidad preexistente de la rama (17 commits). No se corrige ni edita el PR
+  (prohibido).
+
+Sin acciones adicionales en GitHub (sin revisores, labels, merge, comentarios,
+edición, cierre).

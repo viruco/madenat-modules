@@ -1,0 +1,4 @@
+date: Mon Oct 12 16:31:32 UTC 2026
+head: b1d2d1911648f3264bf629c8eccf79a1c140eaf3
+branch: feat/guia-correccion-documental-preservada-20261002
+wip: 94 entries

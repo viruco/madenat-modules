@@ -1,0 +1,51 @@
+### BEFORE: Missing model (any)
+567524:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model lumber.shipment.rebaja.wizard 
+567525:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.sv.imputation 
+567526:2026-10-03 20:58:09,794 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.processor.shipment.wizard 
+count_MissingModel=3
+
+### BEFORE: the three models specifically
+360752:2026-10-02 12:54:45,436 1 WARNING madenat_test odoo.fields: Field madenat.processor.shipment.wizard.line_ids with unknown comodel_name 'madenat.processor.shipment.line' 
+360836:2026-10-02 12:55:03,511 1 WARNING madenat_test odoo.fields: Field madenat.processor.shipment.wizard.line_ids with unknown comodel_name 'madenat.processor.shipment.line' 
+360920:2026-10-02 12:55:12,941 1 WARNING madenat_test odoo.fields: Field madenat.processor.shipment.wizard.line_ids with unknown comodel_name 'madenat.processor.shipment.line' 
+369896:2026-10-02 15:22:37,290 1 INFO madenat_test werkzeug: 172.18.0.1 - - [02/Oct/2026 15:22:37] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/get_views HTTP/1.1" 200 - 12 0.008 0.020
+369897:2026-10-02 15:22:37,314 1 INFO madenat_test werkzeug: 172.18.0.1 - - [02/Oct/2026 15:22:37] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/onchange HTTP/1.1" 200 - 3 0.002 0.006
+369899:2026-10-02 15:22:41,270 1 INFO madenat_test werkzeug: 172.18.0.1 - - [02/Oct/2026 15:22:41] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/onchange HTTP/1.1" 200 - 4 0.005 0.011
+369945:2026-10-02 16:02:23,325 1 INFO madenat_test werkzeug: 172.18.0.1 - - [02/Oct/2026 16:02:23] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/onchange HTTP/1.1" 200 - 3 0.002 0.007
+369968:2026-10-02 16:02:54,661 1 INFO madenat_test werkzeug: 172.18.0.1 - - [02/Oct/2026 16:02:54] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/onchange HTTP/1.1" 200 - 2 0.002 0.008
+373958:2026-10-02 16:11:31,450 1 INFO madenat_test werkzeug: 172.19.0.1 - - [02/Oct/2026 16:11:31] "POST /web/dataset/call_kw/lumber.shipment.rebaja.wizard/onchange HTTP/1.1" 200 - 4 0.004 0.008
+448120:2026-10-02 19:27:08,121 1 INFO madenat_test werkzeug: 172.19.0.1 - - [02/Oct/2026 19:27:08] "POST /web/dataset/call_kw/madenat.sv.imputation.wizard/get_views HTTP/1.1" 200 - 20 0.025 0.021
+448121:2026-10-02 19:27:08,185 1 INFO madenat_test werkzeug: 172.19.0.1 - - [02/Oct/2026 19:27:08] "POST /web/dataset/call_kw/madenat.sv.imputation.wizard/onchange HTTP/1.1" 200 - 26 0.023 0.023
+567524:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model lumber.shipment.rebaja.wizard 
+567525:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.sv.imputation 
+567526:2026-10-03 20:58:09,794 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.processor.shipment.wizard 
+count_three_models=14
+
+### BEFORE: Traceback
+count_Traceback=568
+
+### BEFORE: ALTER TABLE stock_lot (and ALTER TABLE generally)
+count_ALTER_stock_lot=0
+count_ALTER_any=0
+
+### BEFORE: ERROR / CRITICAL lines
+566578:psycopg2.OperationalError: server closed the connection unexpectedly
+566711:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+566725:psycopg2.OperationalError: server closed the connection unexpectedly
+566849:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+566863:psycopg2.OperationalError: server closed the connection unexpectedly
+567009:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+567023:psycopg2.OperationalError: server closed the connection unexpectedly
+567110:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+567124:psycopg2.OperationalError: server closed the connection unexpectedly
+567191:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+567205:psycopg2.OperationalError: server closed the connection unexpectedly
+567272:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: server closed the connection unexpectedly
+567288:psycopg2.OperationalError: server closed the connection unexpectedly
+567375:psycopg2.OperationalError: connection to server at "db" (172.19.0.2), port 5432 failed: FATAL:  the database system is shutting down
+567389:psycopg2.OperationalError: server closed the connection unexpectedly
+567465:psycopg2.InterfaceError: connection already closed
+567524:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model lumber.shipment.rebaja.wizard 
+567525:2026-10-03 20:58:09,791 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.sv.imputation 
+567526:2026-10-03 20:58:09,794 1 ERROR madenat_test odoo.addons.base.models.ir_model: Missing model madenat.processor.shipment.wizard 
+567559:2026-10-03 21:01:21,513 1 WARNING madenat_test odoo.addons.base.models.ir_qweb: Found deprecated directive @t-esc='error' in template 185. Replace by @t-out 

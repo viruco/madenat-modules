@@ -1,0 +1,61 @@
+PRE-02 / F3.1 — FORMALIZACIÓN LOCAL · FASE 0 (PRE-FLIGHT, SOLO LECTURA)
+=====================================================================
+Timestamp            : 20261003_173553 (host) · 2026-10-03T20:35Z (UTC)
+Repo git             : /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+Nota de rutas        : el workspace NO es repo git; el repo root es 'custom_addons'.
+                       Las rutas del encargo 'custom_addons/...' se resuelven como
+                       rutas repo-relativas 'madenat_lumber_core/...'.
+Rama actual          : feat/p0-r-core-sv-foundation-remediation-20261002
+
+--- Identidad Git ---
+HEAD                 : 4aa40113c029fc0a871ae3368e08593bb771774d
+HEAD^ (parent)       : 1df283e3cff10d6b5dae582183a054ad10958ca2
+origin/main          : b862415c5e177a869c38acf574b8cd77b236ab06
+merge-base(H,o/m)    : b862415c5e177a869c38acf574b8cd77b236ab06
+HEAD == autorizado   : SÍ (coincide exactamente)
+
+--- git status --short ---
+ M madenat_lumber_core/models/madenat_guia_processing.py
+ M madenat_lumber_core/tests/test_granel_route.py
+=> exactamente los 2 archivos autorizados. Staged: vacío. Untracked: ninguno.
+   Submódulos: ninguno (git submodule status vacío, sin .gitmodules).
+
+--- git diff --check ---
+exit=0 (sin errores de whitespace)
+
+--- git diff --stat ---
+madenat_lumber_core/models/madenat_guia_processing.py | 174 ++++++++++++------
+madenat_lumber_core/tests/test_granel_route.py        |  75 ++++++++-
+2 files changed, 193 insertions(+), 56 deletions(-)
+
+--- git diff --name-only ---
+madenat_lumber_core/models/madenat_guia_processing.py
+madenat_lumber_core/tests/test_granel_route.py
+
+--- SHA-256 de working tree (comparación con baseline autorizado) ---
+7f8c530b2984ae4adeb288c426b9c48a7869412d7ad7ccacd9dea9b3c0cf517e  models/madenat_guia_processing.py   -> 7f8c530b…0cf517e  COINCIDE
+d05a7d48c2f08a73699941bf616aba49efe8cdd977677af6302d090e37f05e18  tests/test_granel_route.py          -> d05a7d48…e37f05e18  COINCIDE
+
+--- Integridad del informe de cierre ---
+oracle_f31_audit/20261003_165538/INFORME_FINAL_F31.md
+SHA-256 = ea9a37f365364b481f915a966049e8fe551c37d96f1015297cb351b897d41e41  COINCIDE
+
+--- Revisión del diff (solo 2 archivos autorizados) ---
+El diff actual es BYTE-IDÉNTICO al diff validado por el Oráculo Integral F3.1
+(/tmp/pre02_model.diff y /tmp/pre02_test.diff → MODEL_DIFF_IDENTICAL, TEST_DIFF_IDENTICAL).
+
+Escaneo de patrones prohibidos (líneas añadidas):
+  skip_sanity_check                 => 0
+  cr.execute (SQL directo)          => 0
+  sudo( / .sudo()                   => 0
+  INSERT/UPDATE/DELETE/SELECT       => 0
+  env.ref('uom.product_uom_cubic_meter') => 1  (UoM estándar de Odoo, NO fixture)
+
+Derivación de cantidad (relaciones de dominio + UoM estándar):
+  qty_m3 = vol_purchase_m3 → vol_physical_m3 → vol_shipment_m3
+  m3._compute_quantity(qty_m3, uom, round=False)   (conversión UoM estándar)
+Idempotencia: reutiliza la move line existente; crea solo si falta.
+No hay IDs fijos ni cantidades/productos/lotes/ubicaciones/compañías codificados.
+Cobertura de prueba: granel → service + trazabilidad + idempotencia (test_08).
+
+GATE 0: VERDE — se autoriza FASE 1 (stage restringido).

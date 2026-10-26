@@ -1,0 +1,27 @@
+=== AFTER-SWITCH LOG ANALYSIS (FASE 2) ===
+after_slice_lines=1978
+count_MissingModel_after=0
+count_ERROR_or_CRITICAL_after=0
+count_ALTER_TABLE_after=0
+count_Traceback_header_after=1
+--- the only Traceback header + cause ---
+4:Exception in thread odoo.service.cron.cron0:
+5:Traceback (most recent call last):
+16:psycopg2.InterfaceError: connection already closed
+--- unknown comodel_name for the 3 models after? ---
+NONE
+--- reload milestones ---
+1:2026-10-03 21:12:49,280 1 INFO ? odoo.service.server: autoreload: python code updated, autoreload activated 
+2:2026-10-03 21:12:49,292 1 INFO madenat_test odoo.service.server: Initiating server reload 
+26:2026-10-03 21:12:55,551 1 INFO ? odoo.service.server: Watching addons folder /mnt/extra-addons 
+27:2026-10-03 21:13:00,966 1 INFO ? odoo.service.server: AutoReload watcher running with watchdog 
+30:2026-10-03 21:13:01,062 1 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+50:2026-10-03 21:13:03,817 1 INFO madenat_test odoo.modules.loading: 88 modules loaded in 2.60s, 0 queries (+0 extra) 
+51:2026-10-03 21:13:04,122 1 INFO madenat_test odoo.modules.loading: Modules loaded. 
+52:2026-10-03 21:13:04,163 1 INFO madenat_test odoo.modules.registry: Registry loaded in 3.194s 
+
+=== BEFORE (for comparison) ===
+before_total_log_lines=567589
+count_MissingModel_before=0
+count_ALTER_TABLE_before=0
+count_Traceback_header_before=568
