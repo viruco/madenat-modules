@@ -41,7 +41,7 @@ from datetime import datetime, timezone
 
 RAIZ = "/home/viruco/dev-stack/odoo/odoo-18-ce"
 CUARENTENA = os.path.join(RAIZ, ".pendiente_borrado_20261026")
-BACKUPS = "/home/viruco/dev-stack/backups/consolidacion_20261026"
+BACKUPS = "/mnt/g/madenat_respaldos/consolidacion_20261026"
 CSV_D7 = os.path.join(
     RAIZ, "custom_addons/madenat_lumber_docs/FASES/FASE13_20261023/"
           "evidencias/SHA256_BACKUPS_CONSOLIDACION.csv")
