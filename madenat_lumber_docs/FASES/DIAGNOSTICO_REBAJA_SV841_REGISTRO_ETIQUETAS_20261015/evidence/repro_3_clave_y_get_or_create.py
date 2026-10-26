@@ -1,0 +1,27 @@
+# SOLO LECTURA + transaccion revertida. No toca IMP04823/IMP02220.
+Guia = env['madenat.guia.processing'].browse(1198)
+Imp = env['madenat.sv.imputation']
+Wiz = env['madenat.sv.imputation.wizard']
+print('--- CLAVES DOCUMENTALES ---')
+print('  IMP02220 (1189) ->', Imp.browse(1189).documentary_key)
+print('  IMP04823 (2733) ->', Imp.browse(2733).documentary_key)
+print('  clave con (guia=1198, processor=None, signature="") ->', Imp._i2_build_documentary_key(Guia, None, ''))
+print()
+print('--- ¿_i2_get_or_create reutiliza el ANULADO si la firma coincide? ---')
+doc = Imp._i2_get_or_create(Guia, None, '')
+print('  devuelve ->', doc.id, doc.name, '| state:', doc.state, '| work_sv_lot_id:', doc.work_sv_lot_id.id)
+print()
+print('--- Borrado silencioso: doc con 17 lineas y luego guardar SIN seleccion ---')
+w = Wiz.create({'guia_processing_id': 1198, 'sv_lot_id': 10215})
+w._onchange_guia_processing_id()
+w.action_select_all()
+imp = w._i2_guarded_build()
+print('  tras seleccionar todas -> lineas:', len(imp.line_ids))
+w2 = Wiz.create({'guia_processing_id': 1198, 'sv_lot_id': 10215})
+w2._onchange_guia_processing_id()
+w2.imputation_id = imp.id; w2.expected_edit_version = imp.edit_version or 1
+print('  el asistente trae', len(w2.line_ids), 'lineas y', len(w2.line_ids.filtered('selected')), 'seleccionadas')
+imp2 = w2._i2_guarded_build()
+print('  tras guardar sin seleccion -> LINEAS:', len(imp2.line_ids))
+env.cr.rollback()
+print('ROLLBACK (sin cambios)')

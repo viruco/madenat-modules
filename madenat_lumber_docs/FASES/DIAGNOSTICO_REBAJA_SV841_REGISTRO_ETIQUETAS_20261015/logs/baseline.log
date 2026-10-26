@@ -1,0 +1,12 @@
+# BASELINE — DIAGNOSTICO REBAJA SV00000000841 (2026-10-15)
+
+## Repositorio (custom_addons)
+rama=feat/guia-correccion-documental-preservada-20261002  HEAD=677294b7cdc3e0cfbe1cdaef441efcb2234f8681
+entradas git status=11  stash=0
+sha256(WIP 11 archivos)=90d42406807ce615cd9f48abbe5fd22e823f44f8d8381cce230027a0810f1b22
+
+## madenat_test (inicial == final)
+guia=13 recep=8 users=12 lots=151 audit=327 imput=3 lineas=3 repartos=1
+IMP02220(1189): applied lineas=2 write=2026-10-10 22:30:45.455365
+IMP04823(2733): cancelled lineas=0 key=IMP-1198-A87816E2021EC9AA work_sv_lot_id=10215 write=2026-10-12 19:43:36.45072
+stock.lot 10215: quants=7840=-40.3150, 7841=40.3150

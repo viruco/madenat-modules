@@ -1,0 +1,103 @@
+===== evidence/repro_1_abrir_y_guardar_sin_seleccion.py =====
+Traceback (most recent call last):
+  File "/usr/bin/odoo", line 8, in <module>
+candidatas (lotes no-volumen de la guia): 17
+
+--- ESCENARIO 1: abrir y GUARDAR BORRADOR sin seleccionar nada ---
+  lineas del asistente: 17 | seleccionadas: 0
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 13, in <module>
+  File "/mnt/extra-addons/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py", line 748, in _i2_guarded_build
+    imp = self._i2_build_imputation()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/extra-addons/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py", line 643, in _i2_build_imputation
+    raise UserError(_(
+odoo.exceptions.UserError: La imputación IMP02220 ya no admite preparación (estado applied).
+
+===== evidence/repro_2_lectura_campo_claves.py =====
+LOTE: 10215 SV00000000841 flow= volume
+CAMPO sv_assignment_work_imputation_ids -> [2733]
+CONTADOR sv_assignment_work_count -> 1
+BUSQUEDA directa work_sv_lot_id=10215 -> [2733]
+ESTADOS -> [(2733, 'cancelled')]
+DOMINIO declarado -> [('state', 'in', ('draft', 'pending'))]
+TRABAJO elegible (_i2_find_work_for_guia guia 1198) -> []
+IMPUTACION 2733: state= cancelled  work_sv_lot_id= 10215  lineas= 0
+ROLLBACK hecho (sin cambios)
+
+===== evidence/repro_3_clave_y_get_or_create.py =====
+Traceback (most recent call last):
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+--- CLAVES DOCUMENTALES ---
+  IMP02220 (1189) -> IMP-1198-E95825AAF94E58AD
+  IMP04823 (2733) -> IMP-1198-A87816E2021EC9AA
+  clave con (guia=1198, processor=None, signature="") -> IMP-1198-E95825AAF94E58AD
+
+--- ¿_i2_get_or_create reutiliza el ANULADO si la firma coincide? ---
+  devuelve -> 1189 IMP02220 | state: applied | work_sv_lot_id: False
+
+--- Borrado silencioso: doc con 17 lineas y luego guardar SIN seleccion ---
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 18, in <module>
+  File "/mnt/extra-addons/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py", line 748, in _i2_guarded_build
+    imp = self._i2_build_imputation()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/extra-addons/madenat_lumber_logistics/wizards/madenat_sv_imputation_wizard.py", line 643, in _i2_build_imputation
+    raise UserError(_(
+odoo.exceptions.UserError: La imputación IMP02220 ya no admite preparación (estado applied).
+
+===== evidence/repro_4_cantidad0_perfil_y_seccion.py =====
+--- PASO 1: seleccionar 2 etiquetas + destino SV con CANTIDAD 0 (SAVE-05) ---
+  firma -> '18368:10215:0.000'
+  clave que se usara -> IMP-1198-C148C36BE203E5F8
+  documento: IMP11716 | state: draft | LINEAS: 2 | repartos persistidos: 0 | work_sv_lot_id: 10215
+
+--- PASO 2: guardar de nuevo SIN seleccion (misma firma vacia) ---
+  el asistente reconstruye 2 lineas; seleccionadas: 2
+  LINEAS tras guardar sin seleccion: 2 | mismo documento: True
+
+--- PASO 3: la seccion del SV mostraria el documento? ---
+  sv_assignment_work_imputation_ids -> [7658, 2733] | contador: 2
+ROLLBACK (sin cambios)
+
+===== evidence/repro_5_vaciado_documento.py =====
+creado: IMP11717 | lineas: 3 | clave: IMP-1198-C148C36BE203E5F8
+
+--- VIA A: quitar el reparto de cantidad 0 y guardar (firma pasa a vacia) ---
+  lineas reconstruidas: 3 | seleccionadas: 3 | repartos asistente: 0
+  LINEAS tras guardar: 0 (documento VACIO, sigue en la seccion del SV)
+  seccion del SV -> [7659, 2733] | contador: 2
+  ¿se puede anular? state: draft -> action_cancel exige draft/pending: True
+ROLLBACK (sin cambios)
+
+===== evidence/repro_6_caso_sano_apply.py =====
+--- CASO SANO: etiqueta D7670 PCLAT04201403250 19827 | nominal 1.781 | destino SV00000000841 ---
+  firma -> '18378:10215:1.781' | clave -> IMP-1198-2D3F31B7568F1B73
+  documento: IMP11718 | lineas: 1 | repartos: 1
+  tras APLICAR -> state: applied | firma SHA-256: True
+  SV00000000841 -> asignaciones aplicadas: 1 | rebajado documental: 1.781 | trabajo: 2
+  reparto: [('IMP11718', 'D7670 PCLAT04201403250 19827', 1.781, 'applied')]
+ROLLBACK (sin cambios)
+
+===== evidence/repro_7_control_techo_duro.py =====
+etiqueta: D7632 PCLAT04201252900 19827 | nominal: 3.263
+documento: IMP11719 | lineas: 1 | repartos: 1
+CONTROL NEGATIVO OK -> UserError : Techo duro de etiqueta superado: la etiqueta D7632 PCLAT04201252900 19827 acumula 6.526 m³ imputados (activos)
+ROLLBACK (sin cambios)
+FIN

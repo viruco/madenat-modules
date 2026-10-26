@@ -1,0 +1,12 @@
+# SOLO LECTURA - sin escrituras; rollback explicito al final
+lot = env['stock.lot'].browse(10215)
+print('LOTE:', lot.id, lot.name, 'flow=', lot.lot_flow_type)
+print('CAMPO sv_assignment_work_imputation_ids ->', lot.sv_assignment_work_imputation_ids.ids)
+print('CONTADOR sv_assignment_work_count ->', lot.sv_assignment_work_count)
+print('BUSQUEDA directa work_sv_lot_id=10215 ->', env['madenat.sv.imputation'].search([('work_sv_lot_id','=',10215)]).ids)
+print('ESTADOS ->', [(i.id, i.state) for i in env['madenat.sv.imputation'].search([('work_sv_lot_id','=',10215)])])
+print('DOMINIO declarado ->', lot._fields['sv_assignment_work_imputation_ids'].domain)
+print('TRABAJO elegible (_i2_find_work_for_guia guia 1198) ->', env['madenat.sv.imputation']._i2_find_work_for_guia(env['madenat.guia.processing'].browse(1198)).ids)
+print('IMPUTACION 2733: state=', env['madenat.sv.imputation'].browse(2733).state, ' work_sv_lot_id=', env['madenat.sv.imputation'].browse(2733).work_sv_lot_id.id, ' lineas=', len(env['madenat.sv.imputation'].browse(2733).line_ids))
+env.cr.rollback()
+print('ROLLBACK hecho (sin cambios)')
