@@ -1,0 +1,32 @@
+EXEC| uid=8 su=False name='Cristhian Elgueta'
+GUARD| jefatura=True operaciones=True gerencia=False system=False
+=== FIXTURE CREATE ===
+ID| partner=14207 product=5331 vessel=921 voyage=813
+ID| shipment=2128 container=2129 lot=16525 out_type=2
+FIXTURE| shipment=UAT-R2-20261004-SHIP state=draft b01=none cost=pending
+FIXTURE| container=UAT-R2-20261004-CONT state=loaded lines=1
+FIXTURE| line=2415 lot=UAT-R2-20261004-LOT-01 rebaja_state=pending
+FIXTURE| quant internal=3.0 customers=0 lot_flow_type=False
+=== ESTADO PRE-REBAJA ===
+PRE| container.state=loaded line.rebaja_state=pending lot.estado_traz=consolidado
+PRE| quant_internal=3.0 quant_customers=0
+=== EJECUTAR REBAJA (uid 8) ===
+POST| rebaja_picking=WH/OUT/02466
+=== VERIFICACION REBAJA ===
+CHECK| container_state_rebajado       PASS
+CHECK| line_rebaja_state_rebajado     PASS
+CHECK| out_state_done                 PASS
+CHECK| out_internal_to_customers      PASS
+CHECK| quant_internal_0               PASS
+CHECK| quant_customers_3              PASS
+CHECK| out_move_lot                   PASS
+CHECK| audit_rebaja_present           PASS
+CHECK| audit_rebaja_hash_ok           PASS
+CHECK| shipment_state_unchanged       PASS
+CHECK| b01_none                       PASS
+CHECK| cost_pending                   PASS
+DELTA| {'stock.move': 1, 'stock.move.line': 1, 'stock.picking': 1, 'stock.quant': 2, 'stock.lot': 1, 'lumber.export.shipment': 1, 'lumber.container': 1, 'lumber.shipment.line': 1, 'shipping.vessel': 1, 'shipping.voyage': 1, 'madenat.audit.log': 1}
+OUT| picking=WH/OUT/02466 state=done moves=[14134] mlines=[12574]
+AUDIT_MATCH| rebaja=20320 hash_len=64
+COMMITTED| fixture + rebaja persistidos (uid 8)
+SCENARIO1_DONE

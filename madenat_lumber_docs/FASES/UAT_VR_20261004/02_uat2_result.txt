@@ -1,0 +1,132 @@
+=== UAT2_JSON_START ===
+{
+  "ids": {
+    "orig_vessel": 619,
+    "dest_vessel": 620,
+    "dest_voyage": 565,
+    "ship2": 1645,
+    "cont2": 1630
+  },
+  "voyage": {
+    "name": "UAT-VR-20261004-DEST-VESSEL / UAT-VR-20261004-DEST-VOY-01",
+    "reference": "UAT-VR-20261004-DEST-VOY-01",
+    "vessel_id": 620,
+    "state": "draft"
+  },
+  "before": {
+    "shipment": {
+      "vessel_id": 619,
+      "voyage_id": false,
+      "state": "draft",
+      "booking": "UAT-VR-20261004-BOOK-02"
+    },
+    "container": {
+      "shipment_id": 1645,
+      "state": "loaded",
+      "vessel_id": 619
+    },
+    "lots": [],
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 259
+    }
+  },
+  "preview": {
+    "shipment_ids": [
+      1645
+    ],
+    "blocked_shipment_ids": [],
+    "container_ids": [
+      1630
+    ],
+    "blocked_container_ids": [],
+    "block_summary": ""
+  },
+  "after": {
+    "shipment": {
+      "vessel_id": 620,
+      "voyage_id": 565,
+      "state": "draft",
+      "booking": "UAT-VR-20261004-BOOK-02"
+    },
+    "container": {
+      "shipment_id": 1645,
+      "state": "loaded",
+      "vessel_id": 620
+    },
+    "voyage_vessel_id": 620,
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 262
+    },
+    "result_type": "ir.actions.client"
+  },
+  "audits_all": [
+    {
+      "id": 19702,
+      "action_type": "vessel_rollover",
+      "batch_id": "VESSEL-ROLLOVER-20261004035217000000",
+      "hash": "d8afba235c9b2b42a2085b83a78dabdb25eea855a8740dd962fa64b4e6cb6781",
+      "hash_ok": true
+    },
+    {
+      "id": 19703,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035217000000",
+      "hash": "2cd77d878807a5e461772bf721e9de30ecf6fb8469c972cc44845ed68dd7a5f1",
+      "hash_ok": true
+    },
+    {
+      "id": 19704,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035217000000",
+      "hash": "5c3e3c89a6533289af57158f02be7df55a4b5fbf968e4b2167d8ba59fe5712e7",
+      "hash_ok": true
+    },
+    {
+      "id": 19699,
+      "action_type": "vessel_rollover",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "hash": "d6d6121f0d0d8dac0871f3db03c71ecf220446b91a53741a36cc06dd1e3c8c6b",
+      "hash_ok": true
+    },
+    {
+      "id": 19700,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "hash": "4eef3dcdfab093aab486822ad7a27455209c67041a45775d8a8f02ade60cf09d",
+      "hash_ok": true
+    },
+    {
+      "id": 19701,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "hash": "738366d3c20532a65f9f94295f832e264c8f93e7ac7bacd6b31f07dac4a6a1c6",
+      "hash_ok": true
+    }
+  ],
+  "chatter": {
+    "origin": 3,
+    "dest": 3,
+    "voyage": 2,
+    "shipment": 3,
+    "container": 3
+  }
+}
+=== UAT2_JSON_END ===

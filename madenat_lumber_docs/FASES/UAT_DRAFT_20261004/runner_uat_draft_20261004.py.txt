@@ -1,0 +1,311 @@
+# -*- coding: utf-8 -*-
+# UAT Borrador Seguro (Sub-bloque 2) - runner para `odoo shell`
+# Entorno: madenat_test. Ejecutor contractual: uid 2 (Gerencia/Jefatura).
+# NO usa sudo(), NO usa SQL de escritura, NO toca modulo/ACL/codigo.
+import json, hashlib, datetime
+
+def P(*a):
+    print('UAT|', *a)
+
+def sect(t):
+    P(''); P('======== ' + t + ' ========')
+
+now = datetime.datetime.utcnow().isoformat() + 'Z'
+P('RUN_TS', now)
+P('DB', env.cr.dbname)
+P('SHELL_UID', env.uid, env.user.login)
+
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'lumber.export.shipment', 'lumber.container',
+          'lumber.shipment.line', 'shipping.vessel', 'shipping.voyage',
+          'madenat.audit.log', 'madenat.sv.operation', 'madenat.sv.imputation',
+          'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+
+def counts():
+    d = {}
+    for m in MODELS:
+        try:
+            d[m] = env[m].search_count([])
+        except Exception as e:
+            d[m] = 'ERR:%s' % e
+    return d
+
+def delta(a, b):
+    return {k: (a[k] - b[k]) if isinstance(a.get(k), int) and isinstance(b.get(k), int)
+            else '?' for k in MODELS}
+
+def st(model, rid):
+    r = env[model].browse(rid)
+    return r.state if r.exists() and 'state' in r._fields else (
+        r.name if r.exists() else 'MISSING')
+
+def nm(model, rid):
+    r = env[model].browse(rid)
+    return r.name if r.exists() else 'MISSING'
+
+def lot_split(lot_id):
+    lot = env['stock.lot'].browse(lot_id)
+    if not lot.exists():
+        return 'MISSING'
+    qs = env['stock.quant'].search([('lot_id', '=', lot_id)])
+    internal = round(sum(q.quantity for q in qs if q.location_id.usage == 'internal'), 4)
+    customer = round(sum(q.quantity for q in qs if q.location_id.usage == 'customer'), 4)
+    return {'name': lot.name, 'internal': internal, 'customer': customer}
+
+def return_audit(sid):
+    return env['madenat.audit.log'].search([
+        ('action_type', '=', 'shipment_return_to_draft'),
+        ('batch_id', '=', str(sid))])
+
+def success_chatter(sid):
+    return env['mail.message'].search([
+        ('model', '=', 'lumber.export.shipment'), ('res_id', '=', sid),
+        ('body', 'like', 'Retorno seguro a borrador')])
+
+# ── Usuarios ───────────────────────────────────────────────────────────────
+Users = env['res.users']
+u_exec = Users.browse(2)
+u_oper = Users.browse(8)
+u_common = Users.browse(6)
+sect('USUARIOS')
+for u, lbl in ((u_exec, 'EXECUTOR'), (u_oper, 'OPERACIONES'), (u_common, 'INTERNO_COMUN')):
+    P(lbl, u.id, u.login, u.name,
+      'JEF=', u.has_group('madenat_lumber_core.group_madenat_jefatura_operaciones'),
+      'GER=', u.has_group('madenat_lumber_core.group_madenat_gerencia'),
+      'OPER=', u.has_group('madenat_lumber_core.group_madenat_operaciones'))
+
+# ── Línea base GLOBAL (antes de crear UAT) ─────────────────────────────────
+sect('BASELINE_GLOBAL_ANTES')
+base0 = counts()
+P('BASE0', json.dumps(base0, sort_keys=True))
+
+# ── Registros históricos protegidos ────────────────────────────────────────
+def protected():
+    pr = {}
+    pr['s1537'] = (nm('lumber.export.shipment', 1537), st('lumber.export.shipment', 1537))
+    pr['c1509'] = (nm('lumber.container', 1509), st('lumber.container', 1509))
+    pr['pick7065'] = (nm('stock.picking', 7065), st('stock.picking', 7065))
+    pr['line1880'] = (env['lumber.shipment.line'].browse(1880).exists()
+                      and env['lumber.shipment.line'].browse(1880).rebaja_state or 'MISSING')
+    pr['line1881'] = (env['lumber.shipment.line'].browse(1881).exists()
+                      and env['lumber.shipment.line'].browse(1881).rebaja_state or 'MISSING')
+    pr['lot15970'] = lot_split(15970)
+    pr['lot15971'] = lot_split(15971)
+    pr['guia32298'] = nm('madenat.guia.processing', 32298)
+    pr['guia32300'] = nm('madenat.guia.processing', 32300)
+    pr['lot15892'] = nm('stock.lot', 15892)
+    pr['lot15894'] = nm('stock.lot', 15894)
+    pr['c1500'] = (nm('lumber.container', 1500), st('lumber.container', 1500))
+    pr['s1528'] = (nm('lumber.export.shipment', 1528), st('lumber.export.shipment', 1528))
+    pr['svop5822'] = nm('madenat.sv.operation', 5822)
+    pr['imp492'] = nm('madenat.sv.imputation', 492)
+    pr['pick7062'] = (nm('stock.picking', 7062), st('stock.picking', 7062))
+    pr['vessel619'] = (nm('shipping.vessel', 619), st('shipping.vessel', 619))
+    pr['vessel620'] = (nm('shipping.vessel', 620), st('shipping.vessel', 620))
+    pr['voyage565'] = nm('shipping.voyage', 565)
+    pr['s1644'] = (nm('lumber.export.shipment', 1644), st('lumber.export.shipment', 1644))
+    pr['s1645'] = (nm('lumber.export.shipment', 1645), st('lumber.export.shipment', 1645))
+    pr['s1646'] = (nm('lumber.export.shipment', 1646), st('lumber.export.shipment', 1646))
+    pr['c1629'] = (nm('lumber.container', 1629), st('lumber.container', 1629))
+    pr['c1630'] = (nm('lumber.container', 1630), st('lumber.container', 1630))
+    pr['c1631'] = (nm('lumber.container', 1631), st('lumber.container', 1631))
+    pr['rollover_audit_19699_19704'] = [
+        (i, env['madenat.audit.log'].browse(i).action_type)
+        for i in range(19699, 19705) if env['madenat.audit.log'].browse(i).exists()]
+    return pr
+
+sect('PROTEGIDOS_ANTES')
+prot_before = protected()
+P('PROT_BEFORE', json.dumps(prot_before, sort_keys=True, default=str))
+
+# ── Creación de datos UAT (usuario autorizado uid 2, ORM estándar) ──────────
+sect('CREACION_UAT')
+PREF = 'UAT-DRAFT-20261004-'
+existing = env['lumber.export.shipment'].search([('name', 'like', PREF)])
+if existing:
+    P('ALREADY_EXISTS', existing.mapped('name'))
+    raise SystemExit('UAT data already present; abort to avoid duplicates.')
+
+Ex = env(user=2)
+ShipE = Ex['lumber.export.shipment']
+ContE = Ex['lumber.container']
+
+def mk_ship(name, state):
+    return ShipE.create({'name': name, 'state': state,
+                         'booking_reference': name + '-BOOK'})
+
+def mk_cont(name, shipment):
+    return ContE.create({'name': name, 'container_type': '40HC',
+                         'shipment_id': shipment.id, 'state': 'loading'})
+
+s_ok = mk_ship(PREF + 'OK', 'confirmed')
+c_ok = mk_cont(PREF + 'CONT-OK', s_ok)
+s_phys = mk_ship(PREF + 'PHYS-BLOCK', 'confirmed')
+c_phys = mk_cont(PREF + 'CONT-PHYS-BLOCK', s_phys)
+s_perm = mk_ship(PREF + 'PERM-BLOCK', 'confirmed')
+s_term = mk_ship(PREF + 'TERM-BLOCK', 'in_transit')
+c_term = mk_cont(PREF + 'CONT-TERM-BLOCK', s_term)
+
+# rebrowse in superuser env for uniform handling
+ids_u = {'s_ok': s_ok.id, 'c_ok': c_ok.id, 's_phys': s_phys.id,
+         'c_phys': c_phys.id, 's_perm': s_perm.id, 's_term': s_term.id,
+         'c_term': c_term.id}
+for k, v in ids_u.items():
+    P('UAT_ID', k, v)
+s_ok = env['lumber.export.shipment'].browse(ids_u['s_ok'])
+c_ok = env['lumber.container'].browse(ids_u['c_ok'])
+s_phys = env['lumber.export.shipment'].browse(ids_u['s_phys'])
+c_phys = env['lumber.container'].browse(ids_u['c_phys'])
+s_perm = env['lumber.export.shipment'].browse(ids_u['s_perm'])
+s_term = env['lumber.export.shipment'].browse(ids_u['s_term'])
+c_term = env['lumber.container'].browse(ids_u['c_term'])
+
+base1 = counts()
+P('BASE1_AFTER_CREATION', json.dumps(base1, sort_keys=True))
+P('BASE1_DELTA', json.dumps(delta(base1, base0), sort_keys=True))
+env.cr.commit()
+P('COMMIT_AFTER_CREATION', 'ok')
+
+# ── UAT-D1: retorno seguro permitido ───────────────────────────────────────
+sect('UAT-D1_OK')
+P('D1_BEFORE', json.dumps({
+    'shipment': s_ok.id, 'name': s_ok.name, 'state': s_ok.state,
+    'actual_departure': bool(s_ok.actual_departure),
+    'vessel': s_ok.vessel_id.id, 'voyage': s_ok.voyage_id.id,
+    'booking': s_ok.booking_reference,
+    'container': c_ok.id, 'c_state': c_ok.state, 'c_shipment': c_ok.shipment_id.id,
+    'lines': len(c_ok.line_ids), 'lots': len(c_ok.lot_ids)}, sort_keys=True))
+b1 = counts()
+P('D1_ACTION', 'try action_draft as uid 2')
+try:
+    r = s_ok.with_user(2).action_draft()
+    P('D1_ACTION', 'RETURNED', json.dumps(r) if isinstance(r, dict) else str(r))
+except Exception as e:
+    P('D1_ACTION', 'EXC', type(e).__name__, str(e).replace('\n', ' | ')[:300])
+s_ok.invalidate_recordset(); c_ok.invalidate_recordset()
+P('D1_AFTER', json.dumps({
+    'state': s_ok.state, 'actual_departure': bool(s_ok.actual_departure),
+    'c_state': c_ok.state, 'c_shipment': c_ok.shipment_id.id}, sort_keys=True))
+logs1 = return_audit(s_ok.id)
+P('D1_AUDIT_COUNT', len(logs1))
+for l in logs1:
+    snap = l.audit_snapshot or ''
+    h = hashlib.sha256(snap.encode('utf-8')).hexdigest()
+    try:
+        snapj = json.loads(snap)
+    except Exception:
+        snapj = {}
+    ship = snapj.get('shipment', {})
+    P('D1_AUDIT', 'id=%s' % l.id, 'actor=%s/%s' % (l.user_id.id, l.user_id.login),
+      'hash_ok=%s' % (h == l.audit_hash),
+      'state_before=%s' % ship.get('state_before'),
+      'state_after=%s' % ship.get('state_after'),
+      'sname=%s' % ship.get('name'))
+P('D1_CHATTER_SUCCESS', len(success_chatter(s_ok.id)))
+a1 = counts()
+P('D1_DELTA', json.dumps(delta(a1, b1), sort_keys=True))
+# re-ejecución debe fallar
+try:
+    s_ok.with_user(2).action_draft()
+    P('D1_RERUN', 'NO_ERROR(BAD)')
+except Exception as e:
+    P('D1_RERUN', type(e).__name__, str(e).replace('\n', ' | ')[:200])
+P('D1_AUDIT_AFTER_RERUN', len(return_audit(s_ok.id)))
+
+# ── UAT-D2: bloqueo físico (fixture: contenedor 'rebajado', sin stock) ──────
+sect('UAT-D2_PHYS_BLOCK')
+P('D2_FIXTURE', 'set container %s state=rebajado (ORM, sin movimiento)' % c_phys.id)
+c_phys_before = {'state': c_phys.state, 'shipment': c_phys.shipment_id.id,
+                 'lines': len(c_phys.line_ids), 'lots': len(c_phys.lot_ids)}
+P('D2_C_BEFORE', json.dumps(c_phys_before, sort_keys=True))
+c_phys.with_user(2).write({'state': 'rebajado'})
+c_phys.invalidate_recordset()
+P('D2_C_AFTER_FIXTURE', c_phys.state)
+P('D2_SHIPMENT_BEFORE', s_phys.state)
+b2 = counts()
+try:
+    s_phys.with_user(2).action_draft()
+    P('D2_ACTION', 'NO_ERROR(BAD)')
+except Exception as e:
+    P('D2_ACTION', type(e).__name__)
+    P('D2_MSG', str(e).replace('\n', ' || '))
+s_phys.invalidate_recordset(); c_phys.invalidate_recordset()
+P('D2_AFTER', json.dumps({'s_state': s_phys.state, 'c_state': c_phys.state,
+                          'c_shipment': c_phys.shipment_id.id}, sort_keys=True))
+P('D2_AUDIT', len(return_audit(s_phys.id)))
+P('D2_CHATTER_SUCCESS', len(success_chatter(s_phys.id)))
+a2 = counts()
+P('D2_DELTA', json.dumps(delta(a2, b2), sort_keys=True))
+
+# ── UAT-D3: bloqueo terminal (in_transit, sin rebaja) ─────────────────────
+sect('UAT-D3_TERM_BLOCK')
+P('D3_BEFORE', json.dumps({
+    'shipment': s_term.id, 'name': s_term.name, 'state': s_term.state,
+    'container': c_term.id, 'c_state': c_term.state,
+    'c_lines': len(c_term.line_ids), 'c_lots': len(c_term.lot_ids)}, sort_keys=True))
+b3 = counts()
+try:
+    s_term.with_user(2).action_draft()
+    P('D3_ACTION', 'NO_ERROR(BAD)')
+except Exception as e:
+    P('D3_ACTION', type(e).__name__)
+    P('D3_MSG', str(e).replace('\n', ' | ')[:300])
+s_term.invalidate_recordset(); c_term.invalidate_recordset()
+P('D3_AFTER', json.dumps({'s_state': s_term.state, 'c_state': c_term.state},
+                         sort_keys=True))
+P('D3_AUDIT', len(return_audit(s_term.id)))
+P('D3_CHATTER_SUCCESS', len(success_chatter(s_term.id)))
+a3 = counts()
+P('D3_DELTA', json.dumps(delta(a3, b3), sort_keys=True))
+
+# ── UAT-D4: bloqueo por permisos + puerta lateral write ────────────────────
+sect('UAT-D4_PERM_BLOCK')
+P('D4_BEFORE', json.dumps({'shipment': s_perm.id, 'name': s_perm.name,
+                           'state': s_perm.state}, sort_keys=True))
+b4 = counts()
+for u, lbl in ((u_oper, 'OPER'), (u_common, 'COMUN')):
+    try:
+        s_perm.with_user(u).action_draft()
+        P('D4_ACTION_' + lbl, 'NO_ERROR(BAD)')
+    except Exception as e:
+        P('D4_ACTION_' + lbl, type(e).__name__, str(e).replace('\n', ' | ')[:200])
+for u, lbl in ((u_oper, 'OPER'), (u_common, 'COMUN')):
+    try:
+        s_perm.with_user(u).write({'state': 'draft'})
+        P('D4_WRITE_' + lbl, 'NO_ERROR(BAD)')
+    except Exception as e:
+        P('D4_WRITE_' + lbl, type(e).__name__, str(e).replace('\n', ' | ')[:200])
+try:
+    s_perm.with_user(u_oper).with_context(allow_draft=True).write({'state': 'draft'})
+    P('D4_WRITE_OPER_CTX', 'NO_ERROR(BAD)')
+except Exception as e:
+    P('D4_WRITE_OPER_CTX', type(e).__name__, str(e).replace('\n', ' | ')[:200])
+# puerta lateral desde el usuario autorizado (sin token) -> también bloqueada
+try:
+    s_perm.with_user(2).write({'state': 'draft'})
+    P('D4_WRITE_EXEC', 'NO_ERROR(BAD)')
+except Exception as e:
+    P('D4_WRITE_EXEC', type(e).__name__, str(e).replace('\n', ' | ')[:200])
+s_perm.invalidate_recordset()
+P('D4_AFTER_STATE', s_perm.state)
+P('D4_AUDIT', len(return_audit(s_perm.id)))
+P('D4_CHATTER_SUCCESS', len(success_chatter(s_perm.id)))
+a4 = counts()
+P('D4_DELTA', json.dumps(delta(a4, b4), sort_keys=True))
+
+# ── Validación final ───────────────────────────────────────────────────────
+sect('FINAL')
+final = counts()
+P('FINAL_COUNTS', json.dumps(final, sort_keys=True))
+P('GLOBAL_DELTA_BASE0', json.dumps(delta(final, base0), sort_keys=True))
+sect('PROTEGIDOS_DESPUES')
+prot_after = protected()
+P('PROT_AFTER', json.dumps(prot_after, sort_keys=True, default=str))
+P('PROT_UNCHANGED', json.dumps(
+    {k: (prot_before[k] == prot_after[k]) for k in prot_before}, sort_keys=True))
+env.cr.commit()
+P('COMMIT_FINAL', 'ok')
+sect('DONE')
+P('DONE_OK')
+

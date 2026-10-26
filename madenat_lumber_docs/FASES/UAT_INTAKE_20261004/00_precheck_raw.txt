@@ -1,0 +1,73 @@
+2026-10-05 00:23:33,719 4919 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-05 00:23:33,719 4919 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-05 00:23:33,719 4919 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-05 00:23:33,720 4919 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-05 00:23:33,926 4919 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-05 00:23:33,935 4919 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-05 00:23:34,129 4919 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-05 00:23:34,129 4919 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-05 00:23:34,170 4919 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-05 00:23:34,187 4919 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.02s, 0 queries (+0 extra) 
+2026-10-05 00:23:34,232 4919 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-05 00:23:35,433 4919 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-05 00:23:35,434 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-05 00:23:35,434 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-05 00:23:35,434 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-05 00:23:35,434 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-05 00:23:35,434 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-05 00:23:35,435 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-05 00:23:35,435 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-05 00:23:35,435 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-05 00:23:35,541 4919 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-05 00:23:35,783 4919 INFO madenat_test odoo.modules.loading: 88 modules loaded in 1.55s, 0 queries (+0 extra) 
+2026-10-05 00:23:36,035 4919 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-05 00:23:36,045 4919 INFO madenat_test odoo.modules.registry: Registry loaded in 1.915s 
+PRE| DB madenat_test uid 1 su True
+PRE| MODULE madenat_lumber_core installed 18.0.6.5.0
+PRE| MODULE madenat_lumber_intake installed 18.0.0.11.0
+PRE| MODULE madenat_lumber_reception_improvements installed 18.0.1.0.0
+PRE| MODULE madenat_lumber_logistics installed 18.0.1.6.0
+PRE| MODULE madenat_ingestion_engine installed 18.0.1.1.0
+PRE| MODULE madenat_toll_processing installed 18.0.1.0.0
+PRE| MODULE madenat_lumber_costing installed 18.0.1.0.0
+PRE| MODULE madenat_lumber_billing installed 18.0.1.0.0
+PRE| MODULE madenat_vendor_payment installed 18.0.1.2.0
+PRE| GUIA_FIELD intake_direct_stock True
+PRE| GUIA_FIELD volume_pdf_m3 True
+PRE| GUIA_FIELD volume_detail_line_ids True
+PRE| GUIA_FIELD detalle_aplicado True
+PRE| DOC_FIELD criticality True
+PRE| DOC_FIELD responsible_id True
+PRE| DOC_FIELD due_date True
+PRE| DOC_FIELD backlog_state True
+PRE| DOC_FIELD backlog_overdue True
+PRE| DOC_FIELD backlog_attention True
+PRE| WIZ_NAME True
+PRE| USER 2 mauricio.seo@gmail.com 'Administrator' admin= True OPE= True JEF= True GER= True COST= True CONT= True AUD= False SYS= True
+PRE| USER 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez' admin= False OPE= False JEF= False GER= False COST= False CONT= False AUD= False SYS= False
+PRE| USER 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' admin= False OPE= True JEF= True GER= False COST= True CONT= False AUD= False SYS= False
+PRE| WAREHOUSE 1 My Company stock= 8 WH/Stock
+PRE| INTERNAL_LOCS 4
+PRE| COUNTS {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.cost.distribution": 2, "lumber.document.checklist": 6, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 126, "madenat.audit.log": 278, "madenat.guia.processing": 9, "madenat.guia.processing.line": 72, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "product.product": 18, "res.partner": 22, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 132, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 168}
+PRE| GUIA_STATES {'draft': 1, 'verified': 2, 'validated': 6}
+PRE| RECEPTION_STATES {'done': 5, 'verified': 2}
+PRE| SHIP_STATES {'delivered': 2, 'draft': 8, 'in_transit': 8, 'confirmed': 3}
+PRE| SHIP_COST_DIST_STATE {'pending': 21}
+PRE| SHIP_DISTRIBUTED 0
+PRE| COST_DIST_ROWS 2 C2 0
+PRE| AUDIT_TOTAL 278
+PRE| CHECKLIST 6 REQUIRED 5
+PRE| PREFIX_SUPPLIER 0
+PRE| PREFIX_GUIA 0
+PRE| PREFIX_LOT 0
+PRE| PREFIX_DON 0
+PRE| PRECHECK_OK

@@ -1,0 +1,5 @@
+UAT-R2-1 — Rebaja origen
+ESTADO: NO EJECUTADO
+MOTIVO: UAT bloqueada en precheck (no existe usuario Jefatura/Gerencia
+        no-administrador; sólo uid 2 con base.group_system → requiere
+        autorización explícita). No se creó ningún dato UAT.

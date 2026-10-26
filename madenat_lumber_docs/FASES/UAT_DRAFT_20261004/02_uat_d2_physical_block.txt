@@ -1,0 +1,37 @@
+UAT-D2 - BLOQUEO FISICO (evidencia de rebaja/salida)
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:22:35Z
+Usuario ejecutor: uid 2 (Gerencia/Jefatura); env su=False
+Datos UAT       : Shipment 1705 UAT-DRAFT-20261004-PHYS-BLOCK
+                  Container 1679 UAT-DRAFT-20261004-CONT-PHYS-BLOCK
+
+FIXTURE TECNICA (opcion A: estado del contenedor, SIN movimiento de inventario)
+  container 1679: state 'loading' -> 'rebajado'  (ORM, sin rebaja fisica, sin picking,
+  sin stock.move/line, sin quant, sin SV, sin costo). Lineas=0, Lotes=0.
+  NOTA: se eligio la fixture de estado de contenedor (alternativa A) por no crear
+  ningun movimiento; NO se ejecuto rebaja real, reversa, ni picking.
+
+ANTES
+  shipment.state='confirmed'  container.state='rebajado'  shipment_id=1705
+
+ACCION:  shipment.with_user(2).action_draft()
+  -> UserError con la seccion de rebaja fisica:
+  "No se puede volver el Embarque UAT-DRAFT-20261004-PHYS-BLOCK a borrador.
+
+   Existen evidencias que requieren regularizacion:
+
+   [Rebaja fisica / salida]
+   - Contenedores rebajados/embarcados: UAT-DRAFT-20261004-CONT-PHYS-BLOCK.
+
+   Accion requerida:
+   Ejecute la reversa fisica autorizada ("Revertir rebaja" por contenedor) o gestione
+   la regularizacion correspondiente antes de cambiar la planificacion."
+
+DESPUES
+  shipment.state = 'confirmed'   (sin cambio)                          OK
+  container.state = 'rebajado'   (sin cambio)                          OK
+  container.shipment_id = 1705   (sin cambio)                          OK
+  auditoria 'shipment_return_to_draft' para 1705 = 0                   OK
+  chatter de exito = 0                                                 OK
+  delta inventario/costos/SV/auditoria = 0 en todos los modelos        OK
+RESULTADO: UAT-D2  APROBADO (bloqueo correcto, cero efectos)

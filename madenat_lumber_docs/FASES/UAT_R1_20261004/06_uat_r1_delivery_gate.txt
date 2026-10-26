@@ -1,0 +1,17 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 06 GATE DE ENTREGA (sin ejecutar entrega)
+===============================================================================
+Fecha/hora: 2026-10-04T14:17:54-03:00
+Solo verificacion de elegibilidad (_b01_blocks_delivery); NO se invoca action_deliver().
+
+UAT| 
+UAT| ================ UAT_R1_6_DELIVERY_GATE ================
+UAT| TS 2026-10-04T17:17:57.852314Z
+UAT| G6_STATE {"b01": "resolved", "b01_blocks_delivery": false, "consolidations": 0, "cost_distribution_state": "pending", "pendientes_fisicos": [], "ship_state": "in_transit"}
+UAT| G6_BEFORE_NOTE Mientras B-01=open (evidencia 01/02): _b01_blocks_delivery()=True y action_deliver() habria levantado UserError. Ver 01_uat_r1_b01_open.txt (blocks_delivery=true) y 02_uat_r1_close_blocked.txt.
+UAT| G6_GUARD_AFTER_RESOLVED False
+UAT| G6_ELIGIBLE_BY_B01 True
+UAT| G6_ACTION_DELIVER NOT_INVOKED (completaria la Entrega; fuera de alcance)
+UAT| G6_AFTER {"actual_departure": "2026-10-04 17:12:37", "b01": "resolved", "deliver_chatter": 0, "ship_state": "in_transit"}
+UAT| G6_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| G6_CHECK {"b01_no_longer_blocks": true, "no_delivery_executed": true, "no_financial_change": true, "no_physical_change": true, "ship_still_in_transit": true}
+UAT| S06_DONE_OK

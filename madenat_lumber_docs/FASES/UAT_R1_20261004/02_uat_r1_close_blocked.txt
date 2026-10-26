@@ -1,0 +1,14 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 02 CIERRE BLOQUEADO CON PENDIENTE
+===============================================================================
+Fecha/hora: 2026-10-04T14:14:19-03:00
+Ejecutor: uid 2 (Gerencia). Comando: shipment.action_resolve_b01_exception() sobre B-01 open con pendiente.
+
+UAT| 
+UAT| ================ UAT_R1_2_CLOSE_BLOCKED ================
+UAT| TS 2026-10-04T17:14:22.958578Z
+UAT| C2_BEFORE {"b01": "open", "blocks_delivery": true, "chatter_close": 0, "container_state": "sealed", "pendientes": ["UAT-R1-20261004-CONT-PENDING"], "resolution_audits": 0, "ship_state": "in_transit"}
+UAT| C2_ACTION UserError No se puede cerrar la B-01 del Embarque UAT-R1-20261004-SHIP: quedan Contenedores pendientes de rebaja física (UAT-R1-20261004-CONT-PENDING). Regularícelos mediante la rebaja extemporánea R1.
+UAT| C2_AFTER {"b01": "open", "b01_reason": "Regularizaci\u00f3n UAT: rebaja pendiente por contingencia documental.", "chatter_close": 0, "container_state": "sealed", "resolution_audits": 0, "ship_state": "in_transit"}
+UAT| C2_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| C2_CHECK {"b01_still_open": true, "blocked": true, "no_close_chatter": true, "no_cost_fin_sv": true, "no_resolution_audit": true, "no_stock_change": true, "still_in_transit": true}
+UAT| S02_DONE_OK

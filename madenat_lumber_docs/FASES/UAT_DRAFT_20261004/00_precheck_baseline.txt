@@ -1,0 +1,111 @@
+MADENAT - UAT BORRADOR SEGURO (Sub-bloque 2) - PRECHECK / LINEA BASE (solo lectura)
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:17Z (precheck)   |   15:22:35Z (ejecucion UAT)
+Entorno        : base madenat_test
+Contenedores   : odoo18_app Up (127.0.0.1:8069) ; odoo18_db healthy (postgres:15)
+HTTP           : 200 en /web/login
+Metodo         : ORM via `odoo shell -d madenat_test --no-http`. Acciones con env(user=2).
+                 SIN sudo() en el runner. SIN SQL de escritura. SIN update/install de modulos.
+                 No se edito codigo/XML/CSV/manifest/tests/ACL/documentacion.
+
+1) IDENTIDAD (repo /custom_addons)
+   Rama : feat/guia-correccion-documental-preservada-20261002
+   HEAD : 34c81272bb07d48db98d73a7734c81a2a8e384fa
+   git status --porcelain : 25 entradas (21 'M' + 4 '??'), IDENTICO antes y despues de la UAT.
+   Los cambios locales corresponden a: Rolleo de Motonave (Fase C/D) + Borrador Seguro
+   (Sub-bloque 2). No hay cambios no explicados. No se hizo commit/push/PR/reset/checkout/
+   rebase/stash/branch/worktree.
+   Detalle:
+     M madenat_lumber_core/models/madenat_audit_log.py
+     M madenat_lumber_core/views/lumber_core_menu.xml
+     M madenat_lumber_intake/views/intake_menus.xml
+     M madenat_lumber_logistics/__manifest__.py
+     M madenat_lumber_logistics/models/lumber_container.py
+     M madenat_lumber_logistics/models/lumber_export_shipment.py
+     M madenat_lumber_logistics/security/ir.model.access.csv
+     M madenat_lumber_logistics/tests/__init__.py
+     M madenat_lumber_logistics/tests/test_rebaja_contenedor.py
+     M madenat_lumber_logistics/views/logistics_menus.xml
+     M madenat_lumber_logistics/views/lumber_actions.xml
+     M madenat_lumber_logistics/views/lumber_container_views.xml
+     M madenat_lumber_logistics/views/lumber_export_shipment_views.xml
+     M madenat_lumber_logistics/wizards/__init__.py
+     M madenat_lumber_logistics/wizards/lumber_container_rollover_wizard.py
+     M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py
+     M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard_views.xml
+     M madenat_lumber_reports/views/lumber_reports_menu.xml
+     M madenat_lumber_shipping_core/models/shipping_vessel.py
+     M madenat_lumber_shipping_core/views/shipping_vessel_views.xml
+     M madenat_lumber_shipping_core/views/shipping_voyage_views.xml
+     ?? madenat_lumber_logistics/tests/test_shipment_return_to_draft.py
+     ?? madenat_lumber_logistics/tests/test_vessel_rollover.py
+     ?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard.py
+     ?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard_views.xml
+
+2) RUNTIME
+   Modulos 'installed': base, stock, account, mail, madenat_lumber_core,
+   madenat_lumber_logistics, madenat_lumber_shipping_core, madenat_lumber_costing,
+   madenat_lumber_billing, madenat_vendor_payment. (88 modulos cargados)
+
+3) CONFIRMACION DE IMPLEMENTACION (revision de codigo, solo lectura)
+   - action_draft() exige state='confirmed'  ................ SI (linea 925)
+   - _assert_can_return_to_draft() existe 24 ............... SI (linea 921)
+   - Proteccion write({'state':'draft'}) ................... SI (write() linea 112-118 +
+     _assert_draft_write_authorized() con token efimero de proceso, no falsificable por RPC)
+   - Boton visible solo Jefatura/Gerencia .................. SI (vista header,
+     groups='...group_madenat_jefatura_operaciones,...group_madenat_gerencia', invisible=state!='confirmed')
+   - 'shipment_return_to_draft' en Selection de auditoria .. SI (madenat_audit_log.py linea 74)
+   - Guard de grupo: RETURN_TO_DRAFT_GROUPS = Jefatura Operaciones + Gerencia
+
+4) USUARIOS / ROLES UAT
+   EXECUTOR (permitido) : uid 2  login mauricio.seo@gmail.com  name 'Administrator'
+                          grupos relevantes: Operaciones, Jefatura de Operaciones, Gerencia
+                          (es el unico usuario con Jefatura/Gerencia en la base).
+                          env(user=2).su = False (NO superusuario).
+   OPERACIONES (bloqueado): uid 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta'
+                          grupo: Operaciones (unico). JEF=False GER=False OPER=True.
+   INTERNO COMUN (bloqueado): uid 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez'
+                          JEF=False GER=False OPER=False.
+   AUDITORIA funcional (group_madenat_auditoria, id 298): SIN miembros -> no disponible.
+   SUPERUSUARIO uid 1 = OdooBot (inactivo). NO se uso.
+
+5) LINEA BASE GLOBAL (read-only, antes de crear UAT)
+   stock.move ..................... 142
+   stock.move.line ................ 209
+   stock.picking ..................  27
+   stock.quant .................... 169
+   stock.lot ...................... 126
+   lumber.export.shipment .........   7
+   lumber.container ...............   8
+   lumber.shipment.line ...........   5
+   shipping.vessel ................   5
+   shipping.voyage ................   1
+   madenat.audit.log .............. 262
+   madenat.sv.operation ...........   1
+   madenat.sv.imputation ..........   1
+   stock.lot.cost.line ............  53
+   lumber.shipment.cost.line ......   0
+   lumber.billing.consolidation ...   0
+   account.move ...................   1
+   account.payment ................   0
+
+6) REGISTROS HISTORICOS PROTEGIDOS (antes)
+   Shipment 1537 UAT-LOG-20261003-EMB-01 ........ in_transit
+   Container 1509 UAT-LOG-20261003-CONT-01 ...... shipped
+   Picking 7065 WH/OUT/02194 .................... done
+   Lineas 1880 / 1881 ........................... rebajado / rebajado
+   Lote 15970 (UATINTP-20261003-01) ............. internal=0.0  customers=+0.144
+   Lote 15971 (UATINTS-20261003-01 ...) ......... internal=0.0  customers=+0.144
+   Guias SV 32298 / 32300 ....................... UAT-SV-20261003-01 / -IMPG
+   Lote 15892 / 15894 ........................... SV00000001175 / UAT-SV-20261003-RET-01
+   Container 1500 UAT-SV-20261003-CONT ......... rebajado
+   Shipment 1528 UAT-SV-20261003-SHIP .......... draft
+   SV operation 5822 ............................ SVO005684
+   Imputation 492 ............................... IMP00946
+   Picking 7062 WH/OUT/02193 .................... done
+   UAT Rolleo: Vessels 619/620, Voyage 565, Shipments 1644/1645/1646,
+               Containers 1629/1630/1631, Audit logs 19699-19704
+   => Coincide con lo esperado.
+
+CRITERIO DE DETENCION: NO se activo. Historical intacto, linea base sin discrepancias
+inesperadas, working tree sin cambios no explicados, runtime saludable, contrato coincide.

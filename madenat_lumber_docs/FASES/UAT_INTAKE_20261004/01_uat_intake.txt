@@ -1,0 +1,104 @@
+UAT| RUN_TS 2026-10-05T00:26:46.240018Z
+UAT| DB madenat_test
+UAT| SHELL_UID 1 su= True
+UAT| 
+UAT| ================ USERS ================
+UAT| ADMIN_UID2 2 mauricio.seo@gmail.com 'Administrator' su= False OPE= True JEF= True GER= True COST= True CONT= True SYS= True STOCKU= True
+UAT| OPS_UID8 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' su= False OPE= True JEF= True GER= False COST= True CONT= False SYS= False STOCKU= True
+UAT| BLOCK_UID6 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez' su= False OPE= False JEF= False GER= False COST= False CONT= False SYS= False STOCKU= True
+UAT| 
+UAT| ================ BASELINE_ANTES ================
+UAT| BASE0 {"account.move": 1, "account.payment": 0, "ir.attachment": 165, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.cost.distribution": 2, "lumber.document.checklist": 6, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 126, "madenat.audit.log": 278, "madenat.guia.processing": 9, "madenat.guia.processing.line": 72, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 132, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 168}
+UAT| PROT0_MODELS {'lumber.export.shipment': 21, 'lumber.container': 22, 'shipping.vessel': 9, 'shipping.voyage': 2, 'madenat.guia.processing': 9, 'lumber.reception': 7, 'madenat.sv.operation': 1, 'madenat.sv.imputation': 1}
+UAT| SHIP_DISTRIBUTED 0
+UAT| COSTDIST_C2 0
+UAT| AUDIT0 278
+UAT| 
+UAT| ================ INT1_FIXTURES ================
+UAT| TARGET_LOC 8 WH/Stock
+UAT| CREATE_SUPPLIER uid8 14247
+UAT| CREATE_PRODUCT uid8 5341
+UAT| SUBPRODUCTO 1493 5/4X5.3/8 SE S4S LATERAL MC-0523-140 4
+UAT| CREATE_GUIA uid8 32689
+UAT| GUIA 32689 UAT-INT-20261004-RECEPTION draft part 14247 loc 8
+UAT| ATTACH 63623 UAT-INT-20261004-GUIA.pdf | 63624 UAT-INT-20261004-PACKING.xlsx
+UAT| LINE 17948 lot_name UAT-INT-20261004-LOT-01 vol_purchase 4.0 vol_shipment 4.003 vol_phys 4.0
+UAT| 
+UAT| ================ INT1_VALIDATE ================
+UAT| STATE_PRE_VALIDATE verified
+UAT| ACTION_VALIDATE NO_ERROR reload
+UAT| STATE_POST_VALIDATE validated
+UAT| LOT_IDS [16694]
+UAT| PICKING_ID False False False
+UAT| 
+UAT| ================ INT1_VERIFY ================
+UAT| N_LOTS 1
+UAT| LOT 16694 'UAT-INT-20261004-LOT-01 UATSKU 20261004' product 5341 vol_m3 4.0 vol_ship 4.003 guia 32689 traz recepcionado
+UAT| N_PICKINGS 1
+UAT| PICK 7406 EMB-04081 type incoming state done src 4 supplier dst 8 internal partner 14247 guia 32689
+UAT| N_MOVES 1 lots [16694]
+UAT| N_MOVELINES 1 lots [16694]
+UAT| QUANT 12627 lot 16694 loc 4 supplier qty -4.0
+UAT| QUANT 12628 lot 16694 loc 8 internal qty 4.0
+UAT| QUANT_INTERNAL 4.0
+UAT| GUIA_PARTNER_TRACE UAT-INT-20261004-SUPPLIER
+UAT| GUIA_LOC_TRACE WH/Stock
+UAT| AUDIT_VALIDATION_SIGNATURE 1 32a6e16d62ad85f8
+UAT| CHATTER_MSGS 3
+UAT| 
+UAT| ================ INT2_BACKLOG ================
+UAT| CHECKLIST 1 Factura Comercial (Commercial Invoice)
+UAT| CREATE_BACKLOG_DOC uid8 13420
+UAT| DOC 13420 'UAT-INT-20261004-PACKING' state missing backlog open criticality medium
+UAT| DOC_SHIPMENT False
+UAT| DOC_CONFIGURABLE True
+UAT| DOC_AFTER_CFG state missing backlog open crit high resp 8 due 2026-12-31 attention True overdue False
+UAT| BACKLOG_ESCALATE NO_ERROR 
+UAT| DOC_ESC in_progress by 8
+UAT| BACKLOG_COMPLETE NO_ERROR 
+UAT| DOC_COMPLETE completed
+UAT| OC_PENDIENTE_NON_BLOCKING_MSGS 1
+UAT| RECEPTION_VALIDATED_WITH_PENDING_DOCS True
+UAT| INT2_DELTA {"account.move": 0, "account.payment": 0, "ir.attachment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.cost.distribution": 0, "lumber.document.checklist": 0, "lumber.export.shipment": 0, "lumber.reception": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 1, "madenat.audit.log": 0, "madenat.guia.processing": 0, "madenat.guia.processing.line": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| 
+UAT| ================ INT3_CDP ================
+UAT| CDP_BEFORE state validated lots [16694] pdf 63623 notes False
+UAT| WIZ 63 32689 reason? True
+UAT| CDP_APPLY NO_ERROR None
+UAT| CDP_AFTER state validated lots [16694] pdf 63626 UAT-INT-20261004-GUIA-v2.pdf notes 'UAT-INT-20261004 nota corregida CDP-V1'
+UAT| CDP_STATE_UNCHANGED True
+UAT| CDP_LOTS_UNCHANGED True
+UAT| CDP_PDF_CHANGED True
+UAT| CDP_OLD_PDF_ALIVE ir.attachment(63623,)
+UAT| CDP_PICKS_UNCHANGED True
+UAT| CDP_PHYS_UNCHANGED True
+UAT| CDP_AUDIT_ROWS 1 hashlen 64 hash_ok True
+UAT| CDP_TOKENS True
+UAT| 
+UAT| ================ COMMIT ================
+UAT| COMMIT_OK
+UAT| COUNTS_AFTER_UAT {"account.move": 1, "account.payment": 0, "ir.attachment": 168, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.cost.distribution": 2, "lumber.document.checklist": 6, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 127, "madenat.audit.log": 281, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 133, "stock.lot.cost.line": 53, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+UAT| DELTA_VS_BASE0 {"account.move": 0, "account.payment": 0, "ir.attachment": 3, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.cost.distribution": 0, "lumber.document.checklist": 0, "lumber.export.shipment": 0, "lumber.reception": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 1, "madenat.audit.log": 3, "madenat.guia.processing": 1, "madenat.guia.processing.line": 1, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 1, "stock.lot.cost.line": 0, "stock.move": 1, "stock.move.line": 1, "stock.picking": 1, "stock.quant": 2}
+UAT| 
+UAT| ================ INT4_PERMISSIONS ================
+UAT| U6_CREATE_stock.picking NO_ERROR_UNEXPECTED
+UAT| U6_WRITE_stock.picking NO_ERROR_UNEXPECTED
+UAT| U6_CREATE_console AccessError No puede crear registros 'Consola de Ingreso de Madera (readonly)' (madenat.lumber.intake.console).  Ningún grupo permite esta operación por el momento.  Póngase en contacto con su
+UAT| U6_CREATE_intake_wizard AccessError No puede crear registros 'Ingreso de Madera — Fachada de ingreso operacional' (madenat.lumber.intake.wizard).  Esta operación está permitida para los siguientes grupos: 	- MADENAT:
+UAT| U6_WRITE_guia_processing NO_ERROR_UNEXPECTED
+UAT| U6_TARGET_GUIA 32690 UAT-INT-20261004-PERM verified
+UAT| U6_VALIDATE NO_ERROR_UNEXPECTED
+UAT| U6_RESIDUE_DELTA {"account.move": 0, "account.payment": 0, "ir.attachment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.cost.distribution": 0, "lumber.document.checklist": 0, "lumber.export.shipment": 0, "lumber.reception": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 0, "madenat.audit.log": 2, "madenat.guia.processing": 0, "madenat.guia.processing.line": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 1, "stock.lot.cost.line": 0, "stock.move": 1, "stock.move.line": 1, "stock.picking": 1, "stock.quant": 2}
+UAT| ROLLBACK_OK
+UAT| 
+UAT| ================ FINAL ================
+UAT| COUNTS_FINAL {"account.move": 1, "account.payment": 0, "ir.attachment": 168, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.cost.distribution": 2, "lumber.document.checklist": 6, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 127, "madenat.audit.log": 281, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 133, "stock.lot.cost.line": 53, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+UAT| FINAL_VS_COMMITTED {"account.move": 0, "account.payment": 0, "ir.attachment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.cost.distribution": 0, "lumber.document.checklist": 0, "lumber.export.shipment": 0, "lumber.reception": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.document": 0, "madenat.audit.log": 0, "madenat.guia.processing": 0, "madenat.guia.processing.line": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| PROT_INTACT {"lumber.container": {"base": 22, "changed": 0, "missing": 0}, "lumber.export.shipment": {"base": 21, "changed": 0, "missing": 0}, "lumber.reception": {"base": 7, "changed": 0, "missing": 0}, "madenat.guia.processing": {"base": 9, "changed": 0, "missing": 0}, "madenat.sv.imputation": {"base": 1, "changed": 0, "missing": 0}, "madenat.sv.operation": {"base": 1, "changed": 0, "missing": 0}, "shipping.vessel": {"base": 9, "changed": 0, "missing": 0}, "shipping.voyage": {"base": 2, "changed": 0, "missing": 0}}
+UAT| PROT_ALL_INTACT True
+UAT| SHIP_DISTRIBUTED_FINAL 0
+UAT| COSTDIST_C2_FINAL 0
+UAT| AUDIT_FINAL 281
+UAT| UAT_GUIA_FINAL 1
+UAT| UAT_LOT_FINAL 1
+UAT| DONE_OK

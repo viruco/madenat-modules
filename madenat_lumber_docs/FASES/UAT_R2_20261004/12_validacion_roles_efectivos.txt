@@ -1,0 +1,78 @@
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 19:13:09,073 2993 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/models.py:4499: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 110, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4499, in check_access_rights
+    warnings.warn(
+ 
+=== uid 8 (Cristhian Elgueta) su=False internal=True ===
+  HG| uid=8 operaciones        True
+  HG| uid=8 jefatura           True
+  HG| uid=8 gerencia           False
+  HG| uid=8 contabilidad       False
+  HG| uid=8 costos             True
+  HG| uid=8 admin              False
+  HG| uid=8 auditoria          False
+  HG| uid=8 cost_auditor       True
+  HG| uid=8 cost_auditor_plus  True
+  HG| uid=8 account_manager    False
+  HG| uid=8 account_invoice    False
+  HG| uid=8 system             False
+  NGROUPS| uid=8 42
+  GIDS| uid=8 [1, 6, 7, 8, 9, 12, 13, 17, 18, 19, 20, 31, 34, 36, 37, 38, 39, 40, 46, 48, 49, 50, 52, 53, 54, 55, 56, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 69, 256, 257, 260, 261]
+=== uid 6 (Leonardo Rodriguez) su=False internal=True ===
+  HG| uid=6 operaciones        False
+  HG| uid=6 jefatura           False
+  HG| uid=6 gerencia           False
+  HG| uid=6 contabilidad       False
+  HG| uid=6 costos             False
+  HG| uid=6 admin              False
+  HG| uid=6 auditoria          False
+  HG| uid=6 cost_auditor       False
+  HG| uid=6 cost_auditor_plus  False
+  HG| uid=6 account_manager    True
+  HG| uid=6 account_invoice    True
+  HG| uid=6 system             False
+  NGROUPS| uid=6 35
+  GIDS| uid=6 [1, 6, 7, 8, 9, 12, 13, 17, 18, 19, 20, 23, 26, 31, 34, 35, 36, 37, 38, 39, 40, 46, 48, 49, 50, 52, 53, 54, 55, 56, 58, 59, 60, 62, 63]
+=== uid 2 (Administrator) su=False internal=True ===
+  HG| uid=2 operaciones        True
+  HG| uid=2 jefatura           True
+  HG| uid=2 gerencia           True
+  HG| uid=2 contabilidad       True
+  HG| uid=2 costos             True
+  HG| uid=2 admin              True
+  HG| uid=2 auditoria          False
+  HG| uid=2 cost_auditor       True
+  HG| uid=2 cost_auditor_plus  False
+  HG| uid=2 account_manager    True
+  HG| uid=2 account_invoice    True
+  HG| uid=2 system             True
+  NGROUPS| uid=2 54
+  GIDS| uid=2 [1, 2, 3, 4, 6, 7, 8, 9, 12, 13, 14, 17, 18, 19, 20, 22, 23, 24, 25, 26, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 46, 48, 49, 50, 52, 53, 54, 55, 56, 58, 59, 61, 65, 66, 67, 68, 69, 70, 74, 256, 257, 258, 259, 261]
+=== GUARDS (read-only, sin crear/mover inventario) ===
+R2.REQUIRED_GROUPS| ('madenat_lumber_core.group_madenat_jefatura_operaciones', 'madenat_lumber_core.group_madenat_gerencia')
+R2.HASGROUP| uid8_any=True
+R2.NORMAL| PASS uid8 acepta Jefatura/Gerencia (R2 normal habilitado)
+R1.EXTEMP| BLOCKED(AccessError) La rebaja extemporánea B-01 (R1) sólo puede ejecutarla Gerencia.
+R1.WIZ| BLOCKED(AccessError) La regularización B-01 (R1) sólo puede ejecutarla Gerencia. Operaciones/Jefatura pueden visualizar la situación, pero no confirmar.
+B01.OPEN_SHIP| id=1868 name=UAT-B01-20261004-EXCEPTION
+B01.CLOSE| BLOCKED(AccessError) El cierre de la excepción B-01 requiere el rol de Gerencia.
+B01.RESOLVED_SHIP| id=1885 name=UAT-R1-20261004-SHIP state=in_transit
+R2.B01_RESOLVED| BLOCKED(UserError) Revertir una rebaja sobre un Embarque con B-01 regularizada sólo puede autorizarlo Gerencia, con motivo.
+OVR.DELIVERED_FIXTURE| id=None
+OVR.DELIVERED| NO_FIXTURE -> se valida por has_group(gerencia)=False
+OVR.WIZ_ACL| uid8_create=False (Gerencia-only)
+R2.LEONARDO| BLOCKED(AccessError) (sin Jefatura/Gerencia)
+LEO.READ| container=True shipment=True audit=True lot=True
+LEO.INTERNAL| True
+VALIDATION_DONE

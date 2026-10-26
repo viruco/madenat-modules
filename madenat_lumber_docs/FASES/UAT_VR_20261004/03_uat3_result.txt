@@ -1,0 +1,116 @@
+=== UAT3_JSON_START ===
+{
+  "ids": {
+    "ship3": 1646,
+    "cont3": 1631,
+    "orig": 619,
+    "dest": 620
+  },
+  "before": {
+    "ship3": {
+      "vessel_id": 619,
+      "voyage_id": false,
+      "state": "in_transit",
+      "booking": "UAT-VR-20261004-BOOK-03"
+    },
+    "cont3": {
+      "shipment_id": 1646,
+      "state": "loaded",
+      "vessel_id": 619
+    },
+    "all_uat_shipments": {
+      "UAT-VR-20261004-SHIP-NOVOY": {
+        "vessel_id": 620,
+        "voyage_id": false,
+        "state": "draft"
+      },
+      "UAT-VR-20261004-SHIP-VOY": {
+        "vessel_id": 620,
+        "voyage_id": 565,
+        "state": "draft"
+      },
+      "UAT-VR-20261004-SHIP-BLOCK": {
+        "vessel_id": 619,
+        "voyage_id": false,
+        "state": "in_transit"
+      }
+    },
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 262
+    },
+    "audit_vr": 6,
+    "msg_orig": 3,
+    "msg_dest": 3,
+    "msg_s3": 1,
+    "msg_c3": 1
+  },
+  "preview": {
+    "shipment_ids": [],
+    "blocked_shipment_ids": [
+      1646
+    ],
+    "container_ids": [],
+    "blocked_container_ids": [
+      1631
+    ],
+    "block_summary": "Embarque UAT-VR-20261004-SHIP-BLOCK: estado no rolleable (Embarcado)."
+  },
+  "user_error": "Rolleo abortado: la operaci\u00f3n es total y existe al menos un Embarque o Contenedor bloqueado.\n\nEmbarque UAT-VR-20261004-SHIP-BLOCK: estado no rolleable (Embarcado).",
+  "after": {
+    "ship3": {
+      "vessel_id": 619,
+      "voyage_id": false,
+      "state": "in_transit",
+      "booking": "UAT-VR-20261004-BOOK-03"
+    },
+    "cont3": {
+      "shipment_id": 1646,
+      "state": "loaded",
+      "vessel_id": 619
+    },
+    "all_uat_shipments": {
+      "UAT-VR-20261004-SHIP-NOVOY": {
+        "vessel_id": 620,
+        "voyage_id": false,
+        "state": "draft"
+      },
+      "UAT-VR-20261004-SHIP-VOY": {
+        "vessel_id": 620,
+        "voyage_id": 565,
+        "state": "draft"
+      },
+      "UAT-VR-20261004-SHIP-BLOCK": {
+        "vessel_id": 619,
+        "voyage_id": false,
+        "state": "in_transit"
+      }
+    },
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 262
+    },
+    "audit_vr": 6,
+    "msg_orig": 3,
+    "msg_dest": 3,
+    "msg_s3": 1,
+    "msg_c3": 1
+  }
+}
+=== UAT3_JSON_END ===

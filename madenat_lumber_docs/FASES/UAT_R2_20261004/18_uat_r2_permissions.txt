@@ -1,0 +1,16 @@
+EXEC| uid=8 su=False name='Cristhian Elgueta'
+REQUIRED_GROUPS| ('madenat_lumber_core.group_madenat_jefatura_operaciones', 'madenat_lumber_core.group_madenat_gerencia')
+NOTE| El requerimiento de reversa EXCLUYE Operaciones (solo Jefatura o Gerencia).
+EXIST_PURE_OPERACIONES_USER| no existe usuario interno con SOLO Operaciones (distinto de uid 2/8)
+--- uid=6 Leonardo (interno, sin MADENAT) ---
+   groups| operaciones=False jefatura=False gerencia=False
+   RESULT| uid=6 BLOCKED(AccessError): No tiene permisos para esta operación. Se requiere uno de: madenat_lumber_core.group_madenat_jefatura_operacio
+--- uid=7 MariaVictoria (interno, sin MADENAT) ---
+   groups| operaciones=False jefatura=False gerencia=False
+   RESULT| uid=7 BLOCKED(AccessError): No tiene permisos para esta operación. Se requiere uno de: madenat_lumber_core.group_madenat_jefatura_operacio
+--- uid=9 Felipe (admin+auditoria, sin Jef/Ger) ---
+   groups| operaciones=False jefatura=False gerencia=False
+   RESULT| uid=9 BLOCKED(AccessError): No tiene permisos para esta operación. Se requiere uno de: madenat_lumber_core.group_madenat_jefatura_operacio
+NO_WRITE| OK
+COUNTS| before={'picking': 30, 'move': 145, 'mline': 212, 'audit': 273} after={'picking': 30, 'move': 145, 'mline': 212, 'audit': 273}
+SCENARIO4_DONE

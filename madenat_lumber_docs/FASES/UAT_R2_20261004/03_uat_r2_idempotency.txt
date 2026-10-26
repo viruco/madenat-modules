@@ -1,0 +1,3 @@
+UAT-R2-3 — Idempotencia
+ESTADO: NO EJECUTADO
+MOTIVO: UAT bloqueada en precheck (véase 00_precheck_baseline.txt).

@@ -1,0 +1,48 @@
+Warn: Can't find .pfb for face 'Courier'
+=== ROL EFECTIVO (env(user=8, su=False)) ===
+EXEC| uid=8 su=False name='Cristhian Elgueta' login='cristhian.elguetag@gmail.com' internal=True
+HG| operaciones      True
+HG| jefatura         True
+HG| gerencia         False
+HG| contabilidad     False
+HG| account_manager  False
+HG| account_invoice  False
+HG| system           False
+HG| admin            False
+UID_IS_1| False
+=== LINEA BASE (lectura como uid 8) ===
+COUNT| stock.move                     143
+COUNT| stock.move.line                210
+COUNT| stock.picking                  28
+COUNT| stock.quant                    171
+COUNT| stock.lot                      127
+COUNT| stock.lot.cost.line            53
+COUNT| lumber.shipment.cost.line      0
+COUNT| lumber.export.shipment         15
+COUNT| lumber.container               16
+COUNT| lumber.shipment.line           6
+COUNT| shipping.vessel                7
+COUNT| shipping.voyage                1
+COUNT| madenat.audit.log              270
+COUNT| madenat.sv.operation           1
+COUNT| madenat.sv.imputation          1
+COUNT| account.move                   1
+COUNT| account.payment                0
+COUNT| lumber.billing.consolidation   0
+=== INTEGRIDAD PREVIA ===
+AUDIT| rebaja               4
+AUDIT| rebaja_reverse       0
+AUDIT| rebaja_return_total  0
+PRIOR| containers UAT-R2-20261004-* = 0
+PRIOR| shipments  UAT-R2-20261004-* = 0
+PRIOR| lots       UAT-R2-20261004-* = 0
+B01| state=none       13
+B01| state=open       1
+B01| state=resolved   1
+=== PROTEGIDOS (muestra) ===
+PROT| ship1537=UAT-LOG-20261003-EMB-01 [in_transit/none] cont1509=UAT-LOG-20261003-CONT-01 [shipped]
+PROT| ship1528=UAT-SV-20261003-SHIP [draft/none] cont1500=UAT-SV-20261003-CONT [rebajado]
+PROT| vessel619=UAT-VR-20261004-ORIG-VESSEL vessel620=UAT-VR-20261004-DEST-VESSEL
+PROT| ship1885=UAT-R1-20261004-SHIP [in_transit/resolved] cont1888=UAT-R1-20261004-CONT-PENDING [rebajado] lot16312=UAT-R1-20261004-LOT-01
+PROT| ship1868=UAT-B01-20261004-EXCEPTION [in_transit/open]
+PRECHECK_DONE

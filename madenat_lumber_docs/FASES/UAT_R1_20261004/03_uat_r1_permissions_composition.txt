@@ -1,0 +1,26 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 03 PERMISOS Y COMPOSICION CONGELADA
+===============================================================================
+Fecha/hora: 2026-10-04T14:14:31-03:00
+Ejecutores bloqueados: uid 8 Operaciones; uid 6 interno comun. Composicion probada como uid 2 (Gerencia).
+
+UAT| 
+UAT| ================ UAT_R1_3_PERMISSIONS_COMPOSITION ================
+UAT| TS 2026-10-04T17:14:34.553087Z
+UAT| USERS oper8= (8, 'cristhian.elguetag@gmail.com') common6= (6, 'leonardo@pinelli.com.mx')
+UAT| C3_BEFORE {"b01": "open", "cont_shipment": 1885, "containers": [[1888, "UAT-R1-20261004-CONT-PENDING"]], "ship_state": "in_transit"}
+UAT| C3_OPER_OPEN_WIZ AccessError La regularización B-01 (R1) requiere el rol de Gerencia.
+UAT| C3_OPER_REGULARIZE AccessError No puede crear registros 'Regularización B-01' (lumber.b01.regularization.wizard). |  | Esta operación está permitida para los siguientes grupos: | 	- MADENAT: Gestión Madera/Gerencia | 	- MADENAT: Ge
+UAT| C3_OPER_RESOLVE AccessError El cierre de la excepción B-01 requiere el rol de Gerencia.
+UAT| C3_COMMON_OPEN_WIZ AccessError La regularización B-01 (R1) requiere el rol de Gerencia.
+UAT| C3_COMMON_REGULARIZE AccessError No puede crear registros 'Regularización B-01' (lumber.b01.regularization.wizard). |  | Esta operación está permitida para los siguientes grupos: | 	- MADENAT: Gestión Madera/Gerencia | 	- MADENAT: Ge
+UAT| C3_COMMON_RESOLVE AccessError El cierre de la excepción B-01 requiere el rol de Gerencia.
+UAT| C3_COMP_REMOVE UserError No se pueden añadir, quitar ni reasignar Contenedores en un Embarque Embarcado (in_transit) o con excepción B-01 (UAT-R1-20261004-SHIP). Esta protección es de servidor y no admite excepción.
+UAT| C3_COMP_ADD UserError No se pueden añadir, quitar ni reasignar Contenedores en un Embarque Embarcado (in_transit) o con excepción B-01 (UAT-R1-20261004-SHIP). Esta protección es de servidor y no admite excepción.
+UAT| C3_COMP_CTX UserError No se pueden añadir, quitar ni reasignar Contenedores en un Embarque Embarcado (in_transit) o con excepción B-01 (UAT-R1-20261004-SHIP). Esta protección es de servidor y no admite excepción.
+UAT| C3_OTHER_SHIP 1869 UAT-B01-20261004-PERM confirmed
+UAT| C3_REASSIGN UserError No se puede reasignar el Contenedor UAT-R1-20261004-CONT-PENDING: el Embarque UAT-R1-20261004-SHIP está Embarcado (in_transit) o tiene una excepción B-01 (open). Esta protección es de servidor y no ad
+UAT| C3_REASSIGN_CTX UserError No se puede reasignar el Contenedor UAT-R1-20261004-CONT-PENDING: el Embarque UAT-R1-20261004-SHIP está Embarcado (in_transit) o tiene una excepción B-01 (open). Esta protección es de servidor y no ad
+UAT| C3_AFTER {"b01": "open", "cont_shipment": 1885, "containers": [[1888, "UAT-R1-20261004-CONT-PENDING"]], "other_containers": [[1871, "UAT-B01-20261004-CONT-PERM-PEND"]], "ship_state": "in_transit"}
+UAT| C3_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| C3_CHECK {"b01_still_open": true, "container_shipment_unchanged": true, "no_audit_change": true, "no_fin_sv": true, "no_stock_change": true, "only_original_container": true, "other_untouched": true}
+UAT| S03_DONE_OK

@@ -1,0 +1,63 @@
+UAT BORRADOR SEGURO - VALIDACION FINAL
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:25:35Z (verificacion post-commit en proceso independiente)
+
+1) DATOS UAT CREADOS (persistidos)
+   Shipment 1704 UAT-DRAFT-20261004-OK ......... draft     (cont 1678 loading)
+   Shipment 1705 UAT-DRAFT-20261004-PHYS-BLOCK . confirmed (cont 1679 rebajado [fixture])
+   Shipment 1706 UAT-DRAFT-20261004-PERM-BLOCK . confirmed (sin contenedor)
+   Shipment 1707 UAT-DRAFT-20261004-TERM-BLOCK . in_transit(cont 1680 loading)
+   Container 1678 UAT-DRAFT-20261004-CONT-OK     loading  lines=0 lots=0
+   Container 1679 UAT-DRAFT-20261004-CONT-PHYS-BLOCK rebajado lines=0 lots=0
+   Container 1680 UAT-DRAFT-20261004-CONT-TERM-BLOCK loading lines=0 lots=0
+   NO se creo Motonave/Viaje/Booking/lote/picking/movimiento/quant/guia/SV/costo/factura/pago.
+
+2) LINEA BASE GLOBAL (antes -> despues)
+   Modelo                          Antes  Despues  Delta   Esperado
+   stock.move                        142     142      0      OK
+   stock.move.line                   209     209      0      OK
+   stock.picking                      27      27      0      OK
+   stock.quant                       169     169      0      OK
+   stock.lot                         126     126      0      OK
+   lumber.export.shipment              7      11     +4      OK (*)
+   lumber.container                    8      11     +3      OK (*)
+   lumber.shipment.line                5       5      0      OK
+   shipping.vessel                     5       5      0      OK
+   shipping.voyage                     1       1      0      OK
+   madenat.audit.log                 262     263     +1      OK (**)
+   madenat.sv.operation                1       1      0      OK
+   madenat.sv.imputation               1       1      0      OK
+   stock.lot.cost.line                53      53      0      OK
+   lumber.shipment.cost.line           0       0      0      OK
+   lumber.billing.consolidation        0       0      0      OK
+   account.move                        1       1      0      OK
+   account.payment                     0       0      0      OK
+   (*) 4 embarques + 3 contenedores UAT autorizados.
+   (**) 1 evento audit 'shipment_return_to_draft' del escenario UAT-D1.
+   NO varia ningun movimiento de inventario, costeo, facturacion, pago, SV ni consolidacion.
+
+3) AUDITORIA APPEND-ONLY, HASH Y CHATTER
+   Evento id 19742: action_type='shipment_return_to_draft', batch_id='1704',
+   user_id=2 (mauricio.seo@gmail.com = ejecutor).
+   hashlib.sha256(audit_snapshot.encode('utf-8')).hexdigest() == audit_hash -> True
+   snapshot.shipment.state_before='confirmed' ; state_after='draft'.
+   Chatter de exito en shipment 1704: 1 mensaje ('Retorno seguro a borrador').
+   (El autor de chatter resuelve al partner id 3 'Administrator', que es el partner
+    ligado al uid 2; el actor autoritativo en auditoria es uid 2.)
+
+4) REGISTROS HISTORICOS PROTEGIDOS (despues = antes; PROT_UNCHANGED = todos True)
+   Shipment 1537 in_transit | Container 1509 shipped | Picking 7065 done
+   Lineas 1880/1881 rebajado | Lote 15970 internal=0.0 customers=+0.144
+   Lote 15971 internal=0.0 customers=+0.144 | Guias 32298/32300 | Lotes 15892/15894
+   Container 1500 rebajado | Shipment 1528 draft | SV op 5822 | Imputacion 492
+   Picking 7062 done
+   UAT Rolleo: Vessels 619/620, Voyage 565, Shipments 1644/1645/1646,
+               Containers 1629/1630/1631 (loaded/loading, sin cambio),
+               Audit logs 19699-19704 (vessel_rollover / vessel_rollover_item) intactos.
+
+5) CONFIRMACION DE NO ALTERACION DE OTROS DOMINIOS
+   BT-04 / Maquila, Costeo, Billing, Vendor Payment, Rolleo de Motonave y codigo/
+   configuracion: sin cambios (git status --porcelain IDENTICO antes/despues, 25 entradas;
+   HEAD 34c81272bb07d48db98d73a7734c81a2a8e384fa; rama sin cambios).
+   No se ejecuto rebaja, reversa, retorno fisico, zarpe, B-01, entrega/cierre, rolleo,
+   costeo, facturacion, consolidacion, notas de credito, pagos, SV, imputacion ni BT-04.

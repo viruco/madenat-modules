@@ -1,0 +1,1308 @@
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 19:12:40,092 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_volume_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,092 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_packages should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,093 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_lots should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,093 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_amount should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,094 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.currency_id should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,094 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.review_guide_document should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,094 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.review_excel_document should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,095 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.vol_comercial_pdf should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,095 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_volume_declared_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,096 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.sum_vol_documental_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,096 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.diff_pdf_packing_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,096 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.diff_packing_lineas_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,097 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.documental_conciliation_state should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,097 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_pieces_declared should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,098 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_package_count_declared should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,098 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_pdf_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,098 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_stock_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,099 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_diff_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,099 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_suma_detalle should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,100 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_fuente should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,100 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_volume_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,100 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_volume_source should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,101 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_vs_detail_diff_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,101 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_documental_name should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,102 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_documental_rut should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,102 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_resolution_status should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,102 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_excel_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,103 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_detail_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,103 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_operational_source should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,104 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.conciliation_status should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 19:12:40,104 2978 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.conciliation_summary should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 47, in <module>
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_totp_mail/models/res_users.py", line 11, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/auth_signup/models/res_users.py", line 363, in write
+    return super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/discuss/res_users.py", line 17, in write
+    res = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/res_users.py", line 108, in write
+    write_res = super(Users, self).write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/resource/models/res_users.py", line 17, in write
+    rslt = super().write(vals)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1928, in write
+    res = super(UsersView, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 1619, in write
+    res = super(UsersImplied, self.with_context(no_add_implied_groups=True)).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_users.py", line 767, in write
+    res = super(Users, self).write(values)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 4759, in write
+    if self.pool.is_modifying_relations(field):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 529, in is_modifying_relations
+    result = field in self._field_triggers and (
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+APPLY_AS| uid=2 name='Administrator' su=False
+TARGET| uid=8 name='Cristhian Elgueta' login='cristhian.elguetag@gmail.com' active=True share=False
+BEFORE_COUNT| 46
+BEFORE| gid=1 xmlid=base.group_user name='Usuario interno'
+BEFORE| gid=6 xmlid=base.group_multi_currency name='Multimonedas'
+BEFORE| gid=7 xmlid=base.group_no_one name='Características técnicas'
+BEFORE| gid=8 xmlid=base.group_allow_export name='Acceso a la función de exportación'
+BEFORE| gid=9 xmlid=base.group_partner_manager name='Creación de contacto'
+BEFORE| gid=12 xmlid=uom.group_uom name='Gestionar varias unidades de medida'
+BEFORE| gid=13 xmlid=mail.group_mail_canned_response_admin name='Administrador de la respuesta predefinida'
+BEFORE| gid=17 xmlid=product.group_product_pricelist name='Listas de precios básicas'
+BEFORE| gid=18 xmlid=product.group_stock_packaging name='Administrar el embalaje del producto'
+BEFORE| gid=19 xmlid=product.group_product_variant name='Administrar variantes de productos'
+BEFORE| gid=20 xmlid=product.group_product_manager name='Creación de productos'
+BEFORE| gid=23 xmlid=account.group_account_invoice name='Facturando'
+BEFORE| gid=26 xmlid=account.group_account_manager name='Administrador'
+BEFORE| gid=31 xmlid=account.group_purchase_receipts name='Recibo de compra'
+BEFORE| gid=34 xmlid=purchase.group_purchase_user name='Usuario'
+BEFORE| gid=36 xmlid=purchase.group_warning_purchase name='Puede establecer una advertencia en un producto o cliente (Compra)'
+BEFORE| gid=37 xmlid=purchase.group_send_reminder name='Envíe un correo electrónico de recordatorio automático para confirmar la entrega'
+BEFORE| gid=38 xmlid=sales_team.group_sale_salesman name='Usuario: solo mostrar documentos propios'
+BEFORE| gid=39 xmlid=sales_team.group_sale_salesman_all_leads name='Usuario: todos los documentos'
+BEFORE| gid=40 xmlid=sales_team.group_sale_manager name='Administrador'
+BEFORE| gid=46 xmlid=stock.group_stock_multi_locations name='Gestionar múltiples ubicaciones de existencias'
+BEFORE| gid=48 xmlid=stock.group_stock_user name='Usuario'
+BEFORE| gid=49 xmlid=stock.group_stock_manager name='Administrador'
+BEFORE| gid=50 xmlid=stock.group_production_lot name='Gestionar números de lote y de serie'
+BEFORE| gid=52 xmlid=stock.group_lot_on_delivery_slip name='Mostrar número de lote y serie en los recibos de entrega'
+BEFORE| gid=53 xmlid=stock.group_tracking_lot name='Gestionar paquetes'
+BEFORE| gid=54 xmlid=stock.group_adv_location name='Gestionar flujos de inventario push y pull'
+BEFORE| gid=55 xmlid=stock.group_tracking_owner name='Gestione diferentes propietarios de existencias'
+BEFORE| gid=56 xmlid=stock.group_warning_stock name='Se puede establecer una advertencia en un contacto (existencias)'
+BEFORE| gid=58 xmlid=stock.group_reception_report name='Utilizar reporte de recepción'
+BEFORE| gid=59 xmlid=stock_account.group_lot_on_invoice name='Mostrar el número de serie y lote en las facturas'
+BEFORE| gid=61 xmlid=#61 name='MADENAT: Compras y Operaciones'
+BEFORE| gid=62 xmlid=#62 name='MADENAT: Validación Contable (Auditoría)'
+BEFORE| gid=63 xmlid=#63 name='MADENAT'
+BEFORE| gid=64 xmlid=#64 name='MADENAT Aprobación Financiera y Pagos'
+BEFORE| gid=65 xmlid=madenat_toll_processing.group_toll_processing_user name='Usuario'
+BEFORE| gid=66 xmlid=madenat_toll_processing.group_toll_processing_manager name='Responsable'
+BEFORE| gid=67 xmlid=madenat_lumber_shipping_core.group_shipping_user name='Usuario (Solo Lectura)'
+BEFORE| gid=68 xmlid=madenat_lumber_shipping_core.group_shipping_manager name='Administrador de Transporte'
+BEFORE| gid=69 xmlid=madenat_lumber_core.group_madenat_cost_auditor name='Auditor de Costos (Felipe)'
+BEFORE| gid=256 xmlid=madenat_lumber_core.group_madenat_operaciones name='Operaciones'
+BEFORE| gid=257 xmlid=madenat_lumber_core.group_madenat_costos name='Costos'
+BEFORE| gid=258 xmlid=madenat_lumber_core.group_madenat_contabilidad name='Contabilidad'
+BEFORE| gid=259 xmlid=madenat_lumber_core.group_madenat_gerencia name='Gerencia'
+BEFORE| gid=260 xmlid=madenat_lumber_core.group_madenat_cost_auditor_plus name='Auditoría de Costos Avanzada'
+BEFORE| gid=261 xmlid=madenat_lumber_core.group_madenat_jefatura_operaciones name='Jefatura de Operaciones'
+TARGET_GIDS| gerencia=259 contabilidad=258 account_manager=26 account_invoice=23
+PRECHECK_KEEP| ok operaciones/jefatura/costos presentes
+PRECHECK_NO_READD| ninguna membresia conservada re-implica gerencia/contabilidad/account_manager/account_invoice
+AFTER_COUNT| 42
+AFTER| gid=1 xmlid=base.group_user name='Usuario interno'
+AFTER| gid=6 xmlid=base.group_multi_currency name='Multimonedas'
+AFTER| gid=7 xmlid=base.group_no_one name='Características técnicas'
+AFTER| gid=8 xmlid=base.group_allow_export name='Acceso a la función de exportación'
+AFTER| gid=9 xmlid=base.group_partner_manager name='Creación de contacto'
+AFTER| gid=12 xmlid=uom.group_uom name='Gestionar varias unidades de medida'
+AFTER| gid=13 xmlid=mail.group_mail_canned_response_admin name='Administrador de la respuesta predefinida'
+AFTER| gid=17 xmlid=product.group_product_pricelist name='Listas de precios básicas'
+AFTER| gid=18 xmlid=product.group_stock_packaging name='Administrar el embalaje del producto'
+AFTER| gid=19 xmlid=product.group_product_variant name='Administrar variantes de productos'
+AFTER| gid=20 xmlid=product.group_product_manager name='Creación de productos'
+AFTER| gid=31 xmlid=account.group_purchase_receipts name='Recibo de compra'
+AFTER| gid=34 xmlid=purchase.group_purchase_user name='Usuario'
+AFTER| gid=36 xmlid=purchase.group_warning_purchase name='Puede establecer una advertencia en un producto o cliente (Compra)'
+AFTER| gid=37 xmlid=purchase.group_send_reminder name='Envíe un correo electrónico de recordatorio automático para confirmar la entrega'
+AFTER| gid=38 xmlid=sales_team.group_sale_salesman name='Usuario: solo mostrar documentos propios'
+AFTER| gid=39 xmlid=sales_team.group_sale_salesman_all_leads name='Usuario: todos los documentos'
+AFTER| gid=40 xmlid=sales_team.group_sale_manager name='Administrador'
+AFTER| gid=46 xmlid=stock.group_stock_multi_locations name='Gestionar múltiples ubicaciones de existencias'
+AFTER| gid=48 xmlid=stock.group_stock_user name='Usuario'
+AFTER| gid=49 xmlid=stock.group_stock_manager name='Administrador'
+AFTER| gid=50 xmlid=stock.group_production_lot name='Gestionar números de lote y de serie'
+AFTER| gid=52 xmlid=stock.group_lot_on_delivery_slip name='Mostrar número de lote y serie en los recibos de entrega'
+AFTER| gid=53 xmlid=stock.group_tracking_lot name='Gestionar paquetes'
+AFTER| gid=54 xmlid=stock.group_adv_location name='Gestionar flujos de inventario push y pull'
+AFTER| gid=55 xmlid=stock.group_tracking_owner name='Gestione diferentes propietarios de existencias'
+AFTER| gid=56 xmlid=stock.group_warning_stock name='Se puede establecer una advertencia en un contacto (existencias)'
+AFTER| gid=58 xmlid=stock.group_reception_report name='Utilizar reporte de recepción'
+AFTER| gid=59 xmlid=stock_account.group_lot_on_invoice name='Mostrar el número de serie y lote en las facturas'
+AFTER| gid=61 xmlid=#61 name='MADENAT: Compras y Operaciones'
+AFTER| gid=62 xmlid=#62 name='MADENAT: Validación Contable (Auditoría)'
+AFTER| gid=63 xmlid=#63 name='MADENAT'
+AFTER| gid=64 xmlid=#64 name='MADENAT Aprobación Financiera y Pagos'
+AFTER| gid=65 xmlid=madenat_toll_processing.group_toll_processing_user name='Usuario'
+AFTER| gid=66 xmlid=madenat_toll_processing.group_toll_processing_manager name='Responsable'
+AFTER| gid=67 xmlid=madenat_lumber_shipping_core.group_shipping_user name='Usuario (Solo Lectura)'
+AFTER| gid=68 xmlid=madenat_lumber_shipping_core.group_shipping_manager name='Administrador de Transporte'
+AFTER| gid=69 xmlid=madenat_lumber_core.group_madenat_cost_auditor name='Auditor de Costos (Felipe)'
+AFTER| gid=256 xmlid=madenat_lumber_core.group_madenat_operaciones name='Operaciones'
+AFTER| gid=257 xmlid=madenat_lumber_core.group_madenat_costos name='Costos'
+AFTER| gid=260 xmlid=madenat_lumber_core.group_madenat_cost_auditor_plus name='Auditoría de Costos Avanzada'
+AFTER| gid=261 xmlid=madenat_lumber_core.group_madenat_jefatura_operaciones name='Jefatura de Operaciones'
+COMMITTED| gerencia=False contabilidad=False account_manager=False account_invoice=False
+COMMITTED| operaciones=True jefatura=True costos=True system=False admin=False
+APPLY_DONE

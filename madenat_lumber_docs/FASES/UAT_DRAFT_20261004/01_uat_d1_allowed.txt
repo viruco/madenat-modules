@@ -1,0 +1,44 @@
+UAT-D1 - RETORNO SEGURO PERMITIDO (confirmed -> draft)
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:22:35Z
+Usuario ejecutor: uid 2 mauricio.seo@gmail.com (Gerencia/Jefatura de Operaciones); env su=False
+Datos UAT       : Shipment 1704 UAT-DRAFT-20261004-OK ; Container 1678 UAT-DRAFT-20261004-CONT-OK
+
+ANTES
+  shipment.state='confirmed'  actual_departure=False
+  vessel=False voyage=False booking='UAT-DRAFT-20261004-OK-BOOK'
+  container.state='loading'  container.shipment_id=1704
+  lineas=0  lotes=0  pickings=0  stock.Customers=0  costos/SV/factura/pago=0
+
+ACCION:  shipment.with_user(2).action_draft()
+  resultado = {'type': 'ir.actions.client', 'tag': 'reload'}
+
+DESPUES
+  shipment.state = 'draft'          OK
+  shipment.actual_departure = False OK
+  container.state = 'loading'       (sin cambio)
+  container.shipment_id = 1704      (sin cambio)
+
+AUDITORIA (append-only)
+  eventos 'shipment_return_to_draft' para shipment 1704 : 1  (id 19742)
+  audit.actor = 2 / mauricio.seo@gmail.com  (= ejecutor)                 OK
+  audit_hash == SHA-256(audit_snapshot.encode('utf-8'))                  OK (True)
+  snapshot.shipment.state_before = 'confirmed'                           OK
+  snapshot.shipment.state_after  = 'draft'                               OK
+  snapshot.shipment.name         = 'UAT-DRAFT-20261004-OK'               OK
+
+CHATTER
+  mensajes con 'Retorno seguro a borrador' en shipment 1704 : 1          OK
+
+INVENTARIO / FINANZAS (delta D1)
+  stock.move 0 | stock.move.line 0 | stock.picking 0 | stock.quant 0 | stock.lot 0
+  stock.lot.cost.line 0 | lumber.shipment.cost.line 0 | lumber.billing.consolidation 0
+  account.move 0 | account.payment 0 | madenat.sv.operation 0 | madenat.sv.imputation 0
+  madenat.audit.log +1 (unico cambio esperado)
+
+RE-EJECUCION sobre el mismo embarque ya 'draft'
+  shipment.with_user(2).action_draft() -> UserError:
+    "No se puede volver el Embarque UAT-DRAFT-20261004-OK a borrador: la unica transicion
+     permitida es Confirmado -> Borrador (estado actual: Borrador)."
+  Auditoria adicional = 0 (sigue 1).                                          OK
+RESULTADO: UAT-D1  APROBADO

@@ -1,0 +1,7 @@
+# Cambios UI acciones — Sun Oct 11 02:23:26 UTC 2026
+ - wizards/madenat_sv_imputation_wizard_views.xml: <header> con 6 acciones; <footer> RETIRADO; alerta save_result
+ - wizards/madenat_sv_imputation_wizard.py: imputation_state; save_result; action_prepare/action_pending (permanece + confirmacion); action_open_document; action_discard_changes; _i2_notify_saved; _i2_stay
+ - models/madenat_sv_imputation.py: action_continue_preparation sin target=new
+ - tests/test_sv_rebaja_ui_acciones.py (NUEVO; UI-01..05 + confirmacion)
+ - tests/test_sv_rebaja_ui_limpia.py (test_arch_01: header en vez de footer)
+ - tests/__init__.py; __manifest__.py 18.0.1.19.0; CHANGELOG.md

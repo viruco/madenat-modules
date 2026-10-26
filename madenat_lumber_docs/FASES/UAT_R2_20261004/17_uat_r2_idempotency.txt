@@ -1,0 +1,29 @@
+EXEC| uid=8 su=False name='Cristhian Elgueta'
+PRE| container.state=loaded line.rebaja_state=reversed
+BEFORE| pickings         30
+BEFORE| moves            145
+BEFORE| mlines           212
+BEFORE| quants           173
+BEFORE| returns_of_out   1
+BEFORE| audit_rt         1
+BEFORE| audit_rr         1
+BEFORE| audit_reb        5
+BEFORE| sv_reverse       0
+BEFORE| quant_internal   3.0
+=== REINTENTO action_reverse_rebaja (uid 8) ===
+RETRY| result=True
+CHECK| no_change_pickings           PASS (before=30 after=30)
+CHECK| no_change_moves              PASS (before=145 after=145)
+CHECK| no_change_mlines             PASS (before=212 after=212)
+CHECK| no_change_quants             PASS (before=173 after=173)
+CHECK| no_change_returns_of_out     PASS (before=1 after=1)
+CHECK| no_change_audit_rt           PASS (before=1 after=1)
+CHECK| no_change_audit_rr           PASS (before=1 after=1)
+CHECK| no_change_audit_reb          PASS (before=5 after=5)
+CHECK| no_change_sv_reverse         PASS (before=0 after=0)
+CHECK| no_change_quant_internal     PASS (before=3.0 after=3.0)
+CHECK| container_loaded             PASS (before=- after=-)
+CHECK| line_reversed                PASS (before=- after=-)
+RESULT_TYPE| bool
+RESULT| True
+SCENARIO3_DONE (sin nuevas escrituras)

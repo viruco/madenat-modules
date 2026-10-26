@@ -1,0 +1,96 @@
+{
+  "counts": {
+    "stock.move": {
+      "baseline": 142,
+      "current": 142,
+      "delta": 0
+    },
+    "stock.move.line": {
+      "baseline": 209,
+      "current": 209,
+      "delta": 0
+    },
+    "stock.picking": {
+      "baseline": 27,
+      "current": 27,
+      "delta": 0
+    },
+    "stock.quant": {
+      "baseline": 169,
+      "current": 169,
+      "delta": 0
+    },
+    "stock.lot": {
+      "baseline": 126,
+      "current": 126,
+      "delta": 0
+    },
+    "account.move": {
+      "baseline": 1,
+      "current": 1,
+      "delta": 0
+    },
+    "account.payment": {
+      "baseline": 0,
+      "current": 0,
+      "delta": 0
+    },
+    "madenat.sv.operation": {
+      "baseline": 1,
+      "current": 1,
+      "delta": 0
+    },
+    "madenat.sv.imputation": {
+      "baseline": 1,
+      "current": 1,
+      "delta": 0
+    },
+    "lumber.export.shipment": {
+      "baseline": 4,
+      "current": 7,
+      "delta": 3
+    },
+    "lumber.container": {
+      "baseline": 5,
+      "current": 8,
+      "delta": 3
+    },
+    "shipping.vessel": {
+      "baseline": 3,
+      "current": 5,
+      "delta": 2
+    },
+    "shipping.voyage": {
+      "baseline": 0,
+      "current": 1,
+      "delta": 1
+    },
+    "madenat.audit.log": {
+      "baseline": 256,
+      "current": 262,
+      "delta": 6
+    }
+  },
+  "deltas": {},
+  "checks": [
+    "OK delta lumber.export.shipment +3",
+    "OK delta lumber.container +3",
+    "OK delta shipping.vessel +2",
+    "OK delta shipping.voyage +1",
+    "OK delta madenat.audit.log +6",
+    "OK audit events=6 all_hashes_valid=True",
+    "OK historical ship1537",
+    "OK historical cont1509",
+    "OK historical cont1500",
+    "OK historical picking7065"
+  ],
+  "masters": 2,
+  "items": 4,
+  "historical": {
+    "ship1537_state": "in_transit",
+    "cont1509_state": "shipped",
+    "cont1500_state": "rebajado",
+    "picking7065": "done"
+  },
+  "dictamen": "APROBADA"
+}

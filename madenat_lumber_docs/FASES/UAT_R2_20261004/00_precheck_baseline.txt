@@ -1,0 +1,100 @@
+========================================================================
+MADENAT — UAT R2 (Retorno Físico Total) — PRECHECK / LÍNEA BASE
+Sub-bloque 4B — Fase D — SOLO LECTURA
+Fecha: 2026-10-04
+========================================================================
+
+== 1. IDENTIDAD ==
+repo git        : /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+rama            : feat/guia-correccion-documental-preservada-20261002
+HEAD            : 34c81272bb07d48db98d73a7734c81a2a8e384fa
+working tree    : 33 entradas = 24 M + 9 ??
+(no se modificó ni revirtió ningún cambio existente)
+
+== 2. RUNTIME ==
+odoo18_app      : Up (127.0.0.1:8069->8069/tcp)
+odoo18_db       : Up (healthy)
+base            : madenat_test
+madenat_lumber_logistics : installed 18.0.1.6.0
+madenat_lumber_core      : installed 18.0.6.5.0
+(helpers R2 + wizard de reversa instalados via módulo instalado)
+
+== 3. LÍNEA BASE (read-only) ==
+stock_move ................ 143
+stock_move_line ........... 210
+stock_picking ............. 28
+stock_quant ............... 171
+stock_lot ................. 127
+stock_lot_cost_line ....... 53
+lumber_shipment_cost_line . 0
+lumber_export_shipment .... 15
+lumber_container .......... 16
+lumber_shipment_line ...... 6
+shipping_vessel ........... 7
+shipping_voyage ........... 1
+madenat_audit_log ......... 270
+madenat_sv_operation ...... 1
+madenat_sv_imputation ..... 1
+lumber_billing_consolidation 0
+account_move .............. 1
+account_payment ........... 0
+
+== 4. REGISTROS PROTEGIDOS (verificados intactos) ==
+Histórica:
+  shipment 1537 (UAT-LOG-20261003-EMB-01, in_transit)
+  container 1509 (UAT-LOG-20261003-CONT-01, shipped)
+  picking 7065 (WH/OUT/02194, done)  ; picking 7062 (WH/OUT/02193, done)
+  líneas 1880/1881 (rebaja_state = rebajado)
+  lotes 15970 (UATINTP-20261003-01) / 15971 (UATINTS-20261003-01 MAD-SEC 900002)
+  shipment 1528 (UAT-SV-20261003-SHIP, draft) ; container 1500 (rebajado)
+  SV 5822 (action_type=rebaja) ; imputation 492
+UAT Rolleo:
+  vessels 619 (UAT-VR-20261004-ORIG-VESSEL) / 620 (…DEST-VESSEL)
+  voyage 565 (UAT-VR-20261004-DEST-VOY-01)
+  shipments 1644/1645/1646 ; containers 1629/1630/1631
+  audits 19699-19704 (vessel_rollover / vessel_rollover_item)
+UAT Borrador:
+  shipments 1704/1705/1706/1707 ; containers 1678/1679/1680 ; audit 19742
+UAT B-01:
+  vessel 746 ; shipments 1867 (none) / 1868 (open) / 1869 (none)
+  containers 1868/1869/1870/1871 ; audit 19890
+UAT R1:
+  vessel 747 ; shipment 1885 (in_transit/resolved) ; container 1888 (rebajado)
+  lot 16312 ; picking 7238 (done) ; move 13973 (done) ; audits 19941-19945
+
+== 5. INTEGRIDAD R2 / B-01 ==
+rebaja (audit) ............ 4
+rebaja_reverse ............ 0   (no persistida)
+rebaja_return_total ....... 0   (no persistida)
+retorno R2 persistido ..... NO
+b01_exception_state ....... none=13 / open=1 / resolved=1  (sin cambios no explicados)
+
+== 6. USUARIOS (fuente de la DETENCIÓN obligatoria) ==
+Único usuario con Jefatura de Operaciones / Gerencia:
+  uid 2 — "Administrator" (mauricio.seo@gmail.com)
+           grupos: group_madenat_gerencia, group_madenat_jefatura_operaciones,
+                   group_madenat_admin, group_madenat_operaciones,
+                   group_madenat_costos, group_madenat_contabilidad,
+                   group_madenat_cost_auditor,
+                   base.group_system, base.group_erp_manager, base.group_user
+Otros:
+  uid 8 — Operaciones (BLOQUEADO por mandato)
+  uid 9 — group_madenat_admin + cost_auditor (sin Jefatura/Gerencia)
+No existe usuario Jefatura/Gerencia no-administrador (distinto de uid 1/2).
+
+> CRITERIO DE DETENCIÓN CUMPLIDO:
+> "Ejecutor permitido: Jefatura de Operaciones o Gerencia. Preferir usuario no
+>  administrador. Si sólo existe uid 2 con Gerencia/base.group_system, detenerse
+>  y pedir autorización explícita antes de usarlo."
+> y "si no existe Jefatura/Gerencia no uid 1, detenerse y reportar. No crear UAT."
+>
+> RESULTADO: NO se crea UAT. Se detiene y se solicita autorización explícita.
+
+== RESULTADO PRECHECK ==
+Identidad ............ OK
+Runtime .............. OK
+Línea base ........... OK
+Protegidos ........... OK (todos intactos)
+Integridad R2/B-01 ... OK
+Usuarios UAT ......... BLOQUEO (solo uid 2 administrador con group_system)
+========================================================================

@@ -1,0 +1,36 @@
+UAT-D4 - BLOQUEO POR PERMISOS + PUERTA LATERAL write
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:22:35Z
+Datos UAT       : Shipment 1706 UAT-DRAFT-20261004-PERM-BLOCK (confirmed, seguro, sin evidencia)
+                  (sin contenedor/lote/picking/stock/costo/SV/factura/consolidacion/B-01)
+
+USUARIOS PROBADOS
+  uid 8  cristhian.elguetag@gmail.com  'Cristhian Elgueta'  -> Operaciones (unico)
+  uid 6  leonardo@pinelli.com.mx       'Leonardo Rodriguez' -> interno comun (no Jef/Ger/Oper)
+  uid 2  mauricio.seo@gmail.com        'Administrator'      -> Jefatura/Gerencia (autorizado)
+  Auditoria funcional (group_madenat_auditoria id 298): SIN usuarios -> no disponible.
+
+ANTES
+  shipment.state='confirmed'
+
+1) action_draft() como Operaciones (uid 8)
+   -> AccessError: "No tiene permisos para volver un Embarque a borrador. Se requiere el
+      rol de Jefatura de Operaciones o Gerencia."
+2) action_draft() como interno comun (uid 6)
+   -> AccessError: mismo mensaje.
+3) write({'state':'draft'}) como Operaciones (uid 8)
+   -> UserError: "No se puede cambiar el Embarque UAT-DRAFT-20261004-PERM-BLOCK a borrador
+      por esta via. Use la accion autorizada <Volver a Borrador>."
+4) write({'state':'draft'}) como interno comun (uid 6)
+   -> UserError: mismo mensaje.
+5) with_context(allow_draft=True).write({'state':'draft'}) como Operaciones (uid 8)
+   -> UserError: mismo mensaje (el contexto RPC NO otorga token; token efimero de proceso).
+6) write({'state':'draft'}) como Jefatura/Gerencia (uid 2, sin pasar por action_draft)
+   -> UserError: mismo mensaje (puerta lateral cerrada tambien al autorizado).
+
+DESPUES
+  shipment.state = 'confirmed'   (sin cambio)                          OK
+  auditoria 'shipment_return_to_draft' para 1706 = 0                   OK
+  chatter de exito = 0                                                 OK
+  delta inventario/costos/SV/auditoria = 0 en todos los modelos        OK
+RESULTADO: UAT-D4  APROBADO (AccessError por rol y UserError por via lateral)

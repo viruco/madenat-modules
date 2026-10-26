@@ -1,0 +1,33 @@
+EXEC| uid=8 su=False name='Cristhian Elgueta'
+LOAD| container=2129 state=rebajado line=2415 rebaja_state=rebajado
+LOAD| lot=16525 out=WH/OUT/02466 out_state=done
+LOAD| shipment=UAT-R2-20261004-SHIP state=draft b01=none cost=pending
+PRE| quant_internal=0.0 quant_customers=3.0
+PRE| state_before_rebaja=loaded
+=== EJECUTAR REVERSA R2 TOTAL (uid 8) ===
+POST| action_reverse_rebaja -> True
+=== VERIFICACION RETORNO TOTAL ===
+CHECK| return_picking_present           PASS
+CHECK| return_state_done                PASS
+CHECK| return_customers_to_internal     PASS
+CHECK| return_move_origin_link          PASS
+CHECK| return_move_product_uom          PASS
+CHECK| return_move_qty                  PASS
+CHECK| return_same_lot                  PASS
+CHECK| line_reversed                    PASS
+CHECK| container_restored_loaded        PASS
+CHECK| shipment_state_unchanged         PASS
+CHECK| b01_none                         PASS
+CHECK| cost_pending                     PASS
+CHECK| quant_internal_3                 PASS
+CHECK| quant_customers_0                PASS
+CHECK| audit_rebaja_return_total        PASS
+CHECK| audit_rebaja_reverse             PASS
+CHECK| audit_rt_hash_ok                 PASS
+CHECK| audit_rr_hash_ok                 PASS
+DELTA| {'stock.move': 1, 'stock.move.line': 1, 'stock.picking': 1, 'madenat.audit.log': 2}
+RETURN| picking=EMB-04080 state=done in_move=[14135] mlines=[12575]
+AUDIT| return_total=20322 hash_len=64 reverse=20321 hash_len=64
+CHATTER| container_msgs=3
+COMMITTED| retorno fisico total persistido (uid 8)
+SCENARIO2_DONE

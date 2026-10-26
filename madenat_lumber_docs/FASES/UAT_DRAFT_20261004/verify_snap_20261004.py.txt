@@ -1,0 +1,13 @@
+import hashlib, json
+l = env['madenat.audit.log'].browse(19741)
+snap = l.audit_snapshot or ''
+sj = json.loads(snap)
+print('SNAP_STATE_BEFORE=' + str(sj['shipment']['state_before']))
+print('SNAP_STATE_AFTER=' + str(sj['shipment']['state_after']))
+print('HASH_MATCH=' + str(hashlib.sha256(snap.encode('utf-8')).hexdigest() == l.audit_hash))
+print('ACTOR=' + str(l.user_id.id) + '/' + l.user_id.login)
+print('BATCH=' + str(l.batch_id))
+print('ACTION=' + str(l.action_type))
+print('SNAP_JSON_BEGIN')
+print(snap)
+print('SNAP_JSON_END')

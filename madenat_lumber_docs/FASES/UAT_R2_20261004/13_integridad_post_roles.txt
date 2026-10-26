@@ -1,0 +1,105 @@
+Warn: Can't find .pfb for face 'Courier'
+=== CONTEOS (comparar con 10_precheck) ===
+COUNT| stock.move                     143
+COUNT| stock.move.line                210
+COUNT| stock.picking                  28
+COUNT| stock.quant                    171
+COUNT| stock.lot                      127
+COUNT| stock.lot.cost.line            53
+COUNT| lumber.shipment.cost.line      0
+COUNT| lumber.export.shipment         15
+COUNT| lumber.container               16
+COUNT| lumber.shipment.line           6
+COUNT| shipping.vessel                7
+COUNT| shipping.voyage                1
+COUNT| madenat.audit.log              270
+COUNT| madenat.sv.operation           1
+COUNT| madenat.sv.imputation          1
+COUNT| account.move                   1
+COUNT| account.payment                0
+COUNT| lumber.billing.consolidation   0
+=== INTEGRIDAD R2 / B-01 / UAT ===
+AUDIT| rebaja                    4
+AUDIT| rebaja_reverse            0
+AUDIT| rebaja_return_total       0
+AUDIT| b01_regularization        1
+AUDIT| b01_resolution            1
+AUDIT| shipment_return_to_draft  1
+AUDIT| vessel_rollover           2
+B01| state=none       13
+B01| state=open       1
+B01| state=resolved   1
+R2DATA| containers UAT-R2-20261004-* = 0
+R2DATA| shipments UAT-R2-20261004-* = 0
+=== REGISTROS PROTEGIDOS ===
+-- Histórica --
+  ship 1537 UAT-LOG-20261003-EMB-01 state=in_transit b01=none
+  cont 1509 UAT-LOG-20261003-CONT-01 state=shipped
+  pick 7065 WH/OUT/02194 state=done
+  pick 7062 WH/OUT/02193 state=done
+  line 1880 rebaja_state=rebajado
+  line 1881 rebaja_state=rebajado
+  lot 15970 UATINTP-20261003-01
+  lot 15971 UATINTS-20261003-01 MAD-SEC 900002
+  ship 1528 UAT-SV-20261003-SHIP state=draft b01=none
+  cont 1500 UAT-SV-20261003-CONT state=rebajado
+  sv 5822 action_type=rebaja
+  imp 492 IMP00946
+-- UAT Rolleo --
+  vessel 619 UAT-VR-20261004-ORIG-VESSEL
+  vessel 620 UAT-VR-20261004-DEST-VESSEL
+  voyage 565 UAT-VR-20261004-DEST-VESSEL / UAT-VR-20261004-DEST-VOY-01
+  ship 1644 UAT-VR-20261004-SHIP-NOVOY state=draft b01=none
+  ship 1645 UAT-VR-20261004-SHIP-VOY state=draft b01=none
+  ship 1646 UAT-VR-20261004-SHIP-BLOCK state=in_transit b01=none
+  cont 1629 UAT-VR-20261004-CONT-NOVOY state=loaded
+  cont 1630 UAT-VR-20261004-CONT-VOY state=loaded
+  cont 1631 UAT-VR-20261004-CONT-BLOCK state=loaded
+  audit 19699 vessel_rollover
+  audit 19700 vessel_rollover_item
+  audit 19701 vessel_rollover_item
+  audit 19702 vessel_rollover
+  audit 19703 vessel_rollover_item
+  audit 19704 vessel_rollover_item
+-- UAT Borrador --
+  ship 1704 UAT-DRAFT-20261004-OK state=draft b01=none
+  ship 1705 UAT-DRAFT-20261004-PHYS-BLOCK state=confirmed b01=none
+  ship 1706 UAT-DRAFT-20261004-PERM-BLOCK state=confirmed b01=none
+  ship 1707 UAT-DRAFT-20261004-TERM-BLOCK state=in_transit b01=none
+  cont 1678 UAT-DRAFT-20261004-CONT-OK state=loading
+  cont 1679 UAT-DRAFT-20261004-CONT-PHYS-BLOCK state=rebajado
+  cont 1680 UAT-DRAFT-20261004-CONT-TERM-BLOCK state=loading
+  audit 19742 shipment_return_to_draft
+-- UAT B-01 --
+  vessel 746 UAT-B01-20261004-VESSEL
+  ship 1867 UAT-B01-20261004-NORMAL state=in_transit b01=none
+  ship 1868 UAT-B01-20261004-EXCEPTION state=in_transit b01=open
+  ship 1869 UAT-B01-20261004-PERM state=confirmed b01=none
+  cont 1868 UAT-B01-20261004-CONT-NORMAL state=shipped
+  cont 1869 UAT-B01-20261004-CONT-REB state=shipped
+  cont 1870 UAT-B01-20261004-CONT-PENDING state=loaded
+  cont 1871 UAT-B01-20261004-CONT-PERM-PEND state=loaded
+  audit 19890 b01_departure_exception
+-- UAT R1 --
+  vessel 747 UAT-R1-20261004-VESSEL
+  ship 1885 UAT-R1-20261004-SHIP state=in_transit b01=resolved
+  cont 1888 UAT-R1-20261004-CONT-PENDING state=rebajado
+  lot 16312 UAT-R1-20261004-LOT-01
+  pick 7238 WH/OUT/02347 state=done
+  move 13973 state=done
+  audit 19941 deviation
+  audit 19942 b01_departure_exception
+  audit 19943 rebaja
+  audit 19944 b01_regularization
+  audit 19945 b01_resolution
+=== USUARIOS/GRUPOS CLAVE ===
+USERS| madenat_lumber_core.group_madenat_gerencia    [2:mauricio.seo@gmail.com]
+USERS| madenat_lumber_core.group_madenat_contabilidad [2:mauricio.seo@gmail.com]
+USERS| madenat_lumber_core.group_madenat_jefatura_operaciones [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_operaciones [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_costos      [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_admin       [2:mauricio.seo@gmail.com, 9:fmunoz@valean.cl]
+USERS| account.group_account_manager                 [2:mauricio.seo@gmail.com, 9:fmunoz@valean.cl, 6:leonardo@pinelli.com.mx, 7:mvantonio@valean.cl]
+USERS| account.group_account_invoice                 [2:mauricio.seo@gmail.com, 9:fmunoz@valean.cl, 6:leonardo@pinelli.com.mx, 7:mvantonio@valean.cl]
+USERS| base.group_system                             [2:mauricio.seo@gmail.com]
+INTEGRIDAD_DONE

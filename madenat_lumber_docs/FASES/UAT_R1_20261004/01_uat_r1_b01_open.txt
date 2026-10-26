@@ -1,0 +1,29 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 01 APERTURA B-01 (fixtures + zarpe B-01)
+===============================================================================
+Fecha/hora: 2026-10-04T14:12:33-03:00
+Ejecutor: uid 2 Administrator (Gerencia, autorizado; no uid 1). SIN sudo().
+Comando: lumber.shipment.zarpe.wizard.action_zarpar_con_excepcion() con .with_user(2)
+
+UAT| 
+UAT| ================ UAT_R1_1_FIXTURE ================
+UAT| TS 2026-10-04T17:12:36.568696Z
+UAT| FIXTURE_IDS {"container": 1888, "lot": 16312, "partner": 14127, "product": 5314, "shipment": 1885, "vessel": 747}
+UAT| FIXTURE_SHIP 1885 UAT-R1-20261004-SHIP confirmed vessel= UAT-R1-20261004-VESSEL
+UAT| FIXTURE_CONT 1888 UAT-R1-20261004-CONT-PENDING sealed shipment_id= 1885
+UAT| FIXTURE_LOT 16312 UAT-R1-20261004-LOT-01 flow_type= False vol_purchase= 3.0 vol_ship= 3.0 vol_restante= 3.0
+UAT| FIXTURE_LINE [(2208, 1888, 16312, 'pending')]
+UAT| FIXTURE_QUANT {"customer": 0, "internal": 3.0, "name": "UAT-R1-20261004-LOT-01"}
+UAT| FIXTURE_DELTA_COUNTS {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 1, "lumber.export.shipment": 1, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 1, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 1, "shipping.voyage": 0, "stock.lot": 1, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 1}
+UAT| 
+UAT| ================ UAT_R1_1_B01_ZARPE ================
+UAT| B01_BEFORE {"actual_departure": false, "b01": "none", "b01_audits": 0, "blocks_delivery": false, "container_state": "sealed", "customer_quant": 0, "internal_quant": 3.0, "ship_state": "confirmed"}
+UAT| B01_WIZARD 89 pending_count= 1 pending_names= UAT-R1-20261004-CONT-PENDING
+UAT| B01_ACTION OK
+UAT| B01_AFTER {"actual_departure": "2026-10-04 17:12:37", "audit_id": 19942, "b01": "open", "b01_reason": "Regularizaci\u00f3n UAT: rebaja pendiente por contingencia documental.", "blocks_delivery": true, "container_state": "sealed", "customer_quant": 0, "internal_quant": 3.0, "opened_at": "2026-10-04 17:12:37", "opened_by": 2, "reason_exact": true, "ship_state": "in_transit"}
+UAT| B01_AUDITS 1
+UAT| B01_AUDIT 19942 b01_departure_exception actor= 2 hash_ok= True
+UAT| B01_DEVIATION_AUDITS 1
+UAT| B01_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 2, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| B01_CHECK {"b01_open": true, "blocks_delivery_true": true, "container_conserved": true, "customer_unchanged": true, "has_audit": true, "internal_unchanged": true, "no_cost_fin_sv": true, "no_lot_change": true, "no_picking": true, "no_quant_change": true, "no_rebaja_picking": true, "no_stock_move": true, "one_b01_audit": true, "opened_by_exec": true, "reason_exact": true, "state_in_transit": true}
+UAT| B01_CHATTER_OPEN 2
+UAT| S01_DONE_OK

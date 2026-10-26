@@ -1,0 +1,79 @@
+MADENAT — UAT INTAKE (Recepción / Inventario / Bodega) — PRECHECK READ-ONLY (línea base)
+Fecha: 2026-10-04  ·  Entorno: madenat_test  ·  Contenedores: odoo18_app (Up), odoo18_db (healthy)
+HTTP: 200 (http://127.0.0.1:8069/web/login)
+Actor UAT autorizado: uid 8 Cristhian Elgueta (Operaciones + Jefatura, su=False, SIN Gerencia/System/Contabilidad)
+Bloqueado probado: uid 6 Leonardo Rodriguez (sin grupos MADENAT; OJO: tiene stock.group_stock_user/manager)
+Prefijo UAT: UAT-INT-20261004-
+Método: SOLO LECTURA (odoo shell uid 1 en modo lectura, curl, docker ps, git read-only).
+         No se creó/actualizó nada; no SQL de escritura; no sudo() funcional; no uid 1 como actor de datos.
+
+1) GIT (repo /custom_addons)
+   Rama:  feat/guia-correccion-documental-preservada-20261002
+   HEAD:  34c81272bb07d48db98d73a7734c81a2a8e384fa
+   Working tree: 47 entradas (33 modificadas + 14 sin seguimiento) — sin cambios fuera de lo aprobado.
+   NO se hizo commit/push/stash/checkout/rebase/branch.
+
+2) RUNTIME / MÓDULOS (state installed)
+   madenat_lumber_core ................ 18.0.6.5.0
+   madenat_lumber_intake .............. 18.0.0.11.0
+   madenat_lumber_reception_improvements 18.0.1.0.0
+   madenat_lumber_logistics ........... 18.0.1.6.0
+   madenat_ingestion_engine ........... 18.0.1.1.0
+   madenat_toll_processing ............ 18.0.1.0.0
+   madenat_lumber_costing ............. 18.0.1.0.0
+   madenat_lumber_billing ............. 18.0.1.0.0
+   madenat_vendor_payment ............. 18.0.1.2.0
+   Campos CDP-V1/Intake presentes: intake_direct_stock, volume_pdf_m3, volume_detail_line_ids,
+     detalle_aplicado (guía); criticality, responsible_id, due_date, backlog_state,
+     backlog_overdue, backlog_attention (lumber.shipment.document).
+   Modelo wizard CDP-V1 (madenat.guia.processing.documental.correction.wizard) cargado.
+
+3) USUARIOS / ROLES
+   uid 2 Administrator ............ OPE/JEF/GER/COST/CONT/SYS/STOCKM (cuenta admin)
+   uid 8 Cristhian Elgueta ........ OPE=True JEF=True GER=False COST=True CONT=False SYS=False STOCKU/STOCKM True  [ACTOR UAT]
+   uid 6 Leonardo Rodriguez ....... OPE=False JEF=False GER=False COST=False CONT=False SYS=False **STOCKU=True STOCKM=True**
+   uid 7 María Victoria Antonio ... OPE=False ... STOCKU=True STOCKM=False
+   uid 9 Felipe Muñoz ............. OPE=False ... STOCKU=True STOCKM=True
+   NOTA (premisa): NO existe usuario interno ACTIVO "sin Operaciones" y SIN permisos de stock.
+     Todos los internos no-Operaciones (6/7/9) son stock users (uid 6 y 9 además stock managers).
+
+4) UBICACIÓN / ALMACÉN
+   Almacén 1 "My Company" · lot_stock_id = 8 (WH/Stock, usage=internal) · 4 ubicaciones internas.
+
+5) LÍNEA BASE GLOBAL (SELECT count, madenat_test)
+   stock.move ....................... 145
+   stock.move.line .................. 212
+   stock.picking ....................  30
+   stock.quant ...................... 168
+   stock.lot ........................ 132
+   stock.lot.cost.line ..............  53
+   lumber.reception .................   7   (done 5 · verified 2)
+   madenat.guia.processing ..........   9   (draft 1 · verified 2 · validated 6)
+   madenat.guia.processing.line .....  72
+   lumber.export.shipment ...........  21   (draft 8 · confirmed 3 · in_transit 8 · delivered 2)
+   lumber.container .................  22
+   shipping.vessel ..................   9
+   shipping.voyage ..................   2
+   lumber.document.checklist ........   6   (required 5)
+   lumber.shipment.document ......... 126
+   madenat.audit.log ................ 278
+   madenat.sv.operation .............   1
+   madenat.sv.imputation ............   1
+   lumber.billing.consolidation .....   0
+   lumber.shipment.cost.line ........   0
+   lumber.cost.distribution .........   2   (is_c2=True: 0)
+   account.move .....................   1
+   account.payment ..................   0
+   ir.attachment .................... 165
+   res.partner ......................  22
+   product.product ..................  18
+
+6) CONGELAMIENTOS VERIFICADOS (línea base)
+   shipment.cost_distribution_state='distributed' .... 0   (Costeo C2 congelado)
+   lumber.cost.distribution is_c2=True .............. 0
+   lumber.shipment.cost.line ......................... 0
+   account.payment ................................... 0
+   Billing consolidation ............................. 0
+
+7) PREFIJO UAT NUEVO
+   UAT-INT-20261004-* → 0 registros existentes (partner/guía/lote/documento) → prefijo libre.

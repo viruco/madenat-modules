@@ -1,0 +1,4 @@
+UAT-R2-4 — Permisos (Operaciones / interno / Auditoría → AccessError)
+ESTADO: NO EJECUTADO
+MOTIVO: UAT bloqueada en precheck. Además, probar el permiso positivo requiere
+        un ejecutor Jefatura/Gerencia no-administrador, inexistente.

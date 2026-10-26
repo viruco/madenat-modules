@@ -1,0 +1,71 @@
+MADENAT — UAT Rolleo de Motonave — PRECHECK READ-ONLY (línea base)
+Fecha: 2026-10-04  ·  Entorno: madenat_test  ·  Contenedores: odoo18_app (Up), odoo18_db (healthy)
+Actor UAT: usuario 8 Cristhian Elgueta  ·  grupo madenat_lumber_core.group_madenat_operaciones
+           (NO Administrador, NO sudo(), NO grupo de Auditoría)
+
+1) GIT (repo /custom_addons)
+   Rama: feat/guia-correccion-documental-preservada-20261002
+   HEAD: 34c81272bb07d48db98d73a7734c81a2a8e384fa
+   Cambios locales: 20 archivos modificados + 3 sin seguimiento (implementación Rolleo de Motonave Fase C/D):
+     M madenat_lumber_core/models/madenat_audit_log.py
+     M madenat_lumber_core/views/lumber_core_menu.xml
+     M madenat_lumber_intake/views/intake_menus.xml
+     M madenat_lumber_logistics/__manifest__.py
+     M madenat_lumber_logistics/models/lumber_container.py
+     M madenat_lumber_logistics/security/ir.model.access.csv
+     M madenat_lumber_logistics/tests/__init__.py
+     M madenat_lumber_logistics/tests/test_rebaja_contenedor.py
+     M madenat_lumber_logistics/views/logistics_menus.xml
+     M madenat_lumber_logistics/views/lumber_actions.xml
+     M madenat_lumber_logistics/views/lumber_container_views.xml
+     M madenat_lumber_logistics/views/lumber_export_shipment_views.xml
+     M madenat_lumber_logistics/wizards/__init__.py
+     M madenat_lumber_logistics/wizards/lumber_container_rollover_wizard.py
+     M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py
+     M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard_views.xml
+     M madenat_lumber_reports/views/lumber_reports_menu.xml
+     M madenat_lumber_shipping_core/models/shipping_vessel.py
+     M madenat_lumber_shipping_core/views/shipping_vessel_views.xml
+     M madenat_lumber_shipping_core/views/shipping_voyage_views.xml
+     ?? madenat_lumber_logistics/tests/test_vessel_rollover.py
+     ?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard.py
+     ?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard_views.xml
+   Sin cambios fuera de lo aprobado.
+
+2) RUNTIME
+   Base: madenat_test. odoo18_app: corriendo. odoo18_db: healthy (postgres:15).
+   Core, Shipping Core y Logistics instalados (módulos cargados: 88).
+
+3) UAT HISTÓRICA (protegida) — verificado ANTES
+   Embarque 1537 UAT-LOG-20261003-EMB-01 ....... in_transit
+   Contenedor 1509 UAT-LOG-20261003-CONT-01 ... shipped
+   Picking 7065 (WH/OUT/02194) ................ done
+   Lotes 15970/15971 quants:
+        loc 4 Partners/Vendors  = -0.1440  (contrapartida; NO es ubicación interna)
+        loc 5 Partners/Customers= +0.1440
+        loc 17/18 WH/Stock/*    =  0.0000  (interno = 0)
+   Contenedor 1500 UAT-SV-20261003-CONT ....... rebajado
+   Embarque 1528 UAT-SV-20261003-SHIP ......... draft
+   Operación SV 5822 (SVO005684) .............. presente
+   Imputación 492 (IMP00946) .................. presente
+   Guías 32298 / 32300 ........................ presentes
+   Lotes SV 15892 (SV00000001175) / 15894 ..... presentes
+   => Coincide con lo esperado (ver nota minor en informe: contrapartida en Vendors).
+
+4) LÍNEA BASE GLOBAL (read-only)
+   stock.move ..................... 142
+   stock.move.line ................ 209
+   stock.picking ..................  27
+   stock.quant .................... 169
+   stock.lot ...................... 126
+   lumber.export.shipment .........   4
+   lumber.container ...............   5
+   shipping.vessel ................   3
+   shipping.voyage ................   0
+   madenat.audit.log .............. 256
+   account.move ...................   1
+   account.payment ................   0
+   madenat.sv.operation ...........   1
+   madenat.sv.imputation ..........   1
+   stock.lot.cost.line ............  53
+   lumber.shipment.cost.line ......   0

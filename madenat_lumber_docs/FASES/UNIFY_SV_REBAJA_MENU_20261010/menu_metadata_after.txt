@@ -1,0 +1,16 @@
+ id  |          menu_name           | parent_id | sequence | active | action_id |           action_name            |             res_model             
+-----+------------------------------+-----------+----------+--------+-----------+----------------------------------+-----------------------------------
+ 321 | Embarques                    |       346 |       10 | t      |       493 | Embarques de Exportación         | lumber.export.shipment
+ 323 | Consolidación                |       346 |       15 | t      |       496 | 📦 Consolidación de Contenedores | lumber.container
+ 539 | Rebajar por Motonave         |       346 |       17 | t      |       861 | Rebajar por nave                 | lumber.shipment.rebaja.wizard
+ 545 | Rebaja de etiquetas          |       346 |       18 | t      |       874 | Rebaja de etiquetas              | stock.lot
+ 542 | Imputaciones documentales SV |       346 |       19 | f      |       867 | Historial de rebajas             | madenat.sv.imputation
+ 324 | Contenedores                 |       346 |       20 | t      |       494 | Contenedores                     | lumber.container
+ 540 | Saldo por Procesador         |       346 |       25 | t      |       864 | Saldo por Procesador             | stock.quant
+ 543 | Backlog Documental           |       346 |       25 | t      |       872 | Backlog Documental               | lumber.shipment.document
+ 541 | Envío a Procesador           |       346 |       26 | t      |       862 | Envío a procesador               | madenat.processor.shipment.wizard
+ 544 | Conciliación Envío–Retorno   |       346 |       27 | t      |       873 | Conciliación Envío–Retorno       | madenat.processor.return.link
+ 325 | Configuración                |       346 |       90 | t      |           |                                  | 
+ 376 | 📈 Reportes MADENAT          |       346 |       98 | f      |           |                                  | 
+(12 rows)
+

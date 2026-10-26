@@ -1,0 +1,59 @@
+=== CONTEOS FINALES vs BASELINE ===
+COUNT| stock.move                     base=143  now=145  exp=145  OK
+COUNT| stock.move.line                base=210  now=212  exp=212  OK
+COUNT| stock.picking                  base=28   now=30   exp=30   OK
+COUNT| stock.quant                    base=171  now=173  exp=173  OK
+COUNT| stock.lot                      base=127  now=128  exp=128  OK
+COUNT| stock.lot.cost.line            base=53   now=53   exp=53   OK
+COUNT| lumber.shipment.cost.line      base=0    now=0    exp=0    OK
+COUNT| lumber.export.shipment         base=15   now=16   exp=16   OK
+COUNT| lumber.container               base=16   now=17   exp=17   OK
+COUNT| lumber.shipment.line           base=6    now=7    exp=7    OK
+COUNT| shipping.vessel                base=7    now=8    exp=8    OK
+COUNT| shipping.voyage                base=1    now=2    exp=2    OK
+COUNT| madenat.audit.log              base=270  now=273  exp=273  OK
+COUNT| madenat.sv.operation           base=1    now=1    exp=1    OK
+COUNT| madenat.sv.imputation          base=1    now=1    exp=1    OK
+COUNT| account.move                   base=1    now=1    exp=1    OK
+COUNT| account.payment                base=0    now=0    exp=0    OK
+COUNT| lumber.billing.consolidation   base=0    now=0    exp=0    OK
+COUNTS_MATCH| True
+=== FIXTURE UAT FINAL ===
+UAT| vessel=UAT-R2-20261004-VESSEL(921) shipment=UAT-R2-20261004-SHIP(2128/draft/none) container=UAT-R2-20261004-CONT(loaded) lot=UAT-R2-20261004-LOT-01
+UAT| line=2415 rebaja_state=reversed qty=3.0
+UAT| OUT=WH/OUT/02466 state=done IN=EMB-04080 state=done
+UAT| state_before_rebaja=loaded container_state=loaded
+UAT| quant_internal=3.0 quant_customers=0.0
+UAT| lot.flow_type=False sv_rebajado_m3=0.0
+UAT| return move origin_link=[14134]
+=== ESCENARIO 5 — B-01 (no operativo) ===
+UAT| shipment.b01_exception_state=none (debe ser none)
+UAT| shipment.b01 fields vacios=True
+B01_GLOBAL| none       14
+B01_GLOBAL| open       1
+B01_GLOBAL| resolved   1
+=== AUDITORIA UAT ===
+AUDIT| rebaja               total=5 (baseline rebaja=4)
+AUDIT| rebaja_return_total  total=1 (baseline rebaja=4)
+AUDIT| rebaja_reverse       total=1 (baseline rebaja=4)
+AUDIT| rebaja_return_total id=20322 hash_len=64
+AUDIT| rebaja_reverse      id=20321 hash_len=64
+CHATTER| container msgs=4
+=== PROTEGIDOS (integridad) ===
+PROT| 1537=UAT-LOG-20261003-EMB-01[in_transit/none] 1509=UAT-LOG-20261003-CONT-01[shipped] 7065=WH/OUT/02194[done] 7062=WH/OUT/02193[done]
+PROT| lines1880/1881=rebajado/rebajado
+PROT| 1528=UAT-SV-20261003-SHIP[draft/none] 1500=UAT-SV-20261003-CONT[rebajado] SV5822=rebaja imp492=IMP00946
+PROT| vessel619=UAT-VR-20261004-ORIG-VESSEL 620=UAT-VR-20261004-DEST-VESSEL voyage565=UAT-VR-20261004-DEST-VESSEL / UAT-VR-20261004-DEST-VOY-01
+PROT| Rolleo ships 1644/1645/1646=UAT-VR-20261004-SHIP-NOVOY[draft/none] UAT-VR-20261004-SHIP-VOY[draft/none] UAT-VR-20261004-SHIP-BLOCK[in_transit/none]
+PROT| Rolleo conts 1629/1630/1631=UAT-VR-20261004-CONT-NOVOY[loaded] UAT-VR-20261004-CONT-VOY[loaded] UAT-VR-20261004-CONT-BLOCK[loaded]
+PROT| Rolleo audits 19699..19704=['vessel_rollover', 'vessel_rollover_item', 'vessel_rollover_item', 'vessel_rollover', 'vessel_rollover_item', 'vessel_rollover_item']
+PROT| Borrador ships 1704..1707=['UAT-DRAFT-20261004-OK[draft/none]', 'UAT-DRAFT-20261004-PHYS-BLOCK[confirmed/none]', 'UAT-DRAFT-20261004-PERM-BLOCK[confirmed/none]', 'UAT-DRAFT-20261004-TERM-BLOCK[in_transit/none]']
+PROT| Borrador conts 1678/1679/1680=UAT-DRAFT-20261004-CONT-OK[loading] UAT-DRAFT-20261004-CONT-PHYS-BLOCK[rebajado] UAT-DRAFT-20261004-CONT-TERM-BLOCK[loading]
+PROT| Borrador audit 19742=shipment_return_to_draft
+PROT| B01 vessel746=UAT-B01-20261004-VESSEL ships1867/1868/1869=UAT-B01-20261004-NORMAL[in_transit/none] UAT-B01-20261004-EXCEPTION[in_transit/open] UAT-B01-20261004-PERM[confirmed/none]
+PROT| B01 conts 1868..1871=['UAT-B01-20261004-CONT-NORMAL[shipped]', 'UAT-B01-20261004-CONT-REB[shipped]', 'UAT-B01-20261004-CONT-PENDING[loaded]', 'UAT-B01-20261004-CONT-PERM-PEND[loaded]']
+PROT| B01 audit 19890=b01_departure_exception
+PROT| R1 vessel747=UAT-R1-20261004-VESSEL ship1885=UAT-R1-20261004-SHIP[in_transit/resolved] cont1888=UAT-R1-20261004-CONT-PENDING[rebajado] lot16312=UAT-R1-20261004-LOT-01
+PROT| R1 pick7238=WH/OUT/02347[done] move13973=done
+PROT| R1 audits 19941..19945=['deviation', 'b01_departure_exception', 'rebaja', 'b01_regularization', 'b01_resolution']
+FINAL_VALIDATION_DONE

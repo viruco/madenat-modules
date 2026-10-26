@@ -1,0 +1,3 @@
+UAT-R2-5 — Gate B-01 open
+ESTADO: NO EJECUTADO
+MOTIVO: UAT bloqueada en precheck (véase 00_precheck_baseline.txt).

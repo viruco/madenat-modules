@@ -1,0 +1,41 @@
+import hashlib, json, datetime
+PREF = 'UAT-DRAFT-20261004-'
+print('POSTCOMMIT_TS=' + datetime.datetime.utcnow().isoformat() + 'Z')
+print('POSTCOMMIT_BEGIN')
+ships = env['lumber.export.shipment'].search([('name', 'like', PREF)], order='name')
+for s in ships:
+    print('UAT_SHIP', s.id, s.name, s.state, 'dep=', bool(s.actual_departure),
+          'cont=', [(c.id, c.name, c.state) for c in s.container_ids])
+conts = env['lumber.container'].search([('name', 'like', PREF)], order='name')
+for c in conts:
+    print('UAT_CONT', c.id, c.name, c.state, 'ship=', c.shipment_id.id,
+          c.shipment_id.name, 'lines=', len(c.line_ids), 'lots=', len(c.lot_ids))
+l = env['madenat.audit.log'].search([('action_type', '=', 'shipment_return_to_draft'),
+                                     ('batch_id', '=', '1704')])
+print('DRAFT_AUDIT_FOR_OK', len(l))
+for a in l:
+    snap = a.audit_snapshot or ''
+    h = hashlib.sha256(snap.encode('utf-8')).hexdigest()
+    try:
+        sj = json.loads(snap)
+    except Exception:
+        sj = {}
+    print('AUDIT_REC', a.id, a.action_type, a.user_id.id, a.user_id.login,
+          'hash_ok=', h == a.audit_hash,
+          'before=', sj.get('shipment', {}).get('state_before'),
+          'after=', sj.get('shipment', {}).get('state_after'))
+msgs = env['mail.message'].search([('model', '=', 'lumber.export.shipment'),
+                                   ('res_id', '=', 1704),
+                                   ('body', 'like', 'Retorno seguro a borrador')])
+print('CHATTER_OK_COUNT', len(msgs))
+for m in msgs:
+    print('CHATTER_AUTHOR', m.author_id.id, m.author_id.name)
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'lumber.export.shipment', 'lumber.container',
+          'lumber.shipment.line', 'shipping.vessel', 'shipping.voyage',
+          'madenat.audit.log', 'madenat.sv.operation', 'madenat.sv.imputation',
+          'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+for m in MODELS:
+    print('COUNT', m, env[m].search_count([]))
+print('POSTCOMMIT_END')

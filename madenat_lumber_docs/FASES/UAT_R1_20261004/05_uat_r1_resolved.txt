@@ -1,0 +1,28 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 05 CIERRE B-01 APROBADO (resolved)
+===============================================================================
+Fecha/hora: 2026-10-04T14:17:36-03:00
+Ejecutor: uid 2 (Gerencia). Comando: shipment.action_resolve_b01_exception() + reintentos bloqueados.
+
+UAT| 
+UAT| ================ UAT_R1_5_RESOLVED ================
+UAT| TS 2026-10-04T17:17:39.442960Z
+UAT| C5_BEFORE {"audit_id": 19942, "b01": "open", "blocks_delivery": true, "container_state": "rebajado", "opened_at": "2026-10-04 17:12:37", "opened_by": 2, "pendientes": [], "reason": "Regularizaci\u00f3n UAT: rebaja pendiente por contingencia documental.", "regularization_audits": 1, "resolution_audits": 0, "ship_state": "in_transit"}
+UAT| C5_ACTION OK
+UAT| C5_AFTER {"b01": "resolved", "blocks_delivery": false, "departure_unchanged": true, "opened_at_preserved": "2026-10-04 17:12:37", "opened_by_preserved": 2, "orig_audit_preserved": 19942, "reason_preserved": "Regularizaci\u00f3n UAT: rebaja pendiente por contingencia documental.", "resolution_audit_id": 19945, "resolved_at": "2026-10-04 17:17:39", "resolved_by": 2, "ship_state": "in_transit"}
+UAT| C5_RESOLUTION_AUDITS 1 [(19945, True)]
+UAT| C5_RESOLUTION_SNAPSHOT {"b01_after": "resolved", "b01_before": "open", "gates": {"delivery_eligible_after_resolution": true, "draft_still_blocked": true, "rollover_still_blocked": true}, "original_b01_audit_id": 19942, "regularization_audit_ids": [19944]}
+UAT| C5_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 1, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| 
+UAT| ================ UAT_R1_5_RETRY_BLOCKED ================
+UAT| C5_RETRY_BEFORE {"b01": "resolved", "resolution_audits": 1}
+UAT| C5_RETRY_RESOLVE UserError El Embarque UAT-R1-20261004-SHIP ya tiene la excepción B-01 regularizada (resolved).
+UAT| C5_RETRY_WRITE UserError La regularización B-01 (estado «resolved») del Embarque UAT-R1-20261004-SHIP sólo puede ejecutarse mediante la acción autorizada «Cerrar B-01».
+UAT| C5_RETRY_WRITE_CTX UserError La regularización B-01 (estado «resolved») del Embarque UAT-R1-20261004-SHIP sólo puede ejecutarse mediante la acción autorizada «Cerrar B-01».
+UAT| C5_RETRY_R1 UserError La regularización R1 exige un Embarque En Tránsito con excepción B-01 ABIERTA.
+UAT| C5_RETRY_ZARPE UserError Sólo se puede zarpar un Embarque Confirmado (estado actual: Embarcado).
+UAT| C5_RETRY_ZARPE2 UserError Sólo se puede zarpar un Embarque Confirmado (estado actual: Embarcado).
+UAT| C5_RETRY_AFTER {"b01": "resolved", "resolution_audits": 1}
+UAT| C5_RETRY_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 1, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| C5_CHECK {"b01_resolved": true, "departure_unchanged": true, "has_resolution_audit": true, "no_extra_stock_after_close": true, "no_fin_sv": true, "one_resolution_audit": true, "originals_preserved": true, "res_hash_ok": true, "resolved_by_exec": true, "retry_no_new_audit": true, "ship_in_transit": true}
+UAT| C5_CHATTER_CLOSE 1
+UAT| S05_DONE_OK

@@ -1,0 +1,34 @@
+UAT-D3 - BLOQUEO TERMINAL (embarque in_transit)
+========================================================================================
+Fecha/hora UTC : 2026-10-04T15:22:35Z
+Usuario ejecutor: uid 2 (Gerencia/Jefatura); env su=False
+Datos UAT       : Shipment 1707 UAT-DRAFT-20261004-TERM-BLOCK
+                  Container 1680 UAT-DRAFT-20261004-CONT-TERM-BLOCK
+
+CREACION DEL DATO (decision documentada)
+  El flujo estandar a 'in_transit' (action_set_in_transit / _set_in_transit) NO puede
+  alcanzar el estado de forma limpia sin: (a) rebaja fisica de todos los contenedores
+  (prohibida) o (b) excepcion B-01 (prohibida); ademas publica chatter de exito.
+  Por seguridad (cero movimiento de inventario, cero operacion prohibida) NO se ejecuto
+  'action_set_in_transit' ni el zarpe. El embarque TERM-BLOCK se creo DIRECTAMENTE en
+  'in_transit' mediante el ORM estandar (create), fixture UAT de estado, identica a la
+  tecnica del test de implementacion T-D7. Sin stock.move/line/quant, sin picking,
+  sin rebaja y sin efectos colaterales.
+  (Punto sujeto a confirmacion del responsable si se exigiera el flujo de boton.)
+
+ANTES
+  shipment.state='in_transit'  actual_departure=False
+  container 1680: state='loading', lineas=0, lotes=0  (sin rebaja; sin stock asociado)
+
+ACCION:  shipment.with_user(2).action_draft()
+  -> UserError por transicion/estado no permitido:
+  "No se puede volver el Embarque UAT-DRAFT-20261004-TERM-BLOCK a borrador: la unica
+   transicion permitida es Confirmado -> Borrador (estado actual: Embarcado)."
+
+DESPUES
+  shipment.state = 'in_transit'  (sin cambio)                          OK
+  container.state = 'loading'    (sin cambio)                          OK
+  auditoria 'shipment_return_to_draft' para 1707 = 0                   OK
+  chatter (incl. exito) = 0                                            OK
+  delta inventario/costos/SV/auditoria = 0 en todos los modelos        OK
+RESULTADO: UAT-D3  APROBADO (bloqueo correcto, cero efectos)

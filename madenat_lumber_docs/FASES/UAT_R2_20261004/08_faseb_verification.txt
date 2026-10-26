@@ -1,0 +1,33 @@
+========================================================================
+MADENAT — FASE B — Habilitación Jefatura Operativa — VERIFICACIÓN
+Fecha: 2026-10-04
+Ejecución: `odoo shell` con env(user=2, su=False)  → NO uid 1, NO sudo()
+========================================================================
+
+== SALIDA DE LA EJECUCIÓN (07_faseb_grant_groups.txt) ==
+FASEB_OK
+uid=6 name=Leonardo Rodriguez login=leonardo@pinelli.com.mx active=True internal=True
+OPER=True  JEF=True  SYS=False  GER=False  COST=False  CONT=False  AUD=False
+ADDED=['MADENAT: Gestión Madera / Jefatura de Operaciones',
+       'MADENAT: Gestión Madera / Operaciones']
+REMOVED=[]
+V6_uid=6
+V6_oper=True  V6_jef=True  V6_sys=False  V6_ger=False
+V6_can_write_users=False  V6_can_write_acl=False  V6_can_write_configparam=False
+V6_can_read_container=True  V6_can_write_container=True
+V6_can_read_shipment=True  V6_can_read_audit=True
+V6_can_write_rev_wizard=False   (wizard de override es Gerencia-only por ACL;
+                                 el camino R2 NORMAL es server-side, sin wizard)
+V6_rebaja_require_group=PASS
+FASEB_DONE
+
+== VERIFICACIÓN DIRECTA EN BD (read-only) ==
+uid=6  active=t internal=t  system=f  operaciones=t  jefatura=t
+       gerencia=f  auditoria=f  costos=f  contabilidad=f
+
+== INVARIANTES ==
+rebaja_reverse / rebaja_return_total persistidas ... 0
+contenedores UAT-R2-20261004-* ................... 0  (UAT R2 no ejecutada)
+working tree ..................................... 33 = 24 M + 9 ??
+git diff --check ................................. CLEAN
+========================================================================

@@ -1,0 +1,86 @@
+MADENAT — UAT R1 y CIERRE B-01 (Sub-bloque 4A) — 00 PRECHECK / LINEA BASE (solo lectura)
+===============================================================================
+Fecha/hora local: 2026-10-04T14:11:41-03:00
+Repo: /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons
+Rama: feat/guia-correccion-documental-preservada-20261002
+HEAD: 34c81272bb07d48db98d73a7734c81a2a8e384fa
+git status --porcelain (31 esperado: 23 M + 8 ??):
+ M madenat_lumber_core/models/madenat_audit_log.py
+ M madenat_lumber_core/views/lumber_core_menu.xml
+ M madenat_lumber_intake/views/intake_menus.xml
+ M madenat_lumber_logistics/__manifest__.py
+ M madenat_lumber_logistics/models/lumber_container.py
+ M madenat_lumber_logistics/models/lumber_export_shipment.py
+ M madenat_lumber_logistics/security/ir.model.access.csv
+ M madenat_lumber_logistics/tests/__init__.py
+ M madenat_lumber_logistics/tests/test_rebaja_contenedor.py
+ M madenat_lumber_logistics/views/logistics_menus.xml
+ M madenat_lumber_logistics/views/lumber_actions.xml
+ M madenat_lumber_logistics/views/lumber_container_views.xml
+ M madenat_lumber_logistics/views/lumber_export_shipment_views.xml
+ M madenat_lumber_logistics/wizards/__init__.py
+ M madenat_lumber_logistics/wizards/lumber_container_rollover_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_rebaja_wizard_views.xml
+ M madenat_lumber_logistics/wizards/lumber_shipment_zarpe_wizard.py
+ M madenat_lumber_logistics/wizards/lumber_shipment_zarpe_wizard_views.xml
+ M madenat_lumber_reports/views/lumber_reports_menu.xml
+ M madenat_lumber_shipping_core/models/shipping_vessel.py
+ M madenat_lumber_shipping_core/views/shipping_vessel_views.xml
+ M madenat_lumber_shipping_core/views/shipping_voyage_views.xml
+?? madenat_lumber_logistics/tests/test_b01_regularization.py
+?? madenat_lumber_logistics/tests/test_shipment_b01_exception.py
+?? madenat_lumber_logistics/tests/test_shipment_return_to_draft.py
+?? madenat_lumber_logistics/tests/test_vessel_rollover.py
+?? madenat_lumber_logistics/wizards/lumber_b01_regularization_wizard.py
+?? madenat_lumber_logistics/wizards/lumber_b01_regularization_wizard_views.xml
+?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard.py
+?? madenat_lumber_logistics/wizards/lumber_vessel_rollover_wizard_views.xml
+total: 31 entradas
+Runtime: odoo18_app Up / odoo18_db healthy / HTTP:
+odoo18_app Up 2 hours
+odoo18_db Up 2 hours (healthy)
+HTTP /web/login = 200
+Metodo: ORM via odoo shell --no-http (harness uid 1 local; acciones con .with_user(2)). SIN sudo(), SIN SQL de escritura.
+Ejecutor autorizado Gerencia: uid 2 Administrator (confirmacion explicita del usuario).
+
+UAT| 
+UAT| ================ PRECHECK_IDENTIDAD_RUNTIME ================
+UAT| PRECHECK_TS 2026-10-04T17:11:45.262990Z
+UAT| DB madenat_test shell_harness_uid 1
+UAT| EXEC_UID 2 mauricio.seo@gmail.com 'Administrator' su= False SYS= True GER= True
+UAT| GERENCIA_MEMBERS [(2, 'mauricio.seo@gmail.com', 'Administrator')]
+UAT| USER 1 ('OdooBot', '__system__', 'active=', False)
+UAT| USER 2 ('Administrator', 'mauricio.seo@gmail.com', 'active=', True)
+UAT| USER 6 ('Leonardo Rodriguez', 'leonardo@pinelli.com.mx', 'active=', True)
+UAT| USER 8 ('Cristhian Elgueta', 'cristhian.elguetag@gmail.com', 'active=', True)
+UAT| OPER_ONLY_UID8 True JEF= False GER= False
+UAT| COMMON_UID6 False
+UAT| AUDITORIA_MEMBERS 0 []
+UAT| 
+UAT| ================ PRECHECK_MODULOS ================
+UAT| MODULE base installed
+UAT| MODULE stock installed
+UAT| MODULE mail installed
+UAT| MODULE madenat_lumber_core installed
+UAT| MODULE madenat_lumber_logistics installed
+UAT| MODULE madenat_lumber_shipping_core installed
+UAT| 
+UAT| ================ PRECHECK_LINEA_BASE_GLOBAL ================
+UAT| BASE0 {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 15, "lumber.export.shipment": 14, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 5, "madenat.audit.log": 265, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 6, "shipping.voyage": 1, "stock.lot": 126, "stock.lot.cost.line": 53, "stock.move": 142, "stock.move.line": 209, "stock.picking": 27, "stock.quant": 169}
+UAT| 
+UAT| ================ PRECHECK_B01_ESTADO ================
+UAT| B01_OPEN_ALL [(1868, 'UAT-B01-20261004-EXCEPTION', 'in_transit')]
+UAT| B01_RESOLVED_COUNT 0
+UAT| B01_AUDITS_OPEN_TOTAL 1
+UAT| B01_REGULARIZATION_TOTAL 0
+UAT| B01_RESOLUTION_TOTAL 0
+UAT| 
+UAT| ================ PRECHECK_REGISTROS_PROTEGIDOS ================
+UAT| PROT_BEFORE {"b01_audit_19890": "b01_departure_exception", "b01_cont_1868": ["UAT-B01-20261004-CONT-NORMAL", "shipped"], "b01_cont_1869": ["UAT-B01-20261004-CONT-REB", "shipped"], "b01_cont_1870": ["UAT-B01-20261004-CONT-PENDING", "loaded"], "b01_cont_1871": ["UAT-B01-20261004-CONT-PERM-PEND", "loaded"], "b01_ship_1867": ["UAT-B01-20261004-NORMAL", "in_transit"], "b01_ship_1868": ["UAT-B01-20261004-EXCEPTION", "in_transit"], "b01_ship_1869": ["UAT-B01-20261004-PERM", "confirmed"], "b01_vessel_746": "UAT-B01-20261004-VESSEL", "draft_audit_19742": "shipment_return_to_draft", "draft_cont_1678": ["UAT-DRAFT-20261004-CONT-OK", "loading"], "draft_cont_1679": ["UAT-DRAFT-20261004-CONT-PHYS-BLOCK", "rebajado"], "draft_cont_1680": ["UAT-DRAFT-20261004-CONT-TERM-BLOCK", "loading"], "draft_ship_1704": ["UAT-DRAFT-20261004-OK", "draft"], "draft_ship_1705": ["UAT-DRAFT-20261004-PHYS-BLOCK", "confirmed"], "draft_ship_1706": ["UAT-DRAFT-20261004-PERM-BLOCK", "confirmed"], "draft_ship_1707": ["UAT-DRAFT-20261004-TERM-BLOCK", "in_transit"], "hist_cont_1509": ["UAT-LOG-20261003-CONT-01", "shipped"], "hist_line_1880": "rebajado", "hist_line_1881": "rebajado", "hist_lot_15970": {"customer": 0.144, "internal": 0.0, "name": "UATINTP-20261003-01"}, "hist_lot_15971": {"customer": 0.144, "internal": 0.0, "name": "UATINTS-20261003-01 MAD-SEC 900002"}, "hist_pick_7065": ["WH/OUT/02194", "done"], "hist_ship_1537": ["UAT-LOG-20261003-EMB-01", "in_transit"], "roll_audit_19699": "vessel_rollover", "roll_audit_19700": "vessel_rollover_item", "roll_audit_19701": "vessel_rollover_item", "roll_audit_19702": "vessel_rollover", "roll_audit_19703": "vessel_rollover_item", "roll_audit_19704": "vessel_rollover_item", "roll_cont_1629": ["UAT-VR-20261004-CONT-NOVOY", "loaded"], "roll_cont_1630": ["UAT-VR-20261004-CONT-VOY", "loaded"], "roll_cont_1631": ["UAT-VR-20261004-CONT-BLOCK", "loaded"], "roll_ship_1644": ["UAT-VR-20261004-SHIP-NOVOY", "draft"], "roll_ship_1645": ["UAT-VR-20261004-SHIP-VOY", "draft"], "roll_ship_1646": ["UAT-VR-20261004-SHIP-BLOCK", "in_transit"], "roll_vessel_619": "UAT-VR-20261004-ORIG-VESSEL", "roll_vessel_620": "UAT-VR-20261004-DEST-VESSEL", "roll_voyage_565": "UAT-VR-20261004-DEST-VESSEL / UAT-VR-20261004-DEST-VOY-01", "sv_cont_1500": ["UAT-SV-20261003-CONT", "rebajado"], "sv_imp_492": "IMP00946", "sv_op_5822": "SVO005684", "sv_pick_7062": ["WH/OUT/02193", "done"], "sv_ship_1528": ["UAT-SV-20261003-SHIP", "draft"]}
+UAT| 
+UAT| ================ PRECHECK_UAT_R1_EXISTENTE ================
+UAT| UAT_SHIP_EXISTS lumber.export.shipment() None
+UAT| UAT_CONT_EXISTS lumber.container() None
+UAT| UAT_LOT_EXISTS stock.lot() None
+UAT| PRECHECK_DONE_OK

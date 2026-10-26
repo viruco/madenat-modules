@@ -1,0 +1,230 @@
+Warn: Can't find .pfb for face 'Courier'
+=== A. IDENTIDAD / USUARIOS ===
+U| uid=2 name='Administrator' login='mauricio.seo@gmail.com' active=True share=False
+U| uid=6 name='Leonardo Rodriguez' login='leonardo@pinelli.com.mx' active=True share=False
+U| uid=7 name='María Victoria Antonio' login='mvantonio@valean.cl' active=True share=False
+U| uid=8 name='Cristhian Elgueta' login='cristhian.elguetag@gmail.com' active=True share=False
+U| uid=9 name='Felipe Muñoz' login='fmunoz@valean.cl' active=True share=False
+=== B. GRUPOS EFECTIVOS (membresia almacenada) ===
+--- uid 2 (Administrator) : 54 grupos ---
+  G| uid=2 gid=1 xmlid=base.group_user name='Usuario interno' cat=Tipos de usuario
+  G| uid=2 gid=2 xmlid=base.group_erp_manager name='Permisos de acceso' cat=Administración
+  G| uid=2 gid=3 xmlid=base.group_sanitize_override name='Evitar la depuración de campos HTML' cat=None
+  G| uid=2 gid=4 xmlid=base.group_system name='Ajustes' cat=Administración
+  G| uid=2 gid=6 xmlid=base.group_multi_currency name='Multimonedas' cat=Permisos adicionales
+  G| uid=2 gid=7 xmlid=base.group_no_one name='Características técnicas' cat=Permisos adicionales
+  G| uid=2 gid=8 xmlid=base.group_allow_export name='Acceso a la función de exportación' cat=Técnico
+  G| uid=2 gid=9 xmlid=base.group_partner_manager name='Creación de contacto' cat=Permisos adicionales
+  G| uid=2 gid=12 xmlid=uom.group_uom name='Gestionar varias unidades de medida' cat=Técnico
+  G| uid=2 gid=13 xmlid=mail.group_mail_canned_response_admin name='Administrador de la respuesta predefinida' cat=Respuestas predefinidas
+  G| uid=2 gid=14 xmlid=mail.group_mail_template_editor name='Editor de plantillas de correo' cat=Técnico
+  G| uid=2 gid=17 xmlid=product.group_product_pricelist name='Listas de precios básicas' cat=Técnico
+  G| uid=2 gid=18 xmlid=product.group_stock_packaging name='Administrar el embalaje del producto' cat=Técnico
+  G| uid=2 gid=19 xmlid=product.group_product_variant name='Administrar variantes de productos' cat=Técnico
+  G| uid=2 gid=20 xmlid=product.group_product_manager name='Creación de productos' cat=Permisos adicionales
+  G| uid=2 gid=22 xmlid=account.group_account_readonly name='Mostrar funciones de contabilidad: solo lectura' cat=Técnico
+  G| uid=2 gid=23 xmlid=account.group_account_invoice name='Facturando' cat=Contabilidad
+  G| uid=2 gid=24 xmlid=account.group_account_basic name='Básico' cat=Técnico
+  G| uid=2 gid=25 xmlid=account.group_account_user name='Mostrar características de contabilidad completas' cat=Técnico
+  G| uid=2 gid=26 xmlid=account.group_account_manager name='Administrador' cat=Contabilidad
+  G| uid=2 gid=31 xmlid=account.group_purchase_receipts name='Recibo de compra' cat=Técnico
+  G| uid=2 gid=32 xmlid=account.group_validate_bank_account name='Validar cuenta bancaria' cat=Banco
+  G| uid=2 gid=33 xmlid=spreadsheet_dashboard.group_dashboard_manager name='Admin' cat=Tablero
+  G| uid=2 gid=34 xmlid=purchase.group_purchase_user name='Usuario' cat=Compras
+  G| uid=2 gid=35 xmlid=purchase.group_purchase_manager name='Administrador' cat=Compras
+  G| uid=2 gid=36 xmlid=purchase.group_warning_purchase name='Puede establecer una advertencia en un producto o cliente (Compra)' cat=Técnico
+  G| uid=2 gid=37 xmlid=purchase.group_send_reminder name='Envíe un correo electrónico de recordatorio automático para confirmar la entrega' cat=Técnico
+  G| uid=2 gid=38 xmlid=sales_team.group_sale_salesman name='Usuario: solo mostrar documentos propios' cat=Ventas
+  G| uid=2 gid=39 xmlid=sales_team.group_sale_salesman_all_leads name='Usuario: todos los documentos' cat=Ventas
+  G| uid=2 gid=40 xmlid=sales_team.group_sale_manager name='Administrador' cat=Ventas
+  G| uid=2 gid=46 xmlid=stock.group_stock_multi_locations name='Gestionar múltiples ubicaciones de existencias' cat=Técnico
+  G| uid=2 gid=48 xmlid=stock.group_stock_user name='Usuario' cat=Inventario
+  G| uid=2 gid=49 xmlid=stock.group_stock_manager name='Administrador' cat=Inventario
+  G| uid=2 gid=50 xmlid=stock.group_production_lot name='Gestionar números de lote y de serie' cat=Técnico
+  G| uid=2 gid=52 xmlid=stock.group_lot_on_delivery_slip name='Mostrar número de lote y serie en los recibos de entrega' cat=Técnico
+  G| uid=2 gid=53 xmlid=stock.group_tracking_lot name='Gestionar paquetes' cat=Técnico
+  G| uid=2 gid=54 xmlid=stock.group_adv_location name='Gestionar flujos de inventario push y pull' cat=Técnico
+  G| uid=2 gid=55 xmlid=stock.group_tracking_owner name='Gestione diferentes propietarios de existencias' cat=Técnico
+  G| uid=2 gid=56 xmlid=stock.group_warning_stock name='Se puede establecer una advertencia en un contacto (existencias)' cat=Técnico
+  G| uid=2 gid=58 xmlid=stock.group_reception_report name='Utilizar reporte de recepción' cat=Técnico
+  G| uid=2 gid=59 xmlid=stock_account.group_lot_on_invoice name='Mostrar el número de serie y lote en las facturas' cat=Técnico
+  G| uid=2 gid=61 xmlid=#61 name='MADENAT: Compras y Operaciones' cat=None
+  G| uid=2 gid=65 xmlid=madenat_toll_processing.group_toll_processing_user name='Usuario' cat=Procesamiento Terceros (Toll)
+  G| uid=2 gid=66 xmlid=madenat_toll_processing.group_toll_processing_manager name='Responsable' cat=Procesamiento Terceros (Toll)
+  G| uid=2 gid=67 xmlid=madenat_lumber_shipping_core.group_shipping_user name='Usuario (Solo Lectura)' cat=Gestión de Transporte (Navieras)
+  G| uid=2 gid=68 xmlid=madenat_lumber_shipping_core.group_shipping_manager name='Administrador de Transporte' cat=Gestión de Transporte (Navieras)
+  G| uid=2 gid=69 xmlid=madenat_lumber_core.group_madenat_cost_auditor name='Auditor de Costos (Felipe)' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=70 xmlid=madenat_lumber_core.group_madenat_admin name='Administrador Madenat' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=74 xmlid=madenat_lumber_core.group_lumber_config_manager name='Configurador de Reglas de Ingesta' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=256 xmlid=madenat_lumber_core.group_madenat_operaciones name='Operaciones' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=257 xmlid=madenat_lumber_core.group_madenat_costos name='Costos' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=258 xmlid=madenat_lumber_core.group_madenat_contabilidad name='Contabilidad' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=259 xmlid=madenat_lumber_core.group_madenat_gerencia name='Gerencia' cat=MADENAT: Gestión Madera
+  G| uid=2 gid=261 xmlid=madenat_lumber_core.group_madenat_jefatura_operaciones name='Jefatura de Operaciones' cat=MADENAT: Gestión Madera
+--- uid 6 (Leonardo Rodriguez) : 35 grupos ---
+  G| uid=6 gid=1 xmlid=base.group_user name='Usuario interno' cat=Tipos de usuario
+  G| uid=6 gid=6 xmlid=base.group_multi_currency name='Multimonedas' cat=Permisos adicionales
+  G| uid=6 gid=7 xmlid=base.group_no_one name='Características técnicas' cat=Permisos adicionales
+  G| uid=6 gid=8 xmlid=base.group_allow_export name='Acceso a la función de exportación' cat=Técnico
+  G| uid=6 gid=9 xmlid=base.group_partner_manager name='Creación de contacto' cat=Permisos adicionales
+  G| uid=6 gid=12 xmlid=uom.group_uom name='Gestionar varias unidades de medida' cat=Técnico
+  G| uid=6 gid=13 xmlid=mail.group_mail_canned_response_admin name='Administrador de la respuesta predefinida' cat=Respuestas predefinidas
+  G| uid=6 gid=17 xmlid=product.group_product_pricelist name='Listas de precios básicas' cat=Técnico
+  G| uid=6 gid=18 xmlid=product.group_stock_packaging name='Administrar el embalaje del producto' cat=Técnico
+  G| uid=6 gid=19 xmlid=product.group_product_variant name='Administrar variantes de productos' cat=Técnico
+  G| uid=6 gid=20 xmlid=product.group_product_manager name='Creación de productos' cat=Permisos adicionales
+  G| uid=6 gid=23 xmlid=account.group_account_invoice name='Facturando' cat=Contabilidad
+  G| uid=6 gid=26 xmlid=account.group_account_manager name='Administrador' cat=Contabilidad
+  G| uid=6 gid=31 xmlid=account.group_purchase_receipts name='Recibo de compra' cat=Técnico
+  G| uid=6 gid=34 xmlid=purchase.group_purchase_user name='Usuario' cat=Compras
+  G| uid=6 gid=35 xmlid=purchase.group_purchase_manager name='Administrador' cat=Compras
+  G| uid=6 gid=36 xmlid=purchase.group_warning_purchase name='Puede establecer una advertencia en un producto o cliente (Compra)' cat=Técnico
+  G| uid=6 gid=37 xmlid=purchase.group_send_reminder name='Envíe un correo electrónico de recordatorio automático para confirmar la entrega' cat=Técnico
+  G| uid=6 gid=38 xmlid=sales_team.group_sale_salesman name='Usuario: solo mostrar documentos propios' cat=Ventas
+  G| uid=6 gid=39 xmlid=sales_team.group_sale_salesman_all_leads name='Usuario: todos los documentos' cat=Ventas
+  G| uid=6 gid=40 xmlid=sales_team.group_sale_manager name='Administrador' cat=Ventas
+  G| uid=6 gid=46 xmlid=stock.group_stock_multi_locations name='Gestionar múltiples ubicaciones de existencias' cat=Técnico
+  G| uid=6 gid=48 xmlid=stock.group_stock_user name='Usuario' cat=Inventario
+  G| uid=6 gid=49 xmlid=stock.group_stock_manager name='Administrador' cat=Inventario
+  G| uid=6 gid=50 xmlid=stock.group_production_lot name='Gestionar números de lote y de serie' cat=Técnico
+  G| uid=6 gid=52 xmlid=stock.group_lot_on_delivery_slip name='Mostrar número de lote y serie en los recibos de entrega' cat=Técnico
+  G| uid=6 gid=53 xmlid=stock.group_tracking_lot name='Gestionar paquetes' cat=Técnico
+  G| uid=6 gid=54 xmlid=stock.group_adv_location name='Gestionar flujos de inventario push y pull' cat=Técnico
+  G| uid=6 gid=55 xmlid=stock.group_tracking_owner name='Gestione diferentes propietarios de existencias' cat=Técnico
+  G| uid=6 gid=56 xmlid=stock.group_warning_stock name='Se puede establecer una advertencia en un contacto (existencias)' cat=Técnico
+  G| uid=6 gid=58 xmlid=stock.group_reception_report name='Utilizar reporte de recepción' cat=Técnico
+  G| uid=6 gid=59 xmlid=stock_account.group_lot_on_invoice name='Mostrar el número de serie y lote en las facturas' cat=Técnico
+  G| uid=6 gid=60 xmlid=stock_account.group_stock_accounting_automatic name='Contabilidad de existencias automática' cat=Técnico
+  G| uid=6 gid=62 xmlid=#62 name='MADENAT: Validación Contable (Auditoría)' cat=None
+  G| uid=6 gid=63 xmlid=#63 name='MADENAT' cat=None
+--- uid 8 (Cristhian Elgueta) : 46 grupos ---
+  G| uid=8 gid=1 xmlid=base.group_user name='Usuario interno' cat=Tipos de usuario
+  G| uid=8 gid=6 xmlid=base.group_multi_currency name='Multimonedas' cat=Permisos adicionales
+  G| uid=8 gid=7 xmlid=base.group_no_one name='Características técnicas' cat=Permisos adicionales
+  G| uid=8 gid=8 xmlid=base.group_allow_export name='Acceso a la función de exportación' cat=Técnico
+  G| uid=8 gid=9 xmlid=base.group_partner_manager name='Creación de contacto' cat=Permisos adicionales
+  G| uid=8 gid=12 xmlid=uom.group_uom name='Gestionar varias unidades de medida' cat=Técnico
+  G| uid=8 gid=13 xmlid=mail.group_mail_canned_response_admin name='Administrador de la respuesta predefinida' cat=Respuestas predefinidas
+  G| uid=8 gid=17 xmlid=product.group_product_pricelist name='Listas de precios básicas' cat=Técnico
+  G| uid=8 gid=18 xmlid=product.group_stock_packaging name='Administrar el embalaje del producto' cat=Técnico
+  G| uid=8 gid=19 xmlid=product.group_product_variant name='Administrar variantes de productos' cat=Técnico
+  G| uid=8 gid=20 xmlid=product.group_product_manager name='Creación de productos' cat=Permisos adicionales
+  G| uid=8 gid=23 xmlid=account.group_account_invoice name='Facturando' cat=Contabilidad
+  G| uid=8 gid=26 xmlid=account.group_account_manager name='Administrador' cat=Contabilidad
+  G| uid=8 gid=31 xmlid=account.group_purchase_receipts name='Recibo de compra' cat=Técnico
+  G| uid=8 gid=34 xmlid=purchase.group_purchase_user name='Usuario' cat=Compras
+  G| uid=8 gid=36 xmlid=purchase.group_warning_purchase name='Puede establecer una advertencia en un producto o cliente (Compra)' cat=Técnico
+  G| uid=8 gid=37 xmlid=purchase.group_send_reminder name='Envíe un correo electrónico de recordatorio automático para confirmar la entrega' cat=Técnico
+  G| uid=8 gid=38 xmlid=sales_team.group_sale_salesman name='Usuario: solo mostrar documentos propios' cat=Ventas
+  G| uid=8 gid=39 xmlid=sales_team.group_sale_salesman_all_leads name='Usuario: todos los documentos' cat=Ventas
+  G| uid=8 gid=40 xmlid=sales_team.group_sale_manager name='Administrador' cat=Ventas
+  G| uid=8 gid=46 xmlid=stock.group_stock_multi_locations name='Gestionar múltiples ubicaciones de existencias' cat=Técnico
+  G| uid=8 gid=48 xmlid=stock.group_stock_user name='Usuario' cat=Inventario
+  G| uid=8 gid=49 xmlid=stock.group_stock_manager name='Administrador' cat=Inventario
+  G| uid=8 gid=50 xmlid=stock.group_production_lot name='Gestionar números de lote y de serie' cat=Técnico
+  G| uid=8 gid=52 xmlid=stock.group_lot_on_delivery_slip name='Mostrar número de lote y serie en los recibos de entrega' cat=Técnico
+  G| uid=8 gid=53 xmlid=stock.group_tracking_lot name='Gestionar paquetes' cat=Técnico
+  G| uid=8 gid=54 xmlid=stock.group_adv_location name='Gestionar flujos de inventario push y pull' cat=Técnico
+  G| uid=8 gid=55 xmlid=stock.group_tracking_owner name='Gestione diferentes propietarios de existencias' cat=Técnico
+  G| uid=8 gid=56 xmlid=stock.group_warning_stock name='Se puede establecer una advertencia en un contacto (existencias)' cat=Técnico
+  G| uid=8 gid=58 xmlid=stock.group_reception_report name='Utilizar reporte de recepción' cat=Técnico
+  G| uid=8 gid=59 xmlid=stock_account.group_lot_on_invoice name='Mostrar el número de serie y lote en las facturas' cat=Técnico
+  G| uid=8 gid=61 xmlid=#61 name='MADENAT: Compras y Operaciones' cat=None
+  G| uid=8 gid=62 xmlid=#62 name='MADENAT: Validación Contable (Auditoría)' cat=None
+  G| uid=8 gid=63 xmlid=#63 name='MADENAT' cat=None
+  G| uid=8 gid=64 xmlid=#64 name='MADENAT Aprobación Financiera y Pagos' cat=None
+  G| uid=8 gid=65 xmlid=madenat_toll_processing.group_toll_processing_user name='Usuario' cat=Procesamiento Terceros (Toll)
+  G| uid=8 gid=66 xmlid=madenat_toll_processing.group_toll_processing_manager name='Responsable' cat=Procesamiento Terceros (Toll)
+  G| uid=8 gid=67 xmlid=madenat_lumber_shipping_core.group_shipping_user name='Usuario (Solo Lectura)' cat=Gestión de Transporte (Navieras)
+  G| uid=8 gid=68 xmlid=madenat_lumber_shipping_core.group_shipping_manager name='Administrador de Transporte' cat=Gestión de Transporte (Navieras)
+  G| uid=8 gid=69 xmlid=madenat_lumber_core.group_madenat_cost_auditor name='Auditor de Costos (Felipe)' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=256 xmlid=madenat_lumber_core.group_madenat_operaciones name='Operaciones' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=257 xmlid=madenat_lumber_core.group_madenat_costos name='Costos' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=258 xmlid=madenat_lumber_core.group_madenat_contabilidad name='Contabilidad' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=259 xmlid=madenat_lumber_core.group_madenat_gerencia name='Gerencia' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=260 xmlid=madenat_lumber_core.group_madenat_cost_auditor_plus name='Auditoría de Costos Avanzada' cat=MADENAT: Gestión Madera
+  G| uid=8 gid=261 xmlid=madenat_lumber_core.group_madenat_jefatura_operaciones name='Jefatura de Operaciones' cat=MADENAT: Gestión Madera
+=== C. JERARQUIA MADENAT (implied_ids) ===
+HIER| group_madenat_operaciones gid=256 implied_direct=[stock.group_stock_user[Usuario]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_stock_user[Usuario], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_jefatura_operaciones gid=261 implied_direct=[base.group_user[Usuario interno], madenat_lumber_core.group_madenat_operaciones[Operaciones]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_operaciones[Operaciones], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_stock_user[Usuario], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_costos gid=257 implied_direct=[base.group_user[Usuario interno]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_contabilidad gid=258 implied_direct=[account.group_account_manager[Administrador], madenat_lumber_core.group_madenat_costos[Costos]] trans_impl=[account.group_account_invoice[Facturando], account.group_account_manager[Administrador], account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_costos[Costos], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_gerencia gid=259 implied_direct=[madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_costos[Costos], madenat_lumber_core.group_madenat_operaciones[Operaciones]] trans_impl=[account.group_account_invoice[Facturando], account.group_account_manager[Administrador], account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_costos[Costos], madenat_lumber_core.group_madenat_operaciones[Operaciones], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_stock_user[Usuario], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_admin gid=70 implied_direct=[madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_auditoria gid=298 implied_direct=[base.group_user[Usuario interno]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_cost_auditor gid=69 implied_direct=[base.group_user[Usuario interno]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_madenat_cost_auditor_plus gid=260 implied_direct=[madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+HIER| group_lumber_config_manager gid=74 implied_direct=[madenat_lumber_core.group_madenat_admin[Administrador Madenat]] trans_impl=[account.group_purchase_receipts[Recibo de compra], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_admin[Administrador Madenat], madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]]
+=== D. CLASIFICACION DIRECTA vs IMPLICADA (uid 8) ===
+U8_ROOTS| #61[MADENAT: Compras y Operaciones], #62[MADENAT: Validación Contable (Auditoría)], #63[MADENAT], #64[MADENAT Aprobación Financiera y Pagos], base.group_allow_export[Acceso a la función de exportación], base.group_partner_manager[Creación de contacto], madenat_lumber_core.group_madenat_cost_auditor_plus[Auditoría de Costos Avanzada], madenat_lumber_core.group_madenat_gerencia[Gerencia], madenat_lumber_core.group_madenat_jefatura_operaciones[Jefatura de Operaciones], madenat_lumber_shipping_core.group_shipping_manager[Administrador de Transporte], madenat_toll_processing.group_toll_processing_manager[Responsable], product.group_product_manager[Creación de productos], purchase.group_purchase_user[Usuario], sales_team.group_sale_manager[Administrador], stock.group_stock_manager[Administrador]
+CLS| madenat_lumber_core.group_madenat_operaciones member=True  implied_by=[madenat_lumber_core.group_madenat_gerencia[Gerencia], madenat_lumber_core.group_madenat_jefatura_operaciones[Jefatura de Operaciones]]
+CLS| madenat_lumber_core.group_madenat_jefatura_operaciones member=True  implied_by=[—]
+CLS| madenat_lumber_core.group_madenat_gerencia    member=True  implied_by=[—]
+CLS| madenat_lumber_core.group_madenat_contabilidad member=True  implied_by=[madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+CLS| madenat_lumber_core.group_madenat_costos      member=True  implied_by=[madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+CLS| madenat_lumber_core.group_madenat_admin       member=False implied_by=[—]
+CLS| madenat_lumber_core.group_madenat_cost_auditor member=True  implied_by=[madenat_lumber_core.group_madenat_cost_auditor_plus[Auditoría de Costos Avanzada]]
+CLS| madenat_lumber_core.group_madenat_cost_auditor_plus member=True  implied_by=[—]
+CLS| account.group_account_manager                 member=True  implied_by=[madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+CLS| account.group_account_invoice                 member=True  implied_by=[account.group_account_manager[Administrador], madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+CLS| base.group_system                             member=False implied_by=[—]
+=== D2. QUE GRUPOS IMPLICAN contabilidad / account_manager ===
+IMPL| madenat_lumber_core.group_madenat_contabilidad <= [madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+IMPL| account.group_account_manager                 <= [madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+IMPL| account.group_account_invoice                 <= [account.group_account_basic[Básico], account.group_account_manager[Administrador], account.group_account_user[Mostrar características de contabilidad completas], madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+IMPL| madenat_lumber_core.group_madenat_costos      <= [madenat_lumber_core.group_madenat_contabilidad[Contabilidad], madenat_lumber_core.group_madenat_gerencia[Gerencia]]
+=== D3. POST-REMOCION GERENCIA: que quedaria implicado (uid 8) ===
+REM_ROOTS| #61[MADENAT: Compras y Operaciones], #62[MADENAT: Validación Contable (Auditoría)], #63[MADENAT], #64[MADENAT Aprobación Financiera y Pagos], base.group_allow_export[Acceso a la función de exportación], base.group_partner_manager[Creación de contacto], madenat_lumber_core.group_madenat_cost_auditor_plus[Auditoría de Costos Avanzada], madenat_lumber_core.group_madenat_jefatura_operaciones[Jefatura de Operaciones], madenat_lumber_shipping_core.group_shipping_manager[Administrador de Transporte], madenat_toll_processing.group_toll_processing_manager[Responsable], product.group_product_manager[Creación de productos], purchase.group_purchase_user[Usuario], sales_team.group_sale_manager[Administrador], stock.group_stock_manager[Administrador]
+AFTER_IMPLIED| #61[MADENAT: Compras y Operaciones], #62[MADENAT: Validación Contable (Auditoría)], #63[MADENAT], #64[MADENAT Aprobación Financiera y Pagos], account.group_purchase_receipts[Recibo de compra], base.group_allow_export[Acceso a la función de exportación], base.group_multi_currency[Multimonedas], base.group_no_one[Características técnicas], base.group_partner_manager[Creación de contacto], base.group_user[Usuario interno], madenat_lumber_core.group_madenat_cost_auditor[Auditor de Costos (Felipe)], madenat_lumber_core.group_madenat_cost_auditor_plus[Auditoría de Costos Avanzada], madenat_lumber_core.group_madenat_jefatura_operaciones[Jefatura de Operaciones], madenat_lumber_core.group_madenat_operaciones[Operaciones], madenat_lumber_shipping_core.group_shipping_manager[Administrador de Transporte], madenat_lumber_shipping_core.group_shipping_user[Usuario (Solo Lectura)], madenat_toll_processing.group_toll_processing_manager[Responsable], madenat_toll_processing.group_toll_processing_user[Usuario], mail.group_mail_canned_response_admin[Administrador de la respuesta predefinida], product.group_product_manager[Creación de productos], product.group_product_pricelist[Listas de precios básicas], product.group_product_variant[Administrar variantes de productos], product.group_stock_packaging[Administrar el embalaje del producto], purchase.group_purchase_user[Usuario], purchase.group_send_reminder[Envíe un correo electrónico de recordatorio automático para confirmar la entrega], purchase.group_warning_purchase[Puede establecer una advertencia en un producto o cliente (Compra)], sales_team.group_sale_manager[Administrador], sales_team.group_sale_salesman[Usuario: solo mostrar documentos propios], sales_team.group_sale_salesman_all_leads[Usuario: todos los documentos], stock.group_adv_location[Gestionar flujos de inventario push y pull], stock.group_lot_on_delivery_slip[Mostrar número de lote y serie en los recibos de entrega], stock.group_production_lot[Gestionar números de lote y de serie], stock.group_reception_report[Utilizar reporte de recepción], stock.group_stock_manager[Administrador], stock.group_stock_multi_locations[Gestionar múltiples ubicaciones de existencias], stock.group_stock_user[Usuario], stock.group_tracking_lot[Gestionar paquetes], stock.group_tracking_owner[Gestione diferentes propietarios de existencias], stock.group_warning_stock[Se puede establecer una advertencia en un contacto (existencias)], stock_account.group_lot_on_invoice[Mostrar el número de serie y lote en las facturas], uom.group_uom[Gestionar varias unidades de medida]
+=== E. GRUPOS HUERFANOS 61/62/63/64 ===
+ORPH| gid=61 name='MADENAT: Compras y Operaciones' xmlid=#61 implied=[—] users=[2:Administrator, 8:Cristhian Elgueta]
+ORPH| gid=61 ACL_count=9 write_models=[account.move.send.batch.wizard(w=True), account.move.send.wizard(w=True), lumber.reception(w=True), purchase.order(w=True), stock.lot(w=True), stock.lot.cost.line(w=True), stock.lot.report(w=True), stock.picking(w=True), stock.picking.type(w=True)]
+ORPH| gid=62 name='MADENAT: Validación Contable (Auditoría)' xmlid=#62 implied=[—] users=[8:Cristhian Elgueta, 9:Felipe Muñoz, 6:Leonardo Rodriguez, 7:María Victoria Antonio]
+ORPH| gid=62 ACL_count=13 write_models=[account.move(w=True), account.move.line(w=True), account.move.send(w=True), account.move.send.batch.wizard(w=True), account.move.send.wizard(w=True), lumber.reception(w=True), stock.lot(w=True), stock.lot.cost.line(w=True), stock.lot.report(w=True), validate.account.move(w=True)]
+ORPH| gid=63 name='MADENAT' xmlid=#63 implied=[—] users=[8:Cristhian Elgueta, 6:Leonardo Rodriguez, 7:María Victoria Antonio]
+ORPH| gid=63 ACL_count=0 write_models=[]
+ORPH| gid=64 name='MADENAT Aprobación Financiera y Pagos' xmlid=#64 implied=[—] users=[8:Cristhian Elgueta, 7:María Victoria Antonio]
+ORPH| gid=64 ACL_count=12 write_models=[account.move(w=True), account.move.line(w=True), account.move.reversal(w=True), account.move.send.batch.wizard(w=True), account.move.send.wizard(w=True), account.payment(w=True), account.payment.register(w=True), account.payment.term(w=True), account.payment.term.line(w=True), validate.account.move(w=True)]
+=== F. LINEA BASE CONTEOS ===
+COUNT| stock.move                     143
+COUNT| stock.move.line                210
+COUNT| stock.picking                  28
+COUNT| stock.quant                    171
+COUNT| stock.lot                      127
+COUNT| stock.lot.cost.line            53
+COUNT| lumber.shipment.cost.line      0
+COUNT| lumber.export.shipment         15
+COUNT| lumber.container               16
+COUNT| lumber.shipment.line           6
+COUNT| shipping.vessel                7
+COUNT| shipping.voyage                1
+COUNT| madenat.audit.log              270
+COUNT| madenat.sv.operation           1
+COUNT| madenat.sv.imputation          1
+COUNT| account.move                   1
+COUNT| account.payment                0
+COUNT| lumber.billing.consolidation   0
+=== G. INTEGRIDAD R2 / B-01 ===
+AUDIT| rebaja                    4
+AUDIT| rebaja_reverse            0
+AUDIT| rebaja_return_total       0
+AUDIT| b01_regularization        1
+AUDIT| b01_resolution            1
+AUDIT| shipment_return_to_draft  1
+AUDIT| vessel_rollover           2
+B01| state=none       13
+B01| state=open       1
+B01| state=resolved   1
+R2DATA| containers UAT-R2-20261004-* = 0
+=== H. USUARIOS CON GRUPOS CLAVE ===
+USERS| madenat_lumber_core.group_madenat_gerencia    [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_contabilidad [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_jefatura_operaciones [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_operaciones [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_costos      [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com]
+USERS| madenat_lumber_core.group_madenat_admin       [2:mauricio.seo@gmail.com, 9:fmunoz@valean.cl]
+USERS| madenat_lumber_core.group_madenat_auditoria   []
+USERS| account.group_account_manager                 [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com, 9:fmunoz@valean.cl, 6:leonardo@pinelli.com.mx, 7:mvantonio@valean.cl]
+USERS| account.group_account_invoice                 [2:mauricio.seo@gmail.com, 8:cristhian.elguetag@gmail.com, 9:fmunoz@valean.cl, 6:leonardo@pinelli.com.mx, 7:mvantonio@valean.cl]
+USERS| base.group_system                             [2:mauricio.seo@gmail.com]
+=== PRECHECK_DONE ===

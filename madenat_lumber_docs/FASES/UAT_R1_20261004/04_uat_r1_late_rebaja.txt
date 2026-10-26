@@ -1,0 +1,30 @@
+MADENAT — UAT R1 (Sub-bloque 4A) — 04 REBAJA EXTEMPORANEA R1
+===============================================================================
+Fecha/hora: 2026-10-04T14:14:49-03:00
+Ejecutor: uid 2 (Gerencia). Wizard lumber.b01.regularization.wizard.action_regularize_rebaja()
+
+UAT| 
+UAT| ================ UAT_R1_4_REBAJA_R1 ================
+UAT| TS 2026-10-04T17:14:52.833311Z
+UAT| R1_BEFORE {"actual_departure": "2026-10-04 17:12:37", "b01": "open", "container_state": "sealed", "line_rebaja_picking": false, "line_rebaja_state": "pending", "lot_customer": 0, "lot_internal": 3.0, "lot_vol_purchase": 3.0, "lot_vol_ship": 3.0, "ship_state": "in_transit", "state_before_rebaja": false}
+UAT| R1_OPEN_WIZARD lumber.b01.regularization.wizard ctx_shipment= 1885
+UAT| R1_WIZARD 17 pending_count= 1 requested_by= 2
+UAT| R1_ACTION OK
+UAT| 
+UAT| ================ UAT_R1_4_AFTER ================
+UAT| R1_AFTER_SHIPMENT {"actual_departure": "2026-10-04 17:12:37", "b01": "open", "departure_unchanged": true, "state": "in_transit"}
+UAT| R1_AFTER_CONTAINER {"shipment_id": 1885, "shipment_id_unchanged": true, "state": "rebajado", "state_before_rebaja": "sealed"}
+UAT| R1_AFTER_LOT {"container_id": 1888, "customer": 3.0, "id": 16312, "internal": 0.0, "name": "UAT-R1-20261004-LOT-01", "vol_purchase": 3.0, "vol_ship": 3.0}
+UAT| R1_LINE {"id": 2208, "rebaja_date": "2026-10-04 17:15:02", "rebaja_picking_id": 7238, "rebaja_picking_name": "WH/OUT/02347", "rebaja_picking_state": "done", "rebaja_qty_m3": 3.0, "rebaja_state": "rebajado", "rebaja_user_id": 2}
+UAT| R1_PICKING {"date_done": "2026-10-04 17:14:53", "id": 7238, "location_dest_is_customers": true, "location_id_usage": "internal", "name": "WH/OUT/02347", "not_backdated": true, "origin": "Rebaja UAT-R1-20261004-CONT-PENDING", "state": "done", "type_code": "outgoing"}
+UAT| R1_MOVES [(13973, 5314, 3.0, 'done', 'internal', 5)]
+UAT| R1_MOVE_LINES [(12417, 16312, 3.0)]
+UAT| R1_REBAJA_AUDITS 1 [(19943, True)]
+UAT| R1_REGULARIZATION_AUDITS 1
+UAT| R1_SNAPSHOT {"approval_ok": true, "approver_role": "gerencia", "cont_state_after": "rebajado", "cont_state_before": "sealed", "effective_at": "2026-10-04T17:15:03", "invariants": {"departure_not_backdated": true, "physical_stock_moved_by_rebaja": true}, "original_b01_audit_id": 19942, "reason_ok": true, "snap_lot_id": 16312, "snap_picking_id": 7238, "snap_picking_state": "done", "subtype": "late_rebaja"}
+UAT| R1_AUDIT_HASH [(19944, 'b01_regularization', True)]
+UAT| R1_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 2, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 1, "stock.move.line": 1, "stock.picking": 1, "stock.quant": 1}
+UAT| R1_CHECK {"b01_open": true, "container_rebajado": true, "container_shipment_unchanged": true, "customer_became_3": true, "departure_unchanged": true, "internal_became_0": true, "line_qty_3": true, "line_rebajado": true, "lot_identity": true, "lot_volume_preserved": true, "no_cost_fin_sv": true, "no_extra_containers": true, "no_extra_lots": true, "no_extra_shipments": true, "picking_dest_customers": true, "picking_done": true, "picking_not_backdated": true, "picking_origin_internal": true, "picking_out": true, "rebaja_audit_1": true, "reg_hash_ok": true, "regularization_audit_1": true, "ship_in_transit": true, "state_before_sealed": true}
+UAT| R1_CHATTER_SHIP 1
+UAT| R1_CHATTER_CONT 1
+UAT| S04_DONE_OK

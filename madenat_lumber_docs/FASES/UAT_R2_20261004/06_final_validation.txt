@@ -1,0 +1,45 @@
+========================================================================
+MADENAT — UAT R2 (Retorno Físico Total) — VALIDACIÓN FINAL
+Fecha: 2026-10-04
+========================================================================
+ESTADO: UAT NO EJECUTADA (bloqueada en precheck por usuario).
+No se creó ningún registro UAT. No hubo escrituras ORM/SQL.
+
+== CONTEOS ANTES == DESPUÉS (idénticos) ==
+stock_move ................ 143  == 143
+stock_move_line ........... 210  == 210
+stock_picking .............  28  ==  28
+stock_quant ............... 171  == 171
+stock_lot ................. 127  == 127
+stock_lot_cost_line ........ 53  ==  53
+lumber_shipment_cost_line ..  0  ==   0
+lumber_export_shipment ..... 15  ==  15
+lumber_container ........... 16  ==  16
+lumber_shipment_line ........  6  ==   6
+shipping_vessel .............  7  ==   7
+shipping_voyage .............  1  ==   1
+madenat_audit_log .......... 270  == 270
+madenat_sv_operation ........  1  ==   1
+madenat_sv_imputation .......  1  ==   1
+lumber_billing_consolidation 0   ==  0
+account_move ................  1  ==   1
+account_payment .............  0  ==   0
+
+== DATOS UAT CREADOS ==
+contenedores con prefijo 'UAT-R2-20261004-' : 0  (ninguno)
+
+== AUDITORÍAS R2 PERSISTIDAS ==
+rebaja_return_total : 0
+rebaja_reverse ..... : 0
+
+== GIT ==
+rama            : feat/guia-correccion-documental-preservada-20261002
+HEAD            : 34c81272bb07d48db98d73a7734c81a2a8e384fa
+working tree    : 33 = 24 M + 9 ??
+git diff --check: CLEAN
+
+== PROTEGIDOS ==
+Todos intactos (histórica, UAT Rolleo, Borrador, B-01, R1). Sin cambios.
+
+> Delta total = 0. No se alteró inventario, finanzas, SV, B-01 ni UAT.
+========================================================================

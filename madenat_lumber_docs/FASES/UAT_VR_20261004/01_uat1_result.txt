@@ -1,0 +1,113 @@
+ACTOR 8 cristhian.elguetag@gmail.com Cristhian Elgueta su= False
+=== UAT1_JSON_START ===
+{
+  "ids": {
+    "orig_vessel": 619,
+    "dest_vessel": 620,
+    "ship1": 1644,
+    "cont1": 1629
+  },
+  "before": {
+    "shipment": {
+      "vessel_id": 619,
+      "voyage_id": false,
+      "state": "draft",
+      "booking": "UAT-VR-20261004-BOOK-01"
+    },
+    "container": {
+      "shipment_id": 1644,
+      "state": "loaded",
+      "vessel_id": 619
+    },
+    "lots": [],
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 256
+    },
+    "audit_vr": 0
+  },
+  "open_action": {
+    "res_model": "lumber.vessel.rollover.wizard",
+    "context": {
+      "default_origin_vessel_id": 619
+    }
+  },
+  "preview": {
+    "shipment_ids": [
+      1644
+    ],
+    "blocked_shipment_ids": [],
+    "container_ids": [
+      1629
+    ],
+    "blocked_container_ids": [],
+    "block_summary": ""
+  },
+  "after": {
+    "shipment": {
+      "vessel_id": 620,
+      "voyage_id": false,
+      "state": "draft",
+      "booking": "UAT-VR-20261004-BOOK-01"
+    },
+    "container": {
+      "shipment_id": 1644,
+      "state": "loaded",
+      "vessel_id": 620
+    },
+    "counts": {
+      "stock_move": 142,
+      "stock_move_line": 209,
+      "stock_picking": 27,
+      "stock_quant": 169,
+      "stock_lot": 126,
+      "account_move": 1,
+      "account_payment": 0,
+      "sv_operation": 1,
+      "sv_imputation": 1,
+      "audit_log": 259
+    },
+    "result_type": "ir.actions.client"
+  },
+  "audits": [
+    {
+      "id": 19699,
+      "action_type": "vessel_rollover",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "desc": "Rolleo Motonave UAT-VR-20261004-ORIG-VESSEL \u2192 UAT-VR-20261004-DEST-VESSEL",
+      "hash": "d6d6121f0d0d8dac0871f3db03c71ecf220446b91a53741a36cc06dd1e3c8c6b",
+      "hash_ok": true
+    },
+    {
+      "id": 19700,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "desc": "Rolleo \u00b7 Embarque UAT-VR-20261004-SHIP-NOVOY reasignado a UAT-VR-20261004-DEST-VESSEL",
+      "hash": "4eef3dcdfab093aab486822ad7a27455209c67041a45775d8a8f02ade60cf09d",
+      "hash_ok": true
+    },
+    {
+      "id": 19701,
+      "action_type": "vessel_rollover_item",
+      "batch_id": "VESSEL-ROLLOVER-20261004035203000000",
+      "desc": "Rolleo \u00b7 Contenedor UAT-VR-20261004-CONT-NOVOY (Embarque UAT-VR-20261004-SHIP-NOVOY) reasignado a UAT-VR-20261004-DEST-VESSEL",
+      "hash": "738366d3c20532a65f9f94295f832e264c8f93e7ac7bacd6b31f07dac4a6a1c6",
+      "hash_ok": true
+    }
+  ],
+  "chatter": {
+    "origin": 2,
+    "dest": 2,
+    "shipment": 3,
+    "container": 3
+  }
+}
+=== UAT1_JSON_END ===
