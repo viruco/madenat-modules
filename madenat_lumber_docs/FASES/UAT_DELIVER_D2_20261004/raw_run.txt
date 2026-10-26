@@ -1,0 +1,1909 @@
+2026-10-04 22:36:55,692 3789 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-04 22:36:55,692 3789 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-04 22:36:55,692 3789 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-04 22:36:55,692 3789 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 22:36:55,880 3789 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-04 22:36:55,890 3789 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-04 22:36:56,087 3789 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-04 22:36:56,087 3789 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-04 22:36:56,135 3789 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-04 22:36:56,142 3789 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-04 22:36:56,189 3789 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-04 22:36:57,419 3789 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-04 22:36:57,421 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-04 22:36:57,538 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-04 22:36:57,539 3789 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-04 22:36:57,780 3789 INFO madenat_test odoo.modules.loading: 88 modules loaded in 1.59s, 0 queries (+0 extra) 
+2026-10-04 22:36:58,032 3789 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-04 22:36:58,040 3789 INFO madenat_test odoo.modules.registry: Registry loaded in 1.952s 
+2026-10-04 22:36:58,347 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_volume_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,348 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_packages should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,348 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_lots should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,349 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.total_amount should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,349 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.currency_id should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,350 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.review_guide_document should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,350 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.review_excel_document should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,351 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.vol_comercial_pdf should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,351 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_volume_declared_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,352 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.sum_vol_documental_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,352 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.diff_pdf_packing_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,353 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.diff_packing_lineas_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,354 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.documental_conciliation_state should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,354 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_pieces_declared should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,355 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.packing_package_count_declared should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,355 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_pdf_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,356 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_stock_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,356 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_diff_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,357 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_suma_detalle should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,357 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volumen_fuente should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,358 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_volume_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,359 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_volume_source should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,359 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.official_vs_detail_diff_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,360 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_documental_name should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,360 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_documental_rut should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,361 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.supplier_resolution_status should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,361 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_excel_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,362 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_detail_m3 should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,362 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.volume_operational_source should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,363 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.conciliation_status should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+2026-10-04 22:36:58,363 3789 WARNING madenat_test py.warnings: /usr/lib/python3/dist-packages/odoo/fields.py:834: UserWarning: Field 'madenat.lumber.intake.console.volume_detail_line_ids' in dependency of madenat.lumber.intake.console.conciliation_summary should be searchable. This is necessary to determine which records to recompute when madenat.lumber.volume.detail.line.volume_m3 is modified. You should either make the field searchable, or simplify the field dependency.
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 135, in <module>
+  File "<decorator-gen-145>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+  File "/usr/lib/python3/dist-packages/odoo/addons/l10n_cl/models/res_partner.py", line 56, in create
+    return super().create(vals_list)
+  File "<decorator-gen-97>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base_vat/models/res_partner.py", line 953, in create
+    res = super().create(vals_list)
+  File "<decorator-gen-99>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/partner.py", line 836, in create
+    return super().create(vals_list)
+  File "<decorator-gen-23>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/res_partner.py", line 812, in create
+    partners = super().create(vals_list)
+  File "<decorator-gen-51>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5039, in create
+    records = self._create(data_list)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5276, in _create
+    records.modified(self._fields, create=True)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7211, in modified
+    todo = [self._modified([self._fields[fname] for fname in fnames], create)]
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7262, in _modified
+    tree = self.pool.get_trigger_tree(fields, select=select)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 416, in get_trigger_tree
+    if field in self._field_triggers
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 42, in __get__
+    value = self.fget(obj)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 510, in _field_triggers
+    dependencies = list(field.resolve_depends(self))
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 834, in resolve_depends
+    warnings.warn(
+ 
+UAT| RUN_TS 2026-10-04T22:36:58.064660Z
+UAT| DB madenat_test
+UAT| EXEC_UID2 2 mauricio.seo@gmail.com su= False SYS= True JEF= True GER= True
+UAT| JEF_UID8 8 cristhian.elguetag@gmail.com su= False JEF= True OPE= True GER= False
+UAT| PLAIN_UID6 6 leonardo@pinelli.com.mx su= False JEF= False OPE= False
+UAT| 
+UAT| ================ BASELINE_ANTES ================
+UAT| BASE0 {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 17, "lumber.export.shipment": 16, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 7, "madenat.audit.log": 273, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 8, "shipping.voyage": 2, "stock.lot": 128, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 173}
+UAT| PROT_BEFORE {"cont_1500": ["UAT-SV-20261003-CONT", "rebajado"], "cont_1509": ["UAT-LOG-20261003-CONT-01", "shipped"], "cont_1629": ["UAT-VR-20261004-CONT-NOVOY", "loaded"], "cont_1630": ["UAT-VR-20261004-CONT-VOY", "loaded"], "cont_1631": ["UAT-VR-20261004-CONT-BLOCK", "loaded"], "cont_1678": ["UAT-DRAFT-20261004-CONT-OK", "loading"], "cont_1679": ["UAT-DRAFT-20261004-CONT-PHYS-BLOCK", "rebajado"], "cont_1680": ["UAT-DRAFT-20261004-CONT-TERM-BLOCK", "loading"], "ship_1528": ["UAT-SV-20261003-SHIP", "draft"], "ship_1537": ["UAT-LOG-20261003-EMB-01", "in_transit"], "ship_1644": ["UAT-VR-20261004-SHIP-NOVOY", "draft"], "ship_1645": ["UAT-VR-20261004-SHIP-VOY", "draft"], "ship_1646": ["UAT-VR-20261004-SHIP-BLOCK", "in_transit"], "ship_1704": ["UAT-DRAFT-20261004-OK", "draft"], "ship_1705": ["UAT-DRAFT-20261004-PHYS-BLOCK", "confirmed"], "ship_1706": ["UAT-DRAFT-20261004-PERM-BLOCK", "confirmed"], "ship_1707": ["UAT-DRAFT-20261004-TERM-BLOCK", "in_transit"], "ship_1867": ["UAT-B01-20261004-NORMAL", "in_transit"], "ship_1868": ["UAT-B01-20261004-EXCEPTION", "in_transit"], "ship_1885": ["UAT-R1-20261004-SHIP", "in_transit"], "ship_2128": ["UAT-R2-20261004-SHIP", "draft"], "vessel_619": "UAT-VR-20261004-ORIG-VESSEL", "vessel_620": "UAT-VR-20261004-DEST-VESSEL"}
+UAT| DELIVERED_BEFORE 0
+UAT| AUDIT_DELIVERY_BEFORE 0
+UAT| AUDIT_WAIVER_BEFORE 0
+UAT| 
+UAT| ================ FIXTURE_CREATE ================
+UAT| FIXTURE_IDS {"c_b01p": 2182, "c_b01r": 2181, "c_clean": 2179, "c_docs": 2180, "c_write": 2183, "partner": 14224, "product": 5336, "s_b01": 2191, "s_clean": 2189, "s_docs": 2190, "s_write": 2192, "vessel": 926}
+UAT| 
+UAT| ================ FIXTURE_STATE ================
+UAT| FIX 2189 UAT-DLV-D2-20261004-CLEAN in_transit b01= none waiver= none cont= [(2179, 'UAT-DLV-D2-20261004-CONT-CLEAN', 'shipped', 'active')]
+UAT| FIX_DOC 2189 {"approved_ids": [12874, 12875, 12876, 12877, 12879], "configured": true, "missing_ids": [], "pending_ids": [], "status": "approved", "total_required": 5}
+UAT| FIX 2190 UAT-DLV-D2-20261004-DOCS in_transit b01= none waiver= none cont= [(2180, 'UAT-DLV-D2-20261004-CONT-DOCS', 'shipped', 'active')]
+UAT| FIX_DOC 2190 {"approved_ids": [], "configured": true, "missing_ids": [12880, 12881, 12882, 12883, 12885], "pending_ids": [], "status": "missing", "total_required": 5}
+UAT| FIX 2191 UAT-DLV-D2-20261004-B01 in_transit b01= open waiver= none cont= [(2182, 'UAT-DLV-D2-20261004-CONT-B01-PEND', 'loaded', 'none'), (2181, 'UAT-DLV-D2-20261004-CONT-B01-REB', 'shipped', 'active')]
+UAT| FIX_DOC 2191 {"approved_ids": [], "configured": true, "missing_ids": [12886, 12887, 12888, 12889, 12891], "pending_ids": [], "status": "missing", "total_required": 5}
+UAT| FIX 2192 UAT-DLV-D2-20261004-WRITE in_transit b01= none waiver= none cont= [(2183, 'UAT-DLV-D2-20261004-CONT-WRITE', 'shipped', 'active')]
+UAT| FIX_DOC 2192 {"approved_ids": [], "configured": true, "missing_ids": [12892, 12893, 12894, 12895, 12897], "pending_ids": [], "status": "missing", "total_required": 5}
+UAT| 
+UAT| ================ UAT-DLV-1_CLEAN_DELIVER ================
+UAT| D1_DOC {"approved_ids": [12874, 12875, 12876, 12877, 12879], "configured": true, "missing_ids": [], "pending_ids": [], "status": "approved", "total_required": 5}
+UAT| D1_ACTION NO_ERROR reload
+UAT| D1_AFTER {"container": "shipped", "state": "delivered"}
+UAT| D1_AUDITS 1
+UAT| D1_AUDIT 20344 shipment_delivery actor= 8 hash_len= 64 hash_ok= True
+UAT| D1_SNAPSHOT {"containers": [{"classification": "active", "id": 2179, "name": "UAT-DLV-D2-20261004-CONT-CLEAN", "pending": false, "state": "shipped"}], "financial_status": {"consolidations": 0, "cost_distribution_state": "pending", "cost_lines": 0, "invoices": 0, "payments": 0}, "operation": {"action_type": "shipment_delivery", "actor": 8, "timestamp": "2026-10-04T22:36:59"}, "physical_checks": {"no_b01_open": true, "no_inconsistency": true, "no_pending": true, "return_chain_consistent": true}, "shipment": {"b01_exception_state": "none", "document_status": "approved", "id": 2189, "name": "UAT-DLV-D2-202610
+UAT| D1_CHATTER 1
+UAT| D1_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 1, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| D1_CHECK {"audit_delta_1": true, "chatter_eq_1": true, "container_kept_shipped": true, "no_physical": true, "one_delivery_audit": true, "state_delivered": true}
+UAT| 
+UAT| ================ UAT-DLV-2_B01_OPEN_BLOCK ================
+UAT| D2_BEFORE {"b01": "open", "state": "in_transit"}
+UAT| D2_ACTION UserError No se puede entregar el Embarque UAT-DLV-D2-20261004-B01: tiene una excepción B-01 abierta. Regularice y cierre la excepción antes de la Entrega/Cierre.
+UAT| D2_CLASSIFY {"pendientes": ["UAT-DLV-D2-20261004-CONT-B01-PEND"], "rebajados": ["UAT-DLV-D2-20261004-CONT-B01-REB"]}
+UAT| D2_AFTER {"b01": "open", "state": "in_transit"}
+UAT| D2_CHECK {"b01_still_open": true, "has_pending": true, "no_delivery_chatter": true, "no_new_delivery_audit": true, "no_physical": true, "still_in_transit": true}
+UAT| 
+UAT| ================ UAT-DLV-3_DOCS_MISSING_BLOCK ================
+UAT| D3_DOC {"approved_ids": [], "configured": true, "missing_ids": [12880, 12881, 12882, 12883, 12885], "pending_ids": [], "status": "missing", "total_required": 5}
+UAT| D3_ACTION UserError No se puede entregar el Embarque UAT-DLV-D2-20261004-DOCS: la documentación requerida no está aprobada (estado: missing; faltan 5). Anexe y verifique los documentos o solicite un waiver de Gerencia.
+UAT| D3_AFTER {"state": "in_transit", "waiver": "none"}
+UAT| D3_CHECK {"no_delivery_chatter": true, "no_new_delivery_audit": true, "no_physical": true, "still_in_transit": true}
+UAT| 
+UAT| ================ UAT-DLV-6_PERMISSIONS ================
+UAT| P6_U6_DELIVER AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P6_U8_APPROVE_WAIVER AccessError Sólo Gerencia puede aprobar el waiver de Entrega del Embarque UAT-DLV-D2-20261004-DOCS.
+UAT| P6_AFTER {"state": "in_transit", "waiver": "none"}
+UAT| P6_CHECK {"no_waiver_audit": true, "state_unchanged": true, "waiver_unchanged": true}
+UAT| 
+UAT| ================ UAT-DLV-5_WAIVER_ALLOWS_DELIVERY ================
+UAT| D5_WAIVER NO_ERROR reload
+UAT| D5_FIELDS {"approved_by": 2, "audit_id": 20345, "reason_exact": true, "state": "in_transit", "waiver_state": "approved"}
+UAT| D5_AUDIT 20345 delivery_waiver actor= 2 hash_ok= True
+UAT| D5_CHATTER 1
+UAT| D5_DELIVER NO_ERROR reload
+UAT| D5_AFTER {"state": "delivered", "waiver": "approved"}
+UAT| D5_CHECK {"no_physical": true, "one_delivery_audit": true, "one_waiver_audit": true, "state_delivered": true, "waiver_approved": true}
+UAT| 
+UAT| ================ UAT-DLV-7_DIRECT_WRITE_BLOCK ================
+UAT| D7_BEFORE {"state": "in_transit", "waiver": "none"}
+UAT| D7_WRITE_DELIVERED UserError La Entrega del Embarque UAT-DLV-D2-20261004-WRITE sólo puede ejecutarse mediante la acción autorizada «Entregar».
+UAT| D7_WRITE_DELIVERED_CTX UserError La Entrega del Embarque UAT-DLV-D2-20261004-WRITE sólo puede ejecutarse mediante la acción autorizada «Entregar».
+UAT| D7_WRITE_CONFIRMED UserError No se puede confirmar el Embarque UAT-DLV-D2-20261004-WRITE por esta vía. Use la acción autorizada «Confirmar».
+UAT| D7_WRITE_WAIVER UserError Los campos del waiver de Entrega del Embarque UAT-DLV-D2-20261004-WRITE sólo pueden escribirse mediante la acción autorizada «Aprobar Waiver de Entrega».
+UAT| D7_AFTER {"state": "in_transit", "waiver": "none"}
+UAT| D7_CHECK {"no_new_audit": true, "no_physical": true, "state_in_transit": true, "waiver_none": true}
+UAT| 
+UAT| ================ UAT-DLV-8_CREATE_LATERAL_BLOCK ================
+UAT| D8_('state', 'confirmed') UserError No se puede crear un Embarque directamente en estado confirmed. Cree el Embarque en borrador y utilice el flujo operativo autorizado para confirmar, zarpar o entregar.
+UAT| D8_('state', 'in_transit') UserError No se puede crear un Embarque directamente en estado in_transit. Cree el Embarque en borrador y utilice el flujo operativo autorizado para confirmar, zarpar o entregar.
+UAT| D8_('state', 'delivered') UserError No se puede crear un Embarque directamente en estado delivered. Cree el Embarque en borrador y utilice el flujo operativo autorizado para confirmar, zarpar o entregar.
+UAT| D8_('state', 'cancelled') UserError No se puede crear un Embarque directamente en estado cancelled. Cree el Embarque en borrador y utilice el flujo operativo autorizado para confirmar, zarpar o entregar.
+UAT| D8_('delivery_waiver_state', 'approved') UserError Los campos de excepción/waiver sólo pueden ser establecidos por la acción operativa autorizada y auditada.
+UAT| D8_('b01_exception_state', 'open') UserError Los campos de excepción/waiver sólo pueden ser establecidos por la acción operativa autorizada y auditada.
+UAT| D8_CTX_FAKE UserError No se puede crear un Embarque directamente en estado delivered. Cree el Embarque en borrador y utilice el flujo operativo autorizado para confirmar, zarpar o entregar.
+UAT| D8_CREATE_OK 2193 UAT-DLV-D2-20261004-CREATE-OK draft
+UAT| D8_CHECK {"allowed_state_draft": true, "no_new_audit": true, "no_new_except_allowed_draft": true}
+UAT| 
+UAT| ================ UAT-DLV-9_RETRY_BLOCK ================
+UAT| D9_BEFORE {"audits": 1, "chatter": 1, "state": "delivered"}
+UAT| D9_RETRY UserError Sólo se puede entregar un Embarque Embarcado (in_transit). Estado actual: Entregado.
+UAT| D9_CHECK {"no_new_audit": true, "no_new_chatter": true, "still_delivered": true}
+UAT| 
+UAT| ================ FINAL ================
+UAT| FINAL_COUNTS {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.export.shipment": 21, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 11, "madenat.audit.log": 278, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 132, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 173}
+UAT| GLOBAL_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 5, "lumber.export.shipment": 5, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 4, "madenat.audit.log": 5, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 1, "shipping.voyage": 0, "stock.lot": 4, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| DELIVERED_AFTER 2
+UAT| 
+UAT| ================ PROTEGIDOS_DESPUES ================
+UAT| PROT_UNCHANGED {"cont_1500": true, "cont_1509": true, "cont_1629": true, "cont_1630": true, "cont_1631": true, "cont_1678": true, "cont_1679": true, "cont_1680": true, "ship_1528": true, "ship_1537": true, "ship_1644": true, "ship_1645": true, "ship_1646": true, "ship_1704": true, "ship_1705": true, "ship_1706": true, "ship_1707": true, "ship_1867": true, "ship_1868": true, "ship_1885": true, "ship_2128": true, "vessel_619": true, "vessel_620": true}
+UAT| UAT_SHIP 2191 UAT-DLV-D2-20261004-B01 in_transit b01= open waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| UAT_SHIP 2189 UAT-DLV-D2-20261004-CLEAN delivered b01= none waiver= none delivery_audits= 1 waiver_audits= 0
+UAT| UAT_SHIP 2193 UAT-DLV-D2-20261004-CREATE-OK draft b01= none waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| UAT_SHIP 2190 UAT-DLV-D2-20261004-DOCS delivered b01= none waiver= approved delivery_audits= 1 waiver_audits= 1
+UAT| UAT_SHIP 2192 UAT-DLV-D2-20261004-WRITE in_transit b01= none waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| HASH_RECHECK 20344 shipment_delivery batch= 2189 actor= 8 hash_ok= True
+UAT| HASH_RECHECK 20345 delivery_waiver batch= 2190 actor= 2 hash_ok= True
+UAT| HASH_RECHECK 20346 shipment_delivery batch= 2190 actor= 8 hash_ok= True
+UAT| COMMIT_FINAL ok
+UAT| 
+UAT| ================ DONE ================
+UAT| DONE_OK

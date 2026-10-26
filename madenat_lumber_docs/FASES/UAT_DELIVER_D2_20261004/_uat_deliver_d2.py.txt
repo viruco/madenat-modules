@@ -1,0 +1,422 @@
+# -*- coding: utf-8 -*-
+# UAT ENTREGA SEGURA D2 (Sub-bloque 5) - runner para `odoo shell -d madenat_test --no-http`.
+# Ejecutores: uid 2 (Administrator, Jefatura+Gerencia; su=False, NO uid 1),
+#             uid 8 (Cristhian, Jefatura+Operaciones, no admin) como entregador Jefatura,
+#             uid 6 (Leonardo, sin roles MADENAT) como actor no autorizado.
+# SIN sudo(), SIN SQL de escritura, SIN update/install, SIN edicion de codigo/ACL/docs.
+import base64
+import hashlib
+import json
+import datetime
+
+
+def P(*a):
+    print('UAT|', *a)
+
+
+def sect(t):
+    P('')
+    P('================ ' + t + ' ================')
+
+
+PREF = 'UAT-DLV-D2-20261004-'
+E = env(user=2)
+JEF = env(user=8)
+U6 = env(user=6)
+P('RUN_TS', datetime.datetime.utcnow().isoformat() + 'Z')
+P('DB', env.cr.dbname)
+P('EXEC_UID2', E.uid, E.user.login, 'su=', E.su,
+  'SYS=', E.user.has_group('base.group_system'),
+  'JEF=', E.user.has_group('madenat_lumber_core.group_madenat_jefatura_operaciones'),
+  'GER=', E.user.has_group('madenat_lumber_core.group_madenat_gerencia'))
+P('JEF_UID8', JEF.uid, JEF.user.login, 'su=', JEF.su,
+  'JEF=', JEF.user.has_group('madenat_lumber_core.group_madenat_jefatura_operaciones'),
+  'OPE=', JEF.user.has_group('madenat_lumber_core.group_madenat_operaciones'),
+  'GER=', JEF.user.has_group('madenat_lumber_core.group_madenat_gerencia'))
+P('PLAIN_UID6', U6.uid, U6.user.login, 'su=', U6.su,
+  'JEF=', U6.user.has_group('madenat_lumber_core.group_madenat_jefatura_operaciones'),
+  'OPE=', U6.user.has_group('madenat_lumber_core.group_madenat_operaciones'))
+
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.export.shipment', 'lumber.container', 'lumber.shipment.line',
+          'shipping.vessel', 'shipping.voyage', 'madenat.audit.log',
+          'madenat.sv.operation', 'madenat.sv.imputation',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+NOPHYS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'account.move', 'account.payment', 'lumber.billing.consolidation',
+          'madenat.sv.operation', 'madenat.sv.imputation']
+
+
+def counts():
+    d = {}
+    for m in MODELS:
+        try:
+            d[m] = E[m].search_count([])
+        except Exception as e:  # noqa: BLE001
+            d[m] = 'ERR:%s' % e
+    return d
+
+
+def delta(a, b):
+    return {k: (a[k] - b[k])
+            if isinstance(a.get(k), int) and isinstance(b.get(k), int)
+            else '?' for k in MODELS}
+
+
+def nophys(d):
+    return all(d.get(m, 1) == 0 for m in NOPHYS)
+
+
+A = E['madenat.audit.log']
+
+
+def audits(sid, atype):
+    return A.search([('action_type', '=', atype), ('batch_id', '=', str(sid))])
+
+
+M = E['mail.message']
+
+
+def chatter(sid, needle):
+    return M.search([('model', '=', 'lumber.export.shipment'),
+                     ('res_id', '=', sid), ('body', 'like', needle)])
+
+
+def attempt(label, fn):
+    try:
+        r = fn()
+        tag = r.get('tag') if isinstance(r, dict) else ''
+        P(label, 'NO_ERROR', tag)
+        return r
+    except Exception as e:  # noqa: BLE001
+        P(label, type(e).__name__, str(e).replace('\n', ' | ')[:200])
+        return None
+
+
+def hash_ok(a):
+    return hashlib.sha256((a.audit_snapshot or '').encode('utf-8')).hexdigest() == a.audit_hash
+
+
+def protected():
+    def nm(model, rid):
+        r = E[model].browse(rid)
+        return r.name if r.exists() else 'MISSING'
+
+    def st(model, rid):
+        r = E[model].browse(rid)
+        if not r.exists():
+            return 'MISSING'
+        return getattr(r, 'state', nm(model, rid))
+
+    pr = {}
+    for i in (1537, 1528, 1885, 2128, 1867, 1868, 1644, 1645, 1646, 1704, 1705, 1706, 1707):
+        pr['ship_%d' % i] = (nm('lumber.export.shipment', i), st('lumber.export.shipment', i))
+    for i in (1509, 1500, 1629, 1630, 1631, 1678, 1679, 1680):
+        pr['cont_%d' % i] = (nm('lumber.container', i), st('lumber.container', i))
+    for i in (619, 620):
+        pr['vessel_%d' % i] = nm('shipping.vessel', i)
+    return pr
+
+
+sect('BASELINE_ANTES')
+base0 = counts()
+P('BASE0', json.dumps(base0, sort_keys=True))
+prot_before = protected()
+P('PROT_BEFORE', json.dumps(prot_before, sort_keys=True, default=str))
+P('DELIVERED_BEFORE', E['lumber.export.shipment'].search_count([('state', '=', 'delivered')]))
+P('AUDIT_DELIVERY_BEFORE', A.search_count([('action_type', '=', 'shipment_delivery')]))
+P('AUDIT_WAIVER_BEFORE', A.search_count([('action_type', '=', 'delivery_waiver')]))
+
+
+# ── Fixtures (aisladas; sin mover stock) ──────────────────────────────────
+sect('FIXTURE_CREATE')
+partner = E['res.partner'].create({'name': PREF + 'CUSTOMER', 'is_company': True})
+vessel = E['shipping.vessel'].create({'name': PREF + 'VESSEL'})
+PROD = E['product.product'].create(
+    {'name': PREF + 'LUMBER', 'is_storable': True, 'tracking': 'lot'})
+
+
+def approve_docs(ship):
+    for d in ship.document_ids:
+        d.file_data = base64.b64encode(('uat-%s' % d.id).encode('utf-8')).decode('utf-8')
+    ship.invalidate_recordset()
+
+
+def mk_container(name, ship, state, line_state=None):
+    c = E['lumber.container'].create({
+        'name': name, 'container_type': '40HC', 'shipment_id': ship.id, 'state': state})
+    if line_state:
+        lot = E['stock.lot'].create({'name': 'UATDLVLOT-%s' % name,
+                                     'product_id': PROD.id, 'company_id': env.company.id})
+        E['lumber.shipment.line'].create({
+            'container_id': c.id, 'shipment_id': ship.id,
+            'lot_id': lot.id, 'rebaja_state': line_state})
+    c.invalidate_recordset()
+    return c
+
+
+def mk_ship(name):
+    return E['lumber.export.shipment'].create({
+        'name': PREF + name, 'customer_id': partner.id,
+        'booking_reference': PREF + 'B-' + name, 'vessel_id': vessel.id})
+
+
+# s_clean: in_transit, docs aprobados, rebaja fisica activa.
+s_clean = mk_ship('CLEAN')
+approve_docs(s_clean)
+c_clean = mk_container(PREF + 'CONT-CLEAN', s_clean, 'rebajado', 'rebajado')
+s_clean.action_confirm()
+s_clean.action_set_in_transit()
+s_clean.invalidate_recordset()
+
+# s_docs: in_transit, SIN documentos aprobados, rebaja fisica activa.
+s_docs = mk_ship('DOCS')
+c_docs = mk_container(PREF + 'CONT-DOCS', s_docs, 'rebajado', 'rebajado')
+s_docs.action_confirm()
+s_docs.action_set_in_transit()
+s_docs.invalidate_recordset()
+
+# s_b01: in_transit con B-01 open (1 rebajado + 1 pendiente).
+B01_REASON = 'UAT-DLV-D2: contenedor pendiente de rebaja fisica por contingencia documental.'
+s_b01 = mk_ship('B01')
+c_b01r = mk_container(PREF + 'CONT-B01-REB', s_b01, 'rebajado', 'rebajado')
+c_b01p = mk_container(PREF + 'CONT-B01-PEND', s_b01, 'loaded', None)
+s_b01.action_confirm()
+s_b01._set_in_transit(exception_reason=B01_REASON, is_b01=True)
+s_b01.invalidate_recordset()
+
+# s_write: in_transit limpio para escenarios de write directo.
+s_write = mk_ship('WRITE')
+c_write = mk_container(PREF + 'CONT-WRITE', s_write, 'rebajado', 'rebajado')
+s_write.action_confirm()
+s_write.action_set_in_transit()
+s_write.invalidate_recordset()
+
+P('FIXTURE_IDS', json.dumps({
+    'partner': partner.id, 'vessel': vessel.id, 'product': PROD.id,
+    's_clean': s_clean.id, 'c_clean': c_clean.id,
+    's_docs': s_docs.id, 'c_docs': c_docs.id,
+    's_b01': s_b01.id, 'c_b01r': c_b01r.id, 'c_b01p': c_b01p.id,
+    's_write': s_write.id, 'c_write': c_write.id}, sort_keys=True))
+sect('FIXTURE_STATE')
+for s in (s_clean, s_docs, s_b01, s_write):
+    s.invalidate_recordset()
+    P('FIX', s.id, s.name, s.state, 'b01=', s.b01_exception_state,
+      'waiver=', s.delivery_waiver_state,
+      'cont=', [(c.id, c.name, c.state, s._container_rebaja_classification(c))
+                for c in s.container_ids])
+    P('FIX_DOC', s.id, json.dumps(s._delivery_document_status(), sort_keys=True))
+
+
+# ── UAT-DLV-1: in_transit limpio + docs aprobados -> delivered (Jefatura) ──
+sect('UAT-DLV-1_CLEAN_DELIVER')
+s_clean.invalidate_recordset()
+P('D1_DOC', json.dumps(s_clean._delivery_document_status(), sort_keys=True))
+b1 = counts(); aud1b = len(audits(s_clean.id, 'shipment_delivery'))
+ch1b = len(chatter(s_clean.id, 'Embarque entregado'))
+attempt('D1_ACTION', lambda: s_clean.with_user(8).action_deliver())
+s_clean.invalidate_recordset()
+P('D1_AFTER', json.dumps({'state': s_clean.state,
+                          'container': c_clean.state}, sort_keys=True))
+aud1 = audits(s_clean.id, 'shipment_delivery')
+P('D1_AUDITS', len(aud1))
+for a in aud1:
+    P('D1_AUDIT', a.id, a.action_type, 'actor=', a.user_id.id,
+      'hash_len=', len(a.audit_hash or ''), 'hash_ok=', hash_ok(a))
+    P('D1_SNAPSHOT', (a.audit_snapshot or '')[:600])
+P('D1_CHATTER', len(chatter(s_clean.id, 'Embarque entregado')))
+a1 = counts(); d1 = delta(a1, b1)
+P('D1_DELTA', json.dumps(d1, sort_keys=True))
+P('D1_CHECK', json.dumps({
+    'state_delivered': s_clean.state == 'delivered',
+    'one_delivery_audit': len(aud1) == 1,
+    'audit_delta_1': d1['madenat.audit.log'] == 1,
+    'chatter_eq_1': len(chatter(s_clean.id, 'Embarque entregado')) == 1,
+    'no_physical': nophys(d1),
+    'container_kept_shipped': c_clean.state == 'shipped',
+}, sort_keys=True))
+
+
+# ── UAT-DLV-2: B-01 open bloquea la Entrega ────────────────────────────────
+sect('UAT-DLV-2_B01_OPEN_BLOCK')
+s_b01.invalidate_recordset()
+P('D2_BEFORE', json.dumps({'state': s_b01.state,
+                           'b01': s_b01.b01_exception_state}, sort_keys=True))
+b2 = counts(); aud2b = len(audits(s_b01.id, 'shipment_delivery'))
+attempt('D2_ACTION', lambda: s_b01.with_user(8).action_deliver())
+s_b01.invalidate_recordset()
+rb, pd = s_b01._classify_departure_containers()
+P('D2_CLASSIFY', json.dumps({'rebajados': [c.name for c in rb],
+                             'pendientes': [c.name for c in pd]}, sort_keys=True))
+a2 = counts(); d2 = delta(a2, b2)
+P('D2_AFTER', json.dumps({'state': s_b01.state,
+                          'b01': s_b01.b01_exception_state}, sort_keys=True))
+P('D2_CHECK', json.dumps({
+    'still_in_transit': s_b01.state == 'in_transit',
+    'b01_still_open': s_b01.b01_exception_state == 'open',
+    'no_new_delivery_audit': len(audits(s_b01.id, 'shipment_delivery')) == aud2b,
+    'no_delivery_chatter': len(chatter(s_b01.id, 'Embarque entregado')) == 0,
+    'has_pending': bool(pd),
+    'no_physical': nophys(d2),
+}, sort_keys=True))
+
+
+# ── UAT-DLV-3: docs faltantes sin waiver bloquean la Entrega ───────────────
+sect('UAT-DLV-3_DOCS_MISSING_BLOCK')
+s_docs.invalidate_recordset()
+P('D3_DOC', json.dumps(s_docs._delivery_document_status(), sort_keys=True))
+b3 = counts(); aud3b = len(audits(s_docs.id, 'shipment_delivery'))
+attempt('D3_ACTION', lambda: s_docs.with_user(8).action_deliver())
+s_docs.invalidate_recordset()
+a3 = counts(); d3 = delta(a3, b3)
+P('D3_AFTER', json.dumps({'state': s_docs.state,
+                          'waiver': s_docs.delivery_waiver_state}, sort_keys=True))
+P('D3_CHECK', json.dumps({
+    'still_in_transit': s_docs.state == 'in_transit',
+    'no_new_delivery_audit': len(audits(s_docs.id, 'shipment_delivery')) == aud3b,
+    'no_delivery_chatter': len(chatter(s_docs.id, 'Embarque entregado')) == 0,
+    'no_physical': nophys(d3),
+}, sort_keys=True))
+
+
+# ── UAT-DLV-6: permisos (no autorizado / no Gerencia) ──────────────────────
+sect('UAT-DLV-6_PERMISSIONS')
+s_docs.invalidate_recordset()
+WREASON = 'UAT DLV-D2: documentacion en transito, autorizado por Gerencia.'
+attempt('P6_U6_DELIVER', lambda: s_docs.with_user(6).action_deliver())
+attempt('P6_U8_APPROVE_WAIVER', lambda: s_docs.with_user(8).action_approve_delivery_waiver(WREASON))
+s_docs.invalidate_recordset()
+P('P6_AFTER', json.dumps({'state': s_docs.state,
+                          'waiver': s_docs.delivery_waiver_state}, sort_keys=True))
+P('P6_CHECK', json.dumps({
+    'state_unchanged': s_docs.state == 'in_transit',
+    'waiver_unchanged': s_docs.delivery_waiver_state == 'none',
+    'no_waiver_audit': len(audits(s_docs.id, 'delivery_waiver')) == 0,
+}, sort_keys=True))
+
+
+# ── UAT-DLV-5: waiver de Gerencia habilita la Entrega ──────────────────────
+sect('UAT-DLV-5_WAIVER_ALLOWS_DELIVERY')
+s_docs.invalidate_recordset()
+b5 = counts(); aud5b = len(audits(s_docs.id, 'delivery_waiver'))
+ch5b = len(chatter(s_docs.id, 'Waiver de Entrega aprobado'))
+attempt('D5_WAIVER', lambda: s_docs.with_user(2).action_approve_delivery_waiver(WREASON))
+s_docs.invalidate_recordset()
+w5 = audits(s_docs.id, 'delivery_waiver')
+P('D5_FIELDS', json.dumps({
+    'waiver_state': s_docs.delivery_waiver_state,
+    'reason_exact': s_docs.delivery_waiver_reason == WREASON,
+    'approved_by': s_docs.delivery_waiver_approved_by_id.id,
+    'audit_id': s_docs.delivery_waiver_audit_id.id,
+    'state': s_docs.state}, sort_keys=True))
+for w in w5:
+    P('D5_AUDIT', w.id, w.action_type, 'actor=', w.user_id.id, 'hash_ok=', hash_ok(w))
+P('D5_CHATTER', len(chatter(s_docs.id, 'Waiver de Entrega aprobado')))
+attempt('D5_DELIVER', lambda: s_docs.with_user(8).action_deliver())
+s_docs.invalidate_recordset()
+a5 = counts(); d5 = delta(a5, b5)
+P('D5_AFTER', json.dumps({'state': s_docs.state,
+                          'waiver': s_docs.delivery_waiver_state}, sort_keys=True))
+P('D5_CHECK', json.dumps({
+    'waiver_approved': s_docs.delivery_waiver_state == 'approved',
+    'state_delivered': s_docs.state == 'delivered',
+    'one_waiver_audit': len(w5) == 1,
+    'one_delivery_audit': len(audits(s_docs.id, 'shipment_delivery')) == 1,
+    'no_physical': nophys(d5),
+}, sort_keys=True))
+
+
+# ── UAT-DLV-4/7: write directo a delivered/confirmed/waiver (token) ────────
+sect('UAT-DLV-7_DIRECT_WRITE_BLOCK')
+s_write.invalidate_recordset()
+P('D7_BEFORE', json.dumps({'state': s_write.state,
+                           'waiver': s_write.delivery_waiver_state}, sort_keys=True))
+b7 = counts(); aud7b = A.search_count([])
+attempt('D7_WRITE_DELIVERED', lambda: s_write.with_user(8).write({'state': 'delivered'}))
+attempt('D7_WRITE_DELIVERED_CTX', lambda: s_write.with_user(8).with_context(
+    allow_delivery=True, allow_create_terminal=True).write({'state': 'delivered'}))
+attempt('D7_WRITE_CONFIRMED', lambda: s_write.with_user(8).write({'state': 'confirmed'}))
+attempt('D7_WRITE_WAIVER', lambda: s_write.with_user(8).with_context(
+    allow_delivery=True).write({'delivery_waiver_state': 'approved',
+                                'delivery_waiver_reason': 'x' * 25}))
+s_write.invalidate_recordset()
+a7 = counts(); d7 = delta(a7, b7)
+P('D7_AFTER', json.dumps({'state': s_write.state,
+                          'waiver': s_write.delivery_waiver_state}, sort_keys=True))
+P('D7_CHECK', json.dumps({
+    'state_in_transit': s_write.state == 'in_transit',
+    'waiver_none': s_write.delivery_waiver_state == 'none',
+    'no_new_audit': (a7['madenat.audit.log'] - b7['madenat.audit.log']) == 0,
+    'no_physical': nophys(d7),
+}, sort_keys=True))
+
+
+# ── UAT-DLV-8: puerta lateral create() cerrada ─────────────────────────────
+sect('UAT-DLV-8_CREATE_LATERAL_BLOCK')
+Ships = E['lumber.export.shipment']
+Ships6 = U6['lumber.export.shipment']
+Ships8 = JEF['lumber.export.shipment']
+ship_before = Ships.search_count([])
+aud_before = A.search_count([])
+vals_base = {'customer_id': partner.id, 'booking_reference': PREF + 'B-NEW',
+             'vessel_id': vessel.id}
+cases = ({'state': 'confirmed'}, {'state': 'in_transit'},
+         {'state': 'delivered'}, {'state': 'cancelled'},
+         {'delivery_waiver_state': 'approved'}, {'b01_exception_state': 'open'})
+for extra in cases:
+    v = dict(vals_base)
+    v.update(extra)
+    attempt('D8_' + str(list(extra.items())[0]), lambda v=v: Ships6.create(v))
+attempt('D8_CTX_FAKE', lambda: Ships6.with_context(
+    allow_create_terminal=True, allow_delivery=True, b01_internal=True).create(
+        dict(vals_base, state='delivered')))
+ok = Ships8.create(dict(vals_base, name=PREF + 'CREATE-OK'))
+P('D8_CREATE_OK', ok.id, ok.name, ok.state)
+after = Ships.search_count([])
+P('D8_CHECK', json.dumps({
+    'no_new_except_allowed_draft': (after - ship_before) == 1,
+    'allowed_state_draft': ok.state == 'draft',
+    'no_new_audit': (A.search_count([]) - aud_before) == 0,
+}, sort_keys=True))
+
+
+# ── UAT-DLV-9: reintento sobre delivered -> bloqueado sin efecto ───────────
+sect('UAT-DLV-9_RETRY_BLOCK')
+s_clean.invalidate_recordset()
+aud9b = len(audits(s_clean.id, 'shipment_delivery'))
+msg9b = len(chatter(s_clean.id, 'Embarque entregado'))
+P('D9_BEFORE', json.dumps({'state': s_clean.state,
+                           'audits': aud9b, 'chatter': msg9b}, sort_keys=True))
+attempt('D9_RETRY', lambda: s_clean.with_user(8).action_deliver())
+s_clean.invalidate_recordset()
+P('D9_CHECK', json.dumps({
+    'still_delivered': s_clean.state == 'delivered',
+    'no_new_audit': len(audits(s_clean.id, 'shipment_delivery')) == aud9b,
+    'no_new_chatter': len(chatter(s_clean.id, 'Embarque entregado')) == msg9b,
+}, sort_keys=True))
+
+
+# ── Validacion final ───────────────────────────────────────────────────────
+sect('FINAL')
+final = counts()
+P('FINAL_COUNTS', json.dumps(final, sort_keys=True))
+P('GLOBAL_DELTA', json.dumps(delta(final, base0), sort_keys=True))
+P('DELIVERED_AFTER', Ships.search_count([('state', '=', 'delivered')]))
+sect('PROTEGIDOS_DESPUES')
+prot_after = protected()
+P('PROT_UNCHANGED', json.dumps(
+    {k: (prot_before[k] == prot_after[k]) for k in prot_before}, sort_keys=True))
+for s in Ships.search([('name', 'like', PREF)], order='name'):
+    P('UAT_SHIP', s.id, s.name, s.state, 'b01=', s.b01_exception_state,
+      'waiver=', s.delivery_waiver_state,
+      'delivery_audits=', len(audits(s.id, 'shipment_delivery')),
+      'waiver_audits=', len(audits(s.id, 'delivery_waiver')))
+for a in A.search([('action_type', 'in', ['shipment_delivery', 'delivery_waiver'])]):
+    P('HASH_RECHECK', a.id, a.action_type, 'batch=', a.batch_id,
+      'actor=', a.user_id.id, 'hash_ok=', hash_ok(a))
+env.cr.commit()
+P('COMMIT_FINAL', 'ok')
+sect('DONE')
+P('DONE_OK')

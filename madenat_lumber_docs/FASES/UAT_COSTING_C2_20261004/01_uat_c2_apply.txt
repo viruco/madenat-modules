@@ -1,0 +1,28 @@
+================================================================================
+MADENAT — UAT COSTEO C2 — ESCENARIO UAT-C2-1 (PREPARAR + APLICAR) — NO EJECUTADO
+================================================================================
+Fecha   : 2026-10-04
+Estado  : NO EJECUTADO — detencion previa por stop-criterion (ver 00_precheck §9).
+Motivo  : No se dispone de un Embarque UAT delivered valido (los unicos son 2189/2190
+          = UAT D2, prohibidos como target) y el rol que APLICA C2 (Contabilidad)
+          solo lo posee la cuenta Administrator (uid 2).
+--------------------------------------------------------------------------------
+RESULTADO POR PASO (esperado segun contrato C2, NO ejecutado)
+--------------------------------------------------------------------------------
+1) Crear datos UAT nuevos (UAT-C2-20261004-*) ......... NO EJECUTADO
+2) Embarque delivered con 2 lotes ..................... NO EJECUTADO
+     - No existe via licita: los delivered actuales estan protegidos (2189/2190);
+       el flujo D2 exige rebaja fisica (movimiento de inventario) no autorizado.
+3) Linea de costo UAT validada ........................ NO EJECUTADO
+     - Flujo estandar EXISTE: lumber.shipment.cost.line.action_validate()
+       (draft -> validated, validated_by_id/validated_date). Pero no hay Embarque target.
+4) Baseline ........................................... NO EJECUTADO (solo lectura, ver 00)
+5) Preparar distribucion C2 ........................... NO EJECUTADO
+     - Rol preparar (Costos|Contabilidad): disponible via uid 8/2.
+6) Aplicar como Contabilidad autorizado ............... NO EJECUTADO / BLOQUEADO
+     - group_madenat_contabilidad = {uid 2 (Administrator)}. Sin usuario no-admin.
+7) Verificaciones (state=applied, version=1, residual, ledger, ...) ... N/A
+
+SIN EFECTOS: no se creo registro UAT, no hay distribucion/ledger/audit de costeo,
+sin cambios de stock/finanzas/SV. Nada que revertir.
+================================================================================

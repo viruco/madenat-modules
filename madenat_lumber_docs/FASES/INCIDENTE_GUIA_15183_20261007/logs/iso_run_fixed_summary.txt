@@ -1,0 +1,1 @@
+2026-10-07 21:09:24,617 1 INFO repro_inc_15183_20261007 odoo.tests.result: 0 failed, 0 error(s) of 52 tests when loading database 'repro_inc_15183_20261007' 

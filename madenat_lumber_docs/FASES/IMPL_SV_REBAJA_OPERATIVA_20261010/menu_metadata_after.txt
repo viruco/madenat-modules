@@ -1,0 +1,6 @@
+ id  |             menu             | active 
+-----+------------------------------+--------
+ 542 | Imputaciones documentales SV | f
+ 545 | Rebaja de etiquetas          | t
+(2 rows)
+

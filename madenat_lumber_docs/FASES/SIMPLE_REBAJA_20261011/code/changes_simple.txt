@@ -1,0 +1,7 @@
+# Simplificación SIMPLE — Sun Oct 11 02:54:14 UTC 2026
+ - wizards/madenat_sv_imputation_wizard_views.xml: header [Guardar][Aplicar][Volver]; grupo Más opciones; alertas save_result/apply_result; readonly tablas
+ - wizards/madenat_sv_imputation_wizard.py: apply_result; action_apply idempotente y permanece; _i2_notify_applied; action_prepare clear apply_result
+ - models/madenat_sv_imputation.py: mensaje por problema real (cantidad vs disponibilidad)
+ - tests/test_sv_rebaja_simple.py (NUEVO; SIMPLE-01..17 + CLIENT)
+ - tests/test_sv_rebaja_ui_limpia.py, test_sv_rebaja_ui_acciones.py, test_processor_return_link.py, test_sv_imputation_i2.py, test_sv_imputation_manual.py, test_sv_rebaja_navigation.py
+ - tests/__init__.py; __manifest__.py 18.0.1.20.0; CHANGELOG.md

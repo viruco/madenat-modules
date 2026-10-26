@@ -1,0 +1,38 @@
+================================================================================
+MADENAT — UAT COSTEO C2 — ESCENARIO UAT-C2-5 (PERMISOS / RPC) — NO EJECUTADO
+================================================================================
+Fecha   : 2026-10-04
+Estado  : NO EJECUTADO — detencion previa por stop-criterion (ver 00_precheck §9).
+          Se documenta el HALLAZGO DE ROLES (read-only) que motiva la detencion.
+--------------------------------------------------------------------------------
+HALLAZGO READ-ONLY DE ROLES (decide la detencion)
+--------------------------------------------------------------------------------
+Rol que PREPARA C2 (C2_COSTING_GROUPS) = Costos | Contabilidad:
+   group_madenat_costos (257) = {uid 8, uid 2}
+   group_madenat_contabilidad (258) = {uid 2}
+Rol que APLICA C2 (C2_APPLY_GROUPS) = Contabilidad:
+   group_madenat_contabilidad (258) = {uid 2}   ==> UNICO usuario = Administrator
+   (uid 2 = "Administrator", con group_system/Settings; NO es un usuario operativo no-admin)
+Auditoria (group_madenat_auditoria 298) = SIN USUARIOS.
+uid 8 "Cristhian" = Operaciones/Jefatura PERO TAMBIEN group_madenat_costos (257):
+   => NO bloqueado en "preparar" (desajuste con la premisa de la UAT-C2-5).
+
+--------------------------------------------------------------------------------
+CASOS Y EXPECTATIVA (contrato, NO ejecutados)
+--------------------------------------------------------------------------------
+1) Cristhian/Operaciones prepara/aplica .... PREPARAR: permitido (tiene Costos) —
+   desajuste; APLICAR: bloqueado (no Contabilidad) via _c2_assert_user -> AccessError.
+2) Usuario interno comun (uid 6/7) ........ AccessError en prepare y apply.
+3) write directo distribution.write({'state':'applied'}):
+   guard por ACL + tokens; esperado UserError/AccessError.
+   shipment.write({'cost_distribution_state':'distributed'}) y contextos falsos:
+   esperado bloqueo (token de proceso). [NO ejecutado: seria escritura real si no falla]
+4) Resultado esperado en todos: AccessError/UserError; sin distribucion/ledger/audit;
+   sin cambios de stock/finanzas.
+
+CONCLUSION DE PERMISOS: NO existe usuario NO-administrador en el rol de APLICAR
+(Contabilidad). Requiere "habilitacion minima separada" (habilitar un usuario
+Contabilidad dedicado sin group_system) ANTES de poder ejecutar la UAT C2 end-to-end.
+
+SIN EFECTOS: no se ejecuto ningun intento de escritura. Sin cambios de datos.
+================================================================================

@@ -1,0 +1,14 @@
+# Cambios SAVE — Sun Oct 11 02:03:45 UTC 2026
+Modelo:
+ - models/madenat_sv_imputation.py: work_sv_lot_id; action_continue_preparation; sv_assignment_work_*; dominio action_open_sv_rebajas
+Wizard:
+ - wizards/madenat_sv_imputation_wizard.py: _i2_build_imputation (cero se omite, negativo se rechaza; fija work_sv_lot_id); _i2_guia_from_context (default_guia_processing_id)
+Vistas:
+ - views/madenat_sv_imputation_views.xml: panel Trabajo en preparacion + boton Continuar; columna Trabajo en prep.; boton Continuar preparacion en el documento
+Pruebas:
+ - tests/test_sv_rebaja_persistencia.py (NUEVO; SAVE-01..14, FLOW-01..03, PHY-01)
+ - tests/test_sv_rebaja_material.py (amt_01)
+ - tests/test_sv_rebaja_navigation.py (nav_04_05)
+ - tests/test_sv_rebaja_seleccion_asignacion.py (asg_03)
+ - tests/__init__.py (registro)
+Metadatos: __manifest__.py 18.0.1.18.0; CHANGELOG.md

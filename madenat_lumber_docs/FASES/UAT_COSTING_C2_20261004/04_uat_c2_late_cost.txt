@@ -1,0 +1,20 @@
+================================================================================
+MADENAT — UAT COSTEO C2 — ESCENARIO UAT-C2-4 (COSTO TARDIO) — NO EJECUTADO
+================================================================================
+Fecha   : 2026-10-04
+Estado  : NO EJECUTADO — detencion previa por stop-criterion (ver 00_precheck §9).
+Motivo  : Requiere una distribucion C2 'applied' previa (inexistente) y crear una
+          segunda cost line sobre el Embarque target (no creado).
+--------------------------------------------------------------------------------
+CONTRATO SEGUN CODIGO (verificado estaticamente, NO ejecutado)
+--------------------------------------------------------------------------------
+- Costo tardio aprobado (validated/paid) NO incluido en la version aplicada:
+    action_prepare_distribution -> UserError "El Embarque %s tiene costos tardios.
+      Se requiere una redistribucion formal (supersede) que no esta disponible
+      en esta entrega."
+    action_apply_distribution  -> UserError (gate idempotency = False).
+- La version 'applied' original y su ledger NO cambian (append-only). Sin nuevo
+  audit de distribucion.
+- Supersede NO implementado/NO ejecutado (fuera de alcance).
+EVIDENCIA RUNTIME: distribucion C2 aplicada = 0. No aplicable.
+================================================================================

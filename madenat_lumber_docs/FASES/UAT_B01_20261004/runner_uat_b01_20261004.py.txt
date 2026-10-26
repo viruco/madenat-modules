@@ -1,0 +1,422 @@
+# -*- coding: utf-8 -*-
+# UAT B-01 (Sub-bloque 3) - runner para `odoo shell -d madenat_test --no-http`.
+# Ejecutor autorizado: uid 2 (Administrador con Jefatura/Gerencia; su=False, NO uid 1).
+# Todas las acciones de contrato se ejecutan con .with_user(...). SIN sudo(),
+# SIN SQL de escritura, SIN update/install, SIN edicion de codigo/ACL/docs.
+import hashlib
+import json
+import datetime
+
+
+def P(*a):
+    print('UAT|', *a)
+
+
+def sect(t):
+    P('')
+    P('================ ' + t + ' ================')
+
+
+PREF = 'UAT-B01-20261004-'
+E = env(user=2)  # autorizado Jefatura/Gerencia (no superusuario, no uid 1)
+P('RUN_TS', datetime.datetime.utcnow().isoformat() + 'Z')
+P('DB', env.cr.dbname)
+P('EXEC_UID', E.uid, E.user.login, repr(E.user.name),
+  'su=', E.su, 'SYS=', E.user.has_group('base.group_system'))
+
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.export.shipment', 'lumber.container', 'lumber.shipment.line',
+          'shipping.vessel', 'shipping.voyage', 'madenat.audit.log',
+          'madenat.sv.operation', 'madenat.sv.imputation',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+
+
+def counts():
+    d = {}
+    for m in MODELS:
+        try:
+            d[m] = E[m].search_count([])
+        except Exception as e:  # noqa: BLE001
+            d[m] = 'ERR:%s' % e
+    return d
+
+
+def delta(a, b):
+    return {k: (a[k] - b[k]) if isinstance(a.get(k), int) and isinstance(b.get(k), int)
+            else '?' for k in MODELS}
+
+
+def b01_audits(sid):
+    return E['madenat.audit.log'].search([
+        ('action_type', '=', 'b01_departure_exception'), ('batch_id', '=', str(sid))])
+
+
+def dev_audits(sid):
+    return E['madenat.audit.log'].search([
+        ('action_type', '=', 'deviation'), ('batch_id', '=', str(sid))])
+
+
+def chatter(sid, needle):
+    return E['mail.message'].search([
+        ('model', '=', 'lumber.export.shipment'), ('res_id', '=', sid),
+        ('body', 'like', needle)])
+
+
+Users = E['res.users']
+U_OPER = Users.browse(8)     # Cristhian Elgueta - solo Operaciones (bloqueado)
+U_COMMON = Users.browse(6)   # Leonardo Rodriguez - interno comun (bloqueado)
+G_AUD = 'madenat_lumber_core.group_madenat_auditoria'
+U_AUD = Users.search([('groups_id', 'in', [E.ref(G_AUD).id])])
+P('U_USERS',
+  'oper=', (U_OPER.id, U_OPER.login,
+            'JEF=', U_OPER.has_group('madenat_lumber_core.group_madenat_jefatura_operaciones')),
+  'common=', (U_COMMON.id, U_COMMON.login),
+  'aud_count=', len(U_AUD), U_AUD.mapped('login'))
+
+
+def protected():
+    def nm(model, rid):
+        r = E[model].browse(rid)
+        return r.name if r.exists() else 'MISSING'
+
+    def st(model, rid):
+        r = E[model].browse(rid)
+        if not r.exists():
+            return 'MISSING'
+        return r.state if 'state' in r._fields else nm(model, rid)
+
+    def lot_split(lot_id):
+        lot = E['stock.lot'].browse(lot_id)
+        if not lot.exists():
+            return 'MISSING'
+        qs = E['stock.quant'].search([('lot_id', '=', lot_id)])
+        return {'name': lot.name,
+                'internal': round(sum(q.quantity for q in qs if q.location_id.usage == 'internal'), 4),
+                'customer': round(sum(q.quantity for q in qs if q.location_id.usage == 'customer'), 4)}
+
+    pr = {}
+    pr['hist_ship_1537'] = (nm('lumber.export.shipment', 1537), st('lumber.export.shipment', 1537))
+    pr['hist_cont_1509'] = (nm('lumber.container', 1509), st('lumber.container', 1509))
+    pr['hist_pick_7065'] = (nm('stock.picking', 7065), st('stock.picking', 7065))
+    pr['hist_line_1880'] = (E['lumber.shipment.line'].browse(1880).exists() and
+                            E['lumber.shipment.line'].browse(1880).rebaja_state or 'MISSING')
+    pr['hist_line_1881'] = (E['lumber.shipment.line'].browse(1881).exists() and
+                            E['lumber.shipment.line'].browse(1881).rebaja_state or 'MISSING')
+    pr['hist_lot_15970'] = lot_split(15970)
+    pr['hist_lot_15971'] = lot_split(15971)
+    pr['sv_ship_1528'] = (nm('lumber.export.shipment', 1528), st('lumber.export.shipment', 1528))
+    pr['sv_cont_1500'] = (nm('lumber.container', 1500), st('lumber.container', 1500))
+    pr['sv_pick_7062'] = (nm('stock.picking', 7062), st('stock.picking', 7062))
+    pr['sv_op_5822'] = nm('madenat.sv.operation', 5822)
+    pr['sv_imp_492'] = nm('madenat.sv.imputation', 492)
+    pr['sv_guia_32298'] = nm('madenat.guia.processing', 32298)
+    pr['sv_guia_32300'] = nm('madenat.guia.processing', 32300)
+    pr['sv_lot_15892'] = lot_split(15892)
+    pr['sv_lot_15894'] = lot_split(15894)
+    pr['roll_vessel_619'] = nm('shipping.vessel', 619)
+    pr['roll_vessel_620'] = nm('shipping.vessel', 620)
+    pr['roll_voyage_565'] = nm('shipping.voyage', 565)
+    for i in (1644, 1645, 1646):
+        pr['roll_ship_%d' % i] = (nm('lumber.export.shipment', i), st('lumber.export.shipment', i))
+    for i in (1629, 1630, 1631):
+        pr['roll_cont_%d' % i] = (nm('lumber.container', i), st('lumber.container', i))
+    for i in range(19699, 19705):
+        pr['roll_audit_%d' % i] = (E['madenat.audit.log'].browse(i).exists() and
+                                   E['madenat.audit.log'].browse(i).action_type or 'MISSING')
+    for i in (1704, 1705, 1706, 1707):
+        pr['draft_ship_%d' % i] = (nm('lumber.export.shipment', i), st('lumber.export.shipment', i))
+    for i in (1678, 1679, 1680):
+        pr['draft_cont_%d' % i] = (nm('lumber.container', i), st('lumber.container', i))
+    pr['draft_audit_19742'] = (E['madenat.audit.log'].browse(19742).exists() and
+                               E['madenat.audit.log'].browse(19742).action_type or 'MISSING')
+    return pr
+
+
+sect('BASELINE_ANTES')
+base0 = counts()
+P('BASE0', json.dumps(base0, sort_keys=True))
+prot_before = protected()
+P('PROT_BEFORE', json.dumps(prot_before, sort_keys=True, default=str))
+P('PERSIST_B01_AUDITS_BEFORE',
+  E['madenat.audit.log'].search_count([('action_type', '=', 'b01_departure_exception')]))
+P('PERSIST_B01_OPEN_BEFORE',
+  E['lumber.export.shipment'].search_count([('b01_exception_state', '=', 'open')]))
+
+sect('FIXTURE_CREATE')
+partner = E['res.partner'].create({'name': PREF + 'CUSTOMER', 'is_company': True})
+vessel = E['shipping.vessel'].create({'name': PREF + 'VESSEL'})
+s_normal = E['lumber.export.shipment'].create({
+    'name': PREF + 'NORMAL', 'customer_id': partner.id,
+    'booking_reference': PREF + 'BOOK-NORMAL', 'vessel_id': vessel.id,
+    'state': 'confirmed'})
+# Rebaja fisica representada por el estado propio 'rebajado' (AD-82/CANON18).
+# No se crea lote/linea/picking/movimiento: evidencia UAT aislada, sin stock.
+c_normal = E['lumber.container'].create({
+    'name': PREF + 'CONT-NORMAL', 'container_type': '40HC',
+    'shipment_id': s_normal.id, 'state': 'rebajado'})
+s_exc = E['lumber.export.shipment'].create({
+    'name': PREF + 'EXCEPTION', 'customer_id': partner.id,
+    'booking_reference': PREF + 'BOOK-EXC', 'vessel_id': vessel.id,
+    'state': 'confirmed'})
+c_reb = E['lumber.container'].create({
+    'name': PREF + 'CONT-REB', 'container_type': '40HC',
+    'shipment_id': s_exc.id, 'state': 'rebajado'})
+c_pen = E['lumber.container'].create({
+    'name': PREF + 'CONT-PENDING', 'container_type': '40HC',
+    'shipment_id': s_exc.id, 'state': 'loaded'})
+s_perm = E['lumber.export.shipment'].create({
+    'name': PREF + 'PERM', 'customer_id': partner.id,
+    'booking_reference': PREF + 'BOOK-PERM', 'vessel_id': vessel.id,
+    'state': 'confirmed'})
+# Nombre distinto por el constraint UNIQUE(name) del contenedor.
+c_perm = E['lumber.container'].create({
+    'name': PREF + 'CONT-PERM-PEND', 'container_type': '40HC',
+    'shipment_id': s_perm.id, 'state': 'loaded'})
+env.cr.commit()
+P('FIXTURE_IDS', json.dumps({
+    'partner': partner.id, 'vessel': vessel.id,
+    's_normal': s_normal.id, 'c_normal': c_normal.id,
+    's_exc': s_exc.id, 'c_reb': c_reb.id, 'c_pen': c_pen.id,
+    's_perm': s_perm.id, 'c_perm': c_perm.id}, sort_keys=True))
+
+# ── UAT-B01-1: zarpe NORMAL (todos rebajados) ──────────────────────────────
+sect('UAT-B01-1_NORMAL')
+s_normal.invalidate_recordset(); c_normal.invalidate_recordset()
+b1 = counts()
+P('N1_BEFORE', json.dumps({
+    's_state': s_normal.state, 'b01': s_normal.b01_exception_state,
+    'c_state': c_normal.state, 'b01_audits': len(b01_audits(s_normal.id)),
+    'chatter_zarpe': len(chatter(s_normal.id, 'Zarpe Confirmado'))}, sort_keys=True))
+try:
+    res = s_normal.with_user(2).action_set_in_transit()
+    P('N1_ACTION', 'OK', type(res).__name__)
+except Exception as e:  # noqa: BLE001
+    P('N1_ACTION', 'ERROR', type(e).__name__, str(e).replace('\n', ' | ')[:200])
+s_normal.invalidate_recordset(); c_normal.invalidate_recordset()
+P('N1_AFTER', json.dumps({
+    's_state': s_normal.state, 'actual_departure': bool(s_normal.actual_departure),
+    'b01': s_normal.b01_exception_state,
+    'b01_audit_id': bool(s_normal.b01_exception_audit_id),
+    'c_state': c_normal.state}, sort_keys=True))
+P('N1_B01_AUDITS', len(b01_audits(s_normal.id)))
+P('N1_CHATTER_ZARPE', len(chatter(s_normal.id, 'Zarpe Confirmado')))
+a1 = counts(); d1 = delta(a1, b1)
+P('N1_DELTA', json.dumps(d1, sort_keys=True))
+P('N1_CHECK', json.dumps({
+    'state_in_transit': s_normal.state == 'in_transit',
+    'container_shipped': c_normal.state == 'shipped',
+    'b01_none': s_normal.b01_exception_state == 'none',
+    'b01_audit_empty': not s_normal.b01_exception_audit_id,
+    'no_b01_audit': len(b01_audits(s_normal.id)) == 0,
+    'no_extra_stock': all(d1[k] == 0 for k in (
+        'stock.move', 'stock.move.line', 'stock.picking', 'stock.quant', 'stock.lot')),
+    'no_extra_cost_fin_sv': all(d1[k] == 0 for k in (
+        'stock.lot.cost.line', 'lumber.shipment.cost.line', 'account.move',
+        'account.payment', 'madenat.sv.operation', 'madenat.sv.imputation',
+        'lumber.billing.consolidation')),
+    'no_extra_audit': d1['madenat.audit.log'] == 0,
+}, sort_keys=True))
+
+# ── UAT-B01-2: excepcion documental B-01 ───────────────────────────────────
+sect('UAT-B01-2_EXCEPTION')
+REASON = 'Contenedor pendiente de rebaja física por contingencia documental UAT.'
+s_exc.invalidate_recordset(); c_reb.invalidate_recordset(); c_pen.invalidate_recordset()
+P('E2_BEFORE', json.dumps({
+    's_state': s_exc.state, 'b01': s_exc.b01_exception_state,
+    'c_reb': c_reb.state, 'c_pen': c_pen.state}, sort_keys=True))
+b2 = counts(); aud2_before = len(b01_audits(s_exc.id))
+wiz = E['lumber.shipment.zarpe.wizard'].create(
+    {'shipment_id': s_exc.id, 'reason': REASON})
+P('E2_WIZARD', wiz.id, 'pending_count=', wiz.pending_count,
+  'pending_names=', wiz.pending_names)
+try:
+    wiz.with_user(2).action_zarpar_con_excepcion()
+    P('E2_ACTION', 'OK')
+except Exception as e:  # noqa: BLE001
+    P('E2_ACTION', 'ERROR', type(e).__name__, str(e).replace('\n', ' | ')[:200])
+s_exc.invalidate_recordset(); c_reb.invalidate_recordset(); c_pen.invalidate_recordset()
+P('E2_AFTER', json.dumps({
+    's_state': s_exc.state, 'actual_departure': bool(s_exc.actual_departure),
+    'b01': s_exc.b01_exception_state, 'reason': s_exc.b01_exception_reason,
+    'reason_exact': s_exc.b01_exception_reason == REASON,
+    'opened_at': str(s_exc.b01_exception_opened_at),
+    'opened_by': s_exc.b01_exception_opened_by_id.id,
+    'audit_id': s_exc.b01_exception_audit_id.id,
+    'c_reb': c_reb.state, 'c_pen': c_pen.state}, sort_keys=True))
+P('E2_PEN_UNCHANGED', c_pen.state == 'loaded')
+auds = b01_audits(s_exc.id)
+P('E2_B01_AUDITS', len(auds))
+P('E2_DEV_AUDITS', len(dev_audits(s_exc.id)))
+for a in auds:
+    snap = a.audit_snapshot or ''
+    h = hashlib.sha256(snap.encode('utf-8')).hexdigest()
+    try:
+        sj = json.loads(snap)
+    except Exception:  # noqa: BLE001
+        sj = {}
+    P('E2_AUDIT', a.id, a.action_type, 'actor=', a.user_id.id,
+      'hash_ok=', h == a.audit_hash,
+      'rebajados=', [c['name'] for c in sj.get('containers_rebajados', [])],
+      'pendientes=', [c['name'] for c in sj.get('containers_pendientes', [])],
+      'reason_ok=', sj.get('operation', {}).get('reason') == REASON,
+      'gates=', json.dumps(sj.get('exception', {}).get('gates', {}), sort_keys=True),
+      'phys_inv=', json.dumps(sj.get('physical_invariants', {}), sort_keys=True))
+P('E2_CHATTER_B01', len(chatter(s_exc.id, 'Zarpe con excepción B-01')))
+P('E2_CHATTER_DEV', len(chatter(s_exc.id, 'Excepción registrada')))
+a2 = counts(); d2 = delta(a2, b2)
+P('E2_DELTA', json.dumps(d2, sort_keys=True))
+P('E2_CHECK', json.dumps({
+    'state_in_transit': s_exc.state == 'in_transit',
+    'b01_open': s_exc.b01_exception_state == 'open',
+    'reason_exact': s_exc.b01_exception_reason == REASON,
+    'opened_by_exec': s_exc.b01_exception_opened_by_id.id == 2,
+    'has_audit': bool(s_exc.b01_exception_audit_id),
+    'c_reb_shipped': c_reb.state == 'shipped',
+    'c_pen_conserved': c_pen.state == 'loaded',
+    'one_b01_audit': len(b01_audits(s_exc.id)) == 1,
+    'audit_delta_2': d2['madenat.audit.log'] == 2,  # deviation + b01_departure_exception
+    'no_extra_stock': all(d2[k] == 0 for k in (
+        'stock.move', 'stock.move.line', 'stock.picking', 'stock.quant', 'stock.lot')),
+    'no_extra_cost_fin_sv': all(d2[k] == 0 for k in (
+        'stock.lot.cost.line', 'lumber.shipment.cost.line', 'account.move',
+        'account.payment', 'madenat.sv.operation', 'madenat.sv.imputation',
+        'lumber.billing.consolidation')),
+}, sort_keys=True))
+
+# ── UAT-B01-3: Entrega/Cierre bloqueada por B-01 open ──────────────────────
+sect('UAT-B01-3_DELIVERY_BLOCK')
+s_exc.invalidate_recordset()
+P('D3_BEFORE', json.dumps({'s_state': s_exc.state, 'b01': s_exc.b01_exception_state},
+                          sort_keys=True))
+b3 = counts(); aud3 = len(b01_audits(s_exc.id))
+try:
+    s_exc.with_user(2).action_deliver()
+    P('D3_ACTION', 'NO_ERROR(BAD)')
+except Exception as e:  # noqa: BLE001
+    P('D3_ACTION', type(e).__name__, str(e).replace('\n', ' | ')[:220])
+s_exc.invalidate_recordset()
+P('D3_AFTER', json.dumps({'s_state': s_exc.state, 'b01': s_exc.b01_exception_state},
+                         sort_keys=True))
+P('D3_B01_AUDITS_AFTER', len(b01_audits(s_exc.id)),
+  'delta=', len(b01_audits(s_exc.id)) - aud3)
+P('D3_CHATTER_DELIVERED', len(chatter(s_exc.id, 'Embarque entregado')))
+a3 = counts(); d3 = delta(a3, b3)
+P('D3_DELTA', json.dumps(d3, sort_keys=True))
+P('D3_CHECK', json.dumps({
+    'blocked': True,  # action_deliver levanto UserError (ver D3_ACTION)
+    'state_in_transit': s_exc.state == 'in_transit',
+    'b01_still_open': s_exc.b01_exception_state == 'open',
+    'no_new_b01_audit': len(b01_audits(s_exc.id)) == aud3,
+    'no_delivery_chatter': len(chatter(s_exc.id, 'Embarque entregado')) == 0,
+    'no_physical_financial': all(d3[k] == 0 for k in MODELS),
+}, sort_keys=True))
+
+
+# ── UAT-B01-4: permisos y proteccion de escritura ──────────────────────────
+sect('UAT-B01-4_PERMISSIONS')
+s_perm.invalidate_recordset(); c_perm.invalidate_recordset()
+P('P4_BEFORE', json.dumps({'s_state': s_perm.state, 'b01': s_perm.b01_exception_state,
+                           'c_state': c_perm.state}, sort_keys=True))
+b4 = counts(); aud4 = len(b01_audits(s_perm.id))
+wiz4 = E['lumber.shipment.zarpe.wizard'].create(
+    {'shipment_id': s_perm.id, 'reason': REASON})
+
+
+def attempt(label, fn):
+    try:
+        r = fn()
+        extra = ''
+        if isinstance(r, dict):
+            extra = ' -> ' + str(r.get('res_model') or r.get('type'))
+        P(label, 'NO_ERROR', extra)
+    except Exception as e:  # noqa: BLE001
+        P(label, type(e).__name__, str(e).replace('\n', ' | ')[:160])
+
+
+# (a) Operaciones (uid 8) - no puede confirmar zarpe normal ni B-01.
+attempt('P4_OPER_SET_IN_TRANSIT', lambda: s_perm.with_user(U_OPER.id)._set_in_transit())
+attempt('P4_OPER_ACTION_SET_IN_TRANSIT',
+        lambda: s_perm.with_user(U_OPER.id).action_set_in_transit())
+attempt('P4_OPER_B01_WIZARD',
+        lambda: wiz4.with_user(U_OPER.id).action_zarpar_con_excepcion())
+attempt('P4_OPER_REBAJA_ZARPE_WIZARD',
+        lambda: wiz4.with_user(U_OPER.id).action_rebajar_y_zarpar())
+attempt('P4_OPER_DELIVER', lambda: s_perm.with_user(U_OPER.id).action_deliver())
+# (b) Interno comun (uid 6)
+attempt('P4_COMMON_SET_IN_TRANSIT', lambda: s_perm.with_user(U_COMMON.id)._set_in_transit())
+attempt('P4_COMMON_ACTION_SET_IN_TRANSIT',
+        lambda: s_perm.with_user(U_COMMON.id).action_set_in_transit())
+# (c) Escritura lateral directa de campos B-01 (puerta lateral / contexto falso)
+attempt('P4_WRITE_OPER_B01_OPEN',
+        lambda: s_perm.with_user(U_OPER.id).write({
+            'b01_exception_state': 'open',
+            'b01_exception_reason': 'Intento directo no autorizado'}))
+attempt('P4_WRITE_OPER_CTX_FAKE',
+        lambda: s_perm.with_user(U_OPER.id).with_context(
+            allow_b01=True, b01_internal=True).write({'b01_exception_state': 'open'}))
+attempt('P4_WRITE_COMMON_CTX_FAKE',
+        lambda: s_perm.with_user(U_COMMON.id).with_context(
+            allow_b01=True, b01_internal=True).write({'b01_exception_state': 'open'}))
+attempt('P4_WRITE_EXEC_NO_FLOW',
+        lambda: s_perm.with_user(2).write({'b01_exception_state': 'open'}))
+attempt('P4_WRITE_RESOLVED',
+        lambda: s_perm.with_user(U_OPER.id).write({'b01_exception_state': 'resolved'}))
+
+s_perm.invalidate_recordset(); c_perm.invalidate_recordset()
+P('P4_AFTER', json.dumps({'s_state': s_perm.state, 'b01': s_perm.b01_exception_state,
+                          'c_state': c_perm.state}, sort_keys=True))
+a4 = counts(); d4 = delta(a4, b4)
+P('P4_B01_AUDITS', len(b01_audits(s_perm.id)))
+P('P4_DELTA', json.dumps(d4, sort_keys=True))
+P('P4_CHECK', json.dumps({
+    'state_confirmed': s_perm.state == 'confirmed',
+    'b01_none': s_perm.b01_exception_state == 'none',
+    'c_pending_loaded': c_perm.state == 'loaded',
+    'no_b01_audit': len(b01_audits(s_perm.id)) == 0,
+    'no_physical_financial': all(d4[k] == 0 for k in MODELS),
+}, sort_keys=True))
+
+
+# ── Validacion final ───────────────────────────────────────────────────────
+sect('FINAL')
+final = counts()
+P('FINAL_COUNTS', json.dumps(final, sort_keys=True))
+P('GLOBAL_DELTA_BASE0', json.dumps(delta(final, base0), sort_keys=True))
+sect('PROTEGIDOS_DESPUES')
+prot_after = protected()
+P('PROT_AFTER', json.dumps(prot_after, sort_keys=True, default=str))
+P('PROT_UNCHANGED', json.dumps(
+    {k: (prot_before[k] == prot_after[k]) for k in prot_before}, sort_keys=True))
+
+all_b01 = E['madenat.audit.log'].search(
+    [('action_type', '=', 'b01_departure_exception')])
+P('ALL_B01_AUDITS', len(all_b01))
+for a in all_b01:
+    snap = a.audit_snapshot or ''
+    P('HASH_RECHECK', a.id, 'batch=', a.batch_id, 'actor=', a.user_id.id,
+      'hash_ok=', hashlib.sha256(snap.encode('utf-8')).hexdigest() == a.audit_hash)
+
+for s in E['lumber.export.shipment'].search([('name', 'like', PREF)], order='name'):
+    P('UAT_SHIP', s.id, s.name, s.state, 'b01=', s.b01_exception_state,
+      'dep=', bool(s.actual_departure),
+      'cont=', [(c.id, c.name, c.state) for c in s.container_ids],
+      'b01_audits=', len(b01_audits(s.id)))
+
+open_b01 = E['lumber.export.shipment'].search([('b01_exception_state', '=', 'open')])
+P('ALL_OPEN_B01', [(s.id, s.name) for s in open_b01])
+P('PERM_B01_NONE', s_perm.with_user(2).b01_exception_state)
+P('FINAL_CHECK', json.dumps({
+    'only_exc_open': [(s.id, s.name) for s in open_b01] == [(s_exc.id, s_exc.name)],
+    'delta_shipments': delta(final, base0)['lumber.export.shipment'],
+    'delta_containers': delta(final, base0)['lumber.container'],
+    'delta_audit': delta(final, base0)['madenat.audit.log'],
+    'delta_vessels': delta(final, base0)['shipping.vessel'],
+    'protected_unchanged': all(prot_before[k] == prot_after[k] for k in prot_before),
+}, sort_keys=True))
+
+E.cr.commit()
+P('COMMIT_FINAL', 'ok')
+sect('DONE')
+P('DONE_OK')
+

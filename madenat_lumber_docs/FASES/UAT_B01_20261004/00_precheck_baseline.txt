@@ -1,0 +1,85 @@
+MADENAT - UAT B-01 DOCUMENTAL BLOQUEANTE (Sub-bloque 3) - PRECHECK / LINEA BASE (solo lectura)
+================================================================================================
+Fecha/hora UTC : 2026-10-04T16:12:34Z (precheck)
+Entorno        : base madenat_test ; odoo18_app Up (127.0.0.1:8069) ; odoo18_db healthy (postgres:15)
+HTTP           : 200 en /web/login
+Metodo         : ORM via `odoo shell -d madenat_test --no-http`. SIN sudo(), SIN SQL de escritura,
+                 SIN update/install de modulos, SIN edicion de codigo/XML/CSV/ACL/manifest/tests/docs.
+                 Shell = harness (uid local 1). NO se ejecuta ninguna accion de contrato todavia.
+
+1) IDENTIDAD (repo /home/viruco/dev-stack/odoo/odoo-18-ce/custom_addons)
+   Rama : feat/guia-correccion-documental-preservada-20261002
+   HEAD : 34c81272bb07d48db98d73a7734c81a2a8e384fa
+   git status --porcelain : 28 entradas (23 'M' + 5 '??'), COINCIDE con la linea base de la
+   implementacion B-01 (IMPL_B01_20261004/RESULTADO_B01.md). No hay cambios fuera de la linea base.
+   No se hizo commit/push/PR/reset/checkout/rebase/stash/branch/worktree.
+
+2) RUNTIME - Modulos 'installed'
+   base, stock, account, mail, madenat_lumber_core, madenat_lumber_logistics,
+   madenat_lumber_shipping_core, madenat_lumber_costing, madenat_lumber_billing,
+   madenat_vendor_payment  -> todos installed.
+
+3) LINEA BASE GLOBAL (read-only, antes de crear UAT)
+   stock.move ..................... 142
+   stock.move.line ................ 209
+   stock.picking ..................  27
+   stock.quant .................... 169
+   stock.lot ...................... 126
+   stock.lot.cost.line ............  53
+   lumber.shipment.cost.line ......   0
+   lumber.export.shipment .........  11
+   lumber.container ...............  11
+   lumber.shipment.line ...........   5
+   shipping.vessel ................   5
+   shipping.voyage ................   1
+   madenat.audit.log .............. 263
+   madenat.sv.operation ...........   1
+   madenat.sv.imputation ..........   1
+   lumber.billing.consolidation ...   0
+   account.move ...................   1
+   account.payment ................   0
+
+4) REGISTROS HISTORICOS PROTEGIDOS (antes) - coinciden con lo esperado
+   Hist. logistica: Shipment 1537 UAT-LOG-20261003-EMB-01 = in_transit;
+     Container 1509 UAT-LOG-20261003-CONT-01 = shipped; Picking 7065 WH/OUT/02194 = done;
+     Lineas 1880/1881 = rebajado/rebajado; Lotes 15970/15971 internal=0.0 customer=+0.144.
+   Hist. SV: Shipment 1528 UAT-SV-20261003-SHIP = draft; Container 1500 = rebajado;
+     Picking 7062 WH/OUT/02193 = done; SV operation 5822 = SVO005684; Imputation 492 = IMP00946;
+     Guias 32298 UAT-SV-20261003-01 / 32300 UAT-SV-20261003-IMPG; Lotes 15892/15894 (0 interno).
+   UAT Rolleo: Vessels 619/620; Voyage 565; Shipments 1644/1645/1646 (draft/draft/in_transit);
+     Containers 1629/1630/1631 (loaded); Audits 19699-19704 (vessel_rollover[_item]).
+   UAT Borrador Seguro: Shipments 1704/1705/1706/1707 (draft/confirmed/confirmed/in_transit);
+     Containers 1678/1679/1680; Audit 19742 (shipment_return_to_draft).
+
+5) CONFIRMACION IMPLEMENTACION B-01 (revision de metadatos, solo lectura)
+   Campos b01_exception_state/_reason/_opened_at/_opened_by_id/_audit_id ...... instalados (True)
+   Guards _assert_can_depart / _set_in_transit / action_set_in_transit /
+     action_deliver / _create_b01_exception_audit / _assert_b01_write_authorized .... presentes (True)
+   'b01_departure_exception' en Selection de madenat.audit.log.action_type ....... True
+   PERSIST_B01_AUDITS (b01_departure_exception) ................................... 0
+   PERSIST_DEVIATION_B01_TEXT (deviation con '[B-01]') ............................ 0
+   PERSIST_B01_OPEN (shipment b01_exception_state='open') ......................... 0
+   PERSIST_B01_RESOLVED ........................................................... 0
+   UAT_PREFIX_SHIPS ('UAT-B01-20261004') .......................................... 0
+   => No existe B-01 persistida ni desviacion B-01 no explicada. Sin datos UAT previos.
+
+6) USUARIOS / ROLES UAT
+   Grupos: Jefatura Operaciones (id 261), Gerencia (id 259), Operaciones (id 256), Auditoria (id 298).
+   - uid 2  mauricio.seo@gmail.com 'Administrator' -> JEF=True GER=True OPE=True
+            base.group_system=True ; env(user=2).su=False.
+            ** UNICO usuario con Jefatura/Gerencia en la base ** y ADEMAS con base.group_system.
+   - uid 8  cristhian.elguetag@gmail.com 'Cristhian Elgueta' -> solo Operaciones (JEF/GER/AUD=False).
+            Usuario BLOQUEADO valido (Operaciones sin Jefatura/Gerencia).
+   - uid 6  leonardo@pinelli.com.mx 'Leonardo Rodriguez' -> usuario interno comun (sin roles
+            de los 4 grupos). Usuario BLOQUEADO valido.
+   - Auditoria (grupo 298): SIN miembros -> NO disponible (no se crea usuario).
+   - uid 1  OdooBot (superusuario) -> NO se usa.
+   - Otros: uid 7 'Maria Victoria Antonio', uid 9 'Felipe Munoz' (sin los 4 roles UAT).
+
+CRITERIO DE DETENCION / CONFIRMACION OBLIGATORIA
+   Historical intacto, linea base sin discrepancias, working tree = 28 entradas (linea base de
+   implementacion), runtime saludable, campos/guards B-01 instalados, sin B-01 persistida.
+   PERO: el UNICO ejecutor Jefatura/Gerencia es uid 2 (Administrator) con base.group_system.
+   Segun el mandato: "Si el unico ejecutor permitido es uid 2 con base.group_system, no usarlo
+   automaticamente. Detenerse y solicitar confirmacion."  => SE DETIENE y se solicita confirmacion
+   antes de crear cualquier dato UAT.

@@ -1,0 +1,30 @@
+================================================================================
+MADENAT — UAT COSTEO C2 — ESCENARIO UAT-C2-2 (GATES) — NO EJECUTADO
+================================================================================
+Fecha   : 2026-10-04
+Estado  : NO EJECUTADO — detencion previa por stop-criterion (ver 00_precheck §9).
+Motivo  : Requiere fixtures UAT (Embarques delivered/no-delivered) que no pueden
+          crearse sin violar el alcance (movimiento de inventario / reutilizar D2).
+--------------------------------------------------------------------------------
+GATES SEGUN CONTRATO DE CODIGO (verificado estaticamente, NO ejecutado)
+--------------------------------------------------------------------------------
+Fuente: madenat_lumber_costing/models/lumber_shipment_costing.py::_assert_can_distribute_costs_c2
+        y _c2_gate_checks(); madenat_lumber_logistics/models/lumber_export_shipment.py
+        (_classify_departure_containers, _assert_no_rebaja_inconsistency).
+
+Gate 1  Embarque NO delivered ............ UserError "Solo ... ENTREGADO (delivered)"
+Gate 2  B-01 open ........................  UserError "excepcion B-01 ABIERTA"
+Gate 3  Inconsistencia rebaja/R2 incompleto UserError "inconsistencia de rebaja fisica /
+                                            retorno R2 incompleto"
+Gate 4  Contenedores pendientes .......... UserError "Contenedores pendientes de rebaja fisica"
+Gate 5  Sin cost line approved ........... UserError "No hay lineas de costo APROBADAS"
+Gate 6  Moneda/monto USD invalido ........ UserError "moneda y monto USD validos (>0)"
+Gate 7  Volumen total 0 .................. UserError "volumen logistico total final es 0"
+Gate 8  Costos tardios sin cubrir ........ UserError "requiere redistribucion formal (supersede)"
+
+Validacion en: tests/test_shipment_costing_c2.py (T-CST-1..T-CST-12, TransactionCase).
+EVIDENCIA RUNTIME: no existe Embarque delivered no-D2 sobre el cual montar los gates.
+
+SIN EFECTOS: no se creo fixture, no hay version/ledger/audit, sin cambios de
+stock/finanzas.
+================================================================================

@@ -1,0 +1,20 @@
+================================================================================
+MADENAT — UAT COSTEO C2 — ESCENARIO UAT-C2-3 (IDEMPOTENCIA) — NO EJECUTADO
+================================================================================
+Fecha   : 2026-10-04
+Estado  : NO EJECUTADO — detencion previa por stop-criterion (ver 00_precheck §9).
+Motivo  : No existe distribucion C2 aplicada previa (no se pudo crear el Embarque
+          target). La idempotencia no tiene objeto sin una version applied.
+--------------------------------------------------------------------------------
+CONTRATO SEGUN CODIGO (verificado estaticamente, NO ejecutado)
+--------------------------------------------------------------------------------
+- action_apply_distribution: si ya existe distribucion C2 'applied' -> UserError
+  "El Embarque %s ya tiene una distribucion C2 aplicada. No se duplica
+   (use supersede formal para costos tardios)."
+- action_prepare_distribution con applied y misma fuente -> UserError "No se duplica".
+- _c2_next_version(): version = ultima + 1 (no reutiliza version).
+- _c2_applied_distribution(): una unica distribucion C2 'applied' por embarque.
+Resultado esperado del reintento: UserError; sin nueva version; sin duplicar ledger;
+sin nueva auditoria; sin cambios fisicos/financieros.
+EVIDENCIA RUNTIME: distribution C2 aplicada = 0 (nada que reintentar).
+================================================================================

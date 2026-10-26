@@ -1,0 +1,90 @@
+2026-10-04 16:12:31,026 774 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-04 16:12:31,026 774 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-04 16:12:31,026 774 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-04 16:12:31,026 774 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 16:12:31,235 774 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-04 16:12:31,246 774 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-04 16:12:31,469 774 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-04 16:12:31,470 774 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-04 16:12:31,498 774 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-04 16:12:31,510 774 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-04 16:12:31,558 774 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-04 16:12:33,257 774 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-04 16:12:33,258 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-04 16:12:33,259 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-04 16:12:33,989 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-04 16:12:33,990 774 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-04 16:12:34,214 774 INFO madenat_test odoo.modules.loading: 88 modules loaded in 2.66s, 0 queries (+0 extra) 
+2026-10-04 16:12:34,463 774 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-04 16:12:34,469 774 INFO madenat_test odoo.modules.registry: Registry loaded in 2.999s 
+PRE| TS 2026-10-04T16:12:34.489516Z
+PRE| DB madenat_test
+PRE| SHELL_LOCAL_UID 1 __system__
+PRE| MODULE base installed
+PRE| MODULE stock installed
+PRE| MODULE account installed
+PRE| MODULE mail installed
+PRE| MODULE madenat_lumber_core installed
+PRE| MODULE madenat_lumber_logistics installed
+PRE| MODULE madenat_lumber_shipping_core installed
+PRE| MODULE madenat_lumber_costing installed
+PRE| MODULE madenat_lumber_billing installed
+PRE| MODULE madenat_vendor_payment installed
+PRE| BASE stock.move 142
+PRE| BASE stock.move.line 209
+PRE| BASE stock.picking 27
+PRE| BASE stock.quant 169
+PRE| BASE stock.lot 126
+PRE| BASE stock.lot.cost.line 53
+PRE| BASE lumber.shipment.cost.line 0
+PRE| BASE lumber.export.shipment 11
+PRE| BASE lumber.container 11
+PRE| BASE lumber.shipment.line 5
+PRE| BASE shipping.vessel 5
+PRE| BASE shipping.voyage 1
+PRE| BASE madenat.audit.log 263
+PRE| BASE madenat.sv.operation 1
+PRE| BASE madenat.sv.imputation 1
+PRE| BASE lumber.billing.consolidation 0
+PRE| BASE account.move 1
+PRE| BASE account.payment 0
+PRE| PROTECTED {"draft_audit_19742": "shipment_return_to_draft", "draft_cont_1678": ["UAT-DRAFT-20261004-CONT-OK", "loading"], "draft_cont_1679": ["UAT-DRAFT-20261004-CONT-PHYS-BLOCK", "rebajado"], "draft_cont_1680": ["UAT-DRAFT-20261004-CONT-TERM-BLOCK", "loading"], "draft_ship_1704": ["UAT-DRAFT-20261004-OK", "draft"], "draft_ship_1705": ["UAT-DRAFT-20261004-PHYS-BLOCK", "confirmed"], "draft_ship_1706": ["UAT-DRAFT-20261004-PERM-BLOCK", "confirmed"], "draft_ship_1707": ["UAT-DRAFT-20261004-TERM-BLOCK", "in_transit"], "hist_cont_1509": ["UAT-LOG-20261003-CONT-01", "shipped"], "hist_line_1880": "rebajado", "hist_line_1881": "rebajado", "hist_lot_15970": {"customer": 0.144, "internal": 0.0, "name": "UATINTP-20261003-01"}, "hist_lot_15971": {"customer": 0.144, "internal": 0.0, "name": "UATINTS-20261003-01 MAD-SEC 900002"}, "hist_pick_7065": ["WH/OUT/02194", "done"], "hist_ship_1537": ["UAT-LOG-20261003-EMB-01", "in_transit"], "roll_audit_19699": "vessel_rollover", "roll_audit_19700": "vessel_rollover_item", "roll_audit_19701": "vessel_rollover_item", "roll_audit_19702": "vessel_rollover", "roll_audit_19703": "vessel_rollover_item", "roll_audit_19704": "vessel_rollover_item", "roll_cont_1629": ["UAT-VR-20261004-CONT-NOVOY", "loaded"], "roll_cont_1630": ["UAT-VR-20261004-CONT-VOY", "loaded"], "roll_cont_1631": ["UAT-VR-20261004-CONT-BLOCK", "loaded"], "roll_ship_1644": ["UAT-VR-20261004-SHIP-NOVOY", "draft"], "roll_ship_1645": ["UAT-VR-20261004-SHIP-VOY", "draft"], "roll_ship_1646": ["UAT-VR-20261004-SHIP-BLOCK", "in_transit"], "roll_vessel_619": "UAT-VR-20261004-ORIG-VESSEL", "roll_vessel_620": "UAT-VR-20261004-DEST-VESSEL", "roll_voyage_565": "UAT-VR-20261004-DEST-VESSEL / UAT-VR-20261004-DEST-VOY-01", "sv_cont_1500": ["UAT-SV-20261003-CONT", "rebajado"], "sv_guia_32298": "UAT-SV-20261003-01", "sv_guia_32300": "UAT-SV-20261003-IMPG", "sv_imp_492": "IMP00946", "sv_lot_15892": {"customer": 40.315, "internal": 0, "name": "SV00000001175"}, "sv_lot_15894": {"customer": 0, "internal": 0, "name": "UAT-SV-20261003-RET-01"}, "sv_op_5822": "SVO005684", "sv_pick_7062": ["WH/OUT/02193", "done"], "sv_ship_1528": ["UAT-SV-20261003-SHIP", "draft"]}
+PRE| FIELD b01_exception_state True
+PRE| FIELD b01_exception_reason True
+PRE| FIELD b01_exception_opened_at True
+PRE| FIELD b01_exception_opened_by_id True
+PRE| FIELD b01_exception_audit_id True
+PRE| METH _assert_can_depart True
+PRE| METH _set_in_transit True
+PRE| METH action_set_in_transit True
+PRE| METH action_deliver True
+PRE| METH _create_b01_exception_audit True
+PRE| METH _assert_b01_write_authorized True
+PRE| AUDIT_SELECTION_HAS_B01 True
+PRE| PERSIST_B01_AUDITS 0
+PRE| PERSIST_DEVIATION_B01_TEXT 0
+PRE| PERSIST_B01_OPEN 0
+PRE| PERSIST_B01_RESOLVED 0
+PRE| UAT_PREFIX_SHIPS 0
+PRE| GROUP_IDS {"jef": 261, "ger": 259, "ope": 256, "aud": 298}
+PRE| GROUP_MEMBERS_JEF [[2, "mauricio.seo@gmail.com"]]
+PRE| GROUP_MEMBERS_GER [[2, "mauricio.seo@gmail.com"]]
+PRE| GROUP_MEMBERS_OPE [[2, "mauricio.seo@gmail.com"], [8, "cristhian.elguetag@gmail.com"]]
+PRE| GROUP_MEMBERS_AUD []
+PRE| USER 2 mauricio.seo@gmail.com 'Administrator' JEF= True GER= True OPE= True AUD= False SUPER= True active= True
+PRE| USER 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' JEF= False GER= False OPE= True AUD= False SUPER= False active= True
+PRE| DONE_PRECHECK_OK

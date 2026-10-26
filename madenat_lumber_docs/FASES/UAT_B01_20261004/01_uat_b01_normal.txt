@@ -1,0 +1,14 @@
+MADENAT - UAT B-01 (Sub-bloque 3) - ESCENARIO UAT-B01-1: ZARPE NORMAL (sin B-01)
+Fecha/hora UTC : 2026-10-04T16:20:38Z
+Entorno        : madenat_test ; ejecutor uid 2 'Administrator' (Jefatura/Gerencia, su=False, base.group_system=True).
+Metodo         : ORM via odoo shell --no-http. SIN sudo(). SIN SQL de escritura. SIN uid 1. SIN update/install.
+Comando        : s_normal.with_user(2).action_set_in_transit()
+-----------------------------------------------------------------------------------------------------
+UAT| FIXTURE_IDS {"c_normal": 1868, "c_pen": 1870, "c_perm": 1871, "c_reb": 1869, "partner": 14120, "s_exc": 1868, "s_normal": 1867, "s_perm": 1869, "vessel": 746}
+UAT| N1_BEFORE {"b01": "none", "b01_audits": 0, "c_state": "rebajado", "chatter_zarpe": 0, "s_state": "confirmed"}
+UAT| N1_ACTION OK bool
+UAT| N1_AFTER {"actual_departure": true, "b01": "none", "b01_audit_id": false, "c_state": "shipped", "s_state": "in_transit"}
+UAT| N1_B01_AUDITS 0
+UAT| N1_CHATTER_ZARPE 1
+UAT| N1_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| N1_CHECK {"b01_audit_empty": true, "b01_none": true, "container_shipped": true, "no_b01_audit": true, "no_extra_audit": true, "no_extra_cost_fin_sv": true, "no_extra_stock": true, "state_in_transit": true}

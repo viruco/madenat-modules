@@ -1,0 +1,7 @@
+# RESET cambios — Sun Oct 11 03:25:33 UTC 2026
+ - models/madenat_sv_imputation.py: action_reopen_to_draft; _i2_check_reopen_permission; _i2_validate_reopen; campos cancel/reopen; action_cancel con trazabilidad; write() guard
+ - wizards/madenat_sv_imputation_wizard.py: reopen_reason; action_wizard_reopen; mensaje cancelled
+ - views + wizard views: boton Volver a borrador (documento y asistente); campos en Motivo/Reversa
+ - madenat_lumber_core/models/madenat_audit_log.py: imputation_cancel / imputation_reopen
+ - tests/test_sv_rebaja_reset.py (NUEVO; RESET/PHY); tests/test_sv_rebaja_simple.py (simple_01)
+ - tests/__init__.py; __manifest__.py 18.0.1.21.0; CHANGELOG.md

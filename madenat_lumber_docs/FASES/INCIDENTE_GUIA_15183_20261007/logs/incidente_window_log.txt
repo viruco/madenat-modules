@@ -1,0 +1,36 @@
+15451:2026-09-29 00:12:49,700 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+15454:2026-09-29 00:12:49,720 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+15496:2026-09-29 00:14:16,927 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+15499:2026-09-29 00:14:16,943 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+15524:2026-09-29 00:16:18,144 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+15527:2026-09-29 00:16:18,158 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+17579:2026-09-29 00:30:22,857 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+17582:2026-09-29 00:30:22,873 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+61486:2026-09-29 14:18:00,588 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+61489:2026-09-29 14:18:00,613 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+143745:2026-09-29 15:31:52,189 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+143748:2026-09-29 15:31:52,211 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+145782:2026-09-29 15:49:12,988 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+145785:2026-09-29 15:49:13,009 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+199494:2026-09-30 14:28:13,903 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+199497:2026-09-30 14:28:13,923 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+213636:2026-09-30 15:01:00,175 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+213639:2026-09-30 15:01:00,191 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+213800:2026-09-30 15:04:45,139 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+213803:2026-09-30 15:04:45,310 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+213820:2026-09-30 15:05:08,735 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+213823:2026-09-30 15:05:08,764 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+235608:2026-10-01 12:49:39,432 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 4495589 
+235611:2026-10-01 12:49:39,453 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 4495589 → estado: cancelled 
+920612:2026-10-06 18:51:23,991 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: _match_purchase_order: not_found para oc_reference_raw=MC 1108-326. Guía 15183. 
+920633:2026-10-06 18:54:09,266 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 15183 
+920634:2026-10-06 18:54:09,271 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🔎 Albaranes para '15183': 1 → ['EMB-00227'] 
+920640:2026-10-06 18:54:09,959 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 15183 → estado: cancelled 
+930109:2026-10-07 19:23:09,905 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: _match_purchase_order: not_found para oc_reference_raw=MC 1108-326. Guía 15183. 
+930130:2026-10-07 19:23:30,253 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🛡️ [action_force_cancel] Iniciando Cancelación Segura → Guía: 15183 
+930132:2026-10-07 19:23:30,257 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: 🔎 Albaranes para '15183': 0 → [] 
+930133:2026-10-07 19:23:30,269 1 WARNING madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: ✅ [action_force_cancel] Guía 15183 → estado: cancelled 
+931631:2026-10-07 20:41:00,321 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.reception_parser: 🔍 _check_guide_duplicate: buscando guía=15183 company=1 partner=1052 exclude=33154@madenat.guia.processing cross_model=False 
+931632:2026-10-07 20:41:00,323 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.reception_parser: ✅ _check_guide_duplicate: sin duplicados para guía=15183 
+931633:2026-10-07 20:41:00,323 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.reception_parser: 🔍 _check_guide_duplicate: buscando guía=15183 company=1 partner=None exclude=33154@madenat.guia.processing cross_model=True 
+931634:2026-10-07 20:41:00,405 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_guia_processing: _match_purchase_order: not_found para oc_reference_raw=MC 1108-326. Guía 15183. 

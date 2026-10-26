@@ -1,0 +1,62 @@
+MADENAT - UAT B-01 (Sub-bloque 3) - VALIDACION FINAL
+Fecha/hora UTC  : 2026-10-04T16:20:39Z (runner) / 2026-10-04T16:21:20Z (verificacion post-commit, proceso nuevo)
+Entorno         : madenat_test ; odoo18_app Up ; odoo18_db healthy ; HTTP 200.
+Metodo          : ORM via odoo shell. SIN sudo(), SIN SQL de escritura, SIN uid 1, SIN update/install.
+
+--- A) Diferencias globales vs linea base (runner) ---
+UAT| PERSIST_B01_AUDITS_BEFORE 0
+UAT| PERSIST_B01_OPEN_BEFORE 0
+UAT| FINAL_COUNTS {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 15, "lumber.export.shipment": 14, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 5, "madenat.audit.log": 265, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 6, "shipping.voyage": 1, "stock.lot": 126, "stock.lot.cost.line": 53, "stock.move": 142, "stock.move.line": 209, "stock.picking": 27, "stock.quant": 169}
+UAT| GLOBAL_DELTA_BASE0 {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 4, "lumber.export.shipment": 3, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 2, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 1, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| PROT_UNCHANGED {"draft_audit_19742": true, "draft_cont_1678": true, "draft_cont_1679": true, "draft_cont_1680": true, "draft_ship_1704": true, "draft_ship_1705": true, "draft_ship_1706": true, "draft_ship_1707": true, "hist_cont_1509": true, "hist_line_1880": true, "hist_line_1881": true, "hist_lot_15970": true, "hist_lot_15971": true, "hist_pick_7065": true, "hist_ship_1537": true, "roll_audit_19699": true, "roll_audit_19700": true, "roll_audit_19701": true, "roll_audit_19702": true, "roll_audit_19703": true, "roll_audit_19704": true, "roll_cont_1629": true, "roll_cont_1630": true, "roll_cont_1631": true, "roll_ship_1644": true, "roll_ship_1645": true, "roll_ship_1646": true, "roll_vessel_619": true, "roll_vessel_620": true, "roll_voyage_565": true, "sv_cont_1500": true, "sv_guia_32298": true, "sv_guia_32300": true, "sv_imp_492": true, "sv_lot_15892": true, "sv_lot_15894": true, "sv_op_5822": true, "sv_pick_7062": true, "sv_ship_1528": true}
+UAT| ALL_B01_AUDITS 1
+UAT| HASH_RECHECK 19890 batch= 1868 actor= 2 hash_ok= True
+UAT| UAT_SHIP 1868 UAT-B01-20261004-EXCEPTION in_transit b01= open dep= True cont= [(1870, 'UAT-B01-20261004-CONT-PENDING', 'loaded'), (1869, 'UAT-B01-20261004-CONT-REB', 'shipped')] b01_audits= 1
+UAT| UAT_SHIP 1867 UAT-B01-20261004-NORMAL in_transit b01= none dep= True cont= [(1868, 'UAT-B01-20261004-CONT-NORMAL', 'shipped')] b01_audits= 0
+UAT| UAT_SHIP 1869 UAT-B01-20261004-PERM confirmed b01= none dep= False cont= [(1871, 'UAT-B01-20261004-CONT-PERM-PEND', 'loaded')] b01_audits= 0
+UAT| ALL_OPEN_B01 [(1868, 'UAT-B01-20261004-EXCEPTION')]
+UAT| PERM_B01_NONE none
+UAT| FINAL_CHECK {"delta_audit": 2, "delta_containers": 4, "delta_shipments": 3, "delta_vessels": 1, "only_exc_open": true, "protected_unchanged": true}
+
+--- B) Verificacion post-commit (proceso nuevo, solo lectura; confirma persistencia) ---
+VER| TS 2026-10-04T16:21:19.972164Z
+VER| COUNT stock.move 142
+VER| COUNT stock.move.line 209
+VER| COUNT stock.picking 27
+VER| COUNT stock.quant 169
+VER| COUNT stock.lot 126
+VER| COUNT stock.lot.cost.line 53
+VER| COUNT lumber.shipment.cost.line 0
+VER| COUNT lumber.export.shipment 14
+VER| COUNT lumber.container 15
+VER| COUNT lumber.shipment.line 5
+VER| COUNT shipping.vessel 6
+VER| COUNT shipping.voyage 1
+VER| COUNT madenat.audit.log 265
+VER| COUNT madenat.sv.operation 1
+VER| COUNT madenat.sv.imputation 1
+VER| COUNT lumber.billing.consolidation 0
+VER| COUNT account.move 1
+VER| COUNT account.payment 0
+VER| SHIP 1868 UAT-B01-20261004-EXCEPTION state= in_transit b01= open opened_by= 2 audit= 19890 dep= True
+VER|   REASON 'Contenedor pendiente de rebaja física por contingencia documental UAT.'
+VER|   CONT 1870 UAT-B01-20261004-CONT-PENDING loaded
+VER|   CONT 1869 UAT-B01-20261004-CONT-REB shipped
+VER| SHIP 1867 UAT-B01-20261004-NORMAL state= in_transit b01= none opened_by= False audit= False dep= True
+VER|   REASON False
+VER|   CONT 1868 UAT-B01-20261004-CONT-NORMAL shipped
+VER| SHIP 1869 UAT-B01-20261004-PERM state= confirmed b01= none opened_by= False audit= False dep= False
+VER|   REASON False
+VER|   CONT 1871 UAT-B01-20261004-CONT-PERM-PEND loaded
+VER| B01_AUDIT 19890 batch= 1868 actor= 2 hash_ok= True
+VER| SNAP {"containers_pendientes": [{"id": 1870, "lines": [], "name": "UAT-B01-20261004-CONT-PENDING", "state": "loaded"}], "containers_rebajados": [{"id": 1869, "lines": [], "name": "UAT-B01-20261004-CONT-REB", "state": "shipped"}], "exception": {"gates": {"billing": "blocked", "costing": "blocked", "delivery": "blocked", "draft": "blocked", "payments": "blocked", "rollover": "blocked"}, "state": "open"}, "operation": {"action_type": "b01_departure_exception", "actor": {"id": 2, "name": "Administrator"}, "reason": "Contenedor pendiente de rebaja f\u00edsica por contingencia documental UAT.", "timestamp": "2026-10-04T16:20:39"}, "physical_invariants": {"no_picking_created": true, "no_quant_change": true, "no_stock_movement": true}, "shipment": {"id": 1868, "name": "UAT-B01-20261004-EXCEPTION", "state_after": "in_transit", "state_before": "confirmed", "vessel": "UAT-B01-20261004-VESSEL", "voyage": false}}
+VER| DEV_AUDIT 19889 desc= [B-01] Zarpe con excepción B-01: contenedores SIN rebajar (UAT-B01-20261004-CONT-PENDING)  hash_ok= True
+VER| MSG 124686 author= 3 <p>Embarque de Exportación de Madera creado</p>
+VER| MSG 124693 author= 3 <p>⚠️ &lt;b&gt;Excepción registrada [B-01]&lt;/b&gt;&lt;br/&gt;Zarpe con excepción B-01: contenedores SIN rebajar (UAT-B01-20261004-CONT-PEN
+VER| MSG 124694 author= 3 <p>⚠️ &lt;b&gt;Zarpe con excepción B-01&lt;/b&gt;&lt;br/&gt;Motivo: Contenedor pendiente de rebaja física por contingencia documental UAT.&l
+VER| MSG 124695 author= 3 <p>📊 Rendimiento Final de Nave: 0.0%</p>
+VER| MSG 124699 author= 3 
+VER| ALL_OPEN_B01 ['UAT-B01-20261004-EXCEPTION']
+VER| B01_OPEN_COUNT 1
+VER| B01_RESOLVED_COUNT 0
+VER| DONE

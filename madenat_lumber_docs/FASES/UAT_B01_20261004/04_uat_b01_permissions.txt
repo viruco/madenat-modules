@@ -1,0 +1,23 @@
+MADENAT - UAT B-01 (Sub-bloque 3) - ESCENARIO UAT-B01-4: PERMISOS Y PROTECCION DE ESCRITURA
+Fecha/hora UTC : 2026-10-04T16:20:39Z
+Entorno        : madenat_test. Ejecutor autorizado uid 2. Bloqueados: uid 8 'Cristhian Elgueta' (solo Operaciones), uid 6 'Leonardo Rodriguez' (interno comun).
+Auditoria      : grupo group_madenat_auditoria SIN miembros -> NO disponible (no se crea usuario).
+Sobre          : Embarque UAT-B01-20261004-PERM (id 1869) confirmed con Contenedor pendiente UAT-B01-20261004-CONT-PERM-PEND (id 1871).
+-----------------------------------------------------------------------------------------------------
+UAT| P4_BEFORE {"b01": "none", "c_state": "loaded", "s_state": "confirmed"}
+UAT| P4_OPER_SET_IN_TRANSIT AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P4_OPER_ACTION_SET_IN_TRANSIT NO_ERROR  -> lumber.shipment.zarpe.wizard
+UAT| P4_OPER_B01_WIZARD AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P4_OPER_REBAJA_ZARPE_WIZARD AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P4_OPER_DELIVER AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P4_COMMON_SET_IN_TRANSIT AccessError No tiene permisos para confirmar el zarpe. Se requiere el rol de Jefatura de Operaciones o Gerencia.
+UAT| P4_COMMON_ACTION_SET_IN_TRANSIT AccessError No tiene permisos para operar el zarpe. Se requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+UAT| P4_WRITE_OPER_B01_OPEN UserError Los campos de excepción B-01 del Embarque UAT-B01-20261004-PERM sólo pueden escribirse mediante el flujo autorizado de zarpe B-01.
+UAT| P4_WRITE_OPER_CTX_FAKE UserError Los campos de excepción B-01 del Embarque UAT-B01-20261004-PERM sólo pueden escribirse mediante el flujo autorizado de zarpe B-01.
+UAT| P4_WRITE_COMMON_CTX_FAKE UserError Los campos de excepción B-01 del Embarque UAT-B01-20261004-PERM sólo pueden escribirse mediante el flujo autorizado de zarpe B-01.
+UAT| P4_WRITE_EXEC_NO_FLOW UserError Los campos de excepción B-01 del Embarque UAT-B01-20261004-PERM sólo pueden escribirse mediante el flujo autorizado de zarpe B-01.
+UAT| P4_WRITE_RESOLVED UserError La regularización B-01 (estado «resolved») no está habilitada en esta entrega y no puede fijarse por esta vía.
+UAT| P4_AFTER {"b01": "none", "c_state": "loaded", "s_state": "confirmed"}
+UAT| P4_B01_AUDITS 0
+UAT| P4_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 0, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| P4_CHECK {"b01_none": true, "c_pending_loaded": true, "no_b01_audit": true, "no_physical_financial": true, "state_confirmed": true}

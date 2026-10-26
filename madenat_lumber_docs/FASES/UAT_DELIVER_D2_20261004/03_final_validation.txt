@@ -1,0 +1,19 @@
+UAT| ================ FINAL ================
+UAT| FINAL_COUNTS {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 22, "lumber.export.shipment": 21, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 11, "madenat.audit.log": 278, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 132, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 173}
+UAT| GLOBAL_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 5, "lumber.export.shipment": 5, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 4, "madenat.audit.log": 5, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 1, "shipping.voyage": 0, "stock.lot": 4, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| DELIVERED_AFTER 2
+UAT| 
+UAT| ================ PROTEGIDOS_DESPUES ================
+UAT| PROT_UNCHANGED {"cont_1500": true, "cont_1509": true, "cont_1629": true, "cont_1630": true, "cont_1631": true, "cont_1678": true, "cont_1679": true, "cont_1680": true, "ship_1528": true, "ship_1537": true, "ship_1644": true, "ship_1645": true, "ship_1646": true, "ship_1704": true, "ship_1705": true, "ship_1706": true, "ship_1707": true, "ship_1867": true, "ship_1868": true, "ship_1885": true, "ship_2128": true, "vessel_619": true, "vessel_620": true}
+UAT| UAT_SHIP 2191 UAT-DLV-D2-20261004-B01 in_transit b01= open waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| UAT_SHIP 2189 UAT-DLV-D2-20261004-CLEAN delivered b01= none waiver= none delivery_audits= 1 waiver_audits= 0
+UAT| UAT_SHIP 2193 UAT-DLV-D2-20261004-CREATE-OK draft b01= none waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| UAT_SHIP 2190 UAT-DLV-D2-20261004-DOCS delivered b01= none waiver= approved delivery_audits= 1 waiver_audits= 1
+UAT| UAT_SHIP 2192 UAT-DLV-D2-20261004-WRITE in_transit b01= none waiver= none delivery_audits= 0 waiver_audits= 0
+UAT| HASH_RECHECK 20344 shipment_delivery batch= 2189 actor= 8 hash_ok= True
+UAT| HASH_RECHECK 20345 delivery_waiver batch= 2190 actor= 2 hash_ok= True
+UAT| HASH_RECHECK 20346 shipment_delivery batch= 2190 actor= 8 hash_ok= True
+UAT| COMMIT_FINAL ok
+UAT| 
+UAT| ================ DONE ================
+UAT| DONE_OK

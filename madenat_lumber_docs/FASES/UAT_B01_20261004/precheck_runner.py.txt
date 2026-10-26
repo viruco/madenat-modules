@@ -1,0 +1,132 @@
+# -*- coding: utf-8 -*-
+# UAT B-01 (Sub-bloque 3) - PRECHECK SOLO LECTURA.
+# No escribe, no crea, no usa sudo(), no ejecuta acciones de contrato.
+import json, datetime
+
+def P(*a):
+    print('PRE|', *a)
+
+P('TS', datetime.datetime.utcnow().isoformat() + 'Z')
+P('DB', env.cr.dbname)
+P('SHELL_LOCAL_UID', env.uid, env.user.login)  # harness; NO se usa para acciones
+
+# --- Modulos instalados ---
+MODULES = ['base', 'stock', 'account', 'mail', 'madenat_lumber_core',
+           'madenat_lumber_logistics', 'madenat_lumber_shipping_core',
+           'madenat_lumber_costing', 'madenat_lumber_billing',
+           'madenat_vendor_payment']
+for m in MODULES:
+    mod = env['ir.module.module'].search([('name', '=', m)], limit=1)
+    P('MODULE', m, mod.state if mod else 'MISSING')
+
+# --- Linea base ---
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.export.shipment', 'lumber.container', 'lumber.shipment.line',
+          'shipping.vessel', 'shipping.voyage', 'madenat.audit.log',
+          'madenat.sv.operation', 'madenat.sv.imputation',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+for m in MODELS:
+    try:
+        P('BASE', m, env[m].search_count([]))
+    except Exception as e:
+        P('BASE', m, 'ERR:%s' % e)
+
+# --- Registros protegidos ---
+def nm(model, rid):
+    r = env[model].browse(rid)
+    return r.name if r.exists() else 'MISSING'
+
+def st(model, rid):
+    r = env[model].browse(rid)
+    if not r.exists():
+        return 'MISSING'
+    return r.state if 'state' in r._fields else nm(model, rid)
+
+def lot_split(lot_id):
+    lot = env['stock.lot'].browse(lot_id)
+    if not lot.exists():
+        return 'MISSING'
+    qs = env['stock.quant'].search([('lot_id', '=', lot_id)])
+    internal = round(sum(q.quantity for q in qs if q.location_id.usage == 'internal'), 4)
+    customer = round(sum(q.quantity for q in qs if q.location_id.usage == 'customer'), 4)
+    return {'name': lot.name, 'internal': internal, 'customer': customer}
+
+PROT = {}
+PROT['hist_ship_1537'] = (nm('lumber.export.shipment', 1537), st('lumber.export.shipment', 1537))
+PROT['hist_cont_1509'] = (nm('lumber.container', 1509), st('lumber.container', 1509))
+PROT['hist_pick_7065'] = (nm('stock.picking', 7065), st('stock.picking', 7065))
+PROT['hist_line_1880'] = (env['lumber.shipment.line'].browse(1880).exists() and
+                          env['lumber.shipment.line'].browse(1880).rebaja_state or 'MISSING')
+PROT['hist_line_1881'] = (env['lumber.shipment.line'].browse(1881).exists() and
+                          env['lumber.shipment.line'].browse(1881).rebaja_state or 'MISSING')
+PROT['hist_lot_15970'] = lot_split(15970)
+PROT['hist_lot_15971'] = lot_split(15971)
+PROT['sv_ship_1528'] = (nm('lumber.export.shipment', 1528), st('lumber.export.shipment', 1528))
+PROT['sv_cont_1500'] = (nm('lumber.container', 1500), st('lumber.container', 1500))
+PROT['sv_pick_7062'] = (nm('stock.picking', 7062), st('stock.picking', 7062))
+PROT['sv_op_5822'] = nm('madenat.sv.operation', 5822)
+PROT['sv_imp_492'] = nm('madenat.sv.imputation', 492)
+PROT['sv_guia_32298'] = nm('madenat.guia.processing', 32298)
+PROT['sv_guia_32300'] = nm('madenat.guia.processing', 32300)
+PROT['sv_lot_15892'] = lot_split(15892)
+PROT['sv_lot_15894'] = lot_split(15894)
+PROT['roll_vessel_619'] = nm('shipping.vessel', 619)
+PROT['roll_vessel_620'] = nm('shipping.vessel', 620)
+PROT['roll_voyage_565'] = nm('shipping.voyage', 565)
+for i in (1644, 1645, 1646):
+    PROT['roll_ship_%d' % i] = (nm('lumber.export.shipment', i), st('lumber.export.shipment', i))
+for i in (1629, 1630, 1631):
+    PROT['roll_cont_%d' % i] = (nm('lumber.container', i), st('lumber.container', i))
+for i in range(19699, 19705):
+    PROT['roll_audit_%d' % i] = (env['madenat.audit.log'].browse(i).exists() and
+                                 env['madenat.audit.log'].browse(i).action_type or 'MISSING')
+for i in (1704, 1705, 1706, 1707):
+    PROT['draft_ship_%d' % i] = (nm('lumber.export.shipment', i), st('lumber.export.shipment', i))
+for i in (1678, 1679, 1680):
+    PROT['draft_cont_%d' % i] = (nm('lumber.container', i), st('lumber.container', i))
+PROT['draft_audit_19742'] = (env['madenat.audit.log'].browse(19742).exists() and
+                             env['madenat.audit.log'].browse(19742).action_type or 'MISSING')
+P('PROTECTED', json.dumps(PROT, sort_keys=True, default=str))
+
+
+# --- Confirmacion implementacion B-01 (campos + guards) ---
+S = env['lumber.export.shipment']
+for f in ('b01_exception_state', 'b01_exception_reason', 'b01_exception_opened_at',
+          'b01_exception_opened_by_id', 'b01_exception_audit_id'):
+    P('FIELD', f, f in S._fields)
+for meth in ('_assert_can_depart', '_set_in_transit', 'action_set_in_transit',
+             'action_deliver', '_create_b01_exception_audit', '_assert_b01_write_authorized'):
+    P('METH', meth, hasattr(S, meth))
+P('AUDIT_SELECTION_HAS_B01',
+  'b01_departure_exception' in dict(env['madenat.audit.log']._fields['action_type'].selection))
+
+# --- B-01 persistida no explicada ---
+aud = env['madenat.audit.log']
+P('PERSIST_B01_AUDITS', aud.search_count([('action_type', '=', 'b01_departure_exception')]))
+dev = aud.search([('action_type', '=', 'deviation')])
+legacy = dev.filtered(lambda lg: '[B-01]' in (lg.description or ''))
+P('PERSIST_DEVIATION_B01_TEXT', len(legacy))
+P('PERSIST_B01_OPEN', S.search_count([('b01_exception_state', '=', 'open')]))
+P('PERSIST_B01_RESOLVED', S.search_count([('b01_exception_state', '=', 'resolved')]))
+P('UAT_PREFIX_SHIPS', S.search_count([('name', 'like', 'UAT-B01-20261004')]))
+
+# --- Usuarios y roles ---
+G_JEF = 'madenat_lumber_core.group_madenat_jefatura_operaciones'
+G_GER = 'madenat_lumber_core.group_madenat_gerencia'
+G_OPE = 'madenat_lumber_core.group_madenat_operaciones'
+G_AUD = 'madenat_lumber_core.group_madenat_auditoria'
+g_jef = env.ref(G_JEF); g_ger = env.ref(G_GER)
+g_ope = env.ref(G_OPE); g_aud = env.ref(G_AUD)
+P('GROUP_IDS', json.dumps({'jef': g_jef.id, 'ger': g_ger.id, 'ope': g_ope.id, 'aud': g_aud.id}))
+P('GROUP_MEMBERS_JEF', json.dumps([(u.id, u.login) for u in g_jef.users]))
+P('GROUP_MEMBERS_GER', json.dumps([(u.id, u.login) for u in g_ger.users]))
+P('GROUP_MEMBERS_OPE', json.dumps([(u.id, u.login) for u in g_ope.users]))
+P('GROUP_MEMBERS_AUD', json.dumps([(u.id, u.login) for u in g_aud.users]))
+for u in env['res.users'].search([], order='id'):
+    if u.has_group(G_JEF) or u.has_group(G_GER) or u.has_group(G_OPE) or u.has_group(G_AUD):
+        P('USER', u.id, u.login, repr(u.name),
+          'JEF=', u.has_group(G_JEF), 'GER=', u.has_group(G_GER),
+          'OPE=', u.has_group(G_OPE), 'AUD=', u.has_group(G_AUD),
+          'SUPER=', u.has_group('base.group_system'), 'active=', u.active)
+P('DONE_PRECHECK_OK')

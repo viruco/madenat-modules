@@ -1,0 +1,153 @@
+================================================================================
+MADENAT — UAT COSTEO C2 (Sub-bloque 6) — 00 PRECHECK / LINEA BASE
+================================================================================
+Fecha            : 2026-10-04
+Metodo           : READ-ONLY (git, docker ps, psql SELECT, inspeccion de codigo)
+                   Sin creacion de UAT, sin SQL de escritura, sin -u/-i, sin sudo.
+Dictamen previo  : DETENCION (stop-criterion) -> ver UAT-C2-20261004_RESULTADO.md
+--------------------------------------------------------------------------------
+1. IDENTIDAD GIT (repo custom_addons = /home/.../odoo-18-ce/custom_addons)
+--------------------------------------------------------------------------------
+Rama ............ feat/guia-correccion-documental-preservada-20261002
+HEAD ............ 34c81272bb07d48db98d73a7734c81a2a8e384fa
+Working tree .... 44 entradas (34 M + 10 ??)
+  M core/models/madenat_audit_log.py · core/views/lumber_core_menu.xml
+  M costing/__manifest__.py · costing/models/__init__.py
+  M costing/models/lumber_cost_distribution.py · costing/models/lumber_shipment_costing.py
+  M costing/security/ir.model.access.csv · costing/tests/__init__.py
+  M costing/views/lumber_cost_distribution_views.xml · intake/views/intake_menus.xml
+  M logistics/__manifest__.py · logistics/models/lumber_container.py
+  M logistics/models/lumber_export_shipment.py · logistics/security/ir.model.access.csv
+  M logistics/tests/__init__.py · logistics/tests/test_rebaja_contenedor.py
+  M logistics/views/{logistics_menus,lumber_actions,lumber_container_views,
+      lumber_export_shipment_views}.xml · logistics/wizards/__init__.py
+  M logistics/wizards/{lumber_container_rebaja_reverse_wizard,lumber_container_rollover_wizard,
+      lumber_shipment_rebaja_wizard,lumber_shipment_zarpe_wizard}.py
+  M logistics/wizards/{lumber_shipment_rebaja_wizard_views,lumber_shipment_zarpe_wizard_views}.xml
+  M reports/views/lumber_reports_menu.xml
+  M shipping_core/models/shipping_vessel.py
+  M shipping_core/views/{shipping_vessel_views,shipping_voyage_views}.xml
+ ?? costing/models/stock_lot_cost_line.py · costing/tests/test_shipment_costing_c2.py
+ ?? costing/views/lumber_shipment_costing_views.xml
+ ?? logistics/tests/{test_b01_regularization,test_rebaja_return_total,
+      test_shipment_b01_exception,test_shipment_delivery_safe,
+      test_shipment_return_to_draft,test_vessel_rollover}.py
+ ?? logistics/wizards/{lumber_b01_regularization_wizard.py,
+      lumber_b01_regularization_wizard_views.xml}
+Sin commit/push, sin reset/checkout/rebase/stash/branch.
+NOTA: el codigo C2 (Sub-bloque 6) esta SIN COMMITEAR, pero el modulo ya fue
+      ACTUALIZADO en runtime (columnas y vista C2 presentes; ver seccion 4).
+
+--------------------------------------------------------------------------------
+2. RUNTIME / DB / HTTP
+--------------------------------------------------------------------------------
+odoo18_app ...... Up 9 hours
+odoo18_db ....... Up 9 hours (healthy, postgres:15)
+HTTP ............ http://localhost:8069/web/login -> 200
+DB .............. madenat_test
+
+--------------------------------------------------------------------------------
+3. MODULOS INSTALADOS (ir_module_module)
+--------------------------------------------------------------------------------
+madenat_lumber_core .......... installed  18.0.6.5.0
+madenat_lumber_logistics ..... installed  18.0.1.6.0
+madenat_lumber_shipping_core . installed  18.0.1.0.0
+madenat_lumber_costing ....... installed  18.0.1.0.0
+madenat_lumber_billing ....... installed  18.0.1.0.0
+madenat_vendor_payment ....... installed  18.0.1.2.0
+
+--------------------------------------------------------------------------------
+4. COSTEO C2 — PRESENCIA EN RUNTIME (lectura)
+--------------------------------------------------------------------------------
+Modelo lumber.cost.distribution (tabla lumber_cost_distribution, 34 columnas).
+  Columnas C2 presentes: is_c2, version_number, basis, distribution_date,
+  total_source_cost_usd, total_distributed_usd, residual_usd, shipment_id, applied_by_id
+Vista lumber.cost.distribution.form.c2 (id 2905) presente.
+Metodos (modulo instalado madenat_lumber_costing/models/lumber_shipment_costing.py):
+  action_prepare_distribution, action_apply_distribution, _c2_gate_checks,
+  _assert_can_distribute_costs_c2, action_distribute_costs (legado -> CLAUSURADO).
+Rol APLICAR (C2_APPLY_GROUPS) ....... group_madenat_contabilidad
+Rol PREPARAR (C2_COSTING_GROUPS) ..... group_madenat_costos + group_madenat_contabilidad
+Estados fuente aprobados ............ validated, paid
+Ledger C2 ........................... stock.lot.cost.line (partnerid, shipment_id, distribution_id)
+CONCLUSION: el motor C2 SI esta cargado en runtime. Los bloqueos son de ROLES/DATOS,
+            no de codigo.
+
+--------------------------------------------------------------------------------
+5. ACCION TYPES DE AUDITORIA DE COSTEO
+--------------------------------------------------------------------------------
+madenat_audit_log.action_type incluye (aditivos, codigo instalado):
+  shipment_cost_distribution, shipment_cost_distribution_supersede,
+  shipment_cost_distribution_cancel
+Conteo actual de auditoria de costeo/distribucion ............. 0
+
+--------------------------------------------------------------------------------
+6. LINEA BASE DE DATOS (SELECT count, madenat_test)
+--------------------------------------------------------------------------------
+lumber.export.shipment ....... draft 8 · confirmed 3 · in_transit 8 · delivered 2
+lumber.export.shipment delivered:
+   2189 UAT-DLV-D2-20261004-CLEAN  delivered b01=none cost_distribution_state=pending
+   2190 UAT-DLV-D2-20261004-DOCS   delivered b01=none cost_distribution_state=pending
+cost_distribution_state='distributed' ......... 0
+lumber.shipment.cost.line ..................... 0
+stock.lot.cost.line (total / con shipment_id) . 53 / 0
+lumber.cost.distribution ...................... CD-2026-0002 (draft, is_c2=null)
+                                                CD-DEV-0001 (applied, is_c2=null)
+lumber.cost.distribution.line ................. 5
+stock.move .................................... 145
+stock.move.line ............................... 212
+stock.picking ................................. 30
+stock.quant ................................... 168
+stock.lot ..................................... 132
+account.move .................................. 1
+account.payment ............................... 0
+madenat.audit.log ............................. 278
+NOTA: NO existe ninguna distribucion C2 (is_c2) previa. distributed=0. Sin costo
+      distribuido no explicado.
+
+--------------------------------------------------------------------------------
+7. USUARIOS / ROLES MADENAT (res_users + res_groups_users_rel)
+--------------------------------------------------------------------------------
+uid 2  mauricio.seo@gmail.com      "Administrator" -> CONTABILIDAD, Costos, Gerencia,
+        Jefatura, Operaciones + group_system/Settings/Technical  (ADMINISTRADOR)
+uid 6  leonardo@pinelli.com.mx     "Leonardo Rodriguez"  -> sin grupos MADENAT operativos
+uid 7  mvantonio@valean.cl         "Maria Victoria Antonio" -> sin grupos MADENAT operativos
+uid 8  cristhian.elguetag@gmail.com "Cristhian Elgueta"  -> Operaciones, Jefatura,
+        COSTOS(257), cost_auditor(69), cost_auditor_plus(260)
+uid 9  fmunoz@valean.cl            "Felipe Munoz"        -> cost_auditor(69)
+
+Grupos (XMLID -> id -> usuarios):
+  group_madenat_operaciones .......... 256 -> {8, 2}
+  group_madenat_costos ............... 257 -> {8, 2}
+  group_madenat_contabilidad ......... 258 -> {2}     <== UNICO miembro = Administrator
+  group_madenat_gerencia ............. 259 -> {2}
+  group_madenat_jefatura_operaciones . 261 -> {8, 2}
+  group_madenat_cost_auditor .........  69 -> {8, 9, 2}
+  group_madenat_cost_auditor_plus .... 260 -> {8}
+  group_madenat_auditoria ............ 298 -> {}      (sin usuarios)
+
+--------------------------------------------------------------------------------
+8. REGISTROS PROTEGIDOS (verificados, intactos)
+--------------------------------------------------------------------------------
+Historica ....... ship 1537 in_transit · cont 1509 shipped · pick 7065 done
+UAT Rolleo (VR) . vessel 619/620 · voyage 565 · ship 1644/1645/1646 ·
+                  cont 1629/1630/1631 · audit 19699..19704 (uid 8)
+UAT Borrador .... ship 1704 draft / 1705 confirmed / 1706 confirmed / 1707 in_transit
+UAT B-01 ........ ship 1867 in_transit/none · 1868 in_transit/open · 1869 confirmed/none
+UAT R1 .......... ship 1885 in_transit/resolved · cont 1888 rebajado
+UAT D2 .......... ship 2189/2190 delivered (NO reutilizar como target C2)
+
+--------------------------------------------------------------------------------
+9. STOP-CRITERION
+--------------------------------------------------------------------------------
+DISPARADO. Motivos (detalle en UAT-C2-20261004_RESULTADO.md seccion 2/14):
+ (1) No existe usuario NO-administrador en group_madenat_contabilidad (rol que APLICA
+     C2): el unico miembro es uid 2 "Administrator" (group_system/Settings).
+ (2) No hay Embarque delivered reutilizable: los unicos delivered son 2189/2190 (UAT
+     D2), prohibidos como target. Obtener uno nuevo por flujo D2 exige rebaja fisica
+     (movimiento de inventario, no autorizado) o escritura directa de state (prohibida).
+ (3) Desajuste de premisa: uid 8 (Cristhian) pertenece a group_madenat_costos (257),
+     por lo que NO queda bloqueado en "preparar" (UAT-C2-5 tal como fue disenada no
+     puede cumplirse).
+=> NO se crea UAT. Se solicita decision (habilitacion minima separada).
+================================================================================

@@ -1,0 +1,30 @@
+PRE| DB madenat_test uid 1 su True
+PRE| MODULE madenat_lumber_core installed 18.0.6.5.0
+PRE| MODULE madenat_lumber_logistics installed 18.0.1.6.0
+PRE| FIELD delivery_waiver_state True
+PRE| FIELD delivery_waiver_reason True
+PRE| FIELD delivery_waiver_approved_at True
+PRE| FIELD delivery_waiver_approved_by_id True
+PRE| FIELD delivery_waiver_audit_id True
+PRE| AUDIT_TYPES {'shipment_delivery': 'Entrega de Embarque', 'delivery_waiver': 'Waiver de Entrega', 'b01_departure_exception': 'Zarpe con Excepción B-01'}
+PRE| METHOD action_deliver True
+PRE| METHOD action_confirm True
+PRE| METHOD action_approve_delivery_waiver True
+PRE| METHOD _assert_can_deliver True
+PRE| METHOD _delivery_document_status True
+PRE| SHIP_STATES {'draft': 7, 'in_transit': 6, 'confirmed': 3}
+PRE| DELIVERED 0
+PRE| B01_OPEN 1
+PRE| WAIVER_ROWS 0
+PRE| AUDIT_DELIVERY 0
+PRE| AUDIT_WAIVER 0
+PRE| USER 2 mauricio.seo@gmail.com 'Administrator' JEF True GER True OPE True AUD False SYS True
+PRE| USER 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez' JEF False GER False OPE False AUD False SYS False
+PRE| USER 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' JEF True GER False OPE True AUD False SYS False
+PRE| CHECKLIST_TOTAL 6 REQUIRED 5
+PRE| DOC_STATES {'missing': 96}
+PRE| SAMPLE 1885 UAT-R1-20261004-SHIP in_transit b01 resolved docs 6 doc_status {"status": "missing", "configured": true, "approved_ids": [], "pending_ids": [], "missing_ids": [11050, 11051, 11052, 11053, 11055], "total_required": 5}
+PRE| SAMPLE 1867 UAT-B01-20261004-NORMAL in_transit b01 none docs 6 doc_status {"status": "missing", "configured": true, "approved_ids": [], "pending_ids": [], "missing_ids": [10942, 10943, 10944, 10945, 10947], "total_required": 5}
+PRE| SAMPLE 1868 UAT-B01-20261004-EXCEPTION in_transit b01 open docs 6 doc_status {"status": "missing", "configured": true, "approved_ids": [], "pending_ids": [], "missing_ids": [10948, 10949, 10950, 10951, 10953], "total_required": 5}
+PRE| COUNTS {"account.move": 1, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 17, "lumber.export.shipment": 16, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 7, "madenat.audit.log": 273, "madenat.sv.imputation": 1, "madenat.sv.operation": 1, "shipping.vessel": 8, "shipping.voyage": 2, "stock.lot": 128, "stock.lot.cost.line": 53, "stock.move": 145, "stock.move.line": 212, "stock.picking": 30, "stock.quant": 173}
+PRE| PRECHECK_OK

@@ -1,0 +1,19 @@
+MADENAT - UAT B-01 (Sub-bloque 3) - ESCENARIO UAT-B01-2: EXCEPCION DOCUMENTAL B-01
+Fecha/hora UTC : 2026-10-04T16:20:39Z
+Entorno        : madenat_test ; ejecutor uid 2 'Administrator' (Jefatura/Gerencia).
+Metodo         : ORM via odoo shell. SIN sudo(). SIN SQL de escritura. SIN uid 1.
+Comando        : wizard 'lumber.shipment.zarpe.wizard' + wiz.with_user(2).action_zarpar_con_excepcion()
+Motivo B-01    : 'Contenedor pendiente de rebaja fisica por contingencia documental UAT.'
+-----------------------------------------------------------------------------------------------------
+UAT| E2_BEFORE {"b01": "none", "c_pen": "loaded", "c_reb": "rebajado", "s_state": "confirmed"}
+UAT| E2_WIZARD 87 pending_count= 1 pending_names= UAT-B01-20261004-CONT-PENDING
+UAT| E2_ACTION OK
+UAT| E2_AFTER {"actual_departure": true, "audit_id": 19890, "b01": "open", "c_pen": "loaded", "c_reb": "shipped", "opened_at": "2026-10-04 16:20:39", "opened_by": 2, "reason": "Contenedor pendiente de rebaja f\u00edsica por contingencia documental UAT.", "reason_exact": true, "s_state": "in_transit"}
+UAT| E2_PEN_UNCHANGED True
+UAT| E2_B01_AUDITS 1
+UAT| E2_DEV_AUDITS 1
+UAT| E2_AUDIT 19890 b01_departure_exception actor= 2 hash_ok= True rebajados= ['UAT-B01-20261004-CONT-REB'] pendientes= ['UAT-B01-20261004-CONT-PENDING'] reason_ok= True gates= {"billing": "blocked", "costing": "blocked", "delivery": "blocked", "draft": "blocked", "payments": "blocked", "rollover": "blocked"} phys_inv= {"no_picking_created": true, "no_quant_change": true, "no_stock_movement": true}
+UAT| E2_CHATTER_B01 2
+UAT| E2_CHATTER_DEV 1
+UAT| E2_DELTA {"account.move": 0, "account.payment": 0, "lumber.billing.consolidation": 0, "lumber.container": 0, "lumber.export.shipment": 0, "lumber.shipment.cost.line": 0, "lumber.shipment.line": 0, "madenat.audit.log": 2, "madenat.sv.imputation": 0, "madenat.sv.operation": 0, "shipping.vessel": 0, "shipping.voyage": 0, "stock.lot": 0, "stock.lot.cost.line": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+UAT| E2_CHECK {"audit_delta_2": true, "b01_open": true, "c_pen_conserved": true, "c_reb_shipped": true, "has_audit": true, "no_extra_cost_fin_sv": true, "no_extra_stock": true, "one_b01_audit": true, "opened_by_exec": true, "reason_exact": true, "state_in_transit": true}

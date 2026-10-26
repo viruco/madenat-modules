@@ -1,0 +1,48 @@
+# -*- coding: utf-8 -*-
+# UAT B-01 - verificacion post-commit (solo lectura, proceso nuevo).
+import hashlib
+import json
+import datetime
+
+
+def P(*a):
+    print('VER|', *a)
+
+
+PREF = 'UAT-B01-20261004-'
+P('TS', datetime.datetime.utcnow().isoformat() + 'Z')
+MODELS = ['stock.move', 'stock.move.line', 'stock.picking', 'stock.quant',
+          'stock.lot', 'stock.lot.cost.line', 'lumber.shipment.cost.line',
+          'lumber.export.shipment', 'lumber.container', 'lumber.shipment.line',
+          'shipping.vessel', 'shipping.voyage', 'madenat.audit.log',
+          'madenat.sv.operation', 'madenat.sv.imputation',
+          'lumber.billing.consolidation', 'account.move', 'account.payment']
+for m in MODELS:
+    P('COUNT', m, env[m].search_count([]))
+for s in env['lumber.export.shipment'].search([('name', 'like', PREF)], order='name'):
+    P('SHIP', s.id, s.name, 'state=', s.state, 'b01=', s.b01_exception_state,
+      'opened_by=', s.b01_exception_opened_by_id.id,
+      'audit=', s.b01_exception_audit_id.id, 'dep=', bool(s.actual_departure))
+    P('  REASON', repr(s.b01_exception_reason))
+    for c in s.container_ids:
+        P('  CONT', c.id, c.name, c.state)
+for a in env['madenat.audit.log'].search([('action_type', '=', 'b01_departure_exception')]):
+    snap = a.audit_snapshot or ''
+    P('B01_AUDIT', a.id, 'batch=', a.batch_id, 'actor=', a.user_id.id,
+      'hash_ok=', hashlib.sha256(snap.encode('utf-8')).hexdigest() == a.audit_hash)
+    P('SNAP', snap)
+for a in env['madenat.audit.log'].search(
+        [('action_type', '=', 'deviation'), ('batch_id', '=', str(1868))]):
+    snap = a.audit_snapshot or ''
+    P('DEV_AUDIT', a.id, 'desc=', (a.description or '')[:90],
+      'hash_ok=', hashlib.sha256(snap.encode('utf-8')).hexdigest() == a.audit_hash)
+for m in env['mail.message'].search(
+        [('model', '=', 'lumber.export.shipment'), ('res_id', '=', 1868)], order='id'):
+    P('MSG', m.id, 'author=', m.author_id.id, (m.body or '').replace('\n', ' ')[:140])
+P('ALL_OPEN_B01',
+  env['lumber.export.shipment'].search([('b01_exception_state', '=', 'open')]).mapped('name'))
+P('B01_OPEN_COUNT',
+  env['lumber.export.shipment'].search_count([('b01_exception_state', '=', 'open')]))
+P('B01_RESOLVED_COUNT',
+  env['lumber.export.shipment'].search_count([('b01_exception_state', '=', 'resolved')]))
+P('DONE')
