@@ -25,14 +25,14 @@ eaccfd9df77ed23d2a87b07d1f2dd651c82ff9bf22b850c866ca2d375a3b1420  models/recepti
 
 **Evidencia:**
 
-- `FASE_C_20261007_154556/RESUMEN_FASE_C.md:104` registra literalmente:
+- `FASES/FASE_C_20261007_154556/RESUMEN_FASE_C.md` registra literalmente:
   > «Código sin cambios en Fase C: HEAD `e302c488…`; `git status` = **45 entradas**
   > (igual que al cierre de Fase B)».
 - Hoy el conteo es **47** (41 `M` + 6 `??`). La diferencia de 2 corresponde a
   **archivos sin seguimiento** añadidos por intervenciones autorizadas posteriores
   (p. ej. `madenat_lumber_intake/tests/test_guia_delete_acl.py`,
   `madenat_lumber_intake/tests/test_guide_lifecycle_*.py`).
-- La entrega previa (`FIX_GUIA_DUP_20261007_164415/docs/00_BASELINE.md`) declaraba
+- La entrega previa (`FASES/FIX_GUIA_DUP_20261007_164415/docs/00_BASELINE.md`) declaraba
   «sucio (pre-existente): `M … madenat_guia_processing.py`». Esa frase era una
   **vista ACOTADA al archivo de identidad** (se obtuvo filtrando el `git status`
   por los nombres relevantes a la intervención: `reception_parser|guia_processing|

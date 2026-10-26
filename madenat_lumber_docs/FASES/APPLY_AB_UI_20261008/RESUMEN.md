@@ -50,7 +50,7 @@ Logs: `logs/update_modules_20261008_093223.log`, `logs/update_ui_20261008_093651
 | Corrida | Resultado | Log |
 |---|---|---|
 | Dirigidas del gate **sobre `madenat_test`** (8 clases) | **`0 failed, 0 error(s) of 88 tests`** | `logs/tests_directed_madenat_test_20261008_093825.log` |
-| Gate histórico 88/88 (2026-10-07, base aislada) | Antecedente conservado | `IMPL_SERVICE_RETURN_AB_20261007/logs/gate_run2.log` |
+| Gate histórico 88/88 (2026-10-07, base aislada) | Antecedente conservado | `FASES/IMPL_SERVICE_RETURN_AB_20261007/` (artefacto `gate_run2.log` en `logs/`, fuera de git) |
 | 9 fallas preexistentes | Idénticas sin el cambio | `logs/iso_full_run1.log`, `logs/base_targeted.log` |
 | Regresiones nuevas | **0** | — |
 
@@ -72,11 +72,11 @@ Logs: `logs/update_modules_20261008_093223.log`, `logs/update_ui_20261008_093651
 `db/madenat_test_*.dump` (11,3 MB, TOC 13.325), `filestore/odoo-web-data_*.tar.gz` (109 MB),
 `config/config_*/odoo.conf`, `pre_patch_files/`.
 
-Procedimiento: `IMPL_SERVICE_RETURN_AB_20261007/docs/PLAN_APLICACION_REVERSION.md` §Reversión.
+Procedimiento: `FASES/IMPL_SERVICE_RETURN_AB_20261007/docs/PLAN_APLICACION_REVERSION.md` §Reversión.
 
 ## 7. V3 (navegador) — PENDIENTE
 
 No ejecutada (sin navegador disponible). **No** se afirma completada. Guion actualizado a 8069 /
-`madenat_test`: `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`.
+`madenat_test`: `FASES/IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`.
 Verificación estructural read-only sí ejecutada (resumen 2 columnas; **un** encabezado «Evidencia
 documental»; `col="3"`; orden `resumen → botón → radio → evidencia → packing`).

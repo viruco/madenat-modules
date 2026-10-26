@@ -34,7 +34,7 @@ rutas repo-relativas `madenat_lumber_core/...`.
 
 ## 2. Integridad del informe y hashes del working tree / staged
 
-- Informe de cierre `oracle_f31_audit/20261003_165538/INFORME_FINAL_F31.md`
+- Informe de cierre `FASES/oracle_f31_audit/20261003_165538/INFORME_FINAL_F31.md`
   SHA-256 = `ea9a37f365364b481f915a966049e8fe551c37d96f1015297cb351b897d41e41` → **COINCIDE**.
 
 | Archivo | SHA-256 working tree | SHA-256 staged (`git show :path`) | Baseline autorizado |

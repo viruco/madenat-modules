@@ -85,6 +85,12 @@ expediente `AUDIT_REBAJA_ETIQUETAS_20261011/` (raíz del workspace). Versiones: 
 **Estado:** ACTIVO — Mapa maestro de documentación canónica
 **Responsable revisión:** 2026-10-17 — Alta de AD-116 y actualización canónica con las especificaciones de Cristhian Elgueta (F1 a F7, S2S 75-155 mm, Blanks sin deducción 1/16", patios creables). Sincronización monótona de versiones 04, 05, 12, 17 e índice.
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## 1. Principio rector
@@ -223,7 +229,7 @@ La evidencia de las pruebas de ingreso **no vive sólo en el repositorio**. Fuen
 | Fuente | Ruta real | Uso |
 |---|---|---|
 | **Biblioteca de muestras** | `…/odoo-18-ce/muestras_documentos_ingreso` (hermana de `custom_addons`; **no** está versionada en el repo) | Documentos de ingreso: `07-09-2026/`, `Ejercicio Completo Cristhian Elgueta/`, `excel_packing/`, `guias_pdf/` — **63 archivos, 52 únicos por SHA-256** |
-| **Respaldos de base** | `BACKUP_AB_APPLY_20261008/db/madenat_test_20261008_092958.dump` (base **local**), `APPLY_AB_UI_20261008/retired/db/srvretab_*.dump`, `backups/**/madenat_test*.dump`, `APPLY_BUSQUEDA_INTAKE_20261007/backup/madenat_test_pre.dump` | Registros de ingreso, adjuntos, lotes y pickings: **evidencia persistente** de las pruebas (se leen con `pg_restore` **sin** restaurar) |
+| **Respaldos de base** | `FASES/BACKUP_AB_APPLY_20261008/` (artefacto `madenat_test_20261008_092958.dump` en `db/`, fuera de git) (base **local**), `APPLY_AB_UI_20261008/retired/db/srvretab_*.dump`, `backups/**/madenat_test*.dump`, `FASES/APPLY_BUSQUEDA_INTAKE_20261007/` (artefacto `madenat_test_pre.dump` en `backup/`, fuera de git) | Registros de ingreso, adjuntos, lotes y pickings: **evidencia persistente** de las pruebas (se leen con `pg_restore` **sin** restaurar) |
 | **Dump SQL histórico** | `madenat_test_antes_limpieza.sql` (2026-08-20) | Línea base anterior a las pruebas de septiembre |
 | **Expedientes de prueba** | `AUDIT_*`, `UAT_*`, `IMPL_*`, `FIX_*`, `FASE_*`, `CIERRE_*`, `INCIDENTE_*`, `APPLY_*` | Parches, logs de corridas y verificación |
 | **Fixtures con archivo real** | `custom_addons/madenat_lumber_intake/tests/fixtures/HLZF75_4495589.pdf` (byte-idéntico a la muestra) y `custom_addons/madenat_lumber_core/tests/fixtures/26270.txt` (transcripción) | Regresión automatizada |

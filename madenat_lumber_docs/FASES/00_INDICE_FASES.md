@@ -1,17 +1,25 @@
 # Índice de carpetas de fase consolidadas — `madenat_lumber_docs/FASES/`
 
-**Versión documental:** 1.0.0
+**Versión documental:** 1.1.0
 **Fecha:** 2026-10-26
-**Origen:** consolidación documental FASE 2, etapa E4 (D4).
+**Origen:** consolidación documental FASE 2, etapas E4 (D4), E8 y D7.
+
+> **Nota de consolidación (FASE 2, 2026-10-26).** Las referencias a expedientes de fase se reescribieron a
+> `FASES/<CARPETA>/…` en los documentos canónicos, en la WIKI y en las propias copias de `FASES/` (ver
+> `FASES/00_VERIFICACION_E8.md`). El texto, las fechas y las cifras históricas no se alteraron: solo cambió el
+> puntero. Los artefactos no versionados (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de
+> archivo y carpeta de origen.
 
 Cada carpeta de fase que vivía en la raíz del stack (`/home/viruco/dev-stack/odoo/odoo-18-ce/`,
 fuera de git) tiene ahora una copia versionada en `madenat_lumber_docs/FASES/<CARPETA>/`,
 restringida a documentación: `.md`, `.txt`, `.csv`, `.pdf`, `.xlsx`, `.xls` menores de 2 MB por archivo.
-Los originales **siguen en su sitio** hasta que se autorice su borrado en el punto de control C1.
+Los originales **siguen en su sitio** hasta que se autorice su borrado en el punto de control C1, y ya
+están comprimidos y verificados en `/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz`
+(94/94, D7: `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
 
 **No versionado en git (por diseño del filtro):** `addons/`, `workcopy/`, `verify_*`, `respaldos/`,
 `backups_*`, `*.dump`, `*.sql`, `*.tar*`, `*.log` de más de 1 MB y binarios de más de 2 MB.
-Esos restos se archivan en `/home/viruco/dev-stack/backups/<carpeta>.tar.gz` con su sha256 (D7/C1).
+Esos restos viajan íntegros en los `.tar.gz` de D7.
 
 **Manifiestos de verificación:** `FASES/00_MANIFIESTO_CONSOLIDACION_ANTES.csv` (línea base completa)
 y `FASES/00_MANIFIESTO_TANDA_1..8.csv` (sha256 origen vs copiado por tanda).

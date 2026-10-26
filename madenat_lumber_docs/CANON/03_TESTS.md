@@ -11,6 +11,12 @@
 <!-- actualizado: 2026-10-10 (3) — §15.5 controles A/B/C **acreditados** (reversa/procedencia, reimputación, compañía+regla, elegibilidad dura, N:M presentación) y §15.6 ajuste de integridad (T13–T22 = 22/22; regresión 275 pruebas, 4 fallas: 3 preexistentes + 1 ambiental por evidencia V3 7973, 0 errores). Versión 03 6.18.0 → 6.19.0. -->
 **Estado:** ACTIVO — Matriz canónica de validación operativa.
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## 1. Propósito
@@ -545,7 +551,7 @@ rechazo); `action_pending` **no** lo exige; cambio Sí→No/vaciar **rechazado**
   contenedor `srvretab_web`); login de Cristhian verificado por sesión (`uid=8`). **No** es el
   servicio activo (`odoo18_app`, 8069).
 - **Navegador (V3): PENDIENTE.** **No ejecutado** (sin navegador). Guion manual:
-  `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`. **No** se declara
+  `FASES/IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md`. **No** se declara
   completado.
 - **Preexistentes/límites:** se mantienen las **9 fallas** de §12.2 y los **límites de concurrencia**
   no probados.
@@ -592,7 +598,7 @@ entorno 8070 como evidencia de esta implementación (ese aislamiento se retiró;
 #### 12.6.2 Pruebas ejecutadas en esta implementación (evidencia nueva, sobre `madenat_test`)
 
 `0 failed, 0 error(s) of 88 tests when loading database 'madenat_test'` (`odoo.tests.result`; log
-`APPLY_AB_UI_20261008/logs/tests_directed_madenat_test_20261008_093825.log`).
+`FASES/APPLY_AB_UI_20261008/` (artefacto `tests_directed_madenat_test_20261008_093825.log` en `logs/`, fuera de git)).
 
 | Suite | Clase | Rol | Resultado |
 |---|---|---|---|
@@ -777,7 +783,7 @@ concurrencia ni instalación en base limpia (fuera de alcance).
 
 | Corrida | Alcance | Resultado | Log |
 |---|---|---|---|
-| Intake (regresión de módulo) | `--test-tags /madenat_lumber_intake` | **2 failed, 0 error(s) of 380** (→ corregidas) | `CIERRE_PENDIENTES_20261010/logs/tests_intake_20261010.log` |
+| Intake (regresión de módulo) | `--test-tags /madenat_lumber_intake` | **2 failed, 0 error(s) of 380** (→ corregidas) | `FASES/CIERRE_PENDIENTES_20261010/` (artefacto `tests_intake_20261010.log` en `logs/`, fuera de git) |
 | Dirigidas (P1/P4) | `TestGuiaProcessingExcelParser` + `TestVolumeUiHierarchy` + `TestVolumeOperationsScreen` | **1 failed of 34** → **0 failed, 0 error(s) of 34** | `.../tests_p4_p1_20261010.log`, `.../tests_p4_p1_run2_20261010.log` |
 | Documento real JCE | `GDE 95806.xls` por el parser core real | 12 válidas / 0 rechazadas; `4,9967` ≈ `VOL.` 4,997; Σ `59,960` ≈ guía 59,964 | §17.16.4 |
 | Consola Ferramenta | id 900001728 | guía/packing 57,840 · embarque 48,009 | §17.16.2 |
@@ -977,7 +983,7 @@ previos del asistente, porque la inclusión explícita convive con el reparto cr
 **Integración web/RPC (no V3, no sustituye al navegador):** sesión autenticada de Operaciones;
 menú **«Asignaciones SV»** visible; `default_get` del asistente con `active_model='stock.lot'`
 devuelve `sv_lot_id`. **V3 *pixel* pendiente** (guion manual en
-`IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`).
+`FASES/IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`).
 
 **No ejecutado (fuera de alcance):** navegador real (V3); concurrencia real; base limpia; Bloque D.
 
@@ -1258,7 +1264,7 @@ pendiente (sin navegador). Versión 03 6.25.0 → 6.26.0. Sin commit/push. -->
 | AUD-ETQ-09c | ciclos sin efectos físicos (stock.move/move.line/picking) |
 
 **Concurrencia real (sonda externa, cursores independientes + `threading.Barrier`):**
-`AUDIT_REBAJA_ETIQUETAS_20261011/evidence/concurrency_probe.py` → Q1/Q2/Q3 OK, sin sobreconsumo, una sola
+`FASES/AUDIT_REBAJA_ETIQUETAS_20261011/` (artefacto `concurrency_probe.py` en `evidence/`, fuera de git) → Q1/Q2/Q3 OK, sin sobreconsumo, una sola
 reversa, sin efectos físicos, 0 residuos. **RESULTADO GLOBAL: OK** (`logs_cierre/concurrency.log`).
 
 **Comandos y resultados (base `madenat_test`, contenedor `odoo18_app`):**
@@ -1313,7 +1319,7 @@ odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init
      --http-port=8071 --test-tags /madenat_lumber_logistics
 # → 4 failed, 0 error(s) of 385 tests  (mismas 4 preexistentes)
 ```
-Evidencia: `CONTRATO_APLICACION_20261011/logs_pol.log`, `logs_regression.log`.
+Evidencia: `FASES/CONTRATO_APLICACION_20261011/` (artefacto `logs_pol.log`, fuera de git), `logs_regression.log`.
 
 **Límite:** aceptación en navegador pendiente (guion A–I).
 
@@ -1391,7 +1397,7 @@ odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init
      --http-port=8071 --test-tags /madenat_lumber_logistics
 # → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
 ```
-Evidencia: `UI_SAVE_REBAJA_20261011/logs/regression.log`.
+Evidencia: `FASES/UI_SAVE_REBAJA_20261011/` (artefacto `regression.log` en `logs/`, fuera de git).
 
 **Límite:** evidencia de navegador pendiente (guion `docs/GUION_NAVEGADOR_UI.md`); no se declara
 «verificado en pantalla».
@@ -1431,7 +1437,7 @@ odoo -d madenat_test -u madenat_lumber_logistics --test-enable --stop-after-init
      --http-port=8071 --test-tags /madenat_lumber_logistics
 # → mismas 4 fallas preexistentes (test_processor_locations / test_processor_shipment_ad89)
 ```
-Evidencia: `SIMPLE_REBAJA_20261011/logs/regression.log`.
+Evidencia: `FASES/SIMPLE_REBAJA_20261011/` (artefacto `regression.log` en `logs/`, fuera de git).
 
 **Límite:** evidencia de navegador pendiente (guion `docs/GUION_NAVEGADOR_SIMPLE.md`).
 
@@ -1533,7 +1539,7 @@ por defecto (`mail.message`/`mail.followers`) con «Agregar una línea» ⇒ `Ow
 ```
 
 **Límite:** VIEW-01/02/03/04/06/07 en **cliente** (navegador) **PENDIENTES** (sin navegador; guion
-`HOTFIX_OWL_CHATTER_OE_20261012/docs/GUION_MANUAL_NAVEGADOR.md`). Una validación XML/ORM **no** demuestra la
+`FASES/HOTFIX_OWL_CHATTER_OE_20261012/docs/GUION_MANUAL_NAVEGADOR.md`). Una validación XML/ORM **no** demuestra la
 evaluación en Owl.
 
 <!-- actualizado: 2026-10-12 (4) — §30 HOTFIX OWL chatter: VIEW 5/5; logistics 4/506 (0 nuevas);

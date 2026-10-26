@@ -118,7 +118,7 @@ tienen `chatter=True`, `message_ids` **NO** es campo suelto (`False`), `message_
 ## Parte D — Criterio de decisión de despliegue · **PREPARADO (sin ejecutar)**
 
 Árbol completo (CASOS 1–5 con módulos a copiar, `-u`, respaldo, smoke test, rollback y aviso a Cristhian) en
-`HOTFIX_OWL_CHATTER_OE_20261012/docs/PLAN_DESPLIEGUE_ACUMULADO.md` **§10–§11**. Resumen:
+`FASES/HOTFIX_OWL_CHATTER_OE_20261012/docs/PLAN_DESPLIEGUE_ACUMULADO.md` **§10–§11**. Resumen:
 CASO 1 (remoto sólo `<chatter/>` + vistas con `oe_chatter`) → **priorizar hotfix**; CASO 2 (core viejo que aún
 compila `oe_chatter`) → preventivo, combinable; CASO 3 (`vendor_payment` instalado con `oe_chatter`) → riesgo
 adicional, corrección sujeta a autorización; CASO 4 (versiones remotas distintas) → reconstruir paquete mínimo y

@@ -27,6 +27,12 @@
 <!-- actualizado: 2026-10-10 (3) — sección «Conciliación envío–retorno (Bloque A/B/C)»: **ajuste de integridad** (`19` §19.13): reversa vs. procedencia, reimputación con historia, consistencia de compañía + regla de registro, elegibilidad dura (done/tipo interno), volúmenes N:M referenciales (`aggregator=False`). Módulo `madenat_lumber_logistics` **18.0.1.8.0**. Versión 05 8.17.0 → 8.18.0. Bloque D fuera de alcance. Sin commit/push. -->
 **Estado:** ACTIVO — Se incorpora la clasificación por área de la auditoría del 2026-10-01 (Operaciones / Contabilidad-Auditoría-Facturación / Logística / Fase 6). El orden de trabajo vigente del usuario (AD-81 PROPUESTA) es: ingreso a stock → consolidación → mantenimiento → logística y exportación; lo contable, la auditoría y la facturación quedan **diferidos**. AD-74 (Ingreso por Volúmenes), AD-75 (asignación manual de proveedor) y AD-80 (UX de volumen oficial, bloque SV visible y ciclo de vida de guías, 2026-09-28) cerrados. Frente principal AD-65 conserva pendientes de UI/wizard. La **rebaja/reversa de Etiquetas SV y la asignación logística SV** están implementadas y validadas (AD-79) y **visibles y ejecutables desde la Consola y la Guía** (AD-80); la rebaja/registro físico de stock por Volúmenes **fuera** del flujo SV sigue no implementada. El **archivado (`active`) de guías queda diferido** a una fase separada. Programación 1 (AD-77) conserva pendientes de validación visual de R1, exportaciones XLSX y test automatizado.
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## Regla de uso
@@ -559,7 +565,7 @@ retiro y detalle: `02_CONTINUIDAD.md` §17.13 y `03_TESTS.md` §12.6.
       intactos, uid 8) en el gate histórico y en la corrida sobre `madenat_test`. Ver `03_TESTS.md`
       §12.4 / §12.6.
 - [ ] **Verificación en navegador** (V3): guion actualizado en
-      `IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md` → `http://localhost:8069`
+      `FASES/IMPL_SERVICE_RETURN_AB_20261007/docs/GUION_VERIFICACION_NAVEGADOR.md` → `http://localhost:8069`
       (base `madenat_test`, guía **19827**). **NO ejecutada** (sin navegador); incluye la comprobación
       **visual** del nuevo layout de Ingreso de Madera.
 - [ ] **Decisión funcional pendiente:** el filtro «Retornos sin imputación aplicada» **no** evalúa
@@ -789,7 +795,7 @@ documento de negocio, ledger ni motor de saldos nuevos. `CANON/19` **§19.14**; 
   4 fallas** (las mismas preexistentes/ambientales), **0 errores**.
 - **Cierre versionado:** `madenat_lumber_logistics` **18.0.1.9.0**; `19` **1.11.0**.
 - **Pendiente de evidencia manual:** navegador real (V3 *pixel*). Guion:
-  `IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`.
+  `FASES/IMPL_ASSIGN_SV_20261010_165247/docs/GUION_MANUAL_NAVEGADOR.md`.
 - **Bloque D (conciliación cuantitativa):** **NO implementado** (`19` §19.12). **Sin** commit/push.
 
 ---
@@ -985,7 +991,7 @@ manual** · **aceptación pendiente**. `CANON/19` **§19.20**; `02` §17.16.18; 
   que hacen `commit()`; trigger de base de datos o hash encadenado para la bitácora (sigue **propuesto y no
   implementado**); despliegue al TEST remoto.
 
-**Evidencia:** `AUDITORIA_INTEGRAL_20261012/README.md` §4.3 (H-DATA-1) y §7 (D7); `fase4/README.md` §7, §9, §10.
+**Evidencia:** `FASES/AUDITORIA_INTEGRAL_20261012/README.md` §4.3 (H-DATA-1) y §7 (D7); `fase4/README.md` §7, §9, §10.
 
 <!-- actualizado: 2026-10-15 (1) — sección «Supuesto de una sola compañía (AD-106) y conservación de los usuarios de prueba inactivos». Versión 05 8.26.0 → 8.27.0. Commit local ① de la FASE 5 (commits ordenados, solo local); sin push ni despliegue. -->
 

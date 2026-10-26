@@ -27,6 +27,7 @@
         'views/stock_lot_costing_views.xml',
         'data/ir_sequence_data.xml',
         'views/lumber_cost_distribution_views.xml',
+        'views/lumber_shipment_costing_views.xml',
       #  'views/costing_menus.xml',
     ],
     'installable': True,

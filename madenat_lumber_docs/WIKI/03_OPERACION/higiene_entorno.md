@@ -5,6 +5,12 @@
 **Estado:** Activo
 **Última actualización:** 2026-10-07
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## Propósito
@@ -51,7 +57,7 @@ de `FIX_*`/`IMPL_*`, expedientes (`AUDIT_*/IMPL_*/UAT_*/…`), respaldos (`backu
 | | ¿enlace simbólico? / enlaces internos | **NO** / **0** |
 | | contenido | 72 archivos, todos bajo `madenat_lumber_intake/` |
 | | ¿archivos únicos? (`diff -r` vs artefacto **y** vs código activo) | **IDÉNTICO a ambos** ⇒ sin contenido único |
-| | ¿resultados conservados? | **Sí** — `APPLY_BUSQUEDA_INTAKE_20261007/docs/VERIFICACION_POST_APLICACION.md` §1 |
+| | ¿resultados conservados? | **Sí** — `FASES/APPLY_BUSQUEDA_INTAKE_20261007/docs/VERIFICACION_POST_APLICACION.md` §1 |
 | `busqintake_iso_20261007` | nombre exacto / `datallowconn` | OK / `t` |
 | | conexiones activas | **0** |
 | | ¿en `docker-compose.yml` / contenedores? | **No** / **ninguno** |

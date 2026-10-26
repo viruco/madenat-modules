@@ -134,7 +134,7 @@ Untracked files:
    - La librería `openpyxl` **ya se importaba y utilizaba en runtime desde el primer commit** en que se introdujo `madenat_ingestion_engine` (commit `843ed0d`: `import openpyxl`, `openpyxl.load_workbook(...)` en `services/document_extractor.py`).
    - El entregable WP-E (`b661a44`) **NO añadió ninguna dependencia nueva de ejecución al módulo**.
 2. **Prerrequisito de Despliegue:**
-   - Quedó registrado en `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/RUNBOOK_FASE12.md` (§2) como paso previo mandatorio verificar que `openpyxl` esté disponible en el entorno virtual `/opt/odoo18-test/venv`:
+   - Quedó registrado en `FASES/FASE12_REQUERIMIENTOS_OPERACIONES_20261017/RUNBOOK_FASE12.md` (§2) como paso previo mandatorio verificar que `openpyxl` esté disponible en el entorno virtual `/opt/odoo18-test/venv`:
      ```bash
      /opt/odoo18-test/venv/bin/python -c "import openpyxl; print('openpyxl version:', openpyxl.__version__)"
      ```

@@ -94,7 +94,7 @@ la convención ya usada por los recursos históricos `f31_test_…` y `pre02_tes
 
 ## 4. Matriz de invariantes del oráculo (73 aserciones, todas PASS)
 
-Script ORM reproducible: `oracle_f31_audit/20261003_165538/oracle_f31.py`,
+Script ORM reproducible: `FASES/oracle_f31_audit/` (artefacto `oracle_f31.py` en `20261003_165538/`, fuera de git),
 ejecutado vía `odoo shell` como usuario del contenedor (`odoo`), entorno
 superusuario solo para **crear** datos y usuarios; las comprobaciones de ACL se
 ejecutan con `with_user(<usuario>)` (sin `sudo`). Datos 100 % propios (partner

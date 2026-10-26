@@ -3,7 +3,7 @@
 > **⚠ INSTRUCCIÓN DE MENÚ SUPERADA (2026-10-10).** El acceso **«Logística Exportación →
 > Asignaciones SV»** de este guion es **histórico**: fue sustituido por el **único** acceso
 > **«Logística Exportación → Rebaja de etiquetas»** al unificar la navegación (ver
-> `UNIFY_SV_REBAJA_MENU_20261010/docs/GUION_MANUAL_NAVEGADOR.md` y `CANON/19` §19.15). El resto del
+> `FASES/UNIFY_SV_REBAJA_MENU_20261010/docs/GUION_MANUAL_NAVEGADOR.md` y `CANON/19` §19.15). El resto del
 > procedimiento (pasos 2–12) sigue siendo válido; sólo cambia el rótulo del punto de entrada. Se
 > conserva este documento como **antecedente**; no se borra la historia.
 

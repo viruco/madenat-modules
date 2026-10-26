@@ -4,7 +4,7 @@
 **Módulo:** `madenat_lumber_logistics` **18.0.1.32.0 → 18.0.1.36.0**
 **Repositorio:** `custom_addons/` · **Rama:** `feat/guia-correccion-documental-preservada-20261002`
 **HEAD inicial:** `ee7b7c681a936775d181ebf3e215900884b941ba` · **HEAD final:** `254e6d3`
-**Referencia:** `AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015/INFORME_AUDITORIA.md` (§1.2 y §7)
+**Referencia:** `FASES/AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015/INFORME_AUDITORIA.md` (§1.2 y §7)
 **Alcance:** proteger el ciclo de vida documental (A-1, B-1, M-2, M-4, B-2, B-3) con TDD, commitear y validar. Sin
 push, sin ramas, sin reset/clean/stash/rebase/amend, sin `-u all`, sin cambios en datos reales, sin tocar
 `IMP04823`/`IMP02220`, sin `costing` ni menú de `reports`. **NO se ha desplegado.**

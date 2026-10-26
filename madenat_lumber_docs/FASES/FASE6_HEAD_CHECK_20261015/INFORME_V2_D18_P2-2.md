@@ -106,7 +106,7 @@ los métodos `_rebaja_require_group`, `_scope_containers`, `_classify`, `_planne
    contenedores pendientes por embarque, rebaja masiva con **savepoint por contenedor** e informe de
    éxitos/fallos»* y *«Permisos: grupos existentes… con rechazo en servidor (**`_rebaja_require_group`**)»* →
    son **exactamente** los añadidos del diff.
-3. **`AUDIT_B01_20261004/AUDITORIA_B01_FASE_A.md`** (2026-10-04) analiza el estado **ya modificado**: cita
+3. **`FASES/AUDIT_B01_20261004/AUDITORIA_B01_FASE_A.md`** (2026-10-04) analiza el estado **ya modificado**: cita
    `lumber.shipment.rebaja.wizard._classify` (:209) y la rama `feat/rebaja-contenedor-20261001`. `_classify`
    **no existe** en la versión commiteada ⇒ ese estado ya estaba en el árbol el 2026-10-04.
 4. **`WIKI/05_INCIDENTES/INC-011…20261003.md`** menciona el modelo en el incidente de desalineación

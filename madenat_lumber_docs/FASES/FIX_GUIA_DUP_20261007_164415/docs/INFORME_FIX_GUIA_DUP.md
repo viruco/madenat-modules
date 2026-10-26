@@ -1,7 +1,7 @@
 # INFORME — Validación efectiva de guías duplicadas en la ingesta
 
 **MADENAT — Odoo 18 CE** · 2026-10-07 · **Entrega aislada. NO desplegada.**
-Base de la auditoría: `AUDIT_GUIA_DUPLICADOS_20261007/INFORME_VALIDACION_GUIA_INGESTA.md`.
+Base de la auditoría: `FASES/AUDIT_GUIA_DUPLICADOS_20261007/INFORME_VALIDACION_GUIA_INGESTA.md`.
 
 ---
 

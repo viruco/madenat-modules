@@ -1,9 +1,32 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from decimal import Decimal, ROUND_HALF_UP
+import hashlib
+import json
 import logging
 
+from odoo import models, fields, api, _
+from odoo.exceptions import AccessError, UserError
+
 _logger = logging.getLogger(__name__)
+
+# ── C2: rol autorizado a APLICAR (liquidar) la distribución ──────────────
+C2_APPLY_GROUPS = (
+    'madenat_lumber_core.group_madenat_contabilidad',
+)
+# ── C2: regla determinista de ajuste de residual ──────────────────────────
+C2_RESIDUAL_RULE = 'largest_base_lot'
+# ── C2: mapeo categoría de costo de embarque -> cost_type de ledger ───────
+# (los fletes/puerto/aduanas/seguro alimentan `logistic_cost_usd` vía el
+# compute ORM existente de `stock.lot`; nunca por SQL).
+C2_LEDGER_COST_TYPE_MAP = {
+    'freight': 'freight',
+    'inland_freight': 'ocean_freight',
+    'port_charges': 'port',
+    'customs': 'customs',
+    'insurance': 'insurance',
+}
+C2_LEDGER_DEFAULT_COST_TYPE = 'other'
+
 
 class LumberCostDistribution(models.Model):
     _name = 'lumber.cost.distribution'
@@ -15,6 +38,7 @@ class LumberCostDistribution(models.Model):
     state = fields.Selection([
         ('draft', 'Borrador (Staging)'),
         ('applied', 'Liquidado (En Inventario)'),
+        ('superseded', 'Superado (Histórico C2)'),
         ('cancelled', 'Anulado/Revertido')
     ], string='Estado', default='draft', tracking=True)
     
@@ -59,6 +83,48 @@ class LumberCostDistribution(models.Model):
     # === 4. HISTORIAL Y COSTOS BASE ===
     generated_line_ids = fields.One2many('stock.lot.cost.line', 'distribution_id', string='Historial Inyectado', readonly=True)
     existing_cost_line_ids = fields.Many2many('stock.lot.cost.line', compute='_compute_existing_costs', string="Costos Base Ya Aplicados")
+
+    # === 5. POLÍTICA C2 — VERSIÓN DE DISTRIBUCIÓN POST-ENTREGA ===
+    # Cabecera versionada y append-only del costeo provisional de un Embarque
+    # entregado. NO crea costo contable/factura ni mueve inventario físico.
+    is_c2 = fields.Boolean(
+        string='Es versión C2', default=False, copy=False, index=True,
+        help='Marca las cabeceras creadas por el flujo C2 (costeo provisional '
+             'post-Entrega).')
+    shipment_id = fields.Many2one(
+        'lumber.export.shipment', string='Embarque (C2)',
+        ondelete='set null', copy=False, index=True,
+        help='Embarque entregado sobre el que se prorratean los costos.')
+    version_number = fields.Integer(
+        string='Versión', default=0, copy=False, index=True,
+        help='Número de versión de la distribución C2 para el Embarque.')
+    distribution_date = fields.Date(
+        string='Fecha de distribución', copy=False)
+    basis = fields.Selection(
+        [('final_logistic_volume', 'Volumen logístico final (m³)')],
+        string='Base de prorrateo', default='final_logistic_volume',
+        copy=False)
+    source_cost_line_ids = fields.Many2many(
+        'lumber.shipment.cost.line', 'lumber_cd_c2_source_rel',
+        'distribution_id', 'cost_line_id',
+        string='Costos fuente aprobados (C2)', copy=False)
+    total_source_cost_usd = fields.Float(
+        string='Total fuente USD (C2)', digits=(16, 2), copy=False)
+    total_distributed_usd = fields.Float(
+        string='Total distribuido USD (C2)', digits=(16, 2), copy=False)
+    residual_usd = fields.Float(
+        string='Residual USD (C2)', digits=(16, 2), copy=False)
+    supersedes_id = fields.Many2one(
+        'lumber.cost.distribution', string='Supersede a (C2)',
+        ondelete='set null', copy=False)
+    superseded_by_id = fields.Many2one(
+        'lumber.cost.distribution', string='Superada por (C2)',
+        ondelete='set null', copy=False)
+    audit_id = fields.Many2one(
+        'madenat.audit.log', string='Auditoría (C2)',
+        copy=False, readonly=True)
+    applied_by_id = fields.Many2one(
+        'res.users', string='Aplicada por (C2)', copy=False, readonly=True)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -141,6 +207,10 @@ class LumberCostDistribution(models.Model):
             sobre el total de la motonave.
             """
             self.ensure_one()
+            if self.is_c2:
+                raise UserError(_(
+                    'Esta cabecera es una versión C2 (post-Entrega). Use el '
+                    'flujo C2: «Aplicar C2» (action_apply_c2).'))
             if self.state != 'draft': 
                 raise UserError("Solo se puede liquidar en estado Borrador.")
             if not self.lot_ids or not self.cost_line_ids:
@@ -231,10 +301,313 @@ class LumberCostDistribution(models.Model):
 
     def action_reverse_costs(self):
         self.ensure_one()
+        if self.is_c2:
+            raise UserError(_(
+                'Una versión C2 aplicada no se revierte de forma destructiva '
+                '(append-only). Los costos tardíos se corrigen con una '
+                'redistribución formal (supersede).'))
         self.generated_line_ids.unlink()
         self.lot_ids._compute_total_cost_usd()
         self.write({'state': 'draft'})
         self.message_post(body="⛔ Liquidación Revertida: El historial de costos ha sido limpiado y devuelto a Staging.")
+    # ══════════════════════════════════════════════════════════════════════
+    # POLÍTICA C2 — VERSIÓN APLICADA APPEND-ONLY (write/unlink guard)
+    # ══════════════════════════════════════════════════════════════════════
+    # Campos técnicos (computes store) que pueden recalcularse sin editar el
+    # contenido funcional de una versión aplicada.
+    _C2_APPLIED_TECHNICAL_FIELDS = (
+        'total_volumen_fisico', 'total_volumen_export', 'amount_total_usd',
+        'package_count', 'lot_count',
+        'audit_id', 'superseded_by_id', 'supersedes_id',
+    )
+
+    def write(self, vals):
+        for rec in self:
+            if rec.is_c2 and rec.state in ('applied', 'superseded'):
+                illegal = [k for k in vals
+                           if k not in self._C2_APPLIED_TECHNICAL_FIELDS]
+                if illegal:
+                    raise UserError(_(
+                        'La versión C2 aplicada del Embarque no puede editarse '
+                        'ni sobrescribirse (append-only). Campos bloqueados: %s.'
+                    ) % ', '.join(illegal))
+        return super().write(vals)
+
+    def unlink(self):
+        if any(r.is_c2 and r.state in ('applied', 'superseded') for r in self):
+            raise UserError(_(
+                'No se puede eliminar una versión C2 aplicada/superada. '
+                'El historial de costeo es append-only.'))
+        return super().unlink()
+
+    def _c2_assert_apply_group(self):
+        if not any(self.env.user.has_group(g) for g in C2_APPLY_GROUPS):
+            raise AccessError(_(
+                'Sólo el rol de Contabilidad puede aplicar la distribución '
+                'de costos C2.'))
+
+    def action_apply_c2(self):
+        """Aplica (liquida) esta versión C2: prorratea por volumen logístico
+        final y genera el ledger por lote. NO toca inventario físico; NO usa
+        SQL; NO crea costo contable ni factura."""
+        self.ensure_one()
+        if not self.is_c2:
+            raise UserError(_('Esta acción sólo aplica a versiones C2.'))
+        if self.state != 'draft':
+            raise UserError(_(
+                'Sólo se puede aplicar una versión C2 en borrador.'))
+        shipment = self.shipment_id
+        if not shipment:
+            raise UserError(_('La versión C2 requiere un Embarque.'))
+        # Revalidar gate (delivered/B-01/R1/R2/pendientes/fuente) y rol.
+        shipment._assert_can_distribute_costs_c2()
+        self._c2_assert_apply_group()
+        # Idempotencia: una sola versión aplicada por Embarque.
+        other = self.env['lumber.cost.distribution'].search([
+            ('shipment_id', '=', shipment.id),
+            ('is_c2', '=', True),
+            ('state', '=', 'applied'),
+            ('id', '!=', self.id),
+        ], limit=1)
+        if other:
+            raise UserError(_(
+                'Ya existe una distribución C2 aplicada para el Embarque %s. '
+                'No se duplica.') % shipment.name)
+        # La fuente aprobada no puede haber cambiado desde prepare.
+        approved = shipment._c2_source_cost_lines()
+        if set(approved.ids) != set(self.source_cost_line_ids.ids):
+            raise UserError(_(
+                'Las líneas de costo aprobadas cambiaron desde la preparación. '
+                'Vuelva a preparar la distribución.'))
+        lots = shipment._c2_eligible_lots()
+        total_volume = shipment._c2_total_volume(lots)
+        if total_volume <= 0:
+            raise UserError(_(
+                'El volumen logístico total final es 0; no se puede '
+                'prorratear el costeo C2.'))
+        total_source = Decimal('0.00')
+        for line in approved:
+            total_source += Decimal(str(line.amount_usd)).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP)
+        allocations, residual_info = self._c2_compute_allocations(
+            shipment, approved, lots, total_volume)
+        # Ledger por lote (ORM puro).
+        self._c2_write_ledger(shipment, allocations)
+        total_distributed = sum(
+            (a['amount'] for a in allocations), Decimal('0.00'))
+        # Totales (aún en draft; el guard no aplica).
+        self.write({
+            'total_source_cost_usd': float(total_source),
+            'total_distributed_usd': float(total_distributed),
+            'residual_usd': float(total_source - total_distributed),
+        })
+        # Auditoría append-only (SHA-256) con snapshot determinista.
+        checks = shipment._c2_gate_checks()
+        audit = self._c2_create_audit(shipment, allocations, checks,
+                                      residual_info)
+        self.write({
+            'state': 'applied',
+            'applied_by_id': self.env.user.id,
+            'audit_id': audit.id,
+        })
+        self.message_post(body=_(
+            '✅ <b>Distribución C2 aplicada</b> (versión %(v)s).<br/>'
+            '• Costo fuente: %(s).2f USD<br/>'
+            '• Distribuido: %(d).2f USD<br/>'
+            '• Lotes: %(n)s<br/>'
+            '• Auditoría: %(a)s (SHA-256)<br/>'
+            '<b>No se modificó inventario físico.</b>'
+        ) % {'v': self.version_number, 's': float(total_source),
+             'd': float(total_distributed), 'n': len(allocations),
+             'a': audit.id})
+        return True
+
+
+
+
+    def _c2_compute_allocations(self, shipment, sources, lots, total_volume):
+        """Prorrateo determinista por volumen logístico final.
+
+        Reparte cada línea fuente entre los lotes elegibles:
+            allocated_i = total_fuente × volumen_i / volumen_total
+        con Decimal (precisión monetaria) y ajuste del residual redondeado
+        al lote de mayor base (regla determinista `largest_base_lot`).
+        Devuelve ``(allocations, residual_info)``.
+        """
+        lot_basis = []
+        for lot in lots:
+            basis = Decimal(str(shipment._c2_lot_volume(lot))).quantize(
+                Decimal('0.001'), rounding=ROUND_HALF_UP)
+            lot_basis.append((lot, basis))
+        # Orden determinista: mayor base primero; desempate por id de lote.
+        lot_basis.sort(key=lambda t: (-t[1], t[0].id))
+        allocations = []
+        rounding_adjustments = Decimal('0.00')
+        for src in sources.sorted('id'):
+            amount = Decimal(str(src.amount_usd)).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP)
+            rows = []
+            for lot, basis in lot_basis:
+                raw = (amount * basis / total_volume)
+                rows.append([lot, basis,
+                             raw.quantize(Decimal('0.01'),
+                                          rounding=ROUND_HALF_UP)])
+            src_rounded = sum(r[2] for r in rows)
+            residual = amount - src_rounded
+            # Residual al lote de mayor base (primero del orden determinista).
+            if rows:
+                rows[0][2] += residual
+            rounding_adjustments += residual
+            category = dict(
+                src._fields['cost_type'].selection).get(
+                    src.cost_type, src.cost_type)
+            for lot, basis, amt in rows:
+                if amt == 0:
+                    continue
+                allocations.append({
+                    'lot': lot,
+                    'source': src,
+                    'basis': basis,
+                    'amount': amt,
+                    'cost_type': C2_LEDGER_COST_TYPE_MAP.get(
+                        src.cost_type, C2_LEDGER_DEFAULT_COST_TYPE),
+                    'category': category,
+                })
+        residual_info = {
+            'rule': C2_RESIDUAL_RULE,
+            'rounding_adjustment_usd': float(rounding_adjustments),
+        }
+        return allocations, residual_info
+
+    def _c2_write_ledger(self, shipment, allocations):
+        """Crea el ledger por lote (stock.lot.cost.line) por ORM puro.
+
+        NO usa SQL, NO toca stock físico. `partnerid` es el campo real de
+        proveedor en `stock.lot.cost.line` (nunca `partner_id`).
+        """
+        Ledger = self.env['stock.lot.cost.line']
+        today = fields.Date.context_today(self)
+        vals_list = []
+        for a in allocations:
+            src = a['source']
+            vals_list.append({
+                'lot_id': a['lot'].id,
+                'shipment_id': shipment.id,
+                'distribution_id': self.id,
+                'source_shipment_cost_line_id': src.id,
+                'cost_type': a['cost_type'],
+                'amount_usd': float(a['amount']),
+                'allocated_cost_usd': float(a['amount']),
+                'volume_basis_m3': float(a['basis']),
+                'weight_basis_kg': float(
+                    getattr(a['lot'], 'weight_kg', 0.0) or 0.0),
+                'version_number': self.version_number,
+                'cost_category': a['category'],
+                'partnerid': src.partner_id.id or False,
+                'date': today,
+                'name': '%s | v%s | %s' % (
+                    a['category'], self.version_number, self.name),
+                'notes': ('C2 %s | Embarque %s | Fuente #%s | Base m3 %.3f'
+                          % (self.name, shipment.name, src.id,
+                             float(a['basis']))),
+                'state': 'applied',
+            })
+        if vals_list:
+            Ledger.create(vals_list)
+
+
+    def _c2_lot_container(self, shipment, lot):
+        """Contenedor del lote dentro del Embarque (robusto a datos legacy)."""
+        cont = lot.container_id
+        if cont and cont.shipment_id == shipment:
+            return cont
+        return shipment.container_ids.filtered(
+            lambda c: lot in c.lot_ids)[:1]
+
+
+    def _c2_audit_snapshot(self, shipment, allocations, checks, residual_info):
+        """Snapshot determinista (JSON sort_keys) del costeo C2."""
+        sources = self.source_cost_line_ids
+        by_lot = {}
+        for a in allocations:
+            key = a['lot'].id
+            entry = by_lot.get(key)
+            if entry is None:
+                container = self._c2_lot_container(shipment, a['lot'])
+                entry = {
+                    'lot_id': a['lot'].id,
+                    'lot_name': a['lot'].name or False,
+                    'container': container.name or False,
+                    'volume_basis_m3': float(a['basis']),
+                    'allocated_cost_usd': 0.0,
+                    'state_physical': (
+                        shipment._container_rebaja_classification(container)
+                        if container else False),
+                }
+                by_lot[key] = entry
+            entry['allocated_cost_usd'] = round(
+                entry['allocated_cost_usd'] + float(a['amount']), 2)
+        total_distributed = sum(
+            (a['amount'] for a in allocations), Decimal('0.00'))
+        return {
+            'operation': {
+                'action_type': 'shipment_cost_distribution',
+                'timestamp': fields.Datetime.now().isoformat(),
+                'actor': self.env.user.id,
+            },
+            'shipment': {
+                'id': shipment.id,
+                'name': shipment.name,
+                'state': shipment.state,
+                'b01_exception_state': shipment.b01_exception_state,
+            },
+            'distribution': {
+                'id': self.id,
+                'version': self.version_number,
+                'state': 'applied',
+                'basis': self.basis,
+                'total_source_cost_usd': self.total_source_cost_usd,
+                'total_distributed_usd': float(total_distributed),
+                'residual_usd': self.residual_usd,
+                'residual_rule': residual_info.get('rule'),
+                'rounding_adjustment_usd': residual_info.get(
+                    'rounding_adjustment_usd'),
+                'supersedes_id': self.supersedes_id.id or False,
+                'superseded_by_id': self.superseded_by_id.id or False,
+            },
+            'source_lines': [
+                {
+                    'id': s.id,
+                    'partner': s.partner_id.name or False,
+                    'category': s.cost_type,
+                    'amount': s.amount_usd,
+                    'currency': s.currency_id.name or False,
+                    'amount_usd': s.amount_usd,
+                    'state': s.state,
+                }
+                for s in sources.sorted('id')
+            ],
+            'lot_allocations': [by_lot[k] for k in sorted(by_lot)],
+            'checks': checks,
+        }
+
+    def _c2_create_audit(self, shipment, allocations, checks, residual_info):
+        """Crea la auditoría append-only (sudo SÓLO para audit.log)."""
+        snapshot = json.dumps(
+            self._c2_audit_snapshot(
+                shipment, allocations, checks, residual_info),
+            sort_keys=True, default=str)
+        return self.env['madenat.audit.log'].sudo().create({
+            'action_type': 'shipment_cost_distribution',
+            'description': _(
+                'Distribución de Costos C2 · %s v%s') % (
+                    shipment.name, self.version_number),
+            'batch_id': str(shipment.id),
+            'audit_snapshot': snapshot,
+            'audit_hash': hashlib.sha256(
+                snapshot.encode('utf-8')).hexdigest(),
+            'user_id': self.env.user.id,
+        })
 
 
 class LumberCostDistributionLine(models.Model):

@@ -5,6 +5,12 @@
 **Estado:** Activo
 **Última actualización:** 2026-05-28
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## Propósito
@@ -109,7 +115,7 @@ La actualización remota de `madenat_lumber_logistics` falló primero por un **r
   `odoo -d <db> -u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics --stop-after-init --no-http`
 - **TEST remoto:** **NO inspeccionado ni modificado** en esta intervención; Cristhian usa la **versión anterior**.
   Leer en **solo lectura** la versión instalada antes de desplegar.
-- **Detalle y rollback:** expediente `HOTFIX_OWL_CHATTER_OE_20261012/docs/PLAN_DESPLIEGUE_ACUMULADO.md`.
+- **Detalle y rollback:** expediente `FASES/HOTFIX_OWL_CHATTER_OE_20261012/docs/PLAN_DESPLIEGUE_ACUMULADO.md`.
 
 ## Relacionado
 

@@ -33,7 +33,7 @@ los 4 módulos **instalan desde cero** (`exit 0`) y **se actualizan por `-u`** d
 `action=action_madenat_sv_imputation`, `sequence=19`) fue **retirado** en `ded5e89`.
 
 **Evidencia de la intención (documental):**
-* `UNIFY_SV_REBAJA_MENU_20261010/README.md`: «Menú `menu_madenat_sv_imputation`: **retirado de navegación**
+* `FASES/UNIFY_SV_REBAJA_MENU_20261010/README.md`: «Menú `menu_madenat_sv_imputation`: **retirado de navegación**
   (`active=False`, **`record` posterior al `menuitem`** ⇒ no reaparece al reaplicar `-u`; reversible)»;
   «Menú retirado: `menu_madenat_sv_imputation` (id 542) → `ir.ui.menu.active = False`»; y «**Recuperación de
   navegación:** poner `active=True` en `menu_madenat_sv_imputation` y volver a `-u`».

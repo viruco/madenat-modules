@@ -10,7 +10,7 @@ describen para poder reproducirlos.
 
 | Comprobación | Resultado |
 |---|---|
-| Enlaces Markdown `[texto](destino)` revisados | **3** |
+| Enlaces Markdown (texto → destino) revisados | **3** |
 | Enlaces Markdown **rotos** | **2** |
 | Rutas en backticks con extensión, revisadas | **2.299** |
 | Resueltas dentro de `madenat_lumber_docs/` o `custom_addons/` | 1.725 |

@@ -148,7 +148,7 @@ vía privada no usa estado compartido). No se equipara prueba de hilos con prueb
 - **Regresión amplia** (`core+intake+logistics`): **1230 tests → 6 failed, 4 error**.
   - `madenat_lumber_intake`: **467 tests, 0 fallas** (verde).
   - Fallas en `madenat_lumber_core` (no modificado) y en el **conjunto preexistente** de logistics.
-- **Comparación verificable de baseline** (`BLINDAJE_REBAJA_LOCAL_20261012/logs/regression.log`, estado
+- **Comparación verificable de baseline** (`FASES/BLINDAJE_REBAJA_LOCAL_20261012/` (artefacto `regression.log` en `logs/`, fuera de git), estado
   **previo** 18.0.1.22.0 / 18.0.0.12.0): **1217 tests → 6 failed, 4 error** con el **mismo** conjunto exacto de
   10 fallas. La corrida actual (18.0.1.23.0 / 18.0.0.13.0) suma **+13 tests (todos verde)** y **no** añade
   fallas. Conjunto idéntico en ambas: `TestOrphanMoveCleanupSavepoint.test_partial_batch_failure_protected_moves_survive`,

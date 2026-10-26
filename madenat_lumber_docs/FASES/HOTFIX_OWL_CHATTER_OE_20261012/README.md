@@ -110,7 +110,7 @@ odoo -d madenat_test --http-port=8079 -u madenat_lumber_logistics --test-enable 
 ```
 
 Fallas = **las mismas 4 preexistentes**: `TestProcessorLocations.test_09`, `TestProcessorShipmentAD89.test_t1/t5/t6`.
-Baseline del mismo día (mismo WIP, pre-hotfix): `BLINDAJE_REBAJA_LOCAL_20261012/logs/regression_logistics.log`
+Baseline del mismo día (mismo WIP, pre-hotfix): `FASES/BLINDAJE_REBAJA_LOCAL_20261012/` (artefacto `regression_logistics.log` en `logs/`, fuera de git)
 = **4 failed, 0 error(s) of 444 tests** ⇒ **0 fallas nuevas**.
 
 **Regresión `core + intake + logistics`:**
@@ -120,7 +120,7 @@ Baseline del mismo día (mismo WIP, pre-hotfix): `BLINDAJE_REBAJA_LOCAL_20261012
 ```
 
 Fallas/errores = **conjunto IDÉNTICO al baseline** del mismo día
-(`BLINDAJE_REBAJA_LOCAL_20261012/logs/regression.log` = **6 failed, 4 error(s) of 1217 tests**):
+(`FASES/BLINDAJE_REBAJA_LOCAL_20261012/` (artefacto `regression.log` en `logs/`, fuera de git) = **6 failed, 4 error(s) of 1217 tests**):
 `TestGuiaPickingLink.test_t_g2_03`, `TestOrphanMoveCleanupSavepoint.test_partial_batch_failure…`,
 `TestProcessorLocations.test_09`, `TestProcessorShipmentAD89.test_t1/t5/t6`,
 `TestSvConcurrency.test_01`, `TestSvEscalationSecurity.test_02/03/04`

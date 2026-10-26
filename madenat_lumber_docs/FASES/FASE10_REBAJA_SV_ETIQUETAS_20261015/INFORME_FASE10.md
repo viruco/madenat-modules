@@ -4,7 +4,7 @@
 `madenat_lumber_logistics`
 **Repositorio:** `custom_addons/` · **Rama:** `feat/guia-correccion-documental-preservada-20261002`
 **HEAD inicial:** `677294b7cdc3e0cfbe1cdaef441efcb2234f8681` · **HEAD final:** `ee7b7c681a936775d181ebf3e215900884b941ba`
-**Referencia:** `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/INFORME_DIAGNOSTICO.md`
+**Referencia:** `FASES/DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/INFORME_DIAGNOSTICO.md`
 **Alcance:** corregir los defectos **F1/F2/F3** (S2 → S3 → S1) con TDD, commitear 3 correcciones + 1 commit de
 documentación, validar (regresión por nombre, escenario real revertido, instalación desde cero) y **NO**
 desplegar. Sin push, sin ramas, sin reset/clean/stash/rebase/amend, sin `-u all`, sin cambios en datos reales,
@@ -171,7 +171,7 @@ docker exec odoo18_app odoo -d madenat_test -u madenat_lumber_logistics \
 
 | Corrida | Resultado | Conjunto de fallas |
 |---|---|---|
-| Baseline vigente (FASE 5, HEAD `677294b`, core+intake+logistics) | 6 failed + 4 error de 1448 | 10 (lista `FASE5_COMMITS_20261015/logs/baseline_10_fallas.txt`) |
+| Baseline vigente (FASE 5, HEAD `677294b`, core+intake+logistics) | 6 failed + 4 error de 1448 | 10 (lista `FASES/FASE5_COMMITS_20261015/logs/baseline_10_fallas.txt`) |
 | **S2** (`19611d0`) | **4 failed + 0 error de 513** | idéntico al subconjunto logístico del baseline |
 | **S3** (`e2d6b64`) | **4 failed + 0 error de 519** | idéntico |
 | **S1** (`7ac1fcb`) | **4 failed + 0 error de 528** | idéntico |

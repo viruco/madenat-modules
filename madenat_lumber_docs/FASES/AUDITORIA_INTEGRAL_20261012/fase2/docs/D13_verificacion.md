@@ -6,17 +6,17 @@ existente (solo el encabezado de versión, por mandato).
 ## Mapeo sección → expediente fuente (literal)
 | Sección | Título | Expediente fuente (ruta exacta) | § de la fuente |
 |---|---|---|---|
-| 17.16.19 | Auditoría integral y blindaje (AUD-ETQ-01..05) | `AUDIT_REBAJA_ETIQUETAS_20261011/README.md` | §1 (dictamen) |
-| 17.16.20 | Cierre probatorio (AUD-ETQ-06..10) | `AUDIT_REBAJA_ETIQUETAS_20261011/README.md` | §«CIERRE PROBATORIO» |
-| 17.16.21 | Contrato de aplicación sin reparto | `CONTRATO_APLICACION_20261011/README.md` | §1 |
-| 17.16.22 | Persistencia y recuperación (SAVE) | `SAVE_REBAJA_20261011/README.md` | §1 |
-| 17.16.23 | Acciones visibles del asistente (UI) | `UI_SAVE_REBAJA_20261011/README.md` | §1 |
-| 17.16.24 | Simplificación operativa (SIMPLE) | `SIMPLE_REBAJA_20261011/README.md` | §1 |
-| 17.16.25 | Volver a borrador y reasignar (RESET) | `RESET_REBAJA_20261011/README.md` | §1/§2 |
-| 17.16.26 | Blindaje local y estabilización (AUD-ETQ-07/08) | `BLINDAJE_REBAJA_LOCAL_20261012/README.md` | §0/§1/§2 |
-| 17.16.27 | Verificación probatoria P1–P4 | `VERIF_CUATRO_PUNTOS_20261012/README.md` | §1 |
-| 17.16.28 | Blindaje de borradores (LOCK) | `BLINDAJE_SOBRESCRITURA_20261012/README.md` | §1 |
-| 17.16.29 | Cierre V1–V3 del blindaje | `CIERRE_SOBRESCRITURA_V123_20261012/README.md` | §1 |
+| 17.16.19 | Auditoría integral y blindaje (AUD-ETQ-01..05) | `FASES/AUDIT_REBAJA_ETIQUETAS_20261011/README.md` | §1 (dictamen) |
+| 17.16.20 | Cierre probatorio (AUD-ETQ-06..10) | `FASES/AUDIT_REBAJA_ETIQUETAS_20261011/README.md` | §«CIERRE PROBATORIO» |
+| 17.16.21 | Contrato de aplicación sin reparto | `FASES/CONTRATO_APLICACION_20261011/README.md` | §1 |
+| 17.16.22 | Persistencia y recuperación (SAVE) | `FASES/SAVE_REBAJA_20261011/README.md` | §1 |
+| 17.16.23 | Acciones visibles del asistente (UI) | `FASES/UI_SAVE_REBAJA_20261011/README.md` | §1 |
+| 17.16.24 | Simplificación operativa (SIMPLE) | `FASES/SIMPLE_REBAJA_20261011/README.md` | §1 |
+| 17.16.25 | Volver a borrador y reasignar (RESET) | `FASES/RESET_REBAJA_20261011/README.md` | §1/§2 |
+| 17.16.26 | Blindaje local y estabilización (AUD-ETQ-07/08) | `FASES/BLINDAJE_REBAJA_LOCAL_20261012/README.md` | §0/§1/§2 |
+| 17.16.27 | Verificación probatoria P1–P4 | `FASES/VERIF_CUATRO_PUNTOS_20261012/README.md` | §1 |
+| 17.16.28 | Blindaje de borradores (LOCK) | `FASES/BLINDAJE_SOBRESCRITURA_20261012/README.md` | §1 |
+| 17.16.29 | Cierre V1–V3 del blindaje | `FASES/CIERRE_SOBRESCRITURA_V123_20261012/README.md` | §1 |
 
 **Ninguna sección quedó sin fuente** ⇒ no se emitió ningún «cuerpo pendiente: fuente no localizada».
 

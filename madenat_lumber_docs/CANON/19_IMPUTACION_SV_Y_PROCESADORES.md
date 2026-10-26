@@ -9,6 +9,12 @@
 
 > **Alcance de esta versión.** Este documento es **especificación y diseño**. **No** autoriza ni contiene cambios de código, datos ni parámetros. Las reglas marcadas **[DISEÑO]** son objetivos; las marcadas **[VIGENTE]** describen comportamiento ya implementado y verificado en código (rama `feat/rebaja-contenedor-20261001`, BD `madenat_test`).
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 
 ## 1. Propósito y alcance
@@ -858,7 +864,7 @@ conciliación cuantitativa ni cierra el envío.
   la **inmediatamente anterior** (C.previous = B) y la **cadena completa** A→B→C queda trazada por los
   **eventos de auditoría append-only** (`processor_return_link` «reimputación X → Y», uno por paso);
   A/B permanecen `reversed`, C `applied`; **1 solo vínculo activo**. Evidencia:
-  `CONCILIACION_ENVIO_RETORNO_20261010/v3/reimputation_chain_report.txt`. **No** se añade un modelo de
+  `FASES/CONCILIACION_ENVIO_RETORNO_20261010/v3/reimputation_chain_report.txt`. **No** se añade un modelo de
   historial multinivel: la auditoría ya lo registra (evita duplicar el modelo de auditoría).
 
 **19.13.3 Consistencia de compañía.**
@@ -1439,18 +1445,18 @@ Puedes guardar el documento sin aplicarlo.» La revisión previa muestra **nomin
 **repartido a SV** ≠ **pendiente de reparto** ≠ **efecto por saldo de SV**.
 
 **19.23.4 Pruebas del contrato (borrador).** `POL-01..POL-08` en
-`CONTRATO_APLICACION_20261011/evidence/POL_contrato_tests_draft.py`, **no registrado** en
+`FASES/CONTRATO_APLICACION_20261011/` (artefacto `POL_contrato_tests_draft.py` en `evidence/`, fuera de git), **no registrado** en
 `tests/__init__.py` para no dejar la suite en rojo antes de la aprobación. Se activan y ejecutan tras
 aprobar, junto con la regresión.
 
 **19.23.5 IMP02220 (separado, NO reparado).** Dry-run en
-`CONTRATO_APLICACION_20261011/evidence/imp02220_dryrun.md`. Registro: «Aplicado bajo comportamiento
+`FASES/CONTRATO_APLICACION_20261011/evidence/imp02220_dryrun.md`. Registro: «Aplicado bajo comportamiento
 anterior; nominal comprometido sin reparto SV; pendiente de decisión de regularización». Alternativas:
 **Alt-1** conservar con clasificación (por defecto) o **Alt-2** revertir y reasignar (si se autoriza y hay
 destino real). **No** se ejecuta reversa ni reparación; **no** se vincula `lot_flow_type=NULL` sin
 evidencia causal.
 
-**19.23.6 Aceptación.** Guion A–I en `CONTRATO_APLICACION_20261011/docs/GUION_NAVEGADOR_CONTRATO.md`.
+**19.23.6 Aceptación.** Guion A–I en `FASES/CONTRATO_APLICACION_20261011/docs/GUION_NAVEGADOR_CONTRATO.md`.
 **Sin navegador en el entorno del agente** ⇒ aceptación **pendiente de Mauricio**; no se sustituye por
 XML/ORM/SQL. Dictamen: **contrato implementado y probado; aceptación operativa pendiente.** Política
 **aprobada por Mauricio el 2026-10-11**; validación backend en `_i2_validate_payload`; POL‑01..08 en

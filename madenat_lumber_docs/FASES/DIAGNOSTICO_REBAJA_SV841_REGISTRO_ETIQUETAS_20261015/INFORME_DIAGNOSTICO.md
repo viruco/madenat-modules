@@ -192,7 +192,7 @@ ya registrado ⇒ **borra** las líneas (`:715-717`). *Evidencia:* E6 + `wizard:
 **Dato de origen (no defecto del flujo):** que `IMP04823` esté **vacío y anulado** es la combinación de F3
 (documento vacío admitido) con una **anulación que no pasó por el código actual** (sin `cancelled_by_id`/
 `cancellation_date`/`cancellation_reason`, sin `imputation_cancel` en `madenat_audit_log`) — el mismo estado ya
-se documentó el 2026-10-11 en `RESET_REBAJA_20261011/README.md` §1 y CANON §19.27 («caso A+D»).
+se documentó el 2026-10-11 en `FASES/RESET_REBAJA_20261011/README.md` §1 y CANON §19.27 («caso A+D»).
 
 ### 5.2 ¿Regresión de una intervención reciente?
 

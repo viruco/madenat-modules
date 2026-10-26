@@ -30,6 +30,12 @@
 | **AD-132** | 2026-10-21 | Flujo de edición de dimensiones en staging y aviso chatter en stock (Bloque H5) | Vigente |
 | **AD-133** | 2026-10-21 | Paridad de tarjas exportador, importador doble bloque y merma dimensional R2 | Vigente |
 
+> **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
+> `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
+> y las conclusiones históricas **no se alteraron**: solo cambió el puntero. Los artefactos no versionados
+> (`logs/`, `db/`, dumps, código de evidencia) se citan por nombre de archivo y carpeta de origen, y su copia
+> íntegra está en los `.tar.gz` de D7 (`FASES/FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`).
+
 ---
 <!-- actualizado: 2026-10-18 — Cierre del Bloque 5 (AD-126 / Bloque 5D): reconciliación y claridad del real físico con campo physical_status (calculado, sin_mapeo, no_aplica) en líneas y lotes; columna % Dif.Vol vacía cuando no es calculado para evitar cálculo de % con ceros; badge y filtros por estado en vista comparativa; matriz operativa completa de tipos de ingesta en CANON/12 §3.3; confirmación canónica 100% exacta de hashes B y A.2; lista nominal de 10 fallas históricas de la regresión. Versión 04 12.45.0 → 12.46.0. | Bloque 5 (AD-126). -->
 <!-- actualizado: 2026-10-18 — Bloque 5 (AD-126): Volumen Real Físico y Comparativo de los Tres Volúmenes. 5A: modelo nuevo lumber.thickness.real.map con catálogo semilla noupdate="1", chatter, tracking, coherencia <= 0.001" y getter en madenat.ingestion.config sin copia en código (D6). 5B: campo vol_physical_real_m3 (F3) calculado con r3() una sola vez (espesor real x ancho nominal mm x largo m x piezas / 1.000.000) en líneas de guía y stock.lot; Blanks directo a stock y perfiles no aplicables en 0.0; histórico intacto. 5C: vistas de lista y pivote readonly comparativas de los tres volúmenes con columna % Dif.Vol, agrupable por patio, proveedor, OC y motonave; filtros guardados; menú operativo con permisos para Operaciones, Auditoría y Contabilidad; alerta y resaltado de anomalías (exportación > compra). Versión 04 12.44.0 → 12.45.0. | Bloque 4N (AD-125). -->
@@ -2952,13 +2958,13 @@ ACL vive en el WIP de `madenat_lumber_core`/`madenat_lumber_intake`). **No** aut
 esta fase ni modificar ACL/vistas/código en el marco de esta decisión.
 
 **Condición (pendiente).** Guardas de integridad y trazabilidad **por decidir**; ficha de análisis y matriz de
-escenarios en `AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`.
+escenarios en `FASES/AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`.
 **Estado:** permiso **aprobado**; guardas **pendientes**.
 
 **Riesgo residual declarado.** Hasta que Mauricio apruebe las guardas, el cambio de ACL **NO** debe incluirse en
 ningún despliegue al TEST remoto sin documentar expresamente el riesgo.
 
-<!-- actualizado: 2026-10-12 (1) — alta AD-103 (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como política, sin autorizar borrado de datos reales; guardas de integridad/trazabilidad PENDIENTES). Ver `AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`. Solo documentación. -->
+<!-- actualizado: 2026-10-12 (1) — alta AD-103 (jefatura puede eliminar `madenat.guia.processing` por higiene de la base; permiso como política, sin autorizar borrado de datos reales; guardas de integridad/trazabilidad PENDIENTES). Ver `FASES/AUDITORIA_INTEGRAL_20261012/fase2/docs/H_SEC_1_FICHA.md`. Solo documentación. -->
 
 ### AD-104 (2026-10-12) — Guardas de eliminación de guía (G1) y saneamiento de fixtures (G2)
 
@@ -3182,7 +3188,7 @@ anterior; `VIEW-01/04` en navegador sigue pendiente de ejecución manual.
 
 ### AD-109 (2026-10-15) — Registro de etiquetas en la rebaja SV: defectos F1/F2/F3 y correcciones S2/S3/S1 (FASE 10)
 
-**Origen.** Diagnóstico `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/INFORME_DIAGNOSTICO.md` sobre
+**Origen.** Diagnóstico `FASES/DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015/INFORME_DIAGNOSTICO.md` sobre
 `SV00000000841` (guía 1198): **el registro de etiquetas SÍ funciona en el caso sano** (E7), pero en el caso
 reportado no quedaba ninguna etiqueta registrada por **tres defectos encadenados preexistentes** (ninguno
 introducido por las FASES 5–8 ni por el WIP; las cinco funciones implicadas son idénticas en HEAD y en el WIP y
@@ -3282,7 +3288,7 @@ enmascararía la creación/borrado real) usando un `try/except` propio.
 
 ### AD-110 (2026-10-15) — Integridad del ciclo de vida de las imputaciones SV: A-1, B-1, M-2, M-4, B-2 y B-3 (FASE 11)
 
-**Origen.** Auditoría de sólo lectura `AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015/INFORME_AUDITORIA.md`
+**Origen.** Auditoría de sólo lectura `FASES/AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015/INFORME_AUDITORIA.md`
 (§1.2 matriz de transiciones, §7 propuestas) sobre `madenat.sv.imputation` (`logistics` 18.0.1.32.0, HEAD
 `ee7b7c6`). Dictamen: la vía OFICIAL del ciclo está bien construida (métodos propios, permisos por rol,
 validaciones, locks y bitácora firmada), pero la **vía pública `write()`** permitía, con el documento en

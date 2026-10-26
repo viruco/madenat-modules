@@ -78,7 +78,7 @@ regularización»**. **No** se modifica el documento ni `lot_flow_type`.
 
 ## 6. Precisión sobre concurrencia (Q1–Q3)
 
-Resultados de la sonda `AUDIT_REBAJA_ETIQUETAS_20261011/evidence/concurrency_probe.py` (cursores
+Resultados de la sonda `FASES/AUDIT_REBAJA_ETIQUETAS_20261011/` (artefacto `concurrency_probe.py` en `evidence/`, fuera de git) (cursores
 independientes + `threading.Barrier`), descritos con exactitud:
 
 - **Q1 (doble aplicación sobre la misma capacidad):** **una** operación obtiene el recurso y aplica; la

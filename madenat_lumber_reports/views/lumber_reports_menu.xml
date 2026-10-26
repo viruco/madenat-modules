@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
+        <!-- P2-2: Carpeta vacía "📈 Reportes MADENAT" (id 376) inactivada.
+             La entrada operativa oficial es 📊 Reportes y Listados
+             (madenat_lumber_core.menu_madenat_reports_main, id 443) y sus
+             acciones R1–R9 / Listados 1-2-3 / Packing List / reportes
+             operativos permanecen accesibles. Se inactiva solo este menú,
+             sin borrar metadatos ni tocar módulos de datos. -->
         <menuitem id="menu_lumber_reports_root"
                   name="📈 Reportes MADENAT"
                   parent="madenat_lumber_logistics.menu_lumber_logistics"
-                  sequence="98"/>
+                  sequence="98"
+                  active="0"/>
     </data>
 </odoo>

@@ -181,4 +181,58 @@
 
     <menuitem id="menu_lumber_cost_distribution_persist" name="📋 Expedientes de Costeo (Staging)" parent="madenat_lumber_core.menu_finance_costing" action="action_lumber_cost_distribution" sequence="12"/>
     <menuitem id="menu_lumber_cost_matrix" name="📈 Tarja Valorizada (Inventario)" parent="madenat_lumber_core.menu_finance_costing" action="action_lumber_cost_matrix" sequence="15"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         C2 — Versión de distribución post-Entrega (append-only).
+         Hereda el form existente; no usa attrs/states/tree.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_lumber_cost_distribution_form_c2" model="ir.ui.view">
+        <field name="name">lumber.cost.distribution.form.c2</field>
+        <field name="model">lumber.cost.distribution</field>
+        <field name="inherit_id" ref="madenat_lumber_costing.view_lumber_cost_distribution_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_apply_c2" string="Aplicar C2 (Contabilidad)"
+                        type="object" class="oe_highlight"
+                        groups="madenat_lumber_core.group_madenat_contabilidad"
+                        invisible="not is_c2 or state != 'draft'"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="C2 — Versión Post-Entrega" name="c2_version">
+                    <field name="is_c2" invisible="1"/>
+                    <div class="alert alert-warning" role="alert">
+                        Esta versión es <b>append-only</b> y
+                        <b>no modifica inventario físico</b>. Los costos tardíos
+                        requieren una redistribución formal (supersede).
+                    </div>
+                    <group>
+                        <group string="Versión C2">
+                            <field name="shipment_id" readonly="1"/>
+                            <field name="version_number" readonly="1"/>
+                            <field name="distribution_date" readonly="1"/>
+                            <field name="basis" readonly="1"/>
+                        </group>
+                        <group string="Totales C2 (USD)">
+                            <field name="total_source_cost_usd" readonly="1"/>
+                            <field name="total_distributed_usd" readonly="1"/>
+                            <field name="residual_usd" readonly="1"/>
+                            <field name="applied_by_id" readonly="1"/>
+                            <field name="audit_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Costos fuente aprobados"/>
+                    <field name="source_cost_line_ids" readonly="1">
+                        <list>
+                            <field name="cost_type"/>
+                            <field name="description"/>
+                            <field name="amount_usd" sum="Total USD"/>
+                        </list>
+                    </field>
+                    <separator string="Ledger por lote (sólo lectura)"/>
+                    <field name="generated_line_ids" readonly="1"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

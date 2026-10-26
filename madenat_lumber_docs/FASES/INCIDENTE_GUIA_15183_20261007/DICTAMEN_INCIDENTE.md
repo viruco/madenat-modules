@@ -98,7 +98,7 @@ omisión es de alcance (`cross_model=False`), no de staging.**
 ## 4. ¿La política cross-model fue demasiado permisiva?
 
 **[V] Sí (para el caso documento-idéntico).** El AJUSTE B del cierre previo
-(`FIX_GUIA_DUP_CIERRE_20261007_170340/docs/INFORME_CIERRE.md:12`) llevó
+(`FASES/FIX_GUIA_DUP_CIERRE_20261007_170340/docs/INFORME_CIERRE.md`) llevó
 `cross_model` a **default `False`**: una coincidencia de número entre flujos **ya
 no bloquea en ningún sentido**. Correcto para **homónimos** (emisor distinto),
 incorrecto para el **mismo documento** (mismo `número+emisor`).

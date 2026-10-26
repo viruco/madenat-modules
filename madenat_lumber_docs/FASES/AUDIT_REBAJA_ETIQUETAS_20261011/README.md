@@ -287,7 +287,7 @@ pruebas a flujos físicos ajenos.
 | **Regresión de módulo** | ídem con `--test-tags /madenat_lumber_logistics` | **4 failed / 0 errors of 369** (`logs/regression.log`, EXIT=1) |
 
 Las **4 fallas** son **exactamente** las preexistentes declaradas en
-`IMPL_SV_REBAJA_OPERATIVA_20261010/README.md` (corrida de referencia: `4 failed, 0 error(s) of 318`):
+`FASES/IMPL_SV_REBAJA_OPERATIVA_20261010/README.md` (corrida de referencia: `4 failed, 0 error(s) of 318`):
 `test_processor_locations.test_09_auditoria_envio_normal`,
 `test_processor_shipment_ad89.test_t1_envio_manual_parcial_sin_motivo`,
 `...test_t5_desviacion_real_no_aplica_en_i1`, `...test_t6_idempotencia` ⇒ **0 fallas nuevas, 0 errores**.

@@ -64,7 +64,7 @@ se sobrescribe con los diffs).
    *one-shot* `--rm`, **solo** `madenat_test`, sin `-u all` y sin `--test-enable`):
    `odoo --config /etc/odoo/odoo.conf -d madenat_test -u madenat_lumber_core,madenat_lumber_intake,madenat_lumber_logistics --stop-after-init --no-http --max-cron-threads=0`
    → `Modules loaded.` con **0 ERROR / 0 CRITICAL**
-   (`APPLY_AB_UI_20261008/logs/update_modules_20261008_093223.log`).
+   (`FASES/APPLY_AB_UI_20261008/` (artefacto `update_modules_20261008_093223.log` en `logs/`, fuera de git)).
 4. **Reorganización de la UI de Ingreso de Madera** en `madenat_lumber_intake/views/intake_console_views.xml`
    (vista primaria `view_madenat_lumber_intake_console_form`): resumen en 2 columnas, «Aplicar cambios»
    debajo, línea de identificación de retorno a todo el ancho, Evidencia documental en 3 columnas con
@@ -72,7 +72,7 @@ se sobrescribe con los diffs).
    `-u madenat_lumber_intake` (mismo patrón; `APPLY_AB_UI_20261008/logs/update_ui_*.log`).
 5. **Pruebas dirigidas sobre `madenat_test`:** **`0 failed, 0 error(s) of 88 tests`** (misma nómina de
    8 clases del gate histórico; incl. Cristhian uid 8, `su=False`). Log:
-   `APPLY_AB_UI_20261008/logs/tests_directed_madenat_test_20261008_093825.log`.
+   `FASES/APPLY_AB_UI_20261008/` (artefacto `tests_directed_madenat_test_20261008_093825.log` en `logs/`, fuera de git).
 
 ## Reversión
 

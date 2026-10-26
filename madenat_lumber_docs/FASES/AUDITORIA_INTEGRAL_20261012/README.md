@@ -164,7 +164,7 @@ trazabilidad de autor); se rotula por **intervención/ventana temporal**, no por
 
 **Comparación con baseline verificable (mismo día, mismo WIP):**
 - `core+intake+logistics`: **6 failed + 4 error de 1284** (esta auditoría) **vs 6 failed + 4 error de 1217**
-  (`BLINDAJE_REBAJA_LOCAL_20261012/logs/regression.log`, 2026-10-12 15:54) ⇒ **mismo conjunto, 0 nuevos**
+  (`FASES/BLINDAJE_REBAJA_LOCAL_20261012/` (artefacto `regression.log` en `logs/`, fuera de git), 2026-10-12 15:54) ⇒ **mismo conjunto, 0 nuevos**
   (las 67 pruebas extra del WIP no añaden fallas).
 - `logistics`: **4 failed de 506** **vs 4 failed de 444** (baseline) ⇒ **0 nuevos**.
 - **Tratamiento propuesto:** separar los 4 de `deviation`/`locations` (código) de los 6 de
