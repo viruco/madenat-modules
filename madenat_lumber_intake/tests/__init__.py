@@ -48,5 +48,7 @@ from . import test_guia_delete_guards
 from . import test_volume_console_search_menu
 # FASE 12 (Perfil de Ingesta Fase A): transferencia y guarda de coherencia
 from . import test_intake_profile_coherence
+# FASE 13/2D: procedencia del perfil y vigencia de la lectura (H1–H4).
+from . import test_intake_profile_provenance
 
 from . import test_intake_nominal_thickness

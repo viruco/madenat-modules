@@ -16,6 +16,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionResult,
 )
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -50,7 +51,12 @@ class TestIntakeModality(TransactionCase):
             vals['pdf_file'] = self._b64(b'%PDF-fake')
             vals['pdf_filename'] = 'guia.pdf'
         vals['assignment_location_id'] = (location or self.location).id
-        return self.Wizard.create(vals)
+        wizard = self.Wizard.create(vals)
+        if state == 'previewed':
+            # Lectura simulada vigente (FASE 13/2D): estado 'previewed' con la
+            # huella de los datos actuales, sin ejecutar el motor.
+            mark_previewed(wizard)
+        return wizard
 
     def _pdf_result(self, total_volume_m3=10.0):
         return DocumentExtractionResult(
@@ -84,6 +90,7 @@ class TestIntakeModality(TransactionCase):
     # 4. normal + procesado → _route_procesado
     def test_04_normal_procesado_route(self):
         wizard = self._make_wizard(modality='normal', tipo='procesado')
+        mark_previewed(wizard)
         guia_model = self.env['madenat.guia.processing']
         with patch.object(type(guia_model), 'action_verify_data', return_value=None):
             wizard.action_route_document()
@@ -94,6 +101,7 @@ class TestIntakeModality(TransactionCase):
     # 5. normal + tipo no producto/procesado → bloquea
     def test_05_normal_tipo_no_clasificable_bloquea(self):
         wizard = self._make_wizard(modality='normal', tipo='granel')
+        mark_previewed(wizard)
         with self.assertRaises(UserError) as ctx:
             wizard.action_route_document()
         self.assertIn('tipo de ingreso', str(ctx.exception))
@@ -101,6 +109,7 @@ class TestIntakeModality(TransactionCase):
     # 6. volume + PDF sin Excel → _route_granel
     def test_06_volume_pdf_sin_excel_granel(self):
         wizard = self._make_wizard(modality='volume', tipo='granel', excel=False)
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):
             wizard.action_route_document()
@@ -112,6 +121,7 @@ class TestIntakeModality(TransactionCase):
     # 7. volume + PDF + Excel → _route_granel
     def test_07_volume_pdf_excel_granel(self):
         wizard = self._make_wizard(modality='volume', tipo='granel', excel=True)
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):
             wizard.action_route_document()
@@ -123,10 +133,12 @@ class TestIntakeModality(TransactionCase):
     def test_08_patio_interno_acepta_ambas_modalidades(self):
         guia_model = self.env['madenat.guia.processing']
         w1 = self._make_wizard(modality='normal', tipo='procesado')
+        mark_previewed(w1)
         with patch.object(type(guia_model), 'action_verify_data', return_value=None):
             w1.action_route_document()
 
         w2 = self._make_wizard(modality='volume', tipo='granel', excel=False)
+        mark_previewed(w2)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(5.0)):
             w2.action_route_document()

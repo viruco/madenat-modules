@@ -12,6 +12,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionResult,
 )
 from ..models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -56,6 +57,7 @@ class TestGranelRouteIntake(TransactionCase):
     # ── Ruta granel ────────────────────────────────────────────────────────
     def test_01_route_granel_crea_guia_y_linea(self):
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):
             wizard.action_route_document()
@@ -118,6 +120,7 @@ class TestGranelRouteIntake(TransactionCase):
 
     def test_09_excel_opcional_granel(self):
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):
             wizard.action_route_document()  # no debe lanzar UserError
@@ -141,6 +144,7 @@ class TestGranelRouteIntake(TransactionCase):
         """linea_por_linea con PDF que trae líneas → N líneas de detalle."""
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
         wizard.tipo_detalle_granel = 'linea_por_linea'
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result_lines()):
             wizard.action_route_document()
@@ -154,6 +158,7 @@ class TestGranelRouteIntake(TransactionCase):
         """linea_por_linea sin tabla → degrada a resumen agregado + mensaje."""
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
         wizard.tipo_detalle_granel = 'linea_por_linea'
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(10.0)):  # lines=[]
             wizard.action_route_document()
@@ -168,6 +173,7 @@ class TestGranelRouteIntake(TransactionCase):
         """Modo 'agregado' (default) crea 1 línea sintética aunque el PDF traiga detalle."""
         wizard = self._make_wizard(tipo='granel', excel=False, pdf=True)
         # tipo_detalle_granel queda en default 'agregado'
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result_lines()):
             wizard.action_route_document()

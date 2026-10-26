@@ -14,6 +14,7 @@ from odoo.exceptions import UserError
 from ..models.intake_constants import CONSOLE_ID_OFFSET
 from odoo.addons.madenat_lumber_intake.models import intake_classifier
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -88,7 +89,12 @@ class TestIntakeWizard(TransactionCase):
             vals['ingestion_profile'] = 'metric'
         if assign_location:
             vals['assignment_location_id'] = cls.location.id
-        return cls.Wizard.create(vals)
+        wizard = cls.Wizard.create(vals)
+        if state == 'previewed':
+            # Lectura simulada vigente (FASE 13/2D): estado 'previewed' con la
+            # huella de los datos actuales, sin ejecutar el motor.
+            mark_previewed(wizard)
+        return wizard
 
     # ── T1: Producto — preview utiliza extract_document del motor ─────────
     def test_t1_producto_preview_uses_extract_document(self):
@@ -237,6 +243,7 @@ class TestIntakeWizard(TransactionCase):
     # ── T4: Procesado — deriva bytes crudos al parser nativo ─────────────
     def test_t4_procesado_routes_raw_bytes_to_native_parser(self):
         wizard = self._make_wizard(tipo='procesado', excel_raw=b'excel-raw')
+        mark_previewed(wizard)
         guia_model = self.env['madenat.guia.processing']
         parser_model = self.env['madenat.reception.parser']
 
@@ -282,6 +289,7 @@ class TestIntakeWizard(TransactionCase):
     # ── T5: Idempotencia ────────────────────────────────────────────────
     def test_t5_idempotency_double_click(self):
         wizard = self._make_wizard(tipo='procesado', excel_raw=b'excel-raw')
+        mark_previewed(wizard)
         guia_model = self.env['madenat.guia.processing']
 
         with patch.object(
@@ -342,6 +350,7 @@ class TestIntakeWizard(TransactionCase):
         """Toda apertura vía action_open_intake_target usa la CONSOLA de lectura."""
         # Procesado: crear wizard derivado y abrir el registro existente.
         wizard_proc = self._make_wizard(tipo='procesado', excel_raw=b'excel-raw')
+        mark_previewed(wizard_proc)
         guia_model = self.env['madenat.guia.processing']
         with patch.object(
             type(guia_model), 'action_verify_data', return_value=None
@@ -475,6 +484,7 @@ class TestIntakeWizard(TransactionCase):
     def test_tc6_procesado_always_transfers_pdf(self):
         """Mapeo: Intake pdf_file/pdf_filename → madenat.guia.processing.guide_pdf_file/guide_pdf_filename."""
         wizard = self._make_wizard(tipo='procesado', assign_location=True)
+        mark_previewed(wizard)
         guia_model = self.env['madenat.guia.processing']
 
         with patch.object(

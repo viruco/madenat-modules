@@ -10,6 +10,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionResult,
 )
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -45,6 +46,7 @@ class TestIntakeProfileCoherence(TransactionCase):
     def test_01_route_procesado_transfers_ingestion_profile(self):
         """_route_procesado debe transferir ingestion_profile a madenat.guia.processing."""
         wizard = self._make_wizard(profile='f1550', tipo='procesado')
+        mark_previewed(wizard)
         guia_model = self.env['madenat.guia.processing']
         with patch.object(type(guia_model), 'action_verify_data', return_value=None):
             wizard.action_route_document()
@@ -55,6 +57,7 @@ class TestIntakeProfileCoherence(TransactionCase):
     def test_02_profile_f5085_with_metric_lengths_warns_and_requires_confirm(self):
         """Perfil f5085 con largos métricos estándar sin pies debe advertir y requerir confirmación."""
         wizard = self._make_wizard(profile='f5085', tipo='procesado')
+        mark_previewed(wizard)
         mock_result = DocumentExtractionResult(
             header={},
             lines=[
@@ -80,6 +83,7 @@ class TestIntakeProfileCoherence(TransactionCase):
     def test_03_profile_metric_with_fractional_widths_warns_and_requires_confirm(self):
         """Perfil metric con anchos fraccionarios en pulgadas debe advertir y requerir confirmación."""
         wizard = self._make_wizard(profile='metric', tipo='procesado')
+        mark_previewed(wizard)
         mock_result = DocumentExtractionResult(
             header={},
             lines=[
@@ -121,6 +125,7 @@ class TestIntakeProfileCoherence(TransactionCase):
     def test_05_profile_coherent_passes_without_warning(self):
         """Perfil coherente pasa directamente sin advertencia ni bloqueo."""
         wizard = self._make_wizard(profile='metric', tipo='procesado')
+        mark_previewed(wizard)
         mock_result = DocumentExtractionResult(
             header={},
             lines=[

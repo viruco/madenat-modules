@@ -37,6 +37,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
 from odoo.addons.madenat_lumber_intake.models import (
     intake_wizard as intake_wizard_module,
 )
+from .intake_reading_helpers import mark_previewed
 
 FIXTURES = os.path.join(os.path.dirname(__file__), 'fixtures')
 GUIA_PDF = os.path.join(FIXTURES, 'HLZF75_4495589.pdf')
@@ -119,6 +120,7 @@ class TestIntakeVolumeDetailPieces(TransactionCase):
                 _to_xlsx(excel_rows)).decode()
             vals['excel_filename'] = excel_name
         wizard = self.Wizard.create(vals)
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           side_effect=self._extract_unique_guide):
             wizard.action_route_document()

@@ -14,6 +14,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionResult,
 )
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -70,6 +71,8 @@ class TestVolumeOperational(TransactionCase):
             vals['excel_file'] = base64.b64encode(b'excel-bytes').decode()
             vals['excel_filename'] = 'packing.xlsx'
         wizard = self.Wizard.create(vals)
+        # Lectura simulada vigente (FASE 13/2D): la prueba ejerce la derivación.
+        mark_previewed(wizard)
 
         def fake_extract(data, filename, *a, **kw):
             if filename.endswith('.pdf'):

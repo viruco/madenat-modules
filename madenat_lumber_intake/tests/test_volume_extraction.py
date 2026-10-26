@@ -17,6 +17,7 @@ from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     parse_localized_decimal,
 )
 from odoo.addons.madenat_lumber_intake.models import intake_wizard as intake_wizard_module
+from .intake_reading_helpers import mark_previewed
 
 
 @tagged('post_install', '-at_install', 'madenat', 'madenat_lumber_intake')
@@ -128,7 +129,10 @@ class TestVolumeExtraction(TransactionCase):
         if excel:
             vals['excel_file'] = base64.b64encode(b'excel-bytes').decode()
             vals['excel_filename'] = 'packing.xlsx'
-        return self.Wizard.create(vals)
+        wizard = self.Wizard.create(vals)
+        # Lectura simulada vigente (FASE 13/2D): estas pruebas derivan, no leen.
+        mark_previewed(wizard)
+        return wizard
 
     def test_preview_volume_detecta_total(self):
         wizard = self._make_volume_wizard()
@@ -270,6 +274,7 @@ class TestVolumeExtraction(TransactionCase):
             {'volume_m3': 2.92, 'lot_number': 'L1'},
             {'volume_m3': 2.70, 'lot_number': 'L2'},
         ]
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(None, lines=lines)):
             wizard.action_route_document()
@@ -407,6 +412,7 @@ class TestVolumeExtraction(TransactionCase):
     def _route_line_by_line_12(self):
         wizard = self._make_volume_wizard()
         wizard.tipo_detalle_granel = 'linea_por_linea'
+        mark_previewed(wizard)
         with patch.object(intake_wizard_module, 'extract_document',
                           return_value=self._pdf_result(40.315,
                                                         lines=self._DETAIL_LINES)):
