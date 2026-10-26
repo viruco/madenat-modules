@@ -86,10 +86,10 @@ pre02_formalization_audit,pre02_formalization_audit,32,9,9,si,349758,
 pre02_isolated_audit,pre02_isolated_audit,2,2,2,si,3115,
 pre02_publish_audit,pre02_publish_audit,4,4,4,si,7632,
 FASE13_INTAKE_ENGINE_20261023,FASE13_20261023,8,8,5,si,310243,3 archivos con referencias actualizadas por E3 (verificado en E3)
-_archive_pre_cleanup_20261003,(espejo),32,0,0,n/a,1336829,/home/viruco/dev-stack/backups/_archive_pre_cleanup_20261003.tar.gz (D7)
-f31_test_20261003_1410,(espejo),570,0,0,n/a,5656985,/home/viruco/dev-stack/backups/f31_test_20261003_1410.tar.gz (D7)
-madenat_dev_p0r_20261003,(espejo),570,0,0,n/a,5668711,/home/viruco/dev-stack/backups/madenat_dev_p0r_20261003.tar.gz (D7)
-oracle_f31_20261003_165538,(espejo),570,0,0,n/a,5668713,/home/viruco/dev-stack/backups/oracle_f31_20261003_165538.tar.gz (D7)
-pre02_isolated_20261003,(espejo),546,0,0,n/a,5202705,/home/viruco/dev-stack/backups/pre02_isolated_20261003.tar.gz (D7)
-pre02_postcommit_test_20261003_173746,(espejo),569,0,0,n/a,5668610,/home/viruco/dev-stack/backups/pre02_postcommit_test_20261003_173746.tar.gz (D7)
-pre02_test_20261003_1541,(espejo),570,0,0,n/a,5668711,/home/viruco/dev-stack/backups/pre02_test_20261003_1541.tar.gz (D7)
+_archive_pre_cleanup_20261003,(espejo),32,0,0,n/a,1336829,"~/dev-stack/backups/consolidacion_20261026/_archive_pre_cleanup_20261003.tar.gz (D7, verificado)"
+f31_test_20261003_1410,(espejo),570,0,0,n/a,5656985,"~/dev-stack/backups/consolidacion_20261026/f31_test_20261003_1410.tar.gz (D7, verificado)"
+madenat_dev_p0r_20261003,(espejo),570,0,0,n/a,5668711,"~/dev-stack/backups/consolidacion_20261026/madenat_dev_p0r_20261003.tar.gz (D7, verificado)"
+oracle_f31_20261003_165538,(espejo),570,0,0,n/a,5668713,"~/dev-stack/backups/consolidacion_20261026/oracle_f31_20261003_165538.tar.gz (D7, verificado)"
+pre02_isolated_20261003,(espejo),546,0,0,n/a,5202705,"~/dev-stack/backups/consolidacion_20261026/pre02_isolated_20261003.tar.gz (D7, verificado)"
+pre02_postcommit_test_20261003_173746,(espejo),569,0,0,n/a,5668610,"~/dev-stack/backups/consolidacion_20261026/pre02_postcommit_test_20261003_173746.tar.gz (D7, verificado)"
+pre02_test_20261003_1541,(espejo),570,0,0,n/a,5668711,"~/dev-stack/backups/consolidacion_20261026/pre02_test_20261003_1541.tar.gz (D7, verificado)"

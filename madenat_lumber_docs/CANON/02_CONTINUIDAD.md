@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.51.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: §22 con el estado de la consolidación (AD-135). Versión 02 12.50.0 → 12.51.0. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 12.52.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: §22.3 con el respaldo íntegro (94/94 .tar.gz + bundle `ec3d2886…`), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos); §22.4 con la propuesta de borrado en dos tandas (59 + 35) y el riesgo de `run_regression.sh`. Versión 02 12.51.0 → 12.52.0. Sin push ni despliegue. | FASE 3. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: §22 con el estado de la consolidación (AD-135). Versión 02 12.50.0 → 12.51.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.50.0 / 2026-10-26 al registrar §21 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-20 — Higiene Mínima Segura H0 (AD-128): Incorporación de tabla sinóptica ejecutiva al inicio del documento; formalización de permisos ACL (H0-A) y saneamiento de pruebas (H0-B); versión 02 12.48.0 → 12.49.0. Sin push ni despliegue. -->
 <!-- actualizado: 2026-10-19 — Cierre de Jornada 2026-10-19 (Bloque 6 y Arnés): §20 Estado al cierre y plan de continuación; Bloque 6 completo (6A Patios por tipo con MARVAL y Ferramenta en test, 6B visibilidad consola e inventario por patio stock.quant, 6C etiquetas Vol. Compra/Export y compra en lote, 6D packing estándar Forestal Andes y descontinuación lectores nativos); script canónico madenat_lumber_core/scripts/run_regression.sh; suite oficial en 1.591 pruebas con 10 fallas históricas y 0 errores; Hashes B y A.2 100% idénticos; tag cierre-jornada-20261019. Versión 02 12.47.0 → 12.48.0. Sin push ni despliegue. -->
@@ -2435,12 +2436,33 @@ docker compose start web && curl -s -o /dev/null -w '%{http_code}' http://127.0.
 | **E6** | `RAW/00_INDICE_RAW.md` (33 documentos + 1 fixture) y anexo de índices en `CANON/INDICE_DOCUMENTACION.md`; este §22 y AD-135 | (este commit) |
 | **E7** | Verificación global: enlaces relativos, sha256 de lo movido, rutas antiguas y `git status` | (este commit) |
 
+### 22.3 FASE 3 (D7, E8, C2, 2026-10-26)
+
+| Etapa | Resultado | Commit |
+|---|---|---|
+| **D7** | 94/94 carpetas comprimidas en `~/dev-stack/backups/consolidacion_20261026/` (41.574 archivos, 1.549.605.212 B → 1.157.997.868 B); `tar -tzvf` vs original: 0 faltantes, 0 sobrantes; sha256 de los 94 `.tar.gz` + del bundle en `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv` | `ac1a892` |
+| **Bundle** | `git bundle create --all` (5.368.032 B, sha256 `ec3d2886…`), `git bundle verify` = «records a complete history»; 56 refs (HEAD, 31 ramas, 2 remotos, 16 tags, 6 worktrees); remoto `git@github.com:viruco/madenat-modules.git` | (junto a `ac1a892`) |
+| **E8** | 85 citas reescritas a `FASES/<carpeta>/` en 29 archivos (46 en `CANON`, 2 en `WIKI`, 37 en copias de `FASES`); 26 de ellas conservan el artefacto no versionado como prosa; nota de consolidación en 8 documentos vivos + `FASES/00_INDICE_FASES.md` v1.1.0 | `6b911fd` |
+| **Enlaces** | Copiados 7 `.py` y 2 `.log` (< 1 MB) de `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015`; 9/9 sha256 idénticos; enlaces Markdown rotos 2 → **0** | `2f09bd5` |
+| **`.gitignore`** | Excepción `!madenat_lumber_docs/FASES/**/*.log`; los `.log` de evidencia consolidada se versionan sin `git add -f` (los demás `*.log` siguen ignorados) | `3bfa57d` |
+| **C2** | Línea base sobre copia de `madenat_test`: 1.067 tests (510 core + 557 logistics), **1 failed, 7 errors**, 3 omitidos; copia y filestore temporal eliminados. Detalle y diff propuesto (no aplicado) en `FASES/00_LINEA_BASE_C2.md` | — (no toca el repo) |
+
+**Verificación de E8 (antes → después).** Enlaces Markdown rotos 2 → 0; rutas en backticks que resuelven
+solo en la raíz 160 → 79; de ellas, carpetas de fase 83 → **0**; rutas no encontradas 423 → 424. Las 79
+restantes son rutas de módulos (`custom_addons/`), `.clinerules/`, dumps en `backups/` y el directorio de
+fixtures `muestras_documentos_ingreso/`; ninguna desaparece al borrar las 94 carpetas.
+Detalle fila a fila en `FASES/00_REESCRITURAS_E8.csv`.
+
 **No versionado (por diseño).** Código, `workcopy/`, `verify_*`, `respaldos/`, dumps, `*.tar*` y binarios > 2 MB
-quedan fuera de git y se archivan comprimidos en `/home/viruco/dev-stack/backups/` (D7), junto con el dump
-`madenat_test_pre_2d_20261026_0956.dump` (sha256 `279f466c…`).
+quedan fuera de git; desde D7 su copia íntegra está en
+`/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz` (94/94 verificados), junto con el dump
+`madenat_test_pre_2d_20261026_0956.dump` (sha256 `279f466c…`) en `/home/viruco/dev-stack/backups/`.
 
-### 22.2 Punto de retoma
+### 22.4 Punto de retoma
 
-1. Revisión del informe de consolidación y autorización (o no) del borrado de los originales de la raíz (C1).
-2. Después de C1: archivar las 7 carpetas espejo en `.tar.gz` y verificar los comprimidos.
-3. Sin autorización expresa no se toca código: el ajuste de los tests que dependen de xlsx es C2.
+1. Autorizar (o no) el borrado en dos tandas según `FASES/00_PROPUESTA_BORRADO_C2.md`: **59 carpetas no
+   citadas** (484,9 MB) y **35 citadas** (993,0 MB). Nada se ha borrado.
+2. Decidir sobre `FASE12_REQUERIMIENTOS_OPERACIONES_20261017`: `run_regression.sh` escribe sus logs ahí
+   (`mkdir -p`, no falla, pero la ruta apunta a una carpeta de fase de la raíz).
+3. Sin autorización expresa no se toca código: el diff del xlsx (D6) y el de `.clinerules` están **presentados
+   y sin aplicar**.

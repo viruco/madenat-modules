@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.54.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 12.55.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
 <!-- actualizado: 2026-10-21 — Bloque H5-C: AD-132 (Flujo de Edición de Dimensiones en Staging y Aviso en Chatter Pos-Envío). Versión 04 12.50.0 → 12.51.0. | Bloque H5. -->
@@ -4332,8 +4333,8 @@ Inventario de partida [VERIFICADO — `find`/`git ls-files` del 2026-10-26]: 3.6
 | D3 | `CANON/05_AUDITORIA_XML_IDS.md` → `CANON/20_AUDITORIA_XML_IDS.md` (`git mv`, contenido intacto, v1.1.0 → v1.2.0) y actualización de sus 5 citas | [VERIFICADO — `git log --stat 4337630`; grep sin referencias residuales salvo la línea histórica del índice] |
 | D4 | La documentación de fase se consolida en `madenat_lumber_docs/FASES/<CARPETA>/` con filtro de tipos y tamaños | [VERIFICADO — 78 carpetas, 568 archivos, 5.627.119 B; manifiestos `00_MANIFIESTO_TANDA_1..8.csv`] |
 | D5 | Evidencia 2B/2D (CSV, scripts, logs) congelada en el repo; el dump de 11,7 MB queda fuera de git con su sha256 anotado | [VERIFICADO — `FASES/FASE13_20261023/`; `evidencias/SHA256_FUERA_DE_GIT.csv`; dump en `/home/viruco/dev-stack/backups/`] |
-| D6 | Los tests que dependen de xlsx ausentes se saltarán con aviso si falta el archivo | [PENDIENTE — requiere autorización en el punto de control C2; **no ejecutado**] |
-| D7 | Las carpetas espejo se archivan en `.tar.gz` fuera de git; el borrado del original requiere autorización | [PENDIENTE — se ejecuta después de C1] |
+| D6 | Los tests que dependen de xlsx ausentes se saltarán con aviso si falta el archivo | [PROPUESTA PRESENTADA en FASE 3 — diff en `FASES/00_LINEA_BASE_C2.md` §5; **no aplicado**: requiere autorización] |
+| D7 | Las carpetas espejo y los 94 originales se archivan en `.tar.gz` fuera de git; el borrado del original requiere autorización | [EJECUTADO en FASE 3 — 94/94 `.tar.gz` verificados + bundle del repo; evidencia `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`] |
 
 **Hallazgo corregido en el índice (E1).** El commit `1c14206` añadió contenido a `02`, `03`, `04` y `12`
 y subió sus filas del índice a 12.50.0 / 6.43.0 / 12.53.0 / 1.21.0, pero **no** subió las cabeceras de los
@@ -4352,5 +4353,62 @@ Se corrigieron las cabeceras (el lado equivocado) y la fecha del índice (2026-1
 4. Riesgo asumido: cualquier documento que cite literalmente `FASE13_INTAKE_ENGINE_20261023/` debe usar la
    nueva ruta `custom_addons/madenat_lumber_docs/FASES/FASE13_20261023/` [VERIFICADO — 4 citas actualizadas
    en `CANON/04`, `PROMPT_2D.md` e `INFORME_FASE_2B.md`].
+
+### AD-135 · FASE 3 (D7, E8, C2, 2026-10-26)
+
+**D7 ampliado — respaldo íntegro antes de cualquier borrado.**
+
+| Métrica | Valor | Cómo se verificó |
+|---|---|---|
+| Carpetas comprimidas | **94/94** | `tar -czf` por carpeta en `~/dev-stack/backups/consolidacion_20261026/` |
+| Archivos originales | 41.574 | `os.walk` sin seguir symlinks (0 symlinks) |
+| Bytes originales | 1.549.605.212 | suma de tamaños, idéntica a la del manifiesto E0 |
+| Bytes comprimidos | 1.157.997.868 (1.104,4 MB, 74,7 %) | `du` del directorio de respaldos |
+| Diferencias archivo/bytes | **0 faltantes, 0 sobrantes** | `tar -tzvf` vs original, comparando el **conjunto de rutas relativas** |
+| sha256 por archivo | 94 + 1 | `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv` |
+| Bundle del repo | 5.368.032 B, sha256 `ec3d2886…` | `git bundle create --all` + `git bundle verify` → «records a complete history»; 56 refs (HEAD, 31 ramas, 2 remotos, 16 tags, 6 worktrees) |
+| Remoto | `origin git@github.com:viruco/madenat-modules.git` (fetch/push) | `git remote -v` |
+
+**E8 — reescritura de citas a expedientes.**
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Enlaces Markdown rotos | 2 | **0** |
+| Rutas en backticks que resuelven solo en la raíz | 160 | **79** |
+| — de ellas, carpetas de fase | 83 | **0** |
+| Rutas no encontradas (logs, dumps, globs) | 423 | 424 |
+
+Se reescribieron **85** citas (83 detectadas + 2 de `oracle_f31_audit`) en **29 archivos** (6 `CANON`, 2 `WIKI`,
+21 copias de `FASES`), con la regla «solo cambia el puntero»: cuando el artefacto no se copió por el filtro de
+E4 (26 casos), la cita queda como `FASES/<carpeta>/` más el nombre del artefacto y su carpeta de origen en
+prosa. Se insertó nota de consolidación en los 8 documentos vivos y una nota global en
+`FASES/00_INDICE_FASES.md`. Detalle fila a fila en `FASES/00_REESCRITURAS_E8.csv` y `FASES/00_VERIFICACION_E8.md`.
+Las 79 restantes **no son expedientes**: 66 son rutas de módulos dentro de `custom_addons/`, 8 `.clinerules/`,
+2 dumps en `backups/` y 3 citas al directorio de fixtures `muestras_documentos_ingreso/`. Ninguna desaparece al
+borrar las 94 carpetas.
+
+**C2 — línea base de pruebas (sin `-u`, sobre copia).**
+
+| Métrica | Valor |
+|---|---|
+| Base | copia lógica de `madenat_test` (620 tablas, 88 módulos, paridad verificada) |
+| Tests lanzados | 1.067 (510 core + 557 logistics) |
+| Resultado | **1 failed, 7 errors**, 3 omitidos |
+| Rojos | `TestSvConcurrency.test_01` (preexistente, `AssertionError: 2 != 1`) + 7 errores por `conciliation_status NOT NULL` sin default con campo ausente del código (deriva de esquema, no reconciliada al no usar `-u`) |
+| Limpieza | `DROP DATABASE` + filestore temporal eliminados |
+
+**Riesgos abiertos tras la FASE 3.**
+
+1. **R-E8-1 (deriva de esquema).** `madenat_test` conserva `conciliation_status` como `NOT NULL` sin default y
+   el campo ya no existe en el código; 7 de los 8 rojos dependen de ello. Confirmarlo exige `-u
+   madenat_lumber_core` sobre una copia (no autorizado todavía).
+2. **R-E8-2 (dependencia operativa).** `madenat_lumber_core/scripts/run_regression.sh:11` define
+   `LOG_DIR` dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`. El script hace `mkdir -p`, así que
+   no falla al borrar la carpeta, pero seguirá escribiendo logs en una ruta de fase de la raíz.
+3. **R-E8-3 (recuento).** La premisa «45 no citadas + 33 citadas» no coincide con la medición: `grep -rlw`
+   sobre `CANON`/`WIKI`/`RAW` da **59 + 35**; los «33» salen de contar solo citas de ruta en backticks.
+4. **R-E8-4 (cobertura de tests).** `TestConsolidationImportWizard` se omite entero dentro del contenedor
+   porque los xlsx de referencia no están montados ni versionados.
+
 
 
