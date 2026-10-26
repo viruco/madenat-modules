@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+from . import test_intake_wizard
+from . import test_intake_navigation_actions
+from . import test_intake_cancel_reopen
+from . import test_intake_console_actions
+from . import test_intake_direct_stock
+from . import test_intake_apply_changes
+from . import test_intake_tipo_ingreso_content
+from . import test_granel_route
+from . import test_intake_reclassify
+from . import test_intake_modality
+from . import test_volume_extraction
+from . import test_volume_operational
+from . import test_volume_lot_identity
+from . import test_intake_wizard_view
+from . import test_documental_console
+from . import test_intake_volume_declared_header
+from . import test_intake_packing_detail_ui_swap
+from . import test_intake_volume_packing_ux_cleanup
+from . import test_intake_volume_declared_suggestions
+from . import test_intake_volume_declared_pieces_grid
+from . import test_volume_official_volume
+from . import test_intake_console_sv_actions
+from . import test_volume_ui_hierarchy
+from . import test_volume_operations_screen
+from . import test_guide_lifecycle
+from . import test_guide_lifecycle_delete_attribution
+from . import test_guide_lifecycle_phase2
+from . import test_reopen_oc_reextraction
+from . import test_intake_volume_detail_pieces
+from . import test_intake_apply_declared_header_line
+from . import test_intake_volume_declared_grid_filter
+from . import test_intake_volume_declared_grid_ux
+from . import test_intake_volume_declared_grid_onchange
+from . import test_intake_volume_declared_grid_rpc
+from . import test_acl_sod_intake_and_costs
+from . import test_guia_delete_acl
+from . import test_search_console_oc_fecha_modality
+# Confirmación de retorno de servicio no bloqueante (2026-10-07).
+from . import test_service_return_confirmation
+# AUD-ETQ-08 (2026-10-12): dependencias coherentes de los computes de la consola.
+from . import test_intake_console_compute_depends
+# P2 (AUD-ETQ-08): recomputación REAL de las métricas de la consola.
+from . import test_intake_metrics_recompute
+# G1 (FASE 3): guardas de eliminación de guías (D-G1..D-G4), escenarios a–m.
+from . import test_guia_delete_guards
+# FASE 12 (Bloque 1 / WP-C): búsqueda y menú 'Ingresos por Volúmenes'
+from . import test_volume_console_search_menu
+# FASE 12 (Perfil de Ingesta Fase A): transferencia y guarda de coherencia
+from . import test_intake_profile_coherence
+# FASE 13/2D: procedencia del perfil y vigencia de la lectura (H1–H4).
+from . import test_intake_profile_provenance
+
+from . import test_intake_nominal_thickness

@@ -1,0 +1,187 @@
+ Container odoo18_db Running 
+ Container odoo18_db Waiting 
+ Container odoo18_db Healthy 
+ Container odoo-18-ce-web-run-07deef666998 Creating 
+ Container odoo-18-ce-web-run-07deef666998 Created 
+2026-10-26 13:02:57,817 1 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-26 13:02:57,817 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-26 13:02:57,817 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-26 13:02:57,818 1 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-26 13:02:58,215 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-26 13:02:58,307 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-26 13:02:58,815 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on 94796a2b2bcd:8069 
+2026-10-26 13:02:58,898 1 INFO madenat_test odoo.tests.common: Importing test framework 
+2026-10-26 13:02:59,252 1 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-26 13:02:59,262 1 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-26 13:02:59,326 1 INFO madenat_test odoo.modules.loading: updating modules list 
+2026-10-26 13:02:59,376 1 INFO madenat_test odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-10-26 13:03:02,072 1 INFO madenat_test odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['MADENAT Lumber Intake'] to user __system__ #1 via n/a 
+2026-10-26 13:03:02,072 1 INFO madenat_test odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['MADENAT Lumber Intake'] to user __system__ #1 via n/a 
+2026-10-26 13:03:03,662 1 INFO madenat_test odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-10-26 13:03:05,072 1 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-26 13:03:07,737 1 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-26 13:03:07,751 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-26 13:03:07,916 1 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-26 13:03:08,197 1 INFO madenat_test odoo.modules.loading: Loading module madenat_lumber_intake (86/88) 
+2026-10-26 13:03:01,986 1 INFO madenat_test odoo.modules.registry: module madenat_lumber_intake: creating or updating database tables 
+2026-10-26 13:03:02,172 1 WARNING madenat_test odoo.addons.base.models.ir_model: Two fields (oc_pending, purchase_reference) of madenat.lumber.intake.console() have the same label: OC. [Modules: madenat_lumber_intake and madenat_lumber_intake] 
+2026-10-26 13:03:02,539 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/security/ir.model.access.csv 
+2026-10-26 13:03:02,618 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_wizard_views.xml 
+2026-10-26 13:03:02,686 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_console_views.xml 
+2026-10-26 13:03:02,750 1 WARNING madenat_test odoo.addons.base.models.ir_ui_view: A <i> with fa class (fa fa-exclamation-triangle) must have title in its tag, parents, descendants or have text
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_intake/views/intake_console_views.xml',
+ 'line': 169,
+ 'name': 'madenat.lumber.intake.console.form',
+ 'view': ir.ui.view(1867,),
+ 'view.model': 'madenat.lumber.intake.console',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_madenat_lumber_intake_console_form'} 
+2026-10-26 13:03:02,797 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_volume_detail_line_views.xml 
+2026-10-26 13:03:02,808 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_reception_facade_views.xml 
+2026-10-26 13:03:02,836 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_guia_processing_facade_views.xml 
+2026-10-26 13:03:02,852 1 WARNING madenat_test odoo.addons.base.models.ir_ui_view: A <i> with fa class (fa fa-exclamation-triangle) must have title in its tag, parents, descendants or have text
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_intake/views/intake_guia_processing_facade_views.xml',
+ 'line': 48,
+ 'name': 'madenat.guia.processing.intake.facade.form',
+ 'view': ir.ui.view(1879,),
+ 'view.model': 'madenat.guia.processing',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_madenat_guia_processing_intake_facade_form'} 
+2026-10-26 13:03:02,863 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_cancel_wizard_views.xml 
+2026-10-26 13:03:02,897 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_po_link_wizard_views.xml 
+2026-10-26 13:03:02,919 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_supplier_link_wizard_views.xml 
+2026-10-26 13:03:02,937 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_reclassify_wizard_views.xml 
+2026-10-26 13:03:02,949 1 WARNING madenat_test odoo.addons.base.models.ir_ui_view: A <i> with fa class (fa fa-exclamation-triangle) must have title in its tag, parents, descendants or have text
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_intake/views/intake_reclassify_wizard_views.xml',
+ 'line': 5,
+ 'name': 'madenat.lumber.intake.reclassify.wizard.form',
+ 'view': ir.ui.view(1899,),
+ 'view.model': 'madenat.lumber.intake.reclassify.wizard',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_madenat_lumber_intake_reclassify_wizard_form'} 
+2026-10-26 13:03:02,951 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_guide_lifecycle_wizard_views.xml 
+2026-10-26 13:03:02,964 1 INFO madenat_test odoo.modules.loading: loading madenat_lumber_intake/views/intake_menus.xml 
+2026-10-26 13:03:03,032 1 INFO madenat_test odoo.addons.base.models.ir_module: module madenat_lumber_intake: no translation for language es_CL 
+2026-10-26 13:03:03,095 1 WARNING madenat_test py.warnings: /mnt/extra-addons/madenat_lumber_intake/tests/test_guide_lifecycle_phase2.py:22: DeprecationWarning: Since 18.0: odoo.tests.common.Form is deprecated, use odoo.tests.Form
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 182, in run
+    main(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 175, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1510, in start
+    rc = server.run(preload, stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 644, in run
+    rc = preload_registries(preload)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1414, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "/usr/lib/python3/dist-packages/decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 118, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 485, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 365, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 278, in load_module_graph
+    suite = loader.make_suite([module_name], 'at_install')
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 108, in make_suite
+    return OdooSuite(sorted(tests, key=lambda t: t.test_sequence))
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 104, in <genexpr>
+    for m in get_test_modules(module_name)
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 51, in get_test_modules
+    results = _get_tests_modules(importlib.util.find_spec(f'odoo.addons.{module}'))
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 62, in _get_tests_modules
+    tests_mod = importlib.import_module(spec.name)
+  File "/mnt/extra-addons/madenat_lumber_intake/tests/__init__.py", line 28, in <module>
+    from . import test_guide_lifecycle_phase2
+  File "/mnt/extra-addons/madenat_lumber_intake/tests/test_guide_lifecycle_phase2.py", line 22, in <module>
+    from odoo.tests.common import Form, SingleTransactionCase, TransactionCase
+ 
+2026-10-26 13:03:03,102 1 WARNING madenat_test py.warnings: /mnt/extra-addons/madenat_lumber_intake/tests/test_intake_volume_declared_grid_onchange.py:23: DeprecationWarning: Since 18.0: odoo.tests.common.Form is deprecated, use odoo.tests.Form
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 182, in run
+    main(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 175, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1510, in start
+    rc = server.run(preload, stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 644, in run
+    rc = preload_registries(preload)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1414, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "/usr/lib/python3/dist-packages/decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 118, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 485, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 365, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 278, in load_module_graph
+    suite = loader.make_suite([module_name], 'at_install')
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 108, in make_suite
+    return OdooSuite(sorted(tests, key=lambda t: t.test_sequence))
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 104, in <genexpr>
+    for m in get_test_modules(module_name)
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 51, in get_test_modules
+    results = _get_tests_modules(importlib.util.find_spec(f'odoo.addons.{module}'))
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 62, in _get_tests_modules
+    tests_mod = importlib.import_module(spec.name)
+  File "/mnt/extra-addons/madenat_lumber_intake/tests/__init__.py", line 34, in <module>
+    from . import test_intake_volume_declared_grid_onchange
+  File "/mnt/extra-addons/madenat_lumber_intake/tests/test_intake_volume_declared_grid_onchange.py", line 23, in <module>
+    from odoo.tests.common import Form, TransactionCase
+ 
+2026-10-26 13:03:03,141 1 INFO madenat_test odoo.modules.loading: Module madenat_lumber_intake loaded in -5.06s, 370 queries (+370 other) 
+2026-10-26 13:03:03,194 1 INFO madenat_test odoo.modules.loading: 88 modules loaded in -1.88s, 370 queries (+370 extra) 
+2026-10-26 13:03:09,640 1 INFO madenat_test odoo.modules.registry: verifying fields for every extended model 
+2026-10-26 13:03:09,647 1 WARNING madenat_test odoo.addons.base.models.ir_model: Two fields (patio_label, location_id) of lumber.reception.line() have the same label: Patio. [Modules: madenat_lumber_reports and madenat_lumber_reports] 
+2026-10-26 13:03:09,647 1 WARNING madenat_test odoo.addons.base.models.ir_model: Two fields (partner_name, partner_id) of lumber.reception.line() have the same label: Proveedor. [Modules: madenat_lumber_reports and madenat_lumber_reports] 
+2026-10-26 13:03:09,647 1 WARNING madenat_test odoo.addons.base.models.ir_model: Two fields (purchase_id, purchase_order_name) of lumber.reception.line() have the same label: Orden de Compra. [Modules: madenat_lumber_reports and madenat_lumber_core] 
+2026-10-26 13:03:05,440 1 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-26 13:03:05,451 1 INFO madenat_test odoo.modules.registry: Registry changed, signaling through the database 
+2026-10-26 13:03:05,454 1 INFO madenat_test odoo.modules.registry: Registry loaded in 6.637s 
+2026-10-26 13:03:05,454 1 INFO madenat_test odoo.service.server: Starting post tests 
+2026-10-26 13:03:05,467 1 INFO madenat_test odoo.addons.madenat_lumber_intake.tests.test_zz_debug_tmp: Starting TestZzDebugTmp.test_debug_estado ... 
+2026-10-26 13:03:05,529 1 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+2026-10-26 13:03:05,697 1 INFO madenat_test odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-10-26 13:03:05,699 1 INFO madenat_test odoo.service.server: 1 post-tests in 0.24s, 19 queries 
+2026-10-26 13:03:05,699 1 INFO madenat_test odoo.tests.stats: madenat_lumber_intake: 3 tests 0.24s 19 queries 
+2026-10-26 13:03:05,699 1 INFO madenat_test odoo.tests.result: 0 failed, 0 error(s) of 1 tests when loading database 'madenat_test' 
+2026-10-26 13:03:05,699 1 INFO madenat_test odoo.service.server: Initiating shutdown 
+2026-10-26 13:03:05,699 1 INFO madenat_test odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-26 13:03:05,821 1 INFO madenat_test odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+DEBUG state_preview= previewed tipo= producto sig= True
+DEBUG db_state_preview= ('previewed',)
+DEBUG state_after_assign= draft
+DEBUG db_after_assign= ('draft', 'guia_corregida.pdf')
+DEBUG sig_after_assign= False sig_matches= False

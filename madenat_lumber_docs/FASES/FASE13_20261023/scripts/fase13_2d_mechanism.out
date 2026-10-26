@@ -1,0 +1,84 @@
+2026-10-26 11:58:44,749 337 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-26 11:58:44,749 337 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-26 11:58:44,749 337 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-26 11:58:44,749 337 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-26 11:58:44,937 337 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-26 11:58:44,946 337 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-26 11:58:45,145 337 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-26 11:58:45,145 337 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-26 11:58:45,171 337 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-26 11:58:45,179 337 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-26 11:58:45,228 337 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-26 11:58:46,426 337 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-26 11:58:46,433 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-26 11:58:46,558 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-26 11:58:46,559 337 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-26 11:58:46,767 337 INFO madenat_test odoo.modules.loading: 88 modules loaded in 1.54s, 0 queries (+0 extra) 
+2026-10-26 11:58:47,039 337 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-26 11:58:47,046 337 INFO madenat_test odoo.modules.registry: Registry loaded in 1.901s 
+2026-10-26 11:58:47,095 337 INFO madenat_test odoo.tests.common: Importing test framework 
+2026-10-26 11:58:47,098 337 WARNING madenat_test py.warnings: <string>:11: DeprecationWarning: Since 18.0: odoo.tests.common.Form is deprecated, use odoo.tests.Form
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 11, in <module>
+ 
+2026-10-26 11:58:48,002 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+2026-10-26 11:58:48,019 337 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+patio usado: PATIO SERVICIO CEPILLADO FERRAMENTA 12564
+fixture: packing_metrico_aserrada
+
+=== E1 — bucle recursivo de onchange (servidor) ===
+E1a el operador eligió f1550 y sube el Excel -> resultado: metric
+    onchange(ingestion_profile) re-entró con: ['metric']
+E1b procedencia 'chosen'=False -> ingestion_profile = 'metric'
+E1b procedencia 'chosen'=True -> ingestion_profile = None
+
+=== E2 — lectura vieja: ruta actual vs huella ===
+state tras reemplazar el archivo: previewed | huella cambió: True
+RUTA PERMITIDA con lectura vieja. receptiones creadas: 1
+sólo cambia el nombre del PDF -> huella cambió: True
+CON GUARDA -> BLOQUEADO: Los datos cambiaron después de leer el documento. Vuelva a leer antes de continuar.
+receptiones creadas con guarda: 0
+lectura vigente -> ruta permitida, state = routed | target = 14114
+
+=== E3 — onchange que pone state='draft' en un campo readonly ===
+en el Form: state = draft | preview_line_count = 0
+PERSISTIDO tras Form.save implícito: state = previewed | preview_line_count = 2
+
+=== E4 — invalidación a nivel de write() ===
+write directo -> state = draft | preview_line_count = 0 | archivos conservados: True True
+re-guardar el MISMO archivo -> state = previewed (no se invalida por ruido del cliente)
+Form.save() -> state = draft | preview_line_count = 0
+tras invalidar -> BLOQUEADO: Debe leer el documento (preview) antes de derivar a Producto.
+preview normal -> state = previewed | líneas = 2
+preview volume -> state = previewed
+
+=== E5 — Procesado tras Leer documento ===
+procesado -> state = draft | tipo_ingreso = procesado
+guarda de ruta para procesado en state='draft': NO BLOQUEA
+guarda de ruta para volume en state='draft': NO BLOQUEA
+
+ROLLBACK OK — base sin cambios

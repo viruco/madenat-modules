@@ -4269,7 +4269,7 @@ previa (o con una lectura obsoleta tras cambiar archivos, perfil, patio o nivel 
 
 | ID | Decisión | Estado |
 |---|---|---|
-| H1 | Documentar la regla de un paso por vez en `.clinerules/madenat-regla-de-oro.md` y guardar el prompt en `FASE13_INTAKE_ENGINE_20261023/PROMPT_2D.md` | [VERIFICADO — archivos creados] |
+| H1 | Documentar la regla de un paso por vez en `.clinerules/madenat-regla-de-oro.md` y guardar el prompt en `custom_addons/madenat_lumber_docs/FASES/FASE13_20261023/PROMPT_2D.md` | [VERIFICADO — archivos creados] |
 | H2 | La derivación exige lectura vigente en las **tres** modalidades (`state='previewed'` + `reading_signature` coincidente); la lectura de Procesado también deja `previewed` | [VERIFICADO — T-2D-6, suite 445/445] |
 | H3 | Migración sólo si los valores por defecto no bastan; en su caso, inicialización idempotente de columnas nuevas | [VERIFICADO — no hizo falta: `profile_origin` NOT NULL con 112/112 filas en `'default'`] |
 | H4 | Aceptar la limitación del distintivo «Perfil sugerido»: visible mientras `profile_origin != 'chosen'`; sin badge adicional de «elegido» | [VERIFICADO — `views/intake_wizard_views.xml`, T-2D-9] |

@@ -1,0 +1,2 @@
+archivo,bytes,sha256,ubicacion_fuera_de_git,motivo
+madenat_test_pre_2d_20261026_0956.dump,11679364,279f466c4fba8657303e57a07115174e29a5d7679b02e78d3045cc2ed84cdf11,/home/viruco/dev-stack/backups/,dump previo a la FASE 2D (11,7 MB): excluido de git por tamano (D5)
