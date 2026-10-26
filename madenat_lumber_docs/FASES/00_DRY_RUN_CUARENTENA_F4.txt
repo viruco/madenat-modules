@@ -1,0 +1,105 @@
+==============================================================================
+CUARENTENA (DRY-RUN) — tanda AB — 94 candidatas
+Origen : /home/viruco/dev-stack/odoo/odoo-18-ce
+Destino: /home/viruco/dev-stack/odoo/odoo-18-ce/.pendiente_borrado_20261026
+Montajes de contenedor considerados: 4
+==============================================================================
+[  1] APTA       FIX_GUIA_DUP_FINAL_20261007_171740              12323 arch.       99.9 MB  .tar.gz OK
+[  2] APTA       FIX_GUIA_DUP_CIERRE_20261007_170340              8213 arch.       66.6 MB  .tar.gz OK
+[  3] APTA       FIX_GUIA_DUP_20261007_164415                     8206 arch.       66.5 MB  .tar.gz OK
+[  4] APTA       incident_recovery_audit                             9 arch.       39.1 MB  .tar.gz OK
+[  5] APTA       REDISENO_REGISTRAR_REBAJA_20261010                 15 arch.       36.2 MB  .tar.gz OK
+[  6] APTA       IMPL_SV_REBAJA_OPERATIVA_20261010                  17 arch.       34.7 MB  .tar.gz OK
+[  7] APTA       FIX_SV_SELECCIONAR_TODAS_20261010                  14 arch.       34.2 MB  .tar.gz OK
+[  8] APTA       FIX_ACL_GUIA_20261007_1630                       1709 arch.       32.6 MB  .tar.gz OK
+[  9] APTA       FASE5_COMMITS_20261015                             36 arch.       21.7 MB  .tar.gz OK
+[ 10] APTA       FIX_DELETE_INTAKE_20261007_145130                 506 arch.        6.1 MB  .tar.gz OK
+[ 11] APTA       oracle_f31_20261003_165538                        570 arch.        5.4 MB  .tar.gz OK
+[ 12] APTA       madenat_dev_p0r_20261003                          570 arch.        5.4 MB  .tar.gz OK
+[ 13] APTA       pre02_test_20261003_1541                          570 arch.        5.4 MB  .tar.gz OK
+[ 14] APTA       pre02_postcommit_test_20261003_173746             569 arch.        5.4 MB  .tar.gz OK
+[ 15] APTA       f31_test_20261003_1410                            570 arch.        5.4 MB  .tar.gz OK
+[ 16] APTA       pre02_isolated_20261003                           546 arch.        5.0 MB  .tar.gz OK
+[ 17] APTA       AUDIT_DELETE_INTAKE_20261007_130559                57 arch.        1.9 MB  .tar.gz OK
+[ 18] APTA       HOTFIX_OWL_COLUMN_INVISIBLE_20261010               15 arch.        1.4 MB  .tar.gz OK
+[ 19] APTA       _archive_pre_cleanup_20261003                      32 arch.        1.3 MB  .tar.gz OK
+[ 20] APTA       UI_LIMPIA_SV_20261010                              12 arch.        1.1 MB  .tar.gz OK
+[ 21] APTA       DIAGNOSTICO_SV000000841_20261012                    4 arch.        1.1 MB  .tar.gz OK
+[ 22] APTA       pre02_audit                                        51 arch.        1.0 MB  .tar.gz OK
+[ 23] APTA       IMPL_SEC_RECEPCION_20261004                        11 arch.        0.7 MB  .tar.gz OK
+[ 24] APTA       oracle_f31_audit                                   32 arch.        0.6 MB  .tar.gz OK
+[ 25] APTA       IMPL_DELIVER_D2_20261004                            6 arch.        0.6 MB  .tar.gz OK
+[ 26] APTA       IMPL_B01_20261004                                   3 arch.        0.5 MB  .tar.gz OK
+[ 27] APTA       UAT_R2_20261004                                    37 arch.        0.4 MB  .tar.gz OK
+[ 28] APTA       IMPL_DELIVER_D2_C1_20261004                         7 arch.        0.4 MB  .tar.gz OK
+[ 29] APTA       _archive_pre_cleanup_20260822                      53 arch.        0.4 MB  .tar.gz OK
+[ 30] APTA       UAT_DELIVER_D2_20261004                            13 arch.        0.4 MB  .tar.gz OK
+[ 31] APTA       UAT_ROLLEO_EMBARQUE_20261005                       10 arch.        0.4 MB  .tar.gz OK
+[ 32] APTA       FASE_B_20261007_153214                             11 arch.        0.4 MB  .tar.gz OK
+[ 33] APTA       pre02_formalization_audit                          32 arch.        0.3 MB  .tar.gz OK
+[ 34] APTA       backups_provider_total_20260821_094139              3 arch.        0.3 MB  .tar.gz OK
+[ 35] APTA       backups_20260821_20260821_091540                    3 arch.        0.3 MB  .tar.gz OK
+[ 36] APTA       backups_fix_proveedor_20260821_102851               6 arch.        0.3 MB  .tar.gz OK
+[ 37] APTA       ALINEACION_DOC_Y_PRE_DESPLIEGUE_20261012           13 arch.        0.3 MB  .tar.gz OK
+[ 38] APTA       CIERRE_E1_20261005                                 13 arch.        0.2 MB  .tar.gz OK
+[ 39] APTA       UAT_B01_20261004                                   13 arch.        0.2 MB  .tar.gz OK
+[ 40] APTA       UAT_INTAKE_20261004                                 8 arch.        0.2 MB  .tar.gz OK
+[ 41] APTA       UAT_DRAFT_20261004                                 11 arch.        0.2 MB  .tar.gz OK
+[ 42] APTA       UAT_R1_20261004                                    19 arch.        0.1 MB  .tar.gz OK
+[ 43] APTA       FASE_C_20261007_154556                              3 arch.        0.1 MB  .tar.gz OK
+[ 44] APTA       AUDIT_R2_20261004                                   4 arch.        0.1 MB  .tar.gz OK
+[ 45] APTA       AUDIT_BUSQUEDA_FILTROS_INTAKE_20261007              6 arch.        0.1 MB  .tar.gz OK
+[ 46] APTA       FASE_D_20261007_155057                              6 arch.        0.0 MB  .tar.gz OK
+[ 47] APTA       AUDIT_COSTING_20261004                              4 arch.        0.0 MB  .tar.gz OK
+[ 48] APTA       UAT_COSTING_C2_20261004                             8 arch.        0.0 MB  .tar.gz OK
+[ 49] APTA       UAT_VR_20261004                                     6 arch.        0.0 MB  .tar.gz OK
+[ 50] APTA       AUDIT_DELIVER_20261004                              3 arch.        0.0 MB  .tar.gz OK
+[ 51] APTA       backups_20260821_20260821_092634                    1 arch.        0.0 MB  .tar.gz OK
+[ 52] APTA       AUDIT_GUIA_DUPLICADOS_20261007                      1 arch.        0.0 MB  .tar.gz OK
+[ 53] APTA       UAT_INT_20261003                                    5 arch.        0.0 MB  .tar.gz OK
+[ 54] APTA       FASE9_VERIFICACION_REMOTO_20261015                  2 arch.        0.0 MB  .tar.gz OK
+[ 55] APTA       pre02_publish_audit                                 4 arch.        0.0 MB  .tar.gz OK
+[ 56] APTA       pre02_isolated_audit                                2 arch.        0.0 MB  .tar.gz OK
+[ 57] APTA       madenat_dev_audit_20261003                          1 arch.        0.0 MB  .tar.gz OK
+[ 58] APTA       appointment_crm                                     2 arch.        0.0 MB  .tar.gz OK
+[ 59] APTA       postgresql.conf                                     0 arch.        0.0 MB  .tar.gz OK
+[ 60] APTA       AUDITORIA_INTEGRAL_20261012                        97 arch.      175.8 MB  .tar.gz OK
+[ 61] APTA       BACKUP_AB_APPLY_20261008                           23 arch.      140.4 MB  .tar.gz OK
+[ 62] APTA       CONCILIACION_ENVIO_RETORNO_20261010                42 arch.      131.4 MB  .tar.gz OK
+[ 63] APTA       AUDIT_REBAJA_ETIQUETAS_20261011                    24 arch.       49.4 MB  .tar.gz OK
+[ 64] APTA       INCIDENTE_GUIA_15183_20261007                    4119 arch.       34.1 MB  .tar.gz OK
+[ 65] APTA       APPLY_AB_UI_20261008                               27 arch.       34.0 MB  .tar.gz OK
+[ 66] APTA       BLINDAJE_SOBRESCRITURA_20261012                    18 arch.       33.6 MB  .tar.gz OK
+[ 67] APTA       BLINDAJE_REBAJA_LOCAL_20261012                     22 arch.       33.6 MB  .tar.gz OK
+[ 68] APTA       VERIF_CUATRO_PUNTOS_20261012                       19 arch.       33.6 MB  .tar.gz OK
+[ 69] APTA       CIERRE_SOBRESCRITURA_V123_20261012                 19 arch.       33.1 MB  .tar.gz OK
+[ 70] APTA       APPLY_BUSQUEDA_INTAKE_20261007                     17 arch.       31.8 MB  .tar.gz OK
+[ 71] APTA       FASE11_INTEGRIDAD_CICLO_IMPUTACIONES_20261015      64 arch.       31.5 MB  .tar.gz OK
+[ 72] APTA       FASE7_CIERRE_D18_20261015                          49 arch.       23.7 MB  .tar.gz OK
+[ 73] APTA       FASE8_CIERRE_DR_20261015                           43 arch.       23.6 MB  .tar.gz OK
+[ 74] APTA       FASE10_REBAJA_SV_ETIQUETAS_20261015                41 arch.       16.5 MB  .tar.gz OK
+[ 75] APTA       IMPL_ASSIGN_SV_20261010_165247                     22 arch.       14.7 MB  .tar.gz OK
+[ 76] APTA       UNIFY_SV_REBAJA_MENU_20261010                      17 arch.       14.1 MB  .tar.gz OK
+[ 77] APTA       SAVE_REBAJA_20261011                                8 arch.       14.0 MB  .tar.gz OK
+[ 78] APTA       RESET_REBAJA_20261011                               7 arch.       13.8 MB  .tar.gz OK
+[ 79] APTA       SIMPLE_REBAJA_20261011                              7 arch.       13.8 MB  .tar.gz OK
+[ 80] APTA       UI_SAVE_REBAJA_20261011                             6 arch.       13.5 MB  .tar.gz OK
+[ 81] APTA       CIERRE_PENDIENTES_20261010                          8 arch.       12.1 MB  .tar.gz OK
+[ 82] APTA       HOTFIX_OWL_CHATTER_OE_20261012                     17 arch.        9.2 MB  .tar.gz OK
+[ 83] APTA       IMPL_SERVICE_RETURN_20261006                      686 arch.        8.9 MB  .tar.gz OK
+[ 84] APTA       IMPL_SERVICE_RETURN_AB_20261007                   524 arch.        7.7 MB  .tar.gz OK
+[ 85] APTA       IMPL_BUSQUEDA_INTAKE_20261007                     504 arch.        5.2 MB  .tar.gz OK
+[ 86] APTA       FASE6_HEAD_CHECK_20261015                          23 arch.        2.1 MB  .tar.gz OK
+[ 87] APTA       CONTRATO_APLICACION_20261011                        7 arch.        0.8 MB  .tar.gz OK
+[ 88] APTA       FASE13_INTAKE_ENGINE_20261023                       8 arch.        0.3 MB  .tar.gz OK
+[ 89] APTA       AUDITORIA_DISPONIBILIDAD_ETIQUETAS_20261015         8 arch.        0.1 MB  .tar.gz OK
+[ 90] APTA       AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015         15 arch.        0.1 MB  .tar.gz OK
+[ 91] APTA       DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015      11 arch.        0.0 MB  .tar.gz OK
+[ 92] APTA       AUDIT_B01_20261004                                  1 arch.        0.0 MB  .tar.gz OK
+------------------------------------------------------------------------------
+[ -- ] EXCLUIDA   FASE12_REQUERIMIENTOS_OPERACIONES_20261017    postergada: run_regression.sh:11 escribe sus logs aquí (fix propuesto, no aplicado); moverla haría que el script recree la carpeta en la ruta vieja
+[ -- ] EXCLUIDA   config                                        dependencia viva: bind mount ./config -> /etc/odoo en docker-compose.yml y --config /etc/odoo/odoo.conf en odoo18_app
+------------------------------------------------------------------------------
+Aptas: 92 (1441.5 MB) | Bloqueadas: 0 | Excluidas: 2 | Listadas: 94
+
+DRY-RUN: no se movió nada. Para ejecutar: --ejecutar --tanda AB

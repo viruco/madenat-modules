@@ -1,8 +1,8 @@
 # Índice de carpetas de fase consolidadas — `madenat_lumber_docs/FASES/`
 
-**Versión documental:** 1.1.0
+**Versión documental:** 1.2.0
 **Fecha:** 2026-10-26
-**Origen:** consolidación documental FASE 2, etapas E4 (D4), E8 y D7.
+**Origen:** consolidación documental FASE 2, etapas E4 (D4), E8 y D7; §4 añadida en FASE 4 (2026-10-26).
 
 > **Nota de consolidación (FASE 2, 2026-10-26).** Las referencias a expedientes de fase se reescribieron a
 > `FASES/<CARPETA>/…` en los documentos canónicos, en la WIKI y en las propias copias de `FASES/` (ver
@@ -135,3 +135,44 @@ y `FASES/00_MANIFIESTO_TANDA_1..8.csv` (sha256 origen vs copiado por tanda).
 | `pre02_isolated_20261003` | copia completa de módulos/`madenat_lumber_docs` (546 archivos) | Espejo → `/home/viruco/dev-stack/backups/pre02_isolated_20261003.tar.gz` (C1) |
 | `pre02_postcommit_test_20261003_173746` | copia completa de módulos/`madenat_lumber_docs` (569 archivos) | Espejo → `/home/viruco/dev-stack/backups/pre02_postcommit_test_20261003_173746.tar.gz` (C1) |
 | `pre02_test_20261003_1541` | copia completa de módulos/`madenat_lumber_docs` (570 archivos) | Espejo → `/home/viruco/dev-stack/backups/pre02_test_20261003_1541.tar.gz` (C1) |
+
+## 4. Punteros a artefactos fuera de git (FASE 4, punto 7)
+
+Las **26 citas** de E8 que conservan un artefacto **no versionado** ya dicen en prosa la carpeta de origen; esta
+sección añade el `.tar.gz` de D7 que lo contiene, para que el artefacto siga siendo localizable aunque el
+original de la raíz esté en cuarentena. Ruta completa del respaldo:
+`/home/viruco/dev-stack/backups/consolidacion_20261026/<CARPETA>.tar.gz`.
+
+Verificado con `tar -tzf` (rutas y bytes dentro del archivo): **16 artefactos distintos en 26 citas, 16/16
+presentes**. Correspondencia cita por cita en `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv`.
+
+| Carpeta de fase | Artefacto dentro del `.tar.gz` | `.tar.gz` de D7 | Citas |
+|---|---|---|---|
+| `APPLY_AB_UI_20261008/` | `logs/tests_directed_madenat_test_20261008_093825.log` | `APPLY_AB_UI_20261008.tar.gz` | 3 |
+| `APPLY_AB_UI_20261008/` | `logs/update_modules_20261008_093223.log` | `APPLY_AB_UI_20261008.tar.gz` | 2 |
+| `APPLY_BUSQUEDA_INTAKE_20261007/` | `backup/madenat_test_pre.dump` | `APPLY_BUSQUEDA_INTAKE_20261007.tar.gz` | 2 |
+| `AUDIT_REBAJA_ETIQUETAS_20261011/` | `evidence/concurrency_probe.py` | `AUDIT_REBAJA_ETIQUETAS_20261011.tar.gz` | 2 |
+| `BACKUP_AB_APPLY_20261008/` | `db/madenat_test_20261008_092958.dump` | `BACKUP_AB_APPLY_20261008.tar.gz` | 4 |
+| `BLINDAJE_REBAJA_LOCAL_20261012/` | `logs/regression.log` | `BLINDAJE_REBAJA_LOCAL_20261012.tar.gz` | 3 |
+| `BLINDAJE_REBAJA_LOCAL_20261012/` | `logs/regression_logistics.log` | `BLINDAJE_REBAJA_LOCAL_20261012.tar.gz` | 1 |
+| `CIERRE_PENDIENTES_20261010/` | `db/madenat_test_pre_20261010.dump` | `CIERRE_PENDIENTES_20261010.tar.gz` | 1 |
+| `CIERRE_PENDIENTES_20261010/` | `logs/tests_intake_20261010.log` | `CIERRE_PENDIENTES_20261010.tar.gz` | 1 |
+| `CONTRATO_APLICACION_20261011/` | `evidence/POL_contrato_tests_draft.py` | `CONTRATO_APLICACION_20261011.tar.gz` | 1 |
+| `CONTRATO_APLICACION_20261011/` | `logs_pol.log` | `CONTRATO_APLICACION_20261011.tar.gz` | 1 |
+| `IMPL_SERVICE_RETURN_20261006/` | `logs/iso_run4.log` | `IMPL_SERVICE_RETURN_20261006.tar.gz` | 1 |
+| `IMPL_SERVICE_RETURN_AB_20261007/` | `logs/gate_run2.log` | `IMPL_SERVICE_RETURN_AB_20261007.tar.gz` | 1 |
+| `SIMPLE_REBAJA_20261011/` | `logs/regression.log` | `SIMPLE_REBAJA_20261011.tar.gz` | 1 |
+| `UI_SAVE_REBAJA_20261011/` | `logs/regression.log` | `UI_SAVE_REBAJA_20261011.tar.gz` | 1 |
+| `oracle_f31_audit/` | `20261003_165538/oracle_f31.py` | `oracle_f31_audit.tar.gz` | 1 |
+
+**Carpetas afectadas por estas citas:** 12 de las 94 (`APPLY_AB_UI_20261008`, `APPLY_BUSQUEDA_INTAKE_20261007`,
+`AUDIT_REBAJA_ETIQUETAS_20261011`, `BACKUP_AB_APPLY_20261008`, `BLINDAJE_REBAJA_LOCAL_20261012`,
+`CIERRE_PENDIENTES_20261010`, `CONTRATO_APLICACION_20261011`, `IMPL_SERVICE_RETURN_20261006`,
+`IMPL_SERVICE_RETURN_AB_20261007`, `SIMPLE_REBAJA_20261011`, `UI_SAVE_REBAJA_20261011`, `oracle_f31_audit`).
+Todas están en la Tanda B y todas tienen su `.tar.gz` verificado en D7.
+
+> **Nota para el verificador.** Los nombres de la columna «Artefacto» son **rutas internas del `.tar.gz`**, no
+> rutas del árbol de trabajo: por eso `check_paths` las cuenta como «no encontradas» (16 apariciones en esta
+> tabla). No son enlaces y no deben resolverse en disco; la comprobación correcta es `tar -tzf`, que sí se hizo
+> (16/16).
+

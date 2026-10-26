@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.55.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
+**Versión documental:** 12.56.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: AD-135 ampliado con el análisis de las 3 carpetas ambiguas (`config` = dependencia viva, excluida), la refutación de R-E8-1 (no hay deriva de esquema: los 7 errores son tests sin `@tagged('post_install')`), el diff de `run_regression.sh` y el arreglo de `conciliation_status` propuestos sin aplicar, `.clinerules` §6 aplicado, el script de cuarentena con dry-run (92 aptas / 0 bloqueadas / 2 excluidas) y los punteros a 16 artefactos dentro de los `.tar.gz`. Versión 04 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 12.53.0 / 2026-10-26 al registrar AD-134 en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-21 — Bloque 7 (Fase 2): AD-133 (Paridad de Tarja Exportador, Asistente de Importación de Consolidación y Merma Dimensional de Rebaja R2). Versión 04 12.51.0 → 12.52.0. | Bloque 7. -->
@@ -4408,7 +4409,100 @@ borrar las 94 carpetas.
 3. **R-E8-3 (recuento).** La premisa «45 no citadas + 33 citadas» no coincide con la medición: `grep -rlw`
    sobre `CANON`/`WIKI`/`RAW` da **59 + 35**; los «33» salen de contar solo citas de ruta en backticks.
 4. **R-E8-4 (cobertura de tests).** `TestConsolidationImportWizard` se omite entero dentro del contenedor
+
+### AD-135 · FASE 4 — cierre seguro (2026-10-26)
+
+**Alcance.** Siete puntos ejecutados en solo lectura, salvo el diff de `.clinerules` (archivo fuera del repo).
+No hubo borrado, ni `mv` a cuarentena, ni `push`, ni cambios de código. Evidencia completa en
+`FASES/00_INFORME_FASE4.md`; salida íntegra del dry-run en `FASES/00_DRY_RUN_CUARENTENA_F4.txt`.
+
+| # | Punto | Resultado | Estado |
+|---|---|---|---|
+| 1 | Respaldo externo | `origin` = `git@github.com:viruco/madenat-modules.git`; **repositorio PÚBLICO** (`private:false`, `visibility:public`, `main` sin protección); `fase13-2a-lectura` **no existe** en el remoto (404); respaldo de 1.163.365.900 B (1,1 GiB, 95 entradas) | Sin `push`; destino externo pendiente |
+| 2 | Carpetas ambiguas | `config` **excluida** (bind mount vivo); `postgresql.conf` **apta** (0 B, 0 referencias); `appointment_crm` **apta con reserva** (fuera de `addons_path`, no registrada en la base) | Decidido con evidencia |
+| 3 | `run_regression.sh:11` | `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"`; `bash -n` OK y prueba funcional con `docker` simulado en 3 casos | **Sin aplicar** |
+| 4 | `conciliation_status` | **R-E8-1 refutado**: no hay deriva de esquema; los 7 errores son tests `at_install` sin `@tagged('post_install')`; reproducido sobre copia con rollback | **Sin aplicar** |
+| 5 | `.clinerules` | §6 «Documentación consolidada» añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
+| 6 | Cuarentena | `FASES/00_CUARENTENA_20261026.py`: verifica `.tar.gz`, conteo/bytes, procesos y bind mounts; mueve con `os.rename`; diario + reversión | Dry-run: 92 aptas / 0 bloqueadas / 2 excluidas; **sin ejecutar** |
+| 7 | Punteros a artefactos | 26 citas → 16 artefactos, 16/16 dentro de su `.tar.gz`; `FASES/00_INDICE_FASES.md` §4 y `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv` | Aplicado |
+
+**Hallazgo de seguridad (punto 1).** `viruco/madenat-modules` es **público** y `main` no tiene protección de
+rama: cualquier `push` publica el código en Internet. El remoto está en `b862415` (2026-10-06, 3.668 KB,
+4 ramas) y **no** contiene `fase13-2a-lectura`. Además, la clave SSH configurada para `github.com`
+(`id_ed25519_viruco`) es rechazada, y la única que autentica (`id_ed25519`) corresponde a otra cuenta
+(`viruco-sys`); `gh` sí está autenticado como `viruco` por https. Antes de empujar hay que decidir la
+visibilidad del repositorio y el método de autenticación.
+
+**Carpetas ambiguas (punto 2).**
+
+| Carpeta | Contenido | Evidencia | Decisión |
+|---|---|---|---|
+| `config/` | `odoo.conf` 517 B | `docker-compose.yml:17` `./config:/etc/odoo`; `--config /etc/odoo/odoo.conf`; `docker inspect`; `sha256` host = contenedor (`79b3847…`) | **EXCLUIDA** |
+| `postgresql.conf/` | vacía (0 B) | 0 referencias fuera de los documentos de consolidación; ningún montaje; ni cron ni systemd | **APTA** |
+| `appointment_crm/` | `__init__.py` 0 B + `__manifest__.py` 257 B | no está en `addons_path` (`/mnt/extra-addons` + `odoo/addons`); ningún manifiesto depende de él; sin fila en `ir_module_module` | **APTA con reserva** |
+
+**Corrección de R-E8-1 (punto 4).** El campo `conciliation_status` **nunca se eliminó del código**: está en
+`madenat_lumber_intake/models/intake_guia_processing.py:159` con `default='not_compared', required=True`, y
+`ir_model_fields.required = t` coincide con la columna `NOT NULL` (sin default de base: el default es de ORM).
+El campo se creó el 2026-10-01 en `cdf2ea8` (intake `18.0.0.11.0`). Reproducción sobre la copia
+`madenat_f4_probe` con rollback: con el registro completo la guía se crea y toma `not_compared`; al retirar el
+campo del registro (situación de `at_install`) aparece el `psycopg2.errors.NotNullViolation` idéntico al de los
+tests. Causa: `test_h5_nominal_width_and_stock_notice.py` y `test_resolve_export_width_api.py` **no llevan
+`@tagged`**, así que corren antes de que `madenat_lumber_intake` esté cargado; los otros 48 archivos de test de
+core ya declaran `post_install` y `test_lumber_reception.py:15-22` documenta el motivo. Arreglo mínimo propuesto
+(no aplicado): añadir `@tagged('post_install', '-at_install', 'madenat')` a esas dos clases. No hace falta
+migración, `DROP NOT NULL`, default en base ni `-u`.
+
    porque los xlsx de referencia no están montados ni versionados.
+
+**`run_regression.sh` (punto 3).** Diff de una línea, `bash -n` OK en original y propuesto, y prueba funcional
+con un `docker` simulado: ruta por defecto (`/home/viruco/dev-stack/logs/regression`, `.log` + `.exit`, `rc=0`),
+override por `MADENAT_LOG_DIR` (`rc=0`) y fallo simulado (`rc=3`). Este último caso revela un defecto
+preexistente: con `set -e`, `RET=$?` es código muerto y el `.exit` **nunca** se escribe cuando la regresión
+falla; se propone (hunk aparte, tampoco aplicado) envolver la llamada en `set +e` / `set -e`.
+
+**`.clinerules` (punto 5).** Copia previa en
+`/home/viruco/dev-stack/backups/clinerules_20261026/madenat-regla-de-oro.md.pre-20261026`
+(sha256 `f9b9b34…` = original). Aplicado el hunk de §6 y renumeración de «Cierre» a §7: 7 secciones, ninguna
+regla previa alterada, sha256 resultante `8f642a5…`. Al vivir en la raíz de `odoo-18-ce`, fuera de
+`custom_addons/.git`, no genera commit.
+
+**Cuarentena (punto 6).** `FASES/00_CUARENTENA_20261026.py` verifica antes de cada movimiento: (1) `.tar.gz`
+existente y con sha256 igual al CSV de D7; (2) rutas y bytes del `.tar.gz` iguales al original; (3) ningún
+proceso con archivos abiertos (`/proc/*/{cwd,exe,fd}`); (4) que la carpeta no sea origen de un bind mount
+(`docker inspect` de todos los contenedores). Mueve con `os.rename` a `.pendiente_borrado_20261026/`, registra
+en `_diario.jsonl` (origen, destino, fecha, archivos, bytes, sha256 del manifiesto de rutas, `.tar.gz` y su
+sha256) y permite revertir recalculando el manifiesto. Es fail-closed: si una carpeta se bloquea, no mueve
+ninguna. `config` está bloqueada en código y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` queda postergada hasta
+que se aplique el fix de `run_regression.sh`. Dry-run ejecutado: **92 aptas (1.441,5 MB), 0 bloqueadas,
+2 excluidas** de 94 listadas (93 sin `config`, menos `FASE12_…`).
+
+**Punteros (punto 7).** Las 26 citas de E8 con artefacto no versionado apuntan a **16 artefactos distintos**,
+todos presentes en su `.tar.gz` (verificado con `tar -tzf`). Se documentaron en `FASES/00_INDICE_FASES.md` §4
+(versión 1.2.0) y en `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv`; las 12 carpetas implicadas están en la Tanda B.
+
+**Consecuencias.**
+
+1. La Tanda B pasa de 35 a **33 carpetas ejecutables** (`config` excluida) y la Tanda A se mantiene en 59
+   (`appointment_crm` incluida, con opción de excluirla); el total apto para cuarentena es **92**.
+2. El rojo de `conciliation_status` deja de ser un riesgo de esquema y pasa a ser un defecto de etiquetado de
+   tests: el arreglo es de dos líneas y no toca datos.
+3. El respaldo externo sigue pendiente y ahora incluye una decisión previa: la visibilidad del repositorio.
+
+**Riesgos abiertos tras la FASE 4.**
+
+1. **R-F4-1 (exposición).** El repositorio es público y `main` no está protegida; un `push` accidental publica
+   el código y la documentación. Requiere decisión del usuario antes de cualquier envío.
+2. **R-F4-2 (autenticación).** El `push` por SSH fallaría en este entorno (clave configurada rechazada; la
+   válida pertenece a `viruco-sys`). Habría que usar https con `gh` o corregir la clave.
+3. **R-F4-3 (fix pendiente).** Mientras no se aplique el diff de `run_regression.sh`, mover
+   `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` haría que el script recree la carpeta en la ruta vieja
+   (`mkdir -p`); por eso queda postergada.
+4. **R-F4-4 (tests latentes).** Otros 5 archivos de test de core usan `madenat.guia.processing` sin
+   `post_install`; hoy no fallan, pero comparten la causa raíz de los 8 rojos.
+5. **R-E8-4 (sin cambios).** `TestConsolidationImportWizard` sigue omitiéndose entero dentro del contenedor
+   porque los xlsx de referencia no están montados ni versionados.
+
 
 
 

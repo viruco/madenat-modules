@@ -6,6 +6,14 @@
 
 Ninguna carpeta se ha borrado. Esta lista solo se ejecuta con autorización expresa.
 
+> **CORRECCIÓN DE FASE 4 (2026-10-26) — leer antes de ejecutar.** La medición de `config` de esta propuesta era
+> errónea: `config/` **es la configuración viva** del stack (`./config:/etc/odoo` en `docker-compose.yml:17` y
+> `--config /etc/odoo/odoo.conf` en `odoo18_app`, con sha256 idéntico host ↔ contenedor), por lo que queda
+> **excluida**. `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` queda **postergada** hasta aplicar el fix de
+> `run_regression.sh`. La lista ejecutable es de **92 carpetas** (59 de la Tanda A y 33 de la Tanda B) y se
+> materializa en `FASES/00_CUARENTENA_20261026.py`; el dry-run verificado está en
+> `FASES/00_DRY_RUN_CUARENTENA_F4.txt`. Ver `FASES/00_INFORME_FASE4.md` §2 y §6.
+
 ## Resumen
 
 | Tanda | Criterio | Carpetas | Tamaño | Copia íntegra verificada |
@@ -91,7 +99,7 @@ Ninguna carpeta se ha borrado. Esta lista solo se ejecuta con autorización expr
 | B2 | `BACKUP_AB_APPLY_20261008` | 140.4 | 23 | 2 | `8519a7460aeb3cfa` |  |
 | B3 | `CONCILIACION_ENVIO_RETORNO_20261010` | 131.4 | 42 | 4 | `0e1857ce0ff01d73` |  |
 | B4 | `AUDIT_REBAJA_ETIQUETAS_20261011` | 49.4 | 24 | 4 | `47c723b24ad3b281` |  |
-| B5 | `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` | 36.4 | 94 | 1 | `5fc98a00593af450` | **`run_regression.sh:11` escribe sus logs aquí** (`mkdir -p`. no falla. pero el script apunta a una ruta que desaparece) |
+| B5 | `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` | 36.4 | 94 | 1 | `5fc98a00593af450` | **POSTERGADA (FASE 4)**: `run_regression.sh:11` escribe sus logs aquí (hace `mkdir -p`, no falla, pero el script escribiría en una carpeta de fase). No mover hasta aplicar el diff de `FASES/00_INFORME_FASE4.md` §3 |
 | B6 | `INCIDENTE_GUIA_15183_20261007` | 34.1 | 4.119 | 2 | `d3fa4dee2dd97e2b` |  |
 | B7 | `APPLY_AB_UI_20261008` | 34.0 | 27 | 3 | `5ec7c02aa9f6c851` |  |
 | B8 | `BLINDAJE_SOBRESCRITURA_20261012` | 33.6 | 18 | 1 | `9e944e8f58b3ad31` |  |
@@ -121,7 +129,7 @@ Ninguna carpeta se ha borrado. Esta lista solo se ejecuta con autorización expr
 | B32 | `AUDITORIA_CICLO_VIDA_IMPUTACIONES_20261015` | 0.1 | 15 | 1 | `728d2bfd87ae8330` |  |
 | B33 | `DIAGNOSTICO_REBAJA_SV841_REGISTRO_ETIQUETAS_20261015` | 0.0 | 11 | 2 | `9c29223a512913f7` |  |
 | B34 | `AUDIT_B01_20261004` | 0.0 | 1 | 1 | `b4820da3b17e84fe` |  |
-| B35 | `config` | 0.0 | 1 | 13 | `dce264820c588547` | 13 citas; contiene `odoo.conf` históricos. no la config viva (`/home/viruco/dev-stack/odoo/odoo-18-ce/config/`) |
+| B35 | `config` | 0.0 | 1 | 13 | `dce264820c588547` | **EXCLUIDA (FASE 4)**: es la configuración viva (`./config:/etc/odoo` + `--config /etc/odoo/odoo.conf`); moverla deja el contenedor sin `odoo.conf` |
 
 ## Condiciones previas a ejecutar cualquiera de las dos tandas
 
@@ -129,11 +137,14 @@ Ninguna carpeta se ha borrado. Esta lista solo se ejecuta con autorización expr
 2. E8 aplicado: 0 enlaces rotos y 0 citas en backticks que resuelvan solo en la raíz para carpetas de fase.
 3. Decisión sobre `FASE12_REQUERIMIENTOS_OPERACIONES_20261017`: o se conserva la carpeta, o se acepta que
    `run_regression.sh` cree el directorio de logs de nuevo (hace `mkdir -p`; no falla).
-4. Decisión sobre `config/`: no es la configuración viva (esa está en `/home/viruco/dev-stack/odoo/odoo-18-ce/config/`).
+4. `config/` **excluida** de ambas tandas: es la configuración viva del stack (`./config:/etc/odoo` +
+   `--config /etc/odoo/odoo.conf`), no una carpeta de fase. Ver `FASES/00_INFORME_FASE4.md` §2.1.
 
 ## Orden propuesto
 
-1. **Tanda A** (59 carpetas): menor riesgo, sin citas. Verificar `git status` vacío y `check_links` = 0 tras el borrado.
-2. **Tanda B** (35 carpetas): reejecutar `check_links`/`check_paths` después; si algún documento vuelve a citar
-   una ruta de raíz, corregirlo antes de seguir.
+1. **Cuarentena reversible** (no borrado): `python3 FASES/00_CUARENTENA_20261026.py --tanda A` (simulación ya
+   verificada: 59 aptas, 0 bloqueadas) y, tras el OK, `--ejecutar --tanda A`. El script verifica `.tar.gz`,
+   rutas/bytes, procesos y bind mounts antes de cada `mv`, y deja diario con reversión.
+2. **Tanda B** (33 carpetas ejecutables; `config` excluida y `FASE12_…` postergada): reejecutar `check_links` /
+   `check_paths` después; si algún documento vuelve a citar una ruta de raíz, corregirlo antes de seguir.
 3. Nunca borrar los `.tar.gz` de D7 en la misma operación.
