@@ -126,7 +126,10 @@ class TestIntakeWizard(TransactionCase):
             result = wizard.action_preview_document()
 
         self.assertFalse(mock.called)
-        self.assertEqual(wizard.state, 'draft')
+        # FASE 13/2D (H2): la lectura de Procesado también deja el wizard en
+        # 'previewed' — es la condición de vigencia que exige la derivación.
+        self.assertEqual(wizard.state, 'previewed')
+        self.assertTrue(wizard.reading_signature)
         self.assertEqual(wizard.preview_total_volume_m3, 0.0)
         self.assertEqual(result['type'], 'ir.actions.client')
         self.assertEqual(result['tag'], 'display_notification')

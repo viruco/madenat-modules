@@ -219,9 +219,16 @@ class TestIntakeProfileProvenance(TransactionCase):
         wizard = self._preview(self._make_wizard(profile='metric'))
         self.assertEqual(wizard.state, 'previewed')
 
-        # Cambio de datos SIN pasar por write(): la huella deja de coincidir
-        # (escenario de datos mutados por otra vía/servidor).
-        wizard.pdf_filename = 'guia_corregida.pdf'
+        # Datos mutados por una vía que NO pasa por write() (otro módulo,
+        # migración o SQL directo): la lectura queda rancia sin invalidación.
+        # (Asignar el campo en Python sí pasa por write() y ya invalidaría:
+        #  cobertura de esa vía en T-2D-4.)
+        wizard._write({'pdf_filename': 'guia_corregida.pdf'})
+        wizard.invalidate_recordset(['pdf_filename'])
+        self.assertEqual(wizard.state, 'previewed')
+        self.assertNotEqual(
+            wizard.reading_signature, wizard._reading_signature())
+
         with self.assertRaises(UserError) as ctx:
             wizard.action_route_document()
         self.assertIn('cambiaron después de la lectura', str(ctx.exception))
