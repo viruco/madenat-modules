@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import hashlib
 import json
 import logging
 import re
@@ -118,6 +119,47 @@ class MadenatLumberIntakeWizard(models.Model):
         default=False,
     )
 
+    # ─────────────────────────────────────────────────────────────────────
+    # Procedencia del perfil (FASE 13/2D): la sugerencia nunca pisa al operador
+    # ─────────────────────────────────────────────────────────────────────
+    profile_suggested = fields.Selection(
+        [('f1550', 'Madera Aserrada S2S'),
+         ('f5085', 'Madera Bruta — Grado Clear'),
+         ('metric', 'Madera Bruta — Sistema Métrico')],
+        string='Perfil sugerido por el documento',
+        copy=False,
+        help='Perfil que sugiere el contenido del documento. Se conserva '
+             'aparte del perfil aplicado y nunca sobrescribe una elección '
+             'explícita del operador.',
+    )
+    profile_origin = fields.Selection(
+        [('default', 'Por defecto'),
+         ('suggested', 'Sugerido por el documento'),
+         ('chosen', 'Elegido por el operador')],
+        string='Procedencia del perfil',
+        default='default',
+        required=True,
+        copy=False,
+        help='Trazabilidad de la decisión: default (valor inicial del campo), '
+             'suggested (fijado por la sugerencia documental) o chosen '
+             '(elección explícita del operador; desde ese momento la '
+             'sugerencia sólo se muestra y ya no la sobrescribe).',
+    )
+    profile_mismatch_hint = fields.Char(
+        string='Aviso de perfil',
+        compute='_compute_profile_mismatch_hint',
+        help='Aviso no bloqueante cuando el operador eligió un perfil distinto '
+             'del que sugiere el documento.',
+    )
+    reading_signature = fields.Char(
+        string='Huella de la lectura',
+        readonly=True,
+        copy=False,
+        help='Huella de los datos con los que se ejecutó la última lectura. Si '
+             'los datos cambian, la lectura deja de ser vigente y debe '
+             'repetirse antes de derivar el ingreso.',
+    )
+
     tipo_detalle_granel = fields.Selection(
         [('agregado', 'Consolidado (volumen total de cabecera)'),
          ('linea_por_linea', 'Línea por línea (usar tabla del PDF si existe)')],
@@ -159,6 +201,13 @@ class MadenatLumberIntakeWizard(models.Model):
         string='Requisitos del ingreso',
         compute='_compute_requirements_info',
     )
+    has_required_documents = fields.Boolean(
+        string='Documentos requeridos adjuntos',
+        compute='_compute_has_required_documents',
+        help='Verdadero si están adjuntos los documentos exigidos por la '
+             'modalidad (Volúmenes: al menos uno; normal: PDF y Excel). '
+             'Habilita «Leer documento» en el formulario.',
+    )
 
     @api.model
     def default_get(self, fields_list):
@@ -179,6 +228,14 @@ class MadenatLumberIntakeWizard(models.Model):
             if patio:
                 self.assignment_location_id = patio
 
+    @api.depends('intake_modality', 'pdf_file', 'excel_file')
+    def _compute_has_required_documents(self):
+        for rec in self:
+            if rec.intake_modality == 'volume':
+                rec.has_required_documents = bool(rec.pdf_file or rec.excel_file)
+            else:
+                rec.has_required_documents = bool(rec.pdf_file and rec.excel_file)
+
     @api.depends('intake_modality')
     def _compute_requirements_info(self):
         for rec in self:
@@ -193,6 +250,32 @@ class MadenatLumberIntakeWizard(models.Model):
                     'Requisitos obligatorios: Guía/PDF, Archivo Excel y Patio '
                     'de Asignación.'
                 )
+
+    @api.depends('ingestion_profile', 'profile_suggested', 'profile_origin')
+    def _compute_profile_mismatch_hint(self):
+        """Aviso NO bloqueante cuando el operador eligió otro perfil.
+
+        La lectura se hace con la elección del operador; el aviso sólo deja
+        constancia de que el documento sugería otra cosa (FASE 13/2D).
+        """
+        labels = dict(self._fields['ingestion_profile'].selection)
+        for rec in self:
+            mismatch = (
+                rec.profile_origin == 'chosen'
+                and rec.profile_suggested
+                and rec.ingestion_profile != rec.profile_suggested
+            )
+            if mismatch:
+                rec.profile_mismatch_hint = _(
+                    'El documento sugiere «%(sug)s»; usted eligió '
+                    '«%(chosen)s». Se leerá con su elección.',
+                    sug=labels.get(rec.profile_suggested,
+                                   rec.profile_suggested),
+                    chosen=labels.get(rec.ingestion_profile,
+                                      rec.ingestion_profile),
+                )
+            else:
+                rec.profile_mismatch_hint = False
 
     # ─────────────────────────────────────────────────────────────────────
     # Estado del wizard (persistente para evidencia e idempotencia)
@@ -281,7 +364,11 @@ class MadenatLumberIntakeWizard(models.Model):
           - Nunca lanza una excepción visible al usuario.
           - Nunca sobrescribe con una decisión de baja confianza; en el caso
             ambiguo, solo advierte, no cambia el valor.
+          - NUNCA sobrescribe una elección explícita del operador (FASE 13/2D):
+            si profile_origin == 'chosen', la sugerencia sólo se registra en
+            profile_suggested y se muestra como aviso no bloqueante.
         """
+        warning = None
         for rec in self:
             # Volúmenes no usa perfil de lectura: no se sugiere ni modifica.
             if rec.intake_modality == 'volume':
@@ -302,23 +389,25 @@ class MadenatLumberIntakeWizard(models.Model):
                 continue
 
             detected = getattr(result, 'detected_profile_code', None)
+            suggested = None
 
             if detected == 'packing_metrico_aserrada':
-                rec.ingestion_profile = 'metric'
-                continue
+                suggested = 'metric'
 
-            if detected == 'packing_imperial_blanks':
+            elif detected == 'packing_imperial_blanks':
                 nombres = ' '.join([
                     rec.excel_filename or '',
                     rec.pdf_filename or '',
                 ]).casefold()
 
                 if 'blank' in nombres or 'clear' in nombres:
-                    rec.ingestion_profile = 'f5085'
+                    suggested = 'f5085'
                 elif 's2s' in nombres:
-                    rec.ingestion_profile = 'f1550'
+                    suggested = 'f1550'
                 else:
-                    return {
+                    # Antes: return inmediato (abandonaba el resto de
+                    # registros). Ahora: el aviso se difiere al final.
+                    warning = {
                         'warning': {
                             'title': _('Verifique el perfil de lectura antes de continuar'),
                             'message': _(
@@ -330,6 +419,38 @@ class MadenatLumberIntakeWizard(models.Model):
                             ),
                         }
                     }
+
+            # La sugerencia se registra SIEMPRE aparte (alimenta el aviso y la
+            # trazabilidad), aunque luego no se aplique.
+            rec.profile_suggested = suggested or False
+
+            # La elección del operador manda: la sugerencia no la sobrescribe.
+            if suggested and rec.profile_origin != 'chosen':
+                rec.ingestion_profile = suggested
+                rec.profile_origin = 'suggested'
+
+        if warning:
+            return warning
+
+    @api.onchange('ingestion_profile')
+    def _onchange_mark_profile_chosen(self):
+        """Marca la elección explícita del operador sin depender del orden.
+
+        Corre dentro del bucle de onchange del servidor (una escritura de
+        ingestion_profile re-entra sus propios onchange). En esa pasada
+        profile_suggested ya está fijada, así que una coincidencia NO se
+        interpreta como elección: la procedencia sigue siendo 'suggested'.
+        """
+        for rec in self:
+            if not rec.ingestion_profile:
+                continue
+            if (rec.profile_suggested
+                    and rec.ingestion_profile == rec.profile_suggested):
+                if rec.profile_origin == 'default':
+                    rec.profile_origin = 'suggested'
+                continue
+            rec.profile_origin = 'chosen'
+
 
     # ─────────────────────────────────────────────────────────────────────
     # Guarda de coherencia de perfil (asistida, no bloqueante)
@@ -403,6 +524,111 @@ class MadenatLumberIntakeWizard(models.Model):
                 ) % ejemplos
 
         return None
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Lectura vigente (FASE 13/2D): invalidación y huella de la lectura
+    # ─────────────────────────────────────────────────────────────────────
+    _READING_INPUT_FIELDS = (
+        'intake_modality',
+        'ingestion_profile',
+        'assignment_location_id',
+        'tipo_detalle_granel',
+        'excel_file',
+        'excel_filename',
+        'pdf_file',
+        'pdf_filename',
+    )
+
+    def _reading_signature(self):
+        """Huella estable de las entradas con las que se hizo la lectura."""
+        self.ensure_one()
+        digest = hashlib.md5()
+        for part in (
+            self.intake_modality,
+            self.ingestion_profile,
+            self.assignment_location_id.id,
+            self.tipo_detalle_granel,
+            self.excel_filename or '',
+            self.pdf_filename or '',
+            self.excel_file or '',
+            self.pdf_file or '',
+        ):
+            digest.update(str(part).encode('utf-8'))
+        return digest.hexdigest()
+
+    def _reading_inputs_changed(self, vals):
+        """True si `vals` cambia de verdad alguna entrada de la lectura."""
+        for record in self:
+            for name in self._READING_INPUT_FIELDS:
+                if name not in vals:
+                    continue
+                current = record[name]
+                if record._fields[name].type == 'many2one':
+                    current = current.id
+                if vals[name] != current:
+                    return True
+        return False
+
+    def _reading_invalidated_vals(self):
+        """Valores que devuelven el wizard a Borrador sin tocar los archivos."""
+        return {
+            'state': 'draft',
+            'error_message': False,
+            'preview_data': False,
+            'preview_line_count': 0,
+            'preview_total_volume_m3': 0.0,
+            'preview_guide_no': False,
+            'preview_warnings': False,
+            'preview_guide_date': False,
+            'preview_supplier': False,
+            'preview_oc': False,
+            'preview_origin': False,
+            'preview_exchange_rate': 0.0,
+            'preview_total_packages': 0,
+            'preview_document_lines': False,
+            'preview_has_detail': False,
+            'preview_line_volume_m3': 0.0,
+            'detalle_aplicado': 'consolidated',
+            'detalle_motivo': False,
+            'reading_warning': False,
+            'has_reading_warning': False,
+            'reading_signature': False,
+        }
+
+    def write(self, vals):
+        """Invalida la lectura si cambia una de sus entradas ya leídas.
+
+        La verdad vive aquí y no en el onchange: cubre RPC, `Form.save()` y
+        cualquier escritura del servidor (E3/E4). Un vals idéntico al
+        almacenado NO invalida (evita invalidaciones por ruido del cliente).
+        """
+        if vals and self._reading_inputs_changed(vals):
+            stale = self.filtered(lambda r: r.state == 'previewed')
+            if stale:
+                merged = self._reading_invalidated_vals()
+                merged.update(vals)      # lo explícito del llamador manda
+                # Invalidada la lectura, el wizard no puede quedar en
+                # 'previewed': sólo se respeta un estado explícito distinto
+                # (p. ej. 'routed'), nunca un 'previewed' viejo del cliente.
+                if merged.get('state') in (None, 'previewed'):
+                    merged['state'] = 'draft'
+                vals = merged
+        return super().write(vals)
+
+    @api.onchange(
+        'intake_modality', 'ingestion_profile', 'assignment_location_id',
+        'tipo_detalle_granel', 'excel_file', 'excel_filename',
+        'pdf_file', 'pdf_filename',
+    )
+    def _onchange_invalidate_reading(self):
+        """Reflejo inmediato en pantalla de la invalidación.
+
+        Los campos de preview son readonly en la vista, así que el cliente no
+        los guarda (E3): la persistencia la garantiza `write()`.
+        """
+        for rec in self:
+            if rec.state == 'previewed':
+                rec.update(rec._reading_invalidated_vals())
 
     # ─────────────────────────────────────────────────────────────────────
     # Lectura y preview — solo Producto
@@ -559,6 +785,7 @@ class MadenatLumberIntakeWizard(models.Model):
             'detalle_aplicado': detalle_aplicado,
             'detalle_motivo': detalle_motivo,
             'error_message': False,
+            'reading_signature': self._reading_signature(),
         })
 
         if extraction_warning:
@@ -696,24 +923,29 @@ class MadenatLumberIntakeWizard(models.Model):
         if self.intake_modality == 'volume':
             return self._preview_volume()
 
+        # FASE 13/2D: no se lee sin los documentos requeridos. La comprobación
+        # va ANTES de clasificar para no escribir NADA si falta un documento.
+        if not self.pdf_file:
+            raise UserError(_('Guía/PDF requerido para leer el documento.'))
+        if not self.excel_file:
+            raise UserError(_('Archivo Excel requerido.'))
+
         # Modalidad normal: clasificación Producto/Procesado por contenido real,
         # al ejecutar Leer documento (no al adjuntar). El texto del PDF se
         # extrae una sola vez y se reutiliza en el enriquecimiento posterior.
         pdf_text = self._extract_pdf_text_safe()
         self._classify_normal_document(pdf_text=pdf_text)
 
-        # Normal requiere Excel para el detalle/preview.
-        if not self.excel_file:
-            raise UserError(_('Archivo Excel requerido.'))
-
         if self.tipo_ingreso == 'procesado':
             self.write({
+                'state': 'previewed',
                 'preview_data': False,
                 'preview_line_count': 0,
                 'preview_total_volume_m3': 0.0,
                 'preview_guide_no': False,
                 'preview_warnings': False,
                 'error_message': False,
+                'reading_signature': self._reading_signature(),
             })
             return {
                 'type': 'ir.actions.client',
@@ -800,6 +1032,7 @@ class MadenatLumberIntakeWizard(models.Model):
             'preview_guide_no': (result.header or {}).get('guide_number') or False,
             'preview_warnings': warnings_text,
             'error_message': False,
+            'reading_signature': self._reading_signature(),
         })
 
         return {
@@ -870,16 +1103,20 @@ class MadenatLumberIntakeWizard(models.Model):
             if not self.excel_file:
                 raise UserError(_('Archivo Excel requerido.'))
 
-        # Validaciones de estado según modalidad y tipo.
-        if self.intake_modality == 'normal' and self.tipo_ingreso == 'producto':
-            if self.state != 'previewed':
-                raise UserError(
-                    _('Debe leer el documento (preview) antes de derivar '
-                      'a Producto.')
-                )
-        elif self.state not in ('draft', 'previewed'):
+        # Validaciones de estado (FASE 13/2D, decisión H2): TODA derivación
+        # exige una lectura vigente, en las tres modalidades. Sin 'previewed'
+        # no hay lectura; y una huella distinta significa que los datos
+        # cambiaron después de leer (lectura rancia).
+        if self.state != 'previewed':
             raise UserError(
-                _('El ingreso no está en un estado derivable.')
+                _('Debe leer el documento (preview) antes de derivar el '
+                  'ingreso. Use «Leer documento» y reintente.')
+            )
+        if not self.reading_signature or \
+                self.reading_signature != self._reading_signature():
+            raise UserError(
+                _('Los datos del ingreso cambiaron después de la lectura. '
+                  'Vuelva a leer el documento antes de derivar el ingreso.')
             )
 
         # Guarda de coherencia de perfil (ADVERTENCIA con confirmación explícita)

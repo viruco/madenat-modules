@@ -11,7 +11,7 @@
                         type="object"
                         string="Leer documento"
                         class="btn-secondary"
-                        invisible="state not in ('draft', 'error')" />
+                        invisible="state not in ('draft', 'error') or not has_required_documents" />
                     <button
                         name="action_route_document"
                         type="object"
@@ -49,6 +49,19 @@
                             <field
                                 name="ingestion_profile"
                                 invisible="intake_modality == 'volume'" />
+                            <div class="text-info" invisible="profile_origin != 'suggested'">
+                                <i class="fa fa-info-circle me-1" title="Perfil sugerido"/>
+                                Perfil sugerido por el documento — puede cambiarlo
+                            </div>
+                            <field
+                                name="profile_mismatch_hint"
+                                readonly="1"
+                                nolabel="1"
+                                invisible="not profile_mismatch_hint" />
+                            <field name="profile_origin" invisible="1"/>
+                            <field name="profile_suggested" invisible="1"/>
+                            <field name="reading_signature" invisible="1"/>
+                            <field name="has_required_documents" invisible="1"/>
                             <field
                                 name="confirm_profile_mismatch"
                                 invisible="not profile_warning_message and not confirm_profile_mismatch" />
