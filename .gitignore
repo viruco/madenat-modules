@@ -31,6 +31,8 @@ madenat_lumber_docs/ANALISIS_*.md
 
 # ─── Odoo runtime ───
 *.log
+# Excepción: los .log que son evidencia documental consolidada en FASES/ sí se versionan
+!madenat_lumber_docs/FASES/**/*.log
 filestore/
 .odoo_history
 
