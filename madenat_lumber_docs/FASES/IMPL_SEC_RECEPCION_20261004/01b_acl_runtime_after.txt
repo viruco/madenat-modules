@@ -1,0 +1,15 @@
+A2| madenat.guia.processing | Jefatura de Operaciones | r True w True c True u False
+A2| madenat.guia.processing | Operaciones | r True w True c True u False
+A2| madenat.guia.processing | Usuario interno | r True w False c False u False
+A2| lumber.reception | Auditoría | r True w False c False u False
+A2| lumber.reception | Jefatura de Operaciones | r True w True c True u False
+A2| lumber.reception | MADENAT: Compras y Operaciones | r True w True c True u True
+A2| lumber.reception | MADENAT: Validación Contable (Auditoría) | r True w True c True u False
+A2| lumber.reception | Operaciones | r True w True c True u False
+A2| lumber.reception | Usuario interno | r True w False c False u False
+A2| madenat.guia.processing.line | Operaciones | r True w True c True u False
+A2| madenat.guia.processing.line | Usuario interno | r True w False c False u False
+A2| madenat.guia.mass.update | Operaciones | r True w True c True u False
+A2| madenat.guia.mass.update | Usuario interno | r True w False c False u False
+A2| lumber.reception.mass.update | Operaciones | r True w True c True u False
+A2| lumber.reception.mass.update | Usuario interno | r True w False c False u False

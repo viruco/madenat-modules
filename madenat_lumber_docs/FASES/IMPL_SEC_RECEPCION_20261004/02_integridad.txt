@@ -1,0 +1,16 @@
+I| UAT_GUIA 32689 UAT-INT-20261004-RECEPTION validated lots [16694]
+I| UAT_LOT [16694]
+I| UAT_QUANT_INTERNAL 4.0
+I| UAT_BACKLOG_DOC [13420]
+I| INT4_RESIDUE_PERM_GUIA 0
+I| ACLROW 3678 madenat.guia.processing.user group Usuario interno users [2, 8, 9, 6, 7] model madenat.guia.processing
+I| ACLROW 3679 madenat.guia.processing.manager group Jefatura de Operaciones users [2, 8] model madenat.guia.processing
+I| ACLROW 3670 lumber.reception.user group Usuario interno users [2, 8, 9, 6, 7] model lumber.reception
+I| ACLROW 802 madenat_lumber_core group MADENAT: Compras y Operaciones users [2, 8] model lumber.reception
+I| ACLROW 827 madenat_lumber_core group MADENAT: Validación Contable (Auditoría) users [8, 9, 6, 7] model lumber.reception
+I| FROZEN distributed 0
+I| FROZEN c2 0
+I| FROZEN costlines 0 53
+I| FROZEN payments 0
+I| BASE counts 10 7 31 170
+I| GROUPS containing uid6 ['Acceso a la función de exportación', 'Administrador', 'Administrador', 'Administrador', 'Administrador', 'Administrador de la respuesta predefinida', 'Administrar el embalaje del producto', 'Administrar variantes de productos', 'Características técnicas', 'Contabilidad de existencias automática', 'Creación de contacto', 'Creación de productos', 'Envíe un correo electrónico de recordatorio automático para confirmar la entrega', 'Facturando', 'Gestionar flujos de inventario push y pull', 'Gestionar múltiples ubicaciones de existencias', 'Gestionar números de lote y de serie', 'Gestionar paquetes', 'Gestionar varias unidades de medida', 'Gestione diferentes propietarios de existencias', 'Listas de precios básicas', 'MADENAT', 'MADENAT: Validación Contable (Auditoría)', 'Mostrar el número de serie y lote en las facturas', 'Mostrar número de lote y serie en los recibos de entrega', 'Multimonedas', 'Puede establecer una advertencia en un producto o cliente (Compra)', 'Recibo de compra', 'Se puede establecer una advertencia en un contacto (existencias)', 'Usuario', 'Usuario', 'Usuario interno', 'Usuario: solo mostrar documentos propios', 'Usuario: todos los documentos', 'Utilizar reporte de recepción']

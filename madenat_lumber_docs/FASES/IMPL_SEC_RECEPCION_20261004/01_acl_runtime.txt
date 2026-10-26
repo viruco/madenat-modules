@@ -1,0 +1,28 @@
+ACL| MODEL madenat.guia.processing
+ACL|   3679 madenat.guia.processing.manager grp Jefatura de Operaciones r True w True c True u True
+ACL|   3678 madenat.guia.processing.user grp Usuario interno r True w True c True u False
+ACL| MODEL madenat.guia.processing.line
+ACL|   3685 madenat.guia.processing.line grp Usuario interno r True w True c True u True
+ACL| MODEL madenat.guia.processing.source.lot.line
+ACL|   3738 madenat.guia.processing.source.lot.line grp Usuario interno r True w True c True u True
+ACL| MODEL madenat.guia.mass.update
+ACL|   3686 madenat.guia.mass.update grp Usuario interno r True w True c True u True
+ACL| MODEL madenat.reception.mass.update
+ACL| MODEL lumber.reception
+ACL|   3775 lumber.reception.auditoria grp Auditoría r True w False c False u False
+ACL|   3671 lumber.reception.manager grp Jefatura de Operaciones r True w True c True u True
+ACL|   802 madenat_lumber_core grp MADENAT: Compras y Operaciones r True w True c True u True
+ACL|   827 madenat_lumber_core grp MADENAT: Validación Contable (Auditoría) r True w True c True u False
+ACL|   3670 lumber.reception.user grp Usuario interno r True w True c True u False
+ACL| MODEL lumber.reception.line
+ACL|   3683 lumber.reception.line.manager grp Jefatura de Operaciones r True w True c True u True
+ACL|   3682 lumber.reception.line.user grp Usuario interno r True w True c True u True
+ACL| MODEL madenat.guia.processing.reopen.wizard
+ACL|   3853 madenat.guia.processing.reopen.wizard grp Usuario interno r True w True c True u False
+ACL| MODEL madenat.guia.processing.documental.correction.wizard
+ACL|   3856 madenat.guia.processing.documental.correction.wizard grp Usuario interno r True w True c True u False
+ACL| MODEL madenat.guia.processing.historical.reverse.wizard
+ACL|   3854 madenat.guia.processing.historical.reverse.wizard grp Usuario interno r True w True c True u False
+ACL| MODEL madenat.guia.processing.historical.reverse.candidate
+ACL|   3855 madenat.guia.processing.historical.reverse.candidate grp Usuario interno r True w True c True u True
+IRRULE| count 0

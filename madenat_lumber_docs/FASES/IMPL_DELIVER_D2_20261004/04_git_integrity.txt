@@ -1,0 +1,13 @@
+=== GIT ===
+HEAD=34c81272bb07d48db98d73a7734c81a2a8e384fa
+BRANCH=feat/guia-correccion-documental-preservada-20261002
+WT_COUNT=34
+DIFF_CLEAN
+=== phase-edited files ===
+[M] madenat_lumber_core/models/madenat_audit_log.py
+[M] madenat_lumber_logistics/models/lumber_export_shipment.py
+[M] madenat_lumber_logistics/views/lumber_export_shipment_views.xml
+[M] madenat_lumber_logistics/tests/__init__.py
+[??] madenat_lumber_logistics/tests/test_shipment_delivery_safe.py
+=== check: no forbidden view syntax in edited view ===
+NONE

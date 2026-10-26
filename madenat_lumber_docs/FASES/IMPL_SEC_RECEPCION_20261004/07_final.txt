@@ -1,0 +1,4 @@
+S| COUNTS {"account.move": 1, "account.payment": 0, "lumber.container": 22, "lumber.cost.distribution": 2, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.shipment.document": 127, "madenat.audit.log": 281, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "stock.lot": 133, "stock.lot.cost.line": 53, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+S| FROZEN distributed 0 c2 0 costlines 0 53 pay 0
+S| UAT 32689 validated lots [16694] quant_int 4.0 doc [13420] perm_residue 0
+S| MODULE core installed 18.0.6.5.0

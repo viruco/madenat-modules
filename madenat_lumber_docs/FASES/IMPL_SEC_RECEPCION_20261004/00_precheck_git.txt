@@ -1,0 +1,6 @@
+GIT HEAD 34c81272bb07d48db98d73a7734c81a2a8e384fa
+GIT BRANCH feat/guia-correccion-documental-preservada-20261002
+PORCELAIN 47
+odoo18_app | Up 10 hours
+odoo18_db | Up 10 hours (healthy)
+HTTP 200

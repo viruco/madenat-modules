@@ -1,0 +1,7 @@
+REPO=custom_addons
+BRANCH=feat/guia-correccion-documental-preservada-20261002
+HEAD=34c81272bb07d48db98d73a7734c81a2a8e384fa
+WT_TOTAL=34
+WT_M=24
+WT_UNTRACKED=10
+DIFF_CLEAN

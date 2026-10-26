@@ -1,0 +1,2 @@
+POST| delivered=0 waiver_rows=0 new_audits=0
+POST| move=145 mline=212 picking=30 quant=173 lot=128 lotcost=53 shipcost=0 shipments=16 containers=17 vessels=8 account_move=1 payment=0 bill_consol=0 sv_op=1 sv_imp=1 audit=273

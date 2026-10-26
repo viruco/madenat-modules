@@ -1,0 +1,7 @@
+VIEW id=2889 name=madenat.sv.imputation.wizard.form model=madenat.sv.imputation.wizard
+HERENCIAS que referencian esta vista: NINGUNA
+CADENA DE CONTENEDORES de `<field name="sv_line_ids">`:
+   page[Asignación a SV] -> notebook[] -> form[Registrar rebaja]
+PADRE carga multi_sv: True invisible=1
+COLUMN_INVISIBLE del asistente:
+   - sv_lot_id        -> not parent.multi_sv

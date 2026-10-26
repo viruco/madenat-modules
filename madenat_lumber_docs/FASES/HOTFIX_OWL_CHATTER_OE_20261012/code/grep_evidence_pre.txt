@@ -1,0 +1,7 @@
+# grep oe_chatter (pre-fix)
+./madenat_lumber_logistics/views/madenat_processor_return_link_views.xml:84:                <div class="oe_chatter">
+./madenat_lumber_logistics/views/madenat_sv_imputation_views.xml:145:                <div class="oe_chatter">
+./madenat_vendor_payment/views/lumber_shipment_cost_views.xml:151:                    <div class="oe_chatter">
+
+# core Odoo: no oe_chatter support
+EXIT=1
