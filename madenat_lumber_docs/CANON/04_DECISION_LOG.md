@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.57.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo y cuarentena visible (post-FASE 4)**: el respaldo de 95 archivos (1.163.365.900 B) se copió a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`), se verificó 95/95 por `sha256` y solo entonces se borró el origen; AD-135 registra la dependencia del montaje de `G:` (el script aborta sin él, `respaldo_montado`) y el renombrado de la carpeta de cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 04 12.56.0 → 12.57.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.58.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: AD-135/punto 3 pasa a «aplicado» (dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` para que el `.exit` se escriba también al fallar; `bash -n` OK y las tres pruebas repetidas), con lo que R-E8-2 y R-F4-3 quedan cerrados y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada para la cuarentena. Versión 04 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo y cuarentena visible (post-FASE 4)**: el respaldo de 95 archivos (1.163.365.900 B) se copió a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`), se verificó 95/95 por `sha256` y solo entonces se borró el origen; AD-135 registra la dependencia del montaje de `G:` (el script aborta sin él, `respaldo_montado`) y el renombrado de la carpeta de cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 04 12.56.0 → 12.57.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: AD-135 ampliado con el análisis de las 3 carpetas ambiguas (`config` = dependencia viva, excluida), la refutación de R-E8-1 (no hay deriva de esquema: los 7 errores son tests sin `@tagged('post_install')`), el diff de `run_regression.sh` y el arreglo de `conciliation_status` propuestos sin aplicar, `.clinerules` §6 aplicado, el script de cuarentena con dry-run (92 aptas / 0 bloqueadas / 2 excluidas) y los punteros a 16 artefactos dentro de los `.tar.gz`. Versión 04 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: AD-135 (consolidación de la documentación dispersa en `madenat_lumber_docs/FASES`, renumeración `05` → `20` y reserva de los huecos `01/06/09/10/14`). Versión 04 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 2. -->
@@ -4404,9 +4405,10 @@ borrar las 94 carpetas.
 1. **R-E8-1 (deriva de esquema).** `madenat_test` conserva `conciliation_status` como `NOT NULL` sin default y
    el campo ya no existe en el código; 7 de los 8 rojos dependen de ello. Confirmarlo exige `-u
    madenat_lumber_core` sobre una copia (no autorizado todavía).
-2. **R-E8-2 (dependencia operativa).** `madenat_lumber_core/scripts/run_regression.sh:11` define
-   `LOG_DIR` dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`. El script hace `mkdir -p`, así que
-   no falla al borrar la carpeta, pero seguirá escribiendo logs en una ruta de fase de la raíz.
+2. **R-E8-2 (dependencia operativa) — cerrado el 2026-10-26.** `madenat_lumber_core/scripts/run_regression.sh:11`
+   escribía sus logs en `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`; ahora usa
+   `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"`, así que la carpeta de fase deja de ser
+   dependencia del arnés y puede entrar en cuarentena.
 3. **R-E8-3 (recuento).** La premisa «45 no citadas + 33 citadas» no coincide con la medición: `grep -rlw`
    sobre `CANON`/`WIKI`/`RAW` da **59 + 35**; los «33» salen de contar solo citas de ruta en backticks.
 4. **R-E8-4 (cobertura de tests).** `TestConsolidationImportWizard` se omite entero dentro del contenedor
@@ -4421,7 +4423,7 @@ No hubo borrado, ni `mv` a cuarentena, ni `push`, ni cambios de código. Evidenc
 |---|---|---|---|
 | 1 | Respaldo externo | `origin` = `git@github.com:viruco/madenat-modules.git`; **repositorio PÚBLICO** (`private:false`, `visibility:public`, `main` sin protección); `fase13-2a-lectura` **no existe** en el remoto (404); respaldo de 1.163.365.900 B (1,1 GiB, 95 entradas) | Sin `push`; destino externo pendiente |
 | 2 | Carpetas ambiguas | `config` **excluida** (bind mount vivo); `postgresql.conf` **apta** (0 B, 0 referencias); `appointment_crm` **apta con reserva** (fuera de `addons_path`, no registrada en la base) | Decidido con evidencia |
-| 3 | `run_regression.sh:11` | `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"`; `bash -n` OK y prueba funcional con `docker` simulado en 3 casos | **Sin aplicar** |
+| 3 | `run_regression.sh:11` | Dos hunks: `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"` y `set +e`/`set -e` alrededor de `docker exec`; `bash -n` OK y prueba funcional con `docker` simulado en 3 casos, con `.exit` = `3` al fallar | **Aplicado** (2026-10-26) |
 | 4 | `conciliation_status` | **R-E8-1 refutado**: no hay deriva de esquema; los 7 errores son tests `at_install` sin `@tagged('post_install')`; reproducido sobre copia con rollback | **Sin aplicar** |
 | 5 | `.clinerules` | §6 «Documentación consolidada» añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
 | 6 | Cuarentena | `FASES/00_CUARENTENA_20261026.py`: verifica `.tar.gz`, conteo/bytes, procesos y bind mounts; mueve con `os.rename`; diario + reversión | Dry-run: 92 aptas / 0 bloqueadas / 2 excluidas; **sin ejecutar** |
@@ -4456,11 +4458,12 @@ migración, `DROP NOT NULL`, default en base ni `-u`.
 
    porque los xlsx de referencia no están montados ni versionados.
 
-**`run_regression.sh` (punto 3).** Diff de una línea, `bash -n` OK en original y propuesto, y prueba funcional
-con un `docker` simulado: ruta por defecto (`/home/viruco/dev-stack/logs/regression`, `.log` + `.exit`, `rc=0`),
-override por `MADENAT_LOG_DIR` (`rc=0`) y fallo simulado (`rc=3`). Este último caso revela un defecto
-preexistente: con `set -e`, `RET=$?` es código muerto y el `.exit` **nunca** se escribe cuando la regresión
-falla; se propone (hunk aparte, tampoco aplicado) envolver la llamada en `set +e` / `set -e`.
+**`run_regression.sh` (punto 3) — aplicado el 2026-10-26.** Dos hunks: `LOG_DIR` pasa a
+`${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` y la llamada a `docker exec` se envuelve en
+`set +e` / `set -e`. `bash -n` OK; prueba funcional repetida con un `docker` simulado: ruta por defecto
+(`/home/viruco/dev-stack/logs/regression`, `.log` + `.exit`, `rc=0`), override por `MADENAT_LOG_DIR` (`rc=0`) y
+fallo simulado (`rc=3`, `.log` y **`.exit` = `3`**). El segundo hunk corrige el defecto preexistente del primer
+informe: con `set -e`, `RET=$?` era código muerto y el `.exit` no se escribía cuando la regresión fallaba.
 
 **`.clinerules` (punto 5).** Copia previa en
 `/home/viruco/dev-stack/backups/clinerules_20261026/madenat-regla-de-oro.md.pre-20261026`
@@ -4476,8 +4479,9 @@ proceso con archivos abiertos (`/proc/*/{cwd,exe,fd}`); (4) que la carpeta no se
 `PENDIENTE_BORRADO_20261026/` (visible), registra
 en `_diario.jsonl` (origen, destino, fecha, archivos, bytes, sha256 del manifiesto de rutas, `.tar.gz` y su
 sha256) y permite revertir recalculando el manifiesto. Es fail-closed: si una carpeta se bloquea, no mueve
-ninguna. `config` está bloqueada en código y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` queda postergada hasta
-que se aplique el fix de `run_regression.sh`. Dry-run ejecutado: **92 aptas (1.441,5 MB), 0 bloqueadas,
+ninguna. `config` está bloqueada en código y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` quedó postergada hasta
+aplicar el fix de `run_regression.sh` —aplicado el 2026-10-26, así que desde entonces se incluye con
+`--incluir-postergadas`—. Dry-run ejecutado: **92 aptas (1.441,5 MB), 0 bloqueadas,
 2 excluidas** de 94 listadas (93 sin `config`, menos `FASE12_…`).
 
 **Punteros (punto 7).** Las 26 citas de E8 con artefacto no versionado apuntan a **16 artefactos distintos**,
@@ -4499,9 +4503,9 @@ todos presentes en su `.tar.gz` (verificado con `tar -tzf`). Se documentaron en 
    el código y la documentación. Requiere decisión del usuario antes de cualquier envío.
 2. **R-F4-2 (autenticación).** El `push` por SSH fallaría en este entorno (clave configurada rechazada; la
    válida pertenece a `viruco-sys`). Habría que usar https con `gh` o corregir la clave.
-3. **R-F4-3 (fix pendiente).** Mientras no se aplique el diff de `run_regression.sh`, mover
-   `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` haría que el script recree la carpeta en la ruta vieja
-   (`mkdir -p`); por eso queda postergada.
+3. **R-F4-3 (fix pendiente) — cerrado el 2026-10-26.** El diff de `run_regression.sh` está aplicado y probado, así
+   que mover `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` ya no hace que el script recree la carpeta en la ruta
+   vieja; desaparece la postergación de la Tanda B.
 4. **R-F4-4 (tests latentes).** Otros 5 archivos de test de core usan `madenat.guia.processing` sin
    `post_install`; hoy no fallan, pero comparten la causa raíz de los 8 rojos.
 5. **R-E8-4 (sin cambios).** `TestConsolidationImportWizard` sigue omitiéndose entero dentro del contenedor

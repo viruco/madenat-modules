@@ -10,7 +10,7 @@ Este documento no autoriza nada: registra la evidencia de los 7 puntos encargado
 |---|---|---|---|
 | 1 | Respaldo externo | `origin` correcto; **el repositorio es PÚBLICO**; `fase13-2a-lectura` **no existe** en el remoto; respaldo 1.163.365.900 B (1,1 GiB, 95 archivos) | Sin push; **respaldo movido a `G:` y verificado 95/95** (2026-10-26) |
 | 2 | Carpetas ambiguas | `config` = **dependencia viva** (excluida); `postgresql.conf` = vacía (apta); `appointment_crm` = shim no cargable (apta con reserva) | Decidido con evidencia |
-| 3 | `run_regression.sh:11` | Diff con `${MADENAT_LOG_DIR:-…}`; `bash -n` OK y prueba funcional con `docker` simulado | **Sin aplicar** (espera OK) |
+| 3 | `run_regression.sh:11` | Dos hunks: `LOG_DIR="${MADENAT_LOG_DIR:-…}"` y `set +e`/`set -e` alrededor de `docker exec`; `bash -n` OK y prueba funcional con `docker` simulado | **Aplicado** (2026-10-26) |
 | 4 | `conciliation_status` | **No hay deriva de esquema**: es una etiqueta de test faltante; reproducido y propuesto el arreglo mínimo | **Sin aplicar** |
 | 5 | `.clinerules` | §6 añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
 | 6 | Cuarentena | Script `FASES/00_CUARENTENA_20261026.py` con dry-run, verificación, guarda de montaje y reversión | Sin ejecutar (92/0/2) |
@@ -178,9 +178,9 @@ usuario prefiere máxima cautela, el script permite `--excluir appointment_crm` 
 
 ---
 
-## 3. `run_regression.sh:11` — propuesta sin aplicar
+## 3. `run_regression.sh:11` — aplicado (2026-10-26)
 
-**Diff propuesto** (`madenat_lumber_core/scripts/run_regression.sh`, una línea):
+**Diff aplicado** (`madenat_lumber_core/scripts/run_regression.sh`, dos hunks):
 
 ```diff
 @@ -8,7 +8,7 @@
@@ -192,27 +192,39 @@ usuario prefiere máxima cautela, el script permite `--excluir appointment_crm` 
  mkdir -p "$LOG_DIR"
  LOG_FILE="${LOG_DIR}/regresion_7_modulos_${TS}.log"
  EXIT_FILE="${LOG_DIR}/regresion_7_modulos_${TS}.exit"
+@@ -17,6 +17,9 @@ echo "Destino log: ${LOG_FILE}"
+ echo "Destino log: ${LOG_FILE}"
+ 
++# set -e aborta en cuanto `docker exec` devuelve distinto de cero, antes de escribir el .exit:
++# se desactiva solo alrededor de la llamada para que el codigo real quede registrado.
++set +e
+ docker exec odoo18_app odoo \
+@@ -25,6 +28,7 @@ docker exec odoo18_app odoo \
+     --stop-after-init > "$LOG_FILE" 2>&1
+ RET=$?
++set -e
 ```
 
-**Sintaxis:** `bash -n` sobre el original → `OK`; sobre el propuesto → `OK` (`shellcheck` no está instalado).
+**Sintaxis:** `bash -n run_regression.sh` → `OK`; `shellcheck` no está instalado.
 
 **Prueba funcional** (no ejecuta Odoo: se intercepta `docker` con un shim en `/tmp/shim/docker` que registra
-los argumentos y devuelve el código pedido):
+los argumentos en un archivo y devuelve el código pedido). Repetida tras aplicar el diff:
 
 | Caso | Comando | Resultado |
 |---|---|---|
-| A. Ruta por defecto | `bash run_regression_propuesto.sh` | `Destino log: /home/viruco/dev-stack/logs/regression/regresion_7_modulos_20261026_184834.log`; crea `.log` (38 B) y `.exit` (`0`); `rc=0` |
-| B. Override | `MADENAT_LOG_DIR=/tmp/f4_logs/override bash run_regression_propuesto.sh` | escribe en `/tmp/f4_logs/override/`; `.log` + `.exit`; `rc=0` |
-| C. Fallo simulado | `SHIM_RC=3 … bash run_regression_propuesto.sh` | `rc=3` y **solo** el `.log`: el `.exit` **no** se escribe |
+| A. Ruta por defecto | `PATH=/tmp/shim:$PATH bash run_regression.sh` | `Destino log: /home/viruco/dev-stack/logs/regression/regresion_7_modulos_20261026_202914.log`; crea `.log` (25 B) y `.exit` (`0`); `rc=0` |
+| B. Override | `MADENAT_LOG_DIR=/tmp/f4_logs/override PATH=/tmp/shim:$PATH bash run_regression.sh` | escribe en `/tmp/f4_logs/override/`; `.log` + `.exit` (`0`); `rc=0` |
+| C. Fallo simulado | `SHIM_RC=3 MADENAT_LOG_DIR=/tmp/f4_logs/fallo … bash run_regression.sh` | `rc=3`; `.log` (25 B) y **`.exit` = `3`** |
 
-**Hallazgo adicional (bug preexistente, no corregido).** En el caso C se ve que `RET=$?` (línea 27) es código
-muerto: con `set -e`, si `docker exec` devuelve distinto de cero el script aborta antes de escribir
-`$EXIT_FILE`. El `.exit` solo existe en ejecuciones exitosas. Arreglo opcional, en un hunk aparte **no aplicado**:
-envolver la llamada con `set +e` / `set -e` alrededor de `docker exec … > "$LOG_FILE" 2>&1`.
+**Bug del `.exit` corregido en el mismo commit.** La pasada anterior demostró que `RET=$?` era código muerto:
+con `set -e` el script abortaba antes de escribir `$EXIT_FILE` y el `.exit` solo existía en ejecuciones
+exitosas. Ahora la llamada va entre `set +e` y `set -e`, así que el `.exit` se escribe siempre con el código
+real (caso C: `3`).
 
-**Estado:** ninguno de los dos hunks está aplicado; el archivo del repo conserva `LOG_DIR` apuntando a
-`FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`. Los artefactos de la prueba se crearon en `/tmp` y el
-directorio `/home/viruco/dev-stack/logs/regression` que dejó el caso A se eliminó después.
+**Estado:** **aplicado**. Los artefactos de la prueba quedaron en `/tmp`; los `.log`/`.exit` sintéticos que
+dejó el caso A en `/home/viruco/dev-stack/logs/regression/` se borraron después (la carpeta se conserva
+vacía). Consecuencia: `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` **deja de ser dependencia del script** —el
+fix es justo lo que la desbloqueaba— y ya no se posterga su cuarentena.
 
 ---
 
@@ -458,7 +470,9 @@ la cita sigue siendo trazable después de la cuarentena.
 2. **`config/` no es una carpeta de fase.** La fila B35 decía a la vez que `config/` era histórico y que la
    config viva estaba en esa misma ruta. Es la config viva (bind mount + `--config`), y queda **excluida**. (§2.1.)
 3. **El recuento de Tanda A/B no cambia** (59 + 35), pero el número de carpetas realmente ejecutables baja a
-   **92**: 93 sin `config` menos `FASE12_…` (postergada por el fix pendiente de `run_regression.sh`).
+   **92**: 93 sin `config` menos `FASE12_…` (postergada por el fix pendiente de `run_regression.sh`). Al aplicar
+   ese fix (punto 3, 2026-10-26) `FASE12_…` deja de estar postergada: las ejecutables pasan a **93** (94 sin
+   `config`) y a **92** si además se excluye `appointment_crm`.
 4. **`postgresql.conf/` está vacía** (0 B), no es un archivo de configuración ni contiene copias: el respaldo
    `.tar.gz` guarda solo la entrada de directorio.
 
@@ -467,7 +481,7 @@ la cita sigue siendo trazable después de la cuarentena.
 ## 9. Estado al cierre y pendientes
 
 **No ejecutado (por instrucción):** borrado definitivo, `mv` real a cuarentena, `git push`, diff del skip de
-xlsx (D6), fix de `run_regression.sh`, corrección de `conciliation_status`.
+xlsx (D6), corrección de `conciliation_status`.
 
 **Servicios y datos:** `madenat_test` intacta (13 guías, 88 módulos); `odoo18_app` y `odoo18_db` en marcha;
 las 94 carpetas originales siguen en la raíz; no queda ninguna base temporal (`madenat_f4_probe` eliminada).
@@ -478,7 +492,7 @@ las 94 carpetas originales siguen en la raíz; no queda ninguna base temporal (`
 |---|---|---|
 | 1 | Decidir visibilidad del repositorio (hoy **público**) antes de cualquier `push` | Decisión del usuario |
 | 2 | ~~Indicar destino de la copia externa~~ → **hecho el 2026-10-26**: movida a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`) y verificada 95/95. Queda decidir si además se duplica a un **medio USB extraíble** | Decisión del usuario |
-| 3 | Aplicar el diff de `run_regression.sh` (punto 3) en commit aparte | OK explícito |
+| 3 | ~~Aplicar el diff de `run_regression.sh` (punto 3)~~ → **hecho el 2026-10-26**: los dos hunks aplicados y las tres pruebas repetidas (`.exit` = `3` en el fallo) | — |
 | 4 | Aplicar `@tagged('post_install', …)` en los 2 archivos de test (punto 4.5) | OK explícito |
 | 5 | Ejecutar la cuarentena (`--ejecutar --tanda A`, luego `--tanda B`) | Orden explícita |
 | 6 | Aplicar el diff del skip de xlsx (D6) | OK explícito |

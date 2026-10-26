@@ -82,13 +82,14 @@ EXCLUIDAS_FIJAS = {
               "docker-compose.yml y --config /etc/odoo/odoo.conf en odoo18_app",
 }
 
-# Aprobadas pero condicionadas a un arreglo pendiente (se excluyen salvo
-# --incluir-postergadas).
+# Aprobadas pero condicionadas (se excluyen salvo --incluir-postergadas).
+# La condición de FASE12 era el fix de run_regression.sh, aplicado el 2026-10-26
+# (LOG_DIR por variable): ya no escribe aquí, pero se mantiene el interruptor
+# explícito para no moverla sin decirlo.
 POSTERGADAS = {
     "FASE12_REQUERIMIENTOS_OPERACIONES_20261017":
-        "run_regression.sh:11 escribe sus logs aquí (fix propuesto, no "
-        "aplicado); moverla haría que el script recree la carpeta en la ruta "
-        "vieja",
+        "run_regression.sh ya no escribe sus logs aquí (LOG_DIR por variable, "
+        "aplicado el 2026-10-26); incluir con --incluir-postergadas",
 }
 
 # Tanda A — no citadas en CANON/, WIKI/ ni RAW/ (59 carpetas, 484.9 MB).

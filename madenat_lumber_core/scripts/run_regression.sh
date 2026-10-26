@@ -8,7 +8,7 @@
 set -e
 
 TS=$(date +%Y%m%d_%H%M%S)
-LOG_DIR="/home/viruco/dev-stack/odoo/odoo-18-ce/FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs"
+LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/regresion_7_modulos_${TS}.log"
 EXIT_FILE="${LOG_DIR}/regresion_7_modulos_${TS}.exit"
@@ -17,6 +17,9 @@ echo "=== INICIANDO REGRESIÓN MADENAT (${TS}) ==="
 echo "Módulos: core, intake, logistics, engine, purchasing, costing, billing"
 echo "Destino log: ${LOG_FILE}"
 
+# set -e aborta en cuanto `docker exec` devuelve distinto de cero, antes de escribir el .exit:
+# se desactiva solo alrededor de la llamada para que el codigo real quede registrado.
+set +e
 docker exec odoo18_app odoo \
     -c /etc/odoo/odoo.conf \
     -d madenat_test \
@@ -25,6 +28,7 @@ docker exec odoo18_app odoo \
     --test-enable \
     --stop-after-init > "$LOG_FILE" 2>&1
 RET=$?
+set -e
 
 echo "$RET" > "$EXIT_FILE"
 echo "=== REGRESIÓN FINALIZADA CON CÓDIGO ${RET} ==="

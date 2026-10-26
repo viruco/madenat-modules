@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.54.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo (post-FASE 4)**: §22.6 nueva con el movimiento de los 95 archivos (1.163.365.900 B) a `/mnt/g/madenat_respaldos/consolidacion_20261026/`, la verificación 95/95 por `sha256` y el borrado del origen; §22.3/§22.4 y la fila P6 apuntan a la ruta nueva, registran la dependencia del montaje de `G:` (el script aborta con `rc=2` si falta) y el renombrado de la cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 02 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.55.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §22.5/P3 pasa de «sin aplicar» a «aplicado» (los dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` alrededor de `docker exec`, con las tres pruebas repetidas); §22.4 actualizado: `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada (93 ejecutables, 92 sin `appointment_crm`) y se corrige la numeración duplicada del punto de retoma. Versión 02 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo (post-FASE 4)**: §22.6 nueva con el movimiento de los 95 archivos (1.163.365.900 B) a `/mnt/g/madenat_respaldos/consolidacion_20261026/`, la verificación 95/95 por `sha256` y el borrado del origen; §22.3/§22.4 y la fila P6 apuntan a la ruta nueva, registran la dependencia del montaje de `G:` (el script aborta con `rc=2` si falta) y el renombrado de la cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 02 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: §22.5 con los 7 puntos (repo público, `config` excluida, R-E8-1 refutado, diffs de `run_regression.sh` y `conciliation_status` sin aplicar, `.clinerules` §6 aplicado, script de cuarentena con dry-run 92/0/2 y 16 artefactos localizados en los `.tar.gz`) y §22.4 actualizado. Versión 02 12.52.0 → 12.53.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: §22.3 con el respaldo íntegro (94/94 .tar.gz + bundle `ec3d2886…`), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos); §22.4 con la propuesta de borrado en dos tandas (59 + 35) y el riesgo de `run_regression.sh`. Versión 02 12.51.0 → 12.52.0. Sin push ni despliegue. | FASE 3. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E6)**: §22 con el estado de la consolidación (AD-135). Versión 02 12.50.0 → 12.51.0. Sin push ni despliegue. | FASE 2. -->
@@ -2467,15 +2468,18 @@ quedan fuera de git; desde D7 su copia íntegra está en
    `main` no está protegida (§22.5, punto 1).
 2. La **copia externa** de `/mnt/g/madenat_respaldos/consolidacion_20261026/` (1.163.365.900 B, 95 entradas)
    **ya está hecha** (2026-10-26, §22.6). Queda decidir si además se duplica a un **medio USB extraíble**.
-3. Antes de cualquier `--ejecutar`, comprobar que `/mnt/g` sigue montado (`ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` = 95): la verificación de los 94 `.tar.gz` depende de ese montaje.
-4. Autorizar (o no) la **cuarentena reversible** de las **92 carpetas** aptas con
-   `FASES/00_CUARENTENA_20261026.py --ejecutar --tanda A` y luego `--tanda B`; `config` queda excluida y
-   `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` postergada hasta aplicar el fix de `run_regression.sh`.
-   Nada se ha movido ni borrado.
-4. Autorizar los dos arreglos de código **propuestos y no aplicados**: `LOG_DIR` de `run_regression.sh`
-   (una línea) y `@tagged('post_install', '-at_install', 'madenat')` en los dos archivos de test que causan los
+3. Antes de cualquier `--ejecutar`, comprobar que `/mnt/g` sigue montado (`ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` = 95): la verificación de los 94 `.tar.gz` depende de ese montaje —el script aborta con `rc=2` si el disco no está montado (`respaldo_montado`)—.
+4. Autorizar (o no) la **cuarentena reversible** con
+   `FASES/00_CUARENTENA_20261026.py --ejecutar --tanda A` y luego `--tanda B`; `config` queda excluida por
+   código y, con el fix del punto 5 aplicado, `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` **ya no está
+   postergada**: las ejecutables pasan de 92 a **93** (94 sin `config`), o a **92** si además se excluye
+   `appointment_crm`. Nada se ha movido ni borrado.
+5. **Aplicado el 2026-10-26:** dos hunks de `run_regression.sh` —`LOG_DIR="${MADENAT_LOG_DIR:-…}"` y
+   `set +e`/`set -e` alrededor de `docker exec` para que el `.exit` se escriba también al fallar—, con `bash -n`
+   OK y las tres pruebas funcionales repetidas (caso de fallo: `rc=3` y `.exit` = `3`). Queda pendiente de
+   autorización `@tagged('post_install', '-at_install', 'madenat')` en los dos archivos de test que causan los
    8 rojos (`test_h5_nominal_width_and_stock_notice.py`, `test_resolve_export_width_api.py`).
-5. Sin autorización expresa no se toca código: el diff del xlsx (D6) sigue **presentado y sin aplicar**.
+6. Sin autorización expresa no se toca código: el diff del xlsx (D6) sigue **presentado y sin aplicar**.
 
 ### 22.5 FASE 4 — CIERRE SEGURO (2026-10-26)
 
@@ -2486,7 +2490,7 @@ ni `mv` a cuarentena, ni `push`, ni cambios de código. Informe completo en `FAS
 |---|---|---|
 | **P1 · respaldo externo** | `origin` = `git@github.com:viruco/madenat-modules.git`; **repositorio público** (`private:false`, `visibility:public`, `main` sin protección); `fase13-2a-lectura` **no existe** en remoto (404; solo 4 ramas, `main` en `b862415`); respaldo 1.163.365.900 B (1,1 GiB, 95 entradas) | Sin `push`; destino externo pendiente |
 | **P2 · carpetas ambiguas** | `config` **excluida**: `./config:/etc/odoo` en `docker-compose.yml:17`, `--config /etc/odoo/odoo.conf`, `sha256` host = contenedor (`79b3847…`). `postgresql.conf` **apta**: 0 B, 0 referencias. `appointment_crm` **apta con reserva**: fuera de `addons_path`, sin dependencias ni fila en `ir_module_module` | Decidido con evidencia |
-| **P3 · `run_regression.sh`** | `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"`; `bash -n` OK; prueba funcional con `docker` simulado (ruta por defecto, override y fallo `rc=3`). Hallazgo: con `set -e`, `RET=$?` es código muerto y el `.exit` no se escribe al fallar | **Sin aplicar** |
+| **P3 · `run_regression.sh`** | Dos hunks aplicados el 2026-10-26: `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"` y `set +e`/`set -e` alrededor de `docker exec` para que `RET=$?` no sea código muerto. `bash -n` OK; prueba funcional con `docker` simulado repetida (ruta por defecto, override y fallo: `rc=3` con `.exit` = `3`) | **Aplicado** |
 | **P4 · `conciliation_status`** | **R-E8-1 refutado**: el campo existe (`intake_guia_processing.py:159`, `default='not_compared', required=True`), `ir_model_fields.required = t` y la columna `NOT NULL` son coherentes; creado el 2026-10-01 en `cdf2ea8` (intake `18.0.0.11.0`) y nunca eliminado. Reproducción con rollback sobre `madenat_f4_probe`: registro completo ⇒ crea con `not_compared`; campo retirado del registro (equivalente a `at_install`) ⇒ `NotNullViolation` idéntico. Causa: los 2 archivos de test **sin `@tagged`** corren antes de cargar `madenat_lumber_intake` | **Sin aplicar** (arreglo: 2 líneas de `@tagged`) |
 | **P5 · `.clinerules`** | Copia previa `…/backups/clinerules_20261026/madenat-regla-de-oro.md.pre-20261026` (sha256 `f9b9b34…`); aplicado §6 «Documentación consolidada» y «Cierre» → §7; 7 secciones, nada más cambia; sha256 nuevo `8f642a5…`; no genera commit (fuera de `custom_addons/.git`) | **Aplicado** |
 | **P6 · cuarentena** | `FASES/00_CUARENTENA_20261026.py`: **comprueba primero que `/mnt/g` esté montado** (`respaldo_montado`; aborta sin mover nada si no lo está); verifica `.tar.gz` + sha256 del CSV, rutas y bytes contra el original, procesos con archivos abiertos y bind mounts; `os.rename` a `PENDIENTE_BORRADO_20261026/` (visible); diario `_diario.jsonl` con manifiesto sha256; `--revertir` con re-verificación; fail-closed | Dry-run: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** de 94; **sin ejecutar** |
@@ -2499,7 +2503,7 @@ excluida; (c) el total ejecutable baja de 94 a **92** (93 sin `config`, menos `F
 
 **Riesgos abiertos.** R-F4-1 exposición del repo público y `main` sin protección; R-F4-2 el `push` por SSH
 fallaría (clave configurada rechazada; la válida es de `viruco-sys`, y `gh` opera por https como `viruco`);
-R-F4-3 `run_regression.sh` mientras no se aplique el diff; R-F4-4 otros 5 archivos de test de core usan
+R-F4-3 ~~`run_regression.sh` mientras no se aplique el diff~~ (cerrado el 2026-10-26: aplicado y probado); R-F4-4 otros 5 archivos de test de core usan
 `madenat.guia.processing` sin `post_install`; R-E8-4 (`TestConsolidationImportWizard` omitido entero) sin cambios.
 
 ### 22.6 Respaldo movido a disco externo (2026-10-26, posterior al cierre)

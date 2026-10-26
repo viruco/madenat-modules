@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.43.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 6.43.0 / 2026-10-26 al registrar §34 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 6.44.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §33.1 registra el destino de logs por `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` (ya no dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`) y el `.exit` que ahora se escribe también cuando la regresión falla (`set +e` alrededor de `docker exec`). Versión 03 6.43.0 → 6.44.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 6.43.0 / 2026-10-26 al registrar §34 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 14 pruebas unitarias (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 5 en test_volume_comparison_5c); desglose nominal de las 10 fallas preexistentes de regresión (6 en core, 4 en logistics); corrección de atribución errónea "de costing". Total esperado en suite: 1.551 + 14 = 1.565 pruebas. Versión 03 6.40.0 → 6.41.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 13 pruebas unitarias nuevas en madenat_lumber_core (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 4 en test_volume_comparison_5c). Total acumulado esperado en suite: 1.551 + 13 = 1.564 pruebas. Versión 03 6.39.0 → 6.40.0. Sin commit/push. -->
@@ -1645,7 +1646,7 @@ Se incorporan 26 pruebas unitarias nuevas distribuidas en `madenat_lumber_core`,
 ### 33.1 Script Canónico de Regresión de los 7 Módulos (A4 / AD-127)
 - **Ruta Oficial:** `madenat_lumber_core/scripts/run_regression.sh`
 - **Comportamiento:** Ejecuta `odoo` exclusivamente con el flag `-u` sobre los 7 módulos del núcleo (`madenat_lumber_core`, `madenat_lumber_intake`, `madenat_lumber_logistics`, `madenat_ingestion_engine`, `madenat_lumber_purchasing`, `madenat_lumber_costing`, `madenat_lumber_billing`), con `--test-enable`, `--stop-after-init` y `--http-port=8079`.
-- **Registro:** Salida redirigida a archivo de log fechado con timestamp en `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs/regresion_7_modulos_<TIMESTAMP>.log` y código de salida en archivo `.exit`.
+- **Registro:** Salida redirigida a archivo de log fechado con timestamp en `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}/regresion_7_modulos_<TIMESTAMP>.log` y código de salida en el `.exit` homónimo. El directorio se cambia con la variable de entorno `MADENAT_LOG_DIR` (sin definir: `/home/viruco/dev-stack/logs/regression`); hasta el 2026-10-26 apuntaba a `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`, una ruta de fase de la raíz del stack que iba a desaparecer en la cuarentena. El `.exit` se escribe **siempre**, también cuando la regresión falla: la llamada a `docker exec` va entre `set +e` y `set -e`, porque con `set -e` el script abortaba antes de registrarlo.
 
 ### 33.2 Suite 6A / 6B (Patios e Inventario): `test_patios_f7.py` (10 pruebas en `madenat_lumber_core`)
 - `test_01_patio_type_field_and_selection`: Campo `patio_type` (`service`, `port`) en `stock.location`.
