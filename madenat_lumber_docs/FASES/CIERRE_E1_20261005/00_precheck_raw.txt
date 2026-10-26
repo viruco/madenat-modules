@@ -1,0 +1,86 @@
+2026-10-05 13:47:10,524 198 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-05 13:47:10,525 198 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-05 13:47:10,525 198 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-05 13:47:10,525 198 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-05 13:47:10,738 198 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-05 13:47:10,747 198 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-05 13:47:10,945 198 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-05 13:47:10,945 198 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-05 13:47:10,970 198 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-05 13:47:10,978 198 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-05 13:47:11,025 198 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-05 13:47:12,273 198 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-05 13:47:12,274 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-05 13:47:12,274 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-05 13:47:12,274 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-05 13:47:12,274 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-05 13:47:12,275 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-05 13:47:12,275 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-05 13:47:12,275 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-05 13:47:12,275 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-05 13:47:12,317 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-05 13:47:12,317 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    S2S_WIDTH_LOOKUP: 16 entradas validadas 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-05 13:47:12,318 198 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-05 13:47:12,560 198 INFO madenat_test odoo.modules.loading: 88 modules loaded in 1.53s, 0 queries (+0 extra) 
+2026-10-05 13:47:12,839 198 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-05 13:47:12,846 198 INFO madenat_test odoo.modules.registry: Registry loaded in 1.900s 
+PC| RUN_TS 2026-10-05T13:47:12.875153Z
+PC| DB madenat_test
+PC| SHELL_UID 1 su= True
+PC| 
+PC| ================ USERS ================
+PC| USER 2 mauricio.seo@gmail.com 'Administrator' su= False groups=OPE,JEF,GER,COST,CONT,STOCKM,STOCKU,SYS
+PC| USER 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez' su= False groups=STOCKM,STOCKU
+PC| USER 7 mvantonio@valean.cl 'María Victoria Antonio' su= False groups=STOCKU
+PC| USER 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' su= False groups=OPE,JEF,COST,STOCKM,STOCKU
+PC| USER 9 fmunoz@valean.cl 'Felipe Muñoz' su= False groups=STOCKM,STOCKU
+PC| 
+PC| ================ BASELINE_COUNTS ================
+PC| COUNTS {"lumber.container": 22, "lumber.document.checklist": 6, "lumber.export.shipment": 21, "lumber.reception": 7, "lumber.reception.line": 70, "lumber.shipment.document": 127, "madenat.audit.log": 281, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "shipping.vessel": 9, "shipping.voyage": 2, "stock.lot": 133, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+PC| 
+PC| ================ FROZEN_FINANCE ================
+PC| SHIP_DISTRIBUTED 0
+PC| COSTDIST_C2 0
+PC| COST_LINES 0 53
+PC| PAYMENTS 0
+PC| BILLING_CONSOLIDATION 0
+PC| 
+PC| ================ UAT_INT_123_INTEGRITY ================
+PC| GUIA 32689 UAT-INT-20261004-RECEPTION validated lots [16694]
+PC| LOTS [(16694, 'UAT-INT-20261004-LOT-01 UATSKU 20261004', 'UAT-INT-20261004-RECEPTION')]
+PC| QUANT_INTERNAL 4.0
+PC| BACKLOG_DOC 13420 missing completed high
+PC| INT4_PERM_RESIDUE 0
+PC| 
+PC| ================ MODULES ================
+PC| MODULE madenat_ingestion_engine installed 18.0.1.1.0
+PC| MODULE madenat_lumber_billing installed 18.0.1.0.0
+PC| MODULE madenat_lumber_core installed 18.0.6.5.0
+PC| MODULE madenat_lumber_core_BACKUP_20260530_2023 uninstalled False
+PC| MODULE madenat_lumber_costing installed 18.0.1.0.0
+PC| MODULE madenat_lumber_import_valuations uninstalled False
+PC| MODULE madenat_lumber_intake installed 18.0.0.11.0
+PC| MODULE madenat_lumber_inventory uninstalled False
+PC| MODULE madenat_lumber_logistics installed 18.0.1.6.0
+PC| MODULE madenat_lumber_processing uninstalled False
+PC| MODULE madenat_lumber_purchasing installed 18.0.2.2.0
+PC| MODULE madenat_lumber_reception_improvements installed 18.0.1.0.0
+PC| MODULE madenat_lumber_reports installed 18.0.2.3.0
+PC| MODULE madenat_lumber_shipping_core installed 18.0.1.0.0
+PC| MODULE madenat_toll_processing installed 18.0.1.0.0
+PC| MODULE madenat_vendor_payment installed 18.0.1.2.0
+PC| 
+PC| ================ MADENAT_GROUPS ================
+PC| GROUP 70 'Administrador Madenat' users= 2
+PC| GROUP 63 'MADENAT' users= 3
+PC| GROUP 64 'MADENAT Aprobación Financiera y Pagos' users= 2
+PC| GROUP 61 'MADENAT: Compras y Operaciones' users= 2
+PC| GROUP 62 'MADENAT: Validación Contable (Auditoría)' users= 4
+PC| DONE_PRECHECK

@@ -1,0 +1,53 @@
+INT4| RUN_TS 2026-10-05T13:47:24.662403Z
+INT4| DB madenat_test SHELL_UID 1 su= True
+INT4| 
+INT4| ================ ACTORS ================
+INT4| OPS_UID8 8 cristhian.elguetag@gmail.com 'Cristhian Elgueta' su= False OPE= True JEF= True STOCKU= True STOCKM= True
+INT4| BLOCK_UID6 6 leonardo@pinelli.com.mx 'Leonardo Rodriguez' su= False OPE= False JEF= False STOCKU= True STOCKM= True
+INT4| 
+INT4| ================ BASELINE ================
+INT4| COUNTS0 {"lumber.reception": 7, "lumber.reception.line": 70, "lumber.shipment.document": 127, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "stock.lot": 133, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+INT4| 
+INT4| ================ FIXTURE ================
+INT4| FIXTURE loc 8 WH/Stock partner 14270 product 5345 sub 1493
+INT4| 
+INT4| ================ A_POSITIVE_OPS ================
+INT4| OPS_CREATE 32706 draft
+INT4| OPS_WRITE_STATE verified
+INT4| OPS_VALIDATE NO_ERROR_UNEXPECTED
+INT4| OPS_POST_STATE validated lots [16702] picking n/a
+INT4| TARGET_GUIA 32707 UAT-INT-20261005-PERM verified
+INT4| TARGET_RECEPTION 7911 UAT-INT-20261005-REC draft
+INT4| 
+INT4| ================ B_NEGATIVE_UID6 ================
+INT4| COUNTS_PRE_BLOCK {"lumber.reception": 8, "lumber.reception.line": 70, "lumber.shipment.document": 127, "madenat.guia.processing": 12, "madenat.guia.processing.line": 75, "stock.lot": 134, "stock.move": 147, "stock.move.line": 214, "stock.picking": 32, "stock.quant": 172}
+INT4| B1_CREATE_guia_processing AccessError No puede crear registros 'Recepción de Guías Procesadas' (madenat.guia.processing).  Esta operación está permitida para los siguientes grupos: 	- MADENAT: Gestión Madera/Jefatura d
+INT4| B1_WRITE_guia_processing AccessError No tienes permiso para modificar registros "Recepción de Guías Procesadas" (madenat.guia.processing).  Esta operación está permitida para los siguientes grupos: 	- MADENAT: Gestión
+INT4| B1_CREATE_reception NO_ERROR_UNEXPECTED
+INT4| B1_WRITE_reception NO_ERROR_UNEXPECTED
+INT4| B1_CREATE_console AccessError No puede crear registros 'Consola de Ingreso de Madera (readonly)' (madenat.lumber.intake.console).  Ningún grupo permite esta operación por el momento.  Póngase en contacto con su
+INT4| B1_CREATE_intake_wizard AccessError No puede crear registros 'Ingreso de Madera — Fachada de ingreso operacional' (madenat.lumber.intake.wizard).  Esta operación está permitida para los siguientes grupos: 	- MADENAT:
+INT4| B2_CREATE_guia AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B3_WRITE_operativo AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B4_VALIDATE AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B5_VERIFY_DATA AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B6_PROCESS_FROM_STAGING AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B7_REOPEN_TO_DRAFT AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B8_FORCE_CANCEL AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B9_WIZARD_create AccessError No puede crear registros 'Asistente: corrección documental preservada (CDP-V1)' (madenat.guia.processing.documental.correction.wizard).  Esta operación está permitida para los sigu
+INT4| B10_FALSE_CONTEXT AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B11_RECEPTION_CREATE AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B12_RECEPTION_WRITE AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| B13_IMPORT_BULK AccessError La operación de ingreso/recepción requiere el rol de Operaciones, Jefatura de Operaciones o Gerencia.
+INT4| COUNTS_POST_BLOCK {"lumber.reception": 8, "lumber.reception.line": 70, "lumber.shipment.document": 127, "madenat.guia.processing": 12, "madenat.guia.processing.line": 75, "stock.lot": 134, "stock.move": 147, "stock.move.line": 214, "stock.picking": 32, "stock.quant": 172}
+INT4| BLOCKED_RESIDUE_DELTA {"lumber.reception": 0, "lumber.reception.line": 0, "lumber.shipment.document": 0, "madenat.guia.processing": 0, "madenat.guia.processing.line": 0, "stock.lot": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+INT4| TARGET_GUIA_STATE_AFTER verified
+INT4| TARGET_RECEPTION_STATE_AFTER draft
+INT4| U6_BLOCKED_ALL_ACCESS True
+INT4| 
+INT4| ================ C_ROLLBACK ================
+INT4| ROLLBACK_OK
+INT4| COUNTS_FINAL {"lumber.reception": 7, "lumber.reception.line": 70, "lumber.shipment.document": 127, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "stock.lot": 133, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+INT4| FINAL_VS_BASE0 {"lumber.reception": 0, "lumber.reception.line": 0, "lumber.shipment.document": 0, "madenat.guia.processing": 0, "madenat.guia.processing.line": 0, "stock.lot": 0, "stock.move": 0, "stock.move.line": 0, "stock.picking": 0, "stock.quant": 0}
+INT4| U6_PERM_RESIDUE 0
+INT4| DONE_INT4

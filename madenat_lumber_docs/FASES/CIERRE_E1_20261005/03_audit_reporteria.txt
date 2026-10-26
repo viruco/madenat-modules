@@ -1,0 +1,88 @@
+REP| RUN_TS 2026-10-05T13:49:20.144044Z
+REP| DB madenat_test
+REP| 
+REP| ================ ACTIONS ================
+REP| OK R1 Detalle por Patio (Stock Real) | xmlid= madenat_lumber_reports.action_r1_stock_detail_patio | model= stock.quant | view_mode= list | domain= [('quantity', '>', 0), ('location_id.usage', '=', 'internal')]
+REP| OK R2 Resumen por Patio (Stock Real) | xmlid= madenat_lumber_reports.action_r2_stock_summary_patio | model= stock.quant | view_mode= list | domain= [('quantity', '>', 0), ('location_id.usage', '=', 'internal')]
+REP| OK R5 Detalle por Proveedor (Stock Real) | xmlid= madenat_lumber_reports.action_r5_stock_detail_partner | model= stock.quant | view_mode= list | domain= [('quantity', '>', 0), ('location_id.usage', '=', 'internal')]
+REP| OK R7 Detalle por OC (Stock Real) | xmlid= madenat_lumber_reports.action_r7_stock_detail_purchase | model= stock.quant | view_mode= list | domain= [('quantity', '>', 0), ('location_id.usage', '=', 'internal')]
+REP| OK R9 Detalle por Producto (Stock Real) | xmlid= madenat_lumber_reports.action_r9_stock_detail_product | model= stock.quant | view_mode= list | domain= [('quantity', '>', 0), ('location_id.usage', '=', 'internal')]
+REP| OK Ajustes Físicos (Stock 3D) | xmlid= madenat_lumber_core.action_madenat_inventory_adjustments | model= stock.quant | view_mode= list | domain= [('location_id.usage', '=', 'internal')]
+REP| MISSING Tarja por Lote (PDF) | xmlid= madenat_lumber_core.action_report_lumber_batch | ValueError
+REP| OK Listado 1 Comercial (según compra) | xmlid= madenat_lumber_core.action_madenat_list_commercial | model= stock.lot | view_mode= list,form,kanban,pivot,graph | domain= 
+REP| OK Listado 2 Medidas Reales (físico) | xmlid= madenat_lumber_core.action_madenat_list_physical | model= stock.lot | view_mode= list,form,kanban,pivot,graph | domain= 
+REP| OK Listado 3 De Embarque (exportación) | xmlid= madenat_lumber_core.action_madenat_list_export | model= stock.lot | view_mode= list,form,kanban,pivot,graph | domain= 
+REP| OK Consola de Recepciones | xmlid= madenat_lumber_core.action_lumber_reception_pending | model= lumber.reception | view_mode= list,form | domain= [('state', 'not in', ['cancelled'])]
+REP| OK Tablero de Recepciones (kanban) | xmlid= madenat_lumber_core.action_lumber_reception_kanban | model= lumber.reception | view_mode= kanban,list,form | domain= 
+REP| OK Historial de Ingresos | xmlid= madenat_lumber_core.action_lumber_reception_raw_only | model= lumber.reception | view_mode= list,form | domain= []
+REP| OK Guías Procesadas (list) | xmlid= madenat_lumber_core.action_guia_processing_list | model= madenat.guia.processing | view_mode= list,form | domain= [('tipo_recepcion', '!=', 'raw'), ('state', 'not in', ['cancelled'])]
+REP| OK Guías de Procesamiento (pendientes) | xmlid= madenat_lumber_core.action_madenat_guia_processing_pending | model= madenat.guia.processing | view_mode= list,form | domain= [('state', '=', 'draft'), ('order_id','=',False)]
+REP| OK Backlog Documental | xmlid= madenat_lumber_logistics.action_lumber_shipment_document_backlog | model= lumber.shipment.document | view_mode= list,form | domain= [('state','!=','verified')]
+REP| OK Embarques | xmlid= madenat_lumber_logistics.action_lumber_export_shipment | model= lumber.export.shipment | view_mode= list,form,pivot | domain= 
+REP| OK Contenedores | xmlid= madenat_lumber_logistics.action_lumber_container | model= lumber.container | view_mode= list,form | domain= 
+REP| OK Consolidación de Contenedores | xmlid= madenat_lumber_logistics.action_lumber_container_consolidation | model= lumber.container | view_mode= kanban,list,form | domain= [('state', '!=', 'shipped')]
+REP| OK Rebajar por Motonave (wizard) | xmlid= madenat_lumber_logistics.action_lumber_shipment_rebaja_wizard | model= lumber.shipment.rebaja.wizard | view_mode= form | domain= 
+REP| OK Motonaves | xmlid= madenat_lumber_shipping_core.action_shipping_vessel | model= shipping.vessel | view_mode= list,form | domain= 
+REP| OK Viajes | xmlid= madenat_lumber_shipping_core.action_shipping_voyage | model= shipping.voyage | view_mode= list,form | domain= 
+REP| OK Reservas (booking) | xmlid= madenat_lumber_shipping_core.action_shipping_booking | model= shipping.booking | view_mode= list,form | domain= 
+REP| MISSING Dashboard Gerencial | xmlid= madenat_lumber_logistics.action_madenat_executive_dashboard | ValueError
+REP| MISSING Trazabilidad 360 | xmlid= madenat_lumber_logistics.action_madenat_traceability_360 | ValueError
+REP| OK Trazabilidad 360 (Auditoría) | xmlid= madenat_lumber_core.action_madenat_audit_logs | model= madenat.audit.log | view_mode= list,form | domain= 
+REP| OK Tipos de Documentos | xmlid= madenat_lumber_logistics.action_lumber_document_checklist | model= lumber.document.checklist | view_mode= list,form | domain= 
+REP| OK Imputación Documental SV | xmlid= madenat_lumber_logistics.action_madenat_sv_imputation | model= madenat.sv.imputation | view_mode= list,form | domain= 
+REP| OK Saldo por Procesador | xmlid= madenat_lumber_logistics.action_madenat_processor_balance | model= stock.quant | view_mode= list,pivot | domain= [('madenat_processor_id', '!=', False)]
+REP| 
+REP| ================ MENU_GROUPS ================
+REP| MENU R1 Detalle por Patio (Stock Real) | MADENAT Lumber/📊 Reportes y Listados/📦 Inventario Recepción/R1: Detalle por Patio — Stock Real | groups= TODOS | active= True
+REP| MENU R2 Resumen por Patio (Stock Real) | MADENAT Lumber/📊 Reportes y Listados/📦 Inventario Recepción/R2: Resumen por Patio — Stock Real | groups= TODOS | active= True
+REP| MENU R5 Detalle por Proveedor (Stock Real) | MADENAT Lumber/📊 Reportes y Listados/📦 Inventario Recepción/R5: Detalle por Proveedor — Stock Real | groups= TODOS | active= True
+REP| MENU R7 Detalle por OC (Stock Real) | MADENAT Lumber/📊 Reportes y Listados/📦 Inventario Recepción/R7: Detalle por Orden de Compra — Stock Real | groups= TODOS | active= True
+REP| MENU R9 Detalle por Producto (Stock Real) | MADENAT Lumber/📊 Reportes y Listados/📦 Inventario Recepción/R9: Detalle por Producto — Stock Real | groups= TODOS | active= True
+REP| MENU Ajustes Físicos (Stock 3D) | MADENAT Lumber/📦 Operaciones/Control de Lotes/⚖️ Ajustes Físicos (Stock) | groups= Administrador | active= True
+REP| MENU Listado 1 Comercial (según compra) | MADENAT Lumber/📊 Reportes y Listados/1. Comercial (Según Compra) | groups= TODOS | active= True
+REP| MENU Listado 2 Medidas Reales (físico) | MADENAT Lumber/📊 Reportes y Listados/2. Medidas Reales (Físico) | groups= TODOS | active= True
+REP| MENU Listado 3 De Embarque (exportación) | MADENAT Lumber/📊 Reportes y Listados/3. De Embarque (Exportación) | groups= TODOS | active= True
+REP| MENU Embarques | MADENAT Lumber/Logística Exportación/Embarques | groups= TODOS | active= True
+REP| MENU Contenedores | MADENAT Lumber/Logística Exportación/Contenedores | groups= TODOS | active= True
+REP| MENU Consolidación de Contenedores | MADENAT Lumber/Logística Exportación/Consolidación | groups= TODOS | active= True
+REP| MENU Motonaves | MADENAT Lumber/Logística Exportación/Configuración/Motonaves | groups= TODOS | active= True
+REP| MENU Viajes | MADENAT Lumber/Logística Exportación/Configuración/Viajes | groups= TODOS | active= True
+REP| MENU Reservas (booking) | MADENAT Lumber/Logística Exportación/Configuración/Reservas | groups= TODOS | active= True
+REP| MENU Trazabilidad 360 (Auditoría) | MADENAT Lumber/⚖️ Auditoría/Trazabilidad 360° | groups= Administrador,Auditoría,Gerencia,Jefatura de Operaciones | active= True
+REP| MENU Tipos de Documentos | MADENAT Lumber/Logística Exportación/Configuración/Tipos de Documentos | groups= TODOS | active= True
+REP| MENU Imputación Documental SV | MADENAT Lumber/Logística Exportación/Imputaciones documentales SV | groups= TODOS | active= True
+REP| 
+REP| ================ REAL_DATA ================
+REP| DATA stock.quant (total) = 170
+REP| DATA stock.quant internos>0 = 82
+REP| DATA stock.lot (total) = 133
+REP| DATA stock.lot con guia_number = 108
+REP| DATA madenat.guia.processing = 10
+REP| DATA guia draft = 1
+REP| DATA guia verified = 2
+REP| DATA guia validated = 7
+REP| DATA lumber.reception = 7
+REP| DATA recepcion draft = 0
+REP| DATA recepcion done = 5
+REP| DATA lumber.document.checklist = 6
+REP| DATA lumber.shipment.document = 127
+REP| DATA documentos backlog abiertos = 126
+REP| DATA documentos criticos/high = 1
+REP| DATA lumber.export.shipment = 21
+REP| DATA lumber.container = 22
+REP| DATA shipping.vessel = 9
+REP| DATA shipping.voyage = 2
+REP| DATA madenat.audit.log = 281
+REP| DATA madenat.sv.operation = 1
+REP| DATA madenat.sv.imputation = 1
+REP| 
+REP| ================ LOGISTICS_STATES ================
+REP| SHIP_STATE confirmed 3
+REP| SHIP_STATE delivered 2
+REP| SHIP_STATE draft 8
+REP| SHIP_STATE in_transit 8
+REP| CONT_STATE loaded 7
+REP| CONT_STATE loading 4
+REP| CONT_STATE rebajado 4
+REP| CONT_STATE shipped 7
+REP| DONE_AUDIT

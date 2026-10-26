@@ -1,0 +1,6 @@
+date: Mon Oct 12 15:59:38 UTC 2026
+head: b1d2d1911648f3264bf629c8eccf79a1c140eaf3
+branch: feat/guia-correccion-documental-preservada-20261002
+madenat_lumber_core=18.0.6.6.0
+madenat_lumber_intake=18.0.0.12.0
+madenat_lumber_logistics=18.0.1.22.0

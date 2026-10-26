@@ -1,0 +1,12 @@
+# MADENAT — Cierre Entrega 1 — Git / Runtime snapshot
+Fecha UTC: 2026-10-05T13:50:28Z
+
+## Repo custom_addons
+Rama : feat/guia-correccion-documental-preservada-20261002
+HEAD : 34c81272bb07d48db98d73a7734c81a2a8e384fa
+Working tree: 60 entradas (M=44 ??=16)
+
+## Runtime
+odoo18_app | Up About an hour
+odoo18_db | Up About an hour (healthy)
+HTTP /web/login: 200

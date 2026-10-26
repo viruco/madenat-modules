@@ -1,0 +1,3 @@
+# Baseline git (Sun Oct 11 00:06:15 UTC 2026)
+b1d2d1911648f3264bf629c8eccf79a1c140eaf3
+feat/guia-correccion-documental-preservada-20261002

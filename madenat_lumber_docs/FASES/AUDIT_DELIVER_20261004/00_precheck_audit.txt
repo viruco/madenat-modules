@@ -1,0 +1,80 @@
+REPO=custom_addons
+BRANCH=feat/guia-correccion-documental-preservada-20261002
+HEAD=34c81272bb07d48db98d73a7734c81a2a8e384fa
+WT_TOTAL=33
+WT_M=24
+WT_UNTRACKED=9
+DIFF_CLEAN
+--- docker ---
+odoo18_app Up 5 hours
+odoo18_db Up 5 hours (healthy)
+HTTP=200
+=== ROLES ===
+ROLE| uid=6 'Leonardo Rodriguez'
+   HG| operaciones      False
+   HG| jefatura         False
+   HG| gerencia         False
+   HG| contabilidad     False
+   HG| account_manager  True
+   HG| system           False
+ROLE| uid=8 'Cristhian Elgueta'
+   HG| operaciones      True
+   HG| jefatura         True
+   HG| gerencia         False
+   HG| contabilidad     False
+   HG| account_manager  False
+   HG| system           False
+=== ESTADOS DE EMBARQUE ===
+SHIP_STATE| draft        7
+SHIP_STATE| confirmed    3
+SHIP_STATE| in_transit   6
+SHIP_STATE| delivered    0
+SHIP_STATE| cancelled    0
+DELIVERED| ids/names = []
+=== B-01 por estado ===
+B01| none       14
+B01| open       1
+B01| resolved   1
+=== cost_distribution_state ===
+COSTDIST| pending      16
+COSTDIST| distributed  0
+=== document_status ===
+DOCSTATUS| pending    16
+DOCSTATUS| partial    0
+DOCSTATUS| complete   0
+=== BILLING / PAGOS ===
+BILLING| draft          0
+BILLING| ready_audit    0
+BILLING| in_audit       0
+BILLING| audit_approved 0
+BILLING| audit_rejected 0
+BILLING| ready_billing  0
+BILLING| billed         0
+BILLING| cancelled      0
+PAYMENT_ORDERS| 0
+=== LINEA BASE ===
+COUNT| stock.move                     145
+COUNT| stock.move.line                212
+COUNT| stock.picking                  30
+COUNT| stock.quant                    173
+COUNT| stock.lot                      128
+COUNT| stock.lot.cost.line            53
+COUNT| lumber.shipment.cost.line      0
+COUNT| lumber.export.shipment         16
+COUNT| lumber.container               17
+COUNT| lumber.shipment.line           7
+COUNT| shipping.vessel                8
+COUNT| shipping.voyage                2
+COUNT| madenat.audit.log              273
+COUNT| madenat.sv.operation           1
+COUNT| madenat.sv.imputation          1
+COUNT| account.move                   1
+COUNT| account.payment                0
+COUNT| lumber.billing.consolidation   0
+COUNT| lumber.shipment.document       96
+=== PROTEGIDOS UAT (muestra) ===
+PROT| R2 ship2128=UAT-R2-20261004-SHIP[draft/none] cont2129=loaded vessel921=UAT-R2-20261004-VESSEL
+PROT| R1 ship1885=UAT-R1-20261004-SHIP[in_transit/resolved] cont1888=rebajado
+PROT| B01 ship1868=UAT-B01-20261004-EXCEPTION[in_transit/open]
+PROT| historica ship1537=UAT-LOG-20261003-EMB-01[in_transit/none] ship1528=UAT-SV-20261003-SHIP[draft/none]
+PRECHECK_DONE

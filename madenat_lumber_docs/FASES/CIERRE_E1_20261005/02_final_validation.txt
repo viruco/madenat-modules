@@ -1,0 +1,9 @@
+AFT| COUNTS {"lumber.reception": 7, "lumber.shipment.document": 127, "madenat.audit.log": 281, "madenat.guia.processing": 10, "madenat.guia.processing.line": 73, "stock.lot": 133, "stock.move": 146, "stock.move.line": 213, "stock.picking": 31, "stock.quant": 170}
+AFT| distributed 0
+AFT| c2 0
+AFT| costlines 53 0
+AFT| payments 0
+AFT| UAT_int 0
+AFT| guia32689 [(32689, 'UAT-INT-20261004-RECEPTION', 'validated', [16694])]
+AFT| lot16694 [(16694, 'UAT-INT-20261004-LOT-01 UATSKU 20261004')]
+AFT| DONE
