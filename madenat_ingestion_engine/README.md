@@ -64,6 +64,7 @@ por patrón/regex). Sin integración con `lumber.reception` ni
 - ✅ Extracción de cabecera PDF por regex (guía, fecha, RUTs, OC, transportista, patente, montos)
 - ✅ `destination_label`, `carrier_rut`, `carrier_phone`, `carrier_name` como campos opcionales
 - ✅ UI standalone de documento de ingesta: `madenat.ingestion.document` (+ `.line` y `.warning`) con carga→extracción→revisión, inmutabilidad post-extracción (D2), advertencias inline y en pestaña, y menú propio independiente de `madenat_lumber_intake`
+- ✅ Descarte de fila de totales de cierre sin etiqueta (Regla V1): omite filas de cierre sin paquete, piezas ni dimensiones cuyo volumen coincida con la suma acumulada de líneas aceptadas (±0,01 m³), emitiendo advertencia de auditoría `"Fila N: fila de totales sin etiqueta omitida..."` antes del forward-fill para no contaminar estados ni avisos de lote.
 
 ### Dependencia nueva (decisión de arquitectura)
 
@@ -74,6 +75,7 @@ Para reutilizar los grupos de seguridad nativos de Operaciones y Auditoría, el 
 - ⚠️ **P10:** solo se procesa la primera hoja / hoja activa de cada Excel (sin soporte multi-hoja).
 - ⚠️ Los perfiles viven como **datos Python** (`ingestion_profiles.py`), no como registros del modelo ORM `madenat.ingestion.column.profile`. La integración con configuración persistente en BD es **Fase 3**.
 - ⚠️ No se integra con `lumber.reception` ni `madenat.guia.processing` (Fase 4, feature-flagged).
+- ⚠️ **Fila de totales sin etiqueta:** una fila de cierre cuyo volumen difiere de la suma no se descarta. La tolerancia es absoluta (0,01 m³), por lo que en documentos con muchas líneas la deriva de redondeo puede superarla.
 
 ### Alineación con AD-51 / AD-ING-001 / AD-ING-002
 
@@ -272,6 +274,6 @@ python -m py_compile madenat_ingestion_engine/models/*.py madenat_ingestion_engi
 
 ---
 
-**Última actualización:** 2026-09-01  
+**Última actualización:** 2026-10-27  
 **Estado del módulo:** FASE 2 — extracción real implementada (Excel/PDF), sin integración con dominios existentes  
-**Versión:** 18.0.1.0.0
+**Versión:** 18.0.1.5.0

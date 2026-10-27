@@ -4,6 +4,19 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.5.0] - 2026-10-27
+
+### Added
+- **Descarte de fila de totales de cierre sin etiqueta (Regla V1)**:
+  - En `services/document_extractor.py`, se omite la fila de cierre sin etiqueta (sin paquete, piezas ni dimensiones) cuyo volumen numérico coincide con la suma acumulada de las líneas aceptadas precedentes dentro de una tolerancia absoluta de `TOTAL_ROW_TOLERANCE_M3 = 0.01` m³.
+  - La fila omitida genera una advertencia de auditoría con formato `"Fila {source_row_number}: fila de totales sin etiqueta omitida (volumen {v} ≈ suma acumulada {s})"`.
+  - El descarte se ejecuta antes del forward-fill para no contaminar el estado de herencia ni emitir advertencias de lote.
+  - Cobertura de pruebas sintéticas en memoria (XLSX y XLS) en `tests/test_document_extractor_totals_row.py` (10 casos de prueba unitarios).
+
+### Known Limitations
+- Una fila de cierre cuyo volumen difiere de la suma no se descarta.
+- La tolerancia es absoluta (0,01 m³), por lo que en documentos con muchas líneas la deriva de redondeo puede superarla.
+
 ## [18.0.1.3.0] - 2026-10-19
 
 ### Added
