@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.58.0
-**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Cierre técnico de Fase 2E (AD-136)**: Corrección de fila de totales sin etiqueta en document_extractor.py con Regla V1 (commits d6a780c, 5abee74, 7e28228); 10 pruebas sintéticas agregadas (§36); matriz de regresión 36/36 sin impacto colateral; auditoría de ING-00041 e ING-00052 sin dependencias (no se limpian); 4 pendientes registrados para Etapa D y mejoras futuras. Versión 02 12.57.0 → 12.58.0. Sin push ni despliegue. | Fase 2E. -->
+**Versión documental:** 12.59.0
+**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Despliegue de Fase 2E en madenat_test (AD-136 / Etapa D)**: respaldo pre_2e_20261027.dump (12 MB, sha256 2234d969...); linea base de datos 11 columnas 45ad1588... y 02d6284d... intacta; upgrade quirurgico con exit 0 (123 tests ingestion_engine con 10/10 nuevas pasando, 541 tests intake verdes); prueba funcional con Odoo shell (40030 corregido de 13/92.3163 a 12/46.15815 m³ con aviso de fila 25 omitida; 95083 intacto; rollback garantizado); web arriba HTTP 200. Version 02 12.58.0 → 12.59.0. Sin push. | Etapa D. -->
+<!-- actualizado: 2026-10-27 — **Cierre técnico de Fase 2E (AD-136)**: Corrección de fila de totales sin etiqueta en document_extractor.py con Regla V1 (commits d6a780c, 5abee74, 7e28228); 10 pruebas sintéticas agregadas (§36); matriz de regresión 36/36 sin impacto colateral; auditoría de ING-00041 e ING-00052 sin dependencias (no se limpian); 4 pendientes registrados para Etapa D y mejoras futuras. Versión 02 12.57.0 → 12.58.0. Sin push ni despliegue. | Fase 2E. -->
 <!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (§22)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; excluidas fijas config, appointment_crm, postgresql.conf; respaldo en /mnt/g (95 archivos); reversión documentada; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); lista de 8 pendientes fuera de la limpieza con su estado. Versión 02 12.56.0 → 12.57.0. Sin push ni despliegue. | Cierre limpieza. -->
 <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §22.5/P4 pasa de «sin aplicar» a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en las 2 clases, verificado sobre la copia `madenat_f4_b`: `0 failed, 7 errors of 20` antes → `0 failed, 0 errors of 20` después); §22.4 cierra el punto 5 y R-F4-4 queda analizado (4 archivos activos verdes, `test_ingestion_gate.py` fuera de la suite). Versión 02 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §22.5/P3 pasa de «sin aplicar» a «aplicado» (los dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` alrededor de `docker exec`, con las tres pruebas repetidas); §22.4 actualizado: `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada (93 ejecutables, 92 sin `appointment_crm`) y se corrige la numeración duplicada del punto de retoma. Versión 02 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 4. -->
@@ -2575,8 +2576,21 @@ resultado: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** (`FASES/00_DRY_R
 - **Decisión canónica:** **No se limpian.** Son datos históricos de prueba y no generan riesgo operativo.
 
 ### 23.3 Pendientes y Mejoras Futuras Registradas
-1. **Despliegue en `madenat_test` (Etapa D):** Actualización quirúrgica de `madenat_ingestion_engine` a `18.0.1.5.0` (`-u madenat_ingestion_engine`), precedida obligatoriamente por respaldo de base de datos (`pg_dump`).
-2. **Prueba funcional en pantalla de 40030:** Verificación visual en la UI del asistente de ingreso cargando `40030.xls` en `madenat_test` para constatar que muestra 12 líneas y 46,15815 m³ (sin línea 13).
+1. **Despliegue en `madenat_test` (Etapa D):** EJECUTADO el 2026-10-27. Ver §23.4.
+2. **Prueba funcional en pantalla de 40030 (Checklist usuario):** Verificación visual en la UI del asistente de ingreso cargando `40030.xls` en `madenat_test` para constatar que muestra 12 líneas y 46,158 m³ (sin línea 13).
 3. **Chequeo de consistencia entre vista previa y persistencia (Mejora futura):** Evaluar alineación/unificación entre el parser de Producto (`reception_parser.py` en `madenat_lumber_intake`) y el extractor canónico (`extract_document()` en `madenat_ingestion_engine`).
 4. **Uso de columna de volumen nominal de fila de cierre como contraste (Mejora futura):** Utilizar la columna de volumen nominal de la fila de totales únicamente como contraste analítico frente a la suma calculada de piezas, sin forzar sobrescrituras.
+
+### 23.4 Despliegue en madenat_test y Validación Operativa (Etapa D — 2026-10-27)
+- **Respaldo previo:** `/home/viruco/dev-stack/backups/madenat_test_pre_2e_20261027.dump` (12 MB, SHA-256 `2234d969cd666f8ad36d1e0c5f9c417f07547cc9bb0166b56d059844ad0ac4fe`, catálogo TOC con 13.555 entradas verificado mediante `pg_restore -l`).
+- **Invarianza de datos previa y posterior:**
+  - `lumber_reception_line` (id ≤ 7707): `45ad15888e36dfbc6d53ea9d54c05ab3` (idéntico).
+  - `stock_lot` (id ≤ 49837): `02d6284d3209f5f6e0dc70e00a8ec4e7` (idéntico).
+  - Conteos de tablas clave intactos: `lumber_reception` (9), `lumber_reception_line` (96), `stock_lot` (152), `madenat_guia_processing` (13), `madenat_lumber_intake_wizard` (113), `madenat_ingestion_document` (5), `madenat_ingestion_document_line` (42).
+- **Despliegue quirúrgico y pruebas:** `docker compose run` con `-u madenat_ingestion_engine,madenat_lumber_intake` y `--test-tags` exit code `0`. 123 tests de engine (10 nuevas pasando) y 541 tests de intake 100% verdes (`0 failed, 0 error(s)`).
+- **Prueba funcional en Odoo shell (`script_prueba_funcional_40030.py`, rollback garantizado):**
+  - Caso 40030: `preview_line_count = 12`, `preview_total_volume_m3 = 46.15815 m³`, aviso `Fila 25: fila de totales sin etiqueta omitida (volumen 46.15815 ≈ suma acumulada 46.15815)`. Línea fantasma 13 y forward-fill indebido eliminados.
+  - Caso 95083: `preview_line_count = 8`, `preview_total_volume_m3 = 42.132 m³` intacto con aviso normal de totales etiquetados (`Fila 27`).
+- **Servicio web:** Restablecido y verificado con respuesta HTTP `200` en `/web/login`.
+
 

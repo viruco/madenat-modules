@@ -168,7 +168,58 @@ En la base `madenat_test`, se auditó el contenido del modelo `madenat.ingestion
 
 ## 9. Pendientes Registrados
 
-1. **Despliegue controlado en `madenat_test` (Etapa D):** Actualización del módulo mediante `docker compose run` con `-u madenat_ingestion_engine` y prueba de regresión de intake, previo respaldo con `pg_dump`.
-2. **Prueba funcional en UI con Guía 40030:** Verificar en pantalla la visualización de 12 líneas y 46,158 m³ en el asistente de Ingreso de Madera.
+1. **Despliegue en `madenat_test` (Etapa D):** [COMPLETADO el 2026-10-27]. Ver §10.
+2. **Prueba funcional en UI con Guía 40030 (Checklist usuario):** Verificar en pantalla la visualización de 12 líneas y 46,158 m³ en el asistente de Ingreso de Madera.
 3. **Mejora futura de consistencia:** Implementar chequeo de consistencia entre lo previsualizado en el wizard y lo generado por el parser final de Producto (`reception_parser.py` vs `extract_document()`).
 4. **Mejora futura de volumen nominal:** Evaluar el uso de la columna de volumen nominal de la fila de cierre exclusivamente como dato de contraste y auditoría.
+
+---
+
+## 10. Despliegue en madenat_test (Etapa D — 2026-10-27)
+
+### 10.1 Respaldo Previo
+- **Archivo:** `/home/viruco/dev-stack/backups/madenat_test_pre_2e_20261027.dump`
+- **Tamaño:** 12 MB (formato `pg_dump -Fc` binario)
+- **SHA-256:** `2234d969cd666f8ad36d1e0c5f9c417f07547cc9bb0166b56d059844ad0ac4fe`
+- **Verificación:** Catálogo TOC con 13.555 entradas verificado mediante `pg_restore -l`.
+
+### 10.2 Línea Base de Datos (Invarianza Verificada)
+- **Hashes de negocio (11 columnas):**
+  - `lumber_reception_line` (id ≤ 7707): `45ad15888e36dfbc6d53ea9d54c05ab3` (antes == después)
+  - `stock_lot` (id ≤ 49837): `02d6284d3209f5f6e0dc70e00a8ec4e7` (antes == después)
+- **Conteos de tablas clave (antes == después):**
+  - `lumber_reception`: 9
+  - `lumber_reception_line`: 96
+  - `stock_lot`: 152
+  - `madenat_guia_processing`: 13
+  - `madenat_lumber_intake_wizard`: 113
+  - `madenat_ingestion_document`: 5
+  - `madenat_ingestion_document_line`: 42
+
+### 10.3 Despliegue y Suites de Pruebas
+- **Comando:**
+  ```bash
+  docker compose run --rm -T web odoo -d madenat_test -u madenat_ingestion_engine,madenat_lumber_intake --test-tags /madenat_ingestion_engine,/madenat_lumber_intake --stop-after-init
+  ```
+- **Código de salida:** `0` (exitoso).
+- **Log de evidencia:** `evidencias/2e_upgrade.log` (310 KB).
+- **Resultados de las suites:**
+  - `madenat_ingestion_engine`: **123 tests** ejecutados (incluidas las 10 pruebas nuevas de `TestDocumentExtractorTotalsRow`), 0 fallas, 0 errores.
+  - `madenat_lumber_intake`: **541 tests** ejecutados (100% idéntico a la línea base de la Fase 2D), 0 fallas, 0 errores.
+  - Total reporte general: `0 failed, 0 error(s) of 546 tests`.
+  - Cero WARNINGs o ERRORs nuevos introducidos.
+
+### 10.4 Prueba Funcional en Odoo Shell (Rollback Garantizado)
+- **Script ejecutado:** `evidencias/script_prueba_funcional_40030.py` sobre `madenat_test` (salida en `evidencias/2e_funcional_shell.log`).
+- **Caso 40030 (`40030.xls`, Guía `40030.pdf`):**
+  - **Líneas previsualizadas:** **12** (antes 13).
+  - **Volumen total previsualizado:** **46.15815 m³** (antes 92.3163 m³).
+  - **Aviso generado:** `Fila 25: fila de totales sin etiqueta omitida (volumen 46.15815 ≈ suma acumulada 46.15815)`.
+  - **Eliminación del defecto:** Se omitió la fila de cierre sin generar línea de producto ni forward-fill contaminante.
+- **Caso 95083 (`95083.xls` sin fila de cierre numérico puro):**
+  - **Líneas previsualizadas:** **8** (invariante).
+  - **Volumen total previsualizado:** **42.132 m³** (invariante).
+  - **Aviso de totales:** `Fila 27: se omitió una fila de totales ('total 2244 42.132 8')`.
+- **Integridad de datos:** `env.cr.rollback()` ejecutado al finalizar; ningún registro fue persistido en la base de datos.
+- **Servicio Web:** Contenedor `odoo18_app` restablecido y respondiendo con HTTP `200` en `/web/login`.
+

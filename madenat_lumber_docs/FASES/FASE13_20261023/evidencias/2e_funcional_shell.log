@@ -1,0 +1,89 @@
+2026-10-27 18:33:17,973 78 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-27 18:33:17,974 78 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-27 18:33:17,974 78 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-27 18:33:17,974 78 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-27 18:33:18,165 78 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-27 18:33:18,173 78 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-27 18:33:18,366 78 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-27 18:33:18,366 78 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-27 18:33:18,395 78 INFO madenat_test odoo.modules.loading: loading 1 modules... 
+2026-10-27 18:33:18,404 78 INFO madenat_test odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-27 18:33:18,462 78 INFO madenat_test odoo.modules.loading: loading 88 modules... 
+2026-10-27 18:33:19,671 78 INFO madenat_test odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-27 18:33:19,681 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-27 18:33:19,681 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-27 18:33:19,681 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-27 18:33:19,681 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-27 18:33:19,681 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-27 18:33:19,682 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-27 18:33:19,682 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-27 18:33:19,682 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-27 18:33:19,815 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-27 18:33:19,816 78 INFO madenat_test odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-27 18:33:20,037 78 INFO madenat_test odoo.modules.loading: 88 modules loaded in 1.58s, 0 queries (+0 extra) 
+2026-10-27 18:33:20,307 78 INFO madenat_test odoo.modules.loading: Modules loaded. 
+2026-10-27 18:33:20,314 78 INFO madenat_test odoo.modules.registry: Registry loaded in 1.947s 
+2026-10-27 18:33:20,602 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+2026-10-27 18:33:20,667 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+2026-10-27 18:33:20,911 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+2026-10-27 18:33:21,011 78 INFO madenat_test odoo.addons.madenat_lumber_core.models.madenat_ingestion_config: IngestionConfig: tipo_ingreso_keywords desde Fase1 (procesado, 4 kw) 
+=== WIZARD 20556 BASE ===
+Archivos: excel=40030.xls, pdf=Guia 40030.pdf
+Historico pre-2E: line_count=13, total_volume=92.3163
+
+=== WIZARD TEMPORAL 40030 POST-DESPLIEGUE ===
+preview_line_count: 12
+preview_total_volume_m3: 46.15815
+preview_warnings:
+Sin señal de tipo en las señales revisadas (nombre de archivo, título del PDF, glosa de producto del PDF, nombre de producto del Excel). Se conserva el tipo por defecto; confirme el destino del ingreso.
+Posible servicio (señal de artículo, no de servicio): «cepillado» en glosa de producto del PDF; «cepill» en glosa de producto del PDF; «cep.» en glosa de producto del PDF; «cepillado» en nombre de producto del Excel; «cepill» en nombre de producto del Excel; «cep.» en nombre de producto del Excel. NO se cambió el tipo de ingreso; confirme el destino si corresponde.
+Fila 12: se omitió una fila de encabezado de unidades (valores no numéricos: 'mm.', 'mm', 'mm').
+Fila 13: 'lot_number' no informado, sintetizado como 'LOTE-0000000095950' a partir de 'product_code'.
+Fila 14: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 15: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 16: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 17: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 18: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 19: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 20: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 21: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 22: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 23: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 24: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 25: fila de totales sin etiqueta omitida (volumen 46.15815 ≈ suma acumulada 46.15815)
+
+=== WIZARD 3884 BASE (95083) ===
+Archivos: excel=95083.xls, pdf=95083.pdf
+WARNING *** OLE2 inconsistency: SSCS size is 0 but SSAT size is non-zero
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+WARNING *** OLE2 inconsistency: SSCS size is 0 but SSAT size is non-zero
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+*** No CODEPAGE record, no encoding_override: will use 'iso-8859-1'
+
+=== WIZARD TEMPORAL 95083 POST-DESPLIEGUE ===
+preview_line_count: 8
+preview_total_volume_m3: 42.132
+preview_warnings:
+Sin señal de tipo en las señales revisadas (nombre de archivo, título del PDF, glosa de producto del PDF). Se conserva el tipo por defecto; confirme el destino del ingreso.
+Fila 18: 'lot_number' no informado, sintetizado como 'LOTE-' a partir de 'product_code'.
+Fila 19: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 20: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 21: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 22: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 23: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 24: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 25: 'lot_number' no informado, heredado (forward-fill) de la fila anterior.
+Fila 27: se omitió una fila de totales ('total 2244 42.132 8').
+
+>>> env.cr.rollback() EJECUTADO EXITOSAMENTE. NINGUN CAMBIO PERSISTIDO. <<<
