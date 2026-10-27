@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.60.0
-**Última actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (AD-135)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; 3 excluidas fijas (config, appointment_crm, postgresql.conf); respaldo en /mnt/g (95 archivos); comando de reversión documentado; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); registro de los 8 pendientes fuera de la limpieza. Versión 04 12.59.0 → 12.60.0. Sin push ni despliegue. | Cierre limpieza. -->
+**Versión documental:** 12.61.0
+**Última actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Fase 2E: Descarte de fila de totales sin etiqueta en extract_document (AD-136)**: regla V1 lineal con acumulador running_total_m3 y tolerancia 0.01 m3; descarte previo al forward-fill; 10 pruebas sintéticas en test_document_extractor_totals_row.py; matriz de regresión con 18 archivos corregidos y 0 líneas de producto descartadas; auditoría de datos históricos ING-00041 e ING-00052 inocuos. Versión 04 12.60.0 → 12.61.0. Sin push ni despliegue. | Fase 2E. -->
+<!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (AD-135)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; 3 excluidas fijas (config, appointment_crm, postgresql.conf); respaldo en /mnt/g (95 archivos); comando de reversión documentado; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); registro de los 8 pendientes fuera de la limpieza. Versión 04 12.59.0 → 12.60.0. Sin push ni despliegue. | Cierre limpieza. -->
 <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: AD-135/punto 4 pasa a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en `TestH5NominalWidthAndStockNotice` y `TestResolveExportWidthAPI`, con evidencia antes/después sobre la copia `madenat_f4_b` sin `-u`: 7 errores → 0) y se documenta el análisis de R-F4-4; se repara además un párrafo huérfano de AD-135 sobre R-E8-4. Versión 04 12.58.0 → 12.59.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: AD-135/punto 3 pasa a «aplicado» (dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` para que el `.exit` se escriba también al fallar; `bash -n` OK y las tres pruebas repetidas), con lo que R-E8-2 y R-F4-3 quedan cerrados y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada para la cuarentena. Versión 04 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo y cuarentena visible (post-FASE 4)**: el respaldo de 95 archivos (1.163.365.900 B) se copió a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`), se verificó 95/95 por `sha256` y solo entonces se borró el origen; AD-135 registra la dependencia del montaje de `G:` (el script aborta sin él, `respaldo_montado`) y el renombrado de la carpeta de cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 04 12.56.0 → 12.57.0. Sin push ni despliegue. | FASE 4. -->
@@ -4574,7 +4575,38 @@ nada** si el disco no está montado. La carpeta de cuarentena se renombró a **`
 - **Directorio `postgresql.conf` de root:** Pendiente (directorio vacío creado por Docker con propietario `root:root`).
 - **Escaneo de `origin/main` y hook pre-push:** Pendiente (verificado: no existe hook `pre-push` en `.git/hooks` ni escaneo ejecutado).
 - **Diff del skip de xlsx (D6):** Pendiente (presentado pero no aplicado en código).
-- **Fase 2E (paridad de rutas y preview 92,3163):** Pendiente (no iniciada).
+- **Fase 2E (paridad de rutas y preview 92,3163):** **CERRADA** con AD-136 (código y pruebas en commits `d6a780c`, `5abee74` y `7e28228`; informe en `FASES/FASE13_20261023/INFORME_FASE_2E.md`). Despliegue en `madenat_test` pendiente para Etapa D.
+
+---
+
+### AD-136 · Descarte de fila de totales de cierre sin etiqueta en motor de ingesta — Regla V1 (2026-10-27)
+
+**1. Contexto y problema (Guía 40030 y packings Excel reales):**
+En packings Excel generados manualmente o exportados por clientes/proveedores, la fila final de cierre frecuentemente contiene la suma total de volumen sin incluir la palabra literal "TOTAL" o "SUBTOTAL" (ej. fila 25 de `40030.xls`, donde figuran `46.15815`, `1362.847` y `54.518` sin etiqueta). Al no coincidir con `_TOTALS_ROW_RE`, el motor `document_extractor.py` la aceptaba como una línea de detalle adicional (línea 13) y le propagaba el lote sintético mediante forward-fill, duplicando el volumen extraído (`92.3163` m³ en vez de `46.1581` m³).
+
+**2. Decisión de diseño — Regla V1 (lineal, sin recursión):**
+En `_build_lines()` de `madenat_ingestion_engine/services/document_extractor.py`:
+- Se incorpora un acumulador dinámico `running_total_m3` que suma exclusivamente el volumen de las líneas previamente aceptadas.
+- Función `_is_unlabeled_total_row(line, running_total_m3, tolerance=0.01)`:
+  1. Verifica ausencia total de identificadores de paquete, piezas y dimensiones (`package_no`, `pieces`, `thickness_value_raw`, `width_value_raw`, `length_value_raw`, `thickness`, `width`, `length`).
+  2. Exige `line.volume_m3` > 0 y `running_total_m3` > 0.
+  3. Comprueba `|volume_m3 - running_total_m3| <= 0.01`.
+- **Aislamiento de forward-fill:** La comprobación se ejecuta inmediatamente tras el descarte de encabezados de unidades y **antes** del forward-fill, impidiendo que la fila descartada contamine `forward_fill_state` o emita advertencias de herencia de lote.
+- **Advertencia estructurada:** Genera `"Fila {N}: fila de totales sin etiqueta omitida (volumen {v} ≈ suma acumulada {s})"`, compatible con el regex `^Fila (\d+):` consumido por `madenat_ingestion_document`.
+
+**3. Evidencia y validación:**
+- **Suite de pruebas:** `TestDocumentExtractorTotalsRow` en `tests/test_document_extractor_totals_row.py` (10 pruebas sintéticas en memoria con XLSX y XLS protegido ante ausencia de `xlwt`, decorador `@tagged('post_install', '-at_install', 'madenat', 'madenat_ingestion_engine')`). 10/10 en verde en 0.80 s.
+- **Matriz de regresión (Python puro sin BD):** 18 archivos con defecto corregidos (reducción exacta a la mitad, 1 fila descartada; `40030.xls` → 12 líneas y 46.1581 m³; `41964.xls` → 12 líneas y 52.0110 m³; `41994.xls` → 14 líneas y 50.4956 m³), 18 archivos sin defecto sin cambios, **0 filas de producto descartadas**.
+- **Commits versionados:** `d6a780c` (extractor), `5abee74` (tests), `7e28228` (manifest 18.0.1.5.0, CHANGELOG y README).
+
+**4. Auditoría de datos históricos en `madenat_test`:**
+Se identificó que `ING-00041` (id 41) e `ING-00052` (id 52) creados el 2026-09-02 en `madenat_ingestion_document` contienen una línea residual de cierre (ids 54 y 90). No poseen claves foráneas desde tablas operativas (`lumber_reception`, `stock_picking`, etc.). Por ser datos históricos de prueba, se decide **no limpiarlos**.
+
+**5. Límites conocidos y mejoras futuras:**
+- Filas de cierre con volumen discordante (diferencia > 0.01 m³) no se descartan.
+- Tolerancia absoluta (0.01 m³): documentos masivos podrían excederla por redondeo de punto flotante.
+- Pendientes: despliegue en `madenat_test` con respaldo previo (Etapa D), verificación en UI de 40030, chequeo de consistencia entre vista previa y parser de Producto, y evaluación de la columna nominal de cierre como dato de contraste.
+
 
 
 

@@ -1,8 +1,9 @@
 # CANON/12_FLUJOS_INGESTA — Flujos de Ingesta de Madera y Discriminación Operativa
 
 **Proyecto:** MADENAT Lumber — Odoo 18 CE  
-**Versión documental:** 1.21.0
-**Fecha de actualización:** 2026-10-26  <!-- 2026-10-26: **Consolidación documental FASE 2 (E1)** — sincronización de la cabecera con la fila del índice, que ya declaraba 1.21.0 / 2026-10-26 al registrar §13 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
+**Versión documental:** 1.22.0
+**Fecha de actualización:** 2026-10-27  <!-- 2026-10-27: §13.6 Descarte de fila de totales de cierre sin etiqueta en extract_document (Regla V1 / AD-136 / Fase 2E), eliminación de doble conteo de volumen y alineación de vista previa. Versión 1.21.0 → 1.22.0. | Fase 2E. -->
+<!-- 2026-10-26: **Consolidación documental FASE 2 (E1)** — sincronización de la cabecera con la fila del índice, que ya declaraba 1.21.0 / 2026-10-26 al registrar §13 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- 2026-10-21: §12.8 Asistente de importación de consolidación de tarjas desde Excel con doble bloque y filas pendientes (AD-133 / Bloque 7.2). Versión 1.19.0 → 1.20.0. | Bloque 7. -->
 <!-- 2026-10-21: §12.7 Flujo de edición de dimensiones antes y después del envío a stock (AD-132 / Bloque H5). Versión 1.18.0 → 1.19.0. | Bloque H5. -->
 <!-- 2026-10-20: Incorporación de tabla sinóptica ejecutiva al inicio del documento en Bloque H0 (AD-128). Versión 1.17.0 → 1.18.0. | Bloque H0. -->
@@ -672,4 +673,17 @@ Si faltan, `action_preview_document` lanza `UserError` **antes de clasificar**: 
 ### 13.5 Fuera de alcance
 
 `_onchange_intake_modality_patio` sigue diferido (R6): cambiar de modalidad no reasigna el patio.
+
+### 13.6 Descarte de fila de totales de cierre sin etiqueta (Regla V1 — AD-136)
+
+En packings Excel que contienen una fila final de totales puramente numérica sin la etiqueta "TOTAL" o "SUBTOTAL" (caso paradigmático de la guía `40030.xls`), el motor de extracción `document_extractor.py` la aceptaba como una línea adicional de detalle (línea 13), propagando lotes sintéticos y duplicando el volumen extraído (92,316 m³ frente a los 46,158 m³ reales).
+
+**Comportamiento en la vista previa del Asistente de Ingreso:**
+- **Vista previa de Producto:** La invocación a `extract_document()` en `action_preview_document()` descarta automáticamente la fila de cierre mediante la Regla V1 (`_is_unlabeled_total_row` con acumulador `running_total_m3` y tolerancia absoluta `0.01` m³). La previsualización de 40030 pasa de 13 líneas y 92,316 m³ a **12 líneas y 46,158 m³**.
+- **Modalidad Volúmenes con Excel:** Se extrae el detalle exacto sin líneas fantasmas, eliminando la falsa discrepancia entre el PDF y el Excel.
+- **Trazabilidad:** La fila omitida genera la advertencia `"Fila N: fila de totales sin etiqueta omitida (volumen {v} ≈ suma acumulada {s})"`.
+
+**Mejora futura de consistencia:**
+Se registra como pendiente evaluar un chequeo de consistencia cruzada entre lo que previsualiza el asistente (`extract_document`) y lo que crea el parser final de Producto (`reception_parser.py`), así como usar la columna de volumen nominal de la fila de cierre exclusivamente como dato de contraste y auditoría.
+
 

@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.45.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §35 nueva con la regla `@tagged('post_install', '-at_install', 'madenat')` para toda clase que cree `madenat.guia.processing`, las 2 clases corregidas, la evidencia antes/después sobre la copia `madenat_f4_b` (7 errores → 0) y el análisis de los 5 archivos latentes de R-F4-4. Versión 03 6.44.0 → 6.45.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 6.46.0
+**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Fase 2E: Pruebas de descarte de fila de totales sin etiqueta (AD-136)**: §36 nueva con la suite TestDocumentExtractorTotalsRow (10 pruebas sintéticas en memoria XLSX/XLS, @tagged post_install, tolerancia 0.01 m3 y aislamiento de forward-fill). Versión 03 6.45.0 → 6.46.0. Sin push ni despliegue. | Fase 2E. -->
+<!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §35 nueva con la regla `@tagged('post_install', '-at_install', 'madenat')` para toda clase que cree `madenat.guia.processing`, las 2 clases corregidas, la evidencia antes/después sobre la copia `madenat_f4_b` (7 errores → 0) y el análisis de los 5 archivos latentes de R-F4-4. Versión 03 6.44.0 → 6.45.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §33.1 registra el destino de logs por `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` (ya no dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`) y el `.exit` que ahora se escribe también cuando la regresión falla (`set +e` alrededor de `docker exec`). Versión 03 6.43.0 → 6.44.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 6.43.0 / 2026-10-26 al registrar §34 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
@@ -1750,4 +1751,29 @@ sobre la clase o crean `lumber.width.s2s.map`, `product.product` y `stock.lot`. 
 forma parte de la suite de Odoo**: no está importado en `tests/__init__.py` y es un arnés `pytest` con
 `MagicMock`. Riesgo latente: si alguna de las cuatro primeras incorpora un `create()` de guía, deberá llevar la
 misma etiqueta.
+
+---
+
+## 36. PRUEBAS DE DESCARTE DE FILA DE TOTALES SIN ETIQUETA — REGLA V1 (FASE 2E, AD-136)
+
+**Suite:** `madenat_ingestion_engine/tests/test_document_extractor_totals_row.py`  
+**Clase:** `TestDocumentExtractorTotalsRow(TransactionCase)`  
+**Etiquetas:** `@tagged("post_install", "-at_install", "madenat", "madenat_ingestion_engine")`  
+**Diseño:** Fixtures 100% sintéticos en memoria (`openpyxl` y `xlwt` con protección ante ausencia), sin rutas absolutas ni datos comerciales de terceros.
+
+| Caso de Prueba | Método | Aserción Principal | Estado |
+|---|---|---|:---:|
+| **1. Cierre sin etiqueta XLSX/XLS** | `test_01_synthetic_12_packages_unlabeled_closing_total_row_xlsx_and_xls` | 12 líneas aceptadas, suma 46.15815 m³; aviso `"Fila 14: fila de totales sin etiqueta omitida (volumen 46.15815 ≈ suma acumulada 46.15815)"`. | [VERIFICADO] |
+| **2. Fila "TOTAL:" etiquetada** | `test_02_totals_row_with_total_label` | Descarte por filtro preexistente `_TOTALS_ROW_RE` con aviso literal exacto (`'total: 46.15815'`). | [VERIFICADO] |
+| **3. Sin fila de totales** | `test_03_no_totals_row` | 12 líneas intactas sin advertencias de totales. | [VERIFICADO] |
+| **4. Paquete presente** | `test_04_row_with_package_no_matching_sum_not_discarded` | Fila con solo `package_no` no se descarta aunque el volumen coincida con la suma. | [VERIFICADO] |
+| **5. Piezas presentes** | `test_05_row_with_pieces_matching_sum_not_discarded` | Fila con solo `pieces` no se descarta. | [VERIFICADO] |
+| **6. Primera fila sin identificadores** | `test_06_first_row_without_identifiers_not_discarded` | Fila 1 no se descarta (acumulador previo en 0). | [VERIFICADO] |
+| **7. Frontera de tolerancia (0.01 m³)** | `test_07_tolerance_boundary` | Desfase de +0.009 m³ se descarta; desfase de +0.011 m³ se conserva. | [VERIFICADO] |
+| **8. Dos cierres consecutivos** | `test_08_two_consecutive_unlabeled_closing_rows` | Ambas filas de cierre consecutivas descartadas con aviso en filas 14 y 15. | [VERIFICADO] |
+| **9. Formato regex trazable** | `test_09_warning_format_matches_ingestion_document_regex` | Aviso inicia con `^Fila (\d+): ` para parseo en `ingestion_document.py`. | [VERIFICADO] |
+| **10. Aislamiento de forward-fill** | `test_10_discarded_row_does_not_pollute_forward_fill_or_emit_lot_warning` | La fila descartada no altera `forward_fill_state` ni emite aviso espurio de lote heredado. | [VERIFICADO] |
+
+**Resultado de ejecución en Python puro (2026-10-27):** 10 tests ejecutados en 0.80 s, **0 failed, 0 errors, 0 skipped**.
+
 

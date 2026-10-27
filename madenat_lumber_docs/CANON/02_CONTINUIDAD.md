@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.57.0
-**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (§22)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; excluidas fijas config, appointment_crm, postgresql.conf; respaldo en /mnt/g (95 archivos); reversión documentada; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); lista de 8 pendientes fuera de la limpieza con su estado. Versión 02 12.56.0 → 12.57.0. Sin push ni despliegue. | Cierre limpieza. -->
+**Versión documental:** 12.58.0
+**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Cierre técnico de Fase 2E (AD-136)**: Corrección de fila de totales sin etiqueta en document_extractor.py con Regla V1 (commits d6a780c, 5abee74, 7e28228); 10 pruebas sintéticas agregadas (§36); matriz de regresión 36/36 sin impacto colateral; auditoría de ING-00041 e ING-00052 sin dependencias (no se limpian); 4 pendientes registrados para Etapa D y mejoras futuras. Versión 02 12.57.0 → 12.58.0. Sin push ni despliegue. | Fase 2E. -->
+<!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (§22)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; excluidas fijas config, appointment_crm, postgresql.conf; respaldo en /mnt/g (95 archivos); reversión documentada; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); lista de 8 pendientes fuera de la limpieza con su estado. Versión 02 12.56.0 → 12.57.0. Sin push ni despliegue. | Cierre limpieza. -->
 <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §22.5/P4 pasa de «sin aplicar» a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en las 2 clases, verificado sobre la copia `madenat_f4_b`: `0 failed, 7 errors of 20` antes → `0 failed, 0 errors of 20` después); §22.4 cierra el punto 5 y R-F4-4 queda analizado (4 archivos activos verdes, `test_ingestion_gate.py` fuera de la suite). Versión 02 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §22.5/P3 pasa de «sin aplicar» a «aplicado» (los dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` alrededor de `docker exec`, con las tres pruebas repetidas); §22.4 actualizado: `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada (93 ejecutables, 92 sin `appointment_crm`) y se corrige la numeración duplicada del punto de retoma. Versión 02 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo (post-FASE 4)**: §22.6 nueva con el movimiento de los 95 archivos (1.163.365.900 B) a `/mnt/g/madenat_respaldos/consolidacion_20261026/`, la verificación 95/95 por `sha256` y el borrado del origen; §22.3/§22.4 y la fila P6 apuntan a la ruta nueva, registran la dependencia del montaje de `G:` (el script aborta con `rc=2` si falta) y el renombrado de la cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 02 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 4. -->
@@ -2549,4 +2550,33 @@ resultado: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** (`FASES/00_DRY_R
 - **Directorio `postgresql.conf` de root:** Pendiente (directorio vacío creado por Docker con propietario `root:root`).
 - **Escaneo de `origin/main` y hook pre-push:** Pendiente (verificado: no existe hook `pre-push` en `.git/hooks` ni escaneo ejecutado).
 - **Diff del skip de xlsx (D6):** Pendiente (presentado pero no aplicado en código).
-- **Fase 2E (paridad de rutas y preview 92,3163):** Pendiente (no iniciada).
+- **Fase 2E (descarte de fila de totales sin etiqueta y corrección 92,3163 m³):** CERRADA TÉCNICAMENTE (AD-136, commits `d6a780c`, `5abee74`, `7e28228`). Detalles y nuevos pendientes en §23.
+
+---
+
+## 23. Cierre Técnico de Fase 2E (AD-136 — Descarte de Fila de Totales de Cierre)
+
+**Fecha:** 2026-10-27  
+**Referencia AD:** `CANON/04_DECISION_LOG.md` AD-136  
+**Informe Completo:** `FASES/FASE13_20261023/INFORME_FASE_2E.md`  
+**Commits Asociados:**
+1. `d6a780c`: `fix(ingestion): descarte de fila de totales de cierre sin etiqueta (Regla V1)` (`document_extractor.py`).
+2. `5abee74`: `test(ingestion): 10 pruebas sinteticas de descarte de fila de totales (Regla V1)` (`test_document_extractor_totals_row.py`).
+3. `7e28228`: `chore(ingestion): version 18.0.1.5.0, changelog y readme con regla V1` (`__manifest__.py`, `CHANGELOG.md`, `README.md`).
+
+### 23.1 Resumen de la Corrección (Regla V1)
+- **Causa raíz:** En `40030.xls`, la fila de cierre numérico (fila 25) carece de texto identificador ("TOTAL"), por lo que la expresión regular `_TOTALS_ROW_RE` no la detectaba. Al entrar en el bucle principal, sufría forward-fill desde la línea anterior y se insertaba como una línea de producto fantasma (13ª línea), duplicando el volumen total del documento de 46,15815 m³ a 92,3163 m³.
+- **Solución implementada:** Función `_is_unlabeled_total_row` ejecutada en una sola pasada (sin recursión) antes del forward-fill y de la asignación de lotes sintéticos. Descarta filas sin identificadores (sin paquete, piezas ni dimensiones) cuyo volumen numérico coincide con el total acumulado (`running_total_m3`) dentro de `TOTAL_ROW_TOLERANCE_M3 = 0.01` m³.
+- **Validación:** Suite de 10 pruebas sintéticas dedicada (`CANON/03_TESTS.md` §36) y matriz de regresión sobre 36 archivos (18 con defecto corregidos a la mitad exacta, 18 sin defecto intactos, 0 descartes indebidos de líneas de producto). Se excluyó 1 archivo por corresponder a otro tipo documental ajeno al flujo de ingesta.
+
+### 23.2 Auditoría de Datos Históricos en Base de Datos
+- **Registros auditados:** `ING-00041` (id 41) e `ING-00052` (id 52) en `madenat_ingestion_document`, creados el 2026-09-02 por Administrator en `madenat_test`. Conservan una línea fantasma de cierre cada uno (ids 54 y 90).
+- **Integridad relacional:** Verificado que ninguna tabla de negocio (guías `madenat.guia.processing`, recepciones `stock.picking`, movimientos `stock.move`, wizards u otras tablas) apunta a estos dos documentos ni a sus líneas.
+- **Decisión canónica:** **No se limpian.** Son datos históricos de prueba y no generan riesgo operativo.
+
+### 23.3 Pendientes y Mejoras Futuras Registradas
+1. **Despliegue en `madenat_test` (Etapa D):** Actualización quirúrgica de `madenat_ingestion_engine` a `18.0.1.5.0` (`-u madenat_ingestion_engine`), precedida obligatoriamente por respaldo de base de datos (`pg_dump`).
+2. **Prueba funcional en pantalla de 40030:** Verificación visual en la UI del asistente de ingreso cargando `40030.xls` en `madenat_test` para constatar que muestra 12 líneas y 46,15815 m³ (sin línea 13).
+3. **Chequeo de consistencia entre vista previa y persistencia (Mejora futura):** Evaluar alineación/unificación entre el parser de Producto (`reception_parser.py` en `madenat_lumber_intake`) y el extractor canónico (`extract_document()` en `madenat_ingestion_engine`).
+4. **Uso de columna de volumen nominal de fila de cierre como contraste (Mejora futura):** Utilizar la columna de volumen nominal de la fila de totales únicamente como contraste analítico frente a la suma calculada de piezas, sin forzar sobrescrituras.
+
