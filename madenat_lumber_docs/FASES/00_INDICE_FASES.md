@@ -1,8 +1,8 @@
 # Índice de carpetas de fase consolidadas — `madenat_lumber_docs/FASES/`
 
-**Versión documental:** 1.2.0
-**Fecha:** 2026-10-26
-**Origen:** consolidación documental FASE 2, etapas E4 (D4), E8 y D7; §4 añadida en FASE 4 (2026-10-26).
+**Versión documental:** 1.3.0
+**Fecha:** 2026-10-27
+**Origen:** consolidación documental FASE 2, etapas E4 (D4), E8 y D7; §4 añadida en FASE 4 (2026-10-26); §5 añadida con cierre de cuarentena y pendientes (2026-10-27).
 
 > **Nota de consolidación (FASE 2, 2026-10-26).** Las referencias a expedientes de fase se reescribieron a
 > `FASES/<CARPETA>/…` en los documentos canónicos, en la WIKI y en las propias copias de `FASES/` (ver
@@ -13,7 +13,8 @@
 Cada carpeta de fase que vivía en la raíz del stack (`/home/viruco/dev-stack/odoo/odoo-18-ce/`,
 fuera de git) tiene ahora una copia versionada en `madenat_lumber_docs/FASES/<CARPETA>/`,
 restringida a documentación: `.md`, `.txt`, `.csv`, `.pdf`, `.xlsx`, `.xls` menores de 2 MB por archivo.
-Los originales **siguen en su sitio** hasta que se autorice su borrado en el punto de control C1, y ya
+Los originales **están en cuarentena reversible** en `PENDIENTE_BORRADO_20261026/` (91 carpetas,
+1.6 GiB, movidas el 2026-10-26 y 2026-10-27; ver §5) hasta su revisión el 2026-11-03, y ya
 están comprimidos y verificados en `/mnt/g/madenat_respaldos/consolidacion_20261026/<CARPETA>.tar.gz`
 (94/94, D7: `FASE13_20261023/evidencias/SHA256_BACKUPS_CONSOLIDACION.csv`). Esa ruta está en la unidad `G:`
 de Windows: **sin el disco montado no existe** (ver `CANON/02_CONTINUIDAD.md` §22.6).
@@ -176,4 +177,37 @@ Todas están en la Tanda B y todas tienen su `.tar.gz` verificado en D7.
 > rutas del árbol de trabajo: por eso `check_paths` las cuenta como «no encontradas» (16 apariciones en esta
 > tabla). No son enlaces y no deben resolverse en disco; la comprobación correcta es `tar -tzf`, que sí se hizo
 > (16/16).
+
+---
+
+## 5. Estado final de la cuarentena y pendientes fuera de la limpieza (2026-10-27)
+
+**1. Estado final de la cuarentena:**
+- **Carpetas en cuarentena:** **91 carpetas** en `PENDIENTE_BORRADO_20261026/` (57 de Tanda A + 34 de Tanda B incluyendo `FASE12_...`).
+- **Diario de operaciones:** `_diario.jsonl` con **91 líneas** registradas.
+- **Tamaño en disco:** `1.6G` (`1.549.661.608 B`, medido con `du -sb`).
+- **Excluidas fijas que permanecen en la raíz del stack:**
+  - `config`: bind mount vivo de `/etc/odoo`.
+  - `appointment_crm`: pendiente de confirmación de Mauricio.
+  - `postgresql.conf`: directorio de `root:root` creado por Docker.
+- **Respaldo en disco externo:** `/mnt/g/madenat_respaldos/consolidacion_20261026/` (**95 archivos**: 94 `.tar.gz` + 1 git bundle) verificado bajo montaje de `G:`.
+- **Comando de reversión:**
+  ```bash
+  python3 FASES/00_CUARENTENA_20261026.py --revertir --ejecutar
+  ```
+
+**2. Fecha de revisión del borrado definitivo:**
+- **Fecha fijada:** **2026-11-03**. Antes de esa fecha **no se borra nada**.
+- El borrado requiere autorización explícita de Mauricio y una segunda copia del respaldo en otro disco físico.
+
+**3. Pendientes fuera de esta limpieza:**
+- **Segunda copia del respaldo en otro disco:** Pendiente de definir medio físico secundario (ej. USB extraíble).
+- **Limpieza de bases de datos antiguas:** Pendiente (requiere `pg_dump` previo de respaldo y autorización explícita de Mauricio).
+- **Origen de `/tmp/madenat_operations_level1_validation` y `/tmp/madenat_ui_simplify`:** Pendiente (directorios vacíos de `root:root` encontrados en `/tmp`, no verificados ni montados por Docker).
+- **Decisión sobre `appointment_crm`:** Pendiente de confirmación de Mauricio.
+- **Directorio `postgresql.conf` de root:** Pendiente (directorio vacío creado por Docker con propietario `root:root`).
+- **Escaneo de `origin/main` y hook pre-push:** Pendiente (verificado: no existe hook `pre-push` en `.git/hooks` ni escaneo ejecutado).
+- **Diff del skip de xlsx (D6):** Pendiente (presentado pero no aplicado en código).
+- **Fase 2E (paridad de rutas y preview 92,3163):** Pendiente (no iniciada).
+
 

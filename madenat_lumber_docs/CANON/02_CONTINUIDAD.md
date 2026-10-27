@@ -1,7 +1,8 @@
 # MADENAT — Estado de Continuidad Técnica
 
-**Versión documental:** 12.56.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §22.5/P4 pasa de «sin aplicar» a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en las 2 clases, verificado sobre la copia `madenat_f4_b`: `0 failed, 7 errors of 20` antes → `0 failed, 0 errors of 20` después); §22.4 cierra el punto 5 y R-F4-4 queda analizado (4 archivos activos verdes, `test_ingestion_gate.py` fuera de la suite). Versión 02 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.57.0
+**Fecha de actualización:** 2026-10-27  <!-- actualizado: 2026-10-27 — **Cuarentena completada y cierre de limpieza (§22)**: 91 carpetas en PENDIENTE_BORRADO_20261026 (57 Tanda A + 34 Tanda B, 1.6 GiB / 1.549.661.608 B); diario de 91 líneas; excluidas fijas config, appointment_crm, postgresql.conf; respaldo en /mnt/g (95 archivos); reversión documentada; fecha de revisión de borrado 2026-11-03 (requiere autorización y 2ª copia); lista de 8 pendientes fuera de la limpieza con su estado. Versión 02 12.56.0 → 12.57.0. Sin push ni despliegue. | Cierre limpieza. -->
+<!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §22.5/P4 pasa de «sin aplicar» a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en las 2 clases, verificado sobre la copia `madenat_f4_b`: `0 failed, 7 errors of 20` antes → `0 failed, 0 errors of 20` después); §22.4 cierra el punto 5 y R-F4-4 queda analizado (4 archivos activos verdes, `test_ingestion_gate.py` fuera de la suite). Versión 02 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §22.5/P3 pasa de «sin aplicar» a «aplicado» (los dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` alrededor de `docker exec`, con las tres pruebas repetidas); §22.4 actualizado: `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada (93 ejecutables, 92 sin `appointment_crm`) y se corrige la numeración duplicada del punto de retoma. Versión 02 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo (post-FASE 4)**: §22.6 nueva con el movimiento de los 95 archivos (1.163.365.900 B) a `/mnt/g/madenat_respaldos/consolidacion_20261026/`, la verificación 95/95 por `sha256` y el borrado del origen; §22.3/§22.4 y la fila P6 apuntan a la ruta nueva, registran la dependencia del montaje de `G:` (el script aborta con `rc=2` si falta) y el renombrado de la cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 02 12.53.0 → 12.54.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: §22.5 con los 7 puntos (repo público, `config` excluida, R-E8-1 refutado, diffs de `run_regression.sh` y `conciliation_status` sin aplicar, `.clinerules` §6 aplicado, script de cuarentena con dry-run 92/0/2 y 16 artefactos localizados en los `.tar.gz`) y §22.4 actualizado. Versión 02 12.52.0 → 12.53.0. Sin push ni despliegue. | FASE 4. -->
@@ -2465,23 +2466,11 @@ quedan fuera de git; desde D7 su copia íntegra está en
 
 ### 22.4 Punto de retoma
 
-1. Decidir la **visibilidad del repositorio** antes de cualquier `push`: `viruco/madenat-modules` es público y
-   `main` no está protegida (§22.5, punto 1).
-2. La **copia externa** de `/mnt/g/madenat_respaldos/consolidacion_20261026/` (1.163.365.900 B, 95 entradas)
-   **ya está hecha** (2026-10-26, §22.6). Queda decidir si además se duplica a un **medio USB extraíble**.
-3. Antes de cualquier `--ejecutar`, comprobar que `/mnt/g` sigue montado (`ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` = 95): la verificación de los 94 `.tar.gz` depende de ese montaje —el script aborta con `rc=2` si el disco no está montado (`respaldo_montado`)—.
-4. Autorizar (o no) la **cuarentena reversible** con
-   `FASES/00_CUARENTENA_20261026.py --ejecutar --tanda A` y luego `--tanda B`; `config` queda excluida por
-   código y, con el fix del punto 5 aplicado, `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` **ya no está
-   postergada**: las ejecutables pasan de 92 a **93** (94 sin `config`), o a **92** si además se excluye
-   `appointment_crm`. Nada se ha movido ni borrado.
-5. **Aplicado el 2026-10-26:** dos hunks de `run_regression.sh` —`LOG_DIR="${MADENAT_LOG_DIR:-…}"` y
-   `set +e`/`set -e` alrededor de `docker exec` para que el `.exit` se escriba también al fallar—, con `bash -n`
-   OK y las tres pruebas funcionales repetidas (caso de fallo: `rc=3` y `.exit` = `3`). También aplicado
-   `@tagged('post_install', '-at_install', 'madenat')` en los dos archivos de test que causaban los 8 rojos
-   (`test_h5_nominal_width_and_stock_notice.py`, `test_resolve_export_width_api.py`), verificado sobre la copia
-   `madenat_f4_b` **sin `-u`**: `0 failed, 7 error(s) of 20` antes → `0 failed, 0 error(s) of 20` después.
-6. Sin autorización expresa no se toca código: el diff del xlsx (D6) sigue **presentado y sin aplicar**.
+1. **Cuarentena completada:** 91 carpetas movidas a `PENDIENTE_BORRADO_20261026/` (57 Tanda A + 34 Tanda B).
+2. **Excluidas fijas en raíz:** `config` (bind mount vivo), `appointment_crm` (pendiente de confirmación) y `postgresql.conf` (directorio de Docker).
+3. **Respaldo verificado:** 95 archivos en `/mnt/g/madenat_respaldos/consolidacion_20261026/`.
+4. **Fecha de revisión de borrado:** **2026-11-03** (antes no se borra nada; requiere autorización de Mauricio y segunda copia).
+5. **Comando de reversión disponible:** `python3 FASES/00_CUARENTENA_20261026.py --revertir --ejecutar`.
 
 ### 22.5 FASE 4 — CIERRE SEGURO (2026-10-26)
 
@@ -2531,3 +2520,33 @@ cada `--ejecutar`: `ls /mnt/g/madenat_respaldos/consolidacion_20261026 | wc -l` 
 **Carpeta de cuarentena.** Renombrada de `.pendiente_borrado_20261026/` a **`PENDIENTE_BORRADO_20261026/`**
 (visible, sin punto inicial) para que no pase inadvertida; el dry-run se repitió tras el cambio con el mismo
 resultado: **92 aptas (1.441,5 MB), 0 bloqueadas, 2 excluidas** (`FASES/00_DRY_RUN_CUARENTENA_F4.txt`, 106 líneas).
+
+### 22.7 Cuarentena completada y cierre de la limpieza documental (2026-10-27)
+
+**1. Estado final de la cuarentena:**
+- **Carpetas movidas a cuarentena:** **91 carpetas** en `PENDIENTE_BORRADO_20261026/` (57 de Tanda A + 34 de Tanda B incluyendo `FASE12_...`).
+- **Diario de operaciones:** `_diario.jsonl` con exactamente **91 líneas** registradas.
+- **Tamaño en disco:** `1.6G` (`1.549.661.608 B`, medido con `du -sb`).
+- **Excluidas fijas que permanecen en la raíz del stack:**
+  - `config`: bind mount vivo de `/etc/odoo`.
+  - `appointment_crm`: pendiente de confirmación de Mauricio.
+  - `postgresql.conf`: directorio de `root:root` creado por Docker.
+- **Respaldo externo en G:**: `/mnt/g/madenat_respaldos/consolidacion_20261026/` con **95 archivos** (94 `.tar.gz` + 1 git bundle) verificado.
+- **Comando de reversión:**
+  ```bash
+  python3 FASES/00_CUARENTENA_20261026.py --revertir --ejecutar
+  ```
+
+**2. Fecha de revisión del borrado definitivo:**
+- **Fecha fijada:** **2026-11-03**. Antes de esa fecha **no se borra nada**.
+- El borrado requiere autorización explícita de Mauricio y una segunda copia del respaldo en otro disco.
+
+**3. Pendientes fuera de esta limpieza:**
+- **Segunda copia del respaldo en otro disco:** Pendiente de definir medio físico secundario (ej. USB extraíble).
+- **Limpieza de bases de datos antiguas:** Pendiente (requiere `pg_dump` previo de respaldo y autorización explícita de Mauricio).
+- **Origen de `/tmp/madenat_operations_level1_validation` y `/tmp/madenat_ui_simplify`:** Pendiente (directorios vacíos de `root:root` encontrados en `/tmp`, no verificados ni montados por Docker).
+- **Decisión sobre `appointment_crm`:** Pendiente de confirmación de Mauricio.
+- **Directorio `postgresql.conf` de root:** Pendiente (directorio vacío creado por Docker con propietario `root:root`).
+- **Escaneo de `origin/main` y hook pre-push:** Pendiente (verificado: no existe hook `pre-push` en `.git/hooks` ni escaneo ejecutado).
+- **Diff del skip de xlsx (D6):** Pendiente (presentado pero no aplicado en código).
+- **Fase 2E (paridad de rutas y preview 92,3163):** Pendiente (no iniciada).
