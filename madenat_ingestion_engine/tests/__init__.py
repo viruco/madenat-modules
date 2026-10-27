@@ -8,3 +8,4 @@ from . import test_document_format
 from . import test_document_extractor_pieces
 from . import test_packing_metrico_template
 from . import test_packing_estandar_madenat_6d
+from . import test_document_extractor_totals_row
