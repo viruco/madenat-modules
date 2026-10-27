@@ -74,6 +74,45 @@ _RAW_TEXT_FIELDS = {
     "length_value_raw",
 }
 
+# Tolerancia en m3 para descarte de filas de totales de cierre sin etiqueta (Regla V1)
+TOTAL_ROW_TOLERANCE_M3 = 0.01
+
+
+def _is_unlabeled_total_row(line, running_total_m3, tolerance=TOTAL_ROW_TOLERANCE_M3):
+    """Detecta si una fila corresponde a un total de cierre sin etiqueta (Regla V1).
+
+    Criterios:
+      1. Ningún identificador de paquete, piezas ni dimensiones presentes.
+      2. volume_m3 numérico > 0.
+      3. running_total_m3 > 0 (acumulador de líneas aceptadas previo).
+      4. |volume_m3 - running_total_m3| <= tolerance.
+    """
+    has_identifier = any(
+        line.get(field) not in (None, "")
+        for field in (
+            "package_no",
+            "pieces",
+            "thickness_value_raw",
+            "width_value_raw",
+            "length_value_raw",
+            "thickness",
+            "width",
+            "length",
+        )
+    )
+    if has_identifier:
+        return False
+
+    volume_m3 = line.get("volume_m3")
+    if not isinstance(volume_m3, (int, float)) or volume_m3 <= 0:
+        return False
+
+    if running_total_m3 <= 0:
+        return False
+
+    return abs(volume_m3 - running_total_m3) <= tolerance
+
+
 # ── Metadatos de cabecera de Excel (etiquetas label:value) ────────────────
 _CORE_HEADER_LABELS = {
     "cliente": "customer_name",
@@ -387,6 +426,7 @@ def _build_lines(rows, header_idx, mapping, profile):
     forward_fill_state = {}
     forward_fill_fields = profile.get("forward_fill_fields", [])
     synthesis_rule = profile.get("synthesis_rule") or {}
+    running_total_m3 = 0.0
 
     for row_idx in range(header_idx + 1, len(rows)):
         row = rows[row_idx]
@@ -429,6 +469,7 @@ def _build_lines(rows, header_idx, mapping, profile):
                     f"numérico ({str(raw_pieces).strip()!r}); no se informa "
                     f"cantidad de piezas."
                 )
+
         # Unidades de origen declaradas por el perfil (no inferidas por celda)
         source_units = profile.get("source_units") or {}
         for key in _UNIT_KEYS:
@@ -444,6 +485,19 @@ def _build_lines(rows, header_idx, mapping, profile):
             warnings.append(
                 f"Fila {source_row_number}: se omitió una fila de encabezado de "
                 f"unidades (valores no numéricos: {', '.join(repr(t) for t in tokens)})."
+            )
+            continue
+
+        # Fila de totales de cierre sin etiqueta (Regla V1):
+        # Descarte antes del forward-fill para no contaminar forward_fill_state
+        # ni emitir aviso de lote heredado.
+        if _is_unlabeled_total_row(line, running_total_m3):
+            vol_val = line.get("volume_m3")
+            v_disp = str(round(float(vol_val), 6)) if isinstance(vol_val, (int, float)) else str(vol_val)
+            s_disp = str(round(float(running_total_m3), 6))
+            warnings.append(
+                f"Fila {source_row_number}: fila de totales sin etiqueta omitida "
+                f"(volumen {v_disp} ≈ suma acumulada {s_disp})"
             )
             continue
 
@@ -477,6 +531,10 @@ def _build_lines(rows, header_idx, mapping, profile):
             # (leído, heredado o sintetizado), para que filas posteriores hereden.
             if line.get(field_name) not in (None, ""):
                 forward_fill_state[field_name] = line[field_name]
+
+        vol = line.get("volume_m3")
+        if isinstance(vol, (int, float)) and vol > 0:
+            running_total_m3 += vol
 
         line["source_row_number"] = source_row_number
         lines.append(line)
