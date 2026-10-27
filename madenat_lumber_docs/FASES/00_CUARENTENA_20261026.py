@@ -78,9 +78,12 @@ def respaldo_montado():
 
 # Excluidas por evidencia (FASE 4, punto 2): NUNCA se mueven.
 EXCLUIDAS_FIJAS = {
-    "config": "dependencia viva: bind mount ./config -> /etc/odoo en "
-              "docker-compose.yml y --config /etc/odoo/odoo.conf en odoo18_app",
+    "postgresql.conf": "directorio de root creado por Docker",
+    "config": "bind mount vivo de /etc/odoo",
+    "appointment_crm": "pendiente de mi confirmación",
 }
+EXCLUIDAS = EXCLUIDAS_FIJAS
+
 
 # Aprobadas pero condicionadas (se excluyen salvo --incluir-postergadas).
 # La condición de FASE12 era el fix de run_regression.sh, aplicado el 2026-10-26
@@ -315,13 +318,24 @@ def mover(datos):
     destino = os.path.join(CUARENTENA, datos["nombre"])
     if os.path.exists(destino):
         raise RuntimeError("el destino ya existe: %s" % destino)
-    os.rename(datos["origen"], destino)
+    try:
+        os.rename(datos["origen"], destino)
+    except (OSError, PermissionError) as exc:
+        entrada = dict(datos)
+        entrada["estado"] = "BLOQUEADA"
+        entrada["motivo"] = f"{type(exc).__name__}: {exc}"
+        entrada["fecha"] = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+        with open(DIARIO, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entrada, ensure_ascii=False) + "\n")
+        return entrada, exc
+
     entrada = dict(datos)
+    entrada["estado"] = "MOVIDA"
     entrada["destino"] = destino
     entrada["fecha"] = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     with open(DIARIO, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(entrada, ensure_ascii=False) + "\n")
-    return entrada
+    return entrada, None
 
 
 def revertir(ejecutar):
@@ -333,8 +347,10 @@ def revertir(ejecutar):
         entradas = [json.loads(linea) for linea in fh if linea.strip()]
     problemas = 0
     for e in reversed(entradas):
-        destino, origen = e["destino"], e["origen"]
-        if not os.path.isdir(destino):
+        if e.get("estado") == "BLOQUEADA":
+            continue
+        destino, origen = e.get("destino"), e.get("origen")
+        if not destino or not os.path.isdir(destino):
             print("[OMITIDA]   %-45s no está en cuarentena" % e["nombre"])
             continue
         if os.path.exists(origen):
@@ -350,8 +366,12 @@ def revertir(ejecutar):
             print("[DRY-RUN]   %-45s devolvería a %s (%d arch., %d B)"
                   % (e["nombre"], origen, n, b))
             continue
-        os.rename(destino, origen)
-        print("[REVERTIDA] %-45s %d archivos, %d B" % (e["nombre"], n, b))
+        try:
+            os.rename(destino, origen)
+            print("[REVERTIDA] %-45s %d archivos, %d B" % (e["nombre"], n, b))
+        except (OSError, PermissionError) as exc:
+            print("[BLOQUEADA] %-45s error al revertir: %s" % (e["nombre"], exc))
+            problemas += 1
     return 2 if problemas else 0
 
 
@@ -445,12 +465,22 @@ def main(argv=None):
         return 0
 
     os.makedirs(CUARENTENA, exist_ok=True)
+    movidas, bloqueadas_mov = [], []
     for datos in aptas:
-        entrada = mover(datos)
-        print("[MOVIDA] %-45s -> %s" % (entrada["nombre"], entrada["destino"]))
-    print("\n%d carpeta(s) en cuarentena. Diario: %s" % (len(aptas), DIARIO))
+        entrada, exc = mover(datos)
+        if exc:
+            bloqueadas_mov.append(entrada)
+            print("[BLOQUEADA] %-45s %s" % (entrada["nombre"], entrada["motivo"]))
+        else:
+            movidas.append(entrada)
+            print("[MOVIDA]    %-45s -> %s" % (entrada["nombre"], entrada["destino"]))
+
+    print("\n%d carpeta(s) en cuarentena. Diario: %s" % (len(movidas), DIARIO))
+    if bloqueadas_mov:
+        print("AVISO: %d carpeta(s) quedaron bloqueadas durante el movimiento."
+              % len(bloqueadas_mov))
     print("Revertir: python3 %s --revertir --ejecutar" % os.path.basename(__file__))
-    return 0
+    return 2 if bloqueadas_mov else 0
 
 
 if __name__ == "__main__":
