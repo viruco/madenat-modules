@@ -11,7 +11,7 @@ Este documento no autoriza nada: registra la evidencia de los 7 puntos encargado
 | 1 | Respaldo externo | `origin` correcto; **el repositorio es PÚBLICO**; `fase13-2a-lectura` **no existe** en el remoto; respaldo 1.163.365.900 B (1,1 GiB, 95 archivos) | Sin push; **respaldo movido a `G:` y verificado 95/95** (2026-10-26) |
 | 2 | Carpetas ambiguas | `config` = **dependencia viva** (excluida); `postgresql.conf` = vacía (apta); `appointment_crm` = shim no cargable (apta con reserva) | Decidido con evidencia |
 | 3 | `run_regression.sh:11` | Dos hunks: `LOG_DIR="${MADENAT_LOG_DIR:-…}"` y `set +e`/`set -e` alrededor de `docker exec`; `bash -n` OK y prueba funcional con `docker` simulado | **Aplicado** (2026-10-26) |
-| 4 | `conciliation_status` | **No hay deriva de esquema**: es una etiqueta de test faltante; reproducido y propuesto el arreglo mínimo | **Sin aplicar** |
+| 4 | `conciliation_status` | **No hay deriva de esquema**: es una etiqueta de test faltante; arreglo aplicado en los 2 archivos, con antes/después sobre copia (7 errores → 0) | **Aplicado** (2026-10-26) |
 | 5 | `.clinerules` | §6 añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
 | 6 | Cuarentena | Script `FASES/00_CUARENTENA_20261026.py` con dry-run, verificación, guarda de montaje y reversión | Sin ejecutar (92/0/2) |
 | 7 | Punteros a artefactos | 26 citas → 16 artefactos, 16/16 localizados en su `.tar.gz`; `FASES/00_INDICE_FASES.md` §4 | Aplicado |
@@ -291,29 +291,72 @@ el motivo en `test_lumber_reception.py:15-22`: «con `at_install` … los módul
 `madenat_lumber_core` (p. ej. `madenat_lumber_intake`, que aporta el campo requerido `conciliation_status`)
 todavía no están cargados ⇒ NotNullViolation al crear una Guía».
 
-### 4.5 Corrección mínima propuesta (NO aplicada)
+### 4.5 Corrección aplicada y verificación antes/después (2026-10-26)
 
-Añadir la etiqueta a las dos clases (una línea por archivo, sin tocar lógica ni datos):
+Se añadió la etiqueta a las dos clases (dos líneas por archivo: el `import` y el decorador; sin tocar lógica ni
+datos):
 
 ```diff
+--- a/madenat_lumber_core/tests/test_h5_nominal_width_and_stock_notice.py
++++ b/madenat_lumber_core/tests/test_h5_nominal_width_and_stock_notice.py
 +from odoo.tests import tagged
-+
+ from odoo.tests.common import TransactionCase
+ from ..models.utils_uom import r3
+
 +@tagged('post_install', '-at_install', 'madenat')
  class TestH5NominalWidthAndStockNotice(TransactionCase):
 ```
 
 ```diff
+--- a/madenat_lumber_core/tests/test_resolve_export_width_api.py
++++ b/madenat_lumber_core/tests/test_resolve_export_width_api.py
++from odoo.tests import tagged
+ from odoo.tests.common import TransactionCase
+ from odoo.exceptions import ValidationError
+
 +@tagged('post_install', '-at_install', 'madenat')
  class TestResolveExportWidthAPI(TransactionCase):
 ```
 
-**Lo que NO hace falta:** migración, `ALTER TABLE … DROP NOT NULL`, default en base ni restaurar el campo (nunca
-se eliminó). Ejecutar `-u` no cambiaría nada: el esquema ya coincide con el código.
+**Cómo se midió.** Copia `madenat_f4_b` (`pg_dump -Fc` + `pg_restore`, filestore copiado: 620 tablas, 88 módulos,
+13 guías, 2.243 adjuntos, idénticos a `madenat_test`), corrida **sin `-u`** —igual que la línea base C2— y
+filtrada a las dos clases:
 
-**Riesgo latente del mismo tipo:** otros archivos de test de core usan `madenat.guia.processing` sin
-`post_install` (`test_double_rounding_j2.py`, `test_ingestion_gate.py`, `test_pre_deploy_health_check.py`,
-`test_visual_dimension_l3.py`, `test_volume_labels_6c.py`). Hoy no fallan porque no crean guías en
-`at_install`; conviene revisarlos en el mismo commit si se autoriza el arreglo.
+```
+docker exec odoo18_app odoo --config=/etc/odoo/odoo.conf \
+  --database=madenat_f4_b --db-filter='^madenat_f4_b$' \
+  --http-port=8099 --http-interface=127.0.0.1 --test-enable \
+  --test-tags='/madenat_lumber_core:TestH5NominalWidthAndStockNotice,/madenat_lumber_core:TestResolveExportWidthAPI' \
+  --stop-after-init --log-level=test
+```
+
+| Momento | Fase | Resultado |
+|---|---|---|
+| **Antes** (sin etiqueta) | `at_install`, durante la carga de `madenat_lumber_core` | **`0 failed, 7 error(s) of 20 tests`** · `rc=1` · los 7 con `psycopg2.errors.NotNullViolation: null value in column "conciliation_status" of relation "madenat_guia_processing"` (6 en `TestH5NominalWidthAndStockNotice.test_01…06`, 1 en `TestResolveExportWidthAPI.test_14`) |
+| **Después** (`post_install`) | tras «88 modules loaded», con `madenat_lumber_intake` ya cargado | **`0 failed, 0 error(s) of 20 tests`** · `rc=0` |
+
+**Nota metodológica (artefacto de medición).** Antes de esta corrida se probó `-u madenat_lumber_core` sobre la
+copia y salió **verde** (0 failed, 0 error de 20). No es que el defecto no exista: con `-u`, Odoo monta el
+registro completo antes de ejecutar los tests, así que `conciliation_status` ya está en `_fields` y la columna
+`NOT NULL` se satisface con el default de ORM. El rojo solo aparece en el escenario de la línea base C2
+(**sin `-u`**), donde los módulos se cargan de forma incremental y `Intake` todavía no aportó el campo.
+
+**Lo que NO hace falta:** migración, `ALTER TABLE … DROP NOT NULL`, default en base ni restaurar el campo (nunca
+se eliminó). Ejecutar `-u` no cambia el esquema: ya coincide con el código.
+
+### 4.6 Los 5 archivos latentes (analizados, sin modificar)
+
+| Archivo | ¿Lo corre Odoo? | ¿Crea guías? | Riesgo real |
+|---|---|---|---|
+| `test_double_rounding_j2.py` | Sí (`tests/__init__.py:81`) | **No**: solo `search` sobre `madenat.guia.processing.line` y aritmética con `r3()` | Nulo hoy; latente si se le añade un `create()` de guía |
+| `test_pre_deploy_health_check.py` | Sí (`:79`) | **No**: constantes canónicas y `normalize_module_version()`, sin tocar `env` | Nulo |
+| `test_visual_dimension_l3.py` | Sí (`:83`) | **No**: `_compute_visual_dimension()` sobre la clase y `create()` de `lumber.width.s2s.map` | Nulo hoy |
+| `test_volume_labels_6c.py` | Sí (`:91`) | **No**: vistas, `product.product` y `stock.lot` | Nulo hoy |
+| `test_ingestion_gate.py` | **No**: no está importado en `tests/__init__.py` (es un arnés `pytest` con `MagicMock`) | No | Ninguno: no forma parte de la suite de Odoo |
+
+**Verificación empírica** (misma copia, sin `-u`, filtrada a las 4 clases que Odoo sí ve):
+`0 failed, 0 error(s) of 15 tests`, `rc=0`, ejecutadas en `at_install`. Confirma el diagnóstico: no fallan porque
+**ninguna crea una guía**, la única operación afectada por el campo requerido de Intake. No se modificaron.
 
 ---
 
@@ -481,7 +524,7 @@ la cita sigue siendo trazable después de la cuarentena.
 ## 9. Estado al cierre y pendientes
 
 **No ejecutado (por instrucción):** borrado definitivo, `mv` real a cuarentena, `git push`, diff del skip de
-xlsx (D6), corrección de `conciliation_status`.
+xlsx (D6) y migración/esquema de `conciliation_status` (no hace falta).
 
 **Servicios y datos:** `madenat_test` intacta (13 guías, 88 módulos); `odoo18_app` y `odoo18_db` en marcha;
 las 94 carpetas originales siguen en la raíz; no queda ninguna base temporal (`madenat_f4_probe` eliminada).
@@ -493,7 +536,7 @@ las 94 carpetas originales siguen en la raíz; no queda ninguna base temporal (`
 | 1 | Decidir visibilidad del repositorio (hoy **público**) antes de cualquier `push` | Decisión del usuario |
 | 2 | ~~Indicar destino de la copia externa~~ → **hecho el 2026-10-26**: movida a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`) y verificada 95/95. Queda decidir si además se duplica a un **medio USB extraíble** | Decisión del usuario |
 | 3 | ~~Aplicar el diff de `run_regression.sh` (punto 3)~~ → **hecho el 2026-10-26**: los dos hunks aplicados y las tres pruebas repetidas (`.exit` = `3` en el fallo) | — |
-| 4 | Aplicar `@tagged('post_install', …)` en los 2 archivos de test (punto 4.5) | OK explícito |
+| 4 | ~~Aplicar `@tagged('post_install', …)` en los 2 archivos de test (punto 4.5)~~ → **hecho el 2026-10-26**: antes `0 failed, 7 errors of 20`; después `0 failed, 0 errors of 20` | — |
 | 5 | Ejecutar la cuarentena (`--ejecutar --tanda A`, luego `--tanda B`) | Orden explícita |
 | 6 | Aplicar el diff del skip de xlsx (D6) | OK explícito |
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 from ..models.utils_uom import (
@@ -9,6 +10,7 @@ from ..models.utils_uom import (
     calculate_volume_metric_m3,
 )
 
+@tagged('post_install', '-at_install', 'madenat')
 class TestResolveExportWidthAPI(TransactionCase):
     """Pruebas unitarias para la API única de resolución de ancho de exportación (H4 / AD-130)."""
 

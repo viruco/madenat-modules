@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from ..models.utils_uom import r3
 
+@tagged('post_install', '-at_install', 'madenat')
 class TestH5NominalWidthAndStockNotice(TransactionCase):
     """Pruebas para corrección E3 (ancho nominal en exportación) y aviso E4 (chatter en lote) (H5-C)."""
 

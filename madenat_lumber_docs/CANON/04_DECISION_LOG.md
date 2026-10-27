@@ -1,8 +1,9 @@
 # 04 — Decision Log
 
 **Módulo:** MADENAT Lumber Core
-**Versión documental:** 12.58.0
-**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: AD-135/punto 3 pasa a «aplicado» (dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` para que el `.exit` se escriba también al fallar; `bash -n` OK y las tres pruebas repetidas), con lo que R-E8-2 y R-F4-3 quedan cerrados y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada para la cuarentena. Versión 04 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 12.59.0
+**Última actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: AD-135/punto 4 pasa a «aplicado» (`@tagged('post_install', '-at_install', 'madenat')` en `TestH5NominalWidthAndStockNotice` y `TestResolveExportWidthAPI`, con evidencia antes/después sobre la copia `madenat_f4_b` sin `-u`: 7 errores → 0) y se documenta el análisis de R-F4-4; se repara además un párrafo huérfano de AD-135 sobre R-E8-4. Versión 04 12.58.0 → 12.59.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: AD-135/punto 3 pasa a «aplicado» (dos hunks: `LOG_DIR` por `MADENAT_LOG_DIR` y `set +e`/`set -e` para que el `.exit` se escriba también al fallar; `bash -n` OK y las tres pruebas repetidas), con lo que R-E8-2 y R-F4-3 quedan cerrados y `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` deja de estar postergada para la cuarentena. Versión 04 12.57.0 → 12.58.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Respaldo movido a disco externo y cuarentena visible (post-FASE 4)**: el respaldo de 95 archivos (1.163.365.900 B) se copió a `/mnt/g/madenat_respaldos/consolidacion_20261026/` (unidad `G:`), se verificó 95/95 por `sha256` y solo entonces se borró el origen; AD-135 registra la dependencia del montaje de `G:` (el script aborta sin él, `respaldo_montado`) y el renombrado de la carpeta de cuarentena a `PENDIENTE_BORRADO_20261026/` (dry-run repetido: 92/0/2). Versión 04 12.56.0 → 12.57.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 4 (cierre seguro)**: AD-135 ampliado con el análisis de las 3 carpetas ambiguas (`config` = dependencia viva, excluida), la refutación de R-E8-1 (no hay deriva de esquema: los 7 errores son tests sin `@tagged('post_install')`), el diff de `run_regression.sh` y el arreglo de `conciliation_status` propuestos sin aplicar, `.clinerules` §6 aplicado, el script de cuarentena con dry-run (92 aptas / 0 bloqueadas / 2 excluidas) y los punteros a 16 artefactos dentro de los `.tar.gz`. Versión 04 12.55.0 → 12.56.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 3 (D7/E8/C2)**: AD-135 ampliado con el respaldo íntegro de las 94 carpetas (.tar.gz 94/94 verificados + bundle de todas las ramas), la reescritura de 85 citas a `FASES/<carpeta>/` (0 enlaces rotos, 0 citas de fase en la raíz) y la línea base de pruebas (1.067 tests, 1 failed + 7 errors, 3 omitidos), con 4 riesgos abiertos. Versión 04 12.54.0 → 12.55.0. Sin push ni despliegue. | FASE 3. -->
@@ -4424,7 +4425,7 @@ No hubo borrado, ni `mv` a cuarentena, ni `push`, ni cambios de código. Evidenc
 | 1 | Respaldo externo | `origin` = `git@github.com:viruco/madenat-modules.git`; **repositorio PÚBLICO** (`private:false`, `visibility:public`, `main` sin protección); `fase13-2a-lectura` **no existe** en el remoto (404); respaldo de 1.163.365.900 B (1,1 GiB, 95 entradas) | Sin `push`; destino externo pendiente |
 | 2 | Carpetas ambiguas | `config` **excluida** (bind mount vivo); `postgresql.conf` **apta** (0 B, 0 referencias); `appointment_crm` **apta con reserva** (fuera de `addons_path`, no registrada en la base) | Decidido con evidencia |
 | 3 | `run_regression.sh:11` | Dos hunks: `LOG_DIR="${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}"` y `set +e`/`set -e` alrededor de `docker exec`; `bash -n` OK y prueba funcional con `docker` simulado en 3 casos, con `.exit` = `3` al fallar | **Aplicado** (2026-10-26) |
-| 4 | `conciliation_status` | **R-E8-1 refutado**: no hay deriva de esquema; los 7 errores son tests `at_install` sin `@tagged('post_install')`; reproducido sobre copia con rollback | **Sin aplicar** |
+| 4 | `conciliation_status` | **R-E8-1 refutado**: no hay deriva de esquema; los 7 errores son tests `at_install` sin `@tagged('post_install')`; reproducido sobre copia con rollback. **Arreglo aplicado el 2026-10-26**: en la copia `madenat_f4_b` (sin `-u`), `0 failed, 7 error(s) of 20` → `0 failed, 0 error(s) of 20` | **Aplicado** (2026-10-26) |
 | 5 | `.clinerules` | §6 «Documentación consolidada» añadida y «Cierre» renumerado a §7; copia previa con sha256 | **Aplicado** (fuera de git) |
 | 6 | Cuarentena | `FASES/00_CUARENTENA_20261026.py`: verifica `.tar.gz`, conteo/bytes, procesos y bind mounts; mueve con `os.rename`; diario + reversión | Dry-run: 92 aptas / 0 bloqueadas / 2 excluidas; **sin ejecutar** |
 | 7 | Punteros a artefactos | 26 citas → 16 artefactos, 16/16 dentro de su `.tar.gz`; `FASES/00_INDICE_FASES.md` §4 y `FASES/00_PUNTEROS_ARTEFACTOS_F4.csv` | Aplicado |
@@ -4452,11 +4453,25 @@ El campo se creó el 2026-10-01 en `cdf2ea8` (intake `18.0.0.11.0`). Reproducci�
 campo del registro (situación de `at_install`) aparece el `psycopg2.errors.NotNullViolation` idéntico al de los
 tests. Causa: `test_h5_nominal_width_and_stock_notice.py` y `test_resolve_export_width_api.py` **no llevan
 `@tagged`**, así que corren antes de que `madenat_lumber_intake` esté cargado; los otros 48 archivos de test de
-core ya declaran `post_install` y `test_lumber_reception.py:15-22` documenta el motivo. Arreglo mínimo propuesto
-(no aplicado): añadir `@tagged('post_install', '-at_install', 'madenat')` a esas dos clases. No hace falta
-migración, `DROP NOT NULL`, default en base ni `-u`.
+core ya declaran `post_install` y `test_lumber_reception.py:15-22` documenta el motivo. Arreglo mínimo **aplicado el
+2026-10-26**: `@tagged('post_install', '-at_install', 'madenat')` en esas dos clases. No hace falta migración,
+`DROP NOT NULL`, default en base ni `-u`.
 
-   porque los xlsx de referencia no están montados ni versionados.
+**Etiquetado verificado antes/después (punto 4).** Copia `madenat_f4_b` de `madenat_test` (`pg_dump -Fc` +
+`pg_restore` + filestore: 620 tablas, 88 módulos, 13 guías, 2.243 adjuntos), corrida **sin `-u`** —el escenario de
+la línea base C2— y filtrada a las dos clases con `--test-tags`:
+
+| Momento | Fase | Resultado |
+|---|---|---|
+| Antes | `at_install`, durante la carga de `madenat_lumber_core` | `0 failed, 7 error(s) of 20 tests`, `rc=1`, 7 × `psycopg2.errors.NotNullViolation … "conciliation_status"` |
+| Después | `post_install`, tras «88 modules loaded» | `0 failed, 0 error(s) of 20 tests`, `rc=0` |
+
+**Artefacto de medición declarado.** Con `-u madenat_lumber_core` sobre la misma copia la corrida sale verde: al
+montar el registro completo antes de los tests, `conciliation_status` ya está en `_fields`. Un verde obtenido con
+`-u` **no** valida este defecto; la reproducción exige correr sin `-u`.
+
+**R-E8-4.** `TestConsolidationImportWizard.test_01`…`test_03` siguen omitiéndose porque los `.xlsx` de referencia
+no están montados ni versionados: las rutas están escritas como absolutas del host dentro del contenedor.
 
 **`run_regression.sh` (punto 3) — aplicado el 2026-10-26.** Dos hunks: `LOG_DIR` pasa a
 `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` y la llamada a `docker exec` se envuelve en
@@ -4506,8 +4521,11 @@ todos presentes en su `.tar.gz` (verificado con `tar -tzf`). Se documentaron en 
 3. **R-F4-3 (fix pendiente) — cerrado el 2026-10-26.** El diff de `run_regression.sh` está aplicado y probado, así
    que mover `FASE12_REQUERIMIENTOS_OPERACIONES_20261017` ya no hace que el script recree la carpeta en la ruta
    vieja; desaparece la postergación de la Tanda B.
-4. **R-F4-4 (tests latentes).** Otros 5 archivos de test de core usan `madenat.guia.processing` sin
-   `post_install`; hoy no fallan, pero comparten la causa raíz de los 8 rojos.
+4. **R-F4-4 (tests latentes) — analizado el 2026-10-26.** Otros 5 archivos de test de core usan
+   `madenat.guia.processing` sin `post_install`; hoy no fallan y **no se modificaron**: los 4 que Odoo sí ejecuta
+   pasan en `at_install` (`0 failed, 0 error(s) of 15 tests` en `madenat_f4_b`) porque solo leen guías, calculan
+   sobre la clase o crean `lumber.width.s2s.map`, `product.product` y `stock.lot`; `test_ingestion_gate.py` no está
+   importado en `tests/__init__.py` (arnés `pytest` con `MagicMock`). Detalle en CANON/03 §35.
 5. **R-E8-4 (sin cambios).** `TestConsolidationImportWizard` sigue omitiéndose entero dentro del contenedor
    porque los xlsx de referencia no están montados ni versionados.
 

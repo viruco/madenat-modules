@@ -1,7 +1,8 @@
 # MADENAT — Matriz de Evidencia y Validación
 
-**Versión documental:** 6.44.0
-**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §33.1 registra el destino de logs por `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` (ya no dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`) y el `.exit` que ahora se escribe también cuando la regresión falla (`set +e` alrededor de `docker exec`). Versión 03 6.43.0 → 6.44.0. Sin push ni despliegue. | FASE 4. -->
+**Versión documental:** 6.45.0
+**Fecha de actualización:** 2026-10-26  <!-- actualizado: 2026-10-26 — **Etiquetado de fase de los tests de core (post-FASE 4)**: §35 nueva con la regla `@tagged('post_install', '-at_install', 'madenat')` para toda clase que cree `madenat.guia.processing`, las 2 clases corregidas, la evidencia antes/después sobre la copia `madenat_f4_b` (7 errores → 0) y el análisis de los 5 archivos latentes de R-F4-4. Versión 03 6.44.0 → 6.45.0. Sin push ni despliegue. | FASE 4. -->
+<!-- actualizado: 2026-10-26 — **Fix de `run_regression.sh` aplicado (post-FASE 4)**: §33.1 registra el destino de logs por `${MADENAT_LOG_DIR:-/home/viruco/dev-stack/logs/regression}` (ya no dentro de `FASE12_REQUERIMIENTOS_OPERACIONES_20261017/logs`) y el `.exit` que ahora se escribe también cuando la regresión falla (`set +e` alrededor de `docker exec`). Versión 03 6.43.0 → 6.44.0. Sin push ni despliegue. | FASE 4. -->
 <!-- actualizado: 2026-10-26 — **Consolidación documental FASE 2 (E1)**: sincronización de la cabecera con la fila del índice, que ya declaraba 6.43.0 / 2026-10-26 al registrar §34 (AD-134) en `1c14206`. Sin cambio de contenido. Sin push ni despliegue. | FASE 2. -->
 <!-- actualizado: 2026-10-19 — §33 SUITE DE PRUEBAS BLOQUE 6 (AD-127): 26 pruebas unitarias nuevas distribuidas en core, intake e ingestion engine; referencia al script oficial madenat_lumber_core/scripts/run_regression.sh. Total suite acumulada: 1.565 + 26 = 1.591 pruebas. Versión 03 6.41.0 → 6.42.0. Sin commit/push. -->
 <!-- actualizado: 2026-10-18 — §32 SUITE DE PRUEBAS BLOQUE 5 (AD-126): 14 pruebas unitarias (4 en test_lumber_thickness_real_map_5a, 5 en test_vol_physical_real_5b, 5 en test_volume_comparison_5c); desglose nominal de las 10 fallas preexistentes de regresión (6 en core, 4 en logistics); corrección de atribución errónea "de costing". Total esperado en suite: 1.551 + 14 = 1.565 pruebas. Versión 03 6.40.0 → 6.41.0. Sin commit/push. -->
@@ -1711,4 +1712,42 @@ ahora espera `state == 'previewed'` (antes `'draft'`) y exige huella de lectura.
 **Resultado de la suite del módulo (madenat_test, 2026-10-26):** `541 tests` ejecutados
 (`445 post-tests`), **0 failed, 0 error**. Los `ERROR` de `pg_advisory_xact_lock` en el log pertenecen a
 `TestDeleteConcurrency.test_01`, prueba que provoca el timeout de bloqueo a propósito.
+
+---
+
+## 35. ETIQUETADO DE FASE EN LAS PRUEBAS DE `madenat_lumber_core` (FASE 4, AD-135)
+
+**Regla.** Toda clase de prueba que cree un `madenat.guia.processing` debe declarar
+`@tagged('post_install', '-at_install', 'madenat')`: con la etiqueta por defecto (`standard`, `at_install`) la
+clase corre durante la carga de `madenat_lumber_core`, **antes** de que `madenat_lumber_intake` aporte el campo
+requerido `conciliation_status` (`intake_guia_processing.py:159`, `required=True`, `default='not_compared'`), y
+el `create()` falla con `psycopg2.errors.NotNullViolation`. Es el mismo motivo que documenta
+`test_lumber_reception.py:15-22`.
+
+**Corregido el 2026-10-26** (dos líneas por archivo, sin tocar lógica ni datos):
+
+| Archivo | Clase | Efecto |
+|---|---|---|
+| `madenat_lumber_core/tests/test_h5_nominal_width_and_stock_notice.py` | `TestH5NominalWidthAndStockNotice` (6 pruebas) | pasa de `at_install` a `post_install` |
+| `madenat_lumber_core/tests/test_resolve_export_width_api.py` | `TestResolveExportWidthAPI` (14 pruebas, `test_14` fallaba) | ídem |
+
+**Evidencia antes/después** (copia `madenat_f4_b` de `madenat_test`, corrida **sin `-u`**, `--test-tags` filtrado
+a las dos clases, `--log-level=test`):
+
+| Momento | Fase | Resultado |
+|---|---|---|
+| Antes | `at_install` | `0 failed, 7 error(s) of 20 tests`, `rc=1`, 7 × `NotNullViolation … "conciliation_status"` |
+| Después | `post_install` (tras «88 modules loaded») | `0 failed, 0 error(s) of 20 tests`, `rc=0` |
+
+**Nota de método.** La reproducción exige correr **sin `-u`** (como la línea base `FASES/00_LINEA_BASE_C2.md`).
+Con `-u` sobre la copia la corrida sale verde: Odoo monta el registro completo antes de los tests y el campo ya
+está en `_fields`. Un «verde» obtenido con `-u` **no** valida este defecto.
+
+**Archivos revisados y no modificados** (`R-F4-4`): `test_double_rounding_j2.py`, `test_pre_deploy_health_check.py`,
+`test_visual_dimension_l3.py` y `test_volume_labels_6c.py` corren en `at_install` y hoy pasan
+(`0 failed, 0 error(s) of 15 tests` en la misma copia) porque **ninguno crea guías**: solo leen guías, calculan
+sobre la clase o crean `lumber.width.s2s.map`, `product.product` y `stock.lot`. `test_ingestion_gate.py` **no
+forma parte de la suite de Odoo**: no está importado en `tests/__init__.py` y es un arnés `pytest` con
+`MagicMock`. Riesgo latente: si alguna de las cuatro primeras incorpora un `create()` de guía, deberá llevar la
+misma etiqueta.
 
