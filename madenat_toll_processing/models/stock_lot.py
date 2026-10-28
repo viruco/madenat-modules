@@ -54,12 +54,13 @@ class StockLot(models.Model):
     
     def action_view_source_lots(self):
         self.ensure_one()
+        source_lots = self.toll_order_id.source_lot_ids if self.toll_order_id else (self.parent_lot_id if hasattr(self, 'parent_lot_id') and self.parent_lot_id else self.env['stock.lot'])
         return {
             'type': 'ir.actions.act_window',
             'name': 'Lotes Origen',
             'res_model': 'stock.lot',
             'view_mode': 'list,form',
-            'domain': [('id', 'in', self.source_lot_ids.ids)],
+            'domain': [('id', 'in', source_lots.ids)],
             'context': {
                 'search_default_group_by_origin_reception': 1,
             },
