@@ -31,6 +31,7 @@
               name="Ingreso de Madera New"
               parent="madenat_lumber_core.menu_ops_reception_cat"
               sequence="40"
+              active="0"
               groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_cost_auditor"/>
 
 
@@ -38,5 +39,6 @@
               parent="menu_madenat_ingestion_root"
               name="Documentos de Ingesta"
               action="action_madenat_ingestion_document"
+              active="0"
               sequence="10"/>
 </odoo>
