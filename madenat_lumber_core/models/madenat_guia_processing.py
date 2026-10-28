@@ -2153,7 +2153,7 @@ class MadenatGuiaProcessing(models.Model):
         if not (self.excel_attachment_id or self.excel_file):
             raise UserError("❌ Falta el archivo Excel de Packing.")
 
-        self.processing_line_ids.unlink()
+        self.sudo().processing_line_ids.unlink()  # staging interno; acceso ya validado arriba
 
         archivo_excel = self.excel_attachment_id or self._store_binary_as_attachment('excel_file', 'excel_filename', 'Packing Excel')
         packing_data = self._parse_packing_excel(archivo_excel)
