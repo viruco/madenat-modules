@@ -6355,7 +6355,7 @@ class MadenatGuiaProcessing(models.Model):
             # 3) Reset DOCUMENTAL: staging regenerable + cabecera. Se preservan
             #    lotes, pickings, moves y move lines (historial físico).
             if self.processing_line_ids:
-                self.processing_line_ids.unlink()
+                self.sudo().processing_line_ids.unlink()  # staging regenerable; rol validado en el wizard
                 self.invalidate_recordset(['processing_line_ids'])
             if self.lot_ids:
                 # Vínculo operativo desvinculado; la identidad documental
