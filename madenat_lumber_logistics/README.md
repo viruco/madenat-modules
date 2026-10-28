@@ -72,15 +72,14 @@ Transfiere lotes de un contenedor a otro (rolleo). Valida que los contenedores s
 
 ### lumber.consolidation.import.wizard
 
-⚠️ **ARCHIVADO — NO ACTIVO**
+✅ **ACTIVO — REACTIVADO BAJO AD-133 (Bloque 7.2)**
 
-Este archivo existe en el repositorio (`wizards/lumber_consolidation_import_wizard.py`) pero **no está importado, registrado ni expuesto** en el sistema. Fue diseñado para importar consolidación masiva desde Excel (formato LISTADO-TARJAS-MN), pero su lógica es incompatible con el modelo actual:
+Asistente para la importación y conciliación masiva de consolidación de tarjas desde planillas Excel con formato de doble bloque (Exportación a la izquierda y Compra Nominal a la derecha):
 
-- Intenta escribir `container_id` en `stock.lot` (campo inexistente)
-- Busca por `supplier_label` (no es campo de `stock.lot`)
-- Duplica writes manuales de `estado_trazabilidad` que `_inverse_lot_ids()` ya maneja
-
-**No usar en producción.** El flujo soportado para asignación de lotes a contenedores es `lumber.container.lot.wizard`.
+- Procesa archivos de consolidación externa (formato LISTADO-TARJAS-MN).
+- Captura paquetes sin etiqueta o sin coincidencia unívoca en la cola de pendientes (`lumber.consolidation.import.pending`).
+- Ejecuta comparación analítica de volúmenes contra el sistema con tolerancia ±0,001 m³ sin alterar inventario de stock directamente.
+- Integrado y expuesto operativamente bajo Logística de Exportación conforme a la directriz AD-133.
 
 ## Consideraciones técnicas
 
