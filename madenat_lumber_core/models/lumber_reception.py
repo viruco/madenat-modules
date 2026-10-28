@@ -419,7 +419,7 @@ class LumberReceptionLine(models.Model):
     
     # Redefinimos el campo del Mixin para que deje de ser "Físico" y sea "Exportación"
     vol_shipment_m3 = fields.Float(
-        string="Vol. Exp (m³)", 
+        string="Vol. Export (m³)", 
         digits=(12, 3),  # ✅ Precisión 3 decimales
         compute="_compute_export_values", # 🔗 Conectado
         store=True,

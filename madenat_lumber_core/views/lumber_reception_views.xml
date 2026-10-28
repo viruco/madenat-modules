@@ -443,7 +443,7 @@
                                                column_invisible="parent.ingestion_profile == 'f5085'"/>
                                         <field name="pieces" string="Pzas" readonly="1" sum="Total Pzas"/>
                                                                                                                         
-                                        <field name="vol_purchase_m3" string="Volumen Ingreso (m³)" sum="Total Ingreso" decoration-bf="1" decoration-info="1" digits="[16, 3]"/>
+                                        <field name="vol_purchase_m3" string="Vol. Compra (m³)" sum="Total Compra" decoration-bf="1" decoration-info="1" digits="[16, 3]"/>
                                         <field name="currency_id" column_invisible="1"/>
                                         <field name="cost_clp_unit" string="Costo x Lote (CLP)" sum="Total Costo" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
                                     </list>
