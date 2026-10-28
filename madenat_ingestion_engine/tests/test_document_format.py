@@ -24,6 +24,7 @@ from odoo.addons.madenat_lumber_core.models.ingestion_gate import Gate0PreUpload
 from odoo.addons.madenat_ingestion_engine.services.document_extractor import (
     DocumentExtractionError,
     extract_document,
+    _read_excel_rows,
 )
 
 
@@ -180,3 +181,49 @@ class TestDocumentFormatDetection(TransactionCase):
             zf.writestr("hola.txt", "no es excel")
         with self.assertRaises(DocumentExtractionError):
             extract_document(buf.getvalue(), "packing.pdf")
+
+    # ── Detección de Excel por contenido (magic bytes) ────────────────────
+    def test_excel_format_detection_xls_renombrado_a_xlsx(self):
+        """Un archivo .xls antiguo (OLE2 D0 CF 11 E0) renombrado a .xlsx se lee con el lector XLS."""
+        xls_bytes = _build_xls_bytes()
+        self.assertTrue(xls_bytes.startswith(b"\xd0\xcf\x11\xe0"))
+
+        # 1. Lector de Excel del motor (_read_excel_rows)
+        sheet_name, rows = _read_excel_rows(xls_bytes, "packing_antiguo.xlsx")
+        self.assertEqual(sheet_name, "Sheet1")
+        self.assertEqual(len(rows), 2)
+
+        # 2. Extracción de documento completa (extract_document)
+        res = extract_document(xls_bytes, "packing_antiguo.xlsx")
+        self.assertEqual(len(res.lines), 1)
+        self.assertAlmostEqual(res.lines[0].get("volume_m3"), 3.8862, places=4)
+        self.assertEqual(res.detected_profile_code, "packing_metrico_aserrada")
+
+    def test_excel_format_detection_xlsx_real(self):
+        """Un archivo .xlsx real (OOXML PK) se lee correctamente con el lector XLSX."""
+        xlsx_bytes = _build_xlsx_bytes()
+        self.assertTrue(xlsx_bytes.startswith(b"PK"))
+
+        # 1. Lector de Excel del motor (_read_excel_rows)
+        sheet_name, rows = _read_excel_rows(xlsx_bytes, "packing_real.xlsx")
+        self.assertEqual(len(rows), 2)
+
+        # 2. Extracción de documento completa (extract_document)
+        res = extract_document(xlsx_bytes, "packing_real.xlsx")
+        self.assertEqual(len(res.lines), 1)
+        self.assertAlmostEqual(res.lines[0].get("volume_m3"), 3.8862, places=4)
+
+    def test_excel_format_detection_archivo_invalido(self):
+        """Un archivo que no es OOXML ('PK') ni XLS ('D0 CF 11 E0') emite el mensaje claro en español."""
+        archivo_invalido = b"Este contenido de prueba no es un excel valido ni contiene magic bytes esperados."
+        mensaje_esperado = "El archivo no parece un Excel válido; ábrelo en Excel y guárdalo como .xlsx"
+
+        # 1. Lector de Excel del motor (_read_excel_rows)
+        with self.assertRaises(DocumentExtractionError) as ctx1:
+            _read_excel_rows(archivo_invalido, "invalido.xlsx")
+        self.assertEqual(str(ctx1.exception), mensaje_esperado)
+
+        # 2. Extracción de documento completa (extract_document)
+        with self.assertRaises(DocumentExtractionError) as ctx2:
+            extract_document(archivo_invalido, "invalido.xlsx")
+        self.assertEqual(str(ctx2.exception), mensaje_esperado)

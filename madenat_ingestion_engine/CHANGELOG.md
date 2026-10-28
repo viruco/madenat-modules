@@ -6,6 +6,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [18.0.1.5.1] - 2026-10-28
 - Desactivado menú "Ingreso de Madera New" en ingestion_menu.xml conforme a AD-78.
+- Detección de formato Excel por primeros bytes (OOXML = 'PK', XLS antiguo = D0 CF 11 E0) y mensaje claro si no es válido.
 
 ## [18.0.1.5.0] - 2026-10-27
 

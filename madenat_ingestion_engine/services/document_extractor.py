@@ -329,22 +329,32 @@ def _read_xls_rows(file_bytes, filename):
     return str(first_sheet_name), rows
 
 
+# Magic bytes para detección de formato Excel por contenido:
+# - OOXML: contenedor ZIP, inicia con "PK" (0x50 0x4B)
+# - XLS antiguo: OLE2 Compound Document, inicia con D0 CF 11 E0
+_OOXML_MAGIC = b"PK"
+_XLS_LEGACY_MAGIC = b"\xd0\xcf\x11\xe0"
+_INVALID_EXCEL_MSG = (
+    "El archivo no parece un Excel válido; ábrelo en Excel y guárdalo como .xlsx"
+)
+
+
 def _read_excel_rows(file_bytes, filename, detected_format=None):
-    """Lee filas de Excel eligiendo el lector por el formato binario detectado.
+    """Lee filas de Excel eligiendo el lector por los primeros bytes del archivo.
 
-    - xlsx → openpyxl.
-    - xls (OLE2) → pandas + xlrd.
-    - otro  → DocumentExtractionError (nunca openpyxl sobre OLE2).
+    - OOXML (inicia con b'PK') → openpyxl (_read_xlsx_rows).
+    - XLS antiguo (inicia con D0 CF 11 E0) → pandas + xlrd (_read_xls_rows).
+    - Otro → DocumentExtractionError con mensaje claro en español.
     """
-    fmt = detected_format or detect_document_format(file_bytes)
-
-    if fmt == "xlsx":
+    if file_bytes and file_bytes.startswith(_OOXML_MAGIC):
         return _read_xlsx_rows(file_bytes, filename)
-    if fmt == "xls":
+    if file_bytes and file_bytes.startswith(_XLS_LEGACY_MAGIC):
         return _read_xls_rows(file_bytes, filename)
 
-    raise DocumentExtractionError(
-        f"Formato de Excel no soportado para '{filename}' (detectado: {fmt}).")
+    raise DocumentExtractionError(_INVALID_EXCEL_MSG)
+
+
+read_excel_rows = _read_excel_rows
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1587,23 +1597,19 @@ def extract_document(file_bytes, filename, column_profile=None):
     if detected == "pdf":
         return _extract_pdf(file_bytes, filename, column_profile)
 
-    if detected in ("xls", "xlsx"):
-        sheet_name, rows = _read_excel_rows(file_bytes, filename, detected)
-        if not rows:
-            raise DocumentExtractionError(f"El archivo Excel '{filename}' está vacío.")
+    # Lector de Excel por contenido (detecta OOXML por 'PK', XLS por 'D0 CF 11 E0')
+    sheet_name, rows = _read_excel_rows(file_bytes, filename, detected)
+    if not rows:
+        raise DocumentExtractionError(f"El archivo Excel '{filename}' está vacío.")
 
-        profile, header_idx, mapping = _select_profile_and_mapping(rows, column_profile)
-        lines, warnings = _build_lines(rows, header_idx, mapping, profile)
-        header = _extract_excel_header(rows, header_idx, profile.get("header_extra_fields", []))
+    profile, header_idx, mapping = _select_profile_and_mapping(rows, column_profile)
+    lines, warnings = _build_lines(rows, header_idx, mapping, profile)
+    header = _extract_excel_header(rows, header_idx, profile.get("header_extra_fields", []))
 
-        return DocumentExtractionResult(
-            header=header,
-            lines=lines,
-            warnings=warnings,
-            detected_profile_code=profile.get("code"),
-            sheet_name_used=sheet_name,
-        )
-
-    raise DocumentExtractionError(
-        f"Formato de documento no reconocido o corrupto para '{filename}'."
+    return DocumentExtractionResult(
+        header=header,
+        lines=lines,
+        warnings=warnings,
+        detected_profile_code=profile.get("code"),
+        sheet_name_used=sheet_name,
     )
