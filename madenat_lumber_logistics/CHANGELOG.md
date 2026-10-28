@@ -4,6 +4,9 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.41.1] - 2026-10-28
+- Actualizada documentación en README.md reflejando reactivación del asistente de consolidación de tarjas bajo AD-133.
+
 ## [18.0.1.41.0] - 2026-10-21
 
 ### Added

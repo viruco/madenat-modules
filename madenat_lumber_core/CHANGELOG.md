@@ -1,3 +1,6 @@
+## [18.0.6.25.1] - 2026-10-28
+- Unificados rótulos de volumen a "Vol. Compra (m³)" en formulario de recepción y "Vol. Export (m³)" en modelo.
+
 ## [18.0.6.25.0] - 2026-10-21
 
 ### Added

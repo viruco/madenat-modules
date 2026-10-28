@@ -4,6 +4,9 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.5.1] - 2026-10-28
+- Desactivado menú "Ingreso de Madera New" en ingestion_menu.xml conforme a AD-78.
+
 ## [18.0.1.5.0] - 2026-10-27
 
 ### Added
