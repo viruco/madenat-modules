@@ -551,3 +551,39 @@ class TestGuiaProcessingExcelParser(TransactionCase):
         self.assertEqual(len(result['lineas']), 3)
         lotes = [l['N° LOTE'] for l in result['lineas']]
         self.assertEqual(lotes, ['L-BLOCK', 'L-BLOCK', 'L-BLOCK'])
+
+    def test_read_excel_sheets_sin_extension(self):
+        """Verifica que _read_excel_sheets lee archivos sin extensión en filestore (XLSX y XLS)."""
+        guia = self._make_guia('NO-EXT')
+
+        # 1. XLSX real copiado a archivo temporal SIN extensión
+        fd_xlsx, path_xlsx = tempfile.mkstemp(suffix='')
+        try:
+            with os.fdopen(fd_xlsx, 'wb') as fh:
+                fh.write(_build_xlsx_bytes())
+            sheets_xlsx = guia._read_excel_sheets(path_xlsx)
+            self.assertEqual(len(sheets_xlsx), 1)
+            sheet_name, rows = sheets_xlsx[0]
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[0][0], 'Codigo')
+            self.assertEqual(rows[1][0], 'C001')
+            self.assertAlmostEqual(rows[1][3], 3.8862, places=4)
+        finally:
+            if os.path.exists(path_xlsx):
+                os.unlink(path_xlsx)
+
+        # 2. XLS real copiado a archivo temporal SIN extensión
+        fd_xls, path_xls = tempfile.mkstemp(suffix='')
+        try:
+            with os.fdopen(fd_xls, 'wb') as fh:
+                fh.write(_build_xls_bytes())
+            sheets_xls = guia._read_excel_sheets(path_xls)
+            self.assertEqual(len(sheets_xls), 1)
+            sheet_name, rows = sheets_xls[0]
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[0][0], 'Codigo')
+            self.assertEqual(rows[1][0], 'C001')
+            self.assertAlmostEqual(rows[1][3], 3.8862, places=4)
+        finally:
+            if os.path.exists(path_xls):
+                os.unlink(path_xls)

@@ -10,6 +10,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_compare
 from psycopg2.errors import IntegrityError
+import io
 import pandas as pd
 import pdfplumber
 import re 
@@ -3910,7 +3911,8 @@ class MadenatGuiaProcessing(models.Model):
             return sheets
 
         if _fmt == 'xlsx':
-            wb = load_workbook(file_path, data_only=True, read_only=True)
+            with open(file_path, 'rb') as _fh:
+                wb = load_workbook(io.BytesIO(_fh.read()), data_only=True, read_only=True)
             sheets = []
             for ws in wb.worksheets:
                 rows = [list(row) for row in ws.iter_rows(values_only=True)]
