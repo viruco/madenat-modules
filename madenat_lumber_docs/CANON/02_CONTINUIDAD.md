@@ -2340,12 +2340,13 @@ Consultas oficiales B y A.2 ejecutadas en las tres tablas con coincidencia 100% 
 8. *(En curso)*: `docs(continuidad): C1-C3 — actualización documental de cierre de jornada 2026-10-19 (AD-127, CANON 02, 03, 04, 05, 12, 17 e INDICE)`
 
 ### 20.2 Versiones de Módulos al Cierre
-- `madenat_lumber_core`: **18.0.6.22.0**
-- `madenat_lumber_intake`: **18.0.0.19.0**
+- `madenat_lumber_core`: **18.0.6.25.1**
+- `madenat_lumber_intake`: **18.0.0.22.0**
 - `madenat_ingestion_engine`: **18.0.1.3.0**
-- `madenat_lumber_shipping`: 18.0.1.7.0 (sin cambios)
-- `madenat_lumber_logistics`: 18.0.1.8.0 (sin cambios)
-- `madenat_toll_processing`: 18.0.1.1.0 (sin cambios)
+- `madenat_lumber_shipping_core`: **18.0.1.0.0**
+- `madenat_lumber_logistics`: **18.0.1.41.1**
+- `madenat_toll_processing`: **18.0.1.0.2**
+- `madenat_lumber_costing`: **18.0.1.0.0**
 - `madenat_lumber_docs`: Canon v12 (sin cambios de código)
 
 ### 20.3 Resultados de Pruebas y Acreditación de Regresión
