@@ -144,3 +144,14 @@ workcopies y expedientes no aprobados.
 | Fecha | Cambio | Responsable |
 |---|---|---|
 | 2026-10-07 | Creación — limpieza acotada aprobada (`gate/` + base aislada `busqintake_iso_20261007`); inventario fase 1 y pendientes registrados | Intervención IA (aprobada por usuario) |
+
+---
+
+## Registro de limpieza — 2026-10-29 (Lote 5 / NEW-01)
+
+Bases eliminadas por instrucción del responsable del proyecto:
+- `tmp_core_check` (temporal; creada y borrada en la validación de instalación limpia de `madenat_lumber_shipping_core`).
+- `test_blank_fix`, `test_madenat_fase2`, `NOMBRE_BD` (0 referencias en `madenat_lumber_docs`).
+- `repr_test_20261007` (Bloque B; 0 referencias en `madenat_lumber_docs`; recreable desde `madenat_test`).
+
+Conservadas: `madenat_test`, `madenat_test_core`, `madenat_test_ref`, `madenat_test_fresh`, `oracle_f31_*`, `f31_test_20261003_1410`, `pre02_*`.
