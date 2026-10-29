@@ -39,9 +39,8 @@ MADENAT Lumber (menu_madenat_root — madenat_lumber_reports)
 │       ├── ⚖️ Ajustes Físicos (Stock)
 │       └── Procesamiento Externo (toll_processing)
 │
-├── 🚢 Exportaciones (menu_export_main) ................... seq=20
-│   ├── Embarques y Naves (logistics)
-│   └── Bookings y Reservas (shipping_core)
+├── 🚢 Exportaciones (menu_export_main) [INACTIVO active="0" en core] ... seq=20
+│   └── *(Nota DISC-LOG-15: Inactivado por diseño P2-3; la operativa real de exportaciones reside bajo Logística Exportación menu_lumber_logistics)*
 │
 ├── 📊 Reportes y Listados (menu_madenat_reports_main) .... seq=25
 │   ├── 1. Comercial (Según Compra)
@@ -282,7 +281,7 @@ MADENAT Lumber (menu_madenat_root) [core]
 │       └── Procesamiento Externo (menu_toll_processing_root) [toll] (G:group_toll_processing_user)
 │           └── Órdenes Procesamiento (menu_toll_processing_orders) [toll] (A:action_toll_processing_order) (G:group_toll_processing_user)
 │
-├── 🚢 Exportaciones (menu_export_main) [core]
+├── 🚢 Exportaciones (menu_export_main) [core] *(INACTIVO active="0" en lumber_core_menu.xml:257; la operativa reside bajo menu_lumber_logistics)*
 │   └── Embarques y Naves (menu_lumber_logistics) [logistics]
 │       ├── Embarques (menu_lumber_export_shipment) [logistics] (A:action_lumber_export_shipment)
 │       ├── Consolidación (menu_lumber_container_consolidation) [logistics] (A:action_lumber_container_consolidation)
