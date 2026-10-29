@@ -22,3 +22,4 @@ from . import madenat_sv_imputation
 # 6. Bloque A/B/C (CANON/19 §19.11, 2026-10-10): relación de conciliación
 #    envío↔retorno (persistente y documental).
 from . import madenat_processor_return_link
+from . import shipping_vessel_inherit
