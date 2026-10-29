@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- AD-92 (2026-10-05): botón de embarques en motonave, ahora en logistics -->
+    <record id="view_shipping_vessel_form_inherit_logistics" model="ir.ui.view">
+        <field name="name">shipping.vessel.form.inherit.logistics</field>
+        <field name="model">shipping.vessel</field>
+        <field name="inherit_id" ref="madenat_lumber_shipping_core.view_shipping_vessel_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_open_vessel_shipments"
+                        type="object"
+                        string="Ver Embarques de esta Motonave"
+                        class="btn-secondary"
+                        groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

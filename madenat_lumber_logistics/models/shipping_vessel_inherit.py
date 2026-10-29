@@ -1,5 +1,6 @@
 from odoo import _, models
 
+
 class ShippingVesselInherit(models.Model):
     _inherit = 'shipping.vessel'
 

@@ -83,7 +83,7 @@ Este módulo extiende la funcionalidad de inventario para la gestión de:
         
         # 7. 🚀 BI & PROFITABILITY (Fix para error de dependencia de campos)
         # Este archivo contiene las vistas Pivot y Graph que usan campos de 'Logistics'
-        'views/lumber_profitability_views.xml',
+        'views/shipping_vessel_inherit_view.xml',
     ],
     
     'demo': [],
