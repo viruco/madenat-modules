@@ -270,10 +270,13 @@ MADENAT Lumber (menu_madenat_root) [core]
 │   ├── Abastecimiento (menu_ops_supply) [core]
 │   │   ├── 🌲 Compra Madera Bruta (menu_lumber_purchase) [purchasing] (A:action_madenat_purchase_order)
 │   │   └── 📥 Gestión de Entradas (menu_ops_reception_cat) [core]
-│   │       ├── 🪵 Madera Bruta (menu_lumber_reception_pending) [core] (A:action_lumber_reception_pending) (G:stock.group_stock_user)
+│   │       ├── 🪵 Madera Bruta (menu_lumber_reception_pending) [core] (A:action_lumber_reception_pending) (G:group_madenat_jefatura_operaciones)
 │   │       ├── 🏭 Guías Procesadas (menu_guia_processing_root) [core]
-│   │       │   └── Guías Procesadas (menu_guia_processing_list) [core] (A:action_guia_processing_list) (G:stock.group_stock_user)
-│   │       └── 📋 Historial de Ingresos (menu_lumber_reception) [core] (A:action_lumber_reception_raw_only) (G:stock.group_stock_user)
+│   │       │   └── Guías Procesadas (menu_guia_processing_list) [core] (A:action_guia_processing_list) (G:group_madenat_jefatura_operaciones)
+│   │       └── 📋 Historial de Ingresos (menu_lumber_reception) [core] (A:action_lumber_reception_raw_only) (G:group_madenat_jefatura_operaciones)
+│   │
+│   │       *(Nota DISC-OP-12: Los menús directos de recepción son de uso exclusivo de Jefatura de Operaciones.*
+│   │       *Los operadores de Operaciones gestionan las entradas mediante la Consola de Ingresos de madenat_lumber_intake).*
 │   └── Control de Lotes (menu_ops_inventory) [core]
 │       ├── ⚖️ Ajustes Físicos (Stock) (menu_madenat_inventory_adjustments) [core] (A:action_madenat_inventory_adjustments)
 │       └── Procesamiento Externo (menu_toll_processing_root) [toll] (G:group_toll_processing_user)
