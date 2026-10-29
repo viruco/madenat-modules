@@ -6,6 +6,15 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [18.0.1.42.0] - 2026-10-29
 
+## [18.0.1.43.0] - 2026-10-29
+
+### Changed
+- b54de96 madenat_lumber_logistics: registra modelo shipping_vessel_inherit en __init__
+- 9b5a4b4 madenat_lumber_logistics: botón de embarques en motonave (vista heredada + manifest)
+- 1de4bab madenat_lumber_logistics: pruebas del botón de buque (logistics_vessel_button) (NEW-01)
+- 2073d7a madenat_lumber_logistics: corregir test del botón y registrar import (NEW-01)
+- 50e8efa madenat_lumber_logistics: registrar import de test_vessel_button (NEW-01)
+
 ### Changed
 - **Matriz de permisos operativos y auditoría en modelos navieros (DISC-LOG-04, commit c621d1e)**:
   - **Cambio de comportamiento**: Operaciones (`madenat_lumber_core.group_madenat_operaciones`) cuenta con permisos de lectura en buques y creación/edición en viajes y reservas, pero **pierde el permiso de borrado (`unlink=0`)** en viajes (`shipping.voyage`) y reservas (`shipping.booking`). El borrado queda reservado a Jefatura (`group_madenat_jefatura`), Responsable de Inventario (`stock.group_stock_manager`) y Administrador de Envíos.
