@@ -13,13 +13,14 @@
         </field>
     </record>
     
-    <!-- MENÚ RAÍZ -->
+    <!-- RAMA BAJO CONTROL DE LOTES (OPERACIONES) -->
     <!-- groups: Solo visible para usuarios del módulo -->
     <menuitem id="menu_toll_processing_root"
-              name="Toll Processing"
-              web_icon="stock,static/description/icon.png"
+              name="Procesamiento Externo"
+              parent="madenat_lumber_core.menu_ops_inventory"
               groups="group_toll_processing_user"
-              sequence="50"/>
+              sequence="20"/>
+
     
     <!-- SUBMENÚ -->
     <menuitem id="menu_toll_processing_orders"
