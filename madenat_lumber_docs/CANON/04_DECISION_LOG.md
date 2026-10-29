@@ -583,13 +583,6 @@ Toda modificación a documentos vivos (02_CONTINUIDAD.md, 03_TESTS.md) que afect
 
 ---
 
-## 2026-10-29 — Desacople NEW-01 / AD-92 (AD-92)
-
-- Botón «Ver Embarques de esta Motonave» trasladado a `madenat_lumber_logistics`.
-- `shipping_core` ahora es agnóstico y puede instalarse solo.
-- Referencias actualizadas en docs y CHANGELOGs.
-
-
 ## 2026-06-02 — FASE 2: Modelos Persistentes + Helper Centralizado
 
 ### AD-29 — Fase 2 Migración a Modelos Persistentes con Helper Centralizado
@@ -4614,8 +4607,10 @@ Se identificó que `ING-00041` (id 41) e `ING-00052` (id 52) creados el 2026-09-
 - Tolerancia absoluta (0.01 m³): documentos masivos podrían excederla por redondeo de punto flotante.
 - Pendientes: despliegue en `madenat_test` con respaldo previo (Etapa D), verificación en UI de 40030, chequeo de consistencia entre vista previa y parser de Producto, y evaluación de la columna nominal de cierre como dato de contraste.
 
+## 2026-10-29 — Desacople NEW-01 (AD-92)
 
-
-
-
-
+- Botón «Ver Embarques de esta Motonave» trasladado a `madenat_lumber_logistics`.
+- `shipping_core` ahora es agnóstico y puede instalarse solo.
+- Referencias actualizadas en docs y CHANGELOGs.
+- Validación: `shipping_security` 0 failed de 3; `logistics_shipping_access` 0 failed de 3; `test_21` de `test_vessel_rollover.py` 0 failed de 1; `logistics_vessel_button` 0 failed de 3.
+- Instalación limpia de `madenat_lumber_shipping_core` sin `madenat_lumber_core` ni logistics, sin vistas con el botón.
