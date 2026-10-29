@@ -4,6 +4,23 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [18.0.1.42.0] - 2026-10-29
+
+### Changed
+- **Matriz de permisos operativos y auditoría en modelos navieros (DISC-LOG-04, commit c621d1e)**:
+  - **Cambio de comportamiento**: Operaciones (`madenat_lumber_core.group_madenat_operaciones`) cuenta con permisos de lectura en buques y creación/edición en viajes y reservas, pero **pierde el permiso de borrado (`unlink=0`)** en viajes (`shipping.voyage`) y reservas (`shipping.booking`). El borrado queda reservado a Jefatura (`group_madenat_jefatura`), Responsable de Inventario (`stock.group_stock_manager`) y Administrador de Envíos.
+  - Auditoría (`madenat_lumber_core.group_madenat_auditoria`): solo lectura estricta (`1,0,0,0`) sobre buques, viajes y reservas navieras.
+  - Se añade suite de pruebas `tests/test_shipping_access.py` (tag: `logistics_shipping_access`) validando Operaciones, Jefatura y Auditoría.
+- **Búsqueda robusta de etiquetas en Asistente de Consolidación (DISC-OP-01, DISC-LOG-01, commit bd918ee)**:
+  - Sustitución de `supplier_label` por `external_labels` en `lumber.consolidation.import.wizard`.
+  - Estrategia de búsqueda en dos pasos: búsqueda exacta y fallback mediante `ilike` + token parsing case-insensitive por comas (`strip()`), evitando falsos positivos por subcadenas.
+  - Control de ambigüedad: ante múltiples lotes coincidentes, la fila se envía a pendientes (`lumber.consolidation.import.pending`) sin enlazar.
+  - Pruebas automatizadas en `tests/test_consolidation_import_wizard.py` (tag: `consolidation_external_labels`).
+
+### Removed
+- **Método obsoleto en lumber.container (DISC-LOG-03, commit 2d3ba2d)**:
+  - Eliminación de la implementación errónea y redundante de `action_remove_lot_granular` en `lumber.container`. La acción canónica se mantiene intacta en `stock.lot` (`lumber_export_shipment.py`).
+
 ## [18.0.1.41.1] - 2026-10-28
 - Actualizada documentación en README.md reflejando reactivación del asistente de consolidación de tarjas bajo AD-133.
 
