@@ -145,12 +145,6 @@
               sequence="27"
               groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
 
-    <menuitem id="menu_madenat_processor_return_link"
-              name="Conciliación Envío–Retorno"
-              parent="menu_lumber_logistics"
-              action="action_madenat_processor_return_link"
-              sequence="27"
-              groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
 
     <!-- Trazabilidad en la GUÍA de retorno: qué envíos la atienden. -->
     <record id="view_madenat_guia_processing_form_return_link"
