@@ -33,19 +33,5 @@
             </field>
         </record>
         
-        <record id="action_lumber_container_consolidation" model="ir.actions.act_window">
-            <field name="name">Consolidación de Contenedores</field>
-            <field name="res_model">lumber.container</field>
-            <field name="view_mode">list,form</field>
-            <!-- A2: 'draft' no es un estado real de lumber.container.
-                 Estados reales: empty, loading, loaded, sealed, shipped.
-                 La ventana de consolidación muestra todo lo no zarpado. -->
-            <field name="domain">[('state', '!=', 'shipped')]</field> <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">
-                    Consolidar contenedores
-                </p>
-            </field>
-        </record>
-        
     </data>
 </odoo>
