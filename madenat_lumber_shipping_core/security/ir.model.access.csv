@@ -1,4 +1,12 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_shipping_vessel_user,shipping.vessel.user,model_shipping_vessel,base.group_user,1,1,1,1
-access_shipping_voyage_user,shipping.voyage.user,model_shipping_voyage,base.group_user,1,1,1,1
-access_shipping_booking_user,shipping.booking.user,model_shipping_booking,base.group_user,1,1,1,1
+access_shipping_vessel_user,shipping.vessel.user,model_shipping_vessel,group_shipping_user,1,0,0,0
+access_shipping_vessel_manager,shipping.vessel.manager,model_shipping_vessel,group_shipping_manager,1,1,1,1
+access_shipping_vessel_admin,shipping.vessel.admin,model_shipping_vessel,base.group_system,1,1,1,1
+
+access_shipping_voyage_user,shipping.voyage.user,model_shipping_voyage,group_shipping_user,1,0,0,0
+access_shipping_voyage_manager,shipping.voyage.manager,model_shipping_voyage,group_shipping_manager,1,1,1,1
+access_shipping_voyage_admin,shipping.voyage.admin,model_shipping_voyage,base.group_system,1,1,1,1
+
+access_shipping_booking_user,shipping.booking.user,model_shipping_booking,group_shipping_user,1,0,0,0
+access_shipping_booking_manager,shipping.booking.manager,model_shipping_booking,group_shipping_manager,1,1,1,1
+access_shipping_booking_admin,shipping.booking.admin,model_shipping_booking,base.group_system,1,1,1,1
