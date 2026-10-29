@@ -550,6 +550,10 @@ distintos); no es una salida concreta ni un conjunto seguro de cargas afectadas.
 - **Motonave:** el botón de la ficha pasa a **consulta** (`action_open_vessel_shipments`),
   sin reasignación masiva desde la Motonave.
 
+### NEW-01 — Desacople del botón de Embarques de Motonave (AD-92, 2026-10-29)
+
+El botón «Ver Embarques de esta Motonave» y su método `action_open_vessel_shipments` fueron trasladados de `madenat_lumber_shipping_core` a `madenat_lumber_logistics` mediante vista heredada. Ahora `shipping_core` es agnóstico y puede instalarse de forma independiente.
+
 Norma detallada: `04_DECISION_LOG.md` **AD-92**.
 
 ---
