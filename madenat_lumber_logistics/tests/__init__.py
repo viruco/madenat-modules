@@ -101,6 +101,7 @@ from . import test_consolidation_import_wizard
 from . import test_merma_dimensional_rebaja
 # DISC-LOG-04: Permisos de acceso operativo sobre modelos navieros
 from . import test_shipping_access
+from . import test_vessel_button
 
 
 
