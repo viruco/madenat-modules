@@ -583,6 +583,13 @@ Toda modificación a documentos vivos (02_CONTINUIDAD.md, 03_TESTS.md) que afect
 
 ---
 
+## 2026-10-29 — Desacople NEW-01 / AD-92 (AD-92)
+
+- Botón «Ver Embarques de esta Motonave» trasladado a `madenat_lumber_logistics`.
+- `shipping_core` ahora es agnóstico y puede instalarse solo.
+- Referencias actualizadas en docs y CHANGELOGs.
+
+
 ## 2026-06-02 — FASE 2: Modelos Persistentes + Helper Centralizado
 
 ### AD-29 — Fase 2 Migración a Modelos Persistentes con Helper Centralizado
