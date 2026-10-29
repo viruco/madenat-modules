@@ -10,6 +10,7 @@ Valida:
 """
 import base64
 import os
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 
@@ -154,3 +155,76 @@ class TestConsolidationImportWizard(TransactionCase):
             ('name', '=', 'TGBU 617425-8')
         ])
         self.assertEqual(len(containers), 1, "No debe duplicar contenedores preexistentes")
+
+
+@tagged('post_install', '-at_install', 'madenat', 'consolidation_external_labels')
+class TestConsolidationExternalLabelsLookup(TransactionCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company = cls.env.company
+        cls.uom_m3 = cls.env.ref('madenat_lumber_core.uom_m3', raise_if_not_found=False) or cls.env['uom.uom'].search([('name', '=', 'm³')], limit=1)
+        if not cls.uom_m3:
+            cls.uom_m3 = cls.env.ref('uom.product_uom_unit')
+
+        cls.vessel = cls.env['shipping.vessel'].create({'name': 'VESSEL-TEST-EXTERNAL'})
+        cls.shipment = cls.env['lumber.export.shipment'].create({
+            'name': 'EXP-EXT-TEST',
+            'vessel_id': cls.vessel.id,
+        })
+        cls.product = cls.env['product.product'].create({
+            'name': 'Mad. Aserrada Test',
+            'type': 'consu',
+            'uom_id': cls.uom_m3.id,
+            'uom_po_id': cls.uom_m3.id,
+        })
+        cls.wizard = cls.env['lumber.consolidation.import.wizard'].create({
+            'shipment_id': cls.shipment.id,
+        })
+
+        # Caso 1: Lote con etiquetas externas compuestas
+        cls.lot_single = cls.env['stock.lot'].create({
+            'name': 'LOTE-EXT-01',
+            'product_id': cls.product.id,
+            'company_id': cls.company.id,
+            'external_labels': 'D7731, E8800',
+        })
+
+        # Caso 2 & 3: Lotes con etiquetas externas ambiguas
+        cls.lot_ambig_1 = cls.env['stock.lot'].create({
+            'name': 'LOTE-AMBIG-01',
+            'product_id': cls.product.id,
+            'company_id': cls.company.id,
+            'external_labels': 'EXT-DUP, OTHER1',
+        })
+        cls.lot_ambig_2 = cls.env['stock.lot'].create({
+            'name': 'LOTE-AMBIG-02',
+            'product_id': cls.product.id,
+            'company_id': cls.company.id,
+            'external_labels': 'EXT-DUP, OTHER2',
+        })
+
+    def test_01_exact_token_match(self):
+        """1) Coincidencia exacta de token por external_labels (case-insensitive)."""
+        lot, is_ambig, _ = self.wizard._find_lot_by_label('d7731')
+        self.assertFalse(is_ambig, "No debe marcar ambigüedad si hay coincidencia exacta única")
+        self.assertEqual(lot, self.lot_single, "Debe resolver el lote correspondiente al token exacto")
+
+        # También debe coincidir con el segundo token
+        lot2, is_ambig2, _ = self.wizard._find_lot_by_label('E8800')
+        self.assertFalse(is_ambig2)
+        self.assertEqual(lot2, self.lot_single)
+
+    def test_02_substring_no_match(self):
+        """2) No-coincidencia por subcadena: 'D77' no debe coincidir con 'D7731'."""
+        lot, is_ambig, _ = self.wizard._find_lot_by_label('D77')
+        self.assertFalse(is_ambig, "No debe marcar ambigüedad para subcadena sin token exacto")
+        self.assertFalse(lot, "Subcadena parcial no debe coincidir con token más largo")
+
+    def test_03_ambiguity_detection(self):
+        """3) Ambigüedad: dos o más lotes con el mismo token externo no deben enlazarse."""
+        lot, is_ambig, amb_lots = self.wizard._find_lot_by_label('EXT-DUP')
+        self.assertTrue(is_ambig, "Debe detectar ambigüedad al haber múltiples lotes con el mismo token")
+        self.assertFalse(lot, "No debe elegir un lote arbitrario cuando hay ambigüedad")
+        self.assertEqual(len(amb_lots), 2, "Debe identificar ambos lotes ambiguos")

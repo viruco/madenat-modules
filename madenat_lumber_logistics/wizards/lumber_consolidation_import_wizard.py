@@ -57,6 +57,36 @@ class LumberConsolidationImportWizard(models.TransientModel):
         string='Filas Pendientes de Asignación Manual'
     )
 
+    def _find_lot_by_label(self, clean_label):
+        """Busca un lote en el sistema por name, ref o external_labels.
+        Retorna (lot, is_ambiguous, candidate_lots).
+        DISC-OP-01 / DISC-LOG-01.
+        """
+        lot = self.env['stock.lot'].search([('name', '=', clean_label)], limit=1)
+        if not lot:
+            lot = self.env['stock.lot'].search([('ref', '=', clean_label)], limit=1)
+        if not lot:
+            # 1) Búsqueda exacta en external_labels
+            exact_lots = self.env['stock.lot'].search([('external_labels', '=', clean_label)])
+            if len(exact_lots) == 1:
+                return exact_lots[0], False, exact_lots
+            elif len(exact_lots) > 1:
+                return self.env['stock.lot'], True, exact_lots
+            else:
+                # 2) Búsqueda de candidatos vía ilike y filtrado en Python por token exacto
+                candidates = self.env['stock.lot'].search([('external_labels', 'ilike', clean_label)])
+                target_upper = clean_label.upper()
+                matched_lots = self.env['stock.lot']
+                for cand in candidates:
+                    tokens = [t.strip().upper() for t in (cand.external_labels or '').split(',') if t.strip()]
+                    if target_upper in tokens:
+                        matched_lots |= cand
+                if len(matched_lots) == 1:
+                    return matched_lots[0], False, matched_lots
+                elif len(matched_lots) > 1:
+                    return self.env['stock.lot'], True, matched_lots
+        return lot, False, self.env['stock.lot']
+
     def action_validate_file(self):
         """Valida el archivo y extrae discrepancias sin aplicar cambios en BD."""
         self.ensure_one()
@@ -229,11 +259,25 @@ class LumberConsolidationImportWizard(models.TransientModel):
                 continue
 
             # 4. Filas CON etiqueta: buscar lote en el sistema (sin crear ni modificar)
-            lot = self.env['stock.lot'].search([('name', '=', clean_label)], limit=1)
-            if not lot:
-                lot = self.env['stock.lot'].search([('ref', '=', clean_label)], limit=1)
-            if not lot:
-                lot = self.env['stock.lot'].search([('supplier_label', '=', clean_label)], limit=1)
+            lot, is_ambiguous, _amb_lots = self._find_lot_by_label(clean_label)
+            if is_ambiguous:
+                pending_rows.append({
+                    'wizard_id': self.id,
+                    'container_code': current_container,
+                    'tarja_num': current_tarja or '',
+                    'guia': str(val_guia or '').strip(),
+                    'planta': str(val_planta or '').strip(),
+                    'subproducto': str(val_sub or '').strip(),
+                    'espesor': str(val_esp or '').strip(),
+                    'ancho': str(val_ancho or '').strip(),
+                    'largo': largo_flt,
+                    'piezas': pzas_int,
+                    'm3_exp': m3_exp_flt,
+                    'm3_nom': m3_nom_flt,
+                    'fecha': fecha_dt,
+                    'reason': _('Ambigüedad: múltiples lotes encontrados con la etiqueta externa %s.') % clean_label
+                })
+                continue
 
             if not lot:
                 pending_rows.append({
