@@ -18,6 +18,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Pruebas automatizadas en `tests/test_consolidation_import_wizard.py` (tag: `consolidation_external_labels`).
 
 ### Removed
+- **Secuencia duplicada de embarques (DISC-LOG-11, commit 51c69c6)**:
+  - Eliminación de la definición redundante de `seq_lumber_export_shipment` en `views/lumber_actions.xml`, preservando la definición en `data/sequences.xml` bajo `<data noupdate="1">` con prefijo canónico `EMB-` y `padding=5`, sin alterar contadores ni generar colisiones en base de datos.
 - **Método obsoleto en lumber.container (DISC-LOG-03, commit 2d3ba2d)**:
   - Eliminación de la implementación errónea y redundante de `action_remove_lot_granular` en `lumber.container`. La acción canónica se mantiene intacta en `stock.lot` (`lumber_export_shipment.py`).
 
