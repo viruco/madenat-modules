@@ -2,15 +2,6 @@
 <odoo>
     <data>
         
-        <!-- SECUENCIA EMBARQUES -->
-        <record id="seq_lumber_export_shipment" model="ir.sequence">
-            <field name="name">Embarque Exportación</field>
-            <field name="code">lumber.export.shipment</field>
-            <field name="prefix">EMB-</field>
-            <field name="padding">5</field>
-            <field name="company_id" eval="False"/>
-        </record>
-        
         <!-- ACCIONES -->
         <record id="action_lumber_export_shipment" model="ir.actions.act_window">
             <field name="name">Embarques de Exportación</field>
