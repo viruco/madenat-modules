@@ -3695,7 +3695,7 @@ En cumplimiento de la autorización de Mauricio para el Bloque 3, Paso 3b de la 
      - Se elimina de `utils_uom.py:get_s2s_adjustment()` la tolerancia numérica `abs(s2s_in - w_in) < 0.01`.
      - Se reemplaza por un parámetro explícito `is_s2s_inches=False` que viaja desde el normalizador de documentos (`_validar_y_enriquecer_lineas()`) cuando se detecta notación combinada explícita de pulgadas S2S (ej. `5/4x5.3/8x16`).
      - Se fija el Orden Canónico de Resolución en 4 ramas:
-       - **Rama 1 — Manual (`export_width_manual_inches`):** Prevalece sobre cualquier cálculo si es mayor a cero y tiene motivo registrado (`madenat_guia_processing_line.py:270` y `stock_lot.py:90`).
+       - **Rama 1 — Manual (`export_width_manual_inches`):** Prevalece sobre cualquier cálculo si es mayor a cero y tiene motivo registrado (`madenat_guia_processing.py:1700+` y `stock_lot.py:90`).
        - **Rama 2 — Tabla S2S activa:** Si `rough_mm` está en `lumber.width.s2s.map` activo, retorna `ancho_S2S_tabla + sobreancho` (`madenat_ingestion_config.py:171`).
        - **Rama 3 — Documental en pulgadas S2S:** Si la señal `is_s2s_inches=True` está activa, no duplica el ancho base y retorna exactamente el sobreancho (`utils_uom.py:95`). Para JCE `5/4x5.3/8x16` (231 piezas, 16 ft) produce $4,997\text{ m}^3$.
        - **Rama 4 — Directo métrico:** Si no está en tabla, aplica `rough_mm / 25.4` evaluando el umbral `madenat.direct_width_min_mm` (170 mm) y la política `madenat.out_of_table_behavior` (`madenat_ingestion_config.py:179-195`). Caso `150mm` en tabla toma S2S ($5\text{ }5/8" + 1/8" = 5,750"$).
