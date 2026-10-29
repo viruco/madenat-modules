@@ -439,6 +439,25 @@ Extiende el modelo base con campos de distribución de costos.
 
 ---
 
+## Asistentes Operativos: Zarpe (B-01) y Regularización (R1)
+
+### 1. LumberShipmentZarpeWizard (`lumber.shipment.zarpe.wizard`)
+- **Archivo y Líneas:** `madenat_lumber_logistics/wizards/lumber_shipment_zarpe_wizard.py:31-123`
+- **Propósito (AD-88 / B-01):** Asistente disparado cuando `lumber.export.shipment.action_set_in_transit` detecta que existen contenedores sin rebajar físicamente en el embarque.
+- **Permisos:** Visualización permitida a Operaciones, Jefatura y Gerencia (`ZARPE_OPEN_GROUPS`, l.19-23); confirmación reservada exclusivamente a Jefatura de Operaciones y Gerencia (`ZARPE_CONFIRM_GROUPS`, l.24-27).
+- **Operaciones disponibles:**
+  - `action_rebajar_y_zarpar` (l.70-99): Ejecuta `container.action_rebajar()` individualmente bajo savepoints de base de datos para cada contenedor pendiente. Si todos se rebajan con éxito, transiciona el embarque a zarpe (`_set_in_transit`).
+  - `action_zarpar_con_excepcion` (l.101-122): Permite confirmar el zarpe manteniendo contenedores sin rebajar bajo la excepción B-01, exigiendo un motivo mandatorio de al menos 20 caracteres (`ZARPE_B01_MIN_REASON = 20`, l.28) y registrando la auditoría de desviación sin rebaja inmediata de stock.
+
+### 2. LumberB01RegularizationWizard (`lumber.b01.regularization.wizard`)
+- **Archivo y Líneas:** `madenat_lumber_logistics/wizards/lumber_b01_regularization_wizard.py:26-172`
+- **Propósito (Sub-bloque 4A / R1):** Asistente para la rebaja extemporánea de contenedores pertenecientes a embarques ya zarpados con excepción B-01 abierta (`b01_exception_state == 'open'`).
+- **Permisos:** Exclusivo de Gerencia (`GERENCIA_GROUP = 'madenat_lumber_core.group_madenat_gerencia'`, l.22, 63-67). Operaciones y Jefatura pueden visualizar pero no confirmar.
+- **Operaciones disponibles:**
+  - `action_apply_regularization` (l.97-172): Aplica la rebaja extemporánea (R1) sobre los contenedores seleccionados (`action_rebajar()`), genera el picking OUT hacia Clientes respetando lote y volumen, exige justificación operativa y justificación de aprobación de Gerencia (ambas $\ge 20$ caracteres, l.53-60) y registra el evento en `madenat.audit.log` bajo la acción `b01_regularization`. El cierre definitivo de la excepción B-01 (`open` → `resolved`) permanece como acción posterior independiente de Gerencia en la cabecera del embarque.
+
+---
+
 ## Restricciones conocidas del módulo
 
 - `action_set_in_transit` **bloquea** el embarque si algún contenedor está en `empty` o `loading` — todos deben estar al menos `loaded` o `sealed`
