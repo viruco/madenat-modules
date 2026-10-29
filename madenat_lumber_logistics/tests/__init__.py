@@ -99,5 +99,8 @@ from . import test_tarja_paridad_exportador
 from . import test_consolidation_import_wizard
 # Bloque 7.3 (2026-10-21): Merma dimensional y rebaja R2
 from . import test_merma_dimensional_rebaja
+# DISC-LOG-04: Permisos de acceso operativo sobre modelos navieros
+from . import test_shipping_access
+
 
 
