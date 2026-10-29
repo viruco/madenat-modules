@@ -18,6 +18,10 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Pruebas automatizadas en `tests/test_consolidation_import_wizard.py` (tag: `consolidation_external_labels`).
 
 ### Removed
+- **Menú duplicado de conciliación de retornos (DISC-LOG-10, commit d1897a3)**:
+  - Eliminación de la entrada redundante de menú `menu_processor_return_reconciliation` en `views/madenat_processor_return_link_views.xml:148-154`, idéntica a la definida en l.141-147.
+- **Acción redundante de consolidación (DISC-LOG-12, commit 0910355)**:
+  - Eliminación de la definición básica de `action_lumber_container_consolidation` en `views/lumber_actions.xml`, preservando la definición kanban completa en `views/lumber_container_views.xml:100` que coincide con el registro activo en base de datos.
 - **Secuencia duplicada de embarques (DISC-LOG-11, commit 51c69c6)**:
   - Eliminación de la definición redundante de `seq_lumber_export_shipment` en `views/lumber_actions.xml`, preservando la definición en `data/sequences.xml` bajo `<data noupdate="1">` con prefijo canónico `EMB-` y `padding=5`, sin alterar contadores ni generar colisiones en base de datos.
 - **Método obsoleto en lumber.container (DISC-LOG-03, commit 2d3ba2d)**:

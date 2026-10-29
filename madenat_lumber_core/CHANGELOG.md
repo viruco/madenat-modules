@@ -1,3 +1,9 @@
+## [18.0.6.25.2] - 2026-10-29
+- **Homologación de strings de volumen en stock.lot (DISC-OP-17, commit 4a93185)**:
+  - `volume_purchase_m3`: `string='Vol. Compra (m³)'` alineado con formularios de recepción y vistas.
+  - `vol_shipment_m3`: `string='Vol. Export (m³)'` alineado con despachos y contenedores.
+  - Se mantiene `vol_purchase_m3` con `string='Volumen Compra Nominal (m³)'` preservando la distinción semántica sin duplicidad de etiquetas.
+
 ## [18.0.6.25.1] - 2026-10-28
 - Unificados rótulos de volumen a "Vol. Compra (m³)" en formulario de recepción y "Vol. Export (m³)" en modelo.
 - Lectura de .xlsx en _read_excel_sheets mediante io.BytesIO para soportar rutas de filestore sin extensión.
