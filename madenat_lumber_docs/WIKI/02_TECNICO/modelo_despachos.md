@@ -125,7 +125,7 @@ class LumberExportShipment(models.Model):
 | Método | Transición | Detalle |
 |---|---|---|
 | `action_confirm` | draft → confirmed | Valida: contenedores asignados, `booking_reference` presente, `vessel_id` asignado |
-| `action_set_in_transit` | confirmed → in_transit | Valida: contenedores no están en `empty`/`loading`. Ejecuta `_action_reduce_stock` (crea y valida pickings de salida). Pone contenedores en `shipped`. Registra `actual_departure`. Calcula rendimiento final |
+| `action_set_in_transit` | confirmed → in_transit | Valida: contenedores en estado `rebajado` (AD-88 / R2). El zarpe NO descuenta stock (el descuento ocurre previamente en la acción de rebaja por contenedor). Pone contenedores en `shipped`. Registra `actual_departure`. Calcula rendimiento final |
 | `action_deliver` | in_transit → delivered | Solo si está en tránsito |
 | `action_print_packing_list` | — | Imprime packing list consolidado de contenedores |
 | `action_view_shipment_lots` | — | Abre vista de lotes con pivot (list/pivot/form) |
@@ -164,6 +164,7 @@ class LumberContainer(models.Model):
 | Cargando | `loading` | Lotes siendo asignados |
 | Cargado | `loaded` | Carga completada, pendiente sellado |
 | Sellado | `sealed` | Sello naviera colocado |
+| Rebajado | `rebajado` | Inventario rebajado (salida nativa de stock aplicada vía R2) |
 | Embarcado | `shipped` | En tránsito con el embarque |
 
 ### Campos de identidad
@@ -448,7 +449,7 @@ Extiende el modelo base con campos de distribución de costos.
 - El checklist documental se auto-genera al crear un embarque (`create()` override en `lumber_document_checklist.py`)
 - `volume_m3` del contenedor es alias de `total_vol_shipment_m3` (volumen físico real, no nominal)
 - `status_color` del contenedor: 1=verde (<50%), 2=amarillo (50-90%), 3=naranja (90-100%), 4=rojo (sellado)
-- `_action_reduce_stock` crea pickings de salida agrupados por ubicación física real de los lotes (multi-puerto)
+- La salida nativa de stock ocurre al rebajar el contenedor (`_rebajar_container` / R2), extinguiendo el quant de los lotes; el método `_action_reduce_stock` fue eliminado y el zarpe no descuenta stock.
 - El campo `sag_seal` (Sello SAG) **no se exige** en el sellado — burocráticamente puede llegar hasta una semana después del zarpe
 - `fill_percentage` usa el factor limitante entre peso y volumen (`max(peso%, volumen%)`)
 - `vgm_total_weight` del embarque se auto-calcula: `total_weight_kg + suma(tare_weight_kg)` de todos los contenedores
