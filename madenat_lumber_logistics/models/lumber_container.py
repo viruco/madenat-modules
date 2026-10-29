@@ -307,37 +307,7 @@ class LumberContainer(models.Model):
         store=True,
         digits=(16, 3)
     )
-    def action_remove_lot_granular(self):
-            """ ✂️ OPERACIÓN DE REVERSIÓN TOTAL (Granular) """
-            self.ensure_one() # 'self' es el registro del lote (stock.lot)
-            
-            # Obtenemos el contenedor desde el contexto
-            container_id = self.env.context.get('active_id')
-            container = self.env['lumber.container'].browse(container_id)
-            
-            if not container:
-                return True
 
-            # 1. 💰 REVERSIÓN FINANCIERA (madenat_lumber_costing)
-            # Si el lote tiene costos logísticos, los limpiamos porque ya no pertenece al viaje
-            if hasattr(self, 'logistic_cost_usd'):
-                self.write({
-                    'logistic_cost_usd': 0.0,
-                    # Si tienes otros campos de costo del viaje, agrégalos aquí
-                })
-
-            # 2. 🚮 DESVINCULACIÓN FÍSICA
-            # Quitamos el lote de la relación con el contenedor
-            container.write({
-                'lot_ids': [(3, self.id)] 
-            })
-
-            # 3. 🔄 RECALCULAR EMBARQUE
-            # Actualizamos los totales de m3 y kilos del padre inmediatamente
-            if container.shipment_id:
-                container.shipment_id._compute_totals()
-                
-            return True
     # 🚀 RESUMEN DE CARGA CON 3 DECIMALES Y CONTEO DINÁMICO
     @api.depends('lot_ids', 'lot_ids.ref', 'lot_ids.vol_shipment_m3')
     def _compute_totals(self):
