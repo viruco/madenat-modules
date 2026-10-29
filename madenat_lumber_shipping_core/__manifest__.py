@@ -1,6 +1,6 @@
 {
     'name': 'MADENAT Shipping Core',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.3.0',
     'category': 'Inventory/Logistics',
     'summary': 'Datos Maestros de Transporte Marítimo',
     'author': 'MADENAT Team',
