@@ -4,7 +4,12 @@
 > Historial de decisiones: [../madenat_lumber_docs/CANON/04_DECISION_LOG.md](../madenat_lumber_docs/CANON/04_DECISION_LOG.md)
 > Estado vigente: [../madenat_lumber_docs/CANON/02_CONTINUIDAD.md](../madenat_lumber_docs/CANON/02_CONTINUIDAD.md)
 
-## [18.0.1.2.0] - 2026-10-29
+## [18.0.1.3.0] - 2026-10-29
+
+### Removed
+- b690423 madenat_lumber_shipping_core: retirar botón, método y referencias ligadas a logistics (NEW-01)
+- 6f5610f madenat_lumber_shipping_core: limpiar comentario del botón retirado (NEW-01)
+
 ### Removed
 - **Archivos huérfanos pre-modularización (DISC-LOG-13, commit cf0fd61)**:
   - Eliminación de `views/shipping_views.xml`, `views/shipping_menus.xml` y `models/shipping_models.py` tras comprobar que todos sus modelos y vistas ya existen en los componentes modulares (`shipping_vessel.*`, `shipping_voyage.*` y `shipping_booking.*`).
