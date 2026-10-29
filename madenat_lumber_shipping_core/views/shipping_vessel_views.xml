@@ -19,13 +19,7 @@
         <field name="model">shipping.vessel</field>
         <field name="arch" type="xml">
             <form>
-                <header>
-                    <!-- AD-92 (2026-10-05): el Rolleo ya no se ejecuta desde la
-                         Motonave. Este botón sólo abre la lista de Embarques
-                         filtrada por esta Motonave (consulta); el rolleo se
-                         ejecuta desde el Embarque («Rollover de Embarque»). -->
-
-                </header>
+                <header></header>
                 <sheet>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
