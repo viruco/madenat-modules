@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             Costeo C2 — Pestaña en el Embarque (post-Entrega).
+             Sin attrs/states/tree (Odoo 18). No modifica inventario físico.
+        ═══════════════════════════════════════════════════════════════ -->
+        <record id="view_lumber_export_shipment_form_costeo_c2" model="ir.ui.view">
+            <field name="name">lumber.export.shipment.form.costeo.c2</field>
+            <field name="model">lumber.export.shipment</field>
+            <field name="inherit_id" ref="madenat_lumber_logistics.view_lumber_export_shipment_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='costs']" position="after">
+                    <page string="Costeo C2 (post-Entrega)" name="costeo_c2">
+                        <div class="alert alert-info" role="alert">
+                            <b>Costeo provisional C2.</b>
+                            Distribuye las líneas de costo <b>aprobadas</b> por
+                            volumen logístico final por lote y genera una
+                            <b>versión auditada (SHA-256)</b>.
+                            <b>No modifica inventario físico</b> (sin
+                            movimientos, quants ni lotes) ni crea facturas/pagos.
+                        </div>
+
+                        <group>
+                            <group string="Gate del Embarque">
+                                <field name="c2_gate_ok" readonly="1"/>
+                                <field name="c2_gate_message" readonly="1"/>
+                                <field name="state"/>
+                                <field name="b01_exception_state" readonly="1"/>
+                                <field name="cost_distribution_state" readonly="1"/>
+                            </group>
+                            <group string="Distribución C2 activa">
+                                <field name="c2_version" readonly="1"/>
+                                <field name="c2_basis" readonly="1"/>
+                                <field name="currency_id" invisible="1"/>
+                                <field name="c2_total_source_usd" widget="monetary"
+                                       options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="c2_total_distributed_usd" widget="monetary"
+                                       options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="c2_residual_usd" widget="monetary"
+                                       options="{'currency_field': 'currency_id'}" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <div class="mt-2 mb-3">
+                            <button name="action_prepare_distribution"
+                                    string="Preparar distribución"
+                                    type="object" class="btn-secondary"
+                                    groups="madenat_lumber_core.group_madenat_costos,madenat_lumber_core.group_madenat_contabilidad"
+                                    invisible="state != 'delivered'"/>
+                            <button name="action_apply_distribution"
+                                    string="Aplicar distribución"
+                                    type="object" class="btn-primary"
+                                    groups="madenat_lumber_core.group_madenat_contabilidad"
+                                    invisible="state != 'delivered'"/>
+                        </div>
+
+                        <notebook>
+                            <page string="Versiones C2" name="c2_versions">
+                                <field name="c2_distribution_ids" readonly="1">
+                                    <list>
+                                        <field name="version_number"/>
+                                        <field name="name"/>
+                                        <field name="distribution_date"/>
+                                        <field name="basis"/>
+                                        <field name="total_source_cost_usd" sum="Fuente USD"/>
+                                        <field name="total_distributed_usd" sum="Distribuido USD"/>
+                                        <field name="residual_usd" sum="Residual USD"/>
+                                        <field name="state" widget="badge"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Líneas de costo fuente" name="c2_sources">
+                                <field name="cost_line_ids" readonly="1"/>
+                            </page>
+                            <page string="Ledger por lote (sólo lectura)" name="c2_ledger">
+                                <field name="c2_ledger_line_ids" readonly="1">
+                                    <list>
+                                        <field name="lot_id"/>
+                                        <field name="shipment_id" column_invisible="1"/>
+                                        <field name="cost_category"/>
+                                        <field name="cost_type"/>
+                                        <field name="volume_basis_m3" sum="Base m³"/>
+                                        <field name="allocated_cost_usd" sum="Asignado USD"/>
+                                        <field name="partnerid"/>
+                                        <field name="version_number"/>
+                                        <field name="state" widget="badge"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
+
