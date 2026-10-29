@@ -245,9 +245,10 @@ seguridad.
 
 ### Dependencias
 
-- `base` solamente (Odoo core)
-- Sin dependencia en `madenat_lumber_core`, `madenat_lumber_intake`, ni ningún módulo lumber específico
-- Librerías Python usadas en runtime: `pandas`, `openpyxl`, `pdfplumber` (ya disponibles en el entorno Docker; no se declaran en `__manifest__.py`, que sigue dependiendo solo de `base`).
+- `base` (Odoo core)
+- `madenat_lumber_core` (declarada en `__manifest__.py` para referenciar grupos nativos de seguridad de Operaciones)
+- Sin dependencia en `madenat_lumber_intake` ni otros módulos lumber de flujos específicos
+- Librerías Python usadas en runtime: `pandas`, `openpyxl`, `pdfplumber` (disponibles en el entorno de ejecución).
 
 ### Instalación
 
