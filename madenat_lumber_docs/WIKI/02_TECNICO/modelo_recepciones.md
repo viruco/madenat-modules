@@ -34,6 +34,8 @@ class LumberReception(models.Model):
 | Verificado | `verified` | Validación completada |
 | Recibido | `done` | Recepción finalizada, lotes creados |
 | Cancelado | `cancel` | Recepción anulada |
+| Error | `error` | Estado técnico de error en procesamiento (mantenido por compatibilidad) |
+| Pendiente OC | `pending_link` | Pendiente de vinculación con Orden de Compra (mantenido por compatibilidad) |
 
 ---
 
@@ -49,7 +51,7 @@ class LumberReception(models.Model):
 | `manual_po_name` | Char | Referencia manual de OC si no existe en Odoo |
 | `purchase_order` | Char (computed) | Visual: muestra nombre de OC o referencia manual |
 | `manual_entry` | Boolean | Activado si falla reconocimiento automático de PDF |
-| `ingestion_profile` | Selection | `f5085` (Blacks/Pies), `f1550` (S2S/Métrico), `metric` (Bruta) |
+| `ingestion_profile` | Selection | `f5085` (Blanks/Pies), `f1550` (S2S/Métrico), `metric` (Bruta) |
 | `location_id` | Many2one → stock.location | Patio de asignación |
 
 ---
