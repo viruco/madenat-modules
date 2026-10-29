@@ -476,7 +476,7 @@ class StockLotExtended(models.Model):
     
   
     volume_purchase_m3 = fields.Float(
-        string='Volumen Compra (m³)',
+        string='Vol. Compra (m³)',
         digits=(16, 3),
         help="Volumen original al momento de compra (dimensiones brutas, pre-cepillado)."
     )
@@ -487,7 +487,7 @@ class StockLotExtended(models.Model):
     
     # 🚀 CAMBIO 1: Nombre de variable corto (vol_shipment_m3)
     vol_shipment_m3 = fields.Float(
-        string='Volumen Embarque (m³)',
+        string='Vol. Export (m³)',
         store=True, 
         readonly=False, # Permite edición manual si es necesario (flexibilidad)
         digits=(16, 3),
