@@ -24,11 +24,7 @@
                          Motonave. Este botón sólo abre la lista de Embarques
                          filtrada por esta Motonave (consulta); el rolleo se
                          ejecuta desde el Embarque («Rollover de Embarque»). -->
-                    <button name="action_open_vessel_shipments"
-                            type="object"
-                            string="Ver Embarques de esta Motonave"
-                            class="btn-secondary"
-                            groups="madenat_lumber_core.group_madenat_operaciones,madenat_lumber_core.group_madenat_jefatura_operaciones,madenat_lumber_core.group_madenat_gerencia"/>
+
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -58,11 +54,5 @@
         <field name="view_mode">list,form</field>
     </record>
 
-  <!-- MENUITEM ELIMINADO - 2025-12-05
-    <menuitem id="menu_shipping_vessel"
-              parent="menu_shipping_config"
-              action="action_shipping_vessel"
-              sequence="10"/>
-    Ahora está en: madenat_lumber_logistics/views/logistics_menus.xml
-    -->
+
 </odoo>
