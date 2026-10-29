@@ -4,8 +4,6 @@ Todos los cambios notables de este módulo se documentan en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [18.0.1.42.0] - 2026-10-29
-
 ## [18.0.1.43.0] - 2026-10-29
 
 ### Changed
@@ -14,6 +12,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 1de4bab madenat_lumber_logistics: pruebas del botón de buque (logistics_vessel_button) (NEW-01)
 - 2073d7a madenat_lumber_logistics: corregir test del botón y registrar import (NEW-01)
 - 50e8efa madenat_lumber_logistics: registrar import de test_vessel_button (NEW-01)
+
+## [18.0.1.42.0] - 2026-10-29
 
 ### Changed
 - **Matriz de permisos operativos y auditoría en modelos navieros (DISC-LOG-04, commit c621d1e)**:
