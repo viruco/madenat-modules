@@ -38,6 +38,8 @@
 | **AD-133** | 2026-10-21 | Paridad de tarjas exportador, importador doble bloque y merma dimensional R2 | Vigente |
 | **AD-134** | 2026-10-23 | Ingesta 2D: procedencia del perfil y vigencia de lectura documental | Vigente |
 | **AD-135** | 2026-10-27 | Consolidación documental, cuarentena de 91 carpetas y respaldo externo en G: | Vigente |
+| **AD-136** | 2026-10-27 | Descarte de fila de totales sin etiqueta en extract_document (Fase 2E) | Vigente |
+| **AD-137** | 2026-10-29 | Consumo físico real en maquila (OP-10), blindaje de procesador (OP-09) y desbloqueo de orden de carga core | Vigente |
 
 > **Nota de consolidación (FASE 2, 2026-10-26).** Los punteros a expedientes de fase se reescribieron a
 > `FASES/<carpeta>/…`, ubicación consolidada dentro de `madenat_lumber_docs`. El texto, las fechas, las cifras
@@ -4614,3 +4616,40 @@ Se identificó que `ING-00041` (id 41) e `ING-00052` (id 52) creados el 2026-09-
 - Referencias actualizadas en docs y CHANGELOGs.
 - Validación: `shipping_security` 0 failed de 3; `logistics_shipping_access` 0 failed de 3; `test_21` de `test_vessel_rollover.py` 0 failed de 1; `logistics_vessel_button` 0 failed de 3.
 - Instalación limpia de `madenat_lumber_shipping_core` sin `madenat_lumber_core` ni logistics, sin vistas con el botón.
+
+## 2026-10-29 — Corrección Previa a UAT Operaciones (AD-137 / DISC-OP-09 y DISC-OP-10)
+
+### 1. DISC-OP-10 · Consumo de materia prima desde ubicación física real de quants
+- **Contexto y Causa Confirmada:** En `madenat_toll_processing`, `_create_consumption_picking()` hardcodeaba el origen a `warehouse.lot_stock_id.id` (ubicación genérica de stock `WH/Stock`). Si el lote ingresó o fue ubicado en un patio físico específico (p. ej. `WH/Stock/MARVAL` o `WH/Stock/PUERTO CORONEL`), la validación del consumo generaba un quant negativo en `WH/Stock` y dejaba el quant positivo intacto en el patio, desvirtuando el inventario físico.
+- **Decisión de Implementación Mínima:**
+  - Implementación de método `_get_lot_consumption_sources(lot, required_qty)` que inspecciona los `stock.quant` internos del lote para la compañía de la orden.
+  - Cálculo de disponibilidad real reservable mediante API nativa `stock.quant._get_available_quantity(..., strict=True)` (físico − reservas de otros movimientos).
+  - Sin `limit=1`: si el lote reside en varias ubicaciones internas, se distribuye el consumo entre ellas de forma determinista y sin duplicación de movimientos.
+  - Validación de suficiencia: si `total_disponible < required_qty`, se lanza `UserError` bloqueante informando los valores exactos, sin alterar existencias ni enmascarar excepciones.
+  - Preservación de movimientos nativos: creación explícita de `stock.move` y `stock.move.line` (`picked=True`) validados con `picking.button_validate()`.
+
+### 2. DISC-OP-09 · Maquilador/procesador independiente del proveedor de compra
+- **Verificación Estática y Causa:** En `lumber.reception.action_create_toll_order()`, `'processor_id': self.supplier_id.id` se asigna exclusivamente como valor por defecto inicial editable en la orden en estado borrador. El campo `processor_id` (`domain="[('is_processor', '=', True)]"`) es plenamente modificable por el operador.
+- **Dictamen:** **NO REPRODUCIDO COMO DEFECTO DE CÓDIGO.** No existe coerción posterior en `write()`, confirmación (`action_mark_sent`, `action_mark_in_process`), generación de albarán de consumo (`consumption_picking_id.partner_id`) ni emisión de factura de proveedor (`account.move.partner_id`).
+- **Decisión:** Mantener el valor por defecto de drop shipment por utilidad operativa y blindar la independencia mediante tests unitarios automatizados que acreditan la selección y conservación de un procesador distinto.
+
+### 3. Desbloqueo de Manifiesto en Core, Manejo de Unidades y Validación Dinámica
+- **Desbloqueo de Instalación en `madenat_lumber_core` (18.0.6.25.3):**
+  - Causa del bloqueo inicial: `stock_quant_patio_views.xml` definía `menu_madenat_inventario_patio` con padre `madenat_lumber_core.menu_ops_inventory`, cargándose antes que `lumber_core_menu.xml` (donde se define dicho padre). Esto producía un `ParseError` (exit 255) al instalar en bases vacías.
+  - Corrección mínima: Reubicación de `views/stock_quant_patio_views.xml` en la sección 5 de `data` en `__manifest__.py`, inmediatamente posterior a `views/lumber_core_menu.xml`. Se preservaron idénticos XML IDs, permisos, acciones y jerarquía de menú.
+- **Fundamento y Manejo de Unidades en OP-10:**
+  - El volumen de la orden (`expected_volume_m3`) y las cantidades requeridas (`required_qty`) se expresan en metros cúbicos (`m³`).
+  - `stock.quant` mantiene la disponibilidad en la unidad base del producto (`product_id.uom_id`).
+  - En `_get_lot_consumption_sources`, se valida que la UoM del producto pertenezca a la categoría 'Volume' (`uom.product_uom_cubic_meter.category_id`). En caso de discrepancia dimensional, se rechaza con `UserError`. Si la unidad es volumétrica pero distinta de m³, se realiza la conversión canónica mediante `uom_m3._compute_quantity(required_qty, product_uom)`.
+  - El redondeo en movimientos (`stock.move`) y líneas (`stock.move.line`) se realiza con la precisión nativa de la unidad (`product_uom.rounding`), sin sustitutos artificiales ni constantes fijas.
+- **Validación Aislada en Base Temporal (`tmp_lote6_toll_20261029`):**
+  - Entorno: Creada exclusivamente en `odoo18_db` tras comprobar no existencia de BD ni filestore.
+  - Ejecución: `docker exec odoo18_app python3 /usr/bin/odoo ... -d tmp_lote6_toll_20261029 --http-port=8070 --no-http -i madenat_toll_processing --test-tags=toll_consumption_and_processor --without-demo=all --stop-after-init --max-cron-threads=0 --workers=0`.
+  - Conteo real de pruebas: **9 tests ejecutados, 0 fallos, 0 errores, código de salida 0**.
+    - 8 pruebas de suite original (patios físicos específicos, reparto multi-patio, rechazo por falta de saldo, aislamiento multi-compañía, selección independiente de procesador, conservación en ciclo, idempotencia activa, idempotencia tras cancelación).
+    - 1 prueba adicional de cobertura de unidades (`test_09_uom_validation_and_conversion`).
+- **Limpieza Estricta y Verificación:**
+  - Base de datos `tmp_lote6_toll_20261029` eliminada con `dropdb` (verificado retorno vacío en `pg_database`).
+  - Directorio filestore `/var/lib/odoo/filestore/tmp_lote6_toll_20261029` eliminado (verificado `No such file or directory`).
+  - Sin comodines, sin tocar volúmenes ajenos ni la base `madenat_test`.
+- **Estado de Entrega:** Pruebas automatizadas en verde. Los tests administrativos acreditan la corrección técnica del código pero **NO sustituyen ni declaran acreditada la operación en terreno** de Cristhian y Felipe. Despliegue en `madenat_test` y UAT operativa permanecen pendientes.

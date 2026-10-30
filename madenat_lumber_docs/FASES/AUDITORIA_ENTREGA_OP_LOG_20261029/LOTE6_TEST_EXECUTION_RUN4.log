@@ -1,0 +1,1159 @@
+2026-10-29 23:05:15,018 1031 INFO ? odoo: Odoo version 18.0-20260817 
+2026-10-29 23:05:15,019 1031 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-10-29 23:05:15,019 1031 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/extra-addons'] 
+2026-10-29 23:05:15,019 1031 INFO ? odoo: database: odoo@db:5432 
+Warn: Can't find .pfb for face 'Courier'
+2026-10-29 23:05:15,234 1031 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-10-29 23:05:15,244 1031 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2026-10-29 23:05:15,463 1031 INFO ? odoo.service.server: HTTP service (werkzeug) running on cf7880e68800:8070 
+2026-10-29 23:05:15,501 1031 INFO tmp_lote6_toll_20261029 odoo.tests.common: Importing test framework 
+2026-10-29 23:05:15,546 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: init db 
+2026-10-29 23:05:17,650 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading 1 modules... 
+2026-10-29 23:05:17,650 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module base (1/1) 
+2026-10-29 23:05:17,682 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module base: creating or updating database tables 
+2026-10-29 23:05:18,701 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.module.module.menus_by_module 
+2026-10-29 23:05:18,701 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.module.module.reports_by_module 
+2026-10-29 23:05:18,702 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.module.module.views_by_module 
+2026-10-29 23:05:19,063 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.user_id 
+2026-10-29 23:05:19,064 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.commercial_partner_id 
+2026-10-29 23:05:19,064 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.complete_name 
+2026-10-29 23:05:19,064 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.company_registry 
+2026-10-29 23:05:19,064 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.commercial_company_name 
+2026-10-29 23:05:19,064 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.partner_share 
+2026-10-29 23:05:19,182 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.currency.decimal_places 
+2026-10-29 23:05:19,254 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.uses_default_logo 
+2026-10-29 23:05:19,254 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.logo_web 
+2026-10-29 23:05:19,261 1031 INFO tmp_lote6_toll_20261029 odoo.models: Computing parent_path for table res_company... 
+2026-10-29 23:05:19,337 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.users.signature 
+2026-10-29 23:05:19,337 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.users.share 
+2026-10-29 23:05:22,053 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_bank.xml 
+2026-10-29 23:05:22,060 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res.lang.csv 
+2026-10-29 23:05:22,109 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_lang_data.xml 
+2026-10-29 23:05:22,163 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_partner_data.xml 
+2026-10-29 23:05:22,268 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_currency_data.xml 
+2026-10-29 23:05:23,034 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_company_data.xml 
+2026-10-29 23:05:23,045 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_users_data.xml 
+2026-10-29 23:05:24,243 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/report_paperformat_data.xml 
+2026-10-29 23:05:24,254 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res_country_data.xml 
+2026-10-29 23:05:24,939 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_demo_data.xml 
+2026-10-29 23:05:24,953 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/security/base_groups.xml 
+2026-10-29 23:05:25,318 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/security/base_security.xml 
+2026-10-29 23:05:25,520 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/base_menus.xml 
+2026-10-29 23:05:25,612 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/decimal_precision_views.xml 
+2026-10-29 23:05:25,641 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_config_views.xml 
+2026-10-29 23:05:25,656 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/res.country.state.csv 
+2026-10-29 23:05:26,520 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_actions_views.xml 
+2026-10-29 23:05:26,712 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_asset_views.xml 
+2026-10-29 23:05:26,735 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_config_parameter_views.xml 
+2026-10-29 23:05:26,767 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_cron_views.xml 
+2026-10-29 23:05:26,805 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_cron_trigger_views.xml 
+2026-10-29 23:05:26,836 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_filters_views.xml 
+2026-10-29 23:05:26,863 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_mail_server_views.xml 
+2026-10-29 23:05:26,889 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_model_views.xml 
+2026-10-29 23:05:27,101 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_attachment_views.xml 
+2026-10-29 23:05:27,127 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_rule_views.xml 
+2026-10-29 23:05:27,154 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_sequence_views.xml 
+2026-10-29 23:05:27,179 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_ui_menu_views.xml 
+2026-10-29 23:05:27,205 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_ui_view_views.xml 
+2026-10-29 23:05:27,273 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_default_views.xml 
+2026-10-29 23:05:27,298 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_config_parameter_data.xml 
+2026-10-29 23:05:27,302 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_cron_data.xml 
+2026-10-29 23:05:27,317 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/report/ir_model_report.xml 
+2026-10-29 23:05:27,322 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/report/ir_model_templates.xml 
+2026-10-29 23:05:27,331 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_logging_views.xml 
+2026-10-29 23:05:27,355 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_qweb_widget_templates.xml 
+2026-10-29 23:05:27,370 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_module_views.xml 
+2026-10-29 23:05:27,438 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_module_category_data.xml 
+2026-10-29 23:05:27,536 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_module_module.xml 
+2026-10-29 23:05:27,653 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/report/ir_module_reports.xml 
+2026-10-29 23:05:27,659 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/report/ir_module_report_templates.xml 
+2026-10-29 23:05:27,667 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_module_update_views.xml 
+2026-10-29 23:05:27,680 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_language_install_views.xml 
+2026-10-29 23:05:27,698 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_import_language_views.xml 
+2026-10-29 23:05:27,714 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_module_upgrade_views.xml 
+2026-10-29 23:05:27,746 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_module_uninstall_views.xml 
+2026-10-29 23:05:27,760 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_export_language_views.xml 
+2026-10-29 23:05:27,777 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/wizard/base_partner_merge_views.xml 
+2026-10-29 23:05:27,795 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/data/ir_demo_failure_data.xml 
+2026-10-29 23:05:27,817 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/ir_profile_views.xml 
+2026-10-29 23:05:27,849 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_company_views.xml 
+2026-10-29 23:05:27,877 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_lang_views.xml 
+2026-10-29 23:05:27,906 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_partner_views.xml 
+2026-10-29 23:05:28,036 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_bank_views.xml 
+2026-10-29 23:05:28,076 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_country_views.xml 
+2026-10-29 23:05:28,134 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_currency_views.xml 
+2026-10-29 23:05:28,178 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_users_views.xml 
+2026-10-29 23:05:28,333 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_device_views.xml 
+2026-10-29 23:05:28,359 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_users_identitycheck_views.xml 
+2026-10-29 23:05:28,371 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/res_config_settings_views.xml 
+2026-10-29 23:05:28,384 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/views/report_paperformat_views.xml 
+2026-10-29 23:05:28,418 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base/security/ir.model.access.csv 
+2026-10-29 23:05:28,765 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module base loaded in 11.11s, 8244 queries (+8244 other) 
+2026-10-29 23:05:28,765 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: 1 modules loaded in 11.12s, 8244 queries (+8244 extra) 
+2026-10-29 23:05:28,789 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: updating modules list 
+2026-10-29 23:05:28,790 1031 INFO tmp_lote6_toll_20261029 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-10-29 23:05:29,941 1031 INFO tmp_lote6_toll_20261029 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on ['MADENAT Toll Processing'] to user __system__ #1 via n/a 
+2026-10-29 23:05:30,125 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading 67 modules... 
+2026-10-29 23:05:30,125 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module uom (2/67) 
+2026-10-29 23:05:30,155 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module uom: creating or updating database tables 
+2026-10-29 23:05:30,269 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading uom/data/uom_data.xml 
+2026-10-29 23:05:30,380 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading uom/security/uom_security.xml 
+2026-10-29 23:05:30,410 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading uom/security/ir.model.access.csv 
+2026-10-29 23:05:30,432 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading uom/views/uom_uom_views.xml 
+2026-10-29 23:05:30,508 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module uom loaded in 0.38s, 305 queries (+305 other) 
+2026-10-29 23:05:30,509 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module web (3/67) 
+2026-10-29 23:05:30,541 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module web: creating or updating database tables 
+2026-10-29 23:05:31,487 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/security/ir.model.access.csv 
+2026-10-29 23:05:31,498 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/webclient_templates.xml 
+2026-10-29 23:05:31,567 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/report_templates.xml 
+2026-10-29 23:05:31,684 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/base_document_layout_views.xml 
+2026-10-29 23:05:31,703 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/partner_view.xml 
+2026-10-29 23:05:31,711 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/speedscope_template.xml 
+2026-10-29 23:05:31,717 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/views/neutralize_views.xml 
+2026-10-29 23:05:31,725 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/data/ir_attachment.xml 
+2026-10-29 23:05:31,731 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web/data/report_layout.xml 
+2026-10-29 23:05:32,003 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module web loaded in 1.49s, 1126 queries (+1126 other) 
+2026-10-29 23:05:32,004 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module auth_totp (4/67) 
+2026-10-29 23:05:32,042 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module auth_totp: creating or updating database tables 
+2026-10-29 23:05:32,171 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/security/security.xml 
+2026-10-29 23:05:32,211 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/security/ir.model.access.csv 
+2026-10-29 23:05:32,223 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/data/ir_action_data.xml 
+2026-10-29 23:05:32,232 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/views/res_users_views.xml 
+2026-10-29 23:05:32,270 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/views/templates.xml 
+2026-10-29 23:05:32,277 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp/wizard/auth_totp_wizard_views.xml 
+2026-10-29 23:05:32,311 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module auth_totp loaded in 0.31s, 188 queries (+188 other) 
+2026-10-29 23:05:32,311 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module barcodes (5/67) 
+2026-10-29 23:05:32,343 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module barcodes: creating or updating database tables 
+2026-10-29 23:05:32,454 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading barcodes/data/barcodes_data.xml 
+2026-10-29 23:05:32,463 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading barcodes/views/barcodes_view.xml 
+2026-10-29 23:05:32,494 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading barcodes/security/ir.model.access.csv 
+2026-10-29 23:05:32,524 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module barcodes loaded in 0.21s, 149 queries (+149 other) 
+2026-10-29 23:05:32,525 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module base_import (6/67) 
+2026-10-29 23:05:32,760 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module base_import: creating or updating database tables 
+2026-10-29 23:05:33,692 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_import/security/ir.model.access.csv 
+2026-10-29 23:05:33,716 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module base_import loaded in 1.19s, 916 queries (+916 other) 
+2026-10-29 23:05:33,717 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module base_import_module (7/67) 
+2026-10-29 23:05:33,746 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module base_import_module: creating or updating database tables 
+2026-10-29 23:05:33,841 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_import_module/security/ir.model.access.csv 
+2026-10-29 23:05:33,853 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_import_module/views/base_import_module_view.xml 
+2026-10-29 23:05:33,878 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_import_module/views/ir_module_views.xml 
+2026-10-29 23:05:33,939 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module base_import_module loaded in 0.22s, 164 queries (+164 other) 
+2026-10-29 23:05:33,939 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module base_setup (8/67) 
+2026-10-29 23:05:34,048 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module base_setup: creating or updating database tables 
+2026-10-29 23:05:34,133 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_setup/data/base_setup_data.xml 
+2026-10-29 23:05:34,143 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_setup/views/res_config_settings_views.xml 
+2026-10-29 23:05:34,191 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_setup/views/res_partner_views.xml 
+2026-10-29 23:05:34,221 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module base_setup loaded in 0.28s, 154 queries (+154 other) 
+2026-10-29 23:05:34,222 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module bus (9/67) 
+2026-10-29 23:05:34,256 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module bus: creating or updating database tables 
+2026-10-29 23:05:34,454 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading bus/security/ir.model.access.csv 
+2026-10-29 23:05:34,486 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module bus loaded in 0.26s, 168 queries (+168 other) 
+2026-10-29 23:05:34,486 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module http_routing (10/67) 
+2026-10-29 23:05:34,512 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module http_routing: creating or updating database tables 
+2026-10-29 23:05:34,563 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading http_routing/views/http_routing_template.xml 
+2026-10-29 23:05:34,599 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading http_routing/views/res_lang_views.xml 
+2026-10-29 23:05:34,634 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module http_routing loaded in 0.15s, 100 queries (+100 other) 
+2026-10-29 23:05:34,634 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module onboarding (11/67) 
+2026-10-29 23:05:34,664 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module onboarding: creating or updating database tables 
+2026-10-29 23:05:34,885 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading onboarding/views/onboarding_templates.xml 
+2026-10-29 23:05:34,904 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading onboarding/views/onboarding_views.xml 
+2026-10-29 23:05:34,935 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading onboarding/views/onboarding_menus.xml 
+2026-10-29 23:05:34,948 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading onboarding/security/ir.model.access.csv 
+2026-10-29 23:05:35,026 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module onboarding loaded in 0.39s, 225 queries (+225 other) 
+2026-10-29 23:05:35,026 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module resource (12/67) 
+2026-10-29 23:05:35,064 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module resource: creating or updating database tables 
+2026-10-29 23:05:35,384 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/data/resource_data.xml 
+2026-10-29 23:05:35,410 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/security/ir.model.access.csv 
+2026-10-29 23:05:35,427 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/security/resource_security.xml 
+2026-10-29 23:05:35,468 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/views/resource_resource_views.xml 
+2026-10-29 23:05:35,499 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/views/resource_calendar_leaves_views.xml 
+2026-10-29 23:05:35,538 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/views/resource_calendar_attendance_views.xml 
+2026-10-29 23:05:35,552 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/views/resource_calendar_views.xml 
+2026-10-29 23:05:35,578 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading resource/views/menuitems.xml 
+2026-10-29 23:05:35,627 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module resource loaded in 0.60s, 406 queries (+406 other) 
+2026-10-29 23:05:35,627 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module utm (13/67) 
+2026-10-29 23:05:35,664 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module utm: creating or updating database tables 
+2026-10-29 23:05:35,919 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/data/utm_medium_data.xml 
+2026-10-29 23:05:35,947 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/data/utm_source_data.xml 
+2026-10-29 23:05:35,970 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/data/utm_stage_data.xml 
+2026-10-29 23:05:35,975 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/data/utm_tag_data.xml 
+2026-10-29 23:05:35,979 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_campaign_views.xml 
+2026-10-29 23:05:36,014 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_medium_views.xml 
+2026-10-29 23:05:36,033 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_source_views.xml 
+2026-10-29 23:05:36,048 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_stage_views.xml 
+2026-10-29 23:05:36,066 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_tag_views.xml 
+2026-10-29 23:05:36,077 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/views/utm_menus.xml 
+2026-10-29 23:05:36,110 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading utm/security/ir.model.access.csv 
+2026-10-29 23:05:36,153 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module utm loaded in 0.53s, 411 queries (+411 other) 
+2026-10-29 23:05:36,153 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module web_tour (14/67) 
+2026-10-29 23:05:36,186 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module web_tour: creating or updating database tables 
+2026-10-29 23:05:36,194 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.users.tour_enabled 
+2026-10-29 23:05:36,352 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_tour/security/ir.model.access.csv 
+2026-10-29 23:05:36,367 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_tour/views/tour_views.xml 
+2026-10-29 23:05:36,403 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_tour/views/res_users_views.xml 
+2026-10-29 23:05:36,445 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module web_tour loaded in 0.29s, 188 queries (+188 other) 
+2026-10-29 23:05:36,445 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module barcodes_gs1_nomenclature (15/67) 
+2026-10-29 23:05:36,476 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module barcodes_gs1_nomenclature: creating or updating database tables 
+2026-10-29 23:05:36,554 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading barcodes_gs1_nomenclature/data/barcodes_gs1_rules.xml 
+2026-10-29 23:05:36,656 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading barcodes_gs1_nomenclature/views/barcodes_view.xml 
+2026-10-29 23:05:36,718 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module barcodes_gs1_nomenclature loaded in 0.27s, 195 queries (+195 other) 
+2026-10-29 23:05:36,718 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module html_editor (16/67) 
+2026-10-29 23:05:36,750 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module html_editor: creating or updating database tables 
+2026-10-29 23:05:36,821 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module html_editor loaded in 0.10s, 46 queries (+46 other) 
+2026-10-29 23:05:36,821 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module iap (17/67) 
+2026-10-29 23:05:36,853 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module iap: creating or updating database tables 
+2026-10-29 23:05:36,992 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap/data/services.xml 
+2026-10-29 23:05:36,998 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap/security/ir.model.access.csv 
+2026-10-29 23:05:37,013 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap/security/ir_rule.xml 
+2026-10-29 23:05:37,022 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap/views/iap_views.xml 
+2026-10-29 23:05:37,053 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap/views/res_config_settings.xml 
+2026-10-29 23:05:37,085 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module iap loaded in 0.26s, 183 queries (+183 other) 
+2026-10-29 23:05:37,085 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module mail (18/67) 
+2026-10-29 23:05:37,175 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module mail: creating or updating database tables 
+2026-10-29 23:05:37,950 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.partner_ids 
+2026-10-29 23:05:37,950 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.template_id 
+2026-10-29 23:05:37,951 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_type_id 
+2026-10-29 23:05:37,951 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_date_deadline_range 
+2026-10-29 23:05:37,951 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_user_id 
+2026-10-29 23:05:37,951 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.mail_post_method 
+2026-10-29 23:05:37,952 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_summary 
+2026-10-29 23:05:37,953 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_date_deadline_range_type 
+2026-10-29 23:05:37,953 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_user_type 
+2026-10-29 23:05:37,953 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_user_field_name 
+2026-10-29 23:05:37,953 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.activity_note 
+2026-10-29 23:05:37,953 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.mail_post_autofollow 
+2026-10-29 23:05:38,024 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.email_primary_color 
+2026-10-29 23:05:38,024 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.email_secondary_color 
+2026-10-29 23:05:38,046 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.users.notification_type 
+2026-10-29 23:05:38,227 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.email_normalized 
+<string>:38: (ERROR/3) Unexpected indentation.
+<string>:43: (WARNING/2) Block quote ends without a blank line; unexpected unindent.
+2026-10-29 23:05:41,079 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_groups.xml 
+2026-10-29 23:05:41,216 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_activity_schedule_views.xml 
+2026-10-29 23:05:41,229 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_blacklist_remove_views.xml 
+2026-10-29 23:05:41,236 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_compose_message_views.xml 
+2026-10-29 23:05:41,258 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_resend_message_views.xml 
+2026-10-29 23:05:41,272 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_resend_partner_views.xml 
+2026-10-29 23:05:41,284 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_template_preview_views.xml 
+2026-10-29 23:05:41,297 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_wizard_invite_views.xml 
+2026-10-29 23:05:41,306 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/wizard/mail_template_reset_views.xml 
+2026-10-29 23:05:41,317 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/fetchmail_views.xml 
+2026-10-29 23:05:41,341 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_message_subtype_views.xml 
+2026-10-29 23:05:41,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_tracking_value_views.xml 
+2026-10-29 23:05:41,380 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_notification_views.xml 
+2026-10-29 23:05:41,396 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_message_views.xml 
+2026-10-29 23:05:41,433 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_message_schedule_views.xml 
+2026-10-29 23:05:41,452 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_mail_views.xml 
+2026-10-29 23:05:41,484 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_followers_views.xml 
+2026-10-29 23:05:41,502 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_ice_server_views.xml 
+2026-10-29 23:05:41,517 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/discuss_channel_member_views.xml 
+2026-10-29 23:05:41,532 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/discuss_channel_rtc_session_views.xml 
+2026-10-29 23:05:41,550 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_link_preview_views.xml 
+2026-10-29 23:05:41,565 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/discuss/discuss_gif_favorite_views.xml 
+2026-10-29 23:05:41,579 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/discuss_channel_views.xml 
+2026-10-29 23:05:41,613 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_canned_response_views.xml 
+2026-10-29 23:05:41,635 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_activity_views.xml 
+2026-10-29 23:05:42,269 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_activity_plan_views.xml 
+2026-10-29 23:05:42,318 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_activity_plan_template_views.xml 
+2026-10-29 23:05:42,332 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/res_config_settings_views.xml 
+2026-10-29 23:05:42,361 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/ir_config_parameter_data.xml 
+2026-10-29 23:05:42,368 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/res_partner_data.xml 
+2026-10-29 23:05:42,448 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_message_subtype_data.xml 
+2026-10-29 23:05:42,460 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_templates_chatter.xml 
+2026-10-29 23:05:42,479 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_templates_email_layouts.xml 
+2026-10-29 23:05:42,502 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_templates_mailgateway.xml 
+2026-10-29 23:05:42,521 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/discuss_channel_data.xml 
+2026-10-29 23:05:42,571 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_activity_data.xml 
+2026-10-29 23:05:42,589 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/security_notifications_templates.xml 
+2026-10-29 23:05:42,596 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/ir_cron_data.xml 
+2026-10-29 23:05:42,660 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/ir_actions_client.xml 
+2026-10-29 23:05:42,666 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/security/mail_security.xml 
+2026-10-29 23:05:42,867 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/security/ir.model.access.csv 
+2026-10-29 23:05:42,997 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/discuss_public_templates.xml 
+2026-10-29 23:05:43,004 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_alias_domain_views.xml 
+2026-10-29 23:05:43,025 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_alias_views.xml 
+2026-10-29 23:05:43,055 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_gateway_allowed_views.xml 
+2026-10-29 23:05:43,072 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_guest_views.xml 
+2026-10-29 23:05:43,091 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_message_reaction_views.xml 
+2026-10-29 23:05:43,108 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_templates_public.xml 
+2026-10-29 23:05:43,117 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/res_users_views.xml 
+2026-10-29 23:05:43,153 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/res_users_settings_views.xml 
+2026-10-29 23:05:43,178 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_template_views.xml 
+2026-10-29 23:05:43,212 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/ir_actions_server_views.xml 
+2026-10-29 23:05:43,229 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/ir_model_views.xml 
+2026-10-29 23:05:43,276 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/res_partner_views.xml 
+2026-10-29 23:05:43,334 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_blacklist_views.xml 
+2026-10-29 23:05:43,355 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_menus.xml 
+2026-10-29 23:05:43,562 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/res_company_views.xml 
+2026-10-29 23:05:43,575 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/views/mail_scheduled_message_views.xml 
+2026-10-29 23:05:43,584 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_canned_response_data.xml 
+2026-10-29 23:05:43,591 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/mail_templates_invite.xml 
+2026-10-29 23:05:43,601 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail/data/web_tour_tour.xml 
+2026-10-29 23:05:43,669 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module mail loaded in 6.58s, 4601 queries (+4602 other) 
+2026-10-29 23:05:43,669 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module web_editor (19/67) 
+2026-10-29 23:05:43,771 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module web_editor: creating or updating database tables 
+2026-10-29 23:05:45,538 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_editor/security/ir.model.access.csv 
+2026-10-29 23:05:45,554 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_editor/data/editor_assets.xml 
+2026-10-29 23:05:45,561 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_editor/views/editor.xml 
+2026-10-29 23:05:45,577 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_editor/views/snippets.xml 
+2026-10-29 23:05:45,643 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module web_editor loaded in 1.97s, 1527 queries (+1527 other) 
+2026-10-29 23:05:45,643 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module analytic (20/67) 
+2026-10-29 23:05:45,701 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module analytic: creating or updating database tables 
+2026-10-29 23:05:46,031 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/security/analytic_security.xml 
+2026-10-29 23:05:46,085 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/security/ir.model.access.csv 
+2026-10-29 23:05:46,108 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/views/analytic_line_views.xml 
+2026-10-29 23:05:46,159 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/views/analytic_account_views.xml 
+2026-10-29 23:05:46,196 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/views/analytic_plan_views.xml 
+2026-10-29 23:05:46,217 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/views/analytic_distribution_model_views.xml 
+2026-10-29 23:05:46,234 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading analytic/data/analytic_data.xml 
+2026-10-29 23:05:46,332 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module analytic loaded in 0.69s, 434 queries (+434 other) 
+2026-10-29 23:05:46,333 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module auth_signup (21/67) 
+2026-10-29 23:05:46,384 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module auth_signup: creating or updating database tables 
+2026-10-29 23:05:46,514 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/data/ir_config_parameter_data.xml 
+2026-10-29 23:05:46,525 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/data/ir_cron_data.xml 
+2026-10-29 23:05:46,538 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/data/mail_template_data.xml 
+2026-10-29 23:05:46,559 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/views/res_config_settings_views.xml 
+2026-10-29 23:05:46,581 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/views/res_users_views.xml 
+2026-10-29 23:05:46,608 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/views/auth_signup_login_templates.xml 
+2026-10-29 23:05:46,631 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/views/auth_signup_templates_email.xml 
+2026-10-29 23:05:46,646 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_signup/views/webclient_templates.xml 
+2026-10-29 23:05:46,684 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module auth_signup loaded in 0.35s, 207 queries (+207 other) 
+2026-10-29 23:05:46,685 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module auth_totp_mail (22/67) 
+2026-10-29 23:05:46,744 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module auth_totp_mail: creating or updating database tables 
+2026-10-29 23:05:46,797 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_mail/data/ir_action_data.xml 
+2026-10-29 23:05:46,818 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_mail/data/mail_template_data.xml 
+2026-10-29 23:05:46,828 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_mail/data/security_notifications_template.xml 
+2026-10-29 23:05:46,837 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_mail/views/res_users_views.xml 
+2026-10-29 23:05:46,899 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module auth_totp_mail loaded in 0.21s, 121 queries (+121 other) 
+2026-10-29 23:05:46,899 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module base_install_request (23/67) 
+2026-10-29 23:05:46,954 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module base_install_request: creating or updating database tables 
+2026-10-29 23:05:47,071 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_install_request/security/ir.model.access.csv 
+2026-10-29 23:05:47,089 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_install_request/wizard/base_module_install_request_views.xml 
+2026-10-29 23:05:47,113 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_install_request/data/mail_template_data.xml 
+2026-10-29 23:05:47,121 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_install_request/data/mail_templates_module_install.xml 
+2026-10-29 23:05:47,128 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading base_install_request/views/ir_module_module_views.xml 
+2026-10-29 23:05:47,161 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module base_install_request loaded in 0.26s, 153 queries (+153 other) 
+2026-10-29 23:05:47,162 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module google_gmail (24/67) 
+2026-10-29 23:05:47,219 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module google_gmail: creating or updating database tables 
+2026-10-29 23:05:47,299 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading google_gmail/views/fetchmail_server_views.xml 
+2026-10-29 23:05:47,321 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading google_gmail/views/ir_mail_server_views.xml 
+2026-10-29 23:05:47,339 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading google_gmail/views/res_config_settings_views.xml 
+2026-10-29 23:05:47,379 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module google_gmail loaded in 0.22s, 124 queries (+124 other) 
+2026-10-29 23:05:47,379 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module iap_mail (25/67) 
+2026-10-29 23:05:47,436 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module iap_mail: creating or updating database tables 
+2026-10-29 23:05:47,486 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap_mail/data/mail_templates.xml 
+2026-10-29 23:05:47,504 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading iap_mail/views/iap_views.xml 
+2026-10-29 23:05:47,531 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module iap_mail loaded in 0.15s, 70 queries (+70 other) 
+2026-10-29 23:05:47,531 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module mail_bot (26/67) 
+2026-10-29 23:05:47,585 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module mail_bot: creating or updating database tables 
+2026-10-29 23:05:47,767 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail_bot/views/res_users_views.xml 
+2026-10-29 23:05:47,806 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading mail_bot/data/mailbot_data.xml 
+2026-10-29 23:05:47,834 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module mail_bot loaded in 0.30s, 127 queries (+127 other) 
+2026-10-29 23:05:47,834 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module phone_validation (27/67) 
+2026-10-29 23:05:47,945 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module phone_validation: creating or updating database tables 
+2026-10-29 23:05:49,807 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading phone_validation/security/ir.model.access.csv 
+2026-10-29 23:05:49,824 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading phone_validation/views/phone_blacklist_views.xml 
+2026-10-29 23:05:49,865 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading phone_validation/wizard/phone_blacklist_remove_view.xml 
+2026-10-29 23:05:49,893 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module phone_validation loaded in 2.06s, 1602 queries (+1602 other) 
+2026-10-29 23:05:49,893 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module privacy_lookup (28/67) 
+2026-10-29 23:05:49,953 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module privacy_lookup: creating or updating database tables 
+2026-10-29 23:05:50,163 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading privacy_lookup/wizard/privacy_lookup_wizard_views.xml 
+2026-10-29 23:05:50,221 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading privacy_lookup/views/privacy_log_views.xml 
+2026-10-29 23:05:50,255 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading privacy_lookup/security/ir.model.access.csv 
+2026-10-29 23:05:50,277 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading privacy_lookup/data/ir_actions_server_data.xml 
+2026-10-29 23:05:50,317 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module privacy_lookup loaded in 0.42s, 247 queries (+247 other) 
+2026-10-29 23:05:50,317 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module product (29/67) 
+2026-10-29 23:05:50,415 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module product: creating or updating database tables 
+2026-10-29 23:05:51,845 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/data/product_data.xml 
+2026-10-29 23:05:51,891 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/security/product_security.xml 
+2026-10-29 23:05:52,162 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/security/ir.model.access.csv 
+2026-10-29 23:05:52,212 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/wizard/product_label_layout_views.xml 
+2026-10-29 23:05:52,236 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/wizard/update_product_attribute_value_views.xml 
+2026-10-29 23:05:52,245 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_tag_views.xml 
+2026-10-29 23:05:52,269 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_views.xml 
+2026-10-29 23:05:52,389 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/res_config_settings_views.xml 
+2026-10-29 23:05:52,417 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_attribute_views.xml 
+2026-10-29 23:05:52,469 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_attribute_value_views.xml 
+2026-10-29 23:05:52,475 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_category_views.xml 
+2026-10-29 23:05:52,494 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_combo_views.xml 
+2026-10-29 23:05:52,513 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_document_views.xml 
+2026-10-29 23:05:52,539 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_packaging_views.xml 
+2026-10-29 23:05:52,573 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_pricelist_item_views.xml 
+2026-10-29 23:05:52,603 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_pricelist_views.xml 
+2026-10-29 23:05:52,634 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_supplierinfo_views.xml 
+2026-10-29 23:05:52,663 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_template_attribute_line_views.xml 
+2026-10-29 23:05:52,671 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/product_template_views.xml 
+2026-10-29 23:05:52,713 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/res_country_group_views.xml 
+2026-10-29 23:05:52,724 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/views/res_partner_views.xml 
+2026-10-29 23:05:52,739 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/report/product_reports.xml 
+2026-10-29 23:05:52,772 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/report/product_product_templates.xml 
+2026-10-29 23:05:52,805 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/report/product_template_templates.xml 
+2026-10-29 23:05:52,825 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/report/product_packaging.xml 
+2026-10-29 23:05:52,831 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading product/report/product_pricelist_report_templates.xml 
+2026-10-29 23:05:52,882 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module product loaded in 2.57s, 1755 queries (+1755 other) 
+2026-10-29 23:05:52,882 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module resource_mail (30/67) 
+2026-10-29 23:05:52,951 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module resource_mail: creating or updating database tables 
+2026-10-29 23:05:53,012 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module resource_mail loaded in 0.13s, 35 queries (+35 other) 
+2026-10-29 23:05:53,012 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sales_team (31/67) 
+2026-10-29 23:05:53,084 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sales_team: creating or updating database tables 
+2026-10-29 23:05:53,172 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.users.sale_team_id 
+2026-10-29 23:05:53,470 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/security/sales_team_security.xml 
+2026-10-29 23:05:53,689 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/security/ir.model.access.csv 
+2026-10-29 23:05:53,711 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/data/crm_team_data.xml 
+2026-10-29 23:05:53,758 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/views/crm_tag_views.xml 
+2026-10-29 23:05:53,776 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/views/crm_team_views.xml 
+2026-10-29 23:05:53,822 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/views/crm_team_member_views.xml 
+2026-10-29 23:05:53,871 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sales_team/views/mail_activity_views.xml 
+2026-10-29 23:05:53,899 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sales_team loaded in 0.89s, 521 queries (+521 other) 
+2026-10-29 23:05:53,899 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module web_unsplash (32/67) 
+2026-10-29 23:05:53,972 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module web_unsplash: creating or updating database tables 
+2026-10-29 23:05:54,056 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading web_unsplash/views/res_config_settings_view.xml 
+2026-10-29 23:05:54,102 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module web_unsplash loaded in 0.20s, 100 queries (+100 other) 
+2026-10-29 23:05:54,102 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module partner_autocomplete (33/67) 
+2026-10-29 23:05:54,183 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module partner_autocomplete: creating or updating database tables 
+2026-10-29 23:05:54,380 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/security/ir.model.access.csv 
+2026-10-29 23:05:54,401 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/views/res_partner_views.xml 
+2026-10-29 23:05:54,433 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/views/res_company_views.xml 
+2026-10-29 23:05:54,451 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/views/res_config_settings_views.xml 
+2026-10-29 23:05:54,477 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/data/cron.xml 
+2026-10-29 23:05:54,494 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading partner_autocomplete/data/iap_service_data.xml 
+2026-10-29 23:05:54,528 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module partner_autocomplete loaded in 0.43s, 207 queries (+207 other) 
+2026-10-29 23:05:54,528 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module portal (34/67) 
+2026-10-29 23:05:54,621 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module portal: creating or updating database tables 
+2026-10-29 23:05:55,177 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/security/ir.model.access.csv 
+2026-10-29 23:05:55,193 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/data/mail_template_data.xml 
+2026-10-29 23:05:55,204 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/data/mail_templates.xml 
+2026-10-29 23:05:55,212 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/views/mail_templates_public.xml 
+2026-10-29 23:05:55,220 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/views/portal_templates.xml 
+2026-10-29 23:05:55,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/views/res_config_settings_views.xml 
+2026-10-29 23:05:55,390 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/wizard/portal_share_views.xml 
+2026-10-29 23:05:55,407 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading portal/wizard/portal_wizard_views.xml 
+2026-10-29 23:05:55,454 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module portal loaded in 0.93s, 533 queries (+533 other) 
+2026-10-29 23:05:55,454 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sms (35/67) 
+2026-10-29 23:05:55,581 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sms: creating or updating database tables 
+2026-10-29 23:05:55,596 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.sms_template_id 
+2026-10-29 23:05:55,597 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of ir.actions.server.sms_method 
+2026-10-29 23:05:55,640 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.phone_sanitized 
+2026-10-29 23:05:58,257 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/data/iap_service_data.xml 
+2026-10-29 23:05:58,264 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/data/ir_cron_data.xml 
+2026-10-29 23:05:58,275 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_account_code_views.xml 
+2026-10-29 23:05:58,290 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_account_phone_views.xml 
+2026-10-29 23:05:58,298 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_account_sender_views.xml 
+2026-10-29 23:05:58,305 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_composer_views.xml 
+2026-10-29 23:05:58,321 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_template_preview_views.xml 
+2026-10-29 23:05:58,334 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_resend_views.xml 
+2026-10-29 23:05:58,352 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/wizard/sms_template_reset_views.xml 
+2026-10-29 23:05:58,365 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/ir_actions_server_views.xml 
+2026-10-29 23:05:58,382 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/mail_notification_views.xml 
+2026-10-29 23:05:58,399 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/res_config_settings_views.xml 
+2026-10-29 23:05:58,416 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/res_partner_views.xml 
+2026-10-29 23:05:58,462 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/iap_account_views.xml 
+2026-10-29 23:05:58,477 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/sms_sms_views.xml 
+2026-10-29 23:05:58,509 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/views/sms_template_views.xml 
+2026-10-29 23:05:58,538 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/security/ir.model.access.csv 
+2026-10-29 23:05:58,574 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sms/security/sms_security.xml 
+2026-10-29 23:05:58,607 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sms loaded in 3.15s, 2297 queries (+2297 other) 
+2026-10-29 23:05:58,607 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module snailmail (36/67) 
+2026-10-29 23:05:58,697 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module snailmail: creating or updating database tables 
+2026-10-29 23:05:59,354 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/data/iap_service_data.xml 
+2026-10-29 23:05:59,360 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/data/snailmail_data.xml 
+2026-10-29 23:05:59,370 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/views/report_assets.xml 
+2026-10-29 23:05:59,385 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/views/snailmail_views.xml 
+2026-10-29 23:05:59,412 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/wizard/snailmail_letter_format_error_views.xml 
+2026-10-29 23:05:59,424 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/wizard/snailmail_letter_missing_required_fields_views.xml 
+2026-10-29 23:05:59,436 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail/security/ir.model.access.csv 
+2026-10-29 23:05:59,478 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module snailmail loaded in 0.87s, 476 queries (+476 other) 
+2026-10-29 23:05:59,478 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module auth_totp_portal (37/67) 
+2026-10-29 23:05:59,553 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module auth_totp_portal: creating or updating database tables 
+2026-10-29 23:05:59,601 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_portal/security/security.xml 
+2026-10-29 23:05:59,616 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading auth_totp_portal/views/templates.xml 
+2026-10-29 23:05:59,644 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module auth_totp_portal loaded in 0.17s, 66 queries (+66 other) 
+2026-10-29 23:05:59,645 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module digest (38/67) 
+2026-10-29 23:05:59,725 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module digest: creating or updating database tables 
+2026-10-29 23:05:59,929 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/security/ir.model.access.csv 
+2026-10-29 23:05:59,955 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/data/digest_data.xml 
+2026-10-29 23:05:59,993 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/data/digest_tips_data.xml 
+2026-10-29 23:06:00,021 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/data/ir_cron_data.xml 
+2026-10-29 23:06:00,035 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/data/res_config_settings_data.xml 
+2026-10-29 23:06:00,043 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/views/digest_views.xml 
+2026-10-29 23:06:00,106 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/views/digest_templates.xml 
+2026-10-29 23:06:00,113 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading digest/views/res_config_settings_views.xml 
+2026-10-29 23:06:00,163 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module digest loaded in 0.52s, 305 queries (+305 other) 
+2026-10-29 23:06:00,163 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module payment (39/67) 
+2026-10-29 23:06:00,262 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module payment: creating or updating database tables 
+2026-10-29 23:06:00,947 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/data/ir_actions_server_data.xml 
+2026-10-29 23:06:00,960 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/data/onboarding_data.xml 
+2026-10-29 23:06:00,969 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/data/payment_method_data.xml 
+2026-10-29 23:06:03,099 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/data/payment_provider_data.xml 
+2026-10-29 23:06:03,252 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/data/payment_cron.xml 
+2026-10-29 23:06:03,263 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/express_checkout_templates.xml 
+2026-10-29 23:06:03,271 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/payment_form_templates.xml 
+2026-10-29 23:06:03,318 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/portal_templates.xml 
+2026-10-29 23:06:03,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/payment_provider_views.xml 
+2026-10-29 23:06:03,400 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/payment_method_views.xml 
+2026-10-29 23:06:03,428 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/payment_transaction_views.xml 
+2026-10-29 23:06:03,462 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/payment_token_views.xml 
+2026-10-29 23:06:03,486 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/views/res_partner_views.xml 
+2026-10-29 23:06:03,503 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/security/ir.model.access.csv 
+2026-10-29 23:06:04,405 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/security/payment_security.xml 
+2026-10-29 23:06:04,440 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/wizards/payment_capture_wizard_views.xml 
+2026-10-29 23:06:04,453 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/wizards/payment_link_wizard_views.xml 
+2026-10-29 23:06:04,463 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading payment/wizards/payment_onboarding_views.xml 
+2026-10-29 23:06:04,504 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module payment loaded in 4.34s, 2400 queries (+2400 other) 
+2026-10-29 23:06:04,504 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet (40/67) 
+2026-10-29 23:06:04,590 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module spreadsheet: creating or updating database tables 
+2026-10-29 23:06:04,679 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet/views/public_readonly_spreadsheet_templates.xml 
+2026-10-29 23:06:04,712 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet loaded in 0.21s, 86 queries (+86 other) 
+2026-10-29 23:06:04,713 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module account (41/67) 
+2026-10-29 23:06:05,023 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module account: creating or updating database tables 
+2026-10-29 23:06:05,454 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.account_fiscal_country_id 
+2026-10-29 23:06:05,455 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.company.invoice_terms_html 
+2026-10-29 23:06:09,574 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/security/account_security.xml 
+2026-10-29 23:06:10,234 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/security/ir.model.access.csv 
+2026-10-29 23:06:10,372 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/account_data.xml 
+2026-10-29 23:06:10,472 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/digest_data.xml 
+2026-10-29 23:06:10,483 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_report.xml 
+2026-10-29 23:06:10,511 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/mail_template_data.xml 
+2026-10-29 23:06:10,537 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/onboarding_data.xml 
+2026-10-29 23:06:10,571 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/account_tour.xml 
+2026-10-29 23:06:10,577 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/ir_sequence.xml 
+2026-10-29 23:06:10,583 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_payment_view.xml 
+2026-10-29 23:06:10,669 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_automatic_entry_wizard_views.xml 
+2026-10-29 23:06:10,683 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_autopost_bills_wizard.xml 
+2026-10-29 23:06:10,694 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_unreconcile_view.xml 
+2026-10-29 23:06:10,701 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_move_reversal_view.xml 
+2026-10-29 23:06:10,716 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_resequence_views.xml 
+2026-10-29 23:06:10,732 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_payment_register_views.xml 
+2026-10-29 23:06:10,747 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_move_views.xml 
+2026-10-29 23:06:11,514 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/setup_wizards_view.xml 
+2026-10-29 23:06:11,542 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_account_views.xml 
+2026-10-29 23:06:11,586 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_group_views.xml 
+2026-10-29 23:06:11,607 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_journal_views.xml 
+2026-10-29 23:06:11,680 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_account_tag_views.xml 
+2026-10-29 23:06:11,703 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_bank_statement_views.xml 
+2026-10-29 23:06:11,746 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_reconcile_model_views.xml 
+2026-10-29 23:06:11,786 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_tax_views.xml 
+2026-10-29 23:06:11,872 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_full_reconcile_views.xml 
+2026-10-29 23:06:11,883 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_payment_term_views.xml 
+2026-10-29 23:06:11,915 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_payment_method.xml 
+2026-10-29 23:06:11,931 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/res_partner_bank_views.xml 
+2026-10-29 23:06:11,964 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/report_statement.xml 
+2026-10-29 23:06:11,981 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/terms_template.xml 
+2026-10-29 23:06:11,997 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_validate_move_view.xml 
+2026-10-29 23:06:12,013 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/res_company_views.xml 
+2026-10-29 23:06:12,046 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/product_view.xml 
+2026-10-29 23:06:12,087 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_analytic_plan_views.xml 
+2026-10-29 23:06:12,102 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_analytic_account_views.xml 
+2026-10-29 23:06:12,124 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_analytic_distribution_model_views.xml 
+2026-10-29 23:06:12,144 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_analytic_line_views.xml 
+2026-10-29 23:06:12,184 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/report_invoice.xml 
+2026-10-29 23:06:12,229 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/report/account_invoice_report_view.xml 
+2026-10-29 23:06:12,273 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_cash_rounding_view.xml 
+2026-10-29 23:06:12,296 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/ir_actions_views.xml 
+2026-10-29 23:06:12,308 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/ir_module_views.xml 
+2026-10-29 23:06:12,321 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/base_document_layout_views.xml 
+2026-10-29 23:06:12,341 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/res_config_settings_views.xml 
+2026-10-29 23:06:12,406 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/partner_view.xml 
+2026-10-29 23:06:12,523 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_journal_dashboard_view.xml 
+2026-10-29 23:06:12,552 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_portal_templates.xml 
+2026-10-29 23:06:12,610 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/report_payment_receipt_templates.xml 
+2026-10-29 23:06:12,624 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/service_cron.xml 
+2026-10-29 23:06:12,641 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_incoterms_view.xml 
+2026-10-29 23:06:12,670 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/account_incoterms_data.xml 
+2026-10-29 23:06:12,697 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/digest_views.xml 
+2026-10-29 23:06:12,714 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_move_send_wizard.xml 
+2026-10-29 23:06:12,728 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_move_send_batch_wizard.xml 
+2026-10-29 23:06:12,738 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/report/account_hash_integrity_templates.xml 
+2026-10-29 23:06:12,747 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/res_currency.xml 
+2026-10-29 23:06:12,763 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_menuitem.xml 
+2026-10-29 23:06:13,029 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_secure_entries_wizard.xml 
+2026-10-29 23:06:13,049 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/mail_message_views.xml 
+2026-10-29 23:06:13,082 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/accrued_orders.xml 
+2026-10-29 23:06:13,094 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/bill_preview_template.xml 
+2026-10-29 23:06:13,107 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/account_reports_data.xml 
+2026-10-29 23:06:13,134 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/uom_uom_views.xml 
+2026-10-29 23:06:13,146 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/product_views.xml 
+2026-10-29 23:06:13,165 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/tests_shared_js_python.xml 
+2026-10-29 23:06:13,171 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/account_lock_exception_views.xml 
+2026-10-29 23:06:13,181 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/views/report_templates.xml 
+2026-10-29 23:06:13,207 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/wizard/account_merge_wizard_views.xml 
+2026-10-29 23:06:13,226 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account/data/ir_config_parameter_data.xml 
+2026-10-29 23:06:13,430 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module account loaded in 8.72s, 5831 queries (+5831 other) 
+2026-10-29 23:06:13,430 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet_dashboard (42/67) 
+2026-10-29 23:06:13,559 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module spreadsheet_dashboard: creating or updating database tables 
+2026-10-29 23:06:13,917 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard/security/security.xml 
+2026-10-29 23:06:14,053 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard/security/ir.model.access.csv 
+2026-10-29 23:06:14,070 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard/views/spreadsheet_dashboard_views.xml 
+2026-10-29 23:06:14,103 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard/views/menu_views.xml 
+2026-10-29 23:06:14,147 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard/data/dashboard.xml 
+2026-10-29 23:06:14,193 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet_dashboard loaded in 0.76s, 337 queries (+337 other) 
+2026-10-29 23:06:14,194 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module stock (43/67) 
+2026-10-29 23:06:14,507 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module stock: creating or updating database tables 
+2026-10-29 23:06:18,201 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/security/stock_security.xml 
+2026-10-29 23:06:18,741 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/security/ir.model.access.csv 
+2026-10-29 23:06:18,849 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/digest_data.xml 
+2026-10-29 23:06:18,857 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/mail_templates.xml 
+2026-10-29 23:06:18,869 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/default_barcode_patterns.xml 
+2026-10-29 23:06:18,884 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/stock_data.xml 
+2026-10-29 23:06:19,188 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/stock_sequence_data.xml 
+2026-10-29 23:06:19,214 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/stock_traceability_report_data.xml 
+2026-10-29 23:06:19,219 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_stock_quantity.xml 
+2026-10-29 23:06:19,232 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_stock_reception.xml 
+2026-10-29 23:06:19,256 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/stock_report_views.xml 
+2026-10-29 23:06:19,314 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_package_barcode.xml 
+2026-10-29 23:06:19,337 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_lot_barcode.xml 
+2026-10-29 23:06:19,345 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_location_barcode.xml 
+2026-10-29 23:06:19,357 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_stockpicking_operations.xml 
+2026-10-29 23:06:19,380 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_deliveryslip.xml 
+2026-10-29 23:06:19,429 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_stockinventory.xml 
+2026-10-29 23:06:19,439 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_stock_rule.xml 
+2026-10-29 23:06:19,469 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/stock_lot_customer.xml 
+2026-10-29 23:06:19,492 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/package_templates.xml 
+2026-10-29 23:06:19,501 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/picking_templates.xml 
+2026-10-29 23:06:19,518 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/product_templates.xml 
+2026-10-29 23:06:19,532 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/product_packaging.xml 
+2026-10-29 23:06:19,538 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/report/report_return_slip.xml 
+2026-10-29 23:06:19,549 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/data/mail_template_data.xml 
+2026-10-29 23:06:19,559 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_menu_views.xml 
+2026-10-29 23:06:19,658 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_change_product_qty_views.xml 
+2026-10-29 23:06:19,674 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_picking_return_views.xml 
+2026-10-29 23:06:19,690 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_inventory_conflict.xml 
+2026-10-29 23:06:19,706 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_backorder_confirmation_views.xml 
+2026-10-29 23:06:19,718 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_quantity_history.xml 
+2026-10-29 23:06:19,727 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_request_count.xml 
+2026-10-29 23:06:19,741 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_replenishment_info.xml 
+2026-10-29 23:06:19,768 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_rules_report_views.xml 
+2026-10-29 23:06:19,780 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_warn_insufficient_qty_views.xml 
+2026-10-29 23:06:19,801 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/product_replenish_views.xml 
+2026-10-29 23:06:19,814 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/product_label_layout_views.xml 
+2026-10-29 23:06:19,826 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_track_confirmation_views.xml 
+2026-10-29 23:06:19,838 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_orderpoint_snooze_views.xml 
+2026-10-29 23:06:19,852 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_package_destination_views.xml 
+2026-10-29 23:06:19,869 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_inventory_adjustment_name.xml 
+2026-10-29 23:06:19,886 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_inventory_warning.xml 
+2026-10-29 23:06:19,903 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_label_type.xml 
+2026-10-29 23:06:19,911 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_lot_label_layout.xml 
+2026-10-29 23:06:19,920 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/wizard/stock_quant_relocate.xml 
+2026-10-29 23:06:19,936 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/res_partner_views.xml 
+2026-10-29 23:06:19,977 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/product_strategy_views.xml 
+2026-10-29 23:06:20,019 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_lot_views.xml 
+2026-10-29 23:06:20,072 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_scrap_views.xml 
+2026-10-29 23:06:20,122 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_quant_views.xml 
+2026-10-29 23:06:20,467 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_warehouse_views.xml 
+2026-10-29 23:06:20,499 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_move_line_views.xml 
+2026-10-29 23:06:20,569 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_move_views.xml 
+2026-10-29 23:06:20,674 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_picking_views.xml 
+2026-10-29 23:06:20,874 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_picking_type_views.xml 
+2026-10-29 23:06:20,929 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/product_views.xml 
+2026-10-29 23:06:21,152 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_location_views.xml 
+2026-10-29 23:06:21,240 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_orderpoint_views.xml 
+2026-10-29 23:06:21,315 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_storage_category_views.xml 
+2026-10-29 23:06:21,360 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/res_config_settings_views.xml 
+2026-10-29 23:06:21,428 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/report_stock_traceability.xml 
+2026-10-29 23:06:21,445 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_template.xml 
+2026-10-29 23:06:21,457 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_rule_views.xml 
+2026-10-29 23:06:21,526 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_package_level_views.xml 
+2026-10-29 23:06:21,558 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_package_type_view.xml 
+2026-10-29 23:06:21,608 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock/views/stock_forecasted.xml 
+2026-10-29 23:06:21,714 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module stock loaded in 7.52s, 5198 queries (+5198 other) 
+2026-10-29 23:06:21,714 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module account_add_gln (44/67) 
+2026-10-29 23:06:21,855 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module account_add_gln: creating or updating database tables 
+2026-10-29 23:06:22,145 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_add_gln/views/res_partner_views.xml 
+2026-10-29 23:06:22,199 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module account_add_gln loaded in 0.49s, 104 queries (+104 other) 
+2026-10-29 23:06:22,199 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module account_edi_ubl_cii (45/67) 
+2026-10-29 23:06:22,374 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module account_edi_ubl_cii: creating or updating database tables 
+2026-10-29 23:06:22,409 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.peppol_endpoint 
+2026-10-29 23:06:22,409 1031 INFO tmp_lote6_toll_20261029 odoo.models: Prepare computation of res.partner.peppol_eas 
+2026-10-29 23:06:22,701 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/data/cii_22_templates.xml 
+2026-10-29 23:06:22,747 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/data/ubl_20_templates.xml 
+2026-10-29 23:06:22,897 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/data/ir_config_parameter_data.xml 
+2026-10-29 23:06:22,905 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/data/ubl_21_templates.xml 
+2026-10-29 23:06:22,980 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/views/account_move_views.xml 
+2026-10-29 23:06:22,991 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/views/res_partner_views.xml 
+2026-10-29 23:06:23,026 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_edi_ubl_cii/report/account_edi_ubl_cii_report_templates.xml 
+2026-10-29 23:06:23,106 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module account_edi_ubl_cii loaded in 0.91s, 446 queries (+446 other) 
+2026-10-29 23:06:23,106 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module account_payment (46/67) 
+2026-10-29 23:06:23,284 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module account_payment: creating or updating database tables 
+2026-10-29 23:06:23,674 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/data/ir_config_parameter.xml 
+2026-10-29 23:06:23,687 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/data/onboarding_data.xml 
+2026-10-29 23:06:23,707 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/security/ir.model.access.csv 
+2026-10-29 23:06:23,723 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/security/ir_rules.xml 
+2026-10-29 23:06:23,734 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/account_payment_menus.xml 
+2026-10-29 23:06:23,769 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/account_portal_templates.xml 
+2026-10-29 23:06:23,860 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/account_move_views.xml 
+2026-10-29 23:06:23,894 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/account_journal_views.xml 
+2026-10-29 23:06:23,920 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/account_payment_views.xml 
+2026-10-29 23:06:23,941 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/payment_form_templates.xml 
+2026-10-29 23:06:23,949 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/payment_provider_views.xml 
+2026-10-29 23:06:23,960 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/views/payment_transaction_views.xml 
+2026-10-29 23:06:23,970 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/wizards/account_payment_register_views.xml 
+2026-10-29 23:06:23,981 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/wizards/payment_link_wizard_views.xml 
+2026-10-29 23:06:24,003 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/wizards/payment_refund_wizard_views.xml 
+2026-10-29 23:06:24,015 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading account_payment/wizards/res_config_settings_views.xml 
+2026-10-29 23:06:24,106 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module account_payment loaded in 1.00s, 534 queries (+534 other) 
+2026-10-29 23:06:24,106 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module purchase (47/67) 
+2026-10-29 23:06:24,286 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module purchase: creating or updating database tables 
+2026-10-29 23:06:25,309 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/security/purchase_security.xml 
+2026-10-29 23:06:25,653 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/security/ir.model.access.csv 
+2026-10-29 23:06:25,711 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/digest_data.xml 
+2026-10-29 23:06:25,720 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/account_move_views.xml 
+2026-10-29 23:06:25,748 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/purchase_data.xml 
+2026-10-29 23:06:25,784 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/ir_cron_data.xml 
+2026-10-29 23:06:25,794 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/report/purchase_reports.xml 
+2026-10-29 23:06:25,805 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/purchase_views.xml 
+2026-10-29 23:06:26,120 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/purchase_bill_line_match_views.xml 
+2026-10-29 23:06:26,134 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/res_config_settings_views.xml 
+2026-10-29 23:06:26,174 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/product_views.xml 
+2026-10-29 23:06:26,286 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/res_partner_views.xml 
+2026-10-29 23:06:26,373 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/report/purchase_bill_views.xml 
+2026-10-29 23:06:26,387 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/report/purchase_report_views.xml 
+2026-10-29 23:06:26,435 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/mail_templates.xml 
+2026-10-29 23:06:26,446 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/mail_template_data.xml 
+2026-10-29 23:06:26,466 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/portal_templates.xml 
+2026-10-29 23:06:26,530 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/report/purchase_order_templates.xml 
+2026-10-29 23:06:26,551 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/report/purchase_quotation_templates.xml 
+2026-10-29 23:06:26,565 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/product_packaging_views.xml 
+2026-10-29 23:06:26,588 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/views/analytic_account_views.xml 
+2026-10-29 23:06:26,609 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/wizard/bill_to_po_wizard_views.xml 
+2026-10-29 23:06:26,622 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase/data/purchase_tour.xml 
+2026-10-29 23:06:26,678 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module purchase loaded in 2.57s, 1678 queries (+1678 other) 
+2026-10-29 23:06:26,678 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module snailmail_account (48/67) 
+2026-10-29 23:06:26,838 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module snailmail_account: creating or updating database tables 
+2026-10-29 23:06:27,036 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading snailmail_account/views/res_config_settings_views.xml 
+2026-10-29 23:06:27,100 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module snailmail_account loaded in 0.42s, 119 queries (+119 other) 
+2026-10-29 23:06:27,100 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet_account (49/67) 
+2026-10-29 23:06:27,255 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module spreadsheet_account: creating or updating database tables 
+2026-10-29 23:06:27,366 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet_account loaded in 0.27s, 59 queries (+59 other) 
+2026-10-29 23:06:27,366 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet_dashboard_account (50/67) 
+2026-10-29 23:06:27,650 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard_account/data/dashboards.xml 
+2026-10-29 23:06:27,722 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet_dashboard_account loaded in 0.36s, 40 queries (+40 other) 
+2026-10-29 23:06:27,722 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module stock_account (51/67) 
+2026-10-29 23:06:27,881 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module stock_account: creating or updating database tables 
+2026-10-29 23:06:28,691 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/security/stock_account_security.xml 
+2026-10-29 23:06:28,764 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/security/ir.model.access.csv 
+2026-10-29 23:06:28,791 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/data/stock_account_data.xml 
+2026-10-29 23:06:28,807 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/stock_account_views.xml 
+2026-10-29 23:06:29,019 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/res_config_settings_views.xml 
+2026-10-29 23:06:29,048 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/data/product_data.xml 
+2026-10-29 23:06:29,065 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/report_invoice.xml 
+2026-10-29 23:06:29,077 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/stock_valuation_layer_views.xml 
+2026-10-29 23:06:29,214 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/stock_quant_views.xml 
+2026-10-29 23:06:29,241 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/product_views.xml 
+2026-10-29 23:06:29,302 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/stock_lot_views.xml 
+2026-10-29 23:06:29,315 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/views/stock_picking_views.xml 
+2026-10-29 23:06:29,326 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/wizard/stock_request_count.xml 
+2026-10-29 23:06:29,336 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/wizard/stock_valuation_layer_revaluation_views.xml 
+2026-10-29 23:06:29,353 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/wizard/stock_quantity_history.xml 
+2026-10-29 23:06:29,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_account/report/account_invoice_report_view.xml 
+2026-10-29 23:06:29,403 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module stock_account loaded in 1.68s, 886 queries (+886 other) 
+2026-10-29 23:06:29,403 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module stock_sms (52/67) 
+2026-10-29 23:06:29,554 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module stock_sms: creating or updating database tables 
+2026-10-29 23:06:29,764 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_sms/data/sms_data.xml 
+2026-10-29 23:06:29,772 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_sms/views/res_config_settings_views.xml 
+2026-10-29 23:06:29,830 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_sms/wizard/confirm_stock_sms_views.xml 
+2026-10-29 23:06:29,838 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_sms/security/ir.model.access.csv 
+2026-10-29 23:06:29,860 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading stock_sms/security/sms_security.xml 
+2026-10-29 23:06:29,915 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module stock_sms loaded in 0.51s, 190 queries (+190 other) 
+2026-10-29 23:06:29,915 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module purchase_edi_ubl_bis3 (53/67) 
+2026-10-29 23:06:30,223 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module purchase_edi_ubl_bis3: creating or updating database tables 
+2026-10-29 23:06:30,356 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_edi_ubl_bis3/data/bis3_templates.xml 
+2026-10-29 23:06:30,416 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_edi_ubl_bis3/views/portal_templates_edi_ubl_connect_software.xml 
+2026-10-29 23:06:30,445 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module purchase_edi_ubl_bis3 loaded in 0.53s, 146 queries (+146 other) 
+2026-10-29 23:06:30,445 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module purchase_stock (54/67) 
+2026-10-29 23:06:30,604 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module purchase_stock: creating or updating database tables 
+2026-10-29 23:06:31,365 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/security/ir.model.access.csv 
+2026-10-29 23:06:31,392 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/data/purchase_stock_data.xml 
+2026-10-29 23:06:31,505 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/data/mail_templates.xml 
+2026-10-29 23:06:31,514 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/report/vendor_delay_report.xml 
+2026-10-29 23:06:31,532 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/purchase_views.xml 
+2026-10-29 23:06:31,584 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/stock_views.xml 
+2026-10-29 23:06:31,631 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/stock_picking_views.xml 
+2026-10-29 23:06:31,640 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/stock_rule_views.xml 
+2026-10-29 23:06:31,653 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/res_config_settings_views.xml 
+2026-10-29 23:06:31,728 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/res_partner_views.xml 
+2026-10-29 23:06:31,769 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/stock_lot_views.xml 
+2026-10-29 23:06:31,784 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/stock_orderpoint_views.xml 
+2026-10-29 23:06:31,794 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/views/product_views.xml 
+2026-10-29 23:06:31,844 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/report/purchase_report_views.xml 
+2026-10-29 23:06:31,857 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/report/purchase_report_templates.xml 
+2026-10-29 23:06:31,873 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/report/report_stock_rule.xml 
+2026-10-29 23:06:31,881 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/wizard/stock_replenishment_info.xml 
+2026-10-29 23:06:31,905 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading purchase_stock/wizard/product_replenish_views.xml 
+2026-10-29 23:06:31,963 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module purchase_stock loaded in 1.52s, 924 queries (+924 other) 
+2026-10-29 23:06:31,964 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale (55/67) 
+2026-10-29 23:06:32,150 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale: creating or updating database tables 
+2026-10-29 23:06:33,692 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/security/ir.model.access.csv 
+2026-10-29 23:06:33,789 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/security/res_groups.xml 
+2026-10-29 23:06:33,893 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/security/ir_rules.xml 
+2026-10-29 23:06:34,103 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/report/account_invoice_report_views.xml 
+2026-10-29 23:06:34,138 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/report/ir_actions_report_templates.xml 
+2026-10-29 23:06:34,173 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/report/ir_actions_report.xml 
+2026-10-29 23:06:34,187 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/report/sale_report_views.xml 
+2026-10-29 23:06:34,248 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/ir_cron.xml 
+2026-10-29 23:06:34,262 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/ir_sequence_data.xml 
+2026-10-29 23:06:34,268 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/mail_activity_type_data.xml 
+2026-10-29 23:06:34,275 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/mail_message_subtype_data.xml 
+2026-10-29 23:06:34,304 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/mail_template_data.xml 
+2026-10-29 23:06:34,333 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/sale_tour.xml 
+2026-10-29 23:06:34,338 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/data/ir_config_parameter.xml 
+2026-10-29 23:06:34,346 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/account_accrued_orders_wizard_views.xml 
+2026-10-29 23:06:34,352 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/mass_cancel_orders_views.xml 
+2026-10-29 23:06:34,365 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/payment_link_wizard_views.xml 
+2026-10-29 23:06:34,383 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/res_config_settings_views.xml 
+2026-10-29 23:06:34,425 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/sale_make_invoice_advance_views.xml 
+2026-10-29 23:06:34,439 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/sale_order_cancel_views.xml 
+2026-10-29 23:06:34,447 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/wizard/sale_order_discount_views.xml 
+2026-10-29 23:06:34,459 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/sale_order_views.xml 
+2026-10-29 23:06:34,694 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/account_views.xml 
+2026-10-29 23:06:34,768 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/crm_team_views.xml 
+2026-10-29 23:06:34,811 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/mail_activity_views.xml 
+2026-10-29 23:06:34,816 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/mail_activity_plan_views.xml 
+2026-10-29 23:06:34,822 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/payment_views.xml 
+2026-10-29 23:06:34,848 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/product_document_views.xml 
+2026-10-29 23:06:34,881 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/product_packaging_views.xml 
+2026-10-29 23:06:34,904 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/product_template_views.xml 
+2026-10-29 23:06:34,924 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/product_views.xml 
+2026-10-29 23:06:35,012 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/res_partner_views.xml 
+2026-10-29 23:06:35,089 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/sale_order_line_views.xml 
+2026-10-29 23:06:35,113 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/sale_portal_templates.xml 
+2026-10-29 23:06:35,172 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/utm_campaign_views.xml 
+2026-10-29 23:06:35,191 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale/views/sale_menus.xml 
+2026-10-29 23:06:35,473 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale loaded in 3.51s, 2557 queries (+2557 other) 
+2026-10-29 23:06:35,473 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet_dashboard_stock_account (56/67) 
+2026-10-29 23:06:35,643 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard_stock_account/data/dashboards.xml 
+2026-10-29 23:06:35,707 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet_dashboard_stock_account loaded in 0.23s, 33 queries (+33 other) 
+2026-10-29 23:06:35,707 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module madenat_lumber_core (57/67) 
+2026-10-29 23:06:36,062 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core: ✅ Dependencias Python validadas: pandas, pdfplumber, openpyxl 
+2026-10-29 23:06:36,063 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-29 23:06:36,064 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-29 23:06:36,093 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO UoM: MBF_TO_M3 = 2.36 validado correctamente 
+2026-10-29 23:06:36,093 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Factor inverso: M3_TO_MBF = 0.4237288135593220338983050847 
+2026-10-29 23:06:36,093 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Diferencia vs NIST (2.359737): 0.0111% 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom: ✅ REGLA DE ORO IMPERIAL: Factor 1550.003 validado correctamente 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Ajuste S2S: +0.125" (1/8 pulgada) 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Redondeo: r3() ROUND_HALF_UP a 3 decimales 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Tabla S2S: delegada a modelo lumber.width.s2s.map en BD (AD-120/AD-122) 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.utils_uom:    Fuente: Excel ANCHOS-COMPRA-COL-ROUGH-A-S2S.xlsx 
+2026-10-29 23:06:36,094 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models: ✅ Todas las validaciones UoM ejecutadas correctamente en startup 
+2026-10-29 23:06:36,277 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module madenat_lumber_core: creating or updating database tables 
+2026-10-29 23:06:36,767 1031 ERROR tmp_lote6_toll_20261029 odoo.schema: Table 'stock_lot': unable to add constraint 'stock_lot_check_cost_positive' as CHECK(total_cost_usd >= 0) 
+2026-10-29 23:06:37,116 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_model: Two fields (effect_summary, has_physical_effect) of lumber.reception.reset.wizard() have the same label: Efecto físico previsto. [Modules: madenat_lumber_core and madenat_lumber_core] 
+2026-10-29 23:06:37,116 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_model: Two fields (effect_summary, has_physical_effect) of madenat.guia.processing.reopen.wizard() have the same label: Efecto físico previsto. [Modules: madenat_lumber_core and madenat_lumber_core] 
+2026-10-29 23:06:38,762 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/security/madenat_security.xml 
+2026-10-29 23:06:39,051 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/security/ir.model.access.csv 
+2026-10-29 23:06:39,187 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/madenat_res_config_settings_views.xml 
+2026-10-29 23:06:39,224 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/madenat_subproducto_views.xml 
+2026-10-29 23:06:39,246 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/stock_lot_views.xml 
+2026-10-29 23:06:39,298 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/stock_picking_views.xml 
+2026-10-29 23:06:39,338 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/stock_lot_actions.xml 
+2026-10-29 23:06:39,343 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/lumber_reception_mass_update_views.xml 
+2026-10-29 23:06:39,360 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/madenat_guia_mass_update_views.xml 
+2026-10-29 23:06:39,371 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/madenat_sv_operation_views.xml 
+2026-10-29 23:06:39,401 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/lumber_reception_reset_wizard_views.xml 
+2026-10-29 23:06:39,413 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/madenat_guia_processing_reopen_wizard_views.xml 
+2026-10-29 23:06:39,427 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/madenat_guia_processing_historical_reverse_wizard_views.xml 
+2026-10-29 23:06:39,444 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/wizard/madenat_guia_processing_documental_correction_wizard_views.xml 
+2026-10-29 23:06:39,458 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/guia_processing_views.xml 
+2026-10-29 23:06:39,531 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/madenat_views_extensions.xml 
+2026-10-29 23:06:39,557 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_costos” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_views_extensions.xml',
+ 'line': 2,
+ 'name': 'stock.lot form',
+ 'view': ir.ui.view(1312,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_extension'} 
+2026-10-29 23:06:39,557 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_operaciones” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_views_extensions.xml',
+ 'line': 24,
+ 'name': 'stock.lot form',
+ 'view': ir.ui.view(1312,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_extension'} 
+2026-10-29 23:06:39,557 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_gerencia” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_views_extensions.xml',
+ 'line': 24,
+ 'name': 'stock.lot form',
+ 'view': ir.ui.view(1312,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_extension'} 
+2026-10-29 23:06:39,588 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/guia_processing_list_search.xml 
+2026-10-29 23:06:39,607 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/lumber_reception_views.xml 
+2026-10-29 23:06:39,658 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/lumber_reception_views.xml',
+ 'line': 217,
+ 'name': 'lumber.reception.form.professional',
+ 'view': ir.ui.view(1316,),
+ 'view.model': 'lumber.reception',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_lumber_reception_form'} 
+2026-10-29 23:06:39,658 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/lumber_reception_views.xml',
+ 'line': 226,
+ 'name': 'lumber.reception.form.professional',
+ 'view': ir.ui.view(1316,),
+ 'view.model': 'lumber.reception',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_lumber_reception_form'} 
+2026-10-29 23:06:39,658 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: A <i> with fa class (fa fa-exclamation-triangle text-danger) must have title in its tag, parents, descendants or have text
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/lumber_reception_views.xml',
+ 'line': 227,
+ 'name': 'lumber.reception.form.professional',
+ 'view': ir.ui.view(1316,),
+ 'view.model': 'lumber.reception',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_lumber_reception_form'} 
+2026-10-29 23:06:39,660 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/lumber_reception_views.xml',
+ 'line': 277,
+ 'name': 'lumber.reception.form.professional',
+ 'view': ir.ui.view(1316,),
+ 'view.model': 'lumber.reception',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_lumber_reception_form'} 
+2026-10-29 23:06:39,660 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: A <i> with fa class (fa fa-exclamation-triangle text-warning) must have title in its tag, parents, descendants or have text
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/lumber_reception_views.xml',
+ 'line': 278,
+ 'name': 'lumber.reception.form.professional',
+ 'view': ir.ui.view(1316,),
+ 'view.model': 'lumber.reception',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_lumber_reception_form'} 
+2026-10-29 23:06:39,708 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/lumber_reception_kanban_views.xml 
+2026-10-29 23:06:39,719 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: 'kanban-box' is deprecated, define a 'card' template instead 
+2026-10-29 23:06:39,725 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/stock_location_views.xml 
+2026-10-29 23:06:39,763 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/lumber_core_menu.xml 
+2026-10-29 23:06:39,996 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/stock_quant_patio_views.xml 
+2026-10-29 23:06:40,034 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/madenat_sv_operation_views.xml 
+2026-10-29 23:06:40,080 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_costos” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_sv_operation_views.xml',
+ 'line': 2,
+ 'name': 'stock.lot.form.madenat.sv',
+ 'view': ir.ui.view(1334,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_sv'} 
+2026-10-29 23:06:40,081 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_operaciones” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_sv_operation_views.xml',
+ 'line': 24,
+ 'name': 'stock.lot.form.madenat.sv',
+ 'view': ir.ui.view(1334,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_sv'} 
+2026-10-29 23:06:40,081 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_gerencia” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_lumber_core/views/madenat_sv_operation_views.xml',
+ 'line': 24,
+ 'name': 'stock.lot.form.madenat.sv',
+ 'view': ir.ui.view(1334,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_madenat_sv'} 
+2026-10-29 23:06:40,109 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/lumber_ingestion_config_views.xml 
+2026-10-29 23:06:40,285 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/madenat_lumber_product_default_views.xml 
+2026-10-29 23:06:40,314 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/views/lumber_volume_comparison_views.xml 
+2026-10-29 23:06:40,352 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/reports/madenat_guia_report.xml 
+2026-10-29 23:06:40,358 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/reports/madenat_guia_report_templates.xml 
+2026-10-29 23:06:40,367 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/ingestion_config.xml 
+2026-10-29 23:06:40,403 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/ingestion_seed_fase2.xml 
+2026-10-29 23:06:40,540 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/ingestion_seed_fase3.xml 
+2026-10-29 23:06:40,562 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/thickness_real_map_data.xml 
+2026-10-29 23:06:40,594 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/packing_estandar_madenat_data.xml 
+2026-10-29 23:06:40,598 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/madenat_subproducto_data.xml 
+2026-10-29 23:06:40,614 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/madenat_lumber_product_default_data.xml 
+2026-10-29 23:06:40,662 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/madenat_volume_lot_sequence.xml 
+2026-10-29 23:06:40,668 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/madenat_sv_operation_sequence.xml 
+2026-10-29 23:06:40,673 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_core/data/thickness_visual_ranges_seed.xml 
+2026-10-29 23:06:40,717 1031 WARNING tmp_lote6_toll_20261029 odoo.modules.loading: The models ['madenat.sv.internal.capability', 'madenat.sv.internal.marker'] have no access rules in module madenat_lumber_core, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+madenat_lumber_core.access_madenat_sv_internal_capability,access_madenat_sv_internal_capability,madenat_lumber_core.model_madenat_sv_internal_capability,base.group_user,1,0,0,0
+madenat_lumber_core.access_madenat_sv_internal_marker,access_madenat_sv_internal_marker,madenat_lumber_core.model_madenat_sv_internal_marker,base.group_user,1,0,0,0 
+2026-10-29 23:06:40,788 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module madenat_lumber_core loaded in 5.08s, 3033 queries (+3033 other) 
+2026-10-29 23:06:40,789 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_async_emails (58/67) 
+2026-10-29 23:06:40,956 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale_async_emails: creating or updating database tables 
+2026-10-29 23:06:41,077 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_async_emails/data/ir_config_parameter.xml 
+2026-10-29 23:06:41,086 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_async_emails/data/ir_cron.xml 
+2026-10-29 23:06:41,288 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_async_emails loaded in 0.50s, 76 queries (+76 other) 
+2026-10-29 23:06:41,288 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_edi_ubl (59/67) 
+2026-10-29 23:06:41,457 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale_edi_ubl: creating or updating database tables 
+2026-10-29 23:06:41,567 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_edi_ubl loaded in 0.28s, 65 queries (+65 other) 
+2026-10-29 23:06:41,567 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_purchase (60/67) 
+2026-10-29 23:06:41,756 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale_purchase: creating or updating database tables 
+2026-10-29 23:06:41,979 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_purchase/data/mail_templates.xml 
+2026-10-29 23:06:41,999 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_purchase/views/product_views.xml 
+2026-10-29 23:06:42,026 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_purchase/views/sale_order_views.xml 
+2026-10-29 23:06:42,048 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_purchase/views/purchase_order_views.xml 
+2026-10-29 23:06:42,069 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_purchase/wizards/sale_order_cancel_views.xml 
+2026-10-29 23:06:42,103 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_purchase loaded in 0.54s, 235 queries (+235 other) 
+2026-10-29 23:06:42,103 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_sms (61/67) 
+2026-10-29 23:06:42,287 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_sms/security/ir.model.access.csv 
+2026-10-29 23:06:42,331 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_sms/security/security.xml 
+2026-10-29 23:06:42,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_sms loaded in 0.26s, 42 queries (+42 other) 
+2026-10-29 23:06:42,364 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_stock (62/67) 
+2026-10-29 23:06:42,748 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale_stock: creating or updating database tables 
+2026-10-29 23:06:42,904 1031 ERROR tmp_lote6_toll_20261029 odoo.schema: Table 'stock_lot': unable to add constraint 'stock_lot_check_cost_positive' as CHECK(total_cost_usd >= 0) 
+2026-10-29 23:06:43,369 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/security/sale_stock_security.xml 
+2026-10-29 23:06:43,382 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/security/ir.model.access.csv 
+2026-10-29 23:06:43,417 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/sale_order_views.xml 
+2026-10-29 23:06:43,514 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/stock_route_views.xml 
+2026-10-29 23:06:43,528 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/res_config_settings_views.xml 
+2026-10-29 23:06:43,586 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/sale_stock_portal_template.xml 
+2026-10-29 23:06:43,598 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/stock_lot_views.xml 
+2026-10-29 23:06:43,616 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/res_users_views.xml 
+2026-10-29 23:06:43,651 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/views/stock_picking_views.xml 
+2026-10-29 23:06:43,680 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/report/sale_order_report_templates.xml 
+2026-10-29 23:06:43,689 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/report/stock_report_deliveryslip.xml 
+2026-10-29 23:06:43,698 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/data/mail_templates.xml 
+2026-10-29 23:06:43,710 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/data/sale_stock_data.xml 
+2026-10-29 23:06:43,715 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/wizard/stock_rules_report_views.xml 
+2026-10-29 23:06:43,727 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading sale_stock/wizard/sale_order_cancel_views.xml 
+2026-10-29 23:06:43,772 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_stock loaded in 1.41s, 728 queries (+728 other) 
+2026-10-29 23:06:43,773 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module spreadsheet_dashboard_sale (63/67) 
+2026-10-29 23:06:43,959 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading spreadsheet_dashboard_sale/data/dashboards.xml 
+2026-10-29 23:06:44,053 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module spreadsheet_dashboard_sale loaded in 0.28s, 49 queries (+49 other) 
+2026-10-29 23:06:44,053 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module madenat_lumber_purchasing (64/67) 
+2026-10-29 23:06:44,244 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module madenat_lumber_purchasing: creating or updating database tables 
+2026-10-29 23:06:44,395 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_purchasing/security/ir.model.access.csv 
+2026-10-29 23:06:44,418 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_purchasing/views/purchase_order_views.xml 
+2026-10-29 23:06:44,632 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_purchasing/views/lumber_reception_views.xml 
+2026-10-29 23:06:44,651 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_purchasing/views/purchase_order_views_ce.xml 
+2026-10-29 23:06:46,738 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_purchasing/views/lumber_purchase_menu.xml 
+2026-10-29 23:06:46,791 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module madenat_lumber_purchasing loaded in 2.74s, 213 queries (+213 other) 
+2026-10-29 23:06:46,791 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module sale_purchase_stock (65/67) 
+2026-10-29 23:06:46,973 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module sale_purchase_stock: creating or updating database tables 
+2026-10-29 23:06:47,113 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module sale_purchase_stock loaded in 0.32s, 80 queries (+80 other) 
+2026-10-29 23:06:47,113 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module madenat_lumber_reception_improvements (66/67) 
+2026-10-29 23:06:47,287 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module madenat_lumber_reception_improvements: creating or updating database tables 
+2026-10-29 23:06:47,442 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_reception_improvements/security/ir.model.access.csv 
+2026-10-29 23:06:47,457 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_lumber_reception_improvements/views/res_partner_views.xml 
+2026-10-29 23:06:47,516 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module madenat_lumber_reception_improvements loaded in 0.40s, 130 queries (+130 other) 
+2026-10-29 23:06:47,516 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Loading module madenat_toll_processing (67/67) 
+2026-10-29 23:06:47,702 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: module madenat_toll_processing: creating or updating database tables 
+2026-10-29 23:06:47,763 1031 ERROR tmp_lote6_toll_20261029 odoo.schema: Table 'stock_lot': unable to add constraint 'stock_lot_check_cost_positive' as CHECK(total_cost_usd >= 0) 
+2026-10-29 23:06:48,073 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/security/toll_processing_security.xml 
+2026-10-29 23:06:48,186 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/security/ir.model.access.csv 
+2026-10-29 23:06:48,221 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/data/sequences.xml 
+2026-10-29 23:06:48,230 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/views/toll_processing_order_views.xml 
+2026-10-29 23:06:48,440 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/views/stock_lot_views.xml 
+2026-10-29 23:06:48,462 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_costos” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_toll_processing/views/stock_lot_views.xml',
+ 'line': 2,
+ 'name': 'stock.lot.form.inherit.toll',
+ 'view': ir.ui.view(1400,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_inherit_toll'} 
+2026-10-29 23:06:48,463 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_operaciones” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_toll_processing/views/stock_lot_views.xml',
+ 'line': 24,
+ 'name': 'stock.lot.form.inherit.toll',
+ 'view': ir.ui.view(1400,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_inherit_toll'} 
+2026-10-29 23:06:48,463 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.base.models.ir_ui_view: The group “group_madenat_gerencia” defined in view does not exist!
+View error context:
+{'file': '/mnt/extra-addons/madenat_toll_processing/views/stock_lot_views.xml',
+ 'line': 24,
+ 'name': 'stock.lot.form.inherit.toll',
+ 'view': ir.ui.view(1400,),
+ 'view.model': 'stock.lot',
+ 'view.parent': ir.ui.view(1292,),
+ 'xmlid': 'view_stock_lot_form_inherit_toll'} 
+2026-10-29 23:06:48,466 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/views/lumber_reception_views.xml 
+2026-10-29 23:06:48,490 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/views/integration_views.xml 
+2026-10-29 23:06:48,519 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/views/menus.xml 
+2026-10-29 23:06:48,539 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: loading madenat_toll_processing/wizards/create_toll_order_wizard_views.xml 
+2026-10-29 23:06:48,580 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Module madenat_toll_processing loaded in 1.06s, 467 queries (+467 other) 
+2026-10-29 23:06:48,580 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: 67 modules loaded in 78.45s, 47118 queries (+47119 extra) 
+2026-10-29 23:06:50,247 1031 INFO tmp_lote6_toll_20261029 odoo.modules.loading: Modules loaded. 
+2026-10-29 23:06:51,689 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: Registry changed, signaling through the database 
+2026-10-29 23:06:51,690 1031 INFO tmp_lote6_toll_20261029 odoo.modules.registry: Registry loaded in 96.226s 
+2026-10-29 23:06:51,691 1031 INFO tmp_lote6_toll_20261029 odoo.service.server: Starting post tests 
+2026-10-29 23:06:51,881 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_01_lot_in_specific_yard ... 
+2026-10-29 23:06:51,954 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: 🔄 Iniciando consumo automático para Orden Toll TOLL-00001 con 1 asignaciones 
+2026-10-29 23:06:52,067 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: ✅ Consumo creado y validado: WH/OUT/00001 
+2026-10-29 23:06:52,075 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_02_material_distributed_across_locations ... 
+2026-10-29 23:06:52,135 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: 🔄 Iniciando consumo automático para Orden Toll TOLL-00002 con 2 asignaciones 
+2026-10-29 23:06:52,273 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: ✅ Consumo creado y validado: WH/OUT/00002 
+2026-10-29 23:06:52,281 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_03_insufficient_availability ... 
+2026-10-29 23:06:52,433 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_04_incompatible_company ... 
+2026-10-29 23:06:53,898 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_05_processor_distinct_from_supplier ... 
+2026-10-29 23:06:53,900 1031 WARNING tmp_lote6_toll_20261029 odoo.addons.madenat_lumber_core.models.lumber_reception: Advertencia operativa: No existe ningún patio activo clasificado como tipo 'port'. No se realizó asignación automática. 
+2026-10-29 23:06:53,915 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: ====================================================================== 
+2026-10-29 23:06:53,915 1031 ERROR tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: ERROR: TestTollConsumptionAndProcessor.test_05_processor_distinct_from_supplier
+Traceback (most recent call last):
+  File "/mnt/extra-addons/madenat_toll_processing/tests/test_toll_consumption_and_processor.py", line 289, in test_05_processor_distinct_from_supplier
+    reception = self.env['lumber.reception'].create({
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/extra-addons/madenat_lumber_core/models/lumber_reception.py", line 932, in create
+    recs = super().create(vals)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "<decorator-gen-53>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 497, in _model_create_multi
+    return create(self, [arg])
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 294, in create
+    threads = super(MailThread, self).create(vals_list)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<decorator-gen-0>", line 2, in create
+  File "/usr/lib/python3/dist-packages/odoo/api.py", line 498, in _model_create_multi
+    return create(self, arg)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5005, in create
+    raise ValueError("Invalid field %r on model %r" % (key, self._name))
+ValueError: Invalid field 'assignment_location_id' on model 'lumber.reception'
+ 
+2026-10-29 23:06:53,920 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_06_processor_selection_conserved_through_lifecycle ... 
+2026-10-29 23:06:54,011 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: 🔄 Iniciando consumo automático para Orden Toll TOLL-00005 con 1 asignaciones 
+2026-10-29 23:06:54,095 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: ✅ Consumo creado y validado: WH/OUT/00004 
+2026-10-29 23:06:54,915 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_07_no_duplicate_move_creation ... 
+2026-10-29 23:06:54,981 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: 🔄 Iniciando consumo automático para Orden Toll TOLL-00006 con 1 asignaciones 
+2026-10-29 23:06:55,099 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: ✅ Consumo creado y validado: WH/OUT/00005 
+2026-10-29 23:06:55,100 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: Orden TOLL-00006 ya tiene consumo activo (WH/OUT/00005, estado done) 
+2026-10-29 23:06:55,108 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_08_idempotency_cancelled_picking_allows_recreation ... 
+2026-10-29 23:06:55,168 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: 🔄 Iniciando consumo automático para Orden Toll TOLL-00007 con 1 asignaciones 
+2026-10-29 23:06:55,277 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.models.toll_processing_order: ✅ Consumo creado y validado: WH/OUT/00006 
+2026-10-29 23:06:55,290 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: ====================================================================== 
+2026-10-29 23:06:55,290 1031 ERROR tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: ERROR: TestTollConsumptionAndProcessor.test_08_idempotency_cancelled_picking_allows_recreation
+Traceback (most recent call last):
+  File "/mnt/extra-addons/madenat_toll_processing/tests/test_toll_consumption_and_processor.py", line 269, in test_08_idempotency_cancelled_picking_allows_recreation
+    p1.action_cancel()
+  File "/usr/lib/python3/dist-packages/odoo/addons/stock/models/stock_picking.py", line 1200, in action_cancel
+    self.move_ids._action_cancel()
+  File "/usr/lib/python3/dist-packages/odoo/addons/stock_account/models/stock_move.py", line 38, in _action_cancel
+    return super()._action_cancel()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/stock/models/stock_move.py", line 2015, in _action_cancel
+    raise UserError(_('You cannot cancel a stock move that has been set to \'Done\'. Create a return in order to reverse the moves which took place.'))
+odoo.exceptions.UserError: You cannot cancel a stock move that has been set to 'Done'. Create a return in order to reverse the moves which took place.
+ 
+2026-10-29 23:06:55,297 1031 INFO tmp_lote6_toll_20261029 odoo.addons.madenat_toll_processing.tests.test_toll_consumption_and_processor: Starting TestTollConsumptionAndProcessor.test_09_uom_validation_and_conversion ... 
+2026-10-29 23:06:55,432 1031 INFO tmp_lote6_toll_20261029 odoo.addons.base.models.ir_attachment: filestore gc 421 checked, 0 removed 
+2026-10-29 23:06:55,435 1031 INFO tmp_lote6_toll_20261029 odoo.service.server: 9 post-tests in 3.74s, 2601 queries 
+2026-10-29 23:06:55,435 1031 INFO tmp_lote6_toll_20261029 odoo.tests.stats: madenat_toll_processing: 11 tests 3.68s 2601 queries 
+2026-10-29 23:06:55,435 1031 ERROR tmp_lote6_toll_20261029 odoo.tests.result: 0 failed, 2 error(s) of 9 tests when loading database 'tmp_lote6_toll_20261029' 
+2026-10-29 23:06:55,436 1031 INFO tmp_lote6_toll_20261029 odoo.service.server: Initiating shutdown 
+2026-10-29 23:06:55,436 1031 INFO tmp_lote6_toll_20261029 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-29 23:06:55,930 1031 INFO tmp_lote6_toll_20261029 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
