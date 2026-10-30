@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_round, float_compare
 from datetime import timedelta
 import logging
 
@@ -72,7 +73,7 @@ class TollProcessingOrder(models.Model):
         string='Producto Servicio',
         domain="[('type', '=', 'service')]",
         help="Producto de tipo servicio utilizado para generar la factura de proveedor.",
-        required=True
+        required=False
     )
     
     # === DETALLES DE PROCESO ===
@@ -291,110 +292,221 @@ class TollProcessingOrder(models.Model):
         }
 
     # === LÓGICA DE CONSUMO AUTOMÁTICO (CIERRE DE CICLO) ===
+    def _get_lot_consumption_sources(self, lot, required_qty):
+        """
+        Determina las ubicaciones internas físicas de donde consumir el lote y la
+        cantidad a descontar de cada una, respetando disponibilidad real (libre),
+        categoría de unidad de medida (volumen) y compañía.
+
+        :param lot: registro stock.lot
+        :param required_qty: float (volumen a consumir en m³)
+        :return: list of tuples (stock.location, qty_to_consume)
+        :raises: UserError si no hay disponibilidad suficiente, quants válidos o unidad no es volumen
+        """
+        company = getattr(self, 'company_id', False) or self.env.company
+        uom_m3 = self.env.ref('uom.product_uom_cubic_meter')
+        product_uom = lot.product_id.uom_id
+
+        # 1. Validación de categoría de unidad de medida (garantía de volumen)
+        if product_uom.category_id != uom_m3.category_id:
+            raise UserError(_(
+                "El producto %(prod)s del lote %(lot)s tiene la unidad de medida '%(uom)s' "
+                "(categoría: %(cat)s), la cual no pertenece a la categoría de Volumen. "
+                "Toda la madera en MADENAT debe medirse en volumen."
+            ) % {
+                'prod': lot.product_id.display_name,
+                'lot': lot.display_name,
+                'uom': product_uom.name,
+                'cat': product_uom.category_id.name,
+            })
+
+        # Conversión de la cantidad requerida a la UoM del producto (si difiere de m³)
+        if product_uom != uom_m3:
+            required_product_qty = uom_m3._compute_quantity(
+                required_qty, product_uom, rounding_method='HALF-UP'
+            )
+        else:
+            required_product_qty = required_qty
+
+        uom_rounding = product_uom.rounding or 0.001
+        required_product_qty = float_round(required_product_qty, precision_rounding=uom_rounding)
+
+        # 2. Buscar todos los quants internos del lote para la compañía
+        quants = self.env['stock.quant'].search([
+            ('lot_id', '=', lot.id),
+            ('product_id', '=', lot.product_id.id),
+            ('location_id.usage', '=', 'internal'),
+            ('company_id', '=', company.id),
+            ('quantity', '>', 0),
+        ], order='id asc')
+
+        if not quants:
+            raise UserError(_(
+                "No se encontraron existencias en ubicaciones internas para el lote %(lot)s "
+                "(Producto: %(prod)s, Compañía: %(comp)s)."
+            ) % {
+                'lot': lot.display_name,
+                'prod': lot.product_id.display_name,
+                'comp': company.display_name,
+            })
+
+        # Extraer ubicaciones únicas preservando orden
+        locations = self.env['stock.location']
+        for q in quants:
+            if q.location_id not in locations:
+                locations |= q.location_id
+
+        sources = []
+        remaining = required_product_qty
+        total_available = 0.0
+
+        for loc in locations:
+            # Disponibilidad libre real (físico - reservado para otros movimientos)
+            # _get_available_quantity retorna en la UoM del producto (product_uom)
+            free_qty = self.env['stock.quant']._get_available_quantity(
+                lot.product_id, loc, lot_id=lot, strict=True
+            )
+            free_qty = float_round(max(free_qty, 0.0), precision_rounding=uom_rounding)
+            total_available = float_round(total_available + free_qty, precision_rounding=uom_rounding)
+
+            if float_compare(remaining, 0.0, precision_rounding=uom_rounding) <= 0:
+                continue
+
+            if float_compare(free_qty, 0.0, precision_rounding=uom_rounding) > 0:
+                take_qty = float_round(min(remaining, free_qty), precision_rounding=uom_rounding)
+                sources.append((loc, take_qty))
+                remaining = float_round(remaining - take_qty, precision_rounding=uom_rounding)
+
+        if float_compare(remaining, 0.0, precision_rounding=uom_rounding) > 0:
+            raise UserError(_(
+                "Disponibilidad insuficiente para consumir el lote %(lot)s. "
+                "Requerido: %(req).3f %(uom)s, disponible para reservar: %(avail).3f %(uom)s "
+                "(Compañía: %(comp)s)."
+            ) % {
+                'lot': lot.display_name,
+                'req': required_product_qty,
+                'avail': total_available,
+                'uom': product_uom.name,
+                'comp': company.display_name,
+            })
+
+        return sources
+
     def _create_consumption_picking(self):
         """
-        🚀 Genera el albarán de consumo (Salida a Producción) para los lotes de origen.
+        🚀 Genera el albarán de consumo (Salida a Producción) para los lotes de origen
+        desde su ubicación física real.
         Regla de Oro: Consumir lo que salió para evitar duplicidad de inventario.
         """
         self.ensure_one()
         
-        # Validación de estado previo
-        if self.consumption_picking_id:
-            _logger.info(f"Orden {self.name} ya tiene consumo registrado ({self.consumption_picking_id.name})")
+        # Validación de estado previo (idempotencia)
+        if self.consumption_picking_id and self.consumption_picking_id.state != 'cancel':
+            _logger.info("Orden %s ya tiene consumo activo (%s, estado %s)", self.name, self.consumption_picking_id.name, self.consumption_picking_id.state)
             return self.consumption_picking_id
             
         if not self.source_lot_ids:
-            _logger.warning(f"Orden {self.name} sin lotes de origen para consumir.")
+            _logger.warning("Orden %s sin lotes de origen para consumir.", self.name)
             return None
 
-        try:
-            _logger.info(f"🔄 Iniciando consumo automático para Orden Toll {self.name}")
-            
-            # 1. Configuración de Ubicaciones
-            warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.env.company.id)], limit=1)
-            # Origen: Ubicación de stock estándar (o donde estén los lotes)
-            location_src_id = warehouse.lot_stock_id.id
-            # Destino: Virtual Production (para que el costo se absorba)
-            location_dest_id = self.env.ref('stock.location_production').id
-            
-            # Buscar tipo de operación (Salida o Fabricación)
-            picking_type = self.env['stock.picking.type'].search([
-                ('code', '=', 'outgoing'),
-                ('warehouse_id', '=', warehouse.id)
-            ], limit=1)
-            
-            if not picking_type:
-                raise UserError("No se encontró un tipo de operación de salida válido para generar el consumo.")
+        company = getattr(self, 'company_id', False) or self.env.company
 
-            # 2. Crear Cabecera del Picking
-            picking = self.env['stock.picking'].create({
-                'picking_type_id': picking_type.id,
-                'location_id': location_src_id,
+        # 1. Determinar fuentes de consumo por lote y ubicación física real
+        consumption_plan = []  # list of (lot, location, qty)
+
+        for lot in self.source_lot_ids:
+            req_qty = float_round(lot.volumen_m3, precision_digits=3)
+            if float_compare(req_qty, 0.0, precision_rounding=0.001) <= 0:
+                continue
+            sources = self._get_lot_consumption_sources(lot, req_qty)
+            for loc, qty in sources:
+                consumption_plan.append((lot, loc, qty))
+
+        if not consumption_plan:
+            _logger.warning("No hay volumen positivo para consumir en orden %s.", self.name)
+            return None
+
+        _logger.info("🔄 Iniciando consumo automático para Orden Toll %s con %d asignaciones", self.name, len(consumption_plan))
+
+        # 2. Configuración de Albarán y Ubicaciones
+        warehouse = self.env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            raise UserError(_("No se encontró un almacén configurado para la compañía %s.") % company.display_name)
+
+        prod_loc = self.env['stock.location'].search([
+            ('usage', '=', 'production'),
+            ('company_id', 'in', (False, company.id))
+        ], limit=1)
+        if not prod_loc:
+            prod_loc = self.env.ref('stock.stock_location_production', raise_if_not_found=False)
+        if not prod_loc:
+            raise UserError(_("No se encontró una ubicación de producción virtual para el consumo."))
+        location_dest_id = prod_loc.id
+
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'outgoing'),
+            ('warehouse_id', '=', warehouse.id)
+        ], limit=1)
+
+        if not picking_type:
+            raise UserError(_("No se encontró un tipo de operación de salida válido para generar el consumo."))
+
+        source_locs = {loc.id for _, loc, _ in consumption_plan}
+        header_location_id = list(source_locs)[0] if len(source_locs) == 1 else warehouse.lot_stock_id.id
+
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': header_location_id,
+            'location_dest_id': location_dest_id,
+            'origin': f"Consumo Maquila: {self.name}",
+            'partner_id': self.processor_id.id,
+            'move_type': 'direct',
+            'company_id': company.id,
+        })
+
+        # 3. Crear Movimientos y Líneas Detalladas por Lote y Ubicación Física
+        for lot, loc, qty in consumption_plan:
+            product_uom = lot.product_id.uom_id
+            move = self.env['stock.move'].create({
+                'name': f"Consumo {lot.name}",
+                'product_id': lot.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': product_uom.id,
+                'picking_id': picking.id,
+                'location_id': loc.id,
                 'location_dest_id': location_dest_id,
-                'origin': f"Consumo Maquila: {self.name}",
-                'partner_id': self.processor_id.id,
-                'move_type': 'direct',
-                'company_id': self.env.company.id,
+                'origin': picking.origin,
+                'company_id': company.id,
+                'picked': True,
             })
 
-            # 3. Crear Movimientos por Lote
-            uom_cubic = self.env.ref('uom.product_uom_cubic_meter')
-            move_count = 0
-            
-            for lot in self.source_lot_ids:
-                # Validar volumen > 0
-                if lot.volumen_m3 <= 0:
-                    continue
-                    
-                # Crear movimiento de stock
-                move = self.env['stock.move'].create({
-                    'name': f"Consumo {lot.name}",
-                    'product_id': lot.product_id.id,
-                    'product_uom_qty': lot.volumen_m3,
-                    'product_uom': uom_cubic.id,
-                    'picking_id': picking.id,
-                    'location_id': location_src_id,
-                    'location_dest_id': location_dest_id,
-                    'origin': picking.origin,
-                    'company_id': self.env.company.id,
-                })
-                
-                # VINCULACIÓN EXPLÍCITA DE LOTE (Stock Move Line)
-                # Esto asegura que se descuente ESE lote específico
-                self.env['stock.move.line'].create({
-                    'move_id': move.id,
-                    'picking_id': picking.id,
-                    'product_id': lot.product_id.id,
-                    'lot_id': lot.id, # VINCULACIÓN CLAVE
-                    'quantity': lot.volumen_m3, # Cantidad hecha ("Done")
-                    'product_uom_id': uom_cubic.id,
-                    'location_id': location_src_id,
-                    'location_dest_id': location_dest_id,
-                })
-                move_count += 1
+            self.env['stock.move.line'].create({
+                'move_id': move.id,
+                'picking_id': picking.id,
+                'product_id': lot.product_id.id,
+                'lot_id': lot.id,
+                'quantity': qty,
+                'picked': True,
+                'product_uom_id': product_uom.id,
+                'location_id': loc.id,
+                'location_dest_id': location_dest_id,
+                'company_id': company.id,
+            })
 
-            if move_count > 0:
-                # 4. Confirmar y Validar automáticamente
-                picking.action_confirm()
-                picking.action_assign()
-                picking.button_validate()
-                
-                self.consumption_picking_id = picking.id
-                
-                self.message_post(body=f"✅ Materia prima consumida automáticamente en albarán: {picking.name} ({move_count} lotes)")
-                _logger.info(f"✅ Consumo creado y validado: {picking.name}")
-                return picking
-            else:
-                _logger.warning(f"⚠️ No se generaron movimientos para consumo en orden {self.name} (Volúmenes 0?)")
-                picking.unlink()
-                return None
+        # 4. Confirmar y Validar automáticamente
+        picking.action_confirm()
+        picking.action_assign()
+        picking.button_validate()
 
-        except Exception as e:
-            error_msg = f"⚠️ Error intentando consumir materia prima: {str(e)}"
-            _logger.error(error_msg, exc_info=True)
-            self.message_post(body=error_msg)
-            # No levantamos error bloqueante para no impedir otros procesos, pero avisamos.
-            return None
+        self.consumption_picking_id = picking.id
+
+        self.message_post(body=_(
+            "✅ Materia prima consumida automáticamente en albarán: %(picking)s (%(count)d asignaciones)",
+            picking=picking.name,
+            count=len(consumption_plan)
+        ))
+        _logger.info("✅ Consumo creado y validado: %s", picking.name)
+        return picking
 
     # === LÓGICA FINANCIERA (Fase 5) ===
     def action_create_bill(self):
