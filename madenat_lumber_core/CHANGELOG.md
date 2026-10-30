@@ -1,3 +1,10 @@
+## [18.0.6.25.3] - 2026-10-29
+- **Orden de carga de vistas de menú en manifiesto**:
+  - Reubicación de `views/stock_quant_patio_views.xml` en la sección 5 de `data` en `__manifest__.py`, inmediatamente posterior a `views/lumber_core_menu.xml`.
+  - Causa: `menu_madenat_inventario_patio` referencia como padre a `menu_ops_inventory`. Cargar el archivo de patio antes del archivo de menús principales impedía instalaciones limpias en bases nuevas por ParseError de clave externa no encontrada.
+  - Se preservan idénticos XML IDs, permisos, acciones y jerarquía de menú.
+  - Validación: Validado en entorno aislado; no desplegado en `madenat_test`; UAT operativa pendiente.
+
 ## [18.0.6.25.2] - 2026-10-29
 - **Homologación de strings de volumen en stock.lot (DISC-OP-17, commit 4a93185)**:
   - `volume_purchase_m3`: `string='Vol. Compra (m³)'` alineado con formularios de recepción y vistas.

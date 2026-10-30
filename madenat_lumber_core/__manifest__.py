@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'MADENAT Lumber Core',
-    'version': '18.0.6.25.1',
+    'version': '18.0.6.25.3',
     'summary': 'Cimiento Técnico - MADENAT',
     'category': 'Inventory',
     'license': 'LGPL-3',
@@ -45,10 +45,10 @@
         'views/lumber_reception_views.xml',
         'views/lumber_reception_kanban_views.xml',
         'views/stock_location_views.xml',
-        'views/stock_quant_patio_views.xml',
 
         # 🏗️ 5. MENÚS
         'views/lumber_core_menu.xml',
+        'views/stock_quant_patio_views.xml',
         # 🏷️ Programa SV — historial/acciones de etiquetas SV (usa menu_ops_main).
         'views/madenat_sv_operation_views.xml',
         'views/lumber_ingestion_config_views.xml',
